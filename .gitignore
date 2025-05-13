@@ -35,3 +35,16 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# Tüm .env dosyalarını hariç tut
+.env
+.env.*
+
+# Google/Firebase config dosyaları
+android/app/google-services.json
+ios/GoogleService-Info.plist
+
+# Supabase veya diğer özel anahtarlar içerebilecek dosyalar
+*.keystore
+
+# Kişisel veya hassas veri içeren diğer dosyalar buraya eklenebilir

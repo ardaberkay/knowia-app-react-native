@@ -1,0 +1,107 @@
+import { createContext, useState, useContext, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+
+// Context oluştur
+const AuthContext = createContext({});
+
+// Provider component
+export function AuthProvider({ children }) {
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Mevcut oturumu kontrol et
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    // Oturum değişikliklerini dinle
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Login fonksiyonu
+  const login = async (email, password) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      return { error: null };
+    } catch (error) {
+      return { error };
+    }
+  };
+
+  // Register fonksiyonu
+  const register = async (email, password) => {
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      if (error) throw error;
+      return { error: null };
+    } catch (error) {
+      return { error };
+    }
+  };
+
+  // Logout fonksiyonu
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      return { error: null };
+    } catch (error) {
+      return { error };
+    }
+  };
+
+  // Google ile giriş fonksiyonu
+  const signInWithGoogle = async () => {
+    try {
+      console.log('Supabase Google OAuth başlatılıyor...');
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: 'com.arda.knowia://auth/callback'
+        }
+      });
+      console.log('Supabase OAuth yanıtı:', data ? 'Data var' : 'Data yok', error ? 'Hata var' : 'Hata yok');
+      if (error) {
+        console.log('Supabase OAuth hatası:', error.message);
+        throw error;
+      }
+      return { error: null };
+    } catch (error) {
+      console.log('Supabase OAuth catch bloğu:', error);
+      return { error };
+    }
+  };
+
+  const value = {
+    session,
+    loading,
+    login,
+    register,
+    logout,
+    signInWithGoogle,
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+// Custom hook
+export function useAuth() {
+  return useContext(AuthContext);
+} 
