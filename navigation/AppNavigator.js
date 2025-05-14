@@ -1,14 +1,81 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../contexts/AuthContext';
-
-// Ekranlar
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import HomeScreen from '../screens/HomeScreen';
+import CreateScreen from '../screens/CreateScreen';
+import LibraryScreen from '../screens/LibraryScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import React from 'react';
+import { View } from 'react-native';
+import { useRoute } from '@react-navigation/native';
+import { useTheme } from '../theme/theme';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
 
-// Ana navigator
+function MainTabs() {
+  const { colors } = useTheme();
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarShowLabel: true,
+        tabBarActiveTintColor: colors.buttonColor,
+        tabBarInactiveTintColor: colors.muted,
+        tabBarStyle: {
+          backgroundColor: colors.tabBarBackground,
+          borderTopColor: colors.border,
+          borderTopWidth: 1,
+          height: 80,
+        },
+        tabBarLabelStyle: {
+          fontSize: 14,
+          marginBottom: 8,
+          marginTop: 0,
+          padding: 0,
+        },
+        tabBarIconStyle: {
+          marginTop: 8,
+          marginBottom: 0,
+          padding: 0,
+        },
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+          if (route.name === 'Home') {
+            iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'Create') {
+            iconName = focused ? 'plus-box' : 'plus-box-outline';
+          } else if (route.name === 'Library') {
+            iconName = 'bookshelf';
+          } else if (route.name === 'Profile') {
+            iconName = focused ? 'account-circle' : 'account-circle-outline';
+          }
+          // Basit bir animasyon efekti: focused ise scale ve opacity artır
+          return (
+            <MaterialCommunityIcons
+              name={iconName}
+              size={36}
+              color={color}
+              style={{
+                opacity: focused ? 1 : 0.7,
+                transform: [{ scale: focused ? 1.15 : 1 }],
+              }}
+            />
+          );
+        },
+      })}
+    >
+      <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Anasayfa' }} />
+      <Tab.Screen name="Create" component={CreateScreen} options={{ title: 'Oluştur' }} />
+      <Tab.Screen name="Library" component={LibraryScreen} options={{ title: 'Kitaplık' }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profil' }} />
+    </Tab.Navigator>
+  );
+}
+
 export default function AppNavigator() {
   const { session, loading } = useAuth();
 
@@ -24,7 +91,7 @@ export default function AppNavigator() {
           <Stack.Screen name="Register" component={RegisterScreen} />
         </>
       ) : (
-        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="MainTabs" component={MainTabs} />
       )}
     </Stack.Navigator>
   );
