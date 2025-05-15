@@ -8,8 +8,6 @@ import LibraryScreen from '../screens/LibraryScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
-import { View } from 'react-native';
-import { useRoute } from '@react-navigation/native';
 import { useTheme } from '../theme/theme';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -22,11 +20,11 @@ function MainTabs() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarShowLabel: true,
-        tabBarActiveTintColor: colors.buttonColor,
-        tabBarInactiveTintColor: colors.muted,
+        tabBarShowLabel: false,
+        tabBarActiveTintColor: colors.tabBarBackground,
+        tabBarInactiveTintColor: colors.tabBarBackground,
         tabBarStyle: {
-          backgroundColor: colors.tabBarBackground,
+          backgroundColor: colors.buttonColor,
           borderTopColor: colors.border,
           borderTopWidth: 1,
           height: 80,
@@ -47,7 +45,7 @@ function MainTabs() {
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'Create') {
-            iconName = focused ? 'plus-box' : 'plus-box-outline';
+            iconName = focused ? 'plus-circle' : 'plus-circle-outline';
           } else if (route.name === 'Library') {
             iconName = 'bookshelf';
           } else if (route.name === 'Profile') {
