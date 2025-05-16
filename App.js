@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './theme/theme';
 import AppNavigator from './navigation/AppNavigator';
@@ -31,14 +31,23 @@ function AppContent() {
     return null;
   }
 
+  // Navigation için kendi temamızı oluştur
+  const navigationTheme = {
+    ...(isDarkMode ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(isDarkMode ? DarkTheme.colors : DefaultTheme.colors),
+      ...colors,
+    },
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-    <AuthProvider>
-      <NavigationContainer>
-        <AppNavigator />
-          <StatusBar style={isDarkMode ? "light" : "dark"} />
-      </NavigationContainer>
-    </AuthProvider>
+      <AuthProvider>
+        <NavigationContainer theme={navigationTheme}>
+          <AppNavigator />
+            <StatusBar style={isDarkMode ? "light" : "dark"} />
+        </NavigationContainer>
+      </AuthProvider>
     </View>
   );
 }

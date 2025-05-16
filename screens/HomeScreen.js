@@ -2,9 +2,13 @@ import { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { getDecksByCategory } from '../services/DeckService';
+import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../theme/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { typography } from '../theme/typography';
 
 const DECK_CATEGORIES = {
-  myDecks: 'Kendi Destelerim',
+  myDecks: 'Destelerim',
   defaultDecks: 'Hazır Desteler',
   communityDecks: 'Topluluk Desteleri',
   inProgressDecks: 'Çalıştığım Desteler'
@@ -12,6 +16,8 @@ const DECK_CATEGORIES = {
 
 export default function HomeScreen() {
   const { logout } = useAuth();
+  const navigation = useNavigation();
+  const { colors } = useTheme();
   const [decks, setDecks] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -55,85 +61,81 @@ export default function HomeScreen() {
     }
   };
 
-  const handleDeckPress = (deckId) => {
-    // Deste detay sayfasına yönlendirme yapılacak
-    console.log('Deste tıklandı:', deckId);
+  const handleDeckPress = (deck) => {
+    navigation.navigate('DeckDetail', { deck });
   };
 
   const renderDeckSection = (category) => {
     const categoryDecks = decks[category] || [];
-    
-    if (loading) {
-      return (
-        <>
-          <Text style={styles.sectionTitle}>{DECK_CATEGORIES[category]}</Text>
-          <ActivityIndicator size="small" color="#007AFF" />
-        </>
-      );
-    }
 
-    if (categoryDecks.length === 0) {
-      return (
-        <>
-          <Text style={styles.sectionTitle}>{DECK_CATEGORIES[category]}</Text>
-          <Text style={styles.emptyText}>Henüz deste bulunmuyor</Text>
-        </>
-      );
-    }
+    const handleSeeAll = () => {
+      navigation.navigate('CategoryDeckList', {
+        category,
+        title: DECK_CATEGORIES[category],
+        decks: categoryDecks,
+      });
+    };
 
     return (
       <>
-        <Text style={styles.sectionTitle}>{DECK_CATEGORIES[category]}</Text>
-        <ScrollView 
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.decksContainer}
-          decelerationRate="fast"
-          snapToInterval={130}
-          snapToAlignment="start"
-        >
-          {categoryDecks.map((deck) => (
-            <TouchableOpacity
-              key={`deck-${deck.id}`}
-              style={styles.deckCard}
-              onPress={() => handleDeckPress(deck.id)}
-              activeOpacity={0.9}
-            >
-              <View style={styles.deckCardContent}>
-                <View style={styles.deckHeader}>
-                  <Text style={styles.deckTitle} numberOfLines={2}>
-                    {deck.name}
-                  </Text>
-                </View>
-                
-                <View style={styles.deckStats}>
-                  <Text style={styles.deckCount}>
-                    {deck.card_count || 0} kart
-                  </Text>
-                  {deck.description && (
-                    <Text style={styles.deckDescription} numberOfLines={2}>
-                      {deck.description}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={[styles.sectionTitle, typography.styles.subtitle]}>{DECK_CATEGORIES[category]}</Text>
+          <TouchableOpacity style={styles.seeAllButton} onPress={handleSeeAll} activeOpacity={0.7}>
+            <View style={styles.seeAllContent}>
+              <Text style={[styles.seeAllText, typography.styles.button]}>Tümü</Text>
+              <Ionicons name="chevron-forward" size={18} color="#007AFF" style={{ marginLeft: 2 }} />
+            </View>
+          </TouchableOpacity>
+        </View>
+        {loading ? (
+          <ActivityIndicator size="small" color="#007AFF" />
+        ) : categoryDecks.length === 0 ? (
+          <Text style={[styles.emptyText, typography.styles.caption]}>Henüz deste bulunmuyor</Text>
+        ) : (
+          <ScrollView 
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.decksContainer}
+            decelerationRate="fast"
+            snapToInterval={130}
+            snapToAlignment="start"
+          >
+            {categoryDecks.map((deck) => (
+              <TouchableOpacity
+                key={`deck-${deck.id}`}
+                style={styles.deckCard}
+                onPress={() => handleDeckPress(deck)}
+                activeOpacity={0.9}
+              >
+                <View style={styles.deckCardContent}>
+                  <View style={styles.deckHeader}>
+                    <Text style={[styles.deckTitle, typography.styles.body]} numberOfLines={2}>
+                      {deck.name}
                     </Text>
-                  )}
+                  </View>
+                  <View style={styles.deckStats}>
+                    <Text style={[styles.deckCount, typography.styles.caption]}>
+                      {deck.card_count || 0} Kart
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
       </>
     );
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Knowia</Text>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Çıkış Yap</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }] }>
+      <View style={[styles.header, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }] }>
+        <Text style={[styles.title, typography.styles.h1, { color: colors.text }]}>Knowia</Text>
+        <TouchableOpacity style={[styles.logoutButton, { backgroundColor: colors.error }]} onPress={handleLogout}>
+          <Text style={[styles.logoutText, { color: colors.buttonText }]}>Çıkış Yap</Text>
         </TouchableOpacity>
       </View>
-      
-      <ScrollView style={styles.content}>
+      <ScrollView style={[styles.content, { backgroundColor: colors.background }]}>
         {Object.keys(DECK_CATEGORIES).map((category, index) => (
           <View key={`category-${category}`} style={styles.section}>
             {renderDeckSection(category)}
@@ -179,11 +181,17 @@ const styles = StyleSheet.create({
   section: {
     marginVertical: 14,
   },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginLeft: 16,
+    marginRight: 16,
+    marginBottom: 10,
+  },
   sectionTitle: {
     fontSize: 17,
     fontWeight: 'bold',
-    marginLeft: 16,
-    marginBottom: 10,
     color: '#333',
   },
   decksContainer: {
@@ -238,5 +246,21 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
     marginTop: 20,
+  },
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
+    paddingHorizontal: 2,
+    paddingVertical: 2,
+  },
+  seeAllContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  seeAllText: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 }); 

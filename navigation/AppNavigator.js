@@ -6,6 +6,8 @@ import HomeScreen from '../screens/HomeScreen';
 import CreateScreen from '../screens/CreateScreen';
 import LibraryScreen from '../screens/LibraryScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import DeckDetailScreen from '../screens/DeckDetailScreen';
+import CategoryDeckListScreen from '../screens/CategoryDeckListScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import { useTheme } from '../theme/theme';
@@ -89,7 +91,19 @@ export default function AppNavigator() {
           <Stack.Screen name="Register" component={RegisterScreen} />
         </>
       ) : (
-        <Stack.Screen name="MainTabs" component={MainTabs} />
+        <>
+          <Stack.Screen name="MainTabs" component={MainTabs} />
+          <Stack.Screen name="DeckDetail" component={DeckDetailScreen} options={{ headerShown: true, title: 'Deste Bilgisi', headerTitleAlign: 'center' }} />
+          <Stack.Screen
+            name="CategoryDeckList"
+            component={CategoryDeckListScreen}
+            options={({ route }) => ({
+              headerShown: true,
+              title: route.params?.title || 'Tüm Desteler',
+              headerTitleAlign: 'center',
+            })}
+          />
+        </>
       )}
     </Stack.Navigator>
   );
