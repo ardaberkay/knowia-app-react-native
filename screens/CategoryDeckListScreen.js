@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, TextInput } from 'react-native';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import { typography } from '../theme/typography';
 
@@ -7,6 +7,8 @@ export default function CategoryDeckListScreen({ route }) {
   const { title, decks } = route.params;
   const navigation = useNavigation();
   const { colors } = useTheme();
+
+  const [search, setSearch] = useState('');
 
   const screenWidth = Dimensions.get('window').width;
   const horizontalPadding = 16 * 2; // decksContainer padding
@@ -19,6 +21,11 @@ export default function CategoryDeckListScreen({ route }) {
   const handleDeckPress = (deck) => {
     navigation.navigate('DeckDetail', { deck });
   };
+
+  // Filtrelenmiş desteler
+  const filteredDecks = decks.filter(deck =>
+    deck.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   const renderItem = ({ item, index }) => {
     const isRightItem = (index + 1) % 2 === 0;
@@ -53,8 +60,18 @@ export default function CategoryDeckListScreen({ route }) {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }] }>
+      <View style={styles.searchBarContainer}>
+        <TextInput
+          style={styles.searchBar}
+          placeholder="Deste ara..."
+          placeholderTextColor="#999"
+          value={search}
+          onChangeText={setSearch}
+          clearButtonMode="while-editing"
+        />
+      </View>
       <FlatList
-        data={decks}
+        data={filteredDecks}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
         numColumns={2}
@@ -121,5 +138,20 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
     marginTop: 20,
+  },
+  searchBarContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    backgroundColor: 'transparent',
+  },
+  searchBar: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 24,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: '#333',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
 }); 

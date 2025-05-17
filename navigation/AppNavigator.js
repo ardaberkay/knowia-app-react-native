@@ -12,6 +12,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import { useTheme } from '../theme/theme';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import SwipeDeckScreen from '../screens/SwipeDeckScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -103,6 +104,7 @@ export default function AppNavigator() {
               headerTitleAlign: 'center',
             })}
           />
+          <Stack.Screen name="SwipeDeck" component={SwipeDeckScreen} options={{ headerShown: true, title: 'Kartları Öğren', headerTitleAlign: 'center' }} />
         </>
       )}
     </Stack.Navigator>

@@ -2,11 +2,15 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
 import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
+import { setDeckStarted } from '../services/DeckService';
+import { Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 export default function DeckDetailScreen({ route }) {
   const { deck } = route.params;
   const { colors } = useTheme();
   const [isStarted, setIsStarted] = useState(false);
+  const navigation = useNavigation();
 
   if (!deck) {
     return (
@@ -15,6 +19,16 @@ export default function DeckDetailScreen({ route }) {
       </SafeAreaView>
     );
   }
+
+  const handleStart = async () => {
+    try {
+      await setDeckStarted(deck.id);
+      setIsStarted(true);
+      navigation.navigate('SwipeDeck', { deck });
+    } catch (error) {
+      Alert.alert('Hata', 'Deste başlatılamadı.');
+    }
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }] }>
@@ -65,7 +79,7 @@ export default function DeckDetailScreen({ route }) {
               styles.startButton,
               { backgroundColor: colors.buttonColor },
             ]}
-            onPress={() => setIsStarted(true)}
+            onPress={handleStart}
           >
             <Text style={[
               styles.startButtonText,

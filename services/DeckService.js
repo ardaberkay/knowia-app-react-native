@@ -41,3 +41,14 @@ export const getDecksByCategory = async (category) => {
 
   return data;
 };
+
+// Kullanıcı bir destede çalışmaya başladığında is_started alanını true yapar
+export const setDeckStarted = async (deckId) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from('decks')
+    .update({ is_started: true })
+    .eq('id', deckId)
+    .eq('user_id', user.id);
+  if (error) throw error;
+};
