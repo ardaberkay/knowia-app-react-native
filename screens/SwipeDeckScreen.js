@@ -5,8 +5,14 @@ import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
 import { getCardsForLearning, ensureUserCardProgress } from '../services/CardService';
 import { supabase } from '../lib/supabase';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
+
+// Kart boyutlandırma sabitleri
+const CARD_WIDTH = width * 0.88; // %92 genişlik
+const CARD_ASPECT_RATIO = 1.45; // Daha da uzun oran
+const CARD_HEIGHT = CARD_WIDTH * CARD_ASPECT_RATIO;
 
 export default function SwipeDeckScreen({ route, navigation }) {
   const { deck } = route.params;
@@ -17,6 +23,16 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const [userId, setUserId] = useState(null);
   const [flipped, setFlipped] = useState({});
   const animatedValues = useRef({});
+  const [leftCount, setLeftCount] = useState(0);
+  const [rightCount, setRightCount] = useState(0);
+  const [leftHighlight, setLeftHighlight] = useState(false);
+  const [rightHighlight, setRightHighlight] = useState(false);
+
+  // Sayaç kutuları için renkler
+  const leftInactiveColor = '#FFE5C2'; // Açık turuncu
+  const leftActiveColor = colors.buttonColor; // Tema turuncusu
+  const rightInactiveColor = '#D4F8E8'; // Açık yeşil
+  const rightActiveColor = colors.success || '#27AE60'; // Tema yeşili veya fallback
 
   useEffect(() => {
     const fetchCards = async () => {
@@ -36,7 +52,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
         .eq('cards.deck_id', deck.id);
       console.log('learningCards:', learningCards);
       console.log('supabase error:', error);
-      setCards(learningCards || []);
+      setCards((learningCards || []).filter(card => card.cards));
       setFlipped({});
       setLoading(false);
     };
@@ -49,6 +65,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
     const card = cards[cardIndex];
     if (!userId) return;
     if (direction === 'right') {
+      setRightCount((prev) => prev + 1);
+      setRightHighlight(true);
+      setTimeout(() => setRightHighlight(false), 400);
       // Öğrendim (artık tekrar gösterilmesin)
       await supabase
         .from('user_card_progress')
@@ -56,6 +75,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
         .eq('user_id', userId)
         .eq('card_id', card.card_id);
     } else if (direction === 'left') {
+      setLeftCount((prev) => prev + 1);
+      setLeftHighlight(true);
+      setTimeout(() => setLeftHighlight(false), 400);
       // 1 dakika sonra tekrar göster
       await supabase
         .from('user_card_progress')
@@ -107,7 +129,13 @@ export default function SwipeDeckScreen({ route, navigation }) {
     setCurrentIndex(currentIndex + 1);
   };
 
-  const FlipCard = ({ card, cardIndex }) => {
+  const FlipCard = ({ card, cardIndex, currentIndex }) => {
+    // Eğer kart yoksa veya stack'teki alttaki kartsa, placeholder göster
+    if (!card || !card.cards || cardIndex > currentIndex) {
+      return (
+        <View style={[styles.card, { backgroundColor: colors.cardBackground, opacity: 0.7 }]} />
+      );
+    }
     if (!animatedValues.current[cardIndex]) {
       animatedValues.current[cardIndex] = new Animated.Value(0);
     }
@@ -125,8 +153,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
       ],
       backfaceVisibility: 'hidden',
       position: 'absolute',
-      width: '100%',
-      height: height * 0.75,
+      width: CARD_WIDTH,
+      height: CARD_HEIGHT,
     };
     const backAnimatedStyle = {
       transform: [
@@ -134,12 +162,19 @@ export default function SwipeDeckScreen({ route, navigation }) {
       ],
       backfaceVisibility: 'hidden',
       position: 'absolute',
-      width: '100%',
-      height: height * 0.75,
+      width: CARD_WIDTH,
+      height: CARD_HEIGHT,
     };
     return (
-      <Pressable onPress={() => handleFlip(cardIndex)} style={{ width: '100%', height: 60 }}>
-        <View style={{ width: '100%', height: 60 }}>
+      <Pressable
+        onPress={() => handleFlip(cardIndex)}
+        style={{
+          width: CARD_WIDTH,
+          height: CARD_HEIGHT,
+          alignSelf: 'center', // Ortala
+        }}
+      >
+        <View style={{ width: CARD_WIDTH, height: CARD_HEIGHT }}>
           <Animated.View style={[styles.card, { backgroundColor: colors.cardBackground }, frontAnimatedStyle]}>
             <Text style={[typography.styles.h2, { color: colors.text, marginBottom: 16 }]}>{card.cards.question}</Text>
           </Animated.View>
@@ -166,7 +201,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }] }>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={[typography.styles.h2, { color: colors.text, textAlign: 'center', marginTop: 40 }]}>Tüm kartları tamamladın!</Text>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={[styles.backButton, { backgroundColor: colors.buttonColor }]} onPress={() => navigation.goBack()}>
             <Text style={{ color: colors.buttonText }}>Geri Dön</Text>
           </TouchableOpacity>
         </View>
@@ -176,32 +211,54 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }] }>
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      {/* Sayaçlar */}
+      <View style={styles.counterRow}>
+        <View style={[styles.counterBox, { backgroundColor: leftHighlight ? leftActiveColor : leftInactiveColor }] }>
+          {leftHighlight ? (
+            <Ionicons name="time" size={18} color="#fff" />
+          ) : (
+            <Text style={styles.counterText}>{leftCount}</Text>
+          )}
+        </View>
+        <View style={[styles.counterBox, { backgroundColor: rightHighlight ? rightActiveColor : rightInactiveColor }] }>
+          {rightHighlight ? (
+            <Ionicons name="checkmark" size={18} color="#fff" />
+          ) : (
+            <Text style={styles.counterText}>{rightCount}</Text>
+          )}
+        </View>
+      </View>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', marginTop: 15 }}>
         <Swiper
           cards={cards}
           cardIndex={currentIndex}
-          renderCard={(card, i) => <FlipCard card={card} cardIndex={i} key={card.card_id} />}
+          renderCard={(card, i) => <FlipCard card={card} cardIndex={i} currentIndex={currentIndex} key={card.card_id} />}
           onSwipedLeft={(i) => handleSwipe(i, 'left')}
           onSwipedRight={(i) => handleSwipe(i, 'right')}
           backgroundColor={colors.background}
-          stackSize={2}
+          stackSize={3}
           disableTopSwipe
           disableBottomSwipe
           infinite={false}
           showSecondCard
+          stackSeparation={15}
+          stackScale={0.08}
+          cardHorizontalMargin={24}
+          containerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+          cardStyle={{ width: CARD_WIDTH, height: CARD_HEIGHT, alignSelf: 'center', justifyContent: 'center' }}
         />
       </View>
       <View style={styles.skipRow}>
-        <TouchableOpacity style={styles.skipButton} onPress={() => handleSkip(15)}>
+        <TouchableOpacity style={[styles.skipButton, { backgroundColor: colors.buttonColor }]} onPress={() => handleSkip(15)}>
           <Text style={{ color: colors.buttonText }}>15dk</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.skipButton} onPress={() => handleSkip(60)}>
+        <TouchableOpacity style={[styles.skipButton, { backgroundColor: colors.buttonColor }]} onPress={() => handleSkip(60)}>
           <Text style={{ color: colors.buttonText }}>1sa</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.skipButton} onPress={() => handleSkip(24 * 60)}>
+        <TouchableOpacity style={[styles.skipButton, { backgroundColor: colors.buttonColor }]} onPress={() => handleSkip(24 * 60)}>
           <Text style={{ color: colors.buttonText }}>1g</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.skipButton} onPress={() => handleSkip(7 * 24 * 60)}>
+        <TouchableOpacity style={[styles.skipButton, { backgroundColor: colors.buttonColor }]} onPress={() => handleSkip(7 * 24 * 60)}>
           <Text style={{ color: colors.buttonText }}>7g</Text>
         </TouchableOpacity>
       </View>
@@ -214,37 +271,65 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   card: {
-    width: width - 40,
-    height: height * 0.75,
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
   },
   skipRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     position: 'absolute',
-    bottom: 32,
+    bottom: 64,
     left: 20,
     right: 20,
     gap: 12,
   },
   skipButton: {
     flex: 1,
-    backgroundColor: '#007AFF',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
     marginHorizontal: 4,
   },
   backButton: {
     marginTop: 32,
-    backgroundColor: '#007AFF',
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
+  },
+  counterRow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
+    paddingBottom: 100,
+  },
+  counterBox: {
+    backgroundColor: '#fff',
+    minWidth: 50,
+    paddingHorizontal: 12,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    borderTopLeftRadius: 999,
+    borderBottomLeftRadius: 999,
+    borderTopRightRadius: 999,
+    borderBottomRightRadius: 999,
+  },
+  counterText: {
+    fontWeight: 'bold',
+    fontSize: 18,
   },
 }); 
