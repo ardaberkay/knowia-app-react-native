@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity, Dimensions, Pressable, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity, Dimensions, Pressable, Animated, Easing, Image } from 'react-native';
 import Swiper from 'react-native-deck-swiper';
 import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
 import { getCardsForLearning, ensureUserCardProgress } from '../services/CardService';
 import { supabase } from '../lib/supabase';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 
@@ -29,10 +29,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const [rightHighlight, setRightHighlight] = useState(false);
 
   // Sayaç kutuları için renkler
-  const leftInactiveColor = '#FFE5C2'; // Açık turuncu
+  const leftInactiveColor = '#F9B97A'; // Daha koyu turuncu
   const leftActiveColor = colors.buttonColor; // Tema turuncusu
-  const rightInactiveColor = '#D4F8E8'; // Açık yeşil
-  const rightActiveColor = colors.success || '#27AE60'; // Tema yeşili veya fallback
+  const rightInactiveColor = '#81C784'; // Yeni yeşil
+  const rightActiveColor = '#4CAF50'; // Onaylandığında sağdaki aktif renk
 
   useEffect(() => {
     const fetchCards = async () => {
@@ -175,7 +175,15 @@ export default function SwipeDeckScreen({ route, navigation }) {
         }}
       >
         <View style={{ width: CARD_WIDTH, height: CARD_HEIGHT }}>
-          <Animated.View style={[styles.card, { backgroundColor: colors.cardBackground }, frontAnimatedStyle]}>
+          <Animated.View style={[styles.card, { backgroundColor: colors.cardBackground, justifyContent: 'flex-start' }, frontAnimatedStyle]}>
+            <View style={[styles.imageContainer, { backgroundColor: colors.cardBackground }]}>
+              {card.cards.image && (
+                <Image
+                  source={{ uri: card.cards.image }}
+                  style={styles.cardImage}
+                />
+              )}
+            </View>
             <Text style={[typography.styles.h2, { color: colors.text, marginBottom: 16 }]}>{card.cards.question}</Text>
           </Animated.View>
           <Animated.View style={[styles.card, { backgroundColor: colors.cardBackground }, backAnimatedStyle]}>
@@ -190,7 +198,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }] }>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.buttonColor} />
       </SafeAreaView>
     );
@@ -198,7 +206,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
   if (cards.length === 0 || currentIndex >= cards.length) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }] }>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={[typography.styles.h2, { color: colors.text, textAlign: 'center', marginTop: 40 }]}>Tüm kartları tamamladın!</Text>
           <TouchableOpacity style={[styles.backButton, { backgroundColor: colors.buttonColor }]} onPress={() => navigation.goBack()}>
@@ -210,19 +218,19 @@ export default function SwipeDeckScreen({ route, navigation }) {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }] }>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Sayaçlar */}
       <View style={styles.counterRow}>
-        <View style={[styles.counterBox, { backgroundColor: leftHighlight ? leftActiveColor : leftInactiveColor }] }>
+        <View style={[styles.counterBox, { backgroundColor: leftHighlight ? leftActiveColor : leftInactiveColor }]}>
           {leftHighlight ? (
             <Ionicons name="time" size={18} color="#fff" />
           ) : (
             <Text style={styles.counterText}>{leftCount}</Text>
           )}
         </View>
-        <View style={[styles.counterBox, { backgroundColor: rightHighlight ? rightActiveColor : rightInactiveColor }] }>
+        <View style={[styles.counterBox, { backgroundColor: rightHighlight ? rightActiveColor : rightInactiveColor }]}>
           {rightHighlight ? (
-            <Ionicons name="checkmark" size={18} color="#fff" />
+            <MaterialCommunityIcons name="check-bold" size={18} color="#fff" />
           ) : (
             <Text style={styles.counterText}>{rightCount}</Text>
           )}
@@ -236,12 +244,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
           onSwipedLeft={(i) => handleSwipe(i, 'left')}
           onSwipedRight={(i) => handleSwipe(i, 'right')}
           backgroundColor={colors.background}
-          stackSize={3}
+          stackSize={2}
           disableTopSwipe
           disableBottomSwipe
           infinite={false}
           showSecondCard
-          stackSeparation={15}
+          stackSeparation={0}
           stackScale={0.08}
           cardHorizontalMargin={24}
           containerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
@@ -277,13 +285,32 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#fff',
+    shadowOffset: { width: 0, height: -10 },
+    shadowOpacity: 5,
+    shadowRadius: 4,
+    borderWidth: 2,
+    borderColor: '#e5e5e5',
+  },
+  imageContainer: {
+    width: '100%',
+    height: (CARD_HEIGHT * 2) / 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  cardImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
+    borderRadius: 4,
   },
   skipRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     position: 'absolute',
-    bottom: 64,
+    bottom: 80,
     left: 20,
     right: 20,
     gap: 12,
@@ -291,9 +318,16 @@ const styles = StyleSheet.create({
   skipButton: {
     flex: 1,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 20,
     alignItems: 'center',
     marginHorizontal: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 2,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   backButton: {
     marginTop: 32,
@@ -314,7 +348,7 @@ const styles = StyleSheet.create({
   },
   counterBox: {
     backgroundColor: '#fff',
-    minWidth: 50,
+    minWidth: 80,
     paddingHorizontal: 12,
     height: 36,
     alignItems: 'center',
@@ -331,5 +365,6 @@ const styles = StyleSheet.create({
   counterText: {
     fontWeight: 'bold',
     fontSize: 18,
+    color: '#fff',
   },
 }); 

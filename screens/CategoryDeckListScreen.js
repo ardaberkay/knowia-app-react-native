@@ -123,7 +123,6 @@ const styles = StyleSheet.create({
   deckTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
     lineHeight: 20,
   },
   deckStats: {
@@ -131,11 +130,9 @@ const styles = StyleSheet.create({
   },
   deckCount: {
     fontSize: 13,
-    color: '#666',
   },
   emptyText: {
     fontSize: 14,
-    color: '#999',
     textAlign: 'center',
     marginTop: 20,
   },
@@ -150,7 +147,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 10,
     fontSize: 16,
-    color: '#333',
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },

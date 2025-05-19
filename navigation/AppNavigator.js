@@ -23,25 +23,31 @@ function MainTabs() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarShowLabel: false,
-        tabBarActiveTintColor: colors.tabBarBackground,
-        tabBarInactiveTintColor: colors.tabBarBackground,
+        tabBarShowLabel: true,
+        tabBarActiveTintColor: colors.buttonColor,
+        tabBarInactiveTintColor: colors.subtext,
         tabBarStyle: {
-          backgroundColor: colors.buttonColor,
+          backgroundColor: '#fff',
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 80,
+          height: 64,
         },
         tabBarLabelStyle: {
-          fontSize: 14,
-          marginBottom: 8,
-          marginTop: 0,
-          padding: 0,
+          fontSize: 12,
+          marginBottom: 4,
+          fontFamily: 'Inter-Light',
+          textAlign: 'center',
+          marginBottom: 10,
+          marginTop: -8
         },
         tabBarIconStyle: {
-          marginTop: 8,
-          marginBottom: 0,
-          padding: 0,
+          marginTop: 4,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        tabBarItemStyle: {
+          alignItems: 'center',
+          justifyContent: 'center',
         },
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
@@ -54,25 +60,25 @@ function MainTabs() {
           } else if (route.name === 'Profile') {
             iconName = focused ? 'account-circle' : 'account-circle-outline';
           }
-          // Basit bir animasyon efekti: focused ise scale ve opacity artır
           return (
             <MaterialCommunityIcons
               name={iconName}
-              size={36}
+              size={28}
               color={color}
               style={{
                 opacity: focused ? 1 : 0.7,
-                transform: [{ scale: focused ? 1.15 : 1 }],
+                alignSelf: 'center',
+                marginBottom: 0,
               }}
             />
           );
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Anasayfa' }} />
-      <Tab.Screen name="Create" component={CreateScreen} options={{ title: 'Oluştur' }} />
-      <Tab.Screen name="Library" component={LibraryScreen} options={{ title: 'Kitaplık' }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profil' }} />
+      <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Anasayfa', tabBarLabel: 'Anasayfa' }} />
+      <Tab.Screen name="Create" component={CreateScreen} options={{ title: 'Oluştur', tabBarLabel: 'Oluştur' }} />
+      <Tab.Screen name="Library" component={LibraryScreen} options={{ title: 'Kitaplık', tabBarLabel: 'Kitaplık' }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profil', tabBarLabel: 'Profil' }} />
     </Tab.Navigator>
   );
 }

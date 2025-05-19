@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { typography } from '../theme/typography';
+import React from 'react';
 
 const DECK_CATEGORIES = {
   myDecks: 'Destelerim',
@@ -82,7 +83,7 @@ export default function HomeScreen() {
           <Text style={[styles.sectionTitle, typography.styles.subtitle]}>{DECK_CATEGORIES[category]}</Text>
           <TouchableOpacity style={styles.seeAllButton} onPress={handleSeeAll} activeOpacity={0.7}>
             <View style={styles.seeAllContent}>
-              <Text style={[styles.seeAllText, typography.styles.button]}>Tümü</Text>
+              <Text style={[styles.seeAllText, typography.styles.button, { color: colors.secondary }]}>Tümü</Text>
               <Ionicons name="chevron-forward" size={18} color="#007AFF" style={{ marginLeft: 2 }} />
             </View>
           </TouchableOpacity>
@@ -114,10 +115,11 @@ export default function HomeScreen() {
                     </Text>
                   </View>
                   <View style={styles.deckStats}>
-                    <Text style={[styles.deckCount, typography.styles.caption]}>
-                      {deck.card_count || 0} Kart
+                    <Text style={[styles.deckCount, typography.styles.caption, { color: colors.subtext }]}>
+                      {deck.card_count || 0} Adet
                     </Text>
                   </View>
+                  <View style={styles.deckBottomStrip} />
                 </View>
               </TouchableOpacity>
             ))}
@@ -135,11 +137,14 @@ export default function HomeScreen() {
           <Text style={[styles.logoutText, { color: colors.buttonText }]}>Çıkış Yap</Text>
         </TouchableOpacity>
       </View>
-      <ScrollView style={[styles.content, { backgroundColor: colors.background }]}>
+      <ScrollView style={[styles.content, { backgroundColor: colors.background }]}> 
         {Object.keys(DECK_CATEGORIES).map((category, index) => (
-          <View key={`category-${category}`} style={styles.section}>
-            {renderDeckSection(category)}
-          </View>
+          <React.Fragment key={`category-${category}`}>
+            {index > 0 && <View style={[styles.categoryDivider, { backgroundColor: colors.border }]} />}
+            <View style={styles.section}>
+              {renderDeckSection(category)}
+            </View>
+          </React.Fragment>
         ))}
       </ScrollView>
     </View>
@@ -179,7 +184,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {
-    marginVertical: 14,
+    marginVertical: 16,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -192,7 +197,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontWeight: 'bold',
-    color: '#333',
   },
   decksContainer: {
     paddingHorizontal: 16,
@@ -200,21 +204,18 @@ const styles = StyleSheet.create({
   },
   deckCard: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
-    marginRight: 12,
+    borderRadius: 18,
+    padding: 16,
+    marginRight: 16,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-    width: 120,
-    height: 168,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+    width: 130,
+    height: 180,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: '#ececec',
   },
   deckCardContent: {
     flex: 1,
@@ -225,25 +226,26 @@ const styles = StyleSheet.create({
   },
   deckTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    lineHeight: 20,
+    fontWeight: '700',
+    color: '#222',
+    marginBottom: 8,
   },
   deckStats: {
     marginTop: 'auto',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'flex-end',
   },
   deckCount: {
     fontSize: 13,
-    color: '#666',
+    fontWeight: '600',
   },
   deckDescription: {
     fontSize: 12,
-    color: '#999',
     marginTop: 4,
   },
   emptyText: {
     fontSize: 14,
-    color: '#999',
     textAlign: 'center',
     marginTop: 20,
   },
@@ -262,5 +264,17 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  deckBottomStrip: {
+    height: 4,
+    width: '100%',
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
+    backgroundColor: '#F98A21',
+  },
+  categoryDivider: {
+    height: 1,
+    marginHorizontal: 16,
+    borderRadius: 1,
   },
 }); 
