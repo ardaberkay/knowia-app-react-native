@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, TextInput } from 'react-native';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import { typography } from '../theme/typography';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function CategoryDeckListScreen({ route }) {
   const { title, decks } = route.params;
@@ -32,7 +34,7 @@ export default function CategoryDeckListScreen({ route }) {
     return (
       <TouchableOpacity
         style={[
-          styles.deckCard,
+          styles.deckCardModern,
           {
             width: cardWidth,
             height: cardHeight,
@@ -40,20 +42,28 @@ export default function CategoryDeckListScreen({ route }) {
           }
         ]}
         onPress={() => handleDeckPress(item)}
-        activeOpacity={0.9}
+        activeOpacity={0.93}
       >
-        <View style={styles.deckCardContent}>
-          <View style={styles.deckHeader}>
-            <Text style={[styles.deckTitle, typography.styles.body]} numberOfLines={2}>
-              {item.name}
-            </Text>
+        <LinearGradient
+          colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.deckCardGradient}
+        >
+          <View style={styles.deckCardContentModern}>
+            <View style={styles.deckHeaderModern}>
+              <Text style={styles.deckTitleModern} numberOfLines={2}>
+                {item.name}
+              </Text>
+            </View>
+            <View style={styles.deckStatsModern}>
+              <View style={styles.deckCountBadge}>
+                <Ionicons name="layers" size={13} color="#fff" style={{ marginRight: 3 }} />
+                <Text style={styles.deckCountBadgeText}>{item.card_count || 0}</Text>
+              </View>
+            </View>
           </View>
-          <View style={styles.deckStats}>
-            <Text style={[styles.deckCount, typography.styles.caption]}>
-              {item.card_count || 0} Kart
-            </Text>
-          </View>
-        </View>
+        </LinearGradient>
       </TouchableOpacity>
     );
   };
@@ -61,14 +71,17 @@ export default function CategoryDeckListScreen({ route }) {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }] }>
       <View style={styles.searchBarContainer}>
-        <TextInput
-          style={styles.searchBar}
-          placeholder="Deste ara..."
-          placeholderTextColor="#999"
-          value={search}
-          onChangeText={setSearch}
-          clearButtonMode="while-editing"
-        />
+        <View style={styles.searchBarWrapper}>
+          <Ionicons name="search" size={20} color="#B0B0B0" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchBar}
+            placeholder="Deste ara..."
+            placeholderTextColor="#B0B0B0"
+            value={search}
+            onChangeText={setSearch}
+            clearButtonMode="while-editing"
+          />
+        </View>
       </View>
       <FlatList
         data={filteredDecks}
@@ -97,38 +110,56 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
-  deckCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
+  deckCardModern: {
+    backgroundColor: 'transparent',
+    borderRadius: 18,
     marginBottom: 14,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
+    shadowColor: '#F98A21',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 18,
+    elevation: 16,
+    borderWidth: 0,
   },
-  deckCardContent: {
+  deckCardGradient: {
+    flex: 1,
+    borderRadius: 18,
+    padding: 16,
+    justifyContent: 'space-between',
+  },
+  deckCardContentModern: {
     flex: 1,
     justifyContent: 'space-between',
   },
-  deckHeader: {
-    marginBottom: 8,
+  deckHeaderModern: {
+    alignItems: 'flex-start',
+    marginBottom: 10,
   },
-  deckTitle: {
+  deckTitleModern: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: '#F98A21',
     lineHeight: 20,
+    marginTop: 2,
   },
-  deckStats: {
+  deckStatsModern: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 'auto',
+    gap: 6,
   },
-  deckCount: {
+  deckCountBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F98A21',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginRight: 6,
+  },
+  deckCountBadgeText: {
+    color: '#fff',
+    fontWeight: 'bold',
     fontSize: 13,
   },
   emptyText: {
@@ -141,13 +172,31 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     backgroundColor: 'transparent',
   },
-  searchBar: {
-    backgroundColor: '#f0f0f0',
+  searchBarWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
     borderRadius: 24,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    fontSize: 16,
     borderWidth: 1,
     borderColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+    paddingHorizontal: 10,
+  },
+  searchIcon: {
+    marginRight: 6,
+  },
+  searchBar: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    borderRadius: 24,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: '#222',
+    borderWidth: 0,
   },
 }); 

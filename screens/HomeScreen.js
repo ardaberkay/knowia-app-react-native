@@ -7,6 +7,7 @@ import { useTheme } from '../theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { typography } from '../theme/typography';
 import React from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const DECK_CATEGORIES = {
   myDecks: 'Destelerim',
@@ -68,6 +69,7 @@ export default function HomeScreen() {
 
   const renderDeckSection = (category) => {
     const categoryDecks = decks[category] || [];
+    const limitedDecks = categoryDecks; // Tüm desteler gösterilecek
 
     const handleSeeAll = () => {
       navigation.navigate('CategoryDeckList', {
@@ -76,6 +78,8 @@ export default function HomeScreen() {
         decks: categoryDecks,
       });
     };
+
+    const showEndIcon = categoryDecks.length > 10;
 
     return (
       <>
@@ -90,7 +94,7 @@ export default function HomeScreen() {
         </View>
         {loading ? (
           <ActivityIndicator size="small" color="#007AFF" />
-        ) : categoryDecks.length === 0 ? (
+        ) : limitedDecks.length === 0 ? (
           <Text style={[styles.emptyText, typography.styles.caption]}>Henüz deste bulunmuyor</Text>
         ) : (
           <ScrollView 
@@ -101,28 +105,40 @@ export default function HomeScreen() {
             snapToInterval={130}
             snapToAlignment="start"
           >
-            {categoryDecks.map((deck) => (
+            {limitedDecks.map((deck) => (
               <TouchableOpacity
                 key={`deck-${deck.id}`}
-                style={styles.deckCard}
+                style={styles.deckCardModern}
                 onPress={() => handleDeckPress(deck)}
-                activeOpacity={0.9}
+                activeOpacity={0.93}
               >
-                <View style={styles.deckCardContent}>
-                  <View style={styles.deckHeader}>
-                    <Text style={[styles.deckTitle, typography.styles.body]} numberOfLines={2}>
-                      {deck.name}
-                    </Text>
+                <LinearGradient
+                  colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.deckCardGradient}
+                >
+                  <View style={styles.deckCardContentModern}>
+                    <View style={styles.deckHeaderModern}>
+                      <Text style={styles.deckTitleModern} numberOfLines={2}>
+                        {deck.name}
+                      </Text>
+                    </View>
+                    <View style={styles.deckStatsModern}>
+                      <View style={styles.deckCountBadge}>
+                        <Ionicons name="layers" size={13} color="#fff" style={{ marginRight: 3 }} />
+                        <Text style={styles.deckCountBadgeText}>{deck.card_count || 0}</Text>
+                      </View>
+                    </View>
                   </View>
-                  <View style={styles.deckStats}>
-                    <Text style={[styles.deckCount, typography.styles.caption, { color: colors.subtext }]}>
-                      {deck.card_count || 0} Adet
-                    </Text>
-                  </View>
-                  <View style={styles.deckBottomStrip} />
-                </View>
+                </LinearGradient>
               </TouchableOpacity>
             ))}
+            {showEndIcon && (
+              <View style={styles.endIconContainer}>
+                <Ionicons name="chevron-forward" size={32} color="#F98A21" />
+              </View>
+            )}
           </ScrollView>
         )}
       </>
@@ -131,7 +147,7 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }] }>
-      <View style={[styles.header, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }] }>
+      <View style={[styles.header, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]}>
         <Text style={[styles.title, typography.styles.h1, { color: colors.text }]}>Knowia</Text>
         <TouchableOpacity style={[styles.logoutButton, { backgroundColor: colors.error }]} onPress={handleLogout}>
           <Text style={[styles.logoutText, { color: colors.buttonText }]}>Çıkış Yap</Text>
@@ -202,47 +218,60 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
-  deckCard: {
-    backgroundColor: '#fff',
+  deckCardModern: {
+    backgroundColor: 'transparent',
     borderRadius: 18,
-    padding: 16,
     marginRight: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
+    marginBottom: 8,
+    shadowColor: '#F98A21',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 18,
+    elevation: 16,
+    borderWidth: 0,
     width: 130,
     height: 180,
-    borderWidth: 1,
-    borderColor: '#ececec',
   },
-  deckCardContent: {
+  deckCardGradient: {
+    flex: 1,
+    borderRadius: 18,
+    padding: 16,
+    justifyContent: 'space-between',
+  },
+  deckCardContentModern: {
     flex: 1,
     justifyContent: 'space-between',
   },
-  deckHeader: {
-    marginBottom: 8,
+  deckHeaderModern: {
+    alignItems: 'flex-start',
+    marginBottom: 10,
   },
-  deckTitle: {
+  deckTitleModern: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#222',
-    marginBottom: 8,
+    color: '#F98A21',
+    lineHeight: 20,
+    marginTop: 2,
   },
-  deckStats: {
-    marginTop: 'auto',
+  deckStatsModern: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'flex-end',
+    alignItems: 'center',
+    marginTop: 'auto',
+    gap: 6,
   },
-  deckCount: {
+  deckCountBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F98A21',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginRight: 6,
+  },
+  deckCountBadgeText: {
+    color: '#fff',
+    fontWeight: 'bold',
     fontSize: 13,
-    fontWeight: '600',
-  },
-  deckDescription: {
-    fontSize: 12,
-    marginTop: 4,
   },
   emptyText: {
     fontSize: 14,
@@ -265,16 +294,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
-  deckBottomStrip: {
-    height: 4,
-    width: '100%',
-    borderBottomLeftRadius: 18,
-    borderBottomRightRadius: 18,
-    backgroundColor: '#F98A21',
-  },
   categoryDivider: {
     height: 1,
     marginHorizontal: 16,
     borderRadius: 1,
+  },
+  endIconContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 44,
+    height: 180,
+    marginLeft: 4,
+    marginRight: 8,
   },
 }); 
