@@ -16,6 +16,17 @@ const DECK_CATEGORIES = {
   inProgressDecks: 'Çalıştığım Desteler'
 };
 
+// Kategoriye göre ikon seçen yardımcı fonksiyon
+function getCategoryIcon(category) {
+  switch (category) {
+    case 'myDecks': return 'albums';
+    case 'defaultDecks': return 'cube';
+    case 'communityDecks': return 'people';
+    case 'inProgressDecks': return 'book';
+    default: return 'albums';
+  }
+}
+
 export default function HomeScreen() {
   const { logout } = useAuth();
   const navigation = useNavigation();
@@ -83,8 +94,11 @@ export default function HomeScreen() {
 
     return (
       <>
-        <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.sectionTitle, typography.styles.subtitle]}>{DECK_CATEGORIES[category]}</Text>
+        <View style={styles.sectionHeaderGradient}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name={getCategoryIcon(category)} size={22} color="#F98A21" style={{ marginRight: 8 }} />
+            <Text style={[styles.sectionTitle, { color: colors.subtext }]}>{DECK_CATEGORIES[category]}</Text>
+          </View>
           <TouchableOpacity style={styles.seeAllButton} onPress={handleSeeAll} activeOpacity={0.7}>
             <View style={styles.seeAllContent}>
               <Text style={[styles.seeAllText, typography.styles.button, { color: colors.secondary }]}>Tümü</Text>
@@ -202,17 +216,19 @@ const styles = StyleSheet.create({
   section: {
     marginVertical: 16,
   },
-  sectionHeaderRow: {
+  sectionHeaderGradient: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginLeft: 16,
     marginRight: 16,
     marginBottom: 10,
+    borderRadius: 12,
+    paddingVertical: 10,
   },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '700',
   },
   decksContainer: {
     paddingHorizontal: 16,
