@@ -14,6 +14,7 @@ import { useTheme } from '../theme/theme';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import SwipeDeckScreen from '../screens/SwipeDeckScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
+import ProfileAvatarButton from '../components/ProfileAvatarButton';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -78,8 +79,8 @@ function MainTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Anasayfa', tabBarLabel: 'Anasayfa' }} />
       <Tab.Screen name="Create" component={CreateScreen} options={{ title: 'Oluştur', tabBarLabel: 'Oluştur' }} />
-      <Tab.Screen name="Library" component={LibraryScreen} options={{ title: 'Kitaplık', tabBarLabel: 'Kitaplık', headerShown: true }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profil', tabBarLabel: 'Profil' }} />
+      <Tab.Screen name="Library" component={LibraryScreen} options={{ title: 'Kitaplığım', tabBarLabel: 'Kitaplığım', headerShown: true, headerTitleAlign: 'center', headerRight: () => <ProfileAvatarButton />}} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profilim', tabBarLabel: 'Profilim' }} />
     </Tab.Navigator>
   );
 }

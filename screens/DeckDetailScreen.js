@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
 import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
@@ -17,6 +17,8 @@ export default function DeckDetailScreen({ route }) {
   const navigation = useNavigation();
   const [isFavorite, setIsFavorite] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressLoading, setProgressLoading] = useState(true);
 
   if (!deck) {
     return (
@@ -25,6 +27,29 @@ export default function DeckDetailScreen({ route }) {
       </SafeAreaView>
     );
   }
+
+  useEffect(() => {
+    const fetchProgress = async () => {
+      setProgressLoading(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: progressData, error } = await supabase
+          .from('user_card_progress')
+          .select('card_id, status, cards(deck_id)')
+          .eq('user_id', user.id)
+          .eq('cards.deck_id', deck.id);
+        if (error) throw error;
+        const learned = (progressData || []).filter(p => p.status === 'learned').length;
+        const total = deck.card_count || 0;
+        setProgress(total > 0 ? learned / total : 0);
+      } catch (e) {
+        setProgress(0);
+      } finally {
+        setProgressLoading(false);
+      }
+    };
+    fetchProgress();
+  }, [deck.id]);
 
   const handleStart = async () => {
     try {
@@ -98,13 +123,12 @@ export default function DeckDetailScreen({ route }) {
                 <Ionicons name="layers" size={18} color="#fff" style={{ marginRight: 4 }} />
                 <Text style={styles.statBadgeTextModern}>{deck.card_count || 0}</Text>
               </View>
-              <Text style={styles.statLabelModern}>Kart</Text>
             </View>
           </BlurView>
 
           {/* Açıklama Kutusu (Glassmorphism) */}
           {deck.description && (
-            <BlurView intensity={90} tint="light" style={styles.infoCardGlass}>
+            <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { minHeight: 300 }] }>
               <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>Detaylar</Text>
               <Text style={[styles.deckDescription, typography.styles.body, { color: colors.subtext }]}>{deck.description}</Text>
             </BlurView>
@@ -115,9 +139,15 @@ export default function DeckDetailScreen({ route }) {
             <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>İlerleme</Text>
             <View style={styles.progressContainerModern}>
               <View style={styles.progressBarModern}>
-                <View style={[styles.progressFillModern, { width: '0%' }]} />
+                <View style={[styles.progressFillModern, { width: `${Math.round(progress * 100)}%` }]} />
               </View>
-              <Text style={[styles.progressText, typography.styles.caption, { color: colors.muted }]}>Henüz çalışılmadı</Text>
+              {progressLoading ? (
+                <Text style={[styles.progressText, typography.styles.caption, { color: colors.muted }]}>Yükleniyor...</Text>
+              ) : progress === 0 ? (
+                <Text style={[styles.progressText, typography.styles.caption, { color: colors.muted }]}>Henüz çalışılmadı</Text>
+              ) : (
+                <Text style={[styles.progressText, typography.styles.caption, { color: colors.buttonColor }]}>%{Math.round(progress * 100)} Tamamlandı</Text>
+              )}
             </View>
           </BlurView>
         </ScrollView>
@@ -303,7 +333,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 5,
-    marginRight: 8,
   },
   statBadgeTextModern: {
     color: '#fff',

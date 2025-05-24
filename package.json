@@ -14,9 +14,13 @@
     "@react-navigation/native": "^6.1.9",
     "@react-navigation/native-stack": "^6.9.17",
     "@supabase/supabase-js": "^2.39.3",
+    "@types/react": "~18.2.45",
+    "buffer": "^6.0.3",
     "expo": "~50.0.5",
     "expo-blur": "^14.1.4",
     "expo-font": "~11.10.3",
+    "expo-image-manipulator": "~11.8.0",
+    "expo-image-picker": "~14.7.1",
     "expo-linear-gradient": "^14.1.4",
     "expo-splash-screen": "~0.26.5",
     "expo-status-bar": "~1.11.1",
@@ -29,10 +33,7 @@
     "react-native-screens": "~3.29.0",
     "react-native-url-polyfill": "^2.0.0",
     "react-native-vector-icons": "^10.2.0",
-    "expo-image-picker": "~14.7.1",
-    "expo-image-manipulator": "~11.8.0",
-    "typescript": "^5.3.0",
-    "@types/react": "~18.2.45"
+    "typescript": "^5.3.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

@@ -72,7 +72,11 @@ export default function ProfileScreen() {
           <Text style={[typography.styles.body, { color: colors.error }]}>Hata: {error}</Text>
         ) : profile ? (
           <>
-            <Image source={{ uri: profile.image_url || undefined }} style={styles.avatar} />
+            <Image source={
+              profile.image_url
+                ? { uri: profile.image_url }
+                : require('../assets/avatar-default.png')
+            } style={styles.avatar} />
             <View style={styles.userInfo}>
               <Text style={[typography.styles.h2, { color: colors.text }, styles.name]}>{profile.username}</Text>
               <Text style={[typography.styles.body, { color: colors.subtext }, styles.email]}>{profile.email}</Text>

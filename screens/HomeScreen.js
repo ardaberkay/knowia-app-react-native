@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Dimensions, ActivityIndicator, Image } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { getDecksByCategory } from '../services/DeckService';
 import { useNavigation } from '@react-navigation/native';
@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { typography } from '../theme/typography';
 import React from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
+import { getCurrentUserProfile } from '../services/ProfileService';
 
 const DECK_CATEGORIES = {
   myDecks: 'Destelerim',
@@ -34,9 +35,12 @@ export default function HomeScreen() {
   const [decks, setDecks] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
     loadDecks();
+    loadProfile();
   }, []);
 
   const loadDecks = async () => {
@@ -62,6 +66,18 @@ export default function HomeScreen() {
       Alert.alert('Hata', 'Desteler yüklenirken bir hata oluştu');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadProfile = async () => {
+    try {
+      setProfileLoading(true);
+      const data = await getCurrentUserProfile();
+      setProfile(data);
+    } catch (err) {
+      setProfile(null);
+    } finally {
+      setProfileLoading(false);
     }
   };
 
@@ -161,11 +177,25 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }] }>
-      <View style={[styles.header, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, typography.styles.h1, { color: colors.text }]}>Knowia</Text>
-        <TouchableOpacity style={[styles.logoutButton, { backgroundColor: colors.error }]} onPress={handleLogout}>
-          <Text style={[styles.logoutText, { color: colors.buttonText }]}>Çıkış Yap</Text>
-        </TouchableOpacity>
+      <View style={[styles.header, { backgroundColor: '#fff', borderBottomColor: colors.border }]}>
+        <View style={styles.headerContent}>
+          <View style={{ flex: 1 }} />
+          <Text style={[styles.title, typography.styles.h1, styles.centeredTitle]}>Knowia</Text>
+          <TouchableOpacity
+            style={styles.profileAvatarButton}
+            onPress={() => navigation.navigate('Profile')}
+            activeOpacity={0.8}
+          >
+            {profileLoading ? (
+              <ActivityIndicator size="small" color={colors.buttonColor} />
+            ) : (
+              <Image
+                source={profile?.image_url ? { uri: profile.image_url } : require('../assets/avatar-default.png')}
+                style={styles.profileAvatar}
+              />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
       <ScrollView style={[styles.content, { backgroundColor: colors.background }]}> 
         {Object.keys(DECK_CATEGORIES).map((category, index) => (
@@ -191,13 +221,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    paddingTop: 60,
+    paddingTop: 40,
     backgroundColor: '#f8f8f8',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
   title: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: 'bold',
   },
   logoutButton: {
@@ -322,5 +358,30 @@ const styles = StyleSheet.create({
     height: 180,
     marginLeft: 4,
     marginRight: 8,
+  },
+  profileAvatarButton: {
+    marginLeft: 12,
+    width: 47,
+    height: 47,
+    borderRadius: 22,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  profileAvatar: {
+    width: 47,
+    height: 47,
+    borderRadius: 22,
+    resizeMode: 'cover',
+    backgroundColor: '#fff',
+  },
+  centeredTitle: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    color: '#222',
+    zIndex: 1,
   },
 }); 
