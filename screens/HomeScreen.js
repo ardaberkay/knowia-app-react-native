@@ -11,19 +11,17 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { getCurrentUserProfile } from '../services/ProfileService';
 
 const DECK_CATEGORIES = {
-  myDecks: 'Destelerim',
+  inProgressDecks: 'Çalıştığım Desteler',
   defaultDecks: 'Hazır Desteler',
   communityDecks: 'Topluluk Desteleri',
-  inProgressDecks: 'Çalıştığım Desteler'
 };
 
 // Kategoriye göre ikon seçen yardımcı fonksiyon
 function getCategoryIcon(category) {
   switch (category) {
-    case 'myDecks': return 'albums';
+    case 'inProgressDecks': return 'book';
     case 'defaultDecks': return 'cube';
     case 'communityDecks': return 'people';
-    case 'inProgressDecks': return 'book';
     default: return 'albums';
   }
 }
@@ -149,10 +147,27 @@ export default function HomeScreen() {
                   style={styles.deckCardGradient}
                 >
                   <View style={styles.deckCardContentModern}>
-                    <View style={styles.deckHeaderModern}>
-                      <Text style={styles.deckTitleModern} numberOfLines={2}>
-                        {deck.name}
+                    <View style={styles.deckProfileRow}>
+                      <Image
+                        source={deck.profiles?.image_url ? { uri: deck.profiles.image_url } : require('../assets/avatar-default.png')}
+                        style={styles.deckProfileAvatar}
+                      />
+                      <Text style={[styles.deckProfileUsername]} numberOfLines={1} ellipsizeMode="tail">
+                        {deck.profiles?.username || 'Kullanıcı'}
                       </Text>
+                    </View>
+                    <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+                      <View style={styles.deckHeaderModern}>
+                        {deck.to_name ? (
+                          <>
+                            <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
+                            <Text style={[styles.deckTitleModern, {textAlign: 'center', fontSize: 20}]}>⤵</Text>
+                            <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
+                          </>
+                        ) : (
+                          <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
+                        )}
+                      </View>
                     </View>
                     <View style={styles.deckStatsModern}>
                       <View style={styles.deckCountBadge}>
@@ -267,13 +282,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   decksContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 8,
   },
   deckCardModern: {
     backgroundColor: 'transparent',
     borderRadius: 18,
-    marginRight: 16,
+    marginRight: 8,
     marginBottom: 8,
     shadowColor: '#F98A21',
     shadowOffset: { width: 0, height: 8 },
@@ -287,7 +302,7 @@ const styles = StyleSheet.create({
   deckCardGradient: {
     flex: 1,
     borderRadius: 18,
-    padding: 16,
+    padding: 8,
     justifyContent: 'space-between',
   },
   deckCardContentModern: {
@@ -295,21 +310,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   deckHeaderModern: {
-    alignItems: 'flex-start',
-    marginBottom: 10,
+    alignItems: 'center',
   },
   deckTitleModern: {
     fontSize: 16,
     fontWeight: '700',
     color: '#F98A21',
     lineHeight: 20,
-    marginTop: 2,
   },
   deckStatsModern: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 'auto',
+    marginTop: -10,
     gap: 6,
+    marginLeft: 3,
   },
   deckCountBadge: {
     flexDirection: 'row',
@@ -383,5 +397,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#222',
     zIndex: 1,
+  },
+  deckProfileRow: {
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  deckProfileAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 11,
+    marginRight: 4,
+  },
+  deckProfileUsername: {
+    fontSize: 12,
+    color: '#888',
+    fontWeight: '600',
+    paddingRight: 40,
   },
 }); 

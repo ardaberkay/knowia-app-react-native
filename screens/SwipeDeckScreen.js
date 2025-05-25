@@ -244,13 +244,13 @@ export default function SwipeDeckScreen({ route, navigation }) {
           onSwipedLeft={(i) => handleSwipe(i, 'left')}
           onSwipedRight={(i) => handleSwipe(i, 'right')}
           backgroundColor={colors.background}
-          stackSize={2}
+          stackSize={3}
           disableTopSwipe
           disableBottomSwipe
           infinite={false}
-          showSecondCard
-          stackSeparation={0}
-          stackScale={0.08}
+          showSecondCard={true}
+          stackSeparation={18}
+          stackScale={0.07}
           cardHorizontalMargin={24}
           containerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
           cardStyle={{ width: CARD_WIDTH, height: CARD_HEIGHT, alignSelf: 'center', justifyContent: 'center' }}

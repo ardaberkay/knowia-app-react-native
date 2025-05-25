@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform } from 'react-native';
 import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
 import { setDeckStarted } from '../services/DeckService';
@@ -89,8 +89,8 @@ export default function DeckDetailScreen({ route }) {
         .eq('deck_id', deck.id)
         .single();
       if (existing) {
-        Alert.alert('Uyarı', 'Bu deste zaten favorilerde!');
-        setIsFavorite(true);
+        // Favoriden çıkar
+        await handleRemoveFavorite();
         return;
       }
       const { error } = await supabase
@@ -98,9 +98,26 @@ export default function DeckDetailScreen({ route }) {
         .insert({ user_id: user.id, deck_id: deck.id });
       if (error) throw error;
       setIsFavorite(true);
-      Alert.alert('Başarılı', 'Deste favorilere eklendi!');
     } catch (e) {
-      Alert.alert('Hata', 'Favorilere eklenirken bir hata oluştu.');
+      // Alert kaldırıldı
+    } finally {
+      setFavLoading(false);
+    }
+  };
+
+  const handleRemoveFavorite = async () => {
+    setFavLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('favorite_decks')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('deck_id', deck.id);
+      if (error) throw error;
+      setIsFavorite(false);
+    } catch (e) {
+      // Alert kaldırıldı
     } finally {
       setFavLoading(false);
     }
@@ -114,10 +131,18 @@ export default function DeckDetailScreen({ route }) {
       style={styles.bgGradient}
     >
       <View style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 }]} showsVerticalScrollIndicator={false}>
           {/* Başlık kartı da glassmorphism ile */}
           <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { alignItems: 'center', paddingBottom: 28, marginTop: 32 }] }>
-            <Text style={styles.deckTitleModern}>{deck.name}</Text>
+            <View style={{alignItems: 'center', justifyContent: 'center', width: '100%'}}>
+              <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
+              {deck.to_name && (
+                <>
+                  <Text style={[styles.deckTitleModern, {textAlign: 'center', fontSize: 25, marginVertical: 0, marginBottom: 0, marginTop: 0}]}>⤵</Text>
+                  <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
+                </>
+              )}
+            </View>
             <View style={styles.statsContainerModern}>
               <View style={styles.statBadgeModern}>
                 <Ionicons name="layers" size={18} color="#fff" style={{ marginRight: 4 }} />
@@ -152,12 +177,12 @@ export default function DeckDetailScreen({ route }) {
           </BlurView>
         </ScrollView>
         {/* Sabit alt buton barı */}
-        <View style={styles.fixedButtonBar}>
+        <SafeAreaView style={[styles.fixedButtonBar, { borderTopLeftRadius: 18, borderTopRightRadius: 18, ...Platform.select({ android: { paddingBottom: 18 }, ios: {} }) }] } edges={['bottom']}>
           <View style={styles.buttonRowModern}>
             <TouchableOpacity
               style={[styles.favButtonModern, isFavorite && styles.favButtonActive]}
               onPress={handleAddFavorite}
-              disabled={isFavorite || favLoading}
+              disabled={favLoading}
             >
               <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color={isFavorite ? '#F98A21' : colors.buttonColor} style={{ marginRight: 6 }} />
               <Text style={[styles.favButtonTextModern, typography.styles.button, { color: isFavorite ? '#F98A21' : colors.buttonColor }]}> 
@@ -172,7 +197,7 @@ export default function DeckDetailScreen({ route }) {
               <Text style={[styles.startButtonTextModern, typography.styles.button, { color: colors.buttonText }]}>Başla</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </SafeAreaView>
       </View>
     </LinearGradient>
   );
@@ -317,7 +342,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#F98A21',
-    marginBottom: 18,
+
     textAlign: 'center',
   },
   statsContainerModern: {
@@ -325,6 +350,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
+    marginTop: 18,
   },
   statBadgeModern: {
     flexDirection: 'row',
@@ -403,6 +429,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
+    paddingHorizontal: 18,
   },
   favButtonActive: {
     backgroundColor: '#fff8f0',

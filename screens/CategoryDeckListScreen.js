@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, TextInput, Image } from 'react-native';
 import { useNavigation, useTheme } from '@react-navigation/native';
 import { typography } from '../theme/typography';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,7 +26,8 @@ export default function CategoryDeckListScreen({ route }) {
 
   // Filtrelenmiş desteler
   const filteredDecks = decks.filter(deck =>
-    deck.name.toLowerCase().includes(search.toLowerCase())
+    (deck.name && deck.name.toLowerCase().includes(search.toLowerCase())) ||
+    (deck.to_name && deck.to_name.toLowerCase().includes(search.toLowerCase()))
   );
 
   const renderItem = ({ item, index }) => {
@@ -51,14 +52,31 @@ export default function CategoryDeckListScreen({ route }) {
           style={styles.deckCardGradient}
         >
           <View style={styles.deckCardContentModern}>
-            <View style={styles.deckHeaderModern}>
-              <Text style={styles.deckTitleModern} numberOfLines={2}>
-                {item.name}
+            <View style={styles.deckProfileRow}>
+              <Image
+                source={item.profiles?.image_url ? { uri: item.profiles.image_url } : require('../assets/avatar-default.png')}
+                style={styles.deckProfileAvatar}
+              />
+              <Text style={styles.deckProfileUsername} numberOfLines={1} ellipsizeMode="tail">
+                {item.profiles?.username || 'Kullanıcı'}
               </Text>
+            </View>
+            <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+              <View style={styles.deckHeaderModern}>
+                {item.to_name ? (
+                  <>
+                    <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+                    <Text style={[styles.deckTitleModern, {textAlign: 'center', fontSize: 22}]}>⤵</Text>
+                    <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{item.to_name}</Text>
+                  </>
+                ) : (
+                  <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+                )}
+              </View>
             </View>
             <View style={styles.deckStatsModern}>
               <View style={styles.deckCountBadge}>
-                <Ionicons name="layers" size={13} color="#fff" style={{ marginRight: 3 }} />
+                <Ionicons name="layers" size={16} color="#fff" style={{ marginRight: 3 }} />
                 <Text style={styles.deckCountBadgeText}>{item.card_count || 0}</Text>
               </View>
             </View>
@@ -132,8 +150,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   deckHeaderModern: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 10,
+    width: '100%',
+    maxWidth: '100%',
   },
   deckTitleModern: {
     fontSize: 16,
@@ -141,6 +162,9 @@ const styles = StyleSheet.create({
     color: '#F98A21',
     lineHeight: 20,
     marginTop: 2,
+    textAlign: 'center',
+    maxWidth: 110,
+    alignSelf: 'center',
   },
   deckStatsModern: {
     flexDirection: 'row',
@@ -152,15 +176,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F98A21',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     marginRight: 6,
   },
   deckCountBadgeText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 13,
+    fontSize: 15,
   },
   emptyText: {
     fontSize: 14,
@@ -198,5 +222,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#222',
     borderWidth: 0,
+  },
+  deckProfileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+
+  },
+  deckProfileAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 11,
+    marginRight: 4,
+  },
+  deckProfileUsername: {
+    fontSize: 14,
+    color: '#888',
+    fontWeight: '600',
+    paddingRight: 40,
   },
 }); 

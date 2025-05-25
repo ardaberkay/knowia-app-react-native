@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator, Share } from 'react-native';
 import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
 import { getCurrentUserProfile } from '../services/ProfileService';
@@ -26,10 +26,20 @@ export default function ProfileScreen() {
     })();
   }, []);
 
+  const handleInviteFriends = async () => {
+    try {
+      await Share.share({
+        message: 'Bilgi evreninde öğrenme yolunu Knowia ile bul! Ücretsiz kaydol: https://seninuygulaman.com/davet',
+      });
+    } catch (error) {
+      // Paylaşım iptal edildiyse veya hata olursa sessiz geç
+    }
+  };
+
   // Menü kategorileri
   const accountItems = [
     { label: 'Profili Düzenle', onPress: () => navigation.navigate('EditProfile') },
-    { label: 'Arkadaşlarını Davet Et', onPress: () => alert('Arkadaşlarını Davet Et') },
+    { label: 'Arkadaşlarını Davet Et', onPress: handleInviteFriends },
   ];
   const appSettingsItems = [
     { label: 'Gece Modu', onPress: () => alert('Gece Modu') },

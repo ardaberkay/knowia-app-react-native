@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, TextInput, Modal, Pressable, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, TextInput, Modal, Pressable, Platform, Image } from 'react-native';
 import { useTheme, useNavigation } from '@react-navigation/native';
 import { typography } from '../theme/typography';
 import { getDecksByCategory } from '../services/DeckService';
@@ -101,7 +101,8 @@ export default function LibraryScreen() {
 
   const decks = activeTab === 'myDecks' ? myDecks : favoriteDecks;
   const filteredDecks = decks.filter(deck =>
-    deck.name.toLowerCase().includes(search.toLowerCase())
+    (deck.name && deck.name.toLowerCase().includes(search.toLowerCase())) ||
+    (deck.to_name && deck.to_name.toLowerCase().includes(search.toLowerCase()))
   );
 
   // Modern deste kartı render fonksiyonu (hem myDecks hem favori deckler için)
@@ -127,10 +128,18 @@ export default function LibraryScreen() {
           style={styles.deckCardGradient}
         >
           <View style={styles.deckCardContentModern}>
-            <View style={styles.deckHeaderModern}>
-              <Text style={[styles.deckTitleModern, typography.styles.body]} numberOfLines={2}>
-                {item.name}
-              </Text>
+            <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+              <View style={styles.deckHeaderModern}>
+                {item.to_name ? (
+                  <>
+                    <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+                    <Text style={[styles.deckTitleModern, {textAlign: 'center', fontSize: 22}]}>⤵</Text>
+                    <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{item.to_name}</Text>
+                  </>
+                ) : (
+                  <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+                )}
+              </View>
             </View>
             <View style={styles.deckStatsModern}>
               <View style={styles.deckCountBadge}>
@@ -147,7 +156,60 @@ export default function LibraryScreen() {
   // Favorilerim sekmesinde kart/deck render
   const renderFavoriteItem = ({ item, index }) => {
     if (item._type === 'deck') {
-      return renderDeckItem({ item, index });
+      // Render exactly like HomeScreen deck card
+      const isRightItem = (index + 1) % 2 === 0;
+      return (
+        <TouchableOpacity
+          style={[
+            styles.deckCardModern,
+            {
+              width: cardWidth,
+              height: cardHeight,
+              marginRight: isRightItem ? 0 : cardSpacing,
+            }
+          ]}
+          activeOpacity={0.93}
+          onPress={() => navigation.navigate('DeckDetail', { deck: item })}
+        >
+          <LinearGradient
+            colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.deckCardGradient}
+          >
+            <View style={styles.deckCardContentModern}>
+              <View style={styles.deckProfileRow}>
+                <Image
+                  source={item.profiles && item.profiles.image_url ? { uri: item.profiles.image_url } : require('../assets/avatar-default.png')}
+                  style={styles.deckProfileAvatar}
+                />
+                <Text style={styles.deckProfileUsername} numberOfLines={1} ellipsizeMode="tail">
+                  {(item.profiles && item.profiles.username) || 'Kullanıcı'}
+                </Text>
+              </View>
+              <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+                <View style={styles.deckHeaderModern}>
+                  {item.to_name ? (
+                    <>
+                      <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+                      <Text style={[styles.deckTitleModern, {textAlign: 'center', fontSize: 22}]}>⤵</Text>
+                      <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{item.to_name}</Text>
+                    </>
+                  ) : (
+                    <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+                  )}
+                </View>
+              </View>
+              <View style={styles.deckStatsModern}>
+                <View style={styles.deckCountBadge}>
+                  <Ionicons name="layers" size={14} color="#fff" style={{ marginRight: 3 }} />
+                  <Text style={styles.deckCountBadgeText}>{item.card_count || 0}</Text>
+                </View>
+              </View>
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
+      );
     } else if (item._type === 'card') {
       const isRightItem = (index + 1) % 2 === 0;
       return (
@@ -366,18 +428,22 @@ const styles = StyleSheet.create({
   },
   deckCardContentModern: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
   },
   deckHeaderModern: {
-    alignItems: 'flex-start',
-    marginBottom: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    maxWidth: '100%',
   },
   deckTitleModern: {
     fontSize: 17,
     fontWeight: '700',
     color: '#F98A21',
     lineHeight: 22,
-    marginTop: 2,
+    textAlign: 'center',
+    maxWidth: 140,
+    alignSelf: 'center',
   },
   deckStatsModern: {
     flexDirection: 'row',
@@ -496,5 +562,20 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 16,
     justifyContent: 'space-between',
+  },
+  deckProfileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  deckProfileAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 8,
+  },
+  deckProfileUsername: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#F98A21',
   },
 }); 
