@@ -8,7 +8,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { typography } from '../theme/typography';
 import React from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getCurrentUserProfile } from '../services/ProfileService';
+import { getCurrentUserProfile, updateLastActiveAt } from '../services/ProfileService';
+import { registerForPushNotificationsAsync } from '../services/NotificationService';
 
 const DECK_CATEGORIES = {
   inProgressDecks: 'Çalıştığım Desteler',
@@ -40,6 +41,14 @@ export default function HomeScreen() {
     loadDecks();
     loadProfile();
   }, []);
+
+  // Profil yüklendiğinde push bildirim izni iste ve token'ı kaydet + last_active_at güncelle
+  useEffect(() => {
+    if (profile?.id) {
+      registerForPushNotificationsAsync(profile.id);
+      updateLastActiveAt(profile.id);
+    }
+  }, [profile]);
 
   const loadDecks = async () => {
     try {

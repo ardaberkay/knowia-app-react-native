@@ -16,4 +16,19 @@ export async function getCurrentUserProfile() {
 
   if (error) throw error;
   return data;
+}
+
+/**
+ * Kullanıcının son aktif olduğu zamanı günceller.
+ * @param {string} userId - profiles tablosundaki kullanıcı id'si
+ */
+export async function updateLastActiveAt(userId) {
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from('profiles')
+    .update({ last_active_at: now })
+    .eq('id', userId);
+  if (error) {
+    console.error('last_active_at güncellenemedi:', error.message);
+  }
 } 
