@@ -10,7 +10,7 @@ export async function getCurrentUserProfile() {
   // profiles tablosundan verileri çek
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, username, created_at, email, updated_at, image_url')
+    .select('id, username, created_at, email, updated_at, image_url, notifications_enabled')
     .eq('id', user.id)
     .single();
 
@@ -31,4 +31,17 @@ export async function updateLastActiveAt(userId) {
   if (error) {
     console.error('last_active_at güncellenemedi:', error.message);
   }
+}
+
+/**
+ * Kullanıcının bildirim tercihlerini günceller.
+ * @param {boolean} enabled - Bildirimler açık mı kapalı mı
+ */
+export async function updateNotificationPreference(enabled) {
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) return;
+  await supabase
+    .from('profiles')
+    .update({ notifications_enabled: enabled })
+    .eq('id', user.id);
 } 

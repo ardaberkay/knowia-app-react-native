@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator, Share } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator, Share, Switch } from 'react-native';
 import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
-import { getCurrentUserProfile } from '../services/ProfileService';
+import { getCurrentUserProfile, updateNotificationPreference } from '../services/ProfileService';
 import { useNavigation } from '@react-navigation/native';
+import * as Notifications from 'expo-notifications';
+import { supabase } from '../lib/supabase';
 
 export default function ProfileScreen() {
   const { colors } = useTheme();
@@ -11,19 +13,30 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [userId, setUserId] = useState(null);
 
   useEffect(() => {
-    (async () => {
+    const checkNotificationStatus = async () => {
       try {
         setLoading(true);
-        const data = await getCurrentUserProfile();
-        setProfile(data);
-      } catch (err) {
-        setError(err.message || 'Profil yüklenemedi');
+        const profile = await getCurrentUserProfile();
+        setProfile(profile);
+        setUserId(profile.id);
+        const { status } = await Notifications.getPermissionsAsync();
+        if (status === 'granted' && profile.notifications_enabled) {
+          setNotificationsEnabled(true);
+        } else {
+          setNotificationsEnabled(false);
+        }
+      } catch (e) {
+        setNotificationsEnabled(false);
+        setError('Profil yüklenemedi');
       } finally {
         setLoading(false);
       }
-    })();
+    };
+    checkNotificationStatus();
   }, []);
 
   const handleInviteFriends = async () => {
@@ -36,6 +49,32 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleToggleNotifications = async (value) => {
+    if (value) {
+      // Switch açılıyorsa izin iste
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status === 'granted') {
+        setNotificationsEnabled(true);
+        await updateNotificationPreference(true);
+        // Token kaydetme fonksiyonunu çağırabilirsin (isteğe bağlı)
+      } else {
+        setNotificationsEnabled(false);
+        await updateNotificationPreference(false);
+        // Token silmeye gerek yok, çünkü izin yoksa token alınamaz
+      }
+    } else {
+      setNotificationsEnabled(false);
+      await updateNotificationPreference(false);
+      // Token'ı Supabase'den sil
+      if (userId) {
+        await supabase
+          .from('profiles')
+          .update({ expo_push_token: null })
+          .eq('id', userId);
+      }
+    }
+  };
+
   // Menü kategorileri
   const accountItems = [
     { label: 'Profili Düzenle', onPress: () => navigation.navigate('EditProfile') },
@@ -44,7 +83,19 @@ export default function ProfileScreen() {
   const appSettingsItems = [
     { label: 'Gece Modu', onPress: () => alert('Gece Modu') },
     { label: 'Dil Ayarları', onPress: () => alert('Dil Ayarları') },
-    { label: 'Bildirimler', onPress: () => alert('Bildirimler') },
+    {
+      label: 'Bildirimlere İzin Ver',
+      right: (
+        <Switch
+          value={notificationsEnabled}
+          onValueChange={handleToggleNotifications}
+          trackColor={{ false: '#ccc', true: colors.secondary }}
+          thumbColor={notificationsEnabled ? '#5AA3F0' : '#f4f3f4'}
+          ios_backgroundColor="#ccc"
+        />
+      ),
+      onPress: () => {},
+    },
   ];
   const infoItems = [
     { label: 'Hakkımızda', onPress: () => alert('Hakkımızda') },
@@ -65,8 +116,11 @@ export default function ProfileScreen() {
     <View style={styles.menuSection}>
       <Text style={[typography.styles.subtitle, { color: colors.buttonColor }, styles.sectionTitle]}>{title}</Text>
       {items.map((item, idx) => (
-        <TouchableOpacity key={idx} style={styles.menuItem} onPress={item.onPress}>
-          <Text style={[typography.styles.body, { color: colors.text }, styles.menuText]}>{item.label}</Text>
+        <TouchableOpacity key={idx} style={styles.menuItem} onPress={item.onPress} activeOpacity={item.right ? 1 : 0.2}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={[typography.styles.body, { color: colors.text }, styles.menuText]}>{item.label}</Text>
+            {item.right ? item.right : null}
+          </View>
         </TouchableOpacity>
       ))}
     </View>
