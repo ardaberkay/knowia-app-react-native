@@ -89,8 +89,8 @@ export default function ProfileScreen() {
         <Switch
           value={notificationsEnabled}
           onValueChange={handleToggleNotifications}
-          trackColor={{ false: '#ccc', true: colors.secondary }}
-          thumbColor={notificationsEnabled ? '#5AA3F0' : '#f4f3f4'}
+          trackColor={{ false: '#ccc', true: '#5AA3F0' }}
+          thumbColor={notificationsEnabled ? colors.secondary : '#f4f3f4'}
           ios_backgroundColor="#ccc"
         />
       ),

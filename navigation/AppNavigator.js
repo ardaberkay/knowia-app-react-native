@@ -78,7 +78,7 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Anasayfa', tabBarLabel: 'Anasayfa' }} />
-      <Tab.Screen name="Create" component={CreateScreen} options={{ title: 'Oluştur', tabBarLabel: 'Oluştur' }} />
+      <Tab.Screen name="Create" component={CreateScreen} options={{ title: 'Deste Oluştur', tabBarLabel: 'Oluştur', headerShown: true, headerTitleAlign: 'center', headerRight: () => <ProfileAvatarButton />}} />
       <Tab.Screen name="Library" component={LibraryScreen} options={{ title: 'Kitaplığım', tabBarLabel: 'Kitaplığım', headerShown: true, headerTitleAlign: 'center', headerRight: () => <ProfileAvatarButton />}} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profilim', tabBarLabel: 'Profilim' }} />
     </Tab.Navigator>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, Modal, StatusBar, FlatList, TextInput } from 'react-native';
 import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
 import { setDeckStarted } from '../services/DeckService';
@@ -9,16 +9,21 @@ import { supabase } from '../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Alert as RNAlert } from 'react-native';
 
-export default function DeckDetailScreen({ route }) {
+export default function DeckDetailScreen({ route, navigation }) {
   const { deck } = route.params;
   const { colors } = useTheme();
   const [isStarted, setIsStarted] = useState(false);
-  const navigation = useNavigation();
   const [isFavorite, setIsFavorite] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressLoading, setProgressLoading] = useState(true);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [cards, setCards] = useState([]);
+  const [search, setSearch] = useState('');
+  const [filteredCards, setFilteredCards] = useState([]);
 
   if (!deck) {
     return (
@@ -50,6 +55,38 @@ export default function DeckDetailScreen({ route }) {
     };
     fetchProgress();
   }, [deck.id]);
+
+  useEffect(() => {
+    const fetchCards = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('cards')
+          .select('id, question, answer')
+          .eq('deck_id', deck.id)
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        setCards(data || []);
+        setFilteredCards(data || []);
+      } catch (e) {
+        setCards([]);
+        setFilteredCards([]);
+      }
+    };
+    fetchCards();
+  }, [deck.id]);
+
+  useEffect(() => {
+    if (!search.trim()) {
+      setFilteredCards(cards);
+    } else {
+      const s = search.trim().toLowerCase();
+      setFilteredCards(
+        cards.filter(
+          c => (c.question && c.question.toLowerCase().includes(s)) || (c.answer && c.answer.toLowerCase().includes(s))
+        )
+      );
+    }
+  }, [search, cards]);
 
   const handleStart = async () => {
     try {
@@ -123,6 +160,39 @@ export default function DeckDetailScreen({ route }) {
     }
   };
 
+  // Header'a yatay kebab ekle
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => setMenuVisible(true)}
+          style={{ marginRight: 8 }}
+        >
+          <MaterialCommunityIcons name="dots-horizontal" size={28} color={colors.text} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, colors.text]);
+
+  // StatusBar kontrolü (modal açıkken uygun şekilde değiştir)
+  React.useEffect(() => {
+    if (menuVisible) {
+      if (Platform.OS === 'android') {
+        StatusBar.setBarStyle('light-content');
+        StatusBar.setBackgroundColor('rgba(0,0,0,0.25)');
+      } else {
+        StatusBar.setBarStyle('light-content');
+      }
+    } else {
+      if (Platform.OS === 'android') {
+        StatusBar.setBarStyle('dark-content');
+        StatusBar.setBackgroundColor('#fff');
+      } else {
+        StatusBar.setBarStyle('dark-content');
+      }
+    }
+  }, [menuVisible]);
+
   return (
     <LinearGradient
       colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
@@ -131,63 +201,95 @@ export default function DeckDetailScreen({ route }) {
       style={styles.bgGradient}
     >
       <View style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 }]} showsVerticalScrollIndicator={false}>
-          {/* Başlık kartı da glassmorphism ile */}
-          <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { alignItems: 'center', paddingBottom: 28, marginTop: 32 }] }>
-            <View style={{alignItems: 'center', justifyContent: 'center', width: '100%'}}>
-              <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
-              {deck.to_name && (
-                <>
-                  <Text style={[styles.deckTitleModern, {textAlign: 'center', fontSize: 25, marginVertical: 0, marginBottom: 0, marginTop: 0}]}>⤵</Text>
-                  <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
-                </>
-              )}
-            </View>
-            <View style={styles.statsContainerModern}>
-              <View style={styles.statBadgeModern}>
-                <Ionicons name="layers" size={18} color="#fff" style={{ marginRight: 4 }} />
-                <Text style={styles.statBadgeTextModern}>{deck.card_count || 0}</Text>
-              </View>
-            </View>
-          </BlurView>
-
-          {/* Açıklama Kutusu (Glassmorphism) */}
-          {deck.description && (
-            <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { minHeight: 300 }] }>
-              <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>Detaylar</Text>
-              <Text style={[styles.deckDescription, typography.styles.body, { color: colors.subtext }]}>{deck.description}</Text>
-            </BlurView>
+        <FlatList
+          data={filteredCards}
+          keyExtractor={item => item.id?.toString()}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[styles.cardsListContainer, { paddingBottom: 120 }]}
+          ListEmptyComponent={<Text style={[typography.styles.caption, { color: colors.muted, marginLeft: 18, marginTop: 12 }]}>Bu destede henüz kart yok.</Text>}
+          renderItem={({ item }) => (
+            <TouchableOpacity style={styles.cardItemGlass} activeOpacity={0.8} onPress={() => {}}>
+              <Text style={[styles.cardQuestion, typography.styles.body]} numberOfLines={3}>{item.question}</Text>
+              <View style={styles.cardDivider} />
+              <Text style={[styles.cardAnswer, typography.styles.body]} numberOfLines={3}>{item.answer}</Text>
+            </TouchableOpacity>
           )}
-
-          {/* İlerleme Kutusu (Glassmorphism) */}
-          <BlurView intensity={90} tint="light" style={styles.infoCardGlass}>
-            <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>İlerleme</Text>
-            <View style={styles.progressContainerModern}>
-              <View style={styles.progressBarModern}>
-                <View style={[styles.progressFillModern, { width: `${Math.round(progress * 100)}%` }]} />
-              </View>
-              {progressLoading ? (
-                <Text style={[styles.progressText, typography.styles.caption, { color: colors.muted }]}>Yükleniyor...</Text>
-              ) : progress === 0 ? (
-                <Text style={[styles.progressText, typography.styles.caption, { color: colors.muted }]}>Henüz çalışılmadı</Text>
-              ) : (
-                <Text style={[styles.progressText, typography.styles.caption, { color: colors.buttonColor }]}>%{Math.round(progress * 100)} Tamamlandı</Text>
+          ListHeaderComponent={
+            <>
+              {/* Başlık kartı da glassmorphism ile */}
+              <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { alignItems: 'center', paddingBottom: 28, marginTop: 12, width: '100%', maxWidth: 440, alignSelf: 'center' }] }>
+                <View style={{alignItems: 'center', justifyContent: 'center', width: '100%'}}>
+                  <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
+                  {deck.to_name && (
+                    <>
+                      <Text style={[styles.deckTitleModern, {textAlign: 'center', fontSize: 25, marginVertical: 0, marginBottom: 0, marginTop: 0}]}>⤵</Text>
+                      <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
+                    </>
+                  )}
+                </View>
+                <View style={styles.statsContainerModern}>
+                  <View style={styles.statBadgeModern}>
+                    <Ionicons name="layers" size={18} color="#fff" style={{ marginRight: 4 }} />
+                    <Text style={styles.statBadgeTextModern}>{deck.card_count || 0}</Text>
+                  </View>
+                </View>
+              </BlurView>
+              {/* Açıklama Kutusu (Glassmorphism) */}
+              {deck.description && (
+                <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
+                  <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>Detaylar</Text>
+                  <Text style={[styles.deckDescription, typography.styles.body, { color: colors.subtext }]}>{deck.description}</Text>
+                </BlurView>
               )}
-            </View>
-          </BlurView>
-        </ScrollView>
+              {/* İlerleme Kutusu (Glassmorphism) */}
+              <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
+                <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>İlerleme</Text>
+                <View style={styles.progressContainerModern}>
+                  <View style={styles.progressBarModern}>
+                    <View style={[styles.progressFillModern, { width: `${Math.round(progress * 100)}%` }]} />
+                  </View>
+                  {progressLoading ? (
+                    <Text style={[styles.progressText, typography.styles.caption, { color: colors.muted }]}>Yükleniyor...</Text>
+                  ) : progress === 0 ? (
+                    <Text style={[styles.progressText, typography.styles.caption, { color: colors.muted }]}>Henüz çalışılmadı</Text>
+                  ) : (
+                    <Text style={[styles.progressText, typography.styles.caption, { color: colors.buttonColor }]}>%{Math.round(progress * 100)} Tamamlandı</Text>
+                  )}
+                </View>
+              </BlurView>
+              {/* Kartlar Başlığı ve Search Bar */}
+              <View style={styles.cardsHeaderModern}>
+                <MaterialCommunityIcons name="credit-card-multiple-outline" size={22} color={colors.secondary} style={{ marginRight: 8 }} />
+                <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>Kartlar</Text>
+              </View>
+              <View style={styles.cardsSearchBarRow}>
+                <View style={styles.cardsSearchBarWrapperModern}>
+                  <Ionicons name="search" size={20} color="#B0B0B0" style={styles.cardsSearchIcon} />
+                  <TextInput
+                    style={[styles.cardsSearchBarModern, typography.styles.body]}
+                    placeholder="Kartlarda ara..."
+                    value={search}
+                    onChangeText={setSearch}
+                    placeholderTextColor={colors.muted}
+                  />
+                </View>
+                <TouchableOpacity style={[styles.cardsFilterIconButton, { marginLeft: 8 }]} onPress={() => RNAlert.alert('Filtre', 'Filtreleme fonksiyonu burada olacak.') }>
+                  <Ionicons name="filter" size={24} color="#F98A21" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.cardsHeaderDivider} />
+            </>
+          }
+        />
         {/* Sabit alt buton barı */}
         <SafeAreaView style={[styles.fixedButtonBar, { borderTopLeftRadius: 18, borderTopRightRadius: 18, ...Platform.select({ android: { paddingBottom: 18 }, ios: {} }) }] } edges={['bottom']}>
           <View style={styles.buttonRowModern}>
             <TouchableOpacity
-              style={[styles.favButtonModern, isFavorite && styles.favButtonActive]}
-              onPress={handleAddFavorite}
-              disabled={favLoading}
+              style={[styles.favButtonModern]}
+              onPress={() => RNAlert.alert('Kart Ekle', 'Kart ekleme fonksiyonu burada olacak.')}
             >
-              <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={20} color={isFavorite ? '#F98A21' : colors.buttonColor} style={{ marginRight: 6 }} />
-              <Text style={[styles.favButtonTextModern, typography.styles.button, { color: isFavorite ? '#F98A21' : colors.buttonColor }]}> 
-                {isFavorite ? 'Favorilere Eklendi' : favLoading ? 'Ekleniyor...' : 'Favorilere Ekle'}
-              </Text>
+              <MaterialCommunityIcons name="cards-outline" size={22} color={colors.buttonColor} style={{ marginRight: 6 }} />
+              <Text style={[styles.favButtonTextModern, typography.styles.button, { color: colors.buttonColor }]}>Kart Ekle</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.startButtonModern}
@@ -199,6 +301,41 @@ export default function DeckDetailScreen({ route }) {
           </View>
         </SafeAreaView>
       </View>
+      {/* Modal Bottom Sheet Menü */}
+      <Modal
+        visible={menuVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.sheetOverlay}
+          activeOpacity={1}
+          onPress={() => setMenuVisible(false)}
+        />
+        <View style={styles.bottomSheet}>
+          <View style={styles.sheetHandle} />
+          <TouchableOpacity style={styles.sheetItem} onPress={() => { setMenuVisible(false); handleAddFavorite(); }}>
+            <MaterialCommunityIcons
+              name={isFavorite ? 'heart' : 'heart-outline'}
+              size={22}
+              color={isFavorite ? '#F98A21' : colors.text}
+              style={{ marginRight: 12 }}
+            />
+            <Text style={[styles.sheetItemText, isFavorite && { color: '#F98A21' }]}>
+              {isFavorite ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.sheetItem} onPress={() => { setMenuVisible(false); /* Deste Sil fonksiyonu */ }}>
+            <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
+            <Text style={[styles.sheetItemText, { color: '#E74C3C' }]}>Desteyi Sil</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.sheetItem} onPress={() => setMenuVisible(false)}>
+            <MaterialCommunityIcons name="close" size={22} color={colors.text} style={{ marginRight: 12 }} />
+            <Text style={styles.sheetItemText}>Kapat</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -603,5 +740,141 @@ const styles = StyleSheet.create({
     bottom: 0,
     paddingVertical: 18,
     paddingHorizontal: 18,
+  },
+  sheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+  },
+  bottomSheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingTop: 12,
+    paddingBottom: 32,
+    paddingHorizontal: 24,
+    elevation: 16,
+  },
+  sheetHandle: {
+    width: 40,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#e0e0e0',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  sheetItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f2f2f2',
+  },
+  sheetItemText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  cardsHeaderModern: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    marginTop: 18,
+    marginBottom: 2,
+  },
+  cardsHeaderDivider: {
+    height: 1,
+    backgroundColor: '#eee',
+    marginHorizontal: 18,
+    marginBottom: 8,
+    borderRadius: 1,
+  },
+  cardsSearchBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+
+    marginBottom: 10,
+  },
+  cardsSearchBarWrapperModern: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+    paddingHorizontal: 10,
+  },
+  cardsSearchIcon: {
+    marginRight: 6,
+  },
+  cardsSearchBarModern: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    borderRadius: 24,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: '#222',
+    borderWidth: 0,
+  },
+  cardsFilterIconButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff8f0',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#F98A21',
+    height: 48,
+    aspectRatio: 1,
+  },
+  cardsListContainer: {
+    paddingHorizontal: 18,
+    paddingBottom: 24,
+  },
+  cardItemGlass: {
+    width: '100%',
+    minHeight: 110,
+    backgroundColor: 'rgba(255,255,255,0.85)',
+    borderRadius: 16,
+    marginBottom: 14,
+    padding: 16,
+    shadowColor: '#F98A21',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 8,
+    elevation: 4,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  cardQuestion: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#F98A21',
+    marginBottom: 8,
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: '#ffe0c3',
+    alignSelf: 'stretch',
+    marginVertical: 6,
+    borderRadius: 1,
+  },
+  cardAnswer: {
+    fontSize: 15,
+    color: '#333',
+    marginTop: 2,
   },
 });
