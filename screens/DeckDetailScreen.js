@@ -24,6 +24,7 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [cards, setCards] = useState([]);
   const [search, setSearch] = useState('');
   const [filteredCards, setFilteredCards] = useState([]);
+  const [favoriteCards, setFavoriteCards] = useState([]);
 
   if (!deck) {
     return (
@@ -87,6 +88,23 @@ export default function DeckDetailScreen({ route, navigation }) {
       );
     }
   }, [search, cards]);
+
+  useEffect(() => {
+    const fetchFavoriteCards = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data, error } = await supabase
+          .from('favorite_cards')
+          .select('card_id')
+          .eq('user_id', user.id);
+        if (error) throw error;
+        setFavoriteCards((data || []).map(f => f.card_id));
+      } catch (e) {
+        setFavoriteCards([]);
+      }
+    };
+    fetchFavoriteCards();
+  }, [deck.id]);
 
   const handleStart = async () => {
     try {
@@ -160,6 +178,29 @@ export default function DeckDetailScreen({ route, navigation }) {
     }
   };
 
+  const handleToggleFavoriteCard = async (cardId) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (favoriteCards.includes(cardId)) {
+        // Favoriden çıkar
+        await supabase
+          .from('favorite_cards')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('card_id', cardId);
+        setFavoriteCards(favoriteCards.filter(id => id !== cardId));
+      } else {
+        // Favoriye ekle
+        await supabase
+          .from('favorite_cards')
+          .insert({ user_id: user.id, card_id: cardId });
+        setFavoriteCards([...favoriteCards, cardId]);
+      }
+    } catch (e) {
+      // Alert kaldırıldı
+    }
+  };
+
   // Header'a yatay kebab ekle
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -208,11 +249,30 @@ export default function DeckDetailScreen({ route, navigation }) {
           contentContainerStyle={[styles.cardsListContainer, { paddingBottom: 120 }]}
           ListEmptyComponent={<Text style={[typography.styles.caption, { color: colors.muted, marginLeft: 18, marginTop: 12 }]}>Bu destede henüz kart yok.</Text>}
           renderItem={({ item }) => (
-            <TouchableOpacity style={styles.cardItemGlass} activeOpacity={0.8} onPress={() => {}}>
-              <Text style={[styles.cardQuestion, typography.styles.body]} numberOfLines={3}>{item.question}</Text>
-              <View style={styles.cardDivider} />
-              <Text style={[styles.cardAnswer, typography.styles.body]} numberOfLines={3}>{item.answer}</Text>
-            </TouchableOpacity>
+            <View style={styles.cardItemGlass}>
+              <View style={styles.cardTopRow}>
+                <View style={styles.cardTextCol}>
+                  <Text style={[styles.cardQuestion, typography.styles.body]} numberOfLines={1} ellipsizeMode="tail">
+                    {item.question}
+                  </Text>
+                  <View style={styles.cardDivider} />
+                  <Text style={[styles.cardAnswer, typography.styles.body]} numberOfLines={1} ellipsizeMode="tail">
+                    {item.answer}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.cardFavIconBtn}
+                  onPress={() => handleToggleFavoriteCard(item.id)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <MaterialCommunityIcons
+                    name={favoriteCards.includes(item.id) ? 'heart' : 'heart-outline'}
+                    size={22}
+                    color={favoriteCards.includes(item.id) ? '#F98A21' : '#B0B0B0'}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
           )}
           ListHeaderComponent={
             <>
@@ -258,26 +318,28 @@ export default function DeckDetailScreen({ route, navigation }) {
                 </View>
               </BlurView>
               {/* Kartlar Başlığı ve Search Bar */}
-              <View style={styles.cardsHeaderModern}>
-                <MaterialCommunityIcons name="credit-card-multiple-outline" size={22} color={colors.secondary} style={{ marginRight: 8 }} />
-                <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>Kartlar</Text>
-              </View>
-              <View style={styles.cardsSearchBarRow}>
-                <View style={styles.cardsSearchBarWrapperModern}>
-                  <Ionicons name="search" size={20} color="#B0B0B0" style={styles.cardsSearchIcon} />
-                  <TextInput
-                    style={[styles.cardsSearchBarModern, typography.styles.body]}
-                    placeholder="Kartlarda ara..."
-                    value={search}
-                    onChangeText={setSearch}
-                    placeholderTextColor={colors.muted}
-                  />
+              <View style={styles.cardsHeaderCard}>
+                <View style={styles.cardsHeaderRow}>
+                  <MaterialCommunityIcons name="cards-playing-outline" size={22} color={colors.buttonColor} style={styles.cardsHeaderIcon} />
+                  <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>Kartlar</Text>
                 </View>
-                <TouchableOpacity style={[styles.cardsFilterIconButton, { marginLeft: 8 }]} onPress={() => RNAlert.alert('Filtre', 'Filtreleme fonksiyonu burada olacak.') }>
-                  <Ionicons name="filter" size={24} color="#F98A21" />
-                </TouchableOpacity>
+                <View style={styles.cardsSearchBarRow}>
+                  <View style={styles.cardsSearchBarWrapperModern}>
+                    <Ionicons name="search" size={20} color="#B0B0B0" style={styles.cardsSearchIcon} />
+                    <TextInput
+                      style={[styles.cardsSearchBarModern, typography.styles.body]}
+                      placeholder="Kartlarda ara..."
+                      value={search}
+                      onChangeText={setSearch}
+                      placeholderTextColor={colors.muted}
+                    />
+                  </View>
+                  <TouchableOpacity style={[styles.cardsFilterIconButton, { marginLeft: 8 }]} onPress={() => RNAlert.alert('Filtre', 'Filtreleme fonksiyonu burada olacak.') }>
+                    <Ionicons name="filter" size={24} color="#F98A21" />
+                  </TouchableOpacity>
+                </View>
               </View>
-              <View style={styles.cardsHeaderDivider} />
+              <View style={{ height: 12 }} />
             </>
           }
         />
@@ -778,19 +840,19 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#333',
   },
-  cardsHeaderModern: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 18,
+  cardsHeaderCard: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 18,
+    width: '100%',
+    maxWidth: 440,
+    alignSelf: 'center',
     marginTop: 18,
-    marginBottom: 2,
-  },
-  cardsHeaderDivider: {
-    height: 1,
-    backgroundColor: '#eee',
-    marginHorizontal: 18,
-    marginBottom: 8,
-    borderRadius: 1,
+    padding: 16,
+    shadowColor: '#F98A21',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 8,
+    elevation: 4,
   },
   cardsSearchBarRow: {
     flexDirection: 'row',
@@ -876,5 +938,28 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#333',
     marginTop: 2,
+  },
+  cardsHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  cardsHeaderIcon: {
+    marginRight: 8,
+    marginTop: -8,
+  },
+  cardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 4,
+  },
+  cardTextCol: {
+    width: '80%',
+    maxWidth: 320,
+  },
+  cardFavIconBtn: {
+    padding: 2,
   },
 });
