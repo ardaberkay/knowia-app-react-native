@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, Modal, StatusBar, FlatList, TextInput } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, Modal, StatusBar, FlatList, TextInput, Pressable, Image } from 'react-native';
 import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
 import { setDeckStarted } from '../services/DeckService';
@@ -25,6 +25,13 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [search, setSearch] = useState('');
   const [filteredCards, setFilteredCards] = useState([]);
   const [favoriteCards, setFavoriteCards] = useState([]);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [cardSort, setCardSort] = useState('original'); // 'original', 'az', 'fav'
+  const [originalCards, setOriginalCards] = useState([]);
+  const filterIconRef = useRef(null);
+  const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [cardDetailModalVisible, setCardDetailModalVisible] = useState(false);
+  const [selectedCard, setSelectedCard] = useState(null);
 
   if (!deck) {
     return (
@@ -62,15 +69,15 @@ export default function DeckDetailScreen({ route, navigation }) {
       try {
         const { data, error } = await supabase
           .from('cards')
-          .select('id, question, answer')
+          .select('id, question, answer, image, example, note, created_at')
           .eq('deck_id', deck.id)
           .order('created_at', { ascending: false });
         if (error) throw error;
         setCards(data || []);
-        setFilteredCards(data || []);
+        setOriginalCards(data || []);
       } catch (e) {
         setCards([]);
-        setFilteredCards([]);
+        setOriginalCards([]);
       }
     };
     fetchCards();
@@ -105,6 +112,10 @@ export default function DeckDetailScreen({ route, navigation }) {
     };
     fetchFavoriteCards();
   }, [deck.id]);
+
+  useEffect(() => {
+    setFilteredCards(sortCards(cardSort, cards));
+  }, [cardSort, cards, originalCards, favoriteCards]);
 
   const handleStart = async () => {
     try {
@@ -234,6 +245,16 @@ export default function DeckDetailScreen({ route, navigation }) {
     }
   }, [menuVisible]);
 
+  const sortCards = (type, cardsList) => {
+    if (type === 'az') {
+      return [...cardsList].sort((a, b) => (a.question || '').localeCompare(b.question || '', 'tr'));
+    } else if (type === 'fav') {
+      return [...cardsList].filter(card => favoriteCards.includes(card.id));
+    } else {
+      return [...originalCards];
+    }
+  };
+
   return (
     <LinearGradient
       colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
@@ -249,7 +270,14 @@ export default function DeckDetailScreen({ route, navigation }) {
           contentContainerStyle={[styles.cardsListContainer, { paddingBottom: 120 }]}
           ListEmptyComponent={<Text style={[typography.styles.caption, { color: colors.muted, marginLeft: 18, marginTop: 12 }]}>Bu destede henüz kart yok.</Text>}
           renderItem={({ item }) => (
-            <View style={styles.cardItemGlass}>
+            <TouchableOpacity
+              style={styles.cardItemGlass}
+              activeOpacity={0.93}
+              onPress={() => {
+                setSelectedCard(item);
+                setCardDetailModalVisible(true);
+              }}
+            >
               <View style={styles.cardTopRow}>
                 <View style={styles.cardTextCol}>
                   <Text style={[styles.cardQuestion, typography.styles.body]} numberOfLines={1} ellipsizeMode="tail">
@@ -272,38 +300,35 @@ export default function DeckDetailScreen({ route, navigation }) {
                   />
                 </TouchableOpacity>
               </View>
-            </View>
+            </TouchableOpacity>
           )}
           ListHeaderComponent={
             <>
               {/* Başlık kartı da glassmorphism ile */}
               <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { alignItems: 'center', paddingBottom: 28, marginTop: 12, width: '100%', maxWidth: 440, alignSelf: 'center' }] }>
-                <View style={{alignItems: 'center', justifyContent: 'center', width: '100%'}}>
-                  <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
+                <View style={{ width: '100%' }}>
+                  <Text style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%' }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
                   {deck.to_name && (
-                    <>
-                      <Text style={[styles.deckTitleModern, {textAlign: 'center', fontSize: 25, marginVertical: 0, marginBottom: 0, marginTop: 0}]}>⤵</Text>
-                      <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
-                    </>
+                    <Text style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', marginTop: 2 }]} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
                   )}
-                </View>
-                <View style={styles.statsContainerModern}>
-                  <View style={styles.statBadgeModern}>
-                    <Ionicons name="layers" size={18} color="#fff" style={{ marginRight: 4 }} />
-                    <Text style={styles.statBadgeTextModern}>{deck.card_count || 0}</Text>
-                  </View>
                 </View>
               </BlurView>
               {/* Açıklama Kutusu (Glassmorphism) */}
               {deck.description && (
                 <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
-                  <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>Detaylar</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                    <MaterialCommunityIcons name="information-outline" size={20} color={colors.buttonColor} style={{ marginRight: 6, marginBottom: 9 }} />
+                    <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text, marginTop: 1 }]}>Detaylar</Text>
+                  </View>
                   <Text style={[styles.deckDescription, typography.styles.body, { color: colors.subtext }]}>{deck.description}</Text>
                 </BlurView>
               )}
               {/* İlerleme Kutusu (Glassmorphism) */}
               <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
-                <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>İlerleme</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                  <MaterialCommunityIcons name="chart-bar" size={20} color={colors.buttonColor} style={{ marginRight: 6, marginBottom: 12 }} />
+                  <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>İlerleme</Text>
+                </View>
                 <View style={styles.progressContainerModern}>
                   <View style={styles.progressBarModern}>
                     <View style={[styles.progressFillModern, { width: `${Math.round(progress * 100)}%` }]} />
@@ -319,10 +344,17 @@ export default function DeckDetailScreen({ route, navigation }) {
               </BlurView>
               {/* Kartlar Başlığı ve Search Bar */}
               <View style={styles.cardsHeaderCard}>
-                <View style={styles.cardsHeaderRow}>
-                  <MaterialCommunityIcons name="cards-playing-outline" size={22} color={colors.buttonColor} style={styles.cardsHeaderIcon} />
-                  <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>Kartlar</Text>
+                <View style={[styles.cardsHeaderRow, { justifyContent: 'space-between', alignItems: 'center' }] }>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <MaterialCommunityIcons name="cards-outline" size={22} color={colors.buttonColor} style={styles.cardsHeaderIcon} />
+                    <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>Kartlar</Text>
+                  </View>
+                  <View style={styles.statBadgeModern}>
+                    <Ionicons name="layers" size={18} color="#fff" style={{ marginRight: 4 }} />
+                    <Text style={styles.statBadgeTextModern}>{deck.card_count || 0}</Text>
+                  </View>
                 </View>
+                <View style={{ height: 8 }} />
                 <View style={styles.cardsSearchBarRow}>
                   <View style={styles.cardsSearchBarWrapperModern}>
                     <Ionicons name="search" size={20} color="#B0B0B0" style={styles.cardsSearchIcon} />
@@ -334,7 +366,18 @@ export default function DeckDetailScreen({ route, navigation }) {
                       placeholderTextColor={colors.muted}
                     />
                   </View>
-                  <TouchableOpacity style={[styles.cardsFilterIconButton, { marginLeft: 8 }]} onPress={() => RNAlert.alert('Filtre', 'Filtreleme fonksiyonu burada olacak.') }>
+                  <TouchableOpacity
+                    ref={filterIconRef}
+                    style={[styles.cardsFilterIconButton, { marginLeft: 8 }]}
+                    onPress={() => {
+                      if (filterIconRef.current) {
+                        filterIconRef.current.measureInWindow((x, y, width, height) => {
+                          setDropdownPos({ x, y, width, height });
+                          setFilterModalVisible(true);
+                        });
+                      }
+                    }}
+                  >
                     <Ionicons name="filter" size={24} color="#F98A21" />
                   </TouchableOpacity>
                 </View>
@@ -350,7 +393,7 @@ export default function DeckDetailScreen({ route, navigation }) {
               style={[styles.favButtonModern]}
               onPress={() => RNAlert.alert('Kart Ekle', 'Kart ekleme fonksiyonu burada olacak.')}
             >
-              <MaterialCommunityIcons name="cards-outline" size={22} color={colors.buttonColor} style={{ marginRight: 6 }} />
+              <MaterialCommunityIcons name="plus" size={22} color={colors.buttonColor} style={{ marginRight: 6 }} />
               <Text style={[styles.favButtonTextModern, typography.styles.button, { color: colors.buttonColor }]}>Kart Ekle</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -397,6 +440,117 @@ export default function DeckDetailScreen({ route, navigation }) {
             <Text style={styles.sheetItemText}>Kapat</Text>
           </TouchableOpacity>
         </View>
+      </Modal>
+      {/* Filter Modal */}
+      <Modal
+        visible={filterModalVisible}
+        transparent
+        animationType="none"
+        onRequestClose={() => setFilterModalVisible(false)}
+      >
+        <Pressable style={{ flex: 1 }} onPress={() => setFilterModalVisible(false)}>
+          <View
+            style={{
+              position: 'absolute',
+              left: Math.max(0, dropdownPos.x + dropdownPos.width - 180),
+              top: Platform.OS === 'android'
+                ? dropdownPos.y + dropdownPos.height
+                : dropdownPos.y + dropdownPos.height + 4,
+              backgroundColor: '#fff',
+              borderRadius: 14,
+              elevation: 8,
+              shadowColor: '#000',
+              shadowOpacity: 0.12,
+              shadowRadius: 8,
+              minWidth: 180,
+              width: 180,
+              zIndex: 100,
+            }}
+          >
+            <Pressable
+              style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2', backgroundColor: cardSort === 'original' ? '#fff8f0' : '#fff' }}
+              onPress={() => { setCardSort('original'); setFilterModalVisible(false); }}
+            >
+              <Text style={{ color: cardSort === 'original' ? '#F98A21' : '#333', fontWeight: cardSort === 'original' ? 'bold' : 'normal' }}>Orjinal</Text>
+            </Pressable>
+            <Pressable
+              style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2', backgroundColor: cardSort === 'az' ? '#fff8f0' : '#fff' }}
+              onPress={() => { setCardSort('az'); setFilterModalVisible(false); }}
+            >
+              <Text style={{ color: cardSort === 'az' ? '#F98A21' : '#333', fontWeight: cardSort === 'az' ? 'bold' : 'normal' }}>A'dan Z'ye</Text>
+            </Pressable>
+            <Pressable
+              style={{ padding: 16, backgroundColor: cardSort === 'fav' ? '#fff8f0' : '#fff', borderBottomLeftRadius: 14, borderBottomRightRadius: 14 }}
+              onPress={() => { setCardSort('fav'); setFilterModalVisible(false); }}
+            >
+              <Text style={{ color: cardSort === 'fav' ? '#F98A21' : '#333', fontWeight: cardSort === 'fav' ? 'bold' : 'normal' }}>Favorilerim</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+      {/* Kart Detay Modalı */}
+      <Modal
+        visible={cardDetailModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCardDetailModalVisible(false)}
+      >
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.18)', justifyContent: 'center', alignItems: 'center' }} onPress={() => setCardDetailModalVisible(false)}>
+          <View style={styles.cardDetailContainer}>
+            <ScrollView style={{ maxHeight: 600, width: '100%' }} contentContainerStyle={{ paddingBottom: 8 }} showsVerticalScrollIndicator={false}>
+              {selectedCard?.image ? (
+                <Image source={{ uri: selectedCard.image }} style={styles.cardDetailImage} />
+              ) : null}
+              <View style={styles.cardDetailBody}>
+                <View style={styles.cardDetailTitleRow}>
+                  <View style={styles.cardDetailDividerLine} />
+                  <Text style={[typography.styles.subtitle, styles.cardDetailTitle, { color: colors.buttonColor }]}>Soru</Text>
+                  <View style={styles.cardDetailDividerLine} />
+                </View>
+                <Text style={[typography.styles.body, styles.cardDetailText, { color: colors.text }]}>{selectedCard?.question}</Text>
+                {selectedCard?.answer ? (
+                  <>
+                    <View style={styles.cardDetailTitleRow}>
+                      <View style={styles.cardDetailDividerLine} />
+                      <Text style={[typography.styles.subtitle, styles.cardDetailTitle, { color: colors.buttonColor }]}>Cevap</Text>
+                      <View style={styles.cardDetailDividerLine} />
+                    </View>
+                    <Text style={[typography.styles.body, styles.cardDetailText, { color: colors.text }]}>{selectedCard.answer}</Text>
+                  </>
+                ) : null}
+                {selectedCard?.example ? (
+                  <>
+                    <View style={styles.cardDetailTitleRow}>
+                      <View style={styles.cardDetailDividerLine} />
+                      <Text style={[typography.styles.subtitle, styles.cardDetailTitle, { color: colors.buttonColor }]}>Örnek</Text>
+                      <View style={styles.cardDetailDividerLine} />
+                    </View>
+                    <Text style={[typography.styles.body, styles.cardDetailText, { color: colors.text }]}>{selectedCard.example}</Text>
+                  </>
+                ) : null}
+                {selectedCard?.note ? (
+                  <>
+                    <View style={styles.cardDetailTitleRow}>
+                      <View style={styles.cardDetailDividerLine} />
+                      <Text style={[typography.styles.subtitle, styles.cardDetailTitle, { color: colors.buttonColor }]}>Not</Text>
+                      <View style={styles.cardDetailDividerLine} />
+                    </View>
+                    <Text style={[typography.styles.body, styles.cardDetailText, { color: colors.text }]}>{selectedCard.note}</Text>
+                  </>
+                ) : null}
+                {selectedCard?.created_at ? (
+                  <Text style={[typography.styles.caption, styles.cardDetailDate, { color: colors.muted }]}>Oluşturulma {new Date(selectedCard.created_at).toLocaleString('tr-TR')}</Text>
+                ) : null}
+              </View>
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.cardDetailCloseButton}
+              onPress={() => setCardDetailModalVisible(false)}
+            >
+              <Text style={styles.cardDetailCloseButtonText}>Kapat</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
       </Modal>
     </LinearGradient>
   );
@@ -463,7 +617,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 12,
   },
   deckDescription: {
     fontSize: 16,
@@ -858,7 +1011,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
-
     marginBottom: 10,
   },
   cardsSearchBarWrapperModern: {
@@ -946,7 +1098,6 @@ const styles = StyleSheet.create({
   },
   cardsHeaderIcon: {
     marginRight: 8,
-    marginTop: -8,
   },
   cardTopRow: {
     flexDirection: 'row',
@@ -961,5 +1112,77 @@ const styles = StyleSheet.create({
   },
   cardFavIconBtn: {
     padding: 2,
+  },
+  cardDetailContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 24,
+    width: '90%',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 12,
+  },
+  cardDetailHeader: {
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  cardDetailImage: {
+    width: 120,
+    height: 160,
+    maxWidth: '100%',
+    borderRadius: 18,
+    marginBottom: 14,
+    resizeMode: 'contain',
+    alignSelf: 'center',
+  },
+  cardDetailTitle: {
+    fontWeight: 'bold',
+    marginBottom: 4,
+    textAlign: 'center',
+    fontSize: 18,
+  },
+  cardDetailText: {
+    fontSize: 18,
+    marginBottom: 8,
+    textAlign: 'center',
+    fontWeight: 'normal',
+  },
+  cardDetailBody: {
+    marginBottom: 0,
+    width: '100%',
+  },
+  cardDetailDate: {
+    marginTop: 8,
+    textAlign: 'center',
+    fontSize: 16,
+  },
+  cardDetailCloseButton: {
+    alignSelf: 'center',
+    marginTop: 10,
+    backgroundColor: '#F98A21',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 32,
+  },
+  cardDetailCloseButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  cardDetailTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 8,
+    width: '100%',
+    justifyContent: 'center',
+  },
+  cardDetailDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#ffe0c3',
+    borderRadius: 1,
+    marginHorizontal: 14,
   },
 });
