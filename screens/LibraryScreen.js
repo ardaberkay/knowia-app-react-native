@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, TextInput, Modal, Pressable, Platform, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, TextInput, Modal, Pressable, Platform, Image, ScrollView, Animated, Easing } from 'react-native';
 import { useTheme, useNavigation } from '@react-navigation/native';
 import { typography } from '../theme/typography';
 import { getDecksByCategory } from '../services/DeckService';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { getFavoriteDecks, getFavoriteCards } from '../services/FavoriteService';
 import { supabase } from '../lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,6 +23,9 @@ export default function LibraryScreen() {
   const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const filterIconRef = useRef(null);
   const [favoritesFetched, setFavoritesFetched] = useState(false);
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [selectedCard, setSelectedCard] = useState(null);
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
   const screenWidth = Dimensions.get('window').width;
   const horizontalPadding = 16 * 2;
@@ -213,28 +216,45 @@ export default function LibraryScreen() {
     } else if (item._type === 'card') {
       const isRightItem = (index + 1) % 2 === 0;
       return (
-        <View
+        <TouchableOpacity
           style={[
             styles.deckCardModern,
             {
               width: cardWidth,
               height: cardHeight,
               marginRight: isRightItem ? 0 : cardSpacing,
-              backgroundColor: '#f7faff',
+              overflow: 'hidden',
             }
           ]}
+          activeOpacity={0.93}
+          onPress={() => {
+            setSelectedCard(item);
+            setShowCardModal(true);
+          }}
         >
-          <View style={styles.deckCardContentModern}>
-            <View style={styles.deckHeaderModern}>
-              <Text style={[styles.deckTitleModern, typography.styles.body]} numberOfLines={2}>
+          <LinearGradient
+            colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
+            start={{ x: 1, y: 1 }}
+            end={{ x: 0, y: 0 }}
+            style={styles.deckCardGradient}
+          >
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <Text style={[styles.deckTitleModern, typography.styles.body, { textAlign: 'center' }]} numberOfLines={2}>
                 {item.question}
               </Text>
+              <View style={{ width: 60, height: 2, backgroundColor: '#fff', borderRadius: 1, marginVertical: 10 }} />
+              <Text style={{ color: '#F98A21', fontWeight: 'bold', fontSize: 17, textAlign: 'center' }} numberOfLines={2}>{item.answer}</Text>
             </View>
-            <View style={styles.deckStatsModern}>
-              <Text style={styles.deckCountBadgeText}>{item.answer}</Text>
+            <View style={{ position: 'absolute', left: 15, bottom: 15, backgroundColor: '#F98A21', borderRadius: 12, width: 40, height: 25, justifyContent: 'center', alignItems: 'center'}}>
+              <MaterialCommunityIcons
+                name="card-text-outline"
+                size={18}
+                color="#fff"
+                style={{}}
+              />
             </View>
-          </View>
-        </View>
+          </LinearGradient>
+        </TouchableOpacity>
       );
     }
     return null;
@@ -250,6 +270,27 @@ export default function LibraryScreen() {
       setFilterDropdownVisible(true);
     }
   };
+
+  // Modal açılış/kapanış animasyonu
+  useEffect(() => {
+    if (showCardModal) {
+      slideAnim.setValue(400); // Başlangıçta aşağıda
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 340,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    } else {
+      // Modal kapanırken animasyonla aşağıya kaydır
+      Animated.timing(slideAnim, {
+        toValue: 400,
+        duration: 220,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [showCardModal]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }] }>
@@ -271,17 +312,6 @@ export default function LibraryScreen() {
       {/* Arama ve Filtre Butonu */}
       <View style={styles.searchBarContainer}>
         <View style={styles.searchBarRow}>
-          {activeTab === 'favorites' && (
-            <View>
-              <TouchableOpacity
-                ref={filterIconRef}
-                style={styles.filterIconButton}
-                onPress={openDropdown}
-              >
-                <Ionicons name="filter" size={22} color="#F98A21" />
-              </TouchableOpacity>
-            </View>
-          )}
           <View style={styles.searchBarWrapperSmall}>
             <Ionicons name="search" size={20} color="#B0B0B0" style={styles.searchIcon} />
             <TextInput
@@ -293,6 +323,17 @@ export default function LibraryScreen() {
               clearButtonMode="while-editing"
             />
           </View>
+          {activeTab === 'favorites' && (
+            <View>
+              <TouchableOpacity
+                ref={filterIconRef}
+                style={styles.filterIconButton}
+                onPress={openDropdown}
+              >
+                <Ionicons name="filter" size={26} color="#F98A21" />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </View>
       {/* Dropdown Modal */}
@@ -378,6 +419,75 @@ export default function LibraryScreen() {
           }}
         />
       )}
+      <Modal
+        visible={showCardModal && !!selectedCard}
+        animationType="none"
+        transparent
+        onRequestClose={() => setShowCardModal(false)}
+      >
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' }} onPress={() => setShowCardModal(false)} />
+        <Animated.View style={{
+          backgroundColor: '#fff',
+          borderTopLeftRadius: 32,
+          borderTopRightRadius: 32,
+          paddingHorizontal: 0,
+          paddingBottom: 0,
+          minHeight: 260,
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          shadowColor: '#000',
+          shadowOpacity: 0.15,
+          shadowRadius: 16,
+          elevation: 16,
+          transform: [{ translateY: slideAnim }],
+        }}>
+          <View style={{ alignItems: 'center', marginBottom: 0, minHeight: 36, flexDirection: 'row', justifyContent: 'center', paddingTop: 18 }}>
+            <View style={{ width: 44, height: 5, backgroundColor: '#eee', borderRadius: 3, marginBottom: 0, alignSelf: 'center' }} />
+            <TouchableOpacity onPress={() => setShowCardModal(false)} style={{ position: 'absolute', right: 18, top: 8, padding: 8, zIndex: 10 }}>
+              <Ionicons name="close" size={28} color="#F98A21" />
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={{ padding: 28, paddingTop: 10, paddingBottom: 36 }} showsVerticalScrollIndicator={false}>
+            {selectedCard?.image && (
+              <Image source={{ uri: selectedCard.image }} style={{ width: 140, height: 180, borderRadius: 12, alignSelf: 'center', marginBottom: 18, resizeMode: 'cover', backgroundColor: '#f2f2f2' }} />
+            )}
+            {/* Soru */}
+            <View style={styles.modalFieldBox}>
+              <Text style={[styles.modalLabel, { color: colors.buttonColor, ...typography.styles.caption }]}>Soru:</Text>
+              <Text style={[styles.modalValue, { color: colors.text, ...typography.styles.body }]}>{selectedCard?.question}</Text>
+            </View>
+            {/* Cevap */}
+            <View style={styles.modalFieldBox}>
+              <Text style={[styles.modalLabel, { color: colors.buttonColor, ...typography.styles.caption }]}>Cevap:</Text>
+              <Text style={[styles.modalValue, { color: colors.text, ...typography.styles.body }]}>{selectedCard?.answer}</Text>
+            </View>
+            {/* Örnek */}
+            {selectedCard?.example && (
+              <View style={styles.modalFieldBox}>
+                <Text style={[styles.modalLabel, { color: colors.buttonColor, ...typography.styles.caption }]}>Örnek:</Text>
+                <Text style={[styles.modalValue, { color: colors.text, ...typography.styles.body }]}>{selectedCard.example}</Text>
+              </View>
+            )}
+            {/* Not */}
+            {selectedCard?.note && (
+              <View style={styles.modalFieldBox}>
+                <Text style={[styles.modalLabel, { color: colors.buttonColor, ...typography.styles.caption }]}>Not:</Text>
+                <Text style={[styles.modalValue, { color: colors.text, ...typography.styles.body }]}>{selectedCard.note}</Text>
+              </View>
+            )}
+            {/* Tarih */}
+            {selectedCard?.created_at && (
+              <View style={{ alignItems: 'center', marginBottom: 8 }}>
+                <Text style={{ fontSize: 12, color: '#aaa', textAlign: 'center', ...typography.styles.caption }}>
+                  Oluşturulma: {new Date(selectedCard.created_at).toLocaleString('tr-TR')}
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+        </Animated.View>
+      </Modal>
     </View>
   );
 }
@@ -512,9 +622,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff8f0',
-    borderRadius: 18,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    borderRadius: 30,
+    paddingHorizontal: 11,
+    paddingVertical: 10,
     marginRight: 6,
     borderWidth: 1,
     borderColor: '#F98A21',
@@ -577,5 +687,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#F98A21',
+  },
+  modalLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  modalValue: {
+    // typography.styles.body ve renk dışarıdan
+  },
+  modalFieldBox: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#ececec',
   },
 }); 

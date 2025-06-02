@@ -32,6 +32,12 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [cardDetailModalVisible, setCardDetailModalVisible] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editName, setEditName] = useState(deck.name);
+  const [editToName, setEditToName] = useState(deck.to_name || '');
+  const [editDescription, setEditDescription] = useState(deck.description || '');
+  const [editLoading, setEditLoading] = useState(false);
 
   if (!deck) {
     return (
@@ -116,6 +122,15 @@ export default function DeckDetailScreen({ route, navigation }) {
   useEffect(() => {
     setFilteredCards(sortCards(cardSort, cards));
   }, [cardSort, cards, originalCards, favoriteCards]);
+
+  useEffect(() => {
+    // Kullanıcı id'sini çek
+    const fetchUserId = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+    };
+    fetchUserId();
+  }, []);
 
   const handleStart = async () => {
     try {
@@ -307,26 +322,104 @@ export default function DeckDetailScreen({ route, navigation }) {
               {/* Başlık kartı da glassmorphism ile */}
               <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { alignItems: 'center', paddingBottom: 28, marginTop: 12, width: '100%', maxWidth: 440, alignSelf: 'center' }] }>
                 <View style={{ width: '100%' }}>
-                  <Text style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%' }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
-                  {deck.to_name && (
-                    <Text style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', marginTop: 2 }]} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
+                  {editMode ? (
+                    <>
+                      <TextInput
+                        style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', fontWeight: 'bold', fontSize: 24, color: colors.text, backgroundColor: '#fff8f0', borderRadius: 8, marginBottom: 4, padding: 6 }]}
+                        value={editName}
+                        onChangeText={setEditName}
+                        placeholder="Deste Adı"
+                        maxLength={60}
+                      />
+                      <View style={{ width: '100%', alignItems: 'center' }}>
+                        <View style={styles.dividerLine} />
+                        <TextInput
+                          style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', marginTop: 2, color: colors.text, backgroundColor: '#fff8f0', borderRadius: 8, padding: 6 }]}
+                          value={editToName}
+                          onChangeText={setEditToName}
+                          placeholder="Hedef Dil/Alan (isteğe bağlı)"
+                          maxLength={60}
+                        />
+                      </View>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%' }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
+                      {deck.to_name && (
+                        <View style={{ width: '100%', alignItems: 'center' }}>
+                          <View style={styles.dividerLine} />
+                          <Text style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', marginTop: 2 }]} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
+                        </View>
+                      )}
+                    </>
                   )}
                 </View>
+                {editMode && (
+                  <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 10, gap: 10 }}>
+                    <TouchableOpacity
+                      style={{ backgroundColor: '#F98A21', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 18, marginRight: 6 }}
+                      disabled={editLoading}
+                      onPress={async () => {
+                        setEditLoading(true);
+                        try {
+                          const { error } = await supabase
+                            .from('decks')
+                            .update({ name: editName.trim(), to_name: editToName.trim() || null, description: editDescription.trim() || null })
+                            .eq('id', deck.id);
+                          if (error) throw error;
+                          deck.name = editName.trim();
+                          deck.to_name = editToName.trim() || null;
+                          deck.description = editDescription.trim() || null;
+                          setEditMode(false);
+                        } catch (e) {
+                          Alert.alert('Hata', 'Deste güncellenemedi.');
+                        } finally {
+                          setEditLoading(false);
+                        }
+                      }}
+                    >
+                      <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Kaydet</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={{ backgroundColor: '#eee', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 18 }}
+                      disabled={editLoading}
+                      onPress={() => {
+                        setEditMode(false);
+                        setEditName(deck.name);
+                        setEditToName(deck.to_name || '');
+                        setEditDescription(deck.description || '');
+                      }}
+                    >
+                      <Text style={{ color: '#333', fontWeight: 'bold', fontSize: 16 }}>İptal</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </BlurView>
               {/* Açıklama Kutusu (Glassmorphism) */}
               {deck.description && (
                 <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                    <MaterialCommunityIcons name="information-outline" size={20} color={colors.buttonColor} style={{ marginRight: 6, marginBottom: 9 }} />
-                    <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text, marginTop: 1 }]}>Detaylar</Text>
+                    <MaterialCommunityIcons name="information-outline" size={20} color={colors.buttonColor} style={{ marginRight: 6}} />
+                    <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text}]}>Detaylar</Text>
                   </View>
-                  <Text style={[styles.deckDescription, typography.styles.body, { color: colors.subtext }]}>{deck.description}</Text>
+                  {editMode ? (
+                    <TextInput
+                      style={[styles.deckDescription, typography.styles.body, { color: colors.text, backgroundColor: '#fff8f0', borderRadius: 8, padding: 8, minHeight: 40 }]}
+                      value={editDescription}
+                      onChangeText={setEditDescription}
+                      placeholder="Deste açıklaması..."
+                      multiline
+                      maxLength={300}
+                    />
+                  ) : (
+                    <Text style={[styles.deckDescription, typography.styles.body, { color: colors.subtext }]}>{deck.description}</Text>
+                  )}
                 </BlurView>
               )}
               {/* İlerleme Kutusu (Glassmorphism) */}
               <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                  <MaterialCommunityIcons name="chart-bar" size={20} color={colors.buttonColor} style={{ marginRight: 6, marginBottom: 12 }} />
+                  <MaterialCommunityIcons name="chart-bar" size={20} color={colors.buttonColor} style={{ marginRight: 6}} />
                   <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>İlerleme</Text>
                 </View>
                 <View style={styles.progressContainerModern}>
@@ -420,6 +513,13 @@ export default function DeckDetailScreen({ route, navigation }) {
         />
         <View style={styles.bottomSheet}>
           <View style={styles.sheetHandle} />
+          {/* Desteyi Düzenle sadece sahibi ise */}
+          {currentUserId && deck.user_id === currentUserId && (
+            <TouchableOpacity style={styles.sheetItem} onPress={() => { setMenuVisible(false); setEditMode(true); }}>
+              <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
+              <Text style={[styles.sheetItemText]}>Desteyi Düzenle</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.sheetItem} onPress={() => { setMenuVisible(false); handleAddFavorite(); }}>
             <MaterialCommunityIcons
               name={isFavorite ? 'heart' : 'heart-outline'}
@@ -427,7 +527,7 @@ export default function DeckDetailScreen({ route, navigation }) {
               color={isFavorite ? '#F98A21' : colors.text}
               style={{ marginRight: 12 }}
             />
-            <Text style={[styles.sheetItemText, isFavorite && { color: '#F98A21' }]}>
+            <Text style={[styles.sheetItemText, isFavorite && { color: '#F98A21' }]}> 
               {isFavorite ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
             </Text>
           </TouchableOpacity>
@@ -1184,5 +1284,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffe0c3',
     borderRadius: 1,
     marginHorizontal: 14,
+  },
+  dividerLine: {
+    width: '60%',
+    height: 1,
+    backgroundColor: '#ffe0c3',
+    alignSelf: 'center',
+    marginVertical: 6,
   },
 });
