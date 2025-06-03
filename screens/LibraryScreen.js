@@ -41,6 +41,8 @@ export default function LibraryScreen() {
     { key: 'cards', label: 'Kartlar' },
   ];
 
+  const DROPDOWN_WIDTH = 140; // Dropdown menü genişliği
+
   useEffect(() => {
     const fetchDecks = async () => {
       setLoading(true);
@@ -136,7 +138,7 @@ export default function LibraryScreen() {
                 {item.to_name ? (
                   <>
                     <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
-                    <Text style={[styles.deckTitleModern, {textAlign: 'center', fontSize: 22}]}>⤵</Text>
+                    <View style={{ width: 60, height: 2, backgroundColor: '#fff', borderRadius: 1, marginVertical: 10 }} />
                     <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{item.to_name}</Text>
                   </>
                 ) : (
@@ -195,7 +197,7 @@ export default function LibraryScreen() {
                   {item.to_name ? (
                     <>
                       <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
-                      <Text style={[styles.deckTitleModern, {textAlign: 'center', fontSize: 22}]}>⤵</Text>
+                      <View style={{ width: 60, height: 2, backgroundColor: '#fff', borderRadius: 1, marginVertical: 10 }} />
                       <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{item.to_name}</Text>
                     </>
                   ) : (
@@ -349,9 +351,9 @@ export default function LibraryScreen() {
               styles.filterDropdownMenu,
               {
                 position: 'absolute',
-                left: dropdownPos.x,
+                left: Math.max(8, dropdownPos.x + dropdownPos.width - DROPDOWN_WIDTH),
                 top: Platform.OS === 'android' ? dropdownPos.y + dropdownPos.height : dropdownPos.y + dropdownPos.height + 4,
-                // +4 iOS için biraz boşluk bırakır
+                minWidth: DROPDOWN_WIDTH,
               },
             ]}
           >
@@ -664,7 +666,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+
     justifyContent: 'flex-end',
   },
   deckCardGradient: {
@@ -676,6 +678,7 @@ const styles = StyleSheet.create({
   deckProfileRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    maxWidth: 120,
   },
   deckProfileAvatar: {
     width: 32,

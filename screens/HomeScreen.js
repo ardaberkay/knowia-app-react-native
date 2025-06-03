@@ -161,7 +161,7 @@ export default function HomeScreen() {
                         source={deck.profiles?.image_url ? { uri: deck.profiles.image_url } : require('../assets/avatar-default.png')}
                         style={styles.deckProfileAvatar}
                       />
-                      <Text style={[styles.deckProfileUsername]} numberOfLines={1} ellipsizeMode="tail">
+                      <Text style={styles.deckProfileUsername} numberOfLines={1} ellipsizeMode="tail">
                         {deck.profiles?.username || 'Kullanıcı'}
                       </Text>
                     </View>
@@ -170,7 +170,7 @@ export default function HomeScreen() {
                         {deck.to_name ? (
                           <>
                             <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
-                            <Text style={[styles.deckTitleModern, {textAlign: 'center', fontSize: 20}]}>⤵</Text>
+                            <View style={{ width: 60, height: 2, backgroundColor: '#fff', borderRadius: 1, marginVertical: 10 }} />
                             <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
                           </>
                         ) : (
@@ -412,12 +412,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     zIndex: 10,
+    maxWidth: 120,
   },
   deckProfileAvatar: {
     width: 24,
     height: 24,
     borderRadius: 11,
-    marginRight: 4,
+    marginRight: 6,
   },
   deckProfileUsername: {
     fontSize: 12,

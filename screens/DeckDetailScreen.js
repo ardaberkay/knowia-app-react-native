@@ -38,6 +38,8 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [editToName, setEditToName] = useState(deck.to_name || '');
   const [editDescription, setEditDescription] = useState(deck.description || '');
   const [editLoading, setEditLoading] = useState(false);
+  const [cardsModalVisible, setCardsModalVisible] = useState(false);
+  const [searchBarShouldFocus, setSearchBarShouldFocus] = useState(false);
 
   if (!deck) {
     return (
@@ -131,6 +133,14 @@ export default function DeckDetailScreen({ route, navigation }) {
     };
     fetchUserId();
   }, []);
+
+  useEffect(() => {
+    if (cardsModalVisible) {
+      setSearchBarShouldFocus(true);
+    } else {
+      setSearchBarShouldFocus(false);
+    }
+  }, [cardsModalVisible]);
 
   const handleStart = async () => {
     try {
@@ -270,6 +280,11 @@ export default function DeckDetailScreen({ route, navigation }) {
     }
   };
 
+  const handleBackFromDetail = () => {
+    setSelectedCard(null);
+    setSearchBarShouldFocus(false);
+  };
+
   return (
     <LinearGradient
       colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
@@ -277,228 +292,161 @@ export default function DeckDetailScreen({ route, navigation }) {
       end={{ x: 1, y: 1 }}
       style={styles.bgGradient}
     >
-      <View style={{ flex: 1 }}>
-        <FlatList
-          data={filteredCards}
-          keyExtractor={item => item.id?.toString()}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={[styles.cardsListContainer, { paddingBottom: 120 }]}
-          ListEmptyComponent={<Text style={[typography.styles.caption, { color: colors.muted, marginLeft: 18, marginTop: 12 }]}>Bu destede henüz kart yok.</Text>}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.cardItemGlass}
-              activeOpacity={0.93}
-              onPress={() => {
-                setSelectedCard(item);
-                setCardDetailModalVisible(true);
-              }}
-            >
-              <View style={styles.cardTopRow}>
-                <View style={styles.cardTextCol}>
-                  <Text style={[styles.cardQuestion, typography.styles.body]} numberOfLines={1} ellipsizeMode="tail">
-                    {item.question}
-                  </Text>
-                  <View style={styles.cardDivider} />
-                  <Text style={[styles.cardAnswer, typography.styles.body]} numberOfLines={1} ellipsizeMode="tail">
-                    {item.answer}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.cardFavIconBtn}
-                  onPress={() => handleToggleFavoriteCard(item.id)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <MaterialCommunityIcons
-                    name={favoriteCards.includes(item.id) ? 'heart' : 'heart-outline'}
-                    size={22}
-                    color={favoriteCards.includes(item.id) ? '#F98A21' : '#B0B0B0'}
+      <View style={{ flex: 1, paddingHorizontal: 18 }}>
+        <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { alignItems: 'center', paddingBottom: 28, marginTop: 12, width: '100%', maxWidth: 440, alignSelf: 'center' }] }>
+          <View style={{ width: '100%' }}>
+            {editMode ? (
+              <>
+                <TextInput
+                  style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', fontWeight: 'bold', fontSize: 24, color: colors.text, backgroundColor: '#fff8f0', borderRadius: 8, marginBottom: 4, padding: 6 }]}
+                  value={editName}
+                  onChangeText={setEditName}
+                  placeholder="Deste Adı"
+                  maxLength={60}
+                />
+                <View style={{ width: '100%', alignItems: 'center' }}>
+                  <View style={styles.dividerLine} />
+                  <TextInput
+                    style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', marginTop: 2, color: colors.text, backgroundColor: '#fff8f0', borderRadius: 8, padding: 6 }]}
+                    value={editToName}
+                    onChangeText={setEditToName}
+                    placeholder="Hedef Dil/Alan (isteğe bağlı)"
+                    maxLength={60}
                   />
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          )}
-          ListHeaderComponent={
-            <>
-              {/* Başlık kartı da glassmorphism ile */}
-              <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { alignItems: 'center', paddingBottom: 28, marginTop: 12, width: '100%', maxWidth: 440, alignSelf: 'center' }] }>
-                <View style={{ width: '100%' }}>
-                  {editMode ? (
-                    <>
-                      <TextInput
-                        style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', fontWeight: 'bold', fontSize: 24, color: colors.text, backgroundColor: '#fff8f0', borderRadius: 8, marginBottom: 4, padding: 6 }]}
-                        value={editName}
-                        onChangeText={setEditName}
-                        placeholder="Deste Adı"
-                        maxLength={60}
-                      />
-                      <View style={{ width: '100%', alignItems: 'center' }}>
-                        <View style={styles.dividerLine} />
-                        <TextInput
-                          style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', marginTop: 2, color: colors.text, backgroundColor: '#fff8f0', borderRadius: 8, padding: 6 }]}
-                          value={editToName}
-                          onChangeText={setEditToName}
-                          placeholder="Hedef Dil/Alan (isteğe bağlı)"
-                          maxLength={60}
-                        />
-                      </View>
-                    </>
-                  ) : (
-                    <>
-                      <Text style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%' }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
-                      {deck.to_name && (
-                        <View style={{ width: '100%', alignItems: 'center' }}>
-                          <View style={styles.dividerLine} />
-                          <Text style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', marginTop: 2 }]} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
-                        </View>
-                      )}
-                    </>
-                  )}
                 </View>
-                {editMode && (
-                  <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 10, gap: 10 }}>
-                    <TouchableOpacity
-                      style={{ backgroundColor: '#F98A21', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 18, marginRight: 6 }}
-                      disabled={editLoading}
-                      onPress={async () => {
-                        setEditLoading(true);
-                        try {
-                          const { error } = await supabase
-                            .from('decks')
-                            .update({ name: editName.trim(), to_name: editToName.trim() || null, description: editDescription.trim() || null })
-                            .eq('id', deck.id);
-                          if (error) throw error;
-                          deck.name = editName.trim();
-                          deck.to_name = editToName.trim() || null;
-                          deck.description = editDescription.trim() || null;
-                          setEditMode(false);
-                        } catch (e) {
-                          Alert.alert('Hata', 'Deste güncellenemedi.');
-                        } finally {
-                          setEditLoading(false);
-                        }
-                      }}
-                    >
-                      <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Kaydet</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={{ backgroundColor: '#eee', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 18 }}
-                      disabled={editLoading}
-                      onPress={() => {
-                        setEditMode(false);
-                        setEditName(deck.name);
-                        setEditToName(deck.to_name || '');
-                        setEditDescription(deck.description || '');
-                      }}
-                    >
-                      <Text style={{ color: '#333', fontWeight: 'bold', fontSize: 16 }}>İptal</Text>
-                    </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%' }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
+                {deck.to_name && (
+                  <View style={{ width: '100%', alignItems: 'center' }}>
+                    <View style={styles.dividerLine} />
+                    <Text style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', marginTop: 2 }]} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
                   </View>
                 )}
-              </BlurView>
-              {/* Açıklama Kutusu (Glassmorphism) */}
-              {deck.description && (
-                <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                    <MaterialCommunityIcons name="information-outline" size={20} color={colors.buttonColor} style={{ marginRight: 6}} />
-                    <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text}]}>Detaylar</Text>
-                  </View>
-                  {editMode ? (
-                    <TextInput
-                      style={[styles.deckDescription, typography.styles.body, { color: colors.text, backgroundColor: '#fff8f0', borderRadius: 8, padding: 8, minHeight: 40 }]}
-                      value={editDescription}
-                      onChangeText={setEditDescription}
-                      placeholder="Deste açıklaması..."
-                      multiline
-                      maxLength={300}
-                    />
-                  ) : (
-                    <Text style={[styles.deckDescription, typography.styles.body, { color: colors.subtext }]}>{deck.description}</Text>
-                  )}
-                </BlurView>
-              )}
-              {/* İlerleme Kutusu (Glassmorphism) */}
-              <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                  <MaterialCommunityIcons name="chart-bar" size={20} color={colors.buttonColor} style={{ marginRight: 6}} />
-                  <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>İlerleme</Text>
-                </View>
-                <View style={styles.progressContainerModern}>
-                  <View style={styles.progressBarModern}>
-                    <View style={[styles.progressFillModern, { width: `${Math.round(progress * 100)}%` }]} />
-                  </View>
-                  {progressLoading ? (
-                    <Text style={[styles.progressText, typography.styles.caption, { color: colors.muted }]}>Yükleniyor...</Text>
-                  ) : progress === 0 ? (
-                    <Text style={[styles.progressText, typography.styles.caption, { color: colors.muted }]}>Henüz çalışılmadı</Text>
-                  ) : (
-                    <Text style={[styles.progressText, typography.styles.caption, { color: colors.buttonColor }]}>%{Math.round(progress * 100)} Tamamlandı</Text>
-                  )}
-                </View>
-              </BlurView>
-              {/* Kartlar Başlığı ve Search Bar */}
-              <View style={styles.cardsHeaderCard}>
-                <View style={[styles.cardsHeaderRow, { justifyContent: 'space-between', alignItems: 'center' }] }>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <MaterialCommunityIcons name="cards-outline" size={22} color={colors.buttonColor} style={styles.cardsHeaderIcon} />
-                    <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>Kartlar</Text>
-                  </View>
-                  <View style={styles.statBadgeModern}>
-                    <Ionicons name="layers" size={18} color="#fff" style={{ marginRight: 4 }} />
-                    <Text style={styles.statBadgeTextModern}>{deck.card_count || 0}</Text>
-                  </View>
-                </View>
-                <View style={{ height: 8 }} />
-                <View style={styles.cardsSearchBarRow}>
-                  <View style={styles.cardsSearchBarWrapperModern}>
-                    <Ionicons name="search" size={20} color="#B0B0B0" style={styles.cardsSearchIcon} />
-                    <TextInput
-                      style={[styles.cardsSearchBarModern, typography.styles.body]}
-                      placeholder="Kartlarda ara..."
-                      value={search}
-                      onChangeText={setSearch}
-                      placeholderTextColor={colors.muted}
-                    />
-                  </View>
-                  <TouchableOpacity
-                    ref={filterIconRef}
-                    style={[styles.cardsFilterIconButton, { marginLeft: 8 }]}
-                    onPress={() => {
-                      if (filterIconRef.current) {
-                        filterIconRef.current.measureInWindow((x, y, width, height) => {
-                          setDropdownPos({ x, y, width, height });
-                          setFilterModalVisible(true);
-                        });
-                      }
-                    }}
-                  >
-                    <Ionicons name="filter" size={24} color="#F98A21" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-              <View style={{ height: 12 }} />
-            </>
-          }
-        />
-        {/* Sabit alt buton barı */}
-        <SafeAreaView style={[styles.fixedButtonBar, { borderTopLeftRadius: 18, borderTopRightRadius: 18, ...Platform.select({ android: { paddingBottom: 18 }, ios: {} }) }] } edges={['bottom']}>
-          <View style={styles.buttonRowModern}>
-            <TouchableOpacity
-              style={[styles.favButtonModern]}
-              onPress={() => RNAlert.alert('Kart Ekle', 'Kart ekleme fonksiyonu burada olacak.')}
-            >
-              <MaterialCommunityIcons name="plus" size={22} color={colors.buttonColor} style={{ marginRight: 6 }} />
-              <Text style={[styles.favButtonTextModern, typography.styles.button, { color: colors.buttonColor }]}>Kart Ekle</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.startButtonModern}
-              onPress={handleStart}
-            >
-              <Ionicons name="play" size={20} color={colors.buttonText} style={{ marginRight: 6 }} />
-              <Text style={[styles.startButtonTextModern, typography.styles.button, { color: colors.buttonText }]}>Başla</Text>
-            </TouchableOpacity>
+              </>
+            )}
           </View>
-        </SafeAreaView>
+          {editMode && (
+            <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 10, gap: 10 }}>
+              <TouchableOpacity
+                style={{ backgroundColor: '#F98A21', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 18, marginRight: 6 }}
+                disabled={editLoading}
+                onPress={async () => {
+                  setEditLoading(true);
+                  try {
+                    const { error } = await supabase
+                      .from('decks')
+                      .update({ name: editName.trim(), to_name: editToName.trim() || null, description: editDescription.trim() || null })
+                      .eq('id', deck.id);
+                    if (error) throw error;
+                    deck.name = editName.trim();
+                    deck.to_name = editToName.trim() || null;
+                    deck.description = editDescription.trim() || null;
+                    setEditMode(false);
+                  } catch (e) {
+                    Alert.alert('Hata', 'Deste güncellenemedi.');
+                  } finally {
+                    setEditLoading(false);
+                  }
+                }}
+              >
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Kaydet</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ backgroundColor: '#eee', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 18 }}
+                disabled={editLoading}
+                onPress={() => {
+                  setEditMode(false);
+                  setEditName(deck.name);
+                  setEditToName(deck.to_name || '');
+                  setEditDescription(deck.description || '');
+                }}
+              >
+                <Text style={{ color: '#333', fontWeight: 'bold', fontSize: 16 }}>İptal</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </BlurView>
+        {/* Açıklama Kutusu (Glassmorphism) */}
+        {deck.description && (
+          <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+              <MaterialCommunityIcons name="information-outline" size={20} color={colors.buttonColor} style={{ marginRight: 6}} />
+              <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text}]}>Detaylar</Text>
+            </View>
+            {editMode ? (
+              <TextInput
+                style={[styles.deckDescription, typography.styles.body, { color: colors.text, backgroundColor: '#fff8f0', borderRadius: 8, padding: 8, minHeight: 40 }]}
+                value={editDescription}
+                onChangeText={setEditDescription}
+                placeholder="Deste açıklaması..."
+                multiline
+                maxLength={300}
+              />
+            ) : (
+              <Text style={[styles.deckDescription, typography.styles.body, { color: colors.subtext }]}>{deck.description}</Text>
+            )}
+          </BlurView>
+        )}
+        {/* İlerleme Kutusu (Glassmorphism) */}
+        <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <MaterialCommunityIcons name="chart-bar" size={20} color={colors.buttonColor} style={{ marginRight: 6}} />
+              <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>İlerleme</Text>
+            </View>
+            <View style={[styles.statBadgeModern, { marginLeft: 8 }] }>
+              <Ionicons name="layers" size={18} color="#fff" style={{ marginRight: 4 }} />
+              <Text style={styles.statBadgeTextModern}>{deck.card_count || 0}</Text>
+            </View>
+          </View>
+          <View style={styles.progressContainerModern}>
+            <View style={styles.progressBarModern}>
+              <View style={[styles.progressFillModern, { width: `${Math.round(progress * 100)}%` }]} />
+            </View>
+            {progressLoading ? (
+              <Text style={[styles.progressText, typography.styles.caption, { color: colors.muted }]}>Yükleniyor...</Text>
+            ) : progress === 0 ? (
+              <Text style={[styles.progressText, typography.styles.caption, { color: colors.muted }]}>Henüz çalışılmadı</Text>
+            ) : (
+              <Text style={[styles.progressText, typography.styles.caption, { color: colors.buttonColor }]}>%{Math.round(progress * 100)} Tamamlandı</Text>
+            )}
+          </View>
+        </BlurView>
+        {/* Kartlar Başlığı */}
+        <TouchableOpacity onPress={() => setCardsModalVisible(true)} activeOpacity={0.8}>
+          <View style={styles.cardsHeaderCard}>
+            <View style={[styles.cardsHeaderRow, { justifyContent: 'space-between', alignItems: 'center' }] }>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name="albums-outline" size={22} color={colors.buttonColor} style={{ marginRight: 8 }} />
+                <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>Kartlar</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={26} color={colors.buttonColor} />
+            </View>
+          </View>
+        </TouchableOpacity>
+        <View style={{ height: 12 }} />
       </View>
+      {/* Sabit alt buton barı */}
+      <SafeAreaView style={[styles.fixedButtonBar, { borderTopLeftRadius: 18, borderTopRightRadius: 18, ...Platform.select({ android: { paddingBottom: 18 }, ios: {} }) }] } edges={['bottom']}>
+        <View style={styles.buttonRowModern}>
+          <TouchableOpacity
+            style={[styles.favButtonModern]}
+            onPress={() => RNAlert.alert('Kart Ekle', 'Kart ekleme fonksiyonu burada olacak.')}
+          >
+            <MaterialCommunityIcons name="plus" size={22} color={colors.buttonColor} style={{ marginRight: 6 }} />
+            <Text style={[styles.favButtonTextModern, typography.styles.button, { color: colors.buttonColor }]}>Kart Ekle</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.startButtonModern}
+            onPress={handleStart}
+          >
+            <Ionicons name="play" size={20} color={colors.buttonText} style={{ marginRight: 6 }} />
+            <Text style={[styles.startButtonTextModern, typography.styles.button, { color: colors.buttonText }]}>Başla</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
       {/* Modal Bottom Sheet Menü */}
       <Modal
         visible={menuVisible}
@@ -541,116 +489,159 @@ export default function DeckDetailScreen({ route, navigation }) {
           </TouchableOpacity>
         </View>
       </Modal>
-      {/* Filter Modal */}
+      {/* Kartlar Modalı */}
       <Modal
-        visible={filterModalVisible}
-        transparent
-        animationType="none"
-        onRequestClose={() => setFilterModalVisible(false)}
+        visible={cardsModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setCardsModalVisible(false)}
       >
-        <Pressable style={{ flex: 1 }} onPress={() => setFilterModalVisible(false)}>
-          <View
-            style={{
-              position: 'absolute',
-              left: Math.max(0, dropdownPos.x + dropdownPos.width - 180),
-              top: Platform.OS === 'android'
-                ? dropdownPos.y + dropdownPos.height
-                : dropdownPos.y + dropdownPos.height + 4,
-              backgroundColor: '#fff',
-              borderRadius: 14,
-              elevation: 8,
-              shadowColor: '#000',
-              shadowOpacity: 0.12,
-              shadowRadius: 8,
-              minWidth: 180,
-              width: 180,
-              zIndex: 100,
-            }}
-          >
-            <Pressable
-              style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2', backgroundColor: cardSort === 'original' ? '#fff8f0' : '#fff' }}
-              onPress={() => { setCardSort('original'); setFilterModalVisible(false); }}
-            >
-              <Text style={{ color: cardSort === 'original' ? '#F98A21' : '#333', fontWeight: cardSort === 'original' ? 'bold' : 'normal' }}>Orjinal</Text>
-            </Pressable>
-            <Pressable
-              style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2', backgroundColor: cardSort === 'az' ? '#fff8f0' : '#fff' }}
-              onPress={() => { setCardSort('az'); setFilterModalVisible(false); }}
-            >
-              <Text style={{ color: cardSort === 'az' ? '#F98A21' : '#333', fontWeight: cardSort === 'az' ? 'bold' : 'normal' }}>A'dan Z'ye</Text>
-            </Pressable>
-            <Pressable
-              style={{ padding: 16, backgroundColor: cardSort === 'fav' ? '#fff8f0' : '#fff', borderBottomLeftRadius: 14, borderBottomRightRadius: 14 }}
-              onPress={() => { setCardSort('fav'); setFilterModalVisible(false); }}
-            >
-              <Text style={{ color: cardSort === 'fav' ? '#F98A21' : '#333', fontWeight: cardSort === 'fav' ? 'bold' : 'normal' }}>Favorilerim</Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      </Modal>
-      {/* Kart Detay Modalı */}
-      <Modal
-        visible={cardDetailModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setCardDetailModalVisible(false)}
-      >
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.18)', justifyContent: 'center', alignItems: 'center' }} onPress={() => setCardDetailModalVisible(false)}>
-          <View style={styles.cardDetailContainer}>
-            <ScrollView style={{ maxHeight: 600, width: '100%' }} contentContainerStyle={{ paddingBottom: 8 }} showsVerticalScrollIndicator={false}>
-              {selectedCard?.image ? (
-                <Image source={{ uri: selectedCard.image }} style={styles.cardDetailImage} />
-              ) : null}
-              <View style={styles.cardDetailBody}>
-                <View style={styles.cardDetailTitleRow}>
-                  <View style={styles.cardDetailDividerLine} />
-                  <Text style={[typography.styles.subtitle, styles.cardDetailTitle, { color: colors.buttonColor }]}>Soru</Text>
-                  <View style={styles.cardDetailDividerLine} />
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.18)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ width: '95%', maxWidth: 500, height: 650, backgroundColor: '#fff', borderRadius: 24, padding: 18, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, elevation: 12, justifyContent: 'flex-start' }}>
+            {/* Koşullu render: Kart detay veya liste */}
+            {selectedCard ? (
+              // Kart Detay Görünümü
+              <View style={{ flex: 1, width: '100%', paddingHorizontal: 18 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, justifyContent: 'space-between' }}>
+                  <TouchableOpacity onPress={handleBackFromDetail} style={{ padding: 6, marginRight: 8 }}>
+                    <Ionicons name="arrow-back" size={26} color={colors.text} />
+                  </TouchableOpacity>
+                  <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text, textAlign: 'center' }]}>Kart Detayı</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setCardsModalVisible(false)} style={{ padding: 6, marginLeft: 8 }}>
+                    <Ionicons name="close" size={26} color={colors.text} />
+                  </TouchableOpacity>
                 </View>
-                <Text style={[typography.styles.body, styles.cardDetailText, { color: colors.text }]}>{selectedCard?.question}</Text>
-                {selectedCard?.answer ? (
-                  <>
+                <ScrollView style={{ maxHeight: 600, width: '100%' }} contentContainerStyle={{ paddingBottom: 8 }} showsVerticalScrollIndicator={true}>
+                  {selectedCard?.image ? (
+                    <Image source={{ uri: selectedCard.image }} style={styles.cardDetailImage} />
+                  ) : null}
+                  <View style={styles.cardDetailBody}>
                     <View style={styles.cardDetailTitleRow}>
                       <View style={styles.cardDetailDividerLine} />
-                      <Text style={[typography.styles.subtitle, styles.cardDetailTitle, { color: colors.buttonColor }]}>Cevap</Text>
+                      <Text style={[typography.styles.subtitle, styles.cardDetailTitle, { color: colors.buttonColor }]}>Soru</Text>
                       <View style={styles.cardDetailDividerLine} />
                     </View>
-                    <Text style={[typography.styles.body, styles.cardDetailText, { color: colors.text }]}>{selectedCard.answer}</Text>
-                  </>
-                ) : null}
-                {selectedCard?.example ? (
-                  <>
-                    <View style={styles.cardDetailTitleRow}>
-                      <View style={styles.cardDetailDividerLine} />
-                      <Text style={[typography.styles.subtitle, styles.cardDetailTitle, { color: colors.buttonColor }]}>Örnek</Text>
-                      <View style={styles.cardDetailDividerLine} />
-                    </View>
-                    <Text style={[typography.styles.body, styles.cardDetailText, { color: colors.text }]}>{selectedCard.example}</Text>
-                  </>
-                ) : null}
-                {selectedCard?.note ? (
-                  <>
-                    <View style={styles.cardDetailTitleRow}>
-                      <View style={styles.cardDetailDividerLine} />
-                      <Text style={[typography.styles.subtitle, styles.cardDetailTitle, { color: colors.buttonColor }]}>Not</Text>
-                      <View style={styles.cardDetailDividerLine} />
-                    </View>
-                    <Text style={[typography.styles.body, styles.cardDetailText, { color: colors.text }]}>{selectedCard.note}</Text>
-                  </>
-                ) : null}
-                {selectedCard?.created_at ? (
-                  <Text style={[typography.styles.caption, styles.cardDetailDate, { color: colors.muted }]}>Oluşturulma {new Date(selectedCard.created_at).toLocaleString('tr-TR')}</Text>
-                ) : null}
+                    <Text style={[typography.styles.body, styles.cardDetailText, { color: colors.text }]}>{selectedCard?.question}</Text>
+                    {selectedCard?.answer ? (
+                      <>
+                        <View style={styles.cardDetailTitleRow}>
+                          <View style={styles.cardDetailDividerLine} />
+                          <Text style={[typography.styles.subtitle, styles.cardDetailTitle, { color: colors.buttonColor }]}>Cevap</Text>
+                          <View style={styles.cardDetailDividerLine} />
+                        </View>
+                        <Text style={[typography.styles.body, styles.cardDetailText, { color: colors.text }]}>{selectedCard.answer}</Text>
+                      </>
+                    ) : null}
+                    {selectedCard?.example ? (
+                      <>
+                        <View style={styles.cardDetailTitleRow}>
+                          <View style={styles.cardDetailDividerLine} />
+                          <Text style={[typography.styles.subtitle, styles.cardDetailTitle, { color: colors.buttonColor }]}>Örnek</Text>
+                          <View style={styles.cardDetailDividerLine} />
+                        </View>
+                        <Text style={[typography.styles.body, styles.cardDetailText, { color: colors.text }]}>{selectedCard.example}</Text>
+                      </>
+                    ) : null}
+                    {selectedCard?.note ? (
+                      <>
+                        <View style={styles.cardDetailTitleRow}>
+                          <View style={styles.cardDetailDividerLine} />
+                          <Text style={[typography.styles.subtitle, styles.cardDetailTitle, { color: colors.buttonColor }]}>Not</Text>
+                          <View style={styles.cardDetailDividerLine} />
+                        </View>
+                        <Text style={[typography.styles.body, styles.cardDetailText, { color: colors.text }]}>{selectedCard.note}</Text>
+                      </>
+                    ) : null}
+                    {selectedCard?.created_at ? (
+                      <Text style={[typography.styles.caption, styles.cardDetailDate, { color: colors.muted }]}>Oluşturulma {new Date(selectedCard.created_at).toLocaleString('tr-TR')}</Text>
+                    ) : null}
+                  </View>
+                </ScrollView>
               </View>
-            </ScrollView>
-            <TouchableOpacity
-              style={styles.cardDetailCloseButton}
-              onPress={() => setCardDetailModalVisible(false)}
-            >
-              <Text style={styles.cardDetailCloseButtonText}>Kapat</Text>
-            </TouchableOpacity>
+            ) : (
+              // Kartlar Listesi
+              <>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, justifyContent: 'space-between', paddingHorizontal: 18 }}>
+                  <View style={{ width: 38 }} />
+                  <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text, textAlign: 'center' }]}>Kartlar</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setCardsModalVisible(false)} style={{ padding: 6, marginLeft: 8 }}>
+                    <Ionicons name="close" size={26} color={colors.text} />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.cardsSearchBarRow}>
+                  <View style={styles.cardsSearchBarWrapperModern}>
+                    <Ionicons name="search" size={20} color="#B0B0B0" style={styles.cardsSearchIcon} />
+                    <TextInput
+                      style={[styles.cardsSearchBarModern, typography.styles.body]}
+                      placeholder="Kartlarda ara..."
+                      value={search}
+                      onChangeText={setSearch}
+                      placeholderTextColor={colors.muted}
+                      autoFocus={searchBarShouldFocus}
+                    />
+                  </View>
+                  <TouchableOpacity
+                    ref={filterIconRef}
+                    style={[styles.cardsFilterIconButton, { marginLeft: 8 }]}
+                    onPress={() => {
+                      if (filterIconRef.current) {
+                        filterIconRef.current.measureInWindow((x, y, width, height) => {
+                          setDropdownPos({ x, y, width, height });
+                          setFilterModalVisible(true);
+                        });
+                      }
+                    }}
+                  >
+                    <Ionicons name="filter" size={24} color="#F98A21" />
+                  </TouchableOpacity>
+                </View>
+                <View style={{ flex: 1, minHeight: 0 }}>
+                  <FlatList
+                    data={filteredCards}
+                    keyExtractor={item => item.id?.toString()}
+                    showsVerticalScrollIndicator={true}
+                    contentContainerStyle={{ paddingBottom: 24, paddingTop: 8 }}
+                    ListEmptyComponent={<Text style={[typography.styles.caption, { color: colors.muted, marginLeft: 8, marginTop: 12 }]}>Bu destede henüz kart yok.</Text>}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={styles.cardItemGlass}
+                        activeOpacity={0.93}
+                        onPress={() => setSelectedCard(item)}
+                      >
+                        <View style={styles.cardTopRow}>
+                          <View style={styles.cardTextCol}>
+                            <Text style={[styles.cardQuestion, typography.styles.body]} numberOfLines={1} ellipsizeMode="tail">
+                              {item.question}
+                            </Text>
+                            <View style={styles.cardDivider} />
+                            <Text style={[styles.cardAnswer, typography.styles.body]} numberOfLines={1} ellipsizeMode="tail">
+                              {item.answer}
+                            </Text>
+                          </View>
+                          <TouchableOpacity
+                            style={styles.cardFavIconBtn}
+                            onPress={() => handleToggleFavoriteCard(item.id)}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          >
+                            <MaterialCommunityIcons
+                              name={favoriteCards.includes(item.id) ? 'heart' : 'heart-outline'}
+                              size={22}
+                              color={favoriteCards.includes(item.id) ? '#F98A21' : '#B0B0B0'}
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      </TouchableOpacity>
+                    )}
+                  />
+                </View>
+              </>
+            )}
           </View>
-        </Pressable>
+        </View>
       </Modal>
     </LinearGradient>
   );
