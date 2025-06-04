@@ -15,6 +15,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import SwipeDeckScreen from '../screens/SwipeDeckScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import ProfileAvatarButton from '../components/ProfileAvatarButton';
+import DeckEditScreen from '../screens/DeckEditScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -114,6 +115,7 @@ export default function AppNavigator() {
           />
           <Stack.Screen name="SwipeDeck" component={SwipeDeckScreen} options={{ headerShown: true, title: 'Kartları Öğren', headerTitleAlign: 'center' }} />
           <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: 'Profili Düzenle', headerTitleAlign: 'center' }} />
+          <Stack.Screen name="DeckEdit" component={DeckEditScreen} options={{ headerShown: true, title: 'Desteyi Düzenle', headerTitleAlign: 'center' }} />
         </>
       )}
     </Stack.Navigator>

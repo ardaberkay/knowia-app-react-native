@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Dimensions, ActivityIndicator, Image } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Dimensions, ActivityIndicator, Image, Modal, StatusBar, Platform } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { getDecksByCategory } from '../services/DeckService';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { typography } from '../theme/typography';
 import React from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getCurrentUserProfile, updateLastActiveAt } from '../services/ProfileService';
 import { registerForPushNotificationsAsync } from '../services/NotificationService';
+import { supabase } from '../lib/supabase';
+import { getFavoriteDecks } from '../services/FavoriteService';
 
 const DECK_CATEGORIES = {
   inProgressDecks: 'Çalıştığım Desteler',
@@ -36,10 +39,21 @@ export default function HomeScreen() {
   const [error, setError] = useState(null);
   const [profile, setProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [activeDeckMenuId, setActiveDeckMenuId] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [favoriteDecks, setFavoriteDecks] = useState([]);
 
   useEffect(() => {
     loadDecks();
     loadProfile();
+    supabase.auth.getUser().then(({ data: { user } }) => setCurrentUserId(user?.id));
+    // Favori desteleri de çek
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (user?.id) {
+        const decks = await getFavoriteDecks(user.id);
+        setFavoriteDecks(decks || []);
+      }
+    });
   }, []);
 
   // Profil yüklendiğinde push bildirim izni iste ve token'ı kaydet + last_active_at güncelle
@@ -99,6 +113,46 @@ export default function HomeScreen() {
 
   const handleDeckPress = (deck) => {
     navigation.navigate('DeckDetail', { deck });
+  };
+
+  const handleAddFavoriteDeck = async (deckId) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from('favorite_decks').insert({ user_id: user.id, deck_id: deckId });
+    const decks = await getFavoriteDecks(user.id);
+    setFavoriteDecks(decks || []);
+  };
+
+  const handleRemoveFavoriteDeck = async (deckId) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from('favorite_decks').delete().eq('user_id', user.id).eq('deck_id', deckId);
+    const decks = await getFavoriteDecks(user.id);
+    setFavoriteDecks(decks || []);
+  };
+
+  const handleDeleteDeck = (deckId) => {
+    Alert.alert(
+      'Deste Silinsin mi?',
+      'Bu işlemi geri alamazsınız. Emin misiniz?',
+      [
+        { text: 'İptal', style: 'cancel' },
+        {
+          text: 'Sil',
+          style: 'destructive',
+          onPress: async () => {
+            await supabase.from('decks').delete().eq('id', deckId);
+            setDecks(prev => {
+              const newDecks = { ...prev };
+              Object.keys(newDecks).forEach(cat => {
+                newDecks[cat] = newDecks[cat].filter(deck => deck.id !== deckId);
+              });
+              return newDecks;
+            });
+            setFavoriteDecks(prev => prev.filter(deck => deck.id !== deckId));
+            setActiveDeckMenuId(null);
+          }
+        }
+      ]
+    );
   };
 
   const renderDeckSection = (category) => {
@@ -185,6 +239,12 @@ export default function HomeScreen() {
                       </View>
                     </View>
                   </View>
+                  <TouchableOpacity
+                    style={{ position: 'absolute', bottom: 8, right: 5, zIndex: 10 }}
+                    onPress={() => setActiveDeckMenuId(deck.id)}
+                  >
+                    <MaterialCommunityIcons name="dots-vertical" size={24} color="#F98A21" />
+                  </TouchableOpacity>
                 </LinearGradient>
               </TouchableOpacity>
             ))}
@@ -198,6 +258,20 @@ export default function HomeScreen() {
       </>
     );
   };
+
+  useEffect(() => {
+    if (activeDeckMenuId) {
+      StatusBar.setBarStyle('light-content', true);
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('rgba(0,0,0,0.18)', true);
+      }
+    } else {
+      StatusBar.setBarStyle('dark-content', true);
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('#fff', true);
+      }
+    }
+  }, [activeDeckMenuId]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }] }>
@@ -231,6 +305,73 @@ export default function HomeScreen() {
           </React.Fragment>
         ))}
       </ScrollView>
+      {/* Bottom Sheet Modal - sadece bir kez, en dışta */}
+      <Modal
+        visible={!!activeDeckMenuId}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setActiveDeckMenuId(null)}
+      >
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.18)' }}
+          activeOpacity={1}
+          onPress={() => setActiveDeckMenuId(null)}
+        />
+        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingTop: 12, paddingBottom: 32, paddingHorizontal: 24, elevation: 16 }}>
+          <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: '#e0e0e0', alignSelf: 'center', marginBottom: 16 }} />
+          {/* Seçili deste */}
+          {(() => {
+            const allDecks = Object.values(decks).flat();
+            const selectedDeck = allDecks.find(d => d.id === activeDeckMenuId);
+            if (!selectedDeck) return null;
+            return <>
+              {/* Düzenle en üstte, sadece kendi destesi ise */}
+              {selectedDeck.user_id === currentUserId && (
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                  onPress={() => { setActiveDeckMenuId(null); navigation.navigate('DeckEdit', { deck: selectedDeck }); }}
+                >
+                  <MaterialCommunityIcons name="pencil" size={22} color="#333" style={{ marginRight: 12 }} />
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: '#333' }}>Düzenle</Text>
+                </TouchableOpacity>
+              )}
+              {/* Favorilere Ekle/Çıkar herkes için */}
+              <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                onPress={async () => {
+                  if (favoriteDecks.some(fav => fav.id === selectedDeck.id)) {
+                    await handleRemoveFavoriteDeck(selectedDeck.id);
+                  } else {
+                    await handleAddFavoriteDeck(selectedDeck.id);
+                  }
+                  setActiveDeckMenuId(null);
+                }}
+              >
+                <MaterialCommunityIcons
+                  name={favoriteDecks.some(fav => fav.id === selectedDeck.id) ? 'heart' : 'heart-outline'}
+                  size={22}
+                  color={favoriteDecks.some(fav => fav.id === selectedDeck.id) ? '#E74C3C' : '#F98A21'}
+                  style={{ marginRight: 12 }}
+                />
+                <Text style={{ fontSize: 16, fontWeight: '500', color: favoriteDecks.some(fav => fav.id === selectedDeck.id) ? '#E74C3C' : '#F98A21' }}>
+                  {favoriteDecks.some(fav => fav.id === selectedDeck.id) ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
+                </Text>
+              </TouchableOpacity>
+              {/* Desteyi Sil sadece kendi destesi ise */}
+              {selectedDeck.user_id === currentUserId && (
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                  onPress={() => handleDeleteDeck(selectedDeck.id)}
+                >
+                  <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: '#E74C3C' }}>Desteyi Sil</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16 }} onPress={() => setActiveDeckMenuId(null)}>
+                <MaterialCommunityIcons name="close" size={22} color="#333" style={{ marginRight: 12 }} />
+                <Text style={{ fontSize: 16, fontWeight: '500', color: '#333' }}>Kapat</Text>
+              </TouchableOpacity>
+            </>;
+          })()}
+        </View>
+      </Modal>
     </View>
   );
 }

@@ -142,6 +142,20 @@ export default function DeckDetailScreen({ route, navigation }) {
     }
   }, [cardsModalVisible]);
 
+  useEffect(() => {
+    if (cardsModalVisible) {
+      StatusBar.setBarStyle('light-content', true);
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('rgba(0,0,0,0.18)', true);
+      }
+    } else {
+      StatusBar.setBarStyle('dark-content', true);
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('#fff', true);
+      }
+    }
+  }, [cardsModalVisible]);
+
   const handleStart = async () => {
     try {
       await setDeckStarted(deck.id);
@@ -354,7 +368,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                 <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Kaydet</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={{ backgroundColor: '#eee', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 18 }}
+                style={{ backgroundColor: '#eee', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 }}
                 disabled={editLoading}
                 onPress={() => {
                   setEditMode(false);
@@ -463,7 +477,7 @@ export default function DeckDetailScreen({ route, navigation }) {
           <View style={styles.sheetHandle} />
           {/* Desteyi Düzenle sadece sahibi ise */}
           {currentUserId && deck.user_id === currentUserId && (
-            <TouchableOpacity style={styles.sheetItem} onPress={() => { setMenuVisible(false); setEditMode(true); }}>
+            <TouchableOpacity style={styles.sheetItem} onPress={() => { setMenuVisible(false); navigation.navigate('DeckEdit', { deck }); }}>
               <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
               <Text style={[styles.sheetItemText]}>Desteyi Düzenle</Text>
             </TouchableOpacity>
@@ -501,7 +515,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             {/* Koşullu render: Kart detay veya liste */}
             {selectedCard ? (
               // Kart Detay Görünümü
-              <View style={{ flex: 1, width: '100%', paddingHorizontal: 18 }}>
+              <View style={{ flex: 1, width: '100%', paddingHorizontal: 6 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, justifyContent: 'space-between' }}>
                   <TouchableOpacity onPress={handleBackFromDetail} style={{ padding: 6, marginRight: 8 }}>
                     <Ionicons name="arrow-back" size={26} color={colors.text} />
@@ -509,7 +523,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                   <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text, textAlign: 'center' }]}>Kart Detayı</Text>
                   </View>
-                  <TouchableOpacity onPress={() => setCardsModalVisible(false)} style={{ padding: 6, marginLeft: 8 }}>
+                  <TouchableOpacity onPress={() => setCardsModalVisible(false)} style={{ padding: 6, marginLeft: 8, right: 1 }}>
                     <Ionicons name="close" size={26} color={colors.text} />
                   </TouchableOpacity>
                 </View>
@@ -563,12 +577,12 @@ export default function DeckDetailScreen({ route, navigation }) {
             ) : (
               // Kartlar Listesi
               <>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, justifyContent: 'space-between', paddingHorizontal: 18 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, justifyContent: 'space-between', paddingHorizontal: 6 }}>
                   <View style={{ width: 38 }} />
                   <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text, textAlign: 'center' }]}>Kartlar</Text>
                   </View>
-                  <TouchableOpacity onPress={() => setCardsModalVisible(false)} style={{ padding: 6, marginLeft: 8 }}>
+                  <TouchableOpacity onPress={() => setCardsModalVisible(false)} style={{ padding: 6, marginLeft: 8}}>
                     <Ionicons name="close" size={26} color={colors.text} />
                   </TouchableOpacity>
                 </View>
@@ -1136,8 +1150,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff8f0',
-    borderRadius: 20,
+    backgroundColor: '#fffff',
+    borderRadius: 30,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderWidth: 1,

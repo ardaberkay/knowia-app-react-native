@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, TextInput, Modal, Pressable, Platform, Image, ScrollView, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, TextInput, Modal, Pressable, Platform, Image, ScrollView, Animated, Easing, StatusBar, Alert } from 'react-native';
 import { useTheme, useNavigation } from '@react-navigation/native';
 import { typography } from '../theme/typography';
 import { getDecksByCategory } from '../services/DeckService';
@@ -7,6 +7,9 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { getFavoriteDecks, getFavoriteCards } from '../services/FavoriteService';
 import { supabase } from '../lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
+
+const MODAL_OVERLAY_COLOR = 'rgba(0,0,0,0.18)';
+const STATUSBAR_DEFAULT_COLOR = '#fff';
 
 export default function LibraryScreen() {
   const { colors } = useTheme();
@@ -26,6 +29,8 @@ export default function LibraryScreen() {
   const [showCardModal, setShowCardModal] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
   const slideAnim = useRef(new Animated.Value(0)).current;
+  const [activeDeckMenuId, setActiveDeckMenuId] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   const screenWidth = Dimensions.get('window').width;
   const horizontalPadding = 16 * 2;
@@ -80,6 +85,10 @@ export default function LibraryScreen() {
     }
   }, [activeTab, favoritesFetched]);
 
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => setCurrentUserId(user?.id));
+  }, []);
+
   // Filtreleme ve arama
   let filteredFavorites = [];
   if (favoritesFilter === 'all') {
@@ -132,6 +141,7 @@ export default function LibraryScreen() {
           end={{ x: 1, y: 1 }}
           style={styles.deckCardGradient}
         >
+          <View style={{ height: 3, width: '90%', alignSelf: 'center', backgroundColor: colors.buttonColor, borderTopLeftRadius: 18, borderTopRightRadius: 18, marginTop: 8 }} />
           <View style={styles.deckCardContentModern}>
             <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
               <View style={styles.deckHeaderModern}>
@@ -153,6 +163,71 @@ export default function LibraryScreen() {
               </View>
             </View>
           </View>
+          <TouchableOpacity
+            style={{ position: 'absolute', bottom: 18, right: 12, zIndex: 10 }}
+            onPress={() => setActiveDeckMenuId(item.id)}
+          >
+            <MaterialCommunityIcons name="dots-vertical" size={24} color="#F98A21" />
+          </TouchableOpacity>
+          {/* Bottom Sheet Modal */}
+          <Modal
+            visible={activeDeckMenuId === item.id}
+            animationType="slide"
+            transparent
+            onRequestClose={() => setActiveDeckMenuId(null)}
+          >
+            <TouchableOpacity
+              style={{ flex: 1, backgroundColor: MODAL_OVERLAY_COLOR }}
+              activeOpacity={1}
+              onPress={() => setActiveDeckMenuId(null)}
+            />
+            <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingTop: 12, paddingBottom: 32, paddingHorizontal: 24, elevation: 16 }}>
+              <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: '#e0e0e0', alignSelf: 'center', marginBottom: 16 }} />
+              {/* Düzenle en üstte, sadece kendi destesi ise */}
+              {item.user_id === currentUserId && (
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                  onPress={() => { setActiveDeckMenuId(null); navigation.navigate('DeckEdit', { deck: item }); }}
+                >
+                  <MaterialCommunityIcons name="pencil" size={22} color="#333" style={{ marginRight: 12 }} />
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: '#333' }}>Düzenle</Text>
+                </TouchableOpacity>
+              )}
+              {/* Favorilere Ekle/Çıkar herkes için */}
+              <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                onPress={async () => {
+                  if (favoriteDecks.some(deck => deck.id === item.id)) {
+                    await handleRemoveFavoriteDeck(item.id);
+                  } else {
+                    await handleAddFavoriteDeck(item.id);
+                  }
+                  setActiveDeckMenuId(null);
+                }}
+              >
+                <MaterialCommunityIcons
+                  name={favoriteDecks.some(deck => deck.id === item.id) ? 'heart' : 'heart-outline'}
+                  size={22}
+                  color={favoriteDecks.some(deck => deck.id === item.id) ? '#E74C3C' : '#F98A21'}
+                  style={{ marginRight: 12 }}
+                />
+                <Text style={{ fontSize: 16, fontWeight: '500', color: favoriteDecks.some(deck => deck.id === item.id) ? '#E74C3C' : '#F98A21' }}>
+                  {favoriteDecks.some(deck => deck.id === item.id) ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
+                </Text>
+              </TouchableOpacity>
+              {/* Desteyi Sil sadece kendi destesi ise */}
+              {item.user_id === currentUserId && (
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                  onPress={() => handleDeleteDeck(item.id)}
+                >
+                  <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: '#E74C3C' }}>Desteyi Sil</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16 }} onPress={() => setActiveDeckMenuId(null)}>
+                <MaterialCommunityIcons name="close" size={22} color="#333" style={{ marginRight: 12 }} />
+                <Text style={{ fontSize: 16, fontWeight: '500', color: '#333' }}>Kapat</Text>
+              </TouchableOpacity>
+            </View>
+          </Modal>
         </LinearGradient>
       </TouchableOpacity>
     );
@@ -212,6 +287,71 @@ export default function LibraryScreen() {
                 </View>
               </View>
             </View>
+            <TouchableOpacity
+              style={{ position: 'absolute', bottom: 18, right: 12, zIndex: 10 }}
+              onPress={() => setActiveDeckMenuId(item.id)}
+            >
+              <MaterialCommunityIcons name="dots-vertical" size={24} color="#F98A21" />
+            </TouchableOpacity>
+            {/* Bottom Sheet Modal */}
+            <Modal
+              visible={activeDeckMenuId === item.id}
+              animationType="slide"
+              transparent
+              onRequestClose={() => setActiveDeckMenuId(null)}
+            >
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: MODAL_OVERLAY_COLOR }}
+                activeOpacity={1}
+                onPress={() => setActiveDeckMenuId(null)}
+              />
+              <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingTop: 12, paddingBottom: 32, paddingHorizontal: 24, elevation: 16 }}>
+                <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: '#e0e0e0', alignSelf: 'center', marginBottom: 16 }} />
+                {/* Düzenle en üstte, sadece kendi destesi ise */}
+                {item.user_id === currentUserId && (
+                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                    onPress={() => { setActiveDeckMenuId(null); navigation.navigate('DeckEdit', { deck: item }); }}
+                  >
+                    <MaterialCommunityIcons name="pencil" size={22} color="#333" style={{ marginRight: 12 }} />
+                    <Text style={{ fontSize: 16, fontWeight: '500', color: '#333' }}>Düzenle</Text>
+                  </TouchableOpacity>
+                )}
+                {/* Favorilere Ekle/Çıkar herkes için */}
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                  onPress={async () => {
+                    if (favoriteDecks.some(deck => deck.id === item.id)) {
+                      await handleRemoveFavoriteDeck(item.id);
+                    } else {
+                      await handleAddFavoriteDeck(item.id);
+                    }
+                    setActiveDeckMenuId(null);
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name={favoriteDecks.some(deck => deck.id === item.id) ? 'heart' : 'heart-outline'}
+                    size={22}
+                    color={favoriteDecks.some(deck => deck.id === item.id) ? '#E74C3C' : '#F98A21'}
+                    style={{ marginRight: 12 }}
+                  />
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: favoriteDecks.some(deck => deck.id === item.id) ? '#E74C3C' : '#F98A21' }}>
+                    {favoriteDecks.some(deck => deck.id === item.id) ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
+                  </Text>
+                </TouchableOpacity>
+                {/* Desteyi Sil sadece kendi destesi ise */}
+                {item.user_id === currentUserId && (
+                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                    onPress={() => handleDeleteDeck(item.id)}
+                  >
+                    <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
+                    <Text style={{ fontSize: 16, fontWeight: '500', color: '#E74C3C' }}>Desteyi Sil</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16 }} onPress={() => setActiveDeckMenuId(null)}>
+                  <MaterialCommunityIcons name="close" size={22} color="#333" style={{ marginRight: 12 }} />
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: '#333' }}>Kapat</Text>
+                </TouchableOpacity>
+              </View>
+            </Modal>
           </LinearGradient>
         </TouchableOpacity>
       );
@@ -293,6 +433,71 @@ export default function LibraryScreen() {
       }).start();
     }
   }, [showCardModal]);
+
+  // Kart detay modalı açıldığında StatusBar'ı güncelle
+  useEffect(() => {
+    if (showCardModal) {
+      StatusBar.setBarStyle('light-content', true);
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('rgba(0,0,0,0.35)', true);
+      }
+    } else {
+      StatusBar.setBarStyle('dark-content', true);
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('#fff', true);
+      }
+    }
+  }, [showCardModal]);
+
+  // StatusBar'ı modal state'ine göre güncelle
+  useEffect(() => {
+    if (activeDeckMenuId) {
+      StatusBar.setBarStyle('light-content', true);
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor(MODAL_OVERLAY_COLOR, true);
+      }
+    } else {
+      StatusBar.setBarStyle('dark-content', true);
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor(STATUSBAR_DEFAULT_COLOR, true);
+      }
+    }
+  }, [activeDeckMenuId]);
+
+  // Favori deste ekleme/çıkarma fonksiyonları
+  const handleAddFavoriteDeck = async (deckId) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from('favorite_decks').insert({ user_id: user.id, deck_id: deckId });
+    const decks = await getFavoriteDecks(user.id);
+    setFavoriteDecks(decks || []);
+  };
+  const handleRemoveFavoriteDeck = async (deckId) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from('favorite_decks').delete().eq('user_id', user.id).eq('deck_id', deckId);
+    const decks = await getFavoriteDecks(user.id);
+    setFavoriteDecks(decks || []);
+  };
+
+  // Deste silme fonksiyonu
+  const handleDeleteDeck = (deckId) => {
+    Alert.alert(
+      'Deste Silinsin mi?',
+      'Bu işlemi geri alamazsınız. Emin misiniz?',
+      [
+        { text: 'İptal', style: 'cancel' },
+        {
+          text: 'Sil',
+          style: 'destructive',
+          onPress: async () => {
+            await supabase.from('decks').delete().eq('id', deckId);
+            setMyDecks(prev => prev.filter(deck => deck.id !== deckId));
+            setFavoriteDecks(prev => prev.filter(deck => deck.id !== deckId));
+            setActiveDeckMenuId(null);
+          }
+        }
+      ]
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }] }>
@@ -423,72 +628,72 @@ export default function LibraryScreen() {
       )}
       <Modal
         visible={showCardModal && !!selectedCard}
-        animationType="none"
+        animationType="slide"
         transparent
         onRequestClose={() => setShowCardModal(false)}
       >
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' }} onPress={() => setShowCardModal(false)} />
-        <Animated.View style={{
-          backgroundColor: '#fff',
-          borderTopLeftRadius: 32,
-          borderTopRightRadius: 32,
-          paddingHorizontal: 0,
-          paddingBottom: 0,
-          minHeight: 260,
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          shadowColor: '#000',
-          shadowOpacity: 0.15,
-          shadowRadius: 16,
-          elevation: 16,
-          transform: [{ translateY: slideAnim }],
-        }}>
-          <View style={{ alignItems: 'center', marginBottom: 0, minHeight: 36, flexDirection: 'row', justifyContent: 'center', paddingTop: 18 }}>
-            <View style={{ width: 44, height: 5, backgroundColor: '#eee', borderRadius: 3, marginBottom: 0, alignSelf: 'center' }} />
-            <TouchableOpacity onPress={() => setShowCardModal(false)} style={{ position: 'absolute', right: 18, top: 8, padding: 8, zIndex: 10 }}>
-              <Ionicons name="close" size={28} color="#F98A21" />
-            </TouchableOpacity>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+          <View style={{ width: '95%', maxWidth: 500, height: 650, backgroundColor: '#fff', borderRadius: 24, padding: 18, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, elevation: 12, justifyContent: 'flex-start' }}>
+            <View style={{ flex: 1, width: '100%', paddingHorizontal: 6 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, justifyContent: 'space-between' }}>
+                <View style={{ width: 38 }} />
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text, textAlign: 'center' }]}>Kart Detayı</Text>
+                </View>
+                <TouchableOpacity onPress={() => setShowCardModal(false)} style={{ padding: 6, marginLeft: 8, right: 1 }}>
+                  <Ionicons name="close" size={26} color={colors.text} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={{ maxHeight: 600, width: '100%' }} contentContainerStyle={{ paddingBottom: 8 }} showsVerticalScrollIndicator={true}>
+                {selectedCard?.image ? (
+                  <Image source={{ uri: selectedCard.image }} style={{ width: 120, height: 160, borderRadius: 18, marginBottom: 14, resizeMode: 'contain', alignSelf: 'center', backgroundColor: '#f2f2f2' }} />
+                ) : null}
+                <View style={{ marginBottom: 0, width: '100%' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8, width: '100%', justifyContent: 'center' }}>
+                    <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
+                    <Text style={[typography.styles.subtitle, { fontWeight: 'bold', marginBottom: 4, textAlign: 'center', fontSize: 18, color: colors.buttonColor }]}>Soru</Text>
+                    <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
+                  </View>
+                  <Text style={[typography.styles.body, { fontSize: 18, marginBottom: 8, textAlign: 'center', fontWeight: 'normal', color: colors.text }]}>{selectedCard?.question}</Text>
+                  {selectedCard?.answer ? (
+                    <>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8, width: '100%', justifyContent: 'center' }}>
+                        <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
+                        <Text style={[typography.styles.subtitle, { fontWeight: 'bold', marginBottom: 4, textAlign: 'center', fontSize: 18, color: colors.buttonColor }]}>Cevap</Text>
+                        <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
+                      </View>
+                      <Text style={[typography.styles.body, { fontSize: 18, marginBottom: 8, textAlign: 'center', fontWeight: 'normal', color: colors.text }]}>{selectedCard.answer}</Text>
+                    </>
+                  ) : null}
+                  {selectedCard?.example ? (
+                    <>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8, width: '100%', justifyContent: 'center' }}>
+                        <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
+                        <Text style={[typography.styles.subtitle, { fontWeight: 'bold', marginBottom: 4, textAlign: 'center', fontSize: 18, color: colors.buttonColor }]}>Örnek</Text>
+                        <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
+                      </View>
+                      <Text style={[typography.styles.body, { fontSize: 18, marginBottom: 8, textAlign: 'center', fontWeight: 'normal', color: colors.text }]}>{selectedCard.example}</Text>
+                    </>
+                  ) : null}
+                  {selectedCard?.note ? (
+                    <>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8, width: '100%', justifyContent: 'center' }}>
+                        <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
+                        <Text style={[typography.styles.subtitle, { fontWeight: 'bold', marginBottom: 4, textAlign: 'center', fontSize: 18, color: colors.buttonColor }]}>Not</Text>
+                        <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
+                      </View>
+                      <Text style={[typography.styles.body, { fontSize: 18, marginBottom: 8, textAlign: 'center', fontWeight: 'normal', color: colors.text }]}>{selectedCard.note}</Text>
+                    </>
+                  ) : null}
+                  {selectedCard?.created_at ? (
+                    <Text style={[typography.styles.caption, { marginTop: 8, textAlign: 'center', fontSize: 16, color: colors.muted }]}>Oluşturulma {new Date(selectedCard.created_at).toLocaleString('tr-TR')}</Text>
+                  ) : null}
+                </View>
+              </ScrollView>
+            </View>
           </View>
-          <ScrollView contentContainerStyle={{ padding: 28, paddingTop: 10, paddingBottom: 36 }} showsVerticalScrollIndicator={false}>
-            {selectedCard?.image && (
-              <Image source={{ uri: selectedCard.image }} style={{ width: 140, height: 180, borderRadius: 12, alignSelf: 'center', marginBottom: 18, resizeMode: 'cover', backgroundColor: '#f2f2f2' }} />
-            )}
-            {/* Soru */}
-            <View style={styles.modalFieldBox}>
-              <Text style={[styles.modalLabel, { color: colors.buttonColor, ...typography.styles.caption }]}>Soru:</Text>
-              <Text style={[styles.modalValue, { color: colors.text, ...typography.styles.body }]}>{selectedCard?.question}</Text>
-            </View>
-            {/* Cevap */}
-            <View style={styles.modalFieldBox}>
-              <Text style={[styles.modalLabel, { color: colors.buttonColor, ...typography.styles.caption }]}>Cevap:</Text>
-              <Text style={[styles.modalValue, { color: colors.text, ...typography.styles.body }]}>{selectedCard?.answer}</Text>
-            </View>
-            {/* Örnek */}
-            {selectedCard?.example && (
-              <View style={styles.modalFieldBox}>
-                <Text style={[styles.modalLabel, { color: colors.buttonColor, ...typography.styles.caption }]}>Örnek:</Text>
-                <Text style={[styles.modalValue, { color: colors.text, ...typography.styles.body }]}>{selectedCard.example}</Text>
-              </View>
-            )}
-            {/* Not */}
-            {selectedCard?.note && (
-              <View style={styles.modalFieldBox}>
-                <Text style={[styles.modalLabel, { color: colors.buttonColor, ...typography.styles.caption }]}>Not:</Text>
-                <Text style={[styles.modalValue, { color: colors.text, ...typography.styles.body }]}>{selectedCard.note}</Text>
-              </View>
-            )}
-            {/* Tarih */}
-            {selectedCard?.created_at && (
-              <View style={{ alignItems: 'center', marginBottom: 8 }}>
-                <Text style={{ fontSize: 12, color: '#aaa', textAlign: 'center', ...typography.styles.caption }}>
-                  Oluşturulma: {new Date(selectedCard.created_at).toLocaleString('tr-TR')}
-                </Text>
-              </View>
-            )}
-          </ScrollView>
-        </Animated.View>
+        </View>
       </Modal>
     </View>
   );
@@ -623,7 +828,7 @@ const styles = StyleSheet.create({
   filterIconButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff8f0',
+    backgroundColor: '#ffffff',
     borderRadius: 30,
     paddingHorizontal: 11,
     paddingVertical: 10,
@@ -706,5 +911,10 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     borderWidth: 1,
     borderColor: '#ececec',
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
   },
 }); 
