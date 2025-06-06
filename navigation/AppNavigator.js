@@ -16,6 +16,7 @@ import SwipeDeckScreen from '../screens/SwipeDeckScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import ProfileAvatarButton from '../components/ProfileAvatarButton';
 import DeckEditScreen from '../screens/DeckEditScreen';
+import CustomTabBar from '../components/CustomTabBar';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -24,11 +25,13 @@ function MainTabs() {
   const { colors } = useTheme();
   return (
     <Tab.Navigator
+      tabBar={props => <CustomTabBar {...props} />}
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarShowLabel: true,
         tabBarActiveTintColor: colors.buttonColor,
         tabBarInactiveTintColor: colors.subtext,
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
           backgroundColor: '#fff',
           borderTopColor: colors.border,

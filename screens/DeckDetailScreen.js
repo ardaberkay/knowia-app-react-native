@@ -1166,10 +1166,12 @@ const styles = StyleSheet.create({
   cardItemGlass: {
     width: '100%',
     minHeight: 110,
-    backgroundColor: 'rgba(255,255,255,0.85)',
+    backgroundColor: '#fff',
     borderRadius: 16,
     marginBottom: 14,
     padding: 16,
+    borderWidth: 2,
+    borderColor: '#F98A21',
     shadowColor: '#F98A21',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.10,

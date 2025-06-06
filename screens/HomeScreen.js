@@ -385,8 +385,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    paddingTop: 40,
+    padding: 5,
+    paddingTop: 55,
+    marginRight: 12,
+    marginLeft: 12,
     backgroundColor: '#f8f8f8',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
@@ -547,6 +549,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#222',
     zIndex: 1,
+
   },
   deckProfileRow: {
     position: 'absolute',
