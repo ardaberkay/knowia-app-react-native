@@ -395,6 +395,72 @@ export default function LibraryScreen() {
                 style={{}}
               />
             </View>
+            {/* Kebap Menü İkonu */}
+            <TouchableOpacity
+              style={{ position: 'absolute', bottom: 18, right: 12, zIndex: 10 }}
+              onPress={() => setActiveDeckMenuId(item.id + '_card')}
+            >
+              <MaterialCommunityIcons name="dots-vertical" size={24} color="#F98A21" />
+            </TouchableOpacity>
+            {/* Kart Kebap Menü Modal */}
+            <Modal
+              visible={activeDeckMenuId === item.id + '_card'}
+              animationType="slide"
+              transparent
+              onRequestClose={() => setActiveDeckMenuId(null)}
+            >
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: MODAL_OVERLAY_COLOR }}
+                activeOpacity={1}
+                onPress={() => setActiveDeckMenuId(null)}
+              />
+              <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingTop: 12, paddingBottom: 32, paddingHorizontal: 24, elevation: 16 }}>
+                <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: '#e0e0e0', alignSelf: 'center', marginBottom: 16 }} />
+                {/* Kartı Düzenle (sadece kendi kartıysa) */}
+                {myDecks.some(deck => deck.id === item.deck_id) && (
+                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                    onPress={() => {
+                      setActiveDeckMenuId(null);
+                      navigation.navigate('EditCard', { card: item });
+                    }}
+                  >
+                    <MaterialCommunityIcons name="pencil" size={22} color="#333" style={{ marginRight: 12 }} />
+                    <Text style={{ fontSize: 16, fontWeight: '500', color: '#333' }}>Kartı Düzenle</Text>
+                  </TouchableOpacity>
+                )}
+                {/* Favorilerden Çıkar */}
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                  onPress={async () => {
+                    await handleRemoveFavoriteCard(item.id);
+                    setActiveDeckMenuId(null);
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name={'heart-off-outline'}
+                    size={22}
+                    color={'#E74C3C'}
+                    style={{ marginRight: 12 }}
+                  />
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: '#E74C3C' }}>
+                    Favorilerden Çıkar
+                  </Text>
+                </TouchableOpacity>
+                {/* Kartı Sil (sadece kendi kartıysa) */}
+                {myDecks.some(deck => deck.id === item.deck_id) && (
+                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                    onPress={() => handleDeleteCard(item.id)}
+                  >
+                    <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
+                    <Text style={{ fontSize: 16, fontWeight: '500', color: '#E74C3C' }}>Kartı Sil</Text>
+                  </TouchableOpacity>
+                )}
+                {/* Kapat */}
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16 }} onPress={() => setActiveDeckMenuId(null)}>
+                  <MaterialCommunityIcons name="close" size={22} color="#333" style={{ marginRight: 12 }} />
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: '#333' }}>Kapat</Text>
+                </TouchableOpacity>
+              </View>
+            </Modal>
           </LinearGradient>
         </TouchableOpacity>
       );
@@ -499,6 +565,40 @@ export default function LibraryScreen() {
     );
   };
 
+  // Favori kart ekleme/çıkarma fonksiyonları
+  const handleAddFavoriteCard = async (cardId) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from('favorite_cards').insert({ user_id: user.id, card_id: cardId });
+    const cards = await getFavoriteCards(user.id);
+    setFavoriteCards(cards || []);
+  };
+  const handleRemoveFavoriteCard = async (cardId) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from('favorite_cards').delete().eq('user_id', user.id).eq('card_id', cardId);
+    const cards = await getFavoriteCards(user.id);
+    setFavoriteCards(cards || []);
+  };
+
+  // Kart silme fonksiyonu
+  const handleDeleteCard = (cardId) => {
+    Alert.alert(
+      'Kart Silinsin mi?',
+      'Bu işlemi geri alamazsınız. Emin misiniz?',
+      [
+        { text: 'İptal', style: 'cancel' },
+        {
+          text: 'Sil',
+          style: 'destructive',
+          onPress: async () => {
+            await supabase.from('cards').delete().eq('id', cardId);
+            setFavoriteCards(prev => prev.filter(card => card.id !== cardId));
+            setActiveDeckMenuId(null);
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }] }>
       {/* Sekmeler */}
@@ -507,7 +607,7 @@ export default function LibraryScreen() {
           style={[styles.tab, activeTab === 'myDecks' && styles.activeTab]}
           onPress={() => setActiveTab('myDecks')}
         >
-          <Text style={[styles.tabText, activeTab === 'myDecks' && styles.activeTabText]}>Destlerim</Text>
+          <Text style={[styles.tabText, activeTab === 'myDecks' && styles.activeTabText]}>Destelerim</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'favorites' && styles.activeTab]}
@@ -649,47 +749,51 @@ export default function LibraryScreen() {
                 {selectedCard?.image ? (
                   <Image source={{ uri: selectedCard.image }} style={{ width: 120, height: 160, borderRadius: 18, marginBottom: 14, resizeMode: 'contain', alignSelf: 'center', backgroundColor: '#f2f2f2' }} />
                 ) : null}
-                <View style={{ marginBottom: 0, width: '100%' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8, width: '100%', justifyContent: 'center' }}>
-                    <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
-                    <Text style={[typography.styles.subtitle, { fontWeight: 'bold', marginBottom: 4, textAlign: 'center', fontSize: 18, color: colors.buttonColor }]}>Soru</Text>
-                    <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
+                {selectedCard?.question && (
+                  <View style={styles.cardFieldBox}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8, width: '100%', justifyContent: 'center' }}>
+                      <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
+                      <Text style={[typography.styles.subtitle, { fontWeight: 'bold', marginBottom: 4, textAlign: 'center', fontSize: 18, color: colors.buttonColor }]}>Soru</Text>
+                      <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
+                    </View>
+                    <Text style={[typography.styles.body, { fontSize: 18, marginBottom: 8, textAlign: 'center', fontWeight: 'normal', color: colors.text }]}>{selectedCard?.question}</Text>
                   </View>
-                  <Text style={[typography.styles.body, { fontSize: 18, marginBottom: 8, textAlign: 'center', fontWeight: 'normal', color: colors.text }]}>{selectedCard?.question}</Text>
-                  {selectedCard?.answer ? (
-                    <>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8, width: '100%', justifyContent: 'center' }}>
-                        <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
-                        <Text style={[typography.styles.subtitle, { fontWeight: 'bold', marginBottom: 4, textAlign: 'center', fontSize: 18, color: colors.buttonColor }]}>Cevap</Text>
-                        <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
-                      </View>
-                      <Text style={[typography.styles.body, { fontSize: 18, marginBottom: 8, textAlign: 'center', fontWeight: 'normal', color: colors.text }]}>{selectedCard.answer}</Text>
-                    </>
-                  ) : null}
-                  {selectedCard?.example ? (
-                    <>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8, width: '100%', justifyContent: 'center' }}>
-                        <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
-                        <Text style={[typography.styles.subtitle, { fontWeight: 'bold', marginBottom: 4, textAlign: 'center', fontSize: 18, color: colors.buttonColor }]}>Örnek</Text>
-                        <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
-                      </View>
-                      <Text style={[typography.styles.body, { fontSize: 18, marginBottom: 8, textAlign: 'center', fontWeight: 'normal', color: colors.text }]}>{selectedCard.example}</Text>
-                    </>
-                  ) : null}
-                  {selectedCard?.note ? (
-                    <>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8, width: '100%', justifyContent: 'center' }}>
-                        <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
-                        <Text style={[typography.styles.subtitle, { fontWeight: 'bold', marginBottom: 4, textAlign: 'center', fontSize: 18, color: colors.buttonColor }]}>Not</Text>
-                        <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
-                      </View>
-                      <Text style={[typography.styles.body, { fontSize: 18, marginBottom: 8, textAlign: 'center', fontWeight: 'normal', color: colors.text }]}>{selectedCard.note}</Text>
-                    </>
-                  ) : null}
-                  {selectedCard?.created_at ? (
-                    <Text style={[typography.styles.caption, { marginTop: 8, textAlign: 'center', fontSize: 16, color: colors.muted }]}>Oluşturulma {new Date(selectedCard.created_at).toLocaleString('tr-TR')}</Text>
-                  ) : null}
-                </View>
+                )}
+                {selectedCard?.answer && (
+                  <View style={styles.cardFieldBox}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8, width: '100%', justifyContent: 'center' }}>
+                      <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
+                      <Text style={[typography.styles.subtitle, { fontWeight: 'bold', marginBottom: 4, textAlign: 'center', fontSize: 18, color: colors.buttonColor }]}>Cevap</Text>
+                      <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
+                    </View>
+                    <Text style={[typography.styles.body, { fontSize: 18, marginBottom: 8, textAlign: 'center', fontWeight: 'normal', color: colors.text }]}>{selectedCard.answer}</Text>
+                  </View>
+                )}
+                {selectedCard?.example && (
+                  <View style={styles.cardFieldBox}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8, width: '100%', justifyContent: 'center' }}>
+                      <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
+                      <Text style={[typography.styles.subtitle, { fontWeight: 'bold', marginBottom: 4, textAlign: 'center', fontSize: 18, color: colors.buttonColor }]}>Örnek</Text>
+                      <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
+                    </View>
+                    <Text style={[typography.styles.body, { fontSize: 18, marginBottom: 8, textAlign: 'center', fontWeight: 'normal', color: colors.text }]}>{selectedCard.example}</Text>
+                  </View>
+                )}
+                {selectedCard?.note && (
+                  <View style={styles.cardFieldBox}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8, width: '100%', justifyContent: 'center' }}>
+                      <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
+                      <Text style={[typography.styles.subtitle, { fontWeight: 'bold', marginBottom: 4, textAlign: 'center', fontSize: 18, color: colors.buttonColor }]}>Not</Text>
+                      <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
+                    </View>
+                    <Text style={[typography.styles.body, { fontSize: 18, marginBottom: 8, textAlign: 'center', fontWeight: 'normal', color: colors.text }]}>{selectedCard.note}</Text>
+                  </View>
+                )}
+                {selectedCard?.created_at ? (
+                  <Text style={[typography.styles.caption, { marginTop: 8, textAlign: 'center', fontSize: 16, color: colors.muted }]}>
+                    Oluşturulma {new Date(selectedCard.created_at).toLocaleString('tr-TR')}
+                  </Text>
+                ) : null}
               </ScrollView>
             </View>
           </View>
@@ -916,5 +1020,18 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
+  },
+  cardFieldBox: {
+    backgroundColor: '#fffefa',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#ffe0c3',
+    shadowColor: '#F98A21',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 3,
   },
 }); 

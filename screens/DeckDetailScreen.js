@@ -447,7 +447,7 @@ export default function DeckDetailScreen({ route, navigation }) {
         <View style={styles.buttonRowModern}>
           <TouchableOpacity
             style={[styles.favButtonModern]}
-            onPress={() => RNAlert.alert('Kart Ekle', 'Kart ekleme fonksiyonu burada olacak.')}
+            onPress={() => navigation.navigate('AddCard', { deck })}
           >
             <MaterialCommunityIcons name="plus" size={22} color={colors.buttonColor} style={{ marginRight: 6 }} />
             <Text style={[styles.favButtonTextModern, typography.styles.button, { color: colors.buttonColor }]}>Kart Ekle</Text>
