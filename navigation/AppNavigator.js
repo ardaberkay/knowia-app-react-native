@@ -19,6 +19,7 @@ import DeckEditScreen from '../screens/DeckEditScreen';
 import CustomTabBar from '../components/CustomTabBar';
 import AddCardScreen from '../screens/AddCardScreen';
 import EditCardScreen from '../screens/EditCardScreen';
+import DeckCardsScreen from '../screens/DeckCardsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -123,6 +124,7 @@ export default function AppNavigator() {
           <Stack.Screen name="DeckEdit" component={DeckEditScreen} options={{ headerShown: true, title: 'Desteyi Düzenle', headerTitleAlign: 'center' }} />
           <Stack.Screen name="AddCard" component={AddCardScreen} options={{ headerShown: true, title: 'Kart Ekle', headerTitleAlign: 'center' }} />
           <Stack.Screen name="EditCard" component={EditCardScreen} options={{ headerShown: true, title: 'Kartı Düzenle', headerTitleAlign: 'center' }} />
+          <Stack.Screen name="DeckCards" component={DeckCardsScreen} options={{ headerShown: true, title: 'Kartlar', headerTitleAlign: 'center' }} />
         </>
       )}
     </Stack.Navigator>
