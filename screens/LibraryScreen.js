@@ -93,9 +93,11 @@ export default function LibraryScreen() {
   let filteredFavorites = [];
   if (favoritesFilter === 'all') {
     filteredFavorites = [
-      ...favoriteDecks.map(deck => ({ ...deck, _type: 'deck' })),
-      ...favoriteCards.map(card => ({ ...card, _type: 'card' }))
+      ...favoriteDecks.map(deck => ({ ...deck, _type: 'deck', created_at: deck.created_at })),
+      ...favoriteCards.map(card => ({ ...card, _type: 'card', created_at: card.created_at }))
     ];
+    // Favoriye eklenme zamanına göre (yeni en üstte olacak şekilde) sırala
+    filteredFavorites.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   } else if (favoritesFilter === 'decks') {
     filteredFavorites = favoriteDecks.map(deck => ({ ...deck, _type: 'deck' }));
   } else if (favoritesFilter === 'cards') {

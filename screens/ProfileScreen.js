@@ -8,7 +8,7 @@ import * as Notifications from 'expo-notifications';
 import { supabase } from '../lib/supabase';
 
 export default function ProfileScreen() {
-  const { colors } = useTheme();
+  const { colors, isDarkMode, toggleTheme } = useTheme();
   const navigation = useNavigation();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -81,7 +81,19 @@ export default function ProfileScreen() {
     { label: 'Arkadaşlarını Davet Et', onPress: handleInviteFriends },
   ];
   const appSettingsItems = [
-    { label: 'Gece Modu', onPress: () => alert('Gece Modu') },
+    {
+      label: 'Gece Modu',
+      right: (
+        <Switch
+          value={isDarkMode}
+          onValueChange={toggleTheme}
+          trackColor={{ false: '#ccc', true: '#5AA3F0' }}
+          thumbColor={isDarkMode ? colors.secondary : '#f4f3f4'}
+          ios_backgroundColor="#ccc"
+        />
+      ),
+      onPress: () => {},
+    },
     { label: 'Dil Ayarları', onPress: () => alert('Dil Ayarları') },
     {
       label: 'Bildirimlere İzin Ver',

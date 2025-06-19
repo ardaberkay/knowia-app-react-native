@@ -72,7 +72,7 @@ export default function CreateScreen() {
       style={{ flex: 1 }}
     >
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.formContainer}>
+        <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
           <BlurView intensity={90} tint="light" style={styles.inputCard}>
             <View style={styles.labelRow}>
               <Ionicons name="book" size={20} color="#F98A21" style={styles.labelIcon} />
@@ -148,7 +148,7 @@ export default function CreateScreen() {
               <Text style={[styles.startButtonTextModern, typography.styles.button]}>{loading ? 'Oluşturuluyor...' : 'Oluştur'}</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </LinearGradient>
   );

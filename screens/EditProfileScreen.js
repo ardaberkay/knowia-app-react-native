@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
 import { getCurrentUserProfile } from '../services/ProfileService';
@@ -202,75 +202,85 @@ export default function EditProfileScreen({ navigation }) {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}> 
-      <View style={styles.formContent}>
-        <View style={styles.profileRow}>
-          <Image source={imageUrl ? { uri: imageUrl } : require('../assets/avatar-default.png')} style={styles.avatarLarge} />
-          <View style={styles.avatarButtonRow}>
-            <TouchableOpacity style={[styles.removeButton]} onPress={handleRemovePhoto}>
-              <Text style={[typography.styles.button, styles.removeButtonText]}>Kaldır</Text>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+    >
+      <ScrollView
+        style={[styles.container, { backgroundColor: colors.background }]}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.formContent}>
+          <View style={styles.profileRow}>
+            <Image source={imageUrl ? { uri: imageUrl } : require('../assets/avatar-default.png')} style={styles.avatarLarge} />
+            <View style={styles.avatarButtonRow}>
+              <TouchableOpacity style={[styles.removeButton]} onPress={handleRemovePhoto}>
+                <Text style={[typography.styles.button, styles.removeButtonText]}>Kaldır</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.changeButton]} onPress={handlePickImage}>
+                <Text style={[typography.styles.button, styles.changeButtonText]}>Değiştir</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <Text style={[typography.styles.body, { color: colors.text, marginBottom: 8, marginTop: 8 }]}>Kullanıcı Adı</Text>
+          <TextInput
+            style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border }]}
+            placeholder="Kullanıcı Adı"
+            placeholderTextColor={colors.muted}
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+          />
+          <Text style={[typography.styles.body, { color: colors.text, marginBottom: 8 }]}>E-posta</Text>
+          <TextInput
+            style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border }]}
+            placeholder="E-posta"
+            placeholderTextColor={colors.muted}
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
+          <Text style={[typography.styles.body, { color: colors.text, marginBottom: 8 }]}>Yeni Şifre</Text>
+          <TextInput
+            style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border }]}
+            placeholder="Yeni Şifre (değiştirmek için doldurun)"
+            placeholderTextColor={colors.muted}
+            value={password}
+            onChangeText={setPassword}
+            autoCapitalize="none"
+            secureTextEntry
+          />
+          <TextInput
+            style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border }]}
+            placeholder="Yeni Şifreyi Tekrar Girin"
+            placeholderTextColor={colors.muted}
+            value={passwordConfirm}
+            onChangeText={setPasswordConfirm}
+            autoCapitalize="none"
+            secureTextEntry
+          />
+          <View style={styles.bottomButtonBar}>
+            <TouchableOpacity
+              style={[styles.cancelButton, { borderColor: colors.buttonColor }]}
+              onPress={handleCancel}
+              disabled={saving}
+            >
+              <Text style={[typography.styles.button, { color: colors.buttonColor }]}>İptal Et</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.changeButton]} onPress={handlePickImage}>
-              <Text style={[typography.styles.button, styles.changeButtonText]}>Değiştir</Text>
+            <TouchableOpacity
+              style={[styles.saveButton, { backgroundColor: colors.buttonColor }, saving && styles.saveButtonDisabled]}
+              onPress={handleSave}
+              disabled={saving}
+            >
+              <Text style={[typography.styles.button, { color: colors.buttonText }]}>{saving ? 'Kaydediliyor...' : 'Kaydet'}</Text>
             </TouchableOpacity>
           </View>
         </View>
-        <Text style={[typography.styles.body, { color: colors.text, marginBottom: 8, marginTop: 8 }]}>Kullanıcı Adı</Text>
-        <TextInput
-          style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border }]}
-          placeholder="Kullanıcı Adı"
-          placeholderTextColor={colors.muted}
-          value={username}
-          onChangeText={setUsername}
-          autoCapitalize="none"
-        />
-        <Text style={[typography.styles.body, { color: colors.text, marginBottom: 8 }]}>E-posta</Text>
-        <TextInput
-          style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border }]}
-          placeholder="E-posta"
-          placeholderTextColor={colors.muted}
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-        <Text style={[typography.styles.body, { color: colors.text, marginBottom: 8 }]}>Yeni Şifre</Text>
-        <TextInput
-          style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border }]}
-          placeholder="Yeni Şifre (değiştirmek için doldurun)"
-          placeholderTextColor={colors.muted}
-          value={password}
-          onChangeText={setPassword}
-          autoCapitalize="none"
-          secureTextEntry
-        />
-        <TextInput
-          style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border }]}
-          placeholder="Yeni Şifreyi Tekrar Girin"
-          placeholderTextColor={colors.muted}
-          value={passwordConfirm}
-          onChangeText={setPasswordConfirm}
-          autoCapitalize="none"
-          secureTextEntry
-        />
-      </View>
-      <View style={styles.bottomButtonBar}>
-        <TouchableOpacity
-          style={[styles.cancelButton, { borderColor: colors.buttonColor }]}
-          onPress={handleCancel}
-          disabled={saving}
-        >
-          <Text style={[typography.styles.button, { color: colors.buttonColor }]}>İptal Et</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.saveButton, { backgroundColor: colors.buttonColor }, saving && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={saving}
-        >
-          <Text style={[typography.styles.button, { color: colors.buttonText }]}>{saving ? 'Kaydediliyor...' : 'Kaydet'}</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -363,14 +373,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
     paddingHorizontal: 0,
-    paddingBottom: 24,
     paddingTop: 8,
-    backgroundColor: '#fff',
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 10,
+    marginTop: 150,
   },
   saveButton: {
     minWidth: 140,

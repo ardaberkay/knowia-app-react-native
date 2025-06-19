@@ -5,6 +5,9 @@ import { typography } from '../theme/typography';
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { supabase } from '../lib/supabase';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+import AddEditCardInlineForm from '../components/AddEditCardInlineForm';
 
 export default function DeckCardsScreen({ route, navigation }) {
   const { deck } = route.params;
@@ -22,6 +25,7 @@ export default function DeckCardsScreen({ route, navigation }) {
   const filterIconRef = useRef(null);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [editMode, setEditMode] = useState(false);
 
   const screenHeight = Dimensions.get('window').height;
 
@@ -170,146 +174,80 @@ export default function DeckCardsScreen({ route, navigation }) {
   const handleBackFromDetail = () => {
     setSelectedCard(null);
   };
-
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background, paddingHorizontal: 18, paddingTop: 18 }}>
-      {!selectedCard && (
-        <>
-          {/* Search Bar & Filter */}
-          <View style={[styles.cardsSearchBarRow, { marginBottom: 0 }]}>
-            <View style={[styles.cardsSearchBarWrapperModern, { marginRight: 0, marginBottom: 0 }]}>
-              <Ionicons name="search" size={20} color="#B0B0B0" style={[styles.cardsSearchIcon, { marginRight: 0 }]} />
-              <TextInput
-                style={[styles.cardsSearchBarModern, typography.styles.body]}
-                placeholder="Kartlarda ara..."
-                value={search}
-                onChangeText={setSearch}
-                placeholderTextColor={colors.muted}
-              />
-            </View>
-            <TouchableOpacity
-              ref={filterIconRef}
-              style={[styles.cardsFilterIconButton, { marginLeft: 8 }]}
-              onPress={() => {
-                if (filterIconRef.current) {
-                  filterIconRef.current.measureInWindow((x, y, width, height) => {
-                    setDropdownPos({ x, y, width, height });
-                    setFilterModalVisible(true);
-                  });
-                }
-              }}
-            >
-              <Ionicons name="filter" size={24} color="#F98A21" />
-            </TouchableOpacity>
+    selectedCard && editMode ? (
+      <AddEditCardInlineForm
+        card={selectedCard}
+        deck={deck}
+        onSave={updatedCard => {
+          setCards(cards.map(c => c.id === updatedCard.id ? updatedCard : c));
+          setOriginalCards(originalCards.map(c => c.id === updatedCard.id ? updatedCard : c));
+          setSelectedCard(updatedCard);
+          setEditMode(false);
+        }}
+        onCancel={() => setEditMode(false)}
+      />
+    ) : selectedCard ? (
+      <LinearGradient
+        colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ flex: 1 }}
+      >
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 18, paddingBottom: 8, flexGrow: 1 }} showsVerticalScrollIndicator={true}>
+          {/* Görsel */}
+          {selectedCard?.image ? (
+            <BlurView intensity={90} tint="light" style={detailStyles.inputCard}>
+              <View style={detailStyles.labelRow}>
+                <Ionicons name="image" size={20} color="#F98A21" style={detailStyles.labelIcon} />
+                <Text style={[detailStyles.label, typography.styles.body]}>Kart Görseli</Text>
           </View>
-          {/* Divider */}
-          <View style={{ alignItems: 'center', marginTop: 15, marginBottom: 8 }}>
-            <View style={{ width: '15%', height: 3, backgroundColor: '#E9E9E9', borderRadius: 1 }} />
+              <View style={{ alignItems: 'center', marginBottom: 8 }}>
+                <Image source={{ uri: selectedCard.image }} style={detailStyles.cardImage} />
           </View>
-        </>
-      )}
-      {/* Kartlar Listesi veya Detay */}
-      <View style={{ flex: 1, minHeight: 0 }}>
-        {selectedCard ? (
-          <>
-            <ScrollView style={{ minHeight: screenHeight * 0.7, width: '100%' }} contentContainerStyle={{ paddingBottom: 8 }} showsVerticalScrollIndicator={true}>
-              {selectedCard?.image ? (
-                <Image source={{ uri: selectedCard.image }} style={styles.cardDetailImage} />
+            </BlurView>
               ) : null}
-              <View style={styles.cardDetailBody}>
                 {/* Soru */}
-                <View style={{
-                  borderRadius: 16,
-                  padding: 16,
-                  borderWidth: 1,
-                  borderColor: '#E9E9E9',
-                  backgroundColor: '#fff',
-                  shadowColor: '#F98A21',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.10,
-                  shadowRadius: 8,
-                  elevation: 4,
-                  marginBottom: 14,
-                }}>
-                  <View style={styles.cardDetailTitleRow}>
-                    <View style={styles.cardDetailDividerLine} />
-                    <Text style={[typography.styles.subtitle, styles.cardDetailTitle, { color: colors.buttonColor }]}>Soru</Text>
-                    <View style={styles.cardDetailDividerLine} />
+          <BlurView intensity={90} tint="light" style={detailStyles.inputCard}>
+            <View style={detailStyles.labelRow}>
+              <Ionicons name="help-circle-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
+              <Text style={[detailStyles.label, typography.styles.body]}>Soru</Text>
                   </View>
-                  <Text style={[typography.styles.body, styles.cardDetailText, { color: colors.text }]}>{selectedCard?.question}</Text>
-                </View>
+            <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, backgroundColor: '#fafafa', borderRadius: 8, padding: 12 }]}>{selectedCard?.question}</Text>
+          </BlurView>
                 {/* Cevap */}
                 {selectedCard?.answer ? (
-                  <View style={{
-                    borderRadius: 16,
-                    padding: 16,
-                    borderWidth: 1,
-                    borderColor: '#E9E9E9',
-                    backgroundColor: '#fff',
-                    shadowColor: '#F98A21',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.10,
-                    shadowRadius: 8,
-                    elevation: 4,
-                    marginBottom: 14,
-                  }}>
-                    <View style={styles.cardDetailTitleRow}>
-                      <View style={styles.cardDetailDividerLine} />
-                      <Text style={[typography.styles.subtitle, styles.cardDetailTitle, { color: colors.buttonColor }]}>Cevap</Text>
-                      <View style={styles.cardDetailDividerLine} />
+            <BlurView intensity={90} tint="light" style={detailStyles.inputCard}>
+              <View style={detailStyles.labelRow}>
+                <Ionicons name="checkmark-circle-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
+                <Text style={[detailStyles.label, typography.styles.body]}>Cevap</Text>
                     </View>
-                    <Text style={[typography.styles.body, styles.cardDetailText, { color: colors.text }]}>{selectedCard.answer}</Text>
-                  </View>
+              <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, backgroundColor: '#fafafa', borderRadius: 8, padding: 12 }]}>{selectedCard.answer}</Text>
+            </BlurView>
                 ) : null}
                 {/* Örnek */}
                 {selectedCard?.example ? (
-                  <View style={{
-                    borderRadius: 16,
-                    padding: 16,
-                    borderWidth: 1,
-                    borderColor: '#E9E9E9',
-                    backgroundColor: '#fff',
-                    shadowColor: '#F98A21',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.10,
-                    shadowRadius: 8,
-                    elevation: 4,
-                    marginBottom: 14,
-                  }}>
-                    <View style={styles.cardDetailTitleRow}>
-                      <View style={styles.cardDetailDividerLine} />
-                      <Text style={[typography.styles.subtitle, styles.cardDetailTitle, { color: colors.buttonColor }]}>Örnek</Text>
-                      <View style={styles.cardDetailDividerLine} />
+            <BlurView intensity={90} tint="light" style={detailStyles.inputCard}>
+              <View style={detailStyles.labelRow}>
+                <Ionicons name="bulb-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
+                <Text style={[detailStyles.label, typography.styles.body]}>Örnek</Text>
                     </View>
-                    <Text style={[typography.styles.body, styles.cardDetailText, { color: colors.text }]}>{selectedCard.example}</Text>
-                  </View>
+              <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, backgroundColor: '#fafafa', borderRadius: 8, padding: 12 }]}>{selectedCard.example}</Text>
+            </BlurView>
                 ) : null}
                 {/* Not */}
                 {selectedCard?.note ? (
-                  <View style={{
-                    borderRadius: 16,
-                    padding: 16,
-                    borderWidth: 1,
-                    borderColor: '#E9E9E9',
-                    backgroundColor: '#fff',
-                    shadowColor: '#F98A21',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.10,
-                    shadowRadius: 8,
-                    elevation: 4,
-                    marginBottom: 14,
-                  }}>
-                    <View style={styles.cardDetailTitleRow}>
-                      <View style={styles.cardDetailDividerLine} />
-                      <Text style={[typography.styles.subtitle, styles.cardDetailTitle, { color: colors.buttonColor }]}>Not</Text>
-                      <View style={styles.cardDetailDividerLine} />
-                    </View>
-                    <Text style={[typography.styles.body, styles.cardDetailText, { color: colors.text }]}>{selectedCard.note}</Text>
-                  </View>
-                ) : null}
+            <BlurView intensity={90} tint="light" style={detailStyles.inputCard}>
+              <View style={detailStyles.labelRow}>
+                <Ionicons name="document-text-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
+                <Text style={[detailStyles.label, typography.styles.body]}>Not</Text>
               </View>
+              <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, backgroundColor: '#fafafa', borderRadius: 8, padding: 12 }]}>{selectedCard.note}</Text>
+            </BlurView>
+          ) : null}
+          {/* Oluşturulma tarihi */}
               {selectedCard?.created_at ? (
-                <Text style={[typography.styles.caption, styles.cardDetailDate, { color: colors.muted, marginTop: 24, marginBottom: 8, textAlign: 'center' }]}>Oluşturulma {new Date(selectedCard.created_at).toLocaleString('tr-TR')}</Text>
+            <Text style={[typography.styles.caption, { color: colors.muted, marginTop: 24, marginBottom: 8, textAlign: 'center', fontSize: 14 }]}>Oluşturulma {new Date(selectedCard.created_at).toLocaleString('tr-TR')}</Text>
               ) : null}
             </ScrollView>
             {/* Kart Detay Hamburger Menü Modal */}
@@ -329,7 +267,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                 {/* Kartı Düzenle sadece kendi kartıysa */}
                 {currentUserId && deck.user_id === currentUserId && (
                   <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
-                    onPress={() => { setCardMenuVisible(false); navigation.navigate('EditCard', { card: selectedCard, deck }); }}
+                onPress={() => { setCardMenuVisible(false); setEditMode(true); }}
                   >
                     <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
                     <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Kartı Düzenle</Text>
@@ -400,7 +338,110 @@ export default function DeckCardsScreen({ route, navigation }) {
                 </TouchableOpacity>
               </View>
             </Modal>
+      </LinearGradient>
+    ) : (
+      <View style={{ flex: 1, backgroundColor: colors.background, paddingHorizontal: 18, paddingTop: 18 }}>
+        {!selectedCard && (
+          <>
+            {/* Search Bar & Filter */}
+            <View style={[styles.cardsSearchBarRow, { marginBottom: 0 }]}>
+              <View style={[styles.cardsSearchBarWrapperModern, { marginRight: 0, marginBottom: 0 }]}>
+                <Ionicons name="search" size={20} color="#B0B0B0" style={[styles.cardsSearchIcon, { marginRight: 0 }]} />
+                <TextInput
+                  style={[styles.cardsSearchBarModern, typography.styles.body]}
+                  placeholder="Kartlarda ara..."
+                  value={search}
+                  onChangeText={setSearch}
+                  placeholderTextColor={colors.muted}
+                />
+              </View>
+              <TouchableOpacity
+                ref={filterIconRef}
+                style={[styles.cardsFilterIconButton, { marginLeft: 8 }]}
+                onPress={() => {
+                  if (filterIconRef.current) {
+                    filterIconRef.current.measureInWindow((x, y, width, height) => {
+                      setDropdownPos({ x, y, width, height });
+                      setFilterModalVisible(true);
+                    });
+                  }
+                }}
+              >
+                <Ionicons name="filter" size={24} color="#F98A21" />
+              </TouchableOpacity>
+            </View>
+            {/* Divider */}
+            <View style={{ alignItems: 'center', marginTop: 15, marginBottom: 8 }}>
+              <View style={{ width: '15%', height: 3, backgroundColor: '#E9E9E9', borderRadius: 1 }} />
+            </View>
           </>
+        )}
+        {/* Kartlar Listesi veya Detay */}
+        <View style={{ flex: 1, minHeight: 0 }}>
+          {selectedCard ? (
+            <LinearGradient
+              colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ flex: 1 }}
+            >
+              <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 8, flexGrow: 1 }} showsVerticalScrollIndicator={true}>
+                {/* Görsel */}
+                {selectedCard?.image ? (
+                  <BlurView intensity={90} tint="light" style={detailStyles.inputCard}>
+                    <View style={detailStyles.labelRow}>
+                      <Ionicons name="image" size={20} color="#F98A21" style={detailStyles.labelIcon} />
+                      <Text style={[detailStyles.label, typography.styles.body]}>Kart Görseli</Text>
+                    </View>
+                    <View style={{ alignItems: 'center', marginBottom: 8 }}>
+                      <Image source={{ uri: selectedCard.image }} style={detailStyles.cardImage} />
+                    </View>
+                  </BlurView>
+                ) : null}
+                {/* Soru */}
+                <BlurView intensity={90} tint="light" style={detailStyles.inputCard}>
+                  <View style={detailStyles.labelRow}>
+                    <Ionicons name="help-circle-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
+                    <Text style={[detailStyles.label, typography.styles.body]}>Soru *</Text>
+                  </View>
+                  <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, backgroundColor: '#fafafa', borderRadius: 8, padding: 12 }]}>{selectedCard?.question}</Text>
+                </BlurView>
+                {/* Cevap */}
+                {selectedCard?.answer ? (
+                  <BlurView intensity={90} tint="light" style={detailStyles.inputCard}>
+                    <View style={detailStyles.labelRow}>
+                      <Ionicons name="checkmark-circle-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
+                      <Text style={[detailStyles.label, typography.styles.body]}>Cevap *</Text>
+                    </View>
+                    <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, backgroundColor: '#fafafa', borderRadius: 8, padding: 12 }]}>{selectedCard.answer}</Text>
+                  </BlurView>
+                ) : null}
+                {/* Örnek */}
+                {selectedCard?.example ? (
+                  <BlurView intensity={90} tint="light" style={detailStyles.inputCard}>
+                    <View style={detailStyles.labelRow}>
+                      <Ionicons name="bulb-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
+                      <Text style={[detailStyles.label, typography.styles.body]}>Örnek</Text>
+                    </View>
+                    <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, backgroundColor: '#fafafa', borderRadius: 8, padding: 12 }]}>{selectedCard.example}</Text>
+                  </BlurView>
+                ) : null}
+                {/* Not */}
+                {selectedCard?.note ? (
+                  <BlurView intensity={90} tint="light" style={detailStyles.inputCard}>
+                    <View style={detailStyles.labelRow}>
+                      <Ionicons name="document-text-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
+                      <Text style={[detailStyles.label, typography.styles.body]}>Not</Text>
+                    </View>
+                    <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, backgroundColor: '#fafafa', borderRadius: 8, padding: 12 }]}>{selectedCard.note}</Text>
+                  </BlurView>
+                ) : null}
+                {/* Oluşturulma tarihi */}
+                {selectedCard?.created_at ? (
+                  <Text style={[typography.styles.caption, { color: colors.muted, marginTop: 24, marginBottom: 8, textAlign: 'center', fontSize: 14 }]}>Oluşturulma {new Date(selectedCard.created_at).toLocaleString('tr-TR')}</Text>
+                ) : null}
+              </ScrollView>
+            </LinearGradient>
         ) : (
           <FlatList
             data={filteredCards}
@@ -412,7 +453,10 @@ export default function DeckCardsScreen({ route, navigation }) {
               <TouchableOpacity
                 style={styles.cardItemGlass}
                 activeOpacity={0.93}
-                onPress={() => setSelectedCard(item)}
+                  onPress={() => {
+                    setEditMode(false);
+                    setSelectedCard(item);
+                  }}
               >
                 <View style={styles.cardTopRow}>
                   <View style={styles.cardTextCol}>
@@ -442,6 +486,7 @@ export default function DeckCardsScreen({ route, navigation }) {
         )}
       </View>
     </View>
+    )
   );
 }
 
@@ -604,3 +649,43 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 }); 
+
+
+const detailStyles = StyleSheet.create({
+  inputCard: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 18,
+    marginHorizontal: 18,
+    backgroundColor: 'rgba(255,255,255,0.85)',
+    shadowColor: '#F98A21',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 8,
+    elevation: 4,
+    overflow: 'hidden',
+    alignSelf: 'auto',
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  labelIcon: {
+    marginRight: 8,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  cardImage: {
+    width: 120,
+    height: 160,
+    borderRadius: 18,
+    marginBottom: 8,
+    resizeMode: 'contain',
+    backgroundColor: '#f2f2f2',
+    alignSelf: 'center',
+  },
+});
