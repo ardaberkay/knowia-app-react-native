@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ScrollView, Image, Platform, BackHandler, Modal, Alert, StatusBar, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ScrollView, Image, Platform, BackHandler, Modal, Alert, Dimensions } from 'react-native';
 import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { supabase } from '../lib/supabase';
-import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import AddEditCardInlineForm from '../components/AddEditCardInlineForm';
 
@@ -115,7 +114,7 @@ export default function DeckCardsScreen({ route, navigation }) {
   }, [navigation, selectedCard]);
 
   useEffect(() => {
-    if (selectedCard) {
+    if (selectedCard && !editMode) {
       navigation.setOptions({
         headerRight: () => (
           <TouchableOpacity onPress={() => setCardMenuVisible(true)} style={{ marginRight: 8 }}>
@@ -126,21 +125,7 @@ export default function DeckCardsScreen({ route, navigation }) {
     } else {
       navigation.setOptions({ headerRight: undefined });
     }
-  }, [selectedCard, colors.text, navigation]);
-
-  useEffect(() => {
-    if (cardMenuVisible) {
-      StatusBar.setBarStyle('light-content', true);
-      if (Platform.OS === 'android') {
-        StatusBar.setBackgroundColor('rgba(0,0,0,0.25)', true);
-      }
-    } else {
-      StatusBar.setBarStyle('dark-content', true);
-      if (Platform.OS === 'android') {
-        StatusBar.setBackgroundColor('#fff', true);
-      }
-    }
-  }, [cardMenuVisible]);
+  }, [selectedCard, editMode, colors.text, navigation]);
 
   const sortCards = (type, cardsList) => {
     if (type === 'az') {
@@ -189,7 +174,7 @@ export default function DeckCardsScreen({ route, navigation }) {
       />
     ) : selectedCard ? (
       <LinearGradient
-        colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
+        colors={colors.deckGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{ flex: 1 }}
@@ -197,53 +182,53 @@ export default function DeckCardsScreen({ route, navigation }) {
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 18, paddingBottom: 8, flexGrow: 1 }} showsVerticalScrollIndicator={true}>
           {/* Görsel */}
           {selectedCard?.image ? (
-            <BlurView intensity={90} tint="light" style={detailStyles.inputCard}>
+            <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
               <View style={detailStyles.labelRow}>
                 <Ionicons name="image" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                <Text style={[detailStyles.label, typography.styles.body]}>Kart Görseli</Text>
+                <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>Kart Görseli</Text>
           </View>
               <View style={{ alignItems: 'center', marginBottom: 8 }}>
                 <Image source={{ uri: selectedCard.image }} style={detailStyles.cardImage} />
           </View>
-            </BlurView>
+            </View>
               ) : null}
                 {/* Soru */}
-          <BlurView intensity={90} tint="light" style={detailStyles.inputCard}>
+          <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={detailStyles.labelRow}>
               <Ionicons name="help-circle-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-              <Text style={[detailStyles.label, typography.styles.body]}>Soru</Text>
+              <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>Soru</Text>
                   </View>
-            <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, backgroundColor: '#fafafa', borderRadius: 8, padding: 12 }]}>{selectedCard?.question}</Text>
-          </BlurView>
+            <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard?.question}</Text>
+          </View>
                 {/* Cevap */}
                 {selectedCard?.answer ? (
-            <BlurView intensity={90} tint="light" style={detailStyles.inputCard}>
+            <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
               <View style={detailStyles.labelRow}>
                 <Ionicons name="checkmark-circle-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                <Text style={[detailStyles.label, typography.styles.body]}>Cevap</Text>
+                <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>Cevap</Text>
                     </View>
-              <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, backgroundColor: '#fafafa', borderRadius: 8, padding: 12 }]}>{selectedCard.answer}</Text>
-            </BlurView>
+              <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard.answer}</Text>
+            </View>
                 ) : null}
                 {/* Örnek */}
                 {selectedCard?.example ? (
-            <BlurView intensity={90} tint="light" style={detailStyles.inputCard}>
+            <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
               <View style={detailStyles.labelRow}>
                 <Ionicons name="bulb-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                <Text style={[detailStyles.label, typography.styles.body]}>Örnek</Text>
+                <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>Örnek</Text>
                     </View>
-              <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, backgroundColor: '#fafafa', borderRadius: 8, padding: 12 }]}>{selectedCard.example}</Text>
-            </BlurView>
+              <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard.example}</Text>
+            </View>
                 ) : null}
                 {/* Not */}
                 {selectedCard?.note ? (
-            <BlurView intensity={90} tint="light" style={detailStyles.inputCard}>
+            <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
               <View style={detailStyles.labelRow}>
                 <Ionicons name="document-text-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                <Text style={[detailStyles.label, typography.styles.body]}>Not</Text>
+                <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>Not</Text>
               </View>
-              <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, backgroundColor: '#fafafa', borderRadius: 8, padding: 12 }]}>{selectedCard.note}</Text>
-            </BlurView>
+              <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard.note}</Text>
+            </View>
           ) : null}
           {/* Oluşturulma tarihi */}
               {selectedCard?.created_at ? (
@@ -258,15 +243,15 @@ export default function DeckCardsScreen({ route, navigation }) {
               onRequestClose={() => setCardMenuVisible(false)}
             >
               <TouchableOpacity
-                style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)' }}
+                style={{ flex: 1, backgroundColor: 'transparent' }}
                 activeOpacity={1}
                 onPress={() => setCardMenuVisible(false)}
               />
-              <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingTop: 12, paddingBottom: 32, paddingHorizontal: 24, elevation: 16 }}>
-                <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: '#e0e0e0', alignSelf: 'center', marginBottom: 16 }} />
+              <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.background, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingTop: 12, paddingBottom: 32, paddingHorizontal: 24, elevation: 16 }}>
+                <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 }} />
                 {/* Kartı Düzenle sadece kendi kartıysa */}
                 {currentUserId && deck.user_id === currentUserId && (
-                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
                 onPress={() => { setCardMenuVisible(false); setEditMode(true); }}
                   >
                     <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
@@ -274,7 +259,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                   </TouchableOpacity>
                 )}
                 {/* Favorilere Ekle/Çıkar */}
-                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
                   onPress={async () => {
                     setFavLoading(true);
                     try {
@@ -309,7 +294,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                 </TouchableOpacity>
                 {/* Kartı Sil sadece kendi kartıysa */}
                 {currentUserId && deck.user_id === currentUserId && (
-                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
                     onPress={async () => {
                       Alert.alert('Kartı Sil', 'Bu kartı silmek istediğine emin misin?', [
                         { text: 'İptal', style: 'cancel' },
@@ -388,53 +373,53 @@ export default function DeckCardsScreen({ route, navigation }) {
               <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 8, flexGrow: 1 }} showsVerticalScrollIndicator={true}>
                 {/* Görsel */}
                 {selectedCard?.image ? (
-                  <BlurView intensity={90} tint="light" style={detailStyles.inputCard}>
+                  <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
                     <View style={detailStyles.labelRow}>
                       <Ionicons name="image" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                      <Text style={[detailStyles.label, typography.styles.body]}>Kart Görseli</Text>
+                      <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>Kart Görseli</Text>
                     </View>
                     <View style={{ alignItems: 'center', marginBottom: 8 }}>
                       <Image source={{ uri: selectedCard.image }} style={detailStyles.cardImage} />
                     </View>
-                  </BlurView>
+                  </View>
                 ) : null}
                 {/* Soru */}
-                <BlurView intensity={90} tint="light" style={detailStyles.inputCard}>
+                <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
                   <View style={detailStyles.labelRow}>
                     <Ionicons name="help-circle-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                    <Text style={[detailStyles.label, typography.styles.body]}>Soru *</Text>
+                    <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>Soru*</Text>
                   </View>
-                  <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, backgroundColor: '#fafafa', borderRadius: 8, padding: 12 }]}>{selectedCard?.question}</Text>
-                </BlurView>
+                  <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard?.question}</Text>
+                </View>
                 {/* Cevap */}
                 {selectedCard?.answer ? (
-                  <BlurView intensity={90} tint="light" style={detailStyles.inputCard}>
+                  <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
                     <View style={detailStyles.labelRow}>
                       <Ionicons name="checkmark-circle-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                      <Text style={[detailStyles.label, typography.styles.body]}>Cevap *</Text>
+                      <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>Cevap *</Text>
                     </View>
-                    <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, backgroundColor: '#fafafa', borderRadius: 8, padding: 12 }]}>{selectedCard.answer}</Text>
-                  </BlurView>
+                    <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard.answer}</Text>
+                  </View>
                 ) : null}
                 {/* Örnek */}
                 {selectedCard?.example ? (
-                  <BlurView intensity={90} tint="light" style={detailStyles.inputCard}>
+                  <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
                     <View style={detailStyles.labelRow}>
                       <Ionicons name="bulb-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                      <Text style={[detailStyles.label, typography.styles.body]}>Örnek</Text>
+                      <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>Örnek</Text>
                     </View>
-                    <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, backgroundColor: '#fafafa', borderRadius: 8, padding: 12 }]}>{selectedCard.example}</Text>
-                  </BlurView>
+                    <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard.example}</Text>
+                  </View>
                 ) : null}
                 {/* Not */}
                 {selectedCard?.note ? (
-                  <BlurView intensity={90} tint="light" style={detailStyles.inputCard}>
+                  <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
                     <View style={detailStyles.labelRow}>
                       <Ionicons name="document-text-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                      <Text style={[detailStyles.label, typography.styles.body]}>Not</Text>
+                      <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>Not</Text>
                     </View>
-                    <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, backgroundColor: '#fafafa', borderRadius: 8, padding: 12 }]}>{selectedCard.note}</Text>
-                  </BlurView>
+                    <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard.note}</Text>
+                  </View>
                 ) : null}
                 {/* Oluşturulma tarihi */}
                 {selectedCard?.created_at ? (
@@ -451,7 +436,7 @@ export default function DeckCardsScreen({ route, navigation }) {
             ListEmptyComponent={<Text style={[typography.styles.caption, { color: colors.muted, marginLeft: 8, marginTop: 12 }]}>Bu destede henüz kart yok.</Text>}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={styles.cardItemGlass}
+                style={[styles.cardItemGlass, {backgroundColor: colors.cards}]}
                 activeOpacity={0.93}
                   onPress={() => {
                     setEditMode(false);
@@ -464,7 +449,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                       {item.question}
                     </Text>
                     <View style={styles.cardDivider} />
-                    <Text style={[styles.cardAnswer, typography.styles.body]} numberOfLines={1} ellipsizeMode="tail">
+                    <Text style={[styles.cardAnswer, typography.styles.body, {color: colors.text}]} numberOfLines={1} ellipsizeMode="tail">
                       {item.answer}
                     </Text>
                   </View>
@@ -574,7 +559,7 @@ const styles = StyleSheet.create({
   },
   cardAnswer: {
     fontSize: 15,
-    color: '#333',
+
     marginTop: 2,
   },
   cardTopRow: {
@@ -677,7 +662,6 @@ const detailStyles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
   },
   cardImage: {
     width: 120,

@@ -20,6 +20,7 @@ import CustomTabBar from '../components/CustomTabBar';
 import AddCardScreen from '../screens/AddCardScreen';
 import EditCardScreen from '../screens/EditCardScreen';
 import DeckCardsScreen from '../screens/DeckCardsScreen';
+import CardDetailScreen from '../screens/CardDetailScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -36,10 +37,13 @@ function MainTabs() {
         tabBarInactiveTintColor: colors.subtext,
         tabBarHideOnKeyboard: true,
         tabBarStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: colors.tabBarBackground,
           borderTopColor: colors.border,
           borderTopWidth: 1,
           height: 64,
+        },
+        headerStyle: {
+          backgroundColor: colors.tabBarBackground,
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -93,6 +97,7 @@ function MainTabs() {
 }
 
 export default function AppNavigator() {
+  const { colors } = useTheme();
   const { session, loading } = useAuth();
 
   if (loading) {
@@ -100,7 +105,7 @@ export default function AppNavigator() {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, headerStyle: { backgroundColor: colors.tabBarBackground } }}>
       {!session ? (
         <>
           <Stack.Screen name="Login" component={LoginScreen} />
@@ -125,6 +130,7 @@ export default function AppNavigator() {
           <Stack.Screen name="AddCard" component={AddCardScreen} options={{ headerShown: true, title: 'Kart Ekle', headerTitleAlign: 'center' }} />
           <Stack.Screen name="EditCard" component={EditCardScreen} options={{ headerShown: true, title: 'Kartı Düzenle', headerTitleAlign: 'center' }} />
           <Stack.Screen name="DeckCards" component={DeckCardsScreen} options={{ headerShown: true, title: 'Kartlar', headerTitleAlign: 'center' }} />
+          <Stack.Screen name="CardDetail" component={CardDetailScreen} options={{ headerShown: true, title: 'Kart Detayı', headerTitleAlign: 'center' }} />
         </>
       )}
     </Stack.Navigator>

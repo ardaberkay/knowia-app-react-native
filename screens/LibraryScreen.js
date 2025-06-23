@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, TextInput, Modal, Pressable, Platform, Image, ScrollView, Animated, Easing, StatusBar, Alert } from 'react-native';
-import { useTheme, useNavigation } from '@react-navigation/native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, TextInput, Modal, Platform, Image, Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
 import { getDecksByCategory } from '../services/DeckService';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -8,11 +9,8 @@ import { getFavoriteDecks, getFavoriteCards } from '../services/FavoriteService'
 import { supabase } from '../lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const MODAL_OVERLAY_COLOR = 'rgba(0,0,0,0.18)';
-const STATUSBAR_DEFAULT_COLOR = '#fff';
-
 export default function LibraryScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState('myDecks');
   const [search, setSearch] = useState('');
@@ -26,9 +24,6 @@ export default function LibraryScreen() {
   const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const filterIconRef = useRef(null);
   const [favoritesFetched, setFavoritesFetched] = useState(false);
-  const [showCardModal, setShowCardModal] = useState(false);
-  const [selectedCard, setSelectedCard] = useState(null);
-  const slideAnim = useRef(new Animated.Value(0)).current;
   const [activeDeckMenuId, setActiveDeckMenuId] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
 
@@ -138,7 +133,7 @@ export default function LibraryScreen() {
         onPress={() => navigation.navigate('DeckDetail', { deck: item })}
       >
         <LinearGradient
-          colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
+          colors={colors.deckGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.deckCardGradient}
@@ -179,23 +174,23 @@ export default function LibraryScreen() {
             onRequestClose={() => setActiveDeckMenuId(null)}
           >
             <TouchableOpacity
-              style={{ flex: 1, backgroundColor: MODAL_OVERLAY_COLOR }}
+              style={{ flex: 1, backgroundColor: 'transparent' }}
               activeOpacity={1}
               onPress={() => setActiveDeckMenuId(null)}
             />
-            <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingTop: 12, paddingBottom: 32, paddingHorizontal: 24, elevation: 16 }}>
-              <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: '#e0e0e0', alignSelf: 'center', marginBottom: 16 }} />
+            <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.background, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingTop: 12, paddingBottom: 32, paddingHorizontal: 24, elevation: 16 }}>
+              <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 }} />
               {/* Düzenle en üstte, sadece kendi destesi ise */}
               {item.user_id === currentUserId && (
-                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
                   onPress={() => { setActiveDeckMenuId(null); navigation.navigate('DeckEdit', { deck: item }); }}
                 >
-                  <MaterialCommunityIcons name="pencil" size={22} color="#333" style={{ marginRight: 12 }} />
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: '#333' }}>Düzenle</Text>
+                  <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Düzenle</Text>
                 </TouchableOpacity>
               )}
               {/* Favorilere Ekle/Çıkar herkes için */}
-              <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+              <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
                 onPress={async () => {
                   if (favoriteDecks.some(deck => deck.id === item.id)) {
                     await handleRemoveFavoriteDeck(item.id);
@@ -208,16 +203,16 @@ export default function LibraryScreen() {
                 <MaterialCommunityIcons
                   name={favoriteDecks.some(deck => deck.id === item.id) ? 'heart' : 'heart-outline'}
                   size={22}
-                  color={favoriteDecks.some(deck => deck.id === item.id) ? '#E74C3C' : '#F98A21'}
+                  color={favoriteDecks.some(deck => deck.id === item.id) ? '#F98A21' : colors.text}
                   style={{ marginRight: 12 }}
                 />
-                <Text style={{ fontSize: 16, fontWeight: '500', color: favoriteDecks.some(deck => deck.id === item.id) ? '#E74C3C' : '#F98A21' }}>
+                <Text style={{ fontSize: 16, fontWeight: '500', color: favoriteDecks.some(deck => deck.id === item.id) ? '#F98A21' : colors.text }}>
                   {favoriteDecks.some(deck => deck.id === item.id) ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
                 </Text>
               </TouchableOpacity>
               {/* Desteyi Sil sadece kendi destesi ise */}
               {item.user_id === currentUserId && (
-                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
                   onPress={() => handleDeleteDeck(item.id)}
                 >
                   <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
@@ -225,8 +220,8 @@ export default function LibraryScreen() {
                 </TouchableOpacity>
               )}
               <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16 }} onPress={() => setActiveDeckMenuId(null)}>
-                <MaterialCommunityIcons name="close" size={22} color="#333" style={{ marginRight: 12 }} />
-                <Text style={{ fontSize: 16, fontWeight: '500', color: '#333' }}>Kapat</Text>
+                <MaterialCommunityIcons name="close" size={22} color={colors.text} style={{ marginRight: 12 }} />
+                <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Kapat</Text>
               </TouchableOpacity>
             </View>
           </Modal>
@@ -254,7 +249,7 @@ export default function LibraryScreen() {
           onPress={() => navigation.navigate('DeckDetail', { deck: item })}
         >
           <LinearGradient
-            colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
+            colors={colors.deckGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.deckCardGradient}
@@ -303,23 +298,23 @@ export default function LibraryScreen() {
               onRequestClose={() => setActiveDeckMenuId(null)}
             >
               <TouchableOpacity
-                style={{ flex: 1, backgroundColor: MODAL_OVERLAY_COLOR }}
+                style={{ flex: 1, backgroundColor: 'transparent' }}
                 activeOpacity={1}
                 onPress={() => setActiveDeckMenuId(null)}
               />
-              <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingTop: 12, paddingBottom: 32, paddingHorizontal: 24, elevation: 16 }}>
-                <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: '#e0e0e0', alignSelf: 'center', marginBottom: 16 }} />
+              <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.background, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingTop: 12, paddingBottom: 32, paddingHorizontal: 24, elevation: 16 }}>
+                <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 }} />
                 {/* Düzenle en üstte, sadece kendi destesi ise */}
                 {item.user_id === currentUserId && (
-                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
                     onPress={() => { setActiveDeckMenuId(null); navigation.navigate('DeckEdit', { deck: item }); }}
                   >
-                    <MaterialCommunityIcons name="pencil" size={22} color="#333" style={{ marginRight: 12 }} />
-                    <Text style={{ fontSize: 16, fontWeight: '500', color: '#333' }}>Düzenle</Text>
+                    <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
+                    <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Düzenle</Text>
                   </TouchableOpacity>
                 )}
                 {/* Favorilere Ekle/Çıkar herkes için */}
-                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
                   onPress={async () => {
                     if (favoriteDecks.some(deck => deck.id === item.id)) {
                       await handleRemoveFavoriteDeck(item.id);
@@ -332,16 +327,16 @@ export default function LibraryScreen() {
                   <MaterialCommunityIcons
                     name={favoriteDecks.some(deck => deck.id === item.id) ? 'heart' : 'heart-outline'}
                     size={22}
-                    color={favoriteDecks.some(deck => deck.id === item.id) ? '#E74C3C' : '#F98A21'}
+                    color={favoriteDecks.some(deck => deck.id === item.id) ? '#F98A21' : colors.text}
                     style={{ marginRight: 12 }}
                   />
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: favoriteDecks.some(deck => deck.id === item.id) ? '#E74C3C' : '#F98A21' }}>
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: favoriteDecks.some(deck => deck.id === item.id) ? '#F98A21' : colors.text }}>
                     {favoriteDecks.some(deck => deck.id === item.id) ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
                   </Text>
                 </TouchableOpacity>
                 {/* Desteyi Sil sadece kendi destesi ise */}
                 {item.user_id === currentUserId && (
-                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
                     onPress={() => handleDeleteDeck(item.id)}
                   >
                     <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
@@ -349,8 +344,8 @@ export default function LibraryScreen() {
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16 }} onPress={() => setActiveDeckMenuId(null)}>
-                  <MaterialCommunityIcons name="close" size={22} color="#333" style={{ marginRight: 12 }} />
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: '#333' }}>Kapat</Text>
+                  <MaterialCommunityIcons name="close" size={22} color={colors.text} style={{ marginRight: 12 }} />
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Kapat</Text>
                 </TouchableOpacity>
               </View>
             </Modal>
@@ -371,13 +366,13 @@ export default function LibraryScreen() {
             }
           ]}
           activeOpacity={0.93}
-          onPress={() => {
-            setSelectedCard(item);
-            setShowCardModal(true);
-          }}
+          onPress={() => navigation.navigate('CardDetail', { 
+            card: item,
+            isOwner: myDecks.some(deck => deck.id === item.deck_id) 
+          })}
         >
           <LinearGradient
-            colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
+            colors={colors.deckGradient}
             start={{ x: 1, y: 1 }}
             end={{ x: 0, y: 0 }}
             style={styles.deckCardGradient}
@@ -412,44 +407,44 @@ export default function LibraryScreen() {
               onRequestClose={() => setActiveDeckMenuId(null)}
             >
               <TouchableOpacity
-                style={{ flex: 1, backgroundColor: MODAL_OVERLAY_COLOR }}
+                style={{ flex: 1, backgroundColor: 'transparent' }}
                 activeOpacity={1}
                 onPress={() => setActiveDeckMenuId(null)}
               />
-              <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingTop: 12, paddingBottom: 32, paddingHorizontal: 24, elevation: 16 }}>
-                <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: '#e0e0e0', alignSelf: 'center', marginBottom: 16 }} />
+              <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.background, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingTop: 12, paddingBottom: 32, paddingHorizontal: 24, elevation: 16 }}>
+                <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 }} />
                 {/* Kartı Düzenle (sadece kendi kartıysa) */}
                 {myDecks.some(deck => deck.id === item.deck_id) && (
-                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
                     onPress={() => {
                       setActiveDeckMenuId(null);
                       navigation.navigate('EditCard', { card: item });
                     }}
                   >
-                    <MaterialCommunityIcons name="pencil" size={22} color="#333" style={{ marginRight: 12 }} />
-                    <Text style={{ fontSize: 16, fontWeight: '500', color: '#333' }}>Kartı Düzenle</Text>
+                    <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
+                    <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Kartı Düzenle</Text>
                   </TouchableOpacity>
                 )}
                 {/* Favorilerden Çıkar */}
-                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
                   onPress={async () => {
                     await handleRemoveFavoriteCard(item.id);
                     setActiveDeckMenuId(null);
                   }}
                 >
                   <MaterialCommunityIcons
-                    name={'heart-off-outline'}
+                    name={'heart'}
                     size={22}
-                    color={'#E74C3C'}
+                    color={'#F98A21'}
                     style={{ marginRight: 12 }}
                   />
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: '#E74C3C' }}>
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: '#F98A21' }}>
                     Favorilerden Çıkar
                   </Text>
                 </TouchableOpacity>
                 {/* Kartı Sil (sadece kendi kartıysa) */}
                 {myDecks.some(deck => deck.id === item.deck_id) && (
-                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
                     onPress={() => handleDeleteCard(item.id)}
                   >
                     <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
@@ -458,8 +453,8 @@ export default function LibraryScreen() {
                 )}
                 {/* Kapat */}
                 <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16 }} onPress={() => setActiveDeckMenuId(null)}>
-                  <MaterialCommunityIcons name="close" size={22} color="#333" style={{ marginRight: 12 }} />
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: '#333' }}>Kapat</Text>
+                  <MaterialCommunityIcons name="close" size={22} color={colors.text} style={{ marginRight: 12 }} />
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Kapat</Text>
                 </TouchableOpacity>
               </View>
             </Modal>
@@ -480,57 +475,6 @@ export default function LibraryScreen() {
       setFilterDropdownVisible(true);
     }
   };
-
-  // Modal açılış/kapanış animasyonu
-  useEffect(() => {
-    if (showCardModal) {
-      slideAnim.setValue(400); // Başlangıçta aşağıda
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 340,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
-    } else {
-      // Modal kapanırken animasyonla aşağıya kaydır
-      Animated.timing(slideAnim, {
-        toValue: 400,
-        duration: 220,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showCardModal]);
-
-  // Kart detay modalı açıldığında StatusBar'ı güncelle
-  useEffect(() => {
-    if (showCardModal) {
-      StatusBar.setBarStyle('light-content', true);
-      if (Platform.OS === 'android') {
-        StatusBar.setBackgroundColor('rgba(0,0,0,0.35)', true);
-      }
-    } else {
-      StatusBar.setBarStyle('dark-content', true);
-      if (Platform.OS === 'android') {
-        StatusBar.setBackgroundColor('#fff', true);
-      }
-    }
-  }, [showCardModal]);
-
-  // StatusBar'ı modal state'ine göre güncelle
-  useEffect(() => {
-    if (activeDeckMenuId) {
-      StatusBar.setBarStyle('light-content', true);
-      if (Platform.OS === 'android') {
-        StatusBar.setBackgroundColor(MODAL_OVERLAY_COLOR, true);
-      }
-    } else {
-      StatusBar.setBarStyle('dark-content', true);
-      if (Platform.OS === 'android') {
-        StatusBar.setBackgroundColor(STATUSBAR_DEFAULT_COLOR, true);
-      }
-    }
-  }, [activeDeckMenuId]);
 
   // Favori deste ekleme/çıkarma fonksiyonları
   const handleAddFavoriteDeck = async (deckId) => {
@@ -606,13 +550,13 @@ export default function LibraryScreen() {
       {/* Sekmeler */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'myDecks' && styles.activeTab]}
+          style={[styles.tab, activeTab === 'myDecks' && [styles.activeTab, { backgroundColor: colors.libraryTab }]]}
           onPress={() => setActiveTab('myDecks')}
         >
           <Text style={[styles.tabText, activeTab === 'myDecks' && styles.activeTabText]}>Destelerim</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'favorites' && styles.activeTab]}
+          style={[styles.tab, activeTab === 'favorites' && [styles.activeTab, { backgroundColor: colors.libraryTab }]]}
           onPress={() => setActiveTab('favorites')}
         >
           <Text style={[styles.tabText, activeTab === 'favorites' && styles.activeTabText]}>Favorilerim</Text>
@@ -652,11 +596,12 @@ export default function LibraryScreen() {
         animationType="none"
         onRequestClose={() => setFilterDropdownVisible(false)}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setFilterDropdownVisible(false)}>
+        <TouchableOpacity style={styles.modalOverlay} onPress={() => setFilterDropdownVisible(false)} activeOpacity={1}>
           <View
             style={[
               styles.filterDropdownMenu,
               {
+                backgroundColor: colors.background,
                 position: 'absolute',
                 left: Math.max(8, dropdownPos.x + dropdownPos.width - DROPDOWN_WIDTH),
                 top: Platform.OS === 'android' ? dropdownPos.y + dropdownPos.height : dropdownPos.y + dropdownPos.height + 4,
@@ -677,7 +622,7 @@ export default function LibraryScreen() {
               </TouchableOpacity>
             ))}
           </View>
-        </Pressable>
+        </TouchableOpacity>
       </Modal>
       {/* Kartlar */}
       {activeTab === 'favorites' ? (
@@ -728,79 +673,6 @@ export default function LibraryScreen() {
           }}
         />
       )}
-      <Modal
-        visible={showCardModal && !!selectedCard}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setShowCardModal(false)}
-      >
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' }} onPress={() => setShowCardModal(false)} />
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-          <View style={{ width: '95%', maxWidth: 500, height: 650, backgroundColor: '#fff', borderRadius: 24, padding: 18, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, elevation: 12, justifyContent: 'flex-start' }}>
-            <View style={{ flex: 1, width: '100%', paddingHorizontal: 6 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, justifyContent: 'space-between' }}>
-                <View style={{ width: 38 }} />
-                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text, textAlign: 'center' }]}>Kart Detayı</Text>
-                </View>
-                <TouchableOpacity onPress={() => setShowCardModal(false)} style={{ padding: 6, marginLeft: 8, right: 1 }}>
-                  <Ionicons name="close" size={26} color={colors.text} />
-                </TouchableOpacity>
-              </View>
-              <ScrollView style={{ maxHeight: 600, width: '100%' }} contentContainerStyle={{ paddingBottom: 8 }} showsVerticalScrollIndicator={true}>
-                {selectedCard?.image ? (
-                  <Image source={{ uri: selectedCard.image }} style={{ width: 120, height: 160, borderRadius: 18, marginBottom: 14, resizeMode: 'contain', alignSelf: 'center', backgroundColor: '#f2f2f2' }} />
-                ) : null}
-                {selectedCard?.question && (
-                  <View style={styles.cardFieldBox}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8, width: '100%', justifyContent: 'center' }}>
-                      <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
-                      <Text style={[typography.styles.subtitle, { fontWeight: 'bold', marginBottom: 4, textAlign: 'center', fontSize: 18, color: colors.buttonColor }]}>Soru</Text>
-                      <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
-                    </View>
-                    <Text style={[typography.styles.body, { fontSize: 18, marginBottom: 8, textAlign: 'center', fontWeight: 'normal', color: colors.text }]}>{selectedCard?.question}</Text>
-                  </View>
-                )}
-                {selectedCard?.answer && (
-                  <View style={styles.cardFieldBox}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8, width: '100%', justifyContent: 'center' }}>
-                      <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
-                      <Text style={[typography.styles.subtitle, { fontWeight: 'bold', marginBottom: 4, textAlign: 'center', fontSize: 18, color: colors.buttonColor }]}>Cevap</Text>
-                      <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
-                    </View>
-                    <Text style={[typography.styles.body, { fontSize: 18, marginBottom: 8, textAlign: 'center', fontWeight: 'normal', color: colors.text }]}>{selectedCard.answer}</Text>
-                  </View>
-                )}
-                {selectedCard?.example && (
-                  <View style={styles.cardFieldBox}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8, width: '100%', justifyContent: 'center' }}>
-                      <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
-                      <Text style={[typography.styles.subtitle, { fontWeight: 'bold', marginBottom: 4, textAlign: 'center', fontSize: 18, color: colors.buttonColor }]}>Örnek</Text>
-                      <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
-                    </View>
-                    <Text style={[typography.styles.body, { fontSize: 18, marginBottom: 8, textAlign: 'center', fontWeight: 'normal', color: colors.text }]}>{selectedCard.example}</Text>
-                  </View>
-                )}
-                {selectedCard?.note && (
-                  <View style={styles.cardFieldBox}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8, width: '100%', justifyContent: 'center' }}>
-                      <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
-                      <Text style={[typography.styles.subtitle, { fontWeight: 'bold', marginBottom: 4, textAlign: 'center', fontSize: 18, color: colors.buttonColor }]}>Not</Text>
-                      <View style={{ flex: 1, height: 1, backgroundColor: '#ffe0c3', borderRadius: 1, marginHorizontal: 14 }} />
-                    </View>
-                    <Text style={[typography.styles.body, { fontSize: 18, marginBottom: 8, textAlign: 'center', fontWeight: 'normal', color: colors.text }]}>{selectedCard.note}</Text>
-                  </View>
-                )}
-                {selectedCard?.created_at ? (
-                  <Text style={[typography.styles.caption, { marginTop: 8, textAlign: 'center', fontSize: 16, color: colors.muted }]}>
-                    Oluşturulma {new Date(selectedCard.created_at).toLocaleString('tr-TR')}
-                  </Text>
-                ) : null}
-              </ScrollView>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -824,7 +696,6 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomColor: '#F98A21',
-    backgroundColor: '#fff8f0',
   },
   tabText: {
     fontSize: 16,
@@ -934,7 +805,7 @@ const styles = StyleSheet.create({
   filterIconButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: 'transparent',
     borderRadius: 30,
     paddingHorizontal: 11,
     paddingVertical: 10,
@@ -946,7 +817,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     top: 40,
-    backgroundColor: '#fff',
     borderRadius: 12,
     paddingVertical: 6,
     paddingHorizontal: 0,
@@ -977,7 +847,6 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-
     justifyContent: 'flex-end',
   },
   deckCardGradient: {

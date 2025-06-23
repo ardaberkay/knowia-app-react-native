@@ -11,6 +11,13 @@ export const lightColors = {
     muted: '#8C8C8C',
     buttonText: '#FFFFFF',
     tabBarBackground: '#FFFFFF',
+    deckGradient: ["#fff8f0", "#ffe0c3", "#f9b97a"],
+    appbar: '#ffffff',
+    title: '#000000',
+    libraryTab: '#fff8f0',
+    blurView: 'rgba(255,255,255,0.85)',
+    blurViewShadow: '#F98A21',
+    cards: '#ffffff'
 };
 
 export const darkColors = {
@@ -20,10 +27,17 @@ export const darkColors = {
     secondary: '#2F80ED',
     text: '#FFFFFF',
     subtext: '#E0E0E0',
-    border: '#3A3A3A',
+    border: '#7A7A7A',
     success: '#27AE60',
     error: '#EB5757',
     muted: '#BDBDBD',
     buttonText: '#FFFFFF',
     tabBarBackground: '#1C1C1C',
+    deckGradient: ['#2C2C2C', '#4A3E2D', '#F98A21'],
+    appbar: '#1C1C1C',
+    title: '#FFFFFF',
+    libraryTab: '#2C2C2C',
+    blurView: 'rgba(0,0,0,0.4)',
+    blurViewShadow: 'rgba(0,0,0,0.1)',
+    cards: '#1E1E1E'
 };

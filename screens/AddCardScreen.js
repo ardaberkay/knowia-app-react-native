@@ -3,7 +3,6 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Image, Keyb
 import { supabase } from '../lib/supabase';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { typography } from '../theme/typography';
 import { useTheme } from '../theme/theme';
@@ -98,17 +97,17 @@ export default function AddCardScreen() {
 
   return (
     <LinearGradient
-      colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
+      colors={colors.deckGradient}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={{ flex: 1 }}
     >
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.formContainer}>
-          <BlurView intensity={90} tint="light" style={styles.inputCard}>
+          <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="image" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body]}>Kart Görseli</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Kart Görseli</Text>
             </View>
             {image ? (
               <View style={{ alignItems: 'center', marginBottom: 8 }}>
@@ -123,59 +122,63 @@ export default function AddCardScreen() {
                 <Text style={styles.addImageButtonText}>Fotoğraf Ekle</Text>
               </TouchableOpacity>
             )}
-          </BlurView>
-          <BlurView intensity={90} tint="light" style={styles.inputCard}>
+          </View>
+          <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="help-circle-outline" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body]}>Soru *</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Soru *</Text>
             </View>
             <TextInput
-              style={[styles.input, typography.styles.body]}
+              style={[styles.input, typography.styles.body, {color: colors.text, borderColor: colors.border}]}
               placeholder="Kartın sorusu"
+              placeholderTextColor={colors.muted}
               value={question}
               onChangeText={setQuestion}
               multiline
             />
-          </BlurView>
-          <BlurView intensity={90} tint="light" style={styles.inputCard}>
+          </View>
+          <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="checkmark-circle-outline" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body]}>Cevap *</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Cevap *</Text>
             </View>
             <TextInput
-              style={[styles.input, typography.styles.body]}
+              style={[styles.input, typography.styles.body, {color: colors.text, borderColor: colors.border}]}
               placeholder="Kartın cevabı"
+              placeholderTextColor={colors.muted}
               value={answer}
               onChangeText={setAnswer}
               multiline
             />
-          </BlurView>
-          <BlurView intensity={90} tint="light" style={styles.inputCard}>
+          </View>
+          <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="bulb-outline" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body]}>Örnek</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Örnek</Text>
             </View>
             <TextInput
-              style={[styles.input, typography.styles.body]}
+              style={[styles.input, typography.styles.body, {color: colors.text, borderColor: colors.border}]}
               placeholder="Örnek cümle (opsiyonel)"
+              placeholderTextColor={colors.muted}
               value={example}
               onChangeText={setExample}
               multiline
             />
-          </BlurView>
-          <BlurView intensity={90} tint="light" style={styles.inputCard}>
+          </View>
+          <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="document-text-outline" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body]}>Not</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Not</Text>
             </View>
             <TextInput
-              style={[styles.input, typography.styles.body]}
+              style={[styles.input, typography.styles.body, {color: colors.text, borderColor: colors.border}]}
               placeholder="Not (opsiyonel)"
+              placeholderTextColor={colors.muted}
               value={note}
               onChangeText={setNote}
               multiline
             />
-          </BlurView>
+          </View>
           <View style={styles.buttonRowModern}>
             <TouchableOpacity
               style={[styles.startButtonModern, loading && { opacity: 0.7 }]}
@@ -205,8 +208,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginBottom: 18,
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    shadowColor: '#F98A21',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.10,
     shadowRadius: 8,
@@ -224,16 +225,13 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#eee',
     borderRadius: 8,
     padding: 12,
     marginBottom: 0,
     fontSize: 16,
-    backgroundColor: '#fafafa',
   },
   cardImage: {
     width: 120,

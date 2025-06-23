@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, Modal, StatusBar, FlatList, TextInput, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, Modal, FlatList, TextInput, Pressable, Image } from 'react-native';
 import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
 import { setDeckStarted } from '../services/DeckService';
@@ -8,7 +8,6 @@ import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Alert as RNAlert } from 'react-native';
 
@@ -142,20 +141,6 @@ export default function DeckDetailScreen({ route, navigation }) {
     }
   }, [cardsModalVisible]);
 
-  useEffect(() => {
-    if (cardsModalVisible) {
-      StatusBar.setBarStyle('light-content', true);
-      if (Platform.OS === 'android') {
-        StatusBar.setBackgroundColor('rgba(0,0,0,0.18)', true);
-      }
-    } else {
-      StatusBar.setBarStyle('dark-content', true);
-      if (Platform.OS === 'android') {
-        StatusBar.setBackgroundColor('#fff', true);
-      }
-    }
-  }, [cardsModalVisible]);
-
   const handleStart = async () => {
     try {
       await setDeckStarted(deck.id);
@@ -265,25 +250,6 @@ export default function DeckDetailScreen({ route, navigation }) {
     });
   }, [navigation, colors.text]);
 
-  // StatusBar kontrolü (modal açıkken uygun şekilde değiştir)
-  React.useEffect(() => {
-    if (menuVisible) {
-      if (Platform.OS === 'android') {
-        StatusBar.setBarStyle('light-content');
-        StatusBar.setBackgroundColor('rgba(0,0,0,0.25)');
-      } else {
-        StatusBar.setBarStyle('light-content');
-      }
-    } else {
-      if (Platform.OS === 'android') {
-        StatusBar.setBarStyle('dark-content');
-        StatusBar.setBackgroundColor('#fff');
-      } else {
-        StatusBar.setBarStyle('dark-content');
-      }
-    }
-  }, [menuVisible]);
-
   const sortCards = (type, cardsList) => {
     if (type === 'az') {
       return [...cardsList].sort((a, b) => (a.question || '').localeCompare(b.question || '', 'tr'));
@@ -301,13 +267,13 @@ export default function DeckDetailScreen({ route, navigation }) {
 
   return (
     <LinearGradient
-      colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
+      colors={colors.deckGradient}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.bgGradient}
     >
       <View style={{ flex: 1, paddingHorizontal: 18 }}>
-        <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { alignItems: 'center', paddingBottom: 28, marginTop: 12, width: '100%', maxWidth: 440, alignSelf: 'center' }] }>
+        <View style={[styles.infoCardGlass, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow, alignItems: 'center', paddingBottom: 28, marginTop: 12, width: '100%', maxWidth: 440, alignSelf: 'center' }] }>
           <View style={{ width: '100%' }}>
             {editMode ? (
               <>
@@ -381,10 +347,10 @@ export default function DeckDetailScreen({ route, navigation }) {
               </TouchableOpacity>
             </View>
           )}
-        </BlurView>
+        </View>
         {/* Açıklama Kutusu (Glassmorphism) */}
         {deck.description && (
-          <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
+          <View style={[styles.infoCardGlass, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow, width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
               <MaterialCommunityIcons name="information-outline" size={20} color={colors.buttonColor} style={{ marginRight: 6}} />
               <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text}]}>Detaylar</Text>
@@ -401,10 +367,10 @@ export default function DeckDetailScreen({ route, navigation }) {
             ) : (
               <Text style={[styles.deckDescription, typography.styles.body, { color: colors.subtext }]}>{deck.description}</Text>
             )}
-          </BlurView>
+          </View>
         )}
         {/* İlerleme Kutusu (Glassmorphism) */}
-        <BlurView intensity={90} tint="light" style={[styles.infoCardGlass, { width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
+        <View style={[styles.infoCardGlass, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow, width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <MaterialCommunityIcons name="chart-bar" size={20} color={colors.buttonColor} style={{ marginRight: 6}} />
@@ -427,10 +393,10 @@ export default function DeckDetailScreen({ route, navigation }) {
               <Text style={[styles.progressText, typography.styles.caption, { color: colors.buttonColor }]}>%{Math.round(progress * 100)} Tamamlandı</Text>
             )}
           </View>
-        </BlurView>
+        </View>
         {/* Kartlar Başlığı */}
         <TouchableOpacity onPress={() => navigation.navigate('DeckCards', { deck })} activeOpacity={0.8}>
-          <View style={styles.cardsHeaderCard}>
+          <View style={[styles.cardsHeaderCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={[styles.cardsHeaderRow, { justifyContent: 'space-between', alignItems: 'center' }] }>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Ionicons name="albums-outline" size={22} color={colors.buttonColor} style={{ marginRight: 8 }} />
@@ -473,33 +439,33 @@ export default function DeckDetailScreen({ route, navigation }) {
           activeOpacity={1}
           onPress={() => setMenuVisible(false)}
         />
-        <View style={styles.bottomSheet}>
-          <View style={styles.sheetHandle} />
+        <View style={[styles.bottomSheet, { backgroundColor: colors.background }]}>
+          <View style={[styles.sheetHandle, { backgroundColor: colors.border }]} />
           {/* Desteyi Düzenle sadece sahibi ise */}
           {currentUserId && deck.user_id === currentUserId && (
-            <TouchableOpacity style={styles.sheetItem} onPress={() => { setMenuVisible(false); navigation.navigate('DeckEdit', { deck }); }}>
+            <TouchableOpacity style={[styles.sheetItem, { borderBottomColor: colors.border }]} onPress={() => { setMenuVisible(false); navigation.navigate('DeckEdit', { deck }); }}>
               <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
-              <Text style={[styles.sheetItemText]}>Desteyi Düzenle</Text>
+              <Text style={[styles.sheetItemText, { color: colors.text }]}>Desteyi Düzenle</Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity style={styles.sheetItem} onPress={() => { setMenuVisible(false); handleAddFavorite(); }}>
+          <TouchableOpacity style={[styles.sheetItem, { borderBottomColor: colors.border }]} onPress={() => { setMenuVisible(false); handleAddFavorite(); }}>
             <MaterialCommunityIcons
               name={isFavorite ? 'heart' : 'heart-outline'}
               size={22}
               color={isFavorite ? '#F98A21' : colors.text}
               style={{ marginRight: 12 }}
             />
-            <Text style={[styles.sheetItemText, isFavorite && { color: '#F98A21' }]}> 
+            <Text style={[styles.sheetItemText, { color: isFavorite ? '#F98A21' : colors.text }]}>
               {isFavorite ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.sheetItem} onPress={() => { setMenuVisible(false); /* Deste Sil fonksiyonu */ }}>
+          <TouchableOpacity style={[styles.sheetItem, { borderBottomColor: colors.border }]} onPress={() => { setMenuVisible(false); /* Deste Sil fonksiyonu */ }}>
             <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
             <Text style={[styles.sheetItemText, { color: '#E74C3C' }]}>Desteyi Sil</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.sheetItem} onPress={() => setMenuVisible(false)}>
+          <TouchableOpacity style={[styles.sheetItem, { borderBottomColor: 'transparent' }]} onPress={() => setMenuVisible(false)}>
             <MaterialCommunityIcons name="close" size={22} color={colors.text} style={{ marginRight: 12 }} />
-            <Text style={styles.sheetItemText}>Kapat</Text>
+            <Text style={[styles.sheetItemText, { color: colors.text }]}>Kapat</Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -828,8 +794,6 @@ const styles = StyleSheet.create({
     padding: 20,
     marginHorizontal: 18,
     marginBottom: 16,
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    shadowColor: '#F98A21',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.10,
     shadowRadius: 8,
@@ -909,14 +873,13 @@ const styles = StyleSheet.create({
   },
   sheetOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.25)',
+    backgroundColor: 'transparent',
   },
   bottomSheet: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#fff',
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingTop: 12,
@@ -928,7 +891,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 5,
     borderRadius: 3,
-    backgroundColor: '#e0e0e0',
     alignSelf: 'center',
     marginBottom: 16,
   },
@@ -937,22 +899,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f2f2f2',
   },
   sheetItemText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
   },
   cardsHeaderCard: {
-    backgroundColor: 'rgba(255,255,255,0.95)',
+
     borderRadius: 18,
     width: '100%',
     maxWidth: 440,
     alignSelf: 'center',
     marginTop: 18,
     padding: 16,
-    shadowColor: '#F98A21',
+
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.10,
     shadowRadius: 8,

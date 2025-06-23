@@ -46,7 +46,6 @@ function AppContent() {
       <AuthProvider>
         <NavigationContainer theme={navigationTheme}>
           <AppNavigator />
-
           <StatusBar style={isDarkMode ? "light" : "dark"} />
         </NavigationContainer>
       </AuthProvider>

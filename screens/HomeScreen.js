@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Dimensions, ActivityIndicator, Image, Modal, StatusBar, Platform } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Dimensions, ActivityIndicator, Image, Modal, Platform } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { getDecksByCategory } from '../services/DeckService';
 import { useNavigation } from '@react-navigation/native';
@@ -204,7 +204,7 @@ export default function HomeScreen() {
                 activeOpacity={0.93}
               >
                 <LinearGradient
-                  colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
+                  colors={colors.deckGradient}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.deckCardGradient}
@@ -259,26 +259,12 @@ export default function HomeScreen() {
     );
   };
 
-  useEffect(() => {
-    if (activeDeckMenuId) {
-      StatusBar.setBarStyle('light-content', true);
-      if (Platform.OS === 'android') {
-        StatusBar.setBackgroundColor('rgba(0,0,0,0.18)', true);
-      }
-    } else {
-      StatusBar.setBarStyle('dark-content', true);
-      if (Platform.OS === 'android') {
-        StatusBar.setBackgroundColor('#fff', true);
-      }
-    }
-  }, [activeDeckMenuId]);
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }] }>
-      <View style={[styles.header, { backgroundColor: '#fff', borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { backgroundColor: colors.appbar, borderBottomColor: colors.border }]}>
         <View style={styles.headerContent}>
           <View style={{ flex: 1 }} />
-          <Text style={[styles.title, typography.styles.h1, styles.centeredTitle]}>Knowia</Text>
+          <Text style={[styles.title, typography.styles.h1, styles.centeredTitle, { color: colors.title }]}>Knowia</Text>
           <TouchableOpacity
             style={styles.profileAvatarButton}
             onPress={() => navigation.navigate('Profile')}
@@ -313,31 +299,32 @@ export default function HomeScreen() {
         onRequestClose={() => setActiveDeckMenuId(null)}
       >
         <TouchableOpacity
-          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.18)' }}
+          style={{ flex: 1, backgroundColor: 'transparent' }}
           activeOpacity={1}
           onPress={() => setActiveDeckMenuId(null)}
         />
-        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingTop: 12, paddingBottom: 32, paddingHorizontal: 24, elevation: 16 }}>
-          <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: '#e0e0e0', alignSelf: 'center', marginBottom: 16 }} />
+        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.background, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingTop: 12, paddingBottom: 32, paddingHorizontal: 24, elevation: 16 }}>
+          <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 }} />
           {/* Seçili deste */}
           {(() => {
             const allDecks = Object.values(decks).flat();
             const selectedDeck = allDecks.find(d => d.id === activeDeckMenuId);
             if (!selectedDeck) return null;
+            const isFavorite = favoriteDecks.some(fav => fav.id === selectedDeck.id);
             return <>
               {/* Düzenle en üstte, sadece kendi destesi ise */}
               {selectedDeck.user_id === currentUserId && (
-                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
                   onPress={() => { setActiveDeckMenuId(null); navigation.navigate('DeckEdit', { deck: selectedDeck }); }}
                 >
-                  <MaterialCommunityIcons name="pencil" size={22} color="#333" style={{ marginRight: 12 }} />
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: '#333' }}>Düzenle</Text>
+                  <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Düzenle</Text>
                 </TouchableOpacity>
               )}
               {/* Favorilere Ekle/Çıkar herkes için */}
-              <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+              <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
                 onPress={async () => {
-                  if (favoriteDecks.some(fav => fav.id === selectedDeck.id)) {
+                  if (isFavorite) {
                     await handleRemoveFavoriteDeck(selectedDeck.id);
                   } else {
                     await handleAddFavoriteDeck(selectedDeck.id);
@@ -346,18 +333,18 @@ export default function HomeScreen() {
                 }}
               >
                 <MaterialCommunityIcons
-                  name={favoriteDecks.some(fav => fav.id === selectedDeck.id) ? 'heart' : 'heart-outline'}
+                  name={isFavorite ? 'heart' : 'heart-outline'}
                   size={22}
-                  color={favoriteDecks.some(fav => fav.id === selectedDeck.id) ? '#E74C3C' : '#F98A21'}
+                  color={isFavorite ? '#F98A21' : colors.text}
                   style={{ marginRight: 12 }}
                 />
-                <Text style={{ fontSize: 16, fontWeight: '500', color: favoriteDecks.some(fav => fav.id === selectedDeck.id) ? '#E74C3C' : '#F98A21' }}>
-                  {favoriteDecks.some(fav => fav.id === selectedDeck.id) ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
+                <Text style={{ fontSize: 16, fontWeight: '500', color: isFavorite ? '#F98A21' : colors.text }}>
+                  {isFavorite ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
                 </Text>
               </TouchableOpacity>
               {/* Desteyi Sil sadece kendi destesi ise */}
               {selectedDeck.user_id === currentUserId && (
-                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f2f2f2' }}
+                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
                   onPress={() => handleDeleteDeck(selectedDeck.id)}
                 >
                   <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
@@ -365,8 +352,8 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               )}
               <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16 }} onPress={() => setActiveDeckMenuId(null)}>
-                <MaterialCommunityIcons name="close" size={22} color="#333" style={{ marginRight: 12 }} />
-                <Text style={{ fontSize: 16, fontWeight: '500', color: '#333' }}>Kapat</Text>
+                <MaterialCommunityIcons name="close" size={22} color={colors.text} style={{ marginRight: 12 }} />
+                <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Kapat</Text>
               </TouchableOpacity>
             </>;
           })()}

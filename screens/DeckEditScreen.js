@@ -3,7 +3,6 @@ import { View, Text, TextInput, StyleSheet, Switch, TouchableOpacity, Alert, Key
 import { supabase } from '../lib/supabase';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { typography } from '../theme/typography';
 import { useTheme } from '../theme/theme';
@@ -61,67 +60,70 @@ export default function DeckEditScreen() {
 
   return (
     <LinearGradient
-      colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
+      colors={colors.deckGradient}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={{ flex: 1 }}
     >
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.formContainer}>
-          <BlurView intensity={90} tint="light" style={styles.inputCard}>
+          <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="book" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body]}>Deste Adı *</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Deste Adı *</Text>
             </View>
             <TextInput
-              style={[styles.input, typography.styles.body]}
+              style={[styles.input, typography.styles.body, {borderColor: colors.border, color: colors.text}]}
               placeholder="Örn: İngilizce"
+              placeholderTextColor={colors.muted}
               value={name}
               onChangeText={setName}
               autoFocus
             />
-          </BlurView>
-          <BlurView intensity={90} tint="light" style={styles.inputCard}>
+          </View>
+          <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="swap-horizontal" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body]}>Karşılığı</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Karşılığı</Text>
               <Text style={[styles.optional, typography.styles.caption, { color: colors.muted }]}> (opsiyonel)</Text>
             </View>
             <TextInput
-              style={[styles.input, typography.styles.body]}
+              style={[styles.input, typography.styles.body, {borderColor: colors.border, color: colors.text}]}
               placeholder="Örn: Türkçe"
+              placeholderTextColor={colors.muted}
               value={toName}
               onChangeText={setToName}
             />
-          </BlurView>
-          <BlurView intensity={90} tint="light" style={styles.inputCard}>
+          </View>
+          <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="document-text" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body]}>Açıklama</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Açıklama</Text>
               <Text style={[styles.optional, typography.styles.caption, { color: colors.muted }]}> (opsiyonel)</Text>
             </View>
             <TextInput
-              style={[styles.input, typography.styles.body, { height: 120, textAlignVertical: 'top' }]}
+              style={[styles.input, typography.styles.body, { height: 120, textAlignVertical: 'top', borderColor: colors.border, color: colors.text }]}
               placeholder="Deste hakkında açıklama..."
+              placeholderTextColor={colors.muted}
               value={description}
               onChangeText={setDescription}
               multiline
             />
-          </BlurView>
-          <BlurView intensity={90} tint="light" style={[styles.inputCard, styles.switchCard]}>
+          </View>
+          <View style={[styles.inputCard, styles.switchCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.switchRow}>
               <View style={styles.labelRow}>
                 <Ionicons name="people" size={20} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body]}>Toplulukla paylaş</Text>
+                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Toplulukla paylaş</Text>
               </View>
               <Switch
                 value={isShared}
                 onValueChange={setIsShared}
-                trackColor={{ false: '#e0e0e0', true: '#5AA3F0' }}
-                thumbColor={isShared ? colors.secondary : '#f4f3f4'}
+                trackColor={{ false: colors.border, true: colors.secondary }}
+                thumbColor={isShared ? colors.secondary : colors.card}
               />
             </View>
-          </BlurView>
+          </View>
           <View style={styles.detailsRow}>
             <TouchableOpacity onPress={handleShowDetails} activeOpacity={0.7}>
               <Text style={[styles.detailsText, typography.styles.link, { color: colors.secondary }]}>Ayrıntılar</Text>
@@ -163,8 +165,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginBottom: 18,
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    shadowColor: '#F98A21',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.10,
     shadowRadius: 8,
@@ -174,6 +174,7 @@ const styles = StyleSheet.create({
   switchCard: {
     paddingVertical: 8,
     paddingHorizontal: 16,
+    marginRight: 8,
   },
   labelRow: {
     flexDirection: 'row',
@@ -186,16 +187,13 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#eee',
     borderRadius: 8,
     padding: 12,
     marginBottom: 0,
     fontSize: 16,
-    backgroundColor: '#fafafa',
   },
   switchRow: {
     flexDirection: 'row',
