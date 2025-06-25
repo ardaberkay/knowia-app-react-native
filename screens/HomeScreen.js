@@ -33,7 +33,7 @@ function getCategoryIcon(category) {
 export default function HomeScreen() {
   const { logout } = useAuth();
   const navigation = useNavigation();
-  const { colors } = useTheme();
+  const { colors, isDarkMode } = useTheme();
   const [decks, setDecks] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -243,7 +243,7 @@ export default function HomeScreen() {
                     style={{ position: 'absolute', bottom: 8, right: 5, zIndex: 10 }}
                     onPress={() => setActiveDeckMenuId(deck.id)}
                   >
-                    <MaterialCommunityIcons name="dots-vertical" size={24} color="#F98A21" />
+                    <MaterialCommunityIcons name="dots-vertical" size={24} color={colors.orWhite} />
                   </TouchableOpacity>
                 </LinearGradient>
               </TouchableOpacity>
@@ -263,10 +263,13 @@ export default function HomeScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }] }>
       <View style={[styles.header, { backgroundColor: colors.appbar, borderBottomColor: colors.border }]}>
         <View style={styles.headerContent}>
-          <View style={{ flex: 1 }} />
-          <Text style={[styles.title, typography.styles.h1, styles.centeredTitle, { color: colors.title }]}>Knowia</Text>
+          <Image
+            source={isDarkMode ? require('../assets/logo-white.png') : require('../assets/logo-black.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
           <TouchableOpacity
-            style={styles.profileAvatarButton}
+            style={[styles.profileAvatarButton, { position: 'absolute', right: 0 }]}
             onPress={() => navigation.navigate('Profile')}
             activeOpacity={0.8}
           >
@@ -374,6 +377,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 5,
     paddingTop: 55,
+    paddingBottom: 10,
     marginRight: 12,
     marginLeft: 12,
     backgroundColor: '#f8f8f8',
@@ -383,7 +387,8 @@ const styles = StyleSheet.create({
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    position: 'relative',
     width: '100%',
   },
   title: {
@@ -430,10 +435,10 @@ const styles = StyleSheet.create({
     marginRight: 8,
     marginBottom: 8,
     shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.28,
-    shadowRadius: 18,
-    elevation: 16,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
     borderWidth: 0,
     width: 130,
     height: 180,
@@ -556,5 +561,9 @@ const styles = StyleSheet.create({
     color: '#888',
     fontWeight: '600',
     paddingRight: 40,
+  },
+  logoImage: {
+    width: 120,
+    height: 44,
   },
 }); 

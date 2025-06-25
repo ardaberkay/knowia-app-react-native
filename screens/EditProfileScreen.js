@@ -226,7 +226,7 @@ export default function EditProfileScreen({ navigation }) {
           </View>
           <Text style={[typography.styles.body, { color: colors.text, marginBottom: 8, marginTop: 8 }]}>Kullanıcı Adı</Text>
           <TextInput
-            style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border }]}
+            style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border, backgroundColor: colors.blurView }]}
             placeholder="Kullanıcı Adı"
             placeholderTextColor={colors.muted}
             value={username}
@@ -235,7 +235,7 @@ export default function EditProfileScreen({ navigation }) {
           />
           <Text style={[typography.styles.body, { color: colors.text, marginBottom: 8 }]}>E-posta</Text>
           <TextInput
-            style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border }]}
+            style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border, backgroundColor: colors.blurView }]}
             placeholder="E-posta"
             placeholderTextColor={colors.muted}
             value={email}
@@ -245,7 +245,7 @@ export default function EditProfileScreen({ navigation }) {
           />
           <Text style={[typography.styles.body, { color: colors.text, marginBottom: 8 }]}>Yeni Şifre</Text>
           <TextInput
-            style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border }]}
+            style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border, backgroundColor: colors.blurView }]}
             placeholder="Yeni Şifre (değiştirmek için doldurun)"
             placeholderTextColor={colors.muted}
             value={password}
@@ -254,7 +254,7 @@ export default function EditProfileScreen({ navigation }) {
             secureTextEntry
           />
           <TextInput
-            style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border }]}
+            style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border, backgroundColor: colors.blurView }]}
             placeholder="Yeni Şifreyi Tekrar Girin"
             placeholderTextColor={colors.muted}
             value={passwordConfirm}

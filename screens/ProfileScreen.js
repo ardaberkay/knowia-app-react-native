@@ -8,7 +8,7 @@ import * as Notifications from 'expo-notifications';
 import { supabase } from '../lib/supabase';
 
 export default function ProfileScreen() {
-  const { colors, isDarkMode, toggleTheme } = useTheme();
+  const { colors, isDarkMode, toggleTheme, themePreference, loading: themeLoading } = useTheme();
   const navigation = useNavigation();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -84,15 +84,21 @@ export default function ProfileScreen() {
     {
       label: 'Gece Modu',
       right: (
-        <Switch
-          value={isDarkMode}
-          onValueChange={toggleTheme}
-          trackColor={{ false: '#ccc', true: '#5AA3F0' }}
-          thumbColor={isDarkMode ? colors.secondary : '#f4f3f4'}
-          ios_backgroundColor="#ccc"
-        />
+        <TouchableOpacity onPress={toggleTheme} style={{ flexDirection: 'row', alignItems: 'center' }}>
+
+          <View style={{ width: 40 }}>
+            <Switch
+              value={themePreference === 'dark'}
+              onValueChange={toggleTheme}
+              trackColor={{ false: '#ccc', true: '#5AA3F0' }}
+              thumbColor={isDarkMode ? colors.secondary : '#f4f3f4'}
+              ios_backgroundColor="#ccc"
+              disabled={themePreference === 'system'}
+            />
+          </View>
+        </TouchableOpacity>
       ),
-      onPress: () => {},
+      onPress: toggleTheme,
     },
     { label: 'Dil Ayarları', onPress: () => alert('Dil Ayarları') },
     {
@@ -142,7 +148,7 @@ export default function ProfileScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}> 
       {/* Sabit profil alanı */}
       <View style={styles.profileRow}>
-        {loading ? (
+        {(loading || themeLoading) ? (
           <ActivityIndicator size="large" color={colors.buttonColor} />
         ) : error ? (
           <Text style={[typography.styles.body, { color: colors.error }]}>Hata: {error}</Text>

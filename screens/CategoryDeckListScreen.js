@@ -46,7 +46,7 @@ export default function CategoryDeckListScreen({ route }) {
         activeOpacity={0.93}
       >
         <LinearGradient
-          colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
+          colors={colors.deckGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.deckCardGradient}
@@ -133,10 +133,10 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     marginBottom: 14,
     shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.28,
-    shadowRadius: 18,
-    elevation: 16,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
     borderWidth: 0,
   },
   deckCardGradient: {

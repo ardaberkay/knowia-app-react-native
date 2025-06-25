@@ -359,6 +359,44 @@ export default function DeckCardsScreen({ route, navigation }) {
             <View style={{ alignItems: 'center', marginTop: 15, marginBottom: 8 }}>
               <View style={{ width: '15%', height: 3, backgroundColor: '#E9E9E9', borderRadius: 1 }} />
             </View>
+            {/* Filter Modal */}
+            <Modal
+              visible={filterModalVisible}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setFilterModalVisible(false)}
+            >
+              <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setFilterModalVisible(false)}>
+                <View style={{
+                  position: 'absolute',
+                  left: Math.max(8, dropdownPos.x + dropdownPos.width - 140),
+                  top: Platform.OS === 'android' ? dropdownPos.y + dropdownPos.height : dropdownPos.y + dropdownPos.height + 4,
+                  minWidth: 120,
+                  maxWidth: 140,
+                  backgroundColor: colors.background,
+                  borderRadius: 14,
+                  paddingVertical: 6,
+                  paddingHorizontal: 0,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.10,
+                  shadowRadius: 8,
+                  elevation: 8,
+                  borderWidth: 1,
+                  borderColor: '#F98A21',
+                }}>
+                  <TouchableOpacity onPress={() => { setCardSort('original'); setFilterModalVisible(false); }} style={{ paddingVertical: 8, paddingHorizontal: 14, backgroundColor: cardSort === 'original' ? '#F98A21' : 'transparent', borderRadius: 8 }}>
+                    <Text style={{ color: cardSort === 'original' ? '#fff' : colors.text, fontWeight: cardSort === 'original' ? 'bold' : 'normal', fontSize: 15 }}>Varsayılan</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => { setCardSort('az'); setFilterModalVisible(false); }} style={{ paddingVertical: 8, paddingHorizontal: 14, backgroundColor: cardSort === 'az' ? '#F98A21' : 'transparent', borderRadius: 8 }}>
+                    <Text style={{ color: cardSort === 'az' ? '#fff' : colors.text, fontWeight: cardSort === 'az' ? 'bold' : 'normal', fontSize: 15 }}>A-Z</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => { setCardSort('fav'); setFilterModalVisible(false); }} style={{ paddingVertical: 8, paddingHorizontal: 14, backgroundColor: cardSort === 'fav' ? '#F98A21' : 'transparent', borderRadius: 8 }}>
+                    <Text style={{ color: cardSort === 'fav' ? '#fff' : colors.text, fontWeight: cardSort === 'fav' ? 'bold' : 'normal', fontSize: 15 }}>Favoriler</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            </Modal>
           </>
         )}
         {/* Kartlar Listesi veya Detay */}

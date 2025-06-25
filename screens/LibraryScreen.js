@@ -164,7 +164,7 @@ export default function LibraryScreen() {
             style={{ position: 'absolute', bottom: 18, right: 12, zIndex: 10 }}
             onPress={() => setActiveDeckMenuId(item.id)}
           >
-            <MaterialCommunityIcons name="dots-vertical" size={24} color="#F98A21" />
+            <MaterialCommunityIcons name="dots-vertical" size={24} color={colors.orWhite} />
           </TouchableOpacity>
           {/* Bottom Sheet Modal */}
           <Modal
@@ -260,7 +260,7 @@ export default function LibraryScreen() {
                   source={item.profiles && item.profiles.image_url ? { uri: item.profiles.image_url } : require('../assets/avatar-default.png')}
                   style={styles.deckProfileAvatar}
                 />
-                <Text style={styles.deckProfileUsername} numberOfLines={1} ellipsizeMode="tail">
+                <Text style={[styles.deckProfileUsername, {color: colors.orWhite,}]} numberOfLines={1} ellipsizeMode="tail">
                   {(item.profiles && item.profiles.username) || 'Kullanıcı'}
                 </Text>
               </View>
@@ -288,7 +288,7 @@ export default function LibraryScreen() {
               style={{ position: 'absolute', bottom: 18, right: 12, zIndex: 10 }}
               onPress={() => setActiveDeckMenuId(item.id)}
             >
-              <MaterialCommunityIcons name="dots-vertical" size={24} color="#F98A21" />
+              <MaterialCommunityIcons name="dots-vertical" size={24} color={colors.orWhite} />
             </TouchableOpacity>
             {/* Bottom Sheet Modal */}
             <Modal
@@ -397,7 +397,7 @@ export default function LibraryScreen() {
               style={{ position: 'absolute', bottom: 18, right: 12, zIndex: 10 }}
               onPress={() => setActiveDeckMenuId(item.id + '_card')}
             >
-              <MaterialCommunityIcons name="dots-vertical" size={24} color="#F98A21" />
+              <MaterialCommunityIcons name="dots-vertical" size={24} color={colors.orWhite} />
             </TouchableOpacity>
             {/* Kart Kebap Menü Modal */}
             <Modal
@@ -606,6 +606,8 @@ export default function LibraryScreen() {
                 left: Math.max(8, dropdownPos.x + dropdownPos.width - DROPDOWN_WIDTH),
                 top: Platform.OS === 'android' ? dropdownPos.y + dropdownPos.height : dropdownPos.y + dropdownPos.height + 4,
                 minWidth: DROPDOWN_WIDTH,
+                borderWidth: 1,
+                borderColor: '#F98A21',
               },
             ]}
           >
@@ -618,7 +620,11 @@ export default function LibraryScreen() {
                   setFilterDropdownVisible(false);
                 }}
               >
-                <Text style={[styles.filterDropdownOptionText, favoritesFilter === opt.key && styles.activeFilterDropdownOptionText]}>{opt.label}</Text>
+                <Text style={[
+                  styles.filterDropdownOptionText,
+                  favoritesFilter === opt.key && styles.activeFilterDropdownOptionText,
+                  { color: favoritesFilter === opt.key ? '#fff' : colors.text }
+                ]}>{opt.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -714,10 +720,10 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     marginBottom: 16,
     shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.28,
-    shadowRadius: 18,
-    elevation: 16,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
     borderWidth: 0,
   },
   deckCardContentModern: {
@@ -869,7 +875,7 @@ const styles = StyleSheet.create({
   deckProfileUsername: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#F98A21',
+
   },
   modalLabel: {
     fontSize: 13,

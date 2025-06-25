@@ -17,7 +17,8 @@ export const lightColors = {
     libraryTab: '#fff8f0',
     blurView: 'rgba(255,255,255,0.85)',
     blurViewShadow: '#F98A21',
-    cards: '#ffffff'
+    cards: '#ffffff',
+    orWhite: '#F98A21'
 };
 
 export const darkColors = {
@@ -39,5 +40,6 @@ export const darkColors = {
     libraryTab: '#2C2C2C',
     blurView: 'rgba(0,0,0,0.4)',
     blurViewShadow: 'rgba(0,0,0,0.1)',
-    cards: '#1E1E1E'
+    cards: '#1E1E1E',
+    orWhite: '#FFFFFF'
 };
