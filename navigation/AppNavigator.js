@@ -21,6 +21,8 @@ import AddCardScreen from '../screens/AddCardScreen';
 import EditCardScreen from '../screens/EditCardScreen';
 import DeckCardsScreen from '../screens/DeckCardsScreen';
 import CardDetailScreen from '../screens/CardDetailScreen';
+import { Ionicons } from '@expo/vector-icons';
+import { TouchableOpacity, Text } from 'react-native';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -127,7 +129,25 @@ export default function AppNavigator() {
           <Stack.Screen name="SwipeDeck" component={SwipeDeckScreen} options={{ headerShown: true, title: 'Kartları Öğren', headerTitleAlign: 'center' }} />
           <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: 'Profili Düzenle', headerTitleAlign: 'center' }} />
           <Stack.Screen name="DeckEdit" component={DeckEditScreen} options={{ headerShown: true, title: 'Desteyi Düzenle', headerTitleAlign: 'center' }} />
-          <Stack.Screen name="AddCard" component={AddCardScreen} options={{ headerShown: true, title: 'Kart Ekle', headerTitleAlign: 'center' }} />
+          <Stack.Screen name="AddCard" component={AddCardScreen} options={({ navigation }) => ({
+            headerShown: true,
+            title: 'Kart Ekle',
+            headerTitleAlign: 'center',
+            headerRight: () => (
+              <TouchableOpacity
+                onPress={() => navigation.setParams({ openCsvModal: true })}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginRight: 12,
+                  borderWidth: 1, borderColor: colors.text, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8
+                }}
+              >
+                <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15, marginRight: 6}}>CSV</Text>
+                <Ionicons name="cloud-upload-outline" size={22} color={colors.text} />
+              </TouchableOpacity>
+            ),
+          })} />
           <Stack.Screen name="EditCard" component={EditCardScreen} options={{ headerShown: true, title: 'Kartı Düzenle', headerTitleAlign: 'center' }} />
           <Stack.Screen name="DeckCards" component={DeckCardsScreen} options={{ headerShown: true, title: 'Kartlar', headerTitleAlign: 'center' }} />
           <Stack.Screen name="CardDetail" component={CardDetailScreen} options={{ headerShown: true, title: 'Kart Detayı', headerTitleAlign: 'center' }} />

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Modal } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,7 +9,9 @@ import { useTheme } from '../theme/theme';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
+import * as DocumentPicker from 'expo-document-picker';
 import { Buffer } from 'buffer';
+import * as Sharing from 'expo-sharing';
 
 export default function AddCardScreen() {
   const navigation = useNavigation();
@@ -23,6 +25,14 @@ export default function AddCardScreen() {
   const [image, setImage] = useState('');
   const [imageChanged, setImageChanged] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [csvModalVisible, setCsvModalVisible] = useState(false);
+
+  useEffect(() => {
+    if (route.params?.openCsvModal) {
+      setCsvModalVisible(true);
+      navigation.setParams({ openCsvModal: false });
+    }
+  }, [route.params?.openCsvModal]);
 
   const handlePickImage = async () => {
     try {
@@ -95,6 +105,23 @@ export default function AddCardScreen() {
     }
   };
 
+  // CSV şablonunu indirme fonksiyonu
+  const handleDownloadTemplate = async () => {
+    const csvContent = 'Soru,Cevap,Örnek,Not\n"Book","Kitap","i am reading a book","Buk şeklinde okunur"\n"Knowledge","Bilgi","Knowledge is power.","Bilgi güçtür."';
+    const fileUri = FileSystem.documentDirectory + 'ornek_kartlar.csv';
+    await FileSystem.writeAsStringAsync(fileUri, csvContent, { encoding: FileSystem.EncodingType.UTF8 });
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(fileUri);
+    } else {
+      Alert.alert('Paylaşım desteklenmiyor', 'Dosya yolu: ' + fileUri);
+    }
+  };
+
+  // CSV dosyası seçme fonksiyonu (şimdilik sadece alert)
+  const handlePickCSV = async () => {
+    Alert.alert('CSV Yükleme', 'CSV yükleme fonksiyonu burada çalışacak.');
+  };
+
   return (
     <LinearGradient
       colors={colors.deckGradient}
@@ -102,6 +129,43 @@ export default function AddCardScreen() {
       end={{ x: 1, y: 1 }}
       style={{ flex: 1 }}
     >
+      <Modal
+        visible={csvModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setCsvModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'transparent' }}
+          activeOpacity={1}
+          onPress={() => setCsvModalVisible(false)}
+        />
+        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.background, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingTop: 24, paddingBottom: 32, paddingHorizontal: 24, elevation: 16 }}>
+          <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 }} />
+          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: colors.text, textAlign: 'center' }}>CSV ile Toplu Kart Yükleme</Text>
+          <Text style={{ color: colors.muted, fontSize: 15, marginBottom: 18, textAlign: 'center' }}>
+            Kartlarınızı Excel veya Google Sheets'te aşağıdaki gibi hazırlayın ve CSV olarak kaydedin. Sadece ilk iki sütun zorunludur:
+            {'\n'}
+            <Text style={{ fontWeight: 'bold', color: colors.text }}>Soru, Cevap, Örnek (opsiyonel), Not (opsiyonel)</Text>
+            {'\n'}
+            Her satır bir kartı temsil eder. Boş satırlar veya eksik zorunlu alanlar atlanır.
+          </Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 8 }}>
+            <TouchableOpacity
+              onPress={handleDownloadTemplate}
+              style={{ backgroundColor: '#F98A21', borderRadius: 8, paddingVertical: 12, paddingHorizontal: 18, marginRight: 8 }}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>Örnek CSV İndir</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handlePickCSV}
+              style={{ backgroundColor: colors.blurView, borderRadius: 8, paddingVertical: 12, paddingHorizontal: 18, borderWidth: 1, borderColor: colors.border }}
+            >
+              <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15 }}>CSV Dosyası Seç</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.formContainer}>
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
