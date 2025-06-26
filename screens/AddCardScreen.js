@@ -26,6 +26,8 @@ export default function AddCardScreen() {
   const [imageChanged, setImageChanged] = useState(false);
   const [loading, setLoading] = useState(false);
   const [csvModalVisible, setCsvModalVisible] = useState(false);
+  const [csvPreview, setCsvPreview] = useState(null);
+  const [csvLoading, setCsvLoading] = useState(false);
 
   useEffect(() => {
     if (route.params?.openCsvModal) {
@@ -107,7 +109,7 @@ export default function AddCardScreen() {
 
   // CSV şablonunu indirme fonksiyonu
   const handleDownloadTemplate = async () => {
-    const csvContent = 'Soru,Cevap,Örnek,Not\n"Book","Kitap","i am reading a book","Buk şeklinde okunur"\n"Knowledge","Bilgi","Knowledge is power.","Bilgi güçtür."';
+    const csvContent = 'soru,cevap,ornek,not\nBook,Kitap,i am reading a book,Buk seklinde okunur\nKnowledge,Bilgi,Knowledge is power.,Bilgi guctur.';
     const fileUri = FileSystem.documentDirectory + 'ornek_kartlar.csv';
     await FileSystem.writeAsStringAsync(fileUri, csvContent, { encoding: FileSystem.EncodingType.UTF8 });
     if (await Sharing.isAvailableAsync()) {
@@ -117,9 +119,139 @@ export default function AddCardScreen() {
     }
   };
 
-  // CSV dosyası seçme fonksiyonu (şimdilik sadece alert)
+  // Header mapping sistemi
+  const VALID_FIELDS = {
+    'question': ['soru', 'question', 'q', 'sorular', 'soru metni', 'Soru', 'S', 'SORU'],
+    'answer': ['cevap', 'answer', 'a', 'cevaplar', 'cevap metni', 'Cevap', 'C', 'CEVAP'],
+    'example': ['örnek', 'example', 'e', 'örnekler', 'örnek cümle', 'Örnek', 'Ö', 'ÖRNEK', 'ornek'],
+    'note': ['not', 'note', 'n', 'notlar', 'açıklama', 'Not', 'N', 'NOT']
+  };
+
+  // Header işleme
+  const processHeaders = (headers) => {
+    const columnMap = {};
+    const ignoredColumns = [];
+    headers.forEach((header, index) => {
+      const cleanHeader = header.trim().toLowerCase();
+      let matchedField = null;
+      Object.keys(VALID_FIELDS).forEach(field => {
+        if (VALID_FIELDS[field].includes(cleanHeader)) {
+          matchedField = field;
+        }
+      });
+      if (matchedField) {
+        columnMap[matchedField] = index;
+      } else {
+        ignoredColumns.push({
+          column: header,
+          index: index + 1,
+          reason: 'Tanımlanmamış alan'
+        });
+      }
+    });
+    return { columnMap, ignoredColumns };
+  };
+
+  // Kart validasyonu
+  const validateCard = (card, rowNumber) => {
+    const errors = [];
+    if (!card.question || card.question.trim() === '') {
+      errors.push({
+        type: 'EMPTY_QUESTION',
+        row: rowNumber,
+        message: 'Soru alanı boş olamaz'
+      });
+    }
+    if (!card.answer || card.answer.trim() === '') {
+      errors.push({
+        type: 'EMPTY_ANSWER',
+        row: rowNumber,
+        message: 'Cevap alanı boş olamaz'
+      });
+    }
+    if (card.question && card.question.length > 500) {
+      errors.push({
+        type: 'QUESTION_TOO_LONG',
+        row: rowNumber,
+        message: 'Soru 500 karakterden uzun olamaz'
+      });
+    }
+    return {
+      isValid: errors.length === 0,
+      errors: errors
+    };
+  };
+
+  // CSV parse fonksiyonu
+  const parseCSV = (csvContent) => {
+    const lines = csvContent.split(/\r?\n/).filter(line => line.trim());
+    if (lines.length < 2) return { validCards: [], errors: [], ignoredColumns: [] };
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[^a-zçğıöşü0-9]/gi, ''));
+    console.log('CSV Header:', headers);
+    const { columnMap, ignoredColumns } = processHeaders(headers);
+    console.log('Column Map:', columnMap);
+    if (columnMap.question === undefined || columnMap.answer === undefined) {
+      return {
+        validCards: [],
+        errors: [{ type: 'MISSING_REQUIRED_HEADERS', message: 'Soru ve Cevap sütunları gerekli' }],
+        ignoredColumns: ignoredColumns,
+        totalRows: lines.length - 1
+      };
+    }
+    const validCards = [];
+    const errors = [];
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, '').replace(/\r$/, ''));
+      const card = {};
+      Object.keys(columnMap).forEach(field => {
+        const valueIndex = columnMap[field];
+        card[field] = values[valueIndex] || '';
+      });
+      const validation = validateCard(card, i + 1);
+      if (validation.isValid) {
+        validCards.push(card);
+      } else {
+        errors.push(...validation.errors);
+      }
+    }
+    // Toplam satır sayısı: veri satırı (header hariç)
+    return { validCards, errors, ignoredColumns, totalRows: lines.length - 1 };
+  };
+
+  // CSV dosyası seçme ve önizleme fonksiyonu
   const handlePickCSV = async () => {
-    Alert.alert('CSV Yükleme', 'CSV yükleme fonksiyonu burada çalışacak.');
+    try {
+      setCsvLoading(true);
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        copyToCacheDirectory: true,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const file = result.assets[0];
+        if (!file.name.toLowerCase().endsWith('.csv')) {
+          Alert.alert('Hata', 'Lütfen bir CSV dosyası seçin.');
+          setCsvLoading(false);
+          return;
+        }
+        const csvContent = await FileSystem.readAsStringAsync(file.uri, {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+        const { validCards, errors, ignoredColumns, totalRows } = parseCSV(csvContent);
+        setCsvPreview({
+          fileName: file.name,
+          totalRows: totalRows,
+          validCards: validCards.slice(0, 3), // İlk 3 kartı önizleme
+          errors: errors.slice(0, 5), // İlk 5 hatayı göster
+          allValidCards: validCards,
+          allErrors: errors,
+          ignoredColumns: ignoredColumns
+        });
+      }
+    } catch (error) {
+      Alert.alert('Hata', 'CSV dosyası okunamadı: ' + error.message);
+    } finally {
+      setCsvLoading(false);
+    }
   };
 
   return (
@@ -150,20 +282,101 @@ export default function AddCardScreen() {
             {'\n'}
             Her satır bir kartı temsil eder. Boş satırlar veya eksik zorunlu alanlar atlanır.
           </Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 8 }}>
-            <TouchableOpacity
-              onPress={handleDownloadTemplate}
-              style={{ backgroundColor: '#F98A21', borderRadius: 8, paddingVertical: 12, paddingHorizontal: 18, marginRight: 8 }}
-            >
-              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>Örnek CSV İndir</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handlePickCSV}
-              style={{ backgroundColor: colors.blurView, borderRadius: 8, paddingVertical: 12, paddingHorizontal: 18, borderWidth: 1, borderColor: colors.border }}
-            >
-              <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15 }}>CSV Dosyası Seç</Text>
-            </TouchableOpacity>
-          </View>
+          {csvPreview ? (
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>Dosya: {csvPreview.fileName}</Text>
+              <Text style={{ color: colors.text, fontSize: 15 }}>Toplam satır: {csvPreview.totalRows}</Text>
+              <Text style={{ color: colors.text, fontSize: 15 }}>Geçerli kart: {csvPreview.allValidCards.length}</Text>
+              <Text style={{ color: colors.text, fontSize: 15, marginBottom: 6 }}>Geçersiz kart: {csvPreview.allErrors.length}</Text>
+              {csvPreview.errors.length > 0 && (
+                <View style={{ marginTop: 8, marginBottom: 8 }}>
+                  <Text style={{ color: '#D32F2F', fontWeight: 'bold', fontSize: 15, marginBottom: 4 }}>Hatalar (ilk 5):</Text>
+                  {csvPreview.errors.map((err, idx) => (
+                    <Text key={idx} style={{ color: '#D32F2F', fontSize: 14 }}>• Satır {err.row}: {err.message}</Text>
+                  ))}
+                </View>
+              )}
+              <TouchableOpacity
+                onPress={async () => {
+                  // Kartları topluca ekle (Supabase)
+                  if (!csvPreview.allValidCards.length) {
+                    Alert.alert('Hata', 'Geçerli kart yok.');
+                    return;
+                  }
+                  let successCount = 0;
+                  let errorCount = 0;
+                  setCsvLoading(true);
+                  try {
+                    const batchSize = 50;
+                    for (let i = 0; i < csvPreview.allValidCards.length; i += batchSize) {
+                      const batch = csvPreview.allValidCards.slice(i, i + batchSize);
+                      const { error } = await supabase
+                        .from('cards')
+                        .insert(batch.map(card => ({
+                          deck_id: deck.id,
+                          question: card.question.trim(),
+                          answer: card.answer.trim(),
+                          example: card.example.trim() || null,
+                          note: card.note.trim() || null,
+                          image: null,
+                        })));
+                      if (error) {
+                        errorCount += batch.length;
+                      } else {
+                        successCount += batch.length;
+                      }
+                    }
+                    Alert.alert(
+                      'İçe Aktarma Tamamlandı',
+                      `${successCount} kart başarıyla eklendi.${errorCount > 0 ? ` ${errorCount} kart eklenemedi.` : ''}`,
+                      [
+                        { text: 'Tamam', onPress: () => { setCsvPreview(null); setCsvModalVisible(false); } }
+                      ]
+                    );
+                  } catch (e) {
+                    Alert.alert('Hata', 'Kartlar eklenirken bir hata oluştu: ' + e.message);
+                  } finally {
+                    setCsvLoading(false);
+                  }
+                }}
+                style={{ backgroundColor: colors.buttonColor || '#007AFF', borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 10 }}
+                disabled={csvLoading}
+              >
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{csvLoading ? 'Yükleniyor...' : 'Kartları İçe Aktar'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setCsvPreview(null)}
+                style={{
+                  alignItems: 'center',
+                  marginTop: 10,
+                  borderColor: colors.border,
+                  borderWidth: 1,
+                  borderRadius: 8,
+                  backgroundColor: 'transparent',
+                  paddingVertical: 10,
+                  paddingHorizontal: 18,
+                }}
+              >
+                <Text style={{ color: colors.text, fontSize: 15, fontWeight: 'bold' }}>İptal Et</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 8 }}>
+              <TouchableOpacity
+                onPress={handleDownloadTemplate}
+                style={{ backgroundColor: '#F98A21', borderRadius: 8, paddingVertical: 12, paddingHorizontal: 18, marginRight: 8 }}
+              >
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>Örnek CSV İndir</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handlePickCSV}
+                style={{ backgroundColor: colors.blurView, borderRadius: 8, paddingVertical: 12, paddingHorizontal: 18, borderWidth: 1, borderColor: colors.border }}
+                disabled={csvLoading}
+              >
+                <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15 }}>{csvLoading ? 'Yükleniyor...' : 'CSV Dosyası Seç'}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </Modal>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -176,12 +389,12 @@ export default function AddCardScreen() {
             {image ? (
               <View style={{ alignItems: 'center', marginBottom: 8 }}>
                 <Image source={{ uri: image }} style={styles.cardImage} />
-                <TouchableOpacity onPress={handleRemoveImage} style={styles.removeImageButton}>
+                <TouchableOpacity onPress={handleRemoveImage} style={[styles.removeImageButton, {backgroundColor: colors.actionButton}]}>
                   <Text style={styles.removeImageButtonText}>Kaldır</Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity onPress={handlePickImage} style={styles.addImageButton}>
+              <TouchableOpacity onPress={handlePickImage} style={[styles.addImageButton, {backgroundColor: colors.actionButton}]}>
                 <Ionicons name="add" size={24} color="#F98A21" />
                 <Text style={styles.addImageButtonText}>Fotoğraf Ekle</Text>
               </TouchableOpacity>
@@ -245,7 +458,21 @@ export default function AddCardScreen() {
           </View>
           <View style={styles.buttonRowModern}>
             <TouchableOpacity
-              style={[styles.startButtonModern, loading && { opacity: 0.7 }]}
+              style={[styles.startButtonModern, { backgroundColor: '#fff', marginRight: 10, borderColor: colors.buttonColor || 'transparent' }]}
+              onPress={() => {
+                setQuestion('');
+                setAnswer('');
+                setExample('');
+                setNote('');
+                setImage('');
+                setImageChanged(false);
+              }}
+              disabled={loading}
+            >
+              <Text style={[styles.startButtonTextModern, { color: colors.buttonColor }, typography.styles.button]}>Geri Al</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.startButtonModern, loading && { opacity: 0.7 }, { borderWidth: 1, borderColor: colors.buttonBorder || 'transparent' }]}
               onPress={handleCreateCard}
               disabled={loading}
             >
@@ -308,7 +535,7 @@ const styles = StyleSheet.create({
   addImageButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff8f0',
+
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 18,
@@ -357,10 +584,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
+    borderWidth: 1,
   },
   startButtonTextModern: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#fff',
+
   },
 }); 

@@ -412,14 +412,14 @@ export default function DeckDetailScreen({ route, navigation }) {
       <SafeAreaView style={[styles.fixedButtonBar, { borderTopLeftRadius: 18, borderTopRightRadius: 18, ...Platform.select({ android: { paddingBottom: 18 }, ios: {} }) }] } edges={['bottom']}>
         <View style={styles.buttonRowModern}>
           <TouchableOpacity
-            style={[styles.favButtonModern]}
+            style={[styles.favButtonModern, { flex: 1, minWidth: 0, marginRight: 10 }]}
             onPress={() => navigation.navigate('AddCard', { deck })}
           >
             <MaterialCommunityIcons name="plus" size={22} color={colors.buttonColor} style={{ marginRight: 6 }} />
             <Text style={[styles.favButtonTextModern, typography.styles.button, { color: colors.buttonColor }]}>Kart Ekle</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.startButtonModern}
+            style={[styles.startButtonModern, { flex: 1, minWidth: 0, borderWidth: 1, borderColor: colors.buttonBorder || 'transparent' }]}
             onPress={handleStart}
           >
             <Ionicons name="play" size={20} color={colors.buttonText} style={{ marginRight: 6 }} />
@@ -698,7 +698,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
-    paddingHorizontal: 18,
+    paddingHorizontal: 5,
   },
   favButtonActive: {
     backgroundColor: '#fff8f0',

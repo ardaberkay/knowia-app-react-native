@@ -6,6 +6,7 @@ export const lightColors = {
     text: '#1C1C1C',
     subtext: '#4A4A4A',
     border: '#D9D9D9',
+    buttonBorder: '#F98A21',
     success: '#27AE60',
     error: '#EB5757',
     muted: '#8C8C8C',
@@ -18,7 +19,8 @@ export const lightColors = {
     blurView: 'rgba(255,255,255,0.85)',
     blurViewShadow: '#F98A21',
     cards: '#ffffff',
-    orWhite: '#F98A21'
+    orWhite: '#F98A21',
+    actionButton: '#fff8f0'
 };
 
 export const darkColors = {
@@ -29,6 +31,7 @@ export const darkColors = {
     text: '#FFFFFF',
     subtext: '#E0E0E0',
     border: '#7A7A7A',
+    buttonBorder: '#DDDDDD',
     success: '#27AE60',
     error: '#EB5757',
     muted: '#BDBDBD',
@@ -41,5 +44,6 @@ export const darkColors = {
     blurView: 'rgba(0,0,0,0.4)',
     blurViewShadow: 'rgba(0,0,0,0.1)',
     cards: '#1E1E1E',
-    orWhite: '#FFFFFF'
+    orWhite: '#FFFFFF',
+    actionButton: '#FEFEFE'
 };

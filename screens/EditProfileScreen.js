@@ -216,7 +216,7 @@ export default function EditProfileScreen({ navigation }) {
           <View style={styles.profileRow}>
             <Image source={imageUrl ? { uri: imageUrl } : require('../assets/avatar-default.png')} style={styles.avatarLarge} />
             <View style={styles.avatarButtonRow}>
-              <TouchableOpacity style={[styles.removeButton]} onPress={handleRemovePhoto}>
+              <TouchableOpacity style={[styles.removeButton, {backgroundColor: colors.actionButton}]} onPress={handleRemovePhoto}>
                 <Text style={[typography.styles.button, styles.removeButtonText]}>Kaldır</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.changeButton]} onPress={handlePickImage}>
