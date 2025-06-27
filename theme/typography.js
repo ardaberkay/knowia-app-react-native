@@ -23,8 +23,8 @@ export const typography = {
       fontSize: 32,
     },
     h2: {
-      fontFamily: 'Inter-Bold',
-      fontSize: 24,
+      fontFamily: 'Inter-SemiBold',
+      fontSize: 22,
     },
     subtitle: {
       fontFamily: 'Inter',

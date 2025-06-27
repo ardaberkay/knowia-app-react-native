@@ -476,10 +476,10 @@ export default function DeckCardsScreen({ route, navigation }) {
               <TouchableOpacity
                 style={[styles.cardItemGlass, {backgroundColor: colors.cards}]}
                 activeOpacity={0.93}
-                  onPress={() => {
-                    setEditMode(false);
-                    setSelectedCard(item);
-                  }}
+                onPress={() => {
+                  setEditMode(false);
+                  setSelectedCard(item);
+                }}
               >
                 <View style={styles.cardTopRow}>
                   <View style={styles.cardTextCol}>
@@ -491,17 +491,42 @@ export default function DeckCardsScreen({ route, navigation }) {
                       {item.answer}
                     </Text>
                   </View>
-                  <TouchableOpacity
-                    style={styles.cardFavIconBtn}
-                    onPress={() => handleToggleFavoriteCard(item.id)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <MaterialCommunityIcons
-                      name={favoriteCards.includes(item.id) ? 'heart' : 'heart-outline'}
-                      size={22}
-                      color={favoriteCards.includes(item.id) ? '#F98A21' : '#B0B0B0'}
-                    />
-                  </TouchableOpacity>
+                  <View style={{ alignItems: 'center' }}>
+                    <TouchableOpacity
+                      style={styles.cardFavIconBtn}
+                      onPress={() => handleToggleFavoriteCard(item.id)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <MaterialCommunityIcons
+                        name={favoriteCards.includes(item.id) ? 'heart' : 'heart-outline'}
+                        size={22}
+                        color={favoriteCards.includes(item.id) ? '#F98A21' : '#B0B0B0'}
+                      />
+                    </TouchableOpacity>
+                    {/* Çöp kutusu ikonu sadece destenin sahibi ise */}
+                    {currentUserId && deck.user_id === currentUserId && (
+                      <TouchableOpacity
+                        style={{ marginTop: 20 }}
+                        onPress={() => {
+                          Alert.alert('Kartı Sil', 'Bu kartı silmek istediğine emin misin?', [
+                            { text: 'İptal', style: 'cancel' },
+                            {
+                              text: 'Sil', style: 'destructive', onPress: async () => {
+                                await supabase
+                                  .from('cards')
+                                  .delete()
+                                  .eq('id', item.id);
+                                setCards(cards.filter(c => c.id !== item.id));
+                                setOriginalCards(originalCards.filter(c => c.id !== item.id));
+                              }
+                            }
+                          ]);
+                        }}
+                      >
+                        <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
               </TouchableOpacity>
             )}

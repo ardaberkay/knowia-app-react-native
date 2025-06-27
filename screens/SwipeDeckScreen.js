@@ -6,6 +6,7 @@ import { typography } from '../theme/typography';
 import { getCardsForLearning, ensureUserCardProgress } from '../services/CardService';
 import { supabase } from '../lib/supabase';
 import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
 
@@ -27,12 +28,14 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const [rightCount, setRightCount] = useState(0);
   const [leftHighlight, setLeftHighlight] = useState(false);
   const [rightHighlight, setRightHighlight] = useState(false);
+  const swiperRef = useRef(null);
+  const [history, setHistory] = useState([]);
 
   // Sayaç kutuları için renkler
-  const leftInactiveColor = '#F9B97A'; // Daha koyu turuncu
+  const leftInactiveColor = '#f3a14c'; // Bir tık daha koyu turuncu
   const leftActiveColor = colors.buttonColor; // Tema turuncusu
-  const rightInactiveColor = '#81C784'; // Yeni yeşil
-  const rightActiveColor = '#4CAF50'; // Onaylandığında sağdaki aktif renk
+  const rightInactiveColor = '#6faa72'; // Bir tık daha koyu yeşil
+  const rightActiveColor = '#3e8e41'; // Bir tık daha koyu aktif renk
 
   useEffect(() => {
     const fetchCards = async () => {
@@ -64,6 +67,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     if (!cards[cardIndex]) return;
     const card = cards[cardIndex];
     if (!userId) return;
+    setHistory((prev) => [...prev, cardIndex]);
     if (direction === 'right') {
       setRightCount((prev) => prev + 1);
       setRightHighlight(true);
@@ -126,14 +130,33 @@ export default function SwipeDeckScreen({ route, navigation }) {
       .update({ status: 'learning', next_review: nextReview })
       .eq('user_id', userId)
       .eq('card_id', card.card_id);
-    setCurrentIndex(currentIndex + 1);
+    setHistory((prev) => [...prev, currentIndex]);
+    if (swiperRef.current) {
+      swiperRef.current.swipeLeft();
+    }
+  };
+
+  const handleUndo = () => {
+    setHistory((prev) => {
+      if (prev.length === 0) return prev;
+      const lastIndex = prev[prev.length - 1];
+      setCurrentIndex(lastIndex);
+      return prev.slice(0, -1);
+    });
   };
 
   const FlipCard = ({ card, cardIndex, currentIndex }) => {
     // Eğer kart yoksa veya stack'teki alttaki kartsa, placeholder göster
     if (!card || !card.cards || cardIndex > currentIndex) {
       return (
-        <View style={[styles.card, { backgroundColor: colors.cardBackground, opacity: 0.7 }]} />
+        <View style={[styles.card, { opacity: 0.7 }]}> 
+          <LinearGradient
+            colors={colors.deckGradient || ['#fff8f0', '#ffe0c3', '#f9b97a']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+          />
+        </View>
       );
     }
     if (!animatedValues.current[cardIndex]) {
@@ -176,7 +199,13 @@ export default function SwipeDeckScreen({ route, navigation }) {
       >
         <View style={{ width: CARD_WIDTH, height: CARD_HEIGHT }}>
           <Animated.View style={[styles.card, { backgroundColor: colors.cardBackground, justifyContent: 'flex-start' }, frontAnimatedStyle]}>
-            <View style={[styles.imageContainer, { backgroundColor: colors.cardBackground }]}>
+            <LinearGradient
+              colors={colors.deckGradient || ['#fff8f0', '#ffe0c3', '#f9b97a']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+            />
+            <View style={[styles.imageContainer, { backgroundColor: 'transparent' }]}>
               {card.cards.image && (
                 <Image
                   source={{ uri: card.cards.image }}
@@ -184,12 +213,29 @@ export default function SwipeDeckScreen({ route, navigation }) {
                 />
               )}
             </View>
+            {card.cards.image && (
+              <View style={[{ width: 72, height: 2, backgroundColor: colors.orWhite, borderRadius: 2, alignSelf: 'center', marginBottom: 12 }]} />
+            )}
             <Text style={[typography.styles.h2, { color: colors.text, marginBottom: 16 }]}>{card.cards.question}</Text>
           </Animated.View>
           <Animated.View style={[styles.card, { backgroundColor: colors.cardBackground }, backAnimatedStyle]}>
-            <Text style={[typography.styles.body, { color: colors.subtext, marginBottom: 8 }]}>{card.cards.answer}</Text>
-            {card.cards.example && <Text style={{ color: colors.muted, marginBottom: 8 }}>{card.cards.example}</Text>}
-            {card.cards.note && <Text style={{ color: colors.muted }}>{card.cards.note}</Text>}
+            <LinearGradient
+              colors={colors.deckGradient || ['#fff8f0', '#ffe0c3', '#f9b97a']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+            />
+            <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center', paddingVertical: 18 }}>
+              <Text style={[typography.styles.h2, { color: colors.text, marginBottom: 14 }]}>{card.cards.answer}</Text>
+              {(card.cards.example || card.cards.note) && (
+                <View style={[{ width: 72, height: 2, backgroundColor: colors.orWhite, borderRadius: 2, alignSelf: 'center', marginBottom: 14 }]} />
+              )}
+              {card.cards.example && <Text style={[{ color: colors.subtext, marginBottom: 14 }, typography.styles.subtitle]}>{card.cards.example}</Text>}
+              {card.cards.note && (
+                <View style={[{ width: 72, height: 2, backgroundColor: colors.orWhite, borderRadius: 2, alignSelf: 'center', marginBottom: 14 }]} />
+              )}
+              {card.cards.note && <Text style={[typography.styles.body, { color: colors.subtext }]}>{card.cards.note}</Text>}
+            </View>
           </Animated.View>
         </View>
       </Pressable>
@@ -238,13 +284,15 @@ export default function SwipeDeckScreen({ route, navigation }) {
       </View>
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', marginTop: 15 }}>
         <Swiper
+          ref={swiperRef}
+          key={currentIndex}
           cards={cards}
           cardIndex={currentIndex}
           renderCard={(card, i) => <FlipCard card={card} cardIndex={i} currentIndex={currentIndex} key={card.card_id} />}
           onSwipedLeft={(i) => handleSwipe(i, 'left')}
           onSwipedRight={(i) => handleSwipe(i, 'right')}
           backgroundColor={colors.background}
-          stackSize={3}
+          stackSize={1}
           disableTopSwipe
           disableBottomSwipe
           infinite={false}
@@ -256,20 +304,29 @@ export default function SwipeDeckScreen({ route, navigation }) {
           cardStyle={{ width: CARD_WIDTH, height: CARD_HEIGHT, alignSelf: 'center', justifyContent: 'center' }}
         />
       </View>
-      <View style={styles.skipRow}>
-        <TouchableOpacity style={[styles.skipButton, { backgroundColor: colors.buttonColor }]} onPress={() => handleSkip(15)}>
-          <Text style={{ color: colors.buttonText }}>15dk</Text>
+      {/* Yatay birleşik butonlar */}
+      <View style={[styles.horizontalButtonRow, { backgroundColor: colors.buttonColor }]}>
+        <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: 1, borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(15)}>
+          <MaterialCommunityIcons name="repeat" size={20} color={colors.text} style={{ marginRight: 6 }} />
+          <Text style={[styles.horizontalButtonText, { color: colors.text }]}>15 dk</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.skipButton, { backgroundColor: colors.buttonColor }]} onPress={() => handleSkip(60)}>
-          <Text style={{ color: colors.buttonText }}>1sa</Text>
+        <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: 1, borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(60)}>
+          <Ionicons name="time-outline" size={20} color={colors.text} style={{ marginRight: 6 }} />
+          <Text style={[styles.horizontalButtonText, { color: colors.text }]}>1 sa</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.skipButton, { backgroundColor: colors.buttonColor }]} onPress={() => handleSkip(24 * 60)}>
-          <Text style={{ color: colors.buttonText }}>1g</Text>
+        <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: 1, borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(24 * 60)}>
+          <Ionicons name="calendar-outline" size={20} color={colors.text} style={{ marginRight: 6 }} />
+          <Text style={[styles.horizontalButtonText, { color: colors.text }]}>1 gün</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.skipButton, { backgroundColor: colors.buttonColor }]} onPress={() => handleSkip(7 * 24 * 60)}>
-          <Text style={{ color: colors.buttonText }}>7g</Text>
+        <TouchableOpacity style={styles.horizontalButton} onPress={() => handleSkip(7 * 24 * 60)}>
+          <Ionicons name="star-outline" size={20} color={colors.text} style={{ marginRight: 6 }} />
+          <Text style={[styles.horizontalButtonText, { color: colors.text }]}>7 gün</Text>
         </TouchableOpacity>
       </View>
+      {/* Geri alma butonu */}
+      <TouchableOpacity style={styles.undoButton} onPress={handleUndo}>
+        <MaterialCommunityIcons name="arrow-u-left-top" size={28} color={colors.text} />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -294,16 +351,16 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: '100%',
-    height: (CARD_HEIGHT * 2) / 5,
+    height: (CARD_HEIGHT * 1.85) / 5,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 22,
   },
   cardImage: {
     width: '100%',
     height: '100%',
     resizeMode: 'contain',
-    borderRadius: 4,
+    borderRadius: 12,
   },
   skipRow: {
     flexDirection: 'row',
@@ -366,5 +423,48 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 18,
     color: '#fff',
+  },
+  horizontalButtonRow: {
+    flexDirection: 'row',
+    width: '93%',
+    alignSelf: 'center',
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#fff8f0',
+    boxSizing: 'border-box',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+    marginBottom: 93,
+  },
+  horizontalButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    backgroundColor: 'transparent',
+    borderRightWidth: 0,
+    borderColor: '#e0e0e0',
+  },
+  horizontalButtonText: {
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  undoButton: {
+    position: 'absolute',
+    left: 24,
+    bottom: 24,
+    width: 48,
+    height: 48,
+
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 4,
+    zIndex: 30,
   },
 }); 
