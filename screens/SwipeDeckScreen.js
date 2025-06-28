@@ -7,6 +7,7 @@ import { getCardsForLearning, ensureUserCardProgress } from '../services/CardSer
 import { supabase } from '../lib/supabase';
 import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import logoasil from '../assets/logoasil.png';
 
 const { width, height } = Dimensions.get('window');
 
@@ -26,20 +27,29 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const animatedValues = useRef({});
   const [leftCount, setLeftCount] = useState(0);
   const [rightCount, setRightCount] = useState(0);
+  const [initialLearnedCount, setInitialLearnedCount] = useState(0);
   const [leftHighlight, setLeftHighlight] = useState(false);
   const [rightHighlight, setRightHighlight] = useState(false);
   const swiperRef = useRef(null);
   const [history, setHistory] = useState([]);
+  const [undoDisabled, setUndoDisabled] = useState(false);
+  const [historyDirections, setHistoryDirections] = useState([]);
+  const [totalCardCount, setTotalCardCount] = useState(0);
+  const [remainingCardCount, setRemainingCardCount] = useState(0);
+  const [hasLearningCard, setHasLearningCard] = useState(false);
 
   // Sayaç kutuları için renkler
   const leftInactiveColor = '#f3a14c'; // Bir tık daha koyu turuncu
   const leftActiveColor = colors.buttonColor; // Tema turuncusu
   const rightInactiveColor = '#6faa72'; // Bir tık daha koyu yeşil
   const rightActiveColor = '#3e8e41'; // Bir tık daha koyu aktif renk
+  
 
   useEffect(() => {
     const fetchCards = async () => {
       setLoading(true);
+      setRightCount(0);
+      setLeftCount(0);
       // Kullanıcıyı al
       const { data: { user } } = await supabase.auth.getUser();
       setUserId(user.id);
@@ -57,6 +67,40 @@ export default function SwipeDeckScreen({ route, navigation }) {
       console.log('supabase error:', error);
       setCards((learningCards || []).filter(card => card.cards));
       setFlipped({});
+      // Toplam kart sayısı (bu destedeki tüm kartlar)
+      const { data: allCards, error: allCardsError } = await supabase
+        .from('cards')
+        .select('id')
+        .eq('deck_id', deck.id);
+      setTotalCardCount(allCards ? allCards.length : 0);
+      // Kalan kart sayısı (status learned olmayanlar)
+      const { data: notLearned, error: notLearnedError } = await supabase
+        .from('user_card_progress')
+        .select('card_id')
+        .eq('user_id', user.id)
+        .eq('cards.deck_id', deck.id)
+        .neq('status', 'learned')
+        .select('card_id', { count: 'exact' });
+      setRemainingCardCount(notLearned ? notLearned.length : 0);
+      // Gelecekte gösterilecek learning kart var mı?
+      const { data: learningCardsExist, error: learningCardsExistError } = await supabase
+        .from('user_card_progress')
+        .select('card_id, status, cards(deck_id)')
+        .eq('user_id', user.id)
+        .eq('status', 'learning')
+        .eq('cards.deck_id', deck.id);
+      setHasLearningCard(learningCardsExist && learningCardsExist.length > 0);
+      // Başlangıçta learned olan kartların sayısını al
+      const { data: learnedCards, error: learnedCardsError } = await supabase
+        .from('user_card_progress')
+        .select('card_id, cards(deck_id)')
+        .eq('user_id', user.id)
+        .eq('status', 'learned')
+        .eq('cards.deck_id', deck.id);
+      const filteredLearnedCards = (learnedCards || []).filter(
+        c => c.cards && c.cards.deck_id === deck.id
+      );
+      setInitialLearnedCount(filteredLearnedCards.length);
       setLoading(false);
     };
     fetchCards();
@@ -68,6 +112,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     const card = cards[cardIndex];
     if (!userId) return;
     setHistory((prev) => [...prev, cardIndex]);
+    setHistoryDirections((prev) => [...prev, direction]);
     if (direction === 'right') {
       setRightCount((prev) => prev + 1);
       setRightHighlight(true);
@@ -131,18 +176,35 @@ export default function SwipeDeckScreen({ route, navigation }) {
       .eq('user_id', userId)
       .eq('card_id', card.card_id);
     setHistory((prev) => [...prev, currentIndex]);
+    setHistoryDirections((prev) => [...prev, 'left']);
     if (swiperRef.current) {
       swiperRef.current.swipeLeft();
     }
   };
 
   const handleUndo = () => {
-    setHistory((prev) => {
-      if (prev.length === 0) return prev;
-      const lastIndex = prev[prev.length - 1];
+    if (undoDisabled) return;
+    setUndoDisabled(true);
+    setTimeout(() => setUndoDisabled(false), 1000);
+    if (swiperRef.current && history.length > 0) {
+      const lastIndex = history[history.length - 1];
+      console.log('swipeBack çağrıldı', swiperRef.current);
+      swiperRef.current.swipeBack();
       setCurrentIndex(lastIndex);
-      return prev.slice(0, -1);
-    });
+      setHistory((prev) => prev.slice(0, -1));
+      setHistoryDirections((prev) => {
+        if (prev.length === 0) return prev;
+        const lastDirection = prev[prev.length - 1];
+        if (lastDirection === 'right') {
+          setRightCount((c) => Math.max(0, c - 1));
+        } else if (lastDirection === 'left') {
+          setLeftCount((c) => Math.max(0, c - 1));
+        }
+        return prev.slice(0, -1);
+      });
+    } else {
+      console.log('swipeBack çağrılamadı', swiperRef.current, history);
+    }
   };
 
   const FlipCard = ({ card, cardIndex, currentIndex }) => {
@@ -251,13 +313,22 @@ export default function SwipeDeckScreen({ route, navigation }) {
   }
 
   if (cards.length === 0 || currentIndex >= cards.length) {
+    const progress = initialLearnedCount + rightCount;
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={[typography.styles.h2, { color: colors.text, textAlign: 'center', marginTop: 40 }]}>Tüm kartları tamamladın!</Text>
-          <TouchableOpacity style={[styles.backButton, { backgroundColor: colors.buttonColor }]} onPress={() => navigation.goBack()}>
-            <Text style={{ color: colors.buttonText }}>Geri Dön</Text>
-          </TouchableOpacity>
+        <View style={{ width: '100%', alignItems: 'center', marginTop: 110}}>
+          <Image source={logoasil} style={{ width: 260, height: 260, resizeMode: 'cover' }} />
+          <Text style={[typography.styles.h2, { color: colors.text, textAlign: 'center', marginTop: 16 , fontSize: 22}]}> 
+            {progress === totalCardCount ? 'Bravo! Tüm Kartları Tamamladın' : 'Kalan Kartları Öğrenmeye Vakit Var'}
+          </Text>
+          <View style={{ width: 72, height: 1, backgroundColor: colors.orWhite, borderRadius: 2, alignSelf: 'center', marginTop: 16,marginBottom: 16 }} />
+          <View style={styles.deckProgressBox}>
+          <Text style={[styles.deckProgressText, typography.styles.subtitle, {color: colors.text}]}>{initialLearnedCount + rightCount}/{totalCardCount}</Text>
+        </View>
+          {/* Progress Bar (tamamlandı ekranında) */}
+          <View style={[styles.progressBarContainer, { backgroundColor: colors.inProgressBar, position: 'relative', marginTop: 90}]}> 
+            <View style={[styles.progressBarFill, { width: totalCardCount > 0 ? `${((initialLearnedCount + rightCount) / totalCardCount) * 100}%` : '0%', backgroundColor: colors.buttonColor }]} />
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -274,6 +345,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
             <Text style={styles.counterText}>{leftCount}</Text>
           )}
         </View>
+        <View style={styles.deckProgressBox}>
+          <Text style={[styles.deckProgressText, {color: colors.text}]}>{leftCount + initialLearnedCount + rightCount}/{totalCardCount}</Text>
+        </View>
         <View style={[styles.counterBox, { backgroundColor: rightHighlight ? rightActiveColor : rightInactiveColor }]}>
           {rightHighlight ? (
             <MaterialCommunityIcons name="check-bold" size={18} color="#fff" />
@@ -285,23 +359,23 @@ export default function SwipeDeckScreen({ route, navigation }) {
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', marginTop: 15 }}>
         <Swiper
           ref={swiperRef}
-          key={currentIndex}
           cards={cards}
           cardIndex={currentIndex}
           renderCard={(card, i) => <FlipCard card={card} cardIndex={i} currentIndex={currentIndex} key={card.card_id} />}
-          onSwipedLeft={(i) => handleSwipe(i, 'left')}
-          onSwipedRight={(i) => handleSwipe(i, 'right')}
+          onSwipedLeft={(i) => { handleSwipe(i, 'left'); setCurrentIndex(i + 1); }}
+          onSwipedRight={(i) => { handleSwipe(i, 'right'); setCurrentIndex(i + 1); }}
+          stackSize={2}
+          showSecondCard={false}
+          swipeBackCard={true}
           backgroundColor={colors.background}
-          stackSize={1}
-          disableTopSwipe
-          disableBottomSwipe
-          infinite={false}
-          showSecondCard={true}
           stackSeparation={18}
           stackScale={0.07}
           cardHorizontalMargin={24}
           containerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
           cardStyle={{ width: CARD_WIDTH, height: CARD_HEIGHT, alignSelf: 'center', justifyContent: 'center' }}
+          stackAnimationFriction={100}
+          stackAnimationTension={100}
+          swipeAnimationDuration={200}
         />
       </View>
       {/* Yatay birleşik butonlar */}
@@ -324,9 +398,13 @@ export default function SwipeDeckScreen({ route, navigation }) {
         </TouchableOpacity>
       </View>
       {/* Geri alma butonu */}
-      <TouchableOpacity style={styles.undoButton} onPress={handleUndo}>
+      <TouchableOpacity style={[styles.undoButton, undoDisabled && { opacity: 0.5 }]} onPress={handleUndo} disabled={undoDisabled}>
         <MaterialCommunityIcons name="arrow-u-left-top" size={28} color={colors.text} />
       </TouchableOpacity>
+      {/* Progress Bar (undoButton'un hemen üstünde) */}
+      <View style={[styles.progressBarContainer, { backgroundColor: colors.buttonText }]}>
+        <View style={[styles.progressBarFill, { width: totalCardCount > 0 ? `${((leftCount + initialLearnedCount + rightCount) / totalCardCount) * 100}%` : '0%', backgroundColor: colors.buttonColor }]} />
+      </View>
     </SafeAreaView>
   );
 }
@@ -436,7 +514,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 4,
-    marginBottom: 93,
+    marginBottom: 105,
   },
   horizontalButton: {
     flex: 1,
@@ -466,5 +544,30 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
     zIndex: 30,
+  },
+  deckProgressBox: {
+    minWidth: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  deckProgressText: {
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  progressBarContainer: {
+    width: '91%',
+    alignSelf: 'center',
+    height: 3,
+    borderRadius: 8,
+    marginBottom: 8,
+    position: 'absolute',
+    bottom: 72,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 8,
+    transition: 'width 0.3s',
   },
 }); 

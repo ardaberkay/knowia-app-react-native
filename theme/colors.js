@@ -20,14 +20,15 @@ export const lightColors = {
     blurViewShadow: '#F98A21',
     cards: '#ffffff',
     orWhite: '#F98A21',
-    actionButton: '#fff8f0'
+    actionButton: '#fff8f0',
+    inProgressBar: '#d9d9d9'
 };
 
 export const darkColors = {
     background: '#1C1C1C',
     cardBackground: '#2C2C2C',
     buttonColor: '#F98A21',
-    secondary: '#2F80ED',
+    secondary: '#2F80ED', 
     text: '#FFFFFF',
     subtext: '#E0E0E0',
     border: '#7A7A7A',
@@ -45,5 +46,5 @@ export const darkColors = {
     blurViewShadow: 'rgba(0,0,0,0.1)',
     cards: '#1E1E1E',
     orWhite: '#FFFFFF',
-    actionButton: '#FEFEFE'
-};
+    actionButton: '#FEFEFE',
+    inProgressBar: '#dddddd'};
