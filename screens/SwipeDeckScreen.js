@@ -5,7 +5,7 @@ import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
 import { getCardsForLearning, ensureUserCardProgress } from '../services/CardService';
 import { supabase } from '../lib/supabase';
-import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons, MaterialCommunityIcons, Entypo } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import logoasil from '../assets/logoasil.png';
 
@@ -37,6 +37,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const [totalCardCount, setTotalCardCount] = useState(0);
   const [remainingCardCount, setRemainingCardCount] = useState(0);
   const [hasLearningCard, setHasLearningCard] = useState(false);
+  const [autoPlay, setAutoPlay] = useState(false);
+  const autoPlayTimeout = useRef(null);
 
   // Sayaç kutuları için renkler
   const leftInactiveColor = '#f3a14c'; // Bir tık daha koyu turuncu
@@ -207,6 +209,32 @@ export default function SwipeDeckScreen({ route, navigation }) {
     }
   };
 
+  // Auto play fonksiyonu
+  useEffect(() => {
+    if (!autoPlay) return;
+    if (currentIndex >= cards.length) {
+      setAutoPlay(false);
+      return;
+    }
+    // Flip -> bekle -> swipe left (flip sadece bir defa)
+    handleFlip(currentIndex);
+    autoPlayTimeout.current = setTimeout(() => {
+      if (swiperRef.current) {
+        swiperRef.current.swipeLeft();
+      }
+    }, 1200); // kartı gösterme süresi
+    return () => {
+      if (autoPlayTimeout.current) clearTimeout(autoPlayTimeout.current);
+    };
+  }, [autoPlay, currentIndex, cards.length]);
+
+  // Auto play durdurucu (kartlar bittiğinde veya ekran değişirse)
+  useEffect(() => {
+    return () => {
+      if (autoPlayTimeout.current) clearTimeout(autoPlayTimeout.current);
+    };
+  }, []);
+
   const FlipCard = ({ card, cardIndex, currentIndex }) => {
     // Eğer kart yoksa veya stack'teki alttaki kartsa, placeholder göster
     if (!card || !card.cards || cardIndex > currentIndex) {
@@ -251,15 +279,13 @@ export default function SwipeDeckScreen({ route, navigation }) {
       height: CARD_HEIGHT,
     };
     return (
-      <Pressable
-        onPress={() => handleFlip(cardIndex)}
-        style={{
-          width: CARD_WIDTH,
-          height: CARD_HEIGHT,
-          alignSelf: 'center', // Ortala
-        }}
-      >
-        <View style={{ width: CARD_WIDTH, height: CARD_HEIGHT }}>
+      <View style={{ width: CARD_WIDTH, height: CARD_HEIGHT, alignSelf: 'center' }}>
+        {/* Kart içeriği (flip alanı) */}
+        <Pressable
+          onPress={() => handleFlip(cardIndex)}
+          style={{ flex: 1 }}
+        >
+          {/* Ön yüz */}
           <Animated.View style={[styles.card, { backgroundColor: colors.cardBackground, justifyContent: 'flex-start' }, frontAnimatedStyle]}>
             <LinearGradient
               colors={colors.deckGradient || ['#fff8f0', '#ffe0c3', '#f9b97a']}
@@ -267,7 +293,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
               end={{ x: 1, y: 1 }}
               style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
             />
-            <View style={[styles.imageContainer, { backgroundColor: 'transparent' }]}>
+            <View style={[styles.imageContainer, { backgroundColor: 'transparent', marginTop: 32 }]}> 
               {card.cards.image && (
                 <Image
                   source={{ uri: card.cards.image }}
@@ -280,6 +306,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
             )}
             <Text style={[typography.styles.h2, { color: colors.text, marginBottom: 16 }]}>{card.cards.question}</Text>
           </Animated.View>
+          {/* Arka yüz */}
           <Animated.View style={[styles.card, { backgroundColor: colors.cardBackground }, backAnimatedStyle]}>
             <LinearGradient
               colors={colors.deckGradient || ['#fff8f0', '#ffe0c3', '#f9b97a']}
@@ -287,7 +314,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
               end={{ x: 1, y: 1 }}
               style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
             />
-            <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center', paddingVertical: 18 }}>
+            <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center', paddingVertical: 18, marginTop: 32 }}>
               <Text style={[typography.styles.h2, { color: colors.text, marginBottom: 14 }]}>{card.cards.answer}</Text>
               {(card.cards.example || card.cards.note) && (
                 <View style={[{ width: 72, height: 2, backgroundColor: colors.orWhite, borderRadius: 2, alignSelf: 'center', marginBottom: 14 }]} />
@@ -299,8 +326,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
               {card.cards.note && <Text style={[typography.styles.body, { color: colors.subtext }]}>{card.cards.note}</Text>}
             </View>
           </Animated.View>
-        </View>
-      </Pressable>
+        </Pressable>
+      </View>
     );
   };
 
@@ -375,7 +402,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
           cardStyle={{ width: CARD_WIDTH, height: CARD_HEIGHT, alignSelf: 'center', justifyContent: 'center' }}
           stackAnimationFriction={100}
           stackAnimationTension={100}
-          swipeAnimationDuration={200}
+          swipeAnimationDuration={600}
         />
       </View>
       {/* Yatay birleşik butonlar */}
@@ -400,6 +427,17 @@ export default function SwipeDeckScreen({ route, navigation }) {
       {/* Geri alma butonu */}
       <TouchableOpacity style={[styles.undoButton, undoDisabled && { opacity: 0.5 }]} onPress={handleUndo} disabled={undoDisabled}>
         <MaterialCommunityIcons name="arrow-u-left-top" size={28} color={colors.text} />
+      </TouchableOpacity>
+      {/* Auto play butonu */}
+      <TouchableOpacity
+        style={styles.autoPlayButton}
+        onPress={() => setAutoPlay((prev) => !prev)}
+      >
+        {autoPlay ? (
+          <Ionicons name="pause" size={32} color={colors.text} />
+        ) : (
+          <Entypo name="controller-play" size={32} color={colors.text} />
+        )}
       </TouchableOpacity>
       {/* Progress Bar (undoButton'un hemen üstünde) */}
       <View style={[styles.progressBarContainer, { backgroundColor: colors.buttonText }]}>
@@ -569,5 +607,17 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 8,
     transition: 'width 0.3s',
+  },
+  autoPlayButton: {
+    position: 'absolute',
+    right: 24,
+    bottom: 24,
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 30,
+    borderRadius: 24,
+    backgroundColor: 'transparent',
   },
 }); 
