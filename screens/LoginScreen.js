@@ -53,7 +53,6 @@ export default function LoginScreen({ navigation }) {
       resizeMode="cover"
     >
       <View style={styles.container}>
-        <Text style={[styles.title, typography.styles.h1, { color: '#fff' }]}>Knowia</Text>
         <Text style={[styles.subtitle, typography.styles.subtitle, { color: '#fff' }]}>Giriş Yap</Text>
 
         <View style={styles.form}>
@@ -75,15 +74,24 @@ export default function LoginScreen({ navigation }) {
             secureTextEntry
           />
 
-          <TouchableOpacity 
-            style={[styles.button, { backgroundColor: colors.buttonColor }, loading && styles.buttonDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            <Text style={[styles.buttonText, typography.styles.button, { color: colors.buttonText }]}>
-              {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={[styles.button, styles.forgotButton, { flex: 1 }]}
+              onPress={() => Alert.alert('Şifremi Unuttum', 'Şifre sıfırlama işlemi başlatılacak.')}
+              disabled={loading}
+            >
+              <Text style={[styles.buttonText, typography.styles.button, { color: '#FF992B' }]}>Şifremi Unuttum</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.button, { backgroundColor: colors.buttonColor, flex: 1 }, loading && styles.buttonDisabled]}
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              <Text style={[styles.buttonText, typography.styles.button, { color: colors.buttonText }]}> 
+                {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.divider}>
             <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
@@ -125,8 +133,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    paddingBottom: '15%',
-    justifyContent: 'flex-end',
+    paddingTop: '85%',
+    justifyContent: 'center',
   },
   title: {
     textAlign: 'center',
@@ -192,5 +200,15 @@ const styles = StyleSheet.create({
   },
   googleButtonText: {
     marginLeft: 10,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 4,
+    marginBottom: 10,
+  },
+  forgotButton: {
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderWidth: 1,
+    borderColor: '#FF992B',
   },
 }); 

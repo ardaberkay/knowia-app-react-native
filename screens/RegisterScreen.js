@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ImageBackground } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
@@ -37,58 +37,62 @@ export default function RegisterScreen({ navigation }) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.title, typography.styles.h1, { color: colors.text }]}>Knowia</Text>
-      <Text style={[styles.subtitle, typography.styles.subtitle, { color: colors.subtext }]}>Kayıt Ol</Text>
+    <ImageBackground
+      source={require('../assets/bgtwo.png')}
+      style={styles.backgroundImage}
+      resizeMode="cover"
+    >
+      <View style={styles.container}>
+        <Text style={[styles.subtitle, typography.styles.subtitle, { color: '#fff' }]}>Kayıt Ol</Text>
+        <View style={styles.form}>
+          <TextInput
+            style={[styles.input, typography.styles.body, { borderColor: colors.border, color: colors.text }]}
+            placeholder="E-posta"
+            placeholderTextColor={colors.muted}
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
+          <TextInput
+            style={[styles.input, typography.styles.body, { borderColor: colors.border, color: colors.text }]}
+            placeholder="Şifre"
+            placeholderTextColor={colors.muted}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
+          <TextInput
+            style={[styles.input, typography.styles.body, { borderColor: colors.border, color: colors.text }]}
+            placeholder="Şifre Tekrar"
+            placeholderTextColor={colors.muted}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+          />
 
-      <View style={styles.form}>
-        <TextInput
-          style={[styles.input, typography.styles.body, { borderColor: colors.border, color: colors.text }]}
-          placeholder="E-posta"
-          placeholderTextColor={colors.muted}
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-        <TextInput
-          style={[styles.input, typography.styles.body, { borderColor: colors.border, color: colors.text }]}
-          placeholder="Şifre"
-          placeholderTextColor={colors.muted}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
-        <TextInput
-          style={[styles.input, typography.styles.body, { borderColor: colors.border, color: colors.text }]}
-          placeholder="Şifre Tekrar"
-          placeholderTextColor={colors.muted}
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-        />
+          <TouchableOpacity 
+            style={[styles.button, { backgroundColor: '#FF992B'}, loading && styles.buttonDisabled]}
+            onPress={handleRegister}
+            disabled={loading}
+          >
+            <Text style={[styles.buttonText, typography.styles.button, { color: colors.buttonText }]}>
+              {loading ? 'Kayıt yapılıyor...' : 'Kayıt Ol'}
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={[styles.button, { backgroundColor: colors.buttonColor }, loading && styles.buttonDisabled]}
-          onPress={handleRegister}
-          disabled={loading}
-        >
-          <Text style={[styles.buttonText, typography.styles.button, { color: colors.buttonText }]}>
-            {loading ? 'Kayıt yapılıyor...' : 'Kayıt Ol'}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.linkButton}
-          onPress={() => navigation.navigate('Login')}
-        >
-          <Text style={[styles.linkText, typography.styles.link, { color: colors.secondary }]}>
-            Zaten hesabınız var mı?{' '}
-            <Text style={typography.styles.linkBold}>Giriş yapın</Text>
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.linkButton}
+            onPress={() => navigation.navigate('Login')}
+          >
+            <Text style={[styles.linkText, typography.styles.link, { color: colors.secondary }]}>
+              Zaten hesabınız var mı?{' '}
+              <Text style={typography.styles.linkBold}>Giriş yapın</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </ImageBackground>
   );
 }
 
@@ -97,6 +101,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     justifyContent: 'center',
+    paddingTop: '65%',
   },
   title: {
     textAlign: 'center',
@@ -111,8 +116,10 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
     padding: 15,
     borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
   button: {
     padding: 15,
@@ -131,5 +138,10 @@ const styles = StyleSheet.create({
   },
   linkText: {
     // fontSize ve fontFamily artık typography'den geliyor
+  },
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
 }); 
