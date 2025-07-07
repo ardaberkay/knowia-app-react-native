@@ -13,6 +13,7 @@ import { getCurrentUserProfile, updateLastActiveAt } from '../services/ProfileSe
 import { registerForPushNotificationsAsync } from '../services/NotificationService';
 import { supabase } from '../lib/supabase';
 import { getFavoriteDecks } from '../services/FavoriteService';
+import DeckSkeleton from '../components/DeckSkeleton';
 
 const DECK_CATEGORIES = {
   inProgressDecks: 'Çalıştığım Desteler',
@@ -184,7 +185,18 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
         {loading ? (
-          <ActivityIndicator size="small" color="#007AFF" />
+          <ScrollView 
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.decksContainer}
+            decelerationRate="fast"
+            snapToInterval={130}
+            snapToAlignment="start"
+          >
+            {[...Array(4)].map((_, i) => (
+              <DeckSkeleton key={i} />
+            ))}
+          </ScrollView>
         ) : limitedDecks.length === 0 ? (
           <Text style={[styles.emptyText, typography.styles.caption]}>Henüz deste bulunmuyor</Text>
         ) : (

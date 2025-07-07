@@ -80,7 +80,7 @@ export default function LoginScreen({ navigation }) {
               onPress={() => Alert.alert('Şifremi Unuttum', 'Şifre sıfırlama işlemi başlatılacak.')}
               disabled={loading}
             >
-              <Text style={[styles.buttonText, typography.styles.button, { color: '#FF992B' }]}>Şifremi Unuttum</Text>
+              <Text style={[styles.buttonText, typography.styles.button, { color: '#4A4A4A' }]}>Şifremi Unuttum</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.button, { backgroundColor: colors.buttonColor, flex: 1 }, loading && styles.buttonDisabled]}

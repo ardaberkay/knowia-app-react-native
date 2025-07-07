@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, TextInput, Modal, Platform, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, TextInput, Modal, Platform, Image, Alert, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
@@ -545,6 +545,14 @@ export default function LibraryScreen() {
     );
   };
 
+  // Yükleniyor ekranı
+  const renderLoading = () => (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color={colors.text} style={{ marginBottom: 16 }} />
+      <Text style={[styles.loadingText, { color: colors.text }]}>Yükleniyor...</Text>
+    </View>
+  );
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }] }>
       {/* Sekmeler */}
@@ -632,52 +640,60 @@ export default function LibraryScreen() {
       </Modal>
       {/* Kartlar */}
       {activeTab === 'favorites' ? (
-        <FlatList
-          data={filteredFavorites}
-          keyExtractor={(item, idx) => String(item.id) + '_' + item._type}
-          renderItem={renderFavoriteItem}
-          numColumns={2}
-          style={{ backgroundColor: colors.background, flex: 1 }}
-          contentContainerStyle={styles.decksContainer}
-          ListEmptyComponent={<Text style={[styles.emptyText, typography.styles.caption]}>Henüz favori bulunmuyor</Text>}
-          showsVerticalScrollIndicator={false}
-          refreshing={favoritesLoading}
-          onRefresh={async () => {
-            setFavoritesLoading(true);
-            try {
-              const { data: { user } } = await supabase.auth.getUser();
-              const decks = await getFavoriteDecks(user.id);
-              const cards = await getFavoriteCards(user.id);
-              setFavoriteDecks(decks || []);
-              setFavoriteCards(cards || []);
-              setFavoritesFetched(true);
-            } catch (e) {
-              setFavoriteDecks([]);
-              setFavoriteCards([]);
-            } finally {
-              setFavoritesLoading(false);
-            }
-          }}
-        />
+        favoritesLoading ? (
+          renderLoading()
+        ) : (
+          <FlatList
+            data={filteredFavorites}
+            keyExtractor={(item, idx) => String(item.id) + '_' + item._type}
+            renderItem={renderFavoriteItem}
+            numColumns={2}
+            style={{ backgroundColor: colors.background, flex: 1 }}
+            contentContainerStyle={styles.decksContainer}
+            ListEmptyComponent={<Text style={[styles.emptyText, typography.styles.caption]}>Henüz favori bulunmuyor</Text>}
+            showsVerticalScrollIndicator={false}
+            refreshing={favoritesLoading}
+            onRefresh={async () => {
+              setFavoritesLoading(true);
+              try {
+                const { data: { user } } = await supabase.auth.getUser();
+                const decks = await getFavoriteDecks(user.id);
+                const cards = await getFavoriteCards(user.id);
+                setFavoriteDecks(decks || []);
+                setFavoriteCards(cards || []);
+                setFavoritesFetched(true);
+              } catch (e) {
+                setFavoriteDecks([]);
+                setFavoriteCards([]);
+              } finally {
+                setFavoritesLoading(false);
+              }
+            }}
+          />
+        )
       ) : (
-        <FlatList
-          data={filteredDecks}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={renderDeckItem}
-          numColumns={2}
-          style={{ backgroundColor: colors.background, flex: 1 }}
-          contentContainerStyle={styles.decksContainer}
-          ListEmptyComponent={<Text style={[styles.emptyText, typography.styles.caption]}>Henüz deste bulunmuyor</Text>}
-          showsVerticalScrollIndicator={false}
-          refreshing={loading}
-          onRefresh={() => {
-            setLoading(true);
-            getDecksByCategory('myDecks').then(decks => {
-              setMyDecks(decks || []);
-              setLoading(false);
-            });
-          }}
-        />
+        loading ? (
+          renderLoading()
+        ) : (
+          <FlatList
+            data={filteredDecks}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={renderDeckItem}
+            numColumns={2}
+            style={{ backgroundColor: colors.background, flex: 1 }}
+            contentContainerStyle={styles.decksContainer}
+            ListEmptyComponent={<Text style={[styles.emptyText, typography.styles.caption]}>Henüz deste bulunmuyor</Text>}
+            showsVerticalScrollIndicator={false}
+            refreshing={loading}
+            onRefresh={() => {
+              setLoading(true);
+              getDecksByCategory('myDecks').then(decks => {
+                setMyDecks(decks || []);
+                setLoading(false);
+              });
+            }}
+          />
+        )
       )}
     </View>
   );
@@ -910,5 +926,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.10,
     shadowRadius: 6,
     elevation: 3,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 200,
+  },
+  loadingText: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 }); 

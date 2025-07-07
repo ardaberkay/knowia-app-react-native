@@ -333,8 +333,11 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.buttonColor} />
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}> 
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.buttonColor} />
+          <Text style={[styles.loadingText, { color: colors.text }]}>Kartlar Yükleniyor</Text>
+        </View>
       </SafeAreaView>
     );
   }
@@ -619,5 +622,16 @@ const styles = StyleSheet.create({
     zIndex: 30,
     borderRadius: 24,
     backgroundColor: 'transparent',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 18,
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 }); 

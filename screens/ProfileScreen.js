@@ -6,6 +6,8 @@ import { getCurrentUserProfile, updateNotificationPreference } from '../services
 import { useNavigation } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
+import { ProfileSkeleton } from '../components/DeckSkeleton';
 
 export default function ProfileScreen() {
   const { colors, isDarkMode, toggleTheme, themePreference, loading: themeLoading } = useTheme();
@@ -15,6 +17,7 @@ export default function ProfileScreen() {
   const [error, setError] = useState(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [userId, setUserId] = useState(null);
+  const { logout } = useAuth();
 
   useEffect(() => {
     const checkNotificationStatus = async () => {
@@ -121,8 +124,13 @@ export default function ProfileScreen() {
     { label: 'Hükümler ve Politikalar', onPress: () => alert('Hükümler ve Politikalar') },
   ];
 
-  const handleLogout = () => {
-    alert('Çıkış yapıldı!');
+  const handleLogout = async () => {
+    try {
+      const { error } = await logout();
+      if (error) throw error;
+    } catch (error) {
+      alert('Çıkış yapılırken bir hata oluştu');
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -149,7 +157,7 @@ export default function ProfileScreen() {
       {/* Sabit profil alanı */}
       <View style={styles.profileRow}>
         {(loading || themeLoading) ? (
-          <ActivityIndicator size="large" color={colors.buttonColor} />
+          <ProfileSkeleton />
         ) : error ? (
           <Text style={[typography.styles.body, { color: colors.error }]}>Hata: {error}</Text>
         ) : profile ? (
@@ -241,7 +249,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   deleteButton: {
-    backgroundColor: '#fff0f0',
     paddingVertical: 12,
     borderRadius: 24,
     borderWidth: 1,
