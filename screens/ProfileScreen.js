@@ -8,6 +8,8 @@ import * as Notifications from 'expo-notifications';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { ProfileSkeleton } from '../components/DeckSkeleton';
+import { useTranslation } from 'react-i18next';
+import Modal from 'react-native-modal';
 
 export default function ProfileScreen() {
   const { colors, isDarkMode, toggleTheme, themePreference, loading: themeLoading } = useTheme();
@@ -18,6 +20,9 @@ export default function ProfileScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [userId, setUserId] = useState(null);
   const { logout } = useAuth();
+  const { t, i18n } = useTranslation();
+  const [isLanguageModalVisible, setLanguageModalVisible] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState(i18n.language);
 
   useEffect(() => {
     const checkNotificationStatus = async () => {
@@ -78,14 +83,20 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleLanguageChange = async (lng) => {
+    setSelectedLanguage(lng);
+    await i18n.changeLanguage(lng);
+    setLanguageModalVisible(false);
+  };
+
   // Menü kategorileri
   const accountItems = [
-    { label: 'Profili Düzenle', onPress: () => navigation.navigate('EditProfile') },
-    { label: 'Arkadaşlarını Davet Et', onPress: handleInviteFriends },
+    { label: t('profile.edit'), onPress: () => navigation.navigate('EditProfile') },
+    { label: t('profile.invite'), onPress: handleInviteFriends },
   ];
   const appSettingsItems = [
     {
-      label: 'Gece Modu',
+      label: t('profile.night_mode'),
       right: (
         <TouchableOpacity onPress={toggleTheme} style={{ flexDirection: 'row', alignItems: 'center' }}>
 
@@ -103,9 +114,17 @@ export default function ProfileScreen() {
       ),
       onPress: toggleTheme,
     },
-    { label: 'Dil Ayarları', onPress: () => alert('Dil Ayarları') },
     {
-      label: 'Bildirimlere İzin Ver',
+      label: t('profile.language'),
+      onPress: () => setLanguageModalVisible(true),
+      right: (
+        <Text style={{ color: colors.text, marginRight: 8 }}>
+          {selectedLanguage === 'tr' ? 'Türkçe' : 'English'}
+        </Text>
+      ),
+    },
+    {
+      label: t('profile.notifications'),
       right: (
         <Switch
           value={notificationsEnabled}
@@ -119,9 +138,9 @@ export default function ProfileScreen() {
     },
   ];
   const infoItems = [
-    { label: 'Hakkımızda', onPress: () => alert('Hakkımızda') },
-    { label: 'Geri Bildirim Gönder', onPress: () => alert('Geri Bildirim Gönder') },
-    { label: 'Hükümler ve Politikalar', onPress: () => alert('Hükümler ve Politikalar') },
+    { label: t('profile.about'), onPress: () => alert(t('profile.about')) },
+    { label: t('profile.feedback'), onPress: () => alert(t('profile.feedback')) },
+    { label: t('profile.terms'), onPress: () => alert(t('profile.terms')) },
   ];
 
   const handleLogout = async () => {
@@ -178,20 +197,44 @@ export default function ProfileScreen() {
       {/* Scrollable alan: menü + alt butonlar */}
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.menuList}>
-          {renderMenuSection('Hesap', accountItems)}
-          {renderMenuSection('Uygulama Ayarları', appSettingsItems)}
-          {renderMenuSection('Bilgi & Destek', infoItems)}
+          {renderMenuSection(t('profile.account'), accountItems)}
+          {renderMenuSection(t('profile.settings'), appSettingsItems)}
+          {renderMenuSection(t('profile.info'), infoItems)}
         </View>
         {/* Alt butonlar yan yana */}
         <View style={styles.bottomButtonsRow}>
           <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount}>
-            <Text style={[typography.styles.button, { color: colors.error }, styles.deleteText]}>Hesabı Sil</Text>
+            <Text style={[typography.styles.button, { color: colors.error }, styles.deleteText]}>{t('profile.delete')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={[typography.styles.button, { color: colors.buttonText }, styles.logoutText]}>Çıkış Yap</Text>
+            <Text style={[typography.styles.button, { color: colors.buttonText }, styles.logoutText]}>{t('profile.logout')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
+      {/* Dil seçici modal */}
+      <Modal isVisible={isLanguageModalVisible} onBackdropPress={() => setLanguageModalVisible(false)}>
+        <View style={{ backgroundColor: colors.background, borderRadius: 16, padding: 24 }}>
+          <Text style={[typography.styles.h2, { color: colors.text, marginBottom: 16 }]}>{t('profile.language')}</Text>
+          <TouchableOpacity
+            style={{ paddingVertical: 12 }}
+            onPress={() => handleLanguageChange('tr')}
+            disabled={selectedLanguage === 'tr'}
+          >
+            <Text style={{ color: selectedLanguage === 'tr' ? colors.secondary : colors.text, fontWeight: selectedLanguage === 'tr' ? 'bold' : 'normal' }}>
+              Türkçe
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{ paddingVertical: 12 }}
+            onPress={() => handleLanguageChange('en')}
+            disabled={selectedLanguage === 'en'}
+          >
+            <Text style={{ color: selectedLanguage === 'en' ? colors.secondary : colors.text, fontWeight: selectedLanguage === 'en' ? 'bold' : 'normal' }}>
+              English
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </View>
   );
 }

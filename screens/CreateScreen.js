@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { typography } from '../theme/typography';
 import { useTheme } from '../theme/theme';
+import { useTranslation } from 'react-i18next';
 
 export default function CreateScreen() {
   const [name, setName] = useState('');
@@ -16,6 +17,7 @@ export default function CreateScreen() {
   const [showDetails, setShowDetails] = useState(false);
   const navigation = useNavigation();
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   const resetForm = () => {
     setName('');
@@ -58,8 +60,8 @@ export default function CreateScreen() {
 
   const handleShowDetails = () => {
     Alert.alert(
-      'Toplulukta Paylaş Ayrıntıları',
-      'Bu deste toplulukla paylaşıldığında diğer kullanıcılar tarafından da görüntülenebilir ve kullanılabilir. Paylaşımı istediğin zaman kapatabilirsin.'
+      t('create.shareDetails', 'Toplulukta Paylaşma Ayrıntıları'),
+      t('create.shareDetailsText', 'Bu deste toplulukla paylaşıldığında diğer kullanıcılar tarafından da görüntülenebilir ve kullanılabilir. Paylaşımı istediğin zaman kapatabilirsin.')
     );
   };
 
@@ -75,11 +77,11 @@ export default function CreateScreen() {
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="book" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Deste Adı *</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t('create.name', 'Deste Adı')} *</Text>
             </View>
             <TextInput
               style={[styles.input, typography.styles.body, {color: colors.text}]}
-              placeholder="Örn: İngilizce"
+              placeholder={t('create.nameExam', 'Örn: İngilizce')}
               placeholderTextColor={colors.muted}
               value={name}
               onChangeText={setName}
@@ -88,12 +90,12 @@ export default function CreateScreen() {
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="swap-horizontal" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Karşılığı</Text>
-              <Text style={[styles.optional, typography.styles.caption, { color: colors.muted }]}> (opsiyonel)</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t('create.toName', 'Karşılığı')}</Text>
+              <Text style={[styles.optional, typography.styles.caption, { color: colors.muted }]}> ({t('create.optional', 'opsiyonel')})</Text>
             </View>
             <TextInput
               style={[styles.input, typography.styles.body, {color: colors.text}]}
-              placeholder="Örn: Türkçe"
+              placeholder={t('create.toNameExam', 'Örn: Türkçe')}
               placeholderTextColor={colors.muted}
               value={toName}
               onChangeText={setToName}
@@ -102,12 +104,12 @@ export default function CreateScreen() {
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="document-text" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Açıklama</Text>
-              <Text style={[styles.optional, typography.styles.caption, { color: colors.muted }]}> (opsiyonel)</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t('create.description', 'Açıklama')}</Text>
+              <Text style={[styles.optional, typography.styles.caption, { color: colors.muted }]}> ({t('create.optional', 'opsiyonel')})</Text>
             </View>
             <TextInput
               style={[styles.input, typography.styles.body, { height: 120, textAlignVertical: 'top', color: colors.text}]}
-              placeholder="Deste hakkında açıklama..."
+              placeholder={t('create.descriptionExam', 'Deste hakkında açıklama...')}
               placeholderTextColor={colors.muted}
               value={description}
               onChangeText={setDescription}
@@ -118,7 +120,7 @@ export default function CreateScreen() {
             <View style={styles.switchRow}>
               <View style={styles.labelRow}>
                 <Ionicons name="people" size={20} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Toplulukla paylaş</Text>
+                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t('create.isShared', 'Toplulukla paylaş')}</Text>
               </View>
               <Switch
                 value={isShared}
@@ -130,7 +132,7 @@ export default function CreateScreen() {
           </View>
           <View style={styles.detailsRow}>
             <TouchableOpacity onPress={handleShowDetails} activeOpacity={0.7}>
-              <Text style={[styles.detailsText, typography.styles.link, { color: colors.secondary }]}>Ayrıntılar</Text>
+              <Text style={[styles.detailsText, typography.styles.link, { color: colors.secondary }]}>{t('create.details', 'Ayrıntılar')}</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.buttonRowModern}>
@@ -139,14 +141,14 @@ export default function CreateScreen() {
               onPress={resetForm}
               disabled={loading}
             >
-              <Text style={[styles.favButtonTextModern, typography.styles.button]}>Geri Al</Text>
+              <Text style={[styles.favButtonTextModern, typography.styles.button]}>{t('create.removeChanges', 'Geri Al')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.startButtonModern, loading && { opacity: 0.7 }]}
               onPress={handleCreate}
               disabled={loading}
             >
-              <Text style={[styles.startButtonTextModern, typography.styles.button]}>{loading ? 'Oluşturuluyor...' : 'Oluştur'}</Text>
+              <Text style={[styles.startButtonTextModern, typography.styles.button]}>{loading ? t('create.creating', 'Oluşturuluyor...') : t('create.create', 'Oluştur')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

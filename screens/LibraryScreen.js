@@ -8,6 +8,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { getFavoriteDecks, getFavoriteCards } from '../services/FavoriteService';
 import { supabase } from '../lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 export default function LibraryScreen() {
   const { colors, isDark } = useTheme();
@@ -26,6 +27,7 @@ export default function LibraryScreen() {
   const [favoritesFetched, setFavoritesFetched] = useState(false);
   const [activeDeckMenuId, setActiveDeckMenuId] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const { t } = useTranslation();
 
   const screenWidth = Dimensions.get('window').width;
   const horizontalPadding = 16 * 2;
@@ -36,9 +38,9 @@ export default function LibraryScreen() {
   const cardHeight = cardWidth / cardAspectRatio;
 
   const filterOptions = [
-    { key: 'all', label: 'Tümü' },
-    { key: 'decks', label: 'Desteler' },
-    { key: 'cards', label: 'Kartlar' },
+    { key: 'all', label: t('library.all', 'Tümü') },
+    { key: 'decks', label: t('library.decks', 'Desteler') },
+    { key: 'cards', label: t('library.cards', 'Kartlar') },
   ];
 
   const DROPDOWN_WIDTH = 140; // Dropdown menü genişliği
@@ -186,7 +188,7 @@ export default function LibraryScreen() {
                   onPress={() => { setActiveDeckMenuId(null); navigation.navigate('DeckEdit', { deck: item }); }}
                 >
                   <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Düzenle</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>{t('library.set', 'Desteyi Düzenle')}</Text>
                 </TouchableOpacity>
               )}
               {/* Favorilere Ekle/Çıkar herkes için */}
@@ -207,7 +209,7 @@ export default function LibraryScreen() {
                   style={{ marginRight: 12 }}
                 />
                 <Text style={{ fontSize: 16, fontWeight: '500', color: favoriteDecks.some(deck => deck.id === item.id) ? '#F98A21' : colors.text }}>
-                  {favoriteDecks.some(deck => deck.id === item.id) ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
+                  {favoriteDecks.some(deck => deck.id === item.id) ? t('library.removeFavorite', 'Favorilerden Çıkar') : t('library.addFavorite', 'Favorilere Ekle')}
                 </Text>
               </TouchableOpacity>
               {/* Desteyi Sil sadece kendi destesi ise */}
@@ -216,12 +218,12 @@ export default function LibraryScreen() {
                   onPress={() => handleDeleteDeck(item.id)}
                 >
                   <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: '#E74C3C' }}>Desteyi Sil</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: '#E74C3C' }}>{t('library.deleteDeck', 'Desteyi Sil')}</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16 }} onPress={() => setActiveDeckMenuId(null)}>
                 <MaterialCommunityIcons name="close" size={22} color={colors.text} style={{ marginRight: 12 }} />
-                <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Kapat</Text>
+                <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>{t('library.close', 'Kapat')}</Text>
               </TouchableOpacity>
             </View>
           </Modal>
@@ -310,7 +312,7 @@ export default function LibraryScreen() {
                     onPress={() => { setActiveDeckMenuId(null); navigation.navigate('DeckEdit', { deck: item }); }}
                   >
                     <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
-                    <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Düzenle</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>{t('library.set', 'Desteyi Düzenle')}</Text>
                   </TouchableOpacity>
                 )}
                 {/* Favorilere Ekle/Çıkar herkes için */}
@@ -331,7 +333,7 @@ export default function LibraryScreen() {
                     style={{ marginRight: 12 }}
                   />
                   <Text style={{ fontSize: 16, fontWeight: '500', color: favoriteDecks.some(deck => deck.id === item.id) ? '#F98A21' : colors.text }}>
-                    {favoriteDecks.some(deck => deck.id === item.id) ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
+                    {favoriteDecks.some(deck => deck.id === item.id) ? t('library.removeFavorite', 'Favorilerden Çıkar') : t('library.addFavorite', 'Favorilere Ekle')}
                   </Text>
                 </TouchableOpacity>
                 {/* Desteyi Sil sadece kendi destesi ise */}
@@ -340,12 +342,12 @@ export default function LibraryScreen() {
                     onPress={() => handleDeleteDeck(item.id)}
                   >
                     <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
-                    <Text style={{ fontSize: 16, fontWeight: '500', color: '#E74C3C' }}>Desteyi Sil</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '500', color: '#E74C3C' }}>{t('library.deleteDeck', 'Desteyi Sil')}</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16 }} onPress={() => setActiveDeckMenuId(null)}>
                   <MaterialCommunityIcons name="close" size={22} color={colors.text} style={{ marginRight: 12 }} />
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Kapat</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>{t('library.close', 'Kapat')}</Text>
                 </TouchableOpacity>
               </View>
             </Modal>
@@ -422,7 +424,7 @@ export default function LibraryScreen() {
                     }}
                   >
                     <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
-                    <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Kartı Düzenle</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>{t('library.editCard', 'Kartı Düzenle')}</Text>
                   </TouchableOpacity>
                 )}
                 {/* Favorilerden Çıkar */}
@@ -439,7 +441,7 @@ export default function LibraryScreen() {
                     style={{ marginRight: 12 }}
                   />
                   <Text style={{ fontSize: 16, fontWeight: '500', color: '#F98A21' }}>
-                    Favorilerden Çıkar
+                    {t('library.removeFavorite', 'Favorilerden Çıkar')}
                   </Text>
                 </TouchableOpacity>
                 {/* Kartı Sil (sadece kendi kartıysa) */}
@@ -448,13 +450,13 @@ export default function LibraryScreen() {
                     onPress={() => handleDeleteCard(item.id)}
                   >
                     <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
-                    <Text style={{ fontSize: 16, fontWeight: '500', color: '#E74C3C' }}>Kartı Sil</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '500', color: '#E74C3C' }}>{t('library.deleteCard', 'Kartı Sil')}</Text>
                   </TouchableOpacity>
                 )}
                 {/* Kapat */}
                 <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16 }} onPress={() => setActiveDeckMenuId(null)}>
                   <MaterialCommunityIcons name="close" size={22} color={colors.text} style={{ marginRight: 12 }} />
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Kapat</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>{t('library.close', 'Kapat')}</Text>
                 </TouchableOpacity>
               </View>
             </Modal>
@@ -493,12 +495,12 @@ export default function LibraryScreen() {
   // Deste silme fonksiyonu
   const handleDeleteDeck = (deckId) => {
     Alert.alert(
-      'Deste Silinsin mi?',
-      'Bu işlemi geri alamazsınız. Emin misiniz?',
+      t('library.deleteConfirmation', 'Bu işlemi geri alamazsınız. Emin misiniz?'),
+      t('library.deleteConfirm', 'Deste Silinsin mi?'),
       [
-        { text: 'İptal', style: 'cancel' },
+        { text: t('library.cancel', 'İptal'), style: 'cancel' },
         {
-          text: 'Sil',
+          text: t('library.delete', 'Sil'),
           style: 'destructive',
           onPress: async () => {
             await supabase.from('decks').delete().eq('id', deckId);
@@ -528,10 +530,10 @@ export default function LibraryScreen() {
   // Kart silme fonksiyonu
   const handleDeleteCard = (cardId) => {
     Alert.alert(
-      'Kart Silinsin mi?',
-      'Bu işlemi geri alamazsınız. Emin misiniz?',
+      t('library.deleteCardConfirmation', 'Kart Silinsin mi?'),
+      t('library.deleteCardConfirm', 'Bu işlemi geri alamazsınız. Emin misiniz?'),
       [
-        { text: 'İptal', style: 'cancel' },
+        { text: t('library.cancel', 'İptal'), style: 'cancel' },
         {
           text: 'Sil',
           style: 'destructive',
@@ -561,13 +563,13 @@ export default function LibraryScreen() {
           style={[styles.tab, activeTab === 'myDecks' && [styles.activeTab, { backgroundColor: colors.libraryTab }]]}
           onPress={() => setActiveTab('myDecks')}
         >
-          <Text style={[styles.tabText, activeTab === 'myDecks' && styles.activeTabText]}>Destelerim</Text>
+          <Text style={[styles.tabText, activeTab === 'myDecks' && styles.activeTabText]}>{t('library.myDecks', 'Destelerim')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'favorites' && [styles.activeTab, { backgroundColor: colors.libraryTab }]]}
           onPress={() => setActiveTab('favorites')}
         >
-          <Text style={[styles.tabText, activeTab === 'favorites' && styles.activeTabText]}>Favorilerim</Text>
+          <Text style={[styles.tabText, activeTab === 'favorites' && styles.activeTabText]}>{t('library.favorites', 'Favorilerim')}</Text>
         </TouchableOpacity>
       </View>
       {/* Arama ve Filtre Butonu */}
@@ -577,7 +579,7 @@ export default function LibraryScreen() {
             <Ionicons name="search" size={20} color="#B0B0B0" style={styles.searchIcon} />
             <TextInput
               style={styles.searchBarSmall}
-              placeholder="Deste/Kart ara..."
+              placeholder={t('library.searchPlaceholder', 'Deste/Kart ara...')}
               placeholderTextColor="#B0B0B0"
               value={search}
               onChangeText={setSearch}
@@ -650,7 +652,7 @@ export default function LibraryScreen() {
             numColumns={2}
             style={{ backgroundColor: colors.background, flex: 1 }}
             contentContainerStyle={styles.decksContainer}
-            ListEmptyComponent={<Text style={[styles.emptyText, typography.styles.caption]}>Henüz favori bulunmuyor</Text>}
+            ListEmptyComponent={<Text style={[styles.emptyText, typography.styles.caption]}>{t('library.noFavorites', 'Henüz favori bulunmuyor')}</Text>}
             showsVerticalScrollIndicator={false}
             refreshing={favoritesLoading}
             onRefresh={async () => {
@@ -682,7 +684,7 @@ export default function LibraryScreen() {
             numColumns={2}
             style={{ backgroundColor: colors.background, flex: 1 }}
             contentContainerStyle={styles.decksContainer}
-            ListEmptyComponent={<Text style={[styles.emptyText, typography.styles.caption]}>Henüz deste bulunmuyor</Text>}
+            ListEmptyComponent={<Text style={[styles.emptyText, typography.styles.caption]}>{t('library.noDecks', 'Henüz deste bulunmuyor')}</Text>}
             showsVerticalScrollIndicator={false}
             refreshing={loading}
             onRefresh={() => {

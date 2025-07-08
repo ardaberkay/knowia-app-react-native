@@ -14,12 +14,9 @@ import { registerForPushNotificationsAsync } from '../services/NotificationServi
 import { supabase } from '../lib/supabase';
 import { getFavoriteDecks } from '../services/FavoriteService';
 import DeckSkeleton from '../components/DeckSkeleton';
+import { useTranslation } from 'react-i18next';
 
-const DECK_CATEGORIES = {
-  inProgressDecks: 'Çalıştığım Desteler',
-  defaultDecks: 'Hazır Desteler',
-  communityDecks: 'Topluluk Desteleri',
-};
+
 
 // Kategoriye göre ikon seçen yardımcı fonksiyon
 function getCategoryIcon(category) {
@@ -43,6 +40,14 @@ export default function HomeScreen() {
   const [activeDeckMenuId, setActiveDeckMenuId] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [favoriteDecks, setFavoriteDecks] = useState([]);
+
+  const { t } = useTranslation();
+
+const DECK_CATEGORIES = {
+  inProgressDecks: t('home.inProgressDecks', 'Çalıştığım Desteler'),
+  defaultDecks: t('home.defaultDecks', 'Hazır Desteler'),
+  communityDecks: t('home.communityDecks', 'Topluluk Desteleri'),
+};
 
   useEffect(() => {
     loadDecks();
@@ -131,13 +136,13 @@ export default function HomeScreen() {
   };
 
   const handleDeleteDeck = (deckId) => {
-    Alert.alert(
-      'Deste Silinsin mi?',
-      'Bu işlemi geri alamazsınız. Emin misiniz?',
+      Alert.alert(
+          t('home.deleteConfirmation', 'Deste Silinsin mi?'),
+          t('home.deleteConfirm', 'Desteyi silmek istediğinize emin misiniz?'),
       [
-        { text: 'İptal', style: 'cancel' },
+        { text: t('home.cancel', 'İptal'), style: 'cancel' },
         {
-          text: 'Sil',
+          text: t('home.delete', 'Sil'),
           style: 'destructive',
           onPress: async () => {
             await supabase.from('decks').delete().eq('id', deckId);
@@ -179,7 +184,7 @@ export default function HomeScreen() {
           </View>
           <TouchableOpacity style={styles.seeAllButton} onPress={handleSeeAll} activeOpacity={0.7}>
             <View style={styles.seeAllContent}>
-              <Text style={[styles.seeAllText, typography.styles.button, { color: colors.secondary }]}>Tümü</Text>
+              <Text style={[styles.seeAllText, typography.styles.button, { color: colors.secondary }]}>{t('home.all', 'Tümü')}</Text>
               <Ionicons name="chevron-forward" size={18} color="#007AFF" style={{ marginLeft: 2 }} />
             </View>
           </TouchableOpacity>
@@ -333,7 +338,7 @@ export default function HomeScreen() {
                   onPress={() => { setActiveDeckMenuId(null); navigation.navigate('DeckEdit', { deck: selectedDeck }); }}
                 >
                   <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Düzenle</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>{t('home.edit', 'Düzenle')}</Text>
                 </TouchableOpacity>
               )}
               {/* Favorilere Ekle/Çıkar herkes için */}
@@ -354,7 +359,7 @@ export default function HomeScreen() {
                   style={{ marginRight: 12 }}
                 />
                 <Text style={{ fontSize: 16, fontWeight: '500', color: isFavorite ? '#F98A21' : colors.text }}>
-                  {isFavorite ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
+                  {isFavorite ? t('home.removeFavorite', 'Favorilerden Çıkar') : t('home.addFavorite', 'Favorilere Ekle')}
                 </Text>
               </TouchableOpacity>
               {/* Desteyi Sil sadece kendi destesi ise */}
@@ -363,12 +368,12 @@ export default function HomeScreen() {
                   onPress={() => handleDeleteDeck(selectedDeck.id)}
                 >
                   <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: '#E74C3C' }}>Desteyi Sil</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: '#E74C3C' }}>{t('home.deleteDeck', 'Desteyi Sil')}</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16 }} onPress={() => setActiveDeckMenuId(null)}>
                 <MaterialCommunityIcons name="close" size={22} color={colors.text} style={{ marginRight: 12 }} />
-                <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Kapat</Text>
+                <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>{t('home.close', 'Kapat')}</Text>
               </TouchableOpacity>
             </>;
           })()}

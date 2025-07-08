@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ScrollView, Image, Platform, BackHandler, Modal, Alert, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ScrollView, Image, Platform, BackHandler, Modal, Alert, Dimensions, Animated, Easing, ActivityIndicator } from 'react-native';
 import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,6 +25,8 @@ export default function DeckCardsScreen({ route, navigation }) {
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [editMode, setEditMode] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const spinValue = useRef(new Animated.Value(0)).current;
 
   const screenHeight = Dimensions.get('window').height;
 
@@ -39,6 +41,7 @@ export default function DeckCardsScreen({ route, navigation }) {
   useEffect(() => {
     const fetchCards = async () => {
       try {
+        setLoading(true);
         const { data, error } = await supabase
           .from('cards')
           .select('id, question, answer, image, example, note, created_at')
@@ -50,6 +53,8 @@ export default function DeckCardsScreen({ route, navigation }) {
       } catch (e) {
         setCards([]);
         setOriginalCards([]);
+      } finally {
+        setLoading(false);
       }
     };
     fetchCards();
@@ -126,6 +131,22 @@ export default function DeckCardsScreen({ route, navigation }) {
       navigation.setOptions({ headerRight: undefined });
     }
   }, [selectedCard, editMode, colors.text, navigation]);
+
+  useEffect(() => {
+    if (loading) {
+      Animated.loop(
+        Animated.timing(spinValue, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      ).start();
+    } else {
+      spinValue.stopAnimation();
+      spinValue.setValue(0);
+    }
+  }, [loading]);
 
   const sortCards = (type, cardsList) => {
     if (type === 'az') {
@@ -470,8 +491,19 @@ export default function DeckCardsScreen({ route, navigation }) {
             data={filteredCards}
             keyExtractor={item => item.id?.toString()}
             showsVerticalScrollIndicator={true}
-            contentContainerStyle={{ paddingBottom: 24, paddingTop: 8 }}
-            ListEmptyComponent={<Text style={[typography.styles.caption, { color: colors.muted, marginLeft: 8, marginTop: 12 }]}>Bu destede henüz kart yok.</Text>}
+            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: 24, paddingTop: 8 }}
+            ListEmptyComponent={
+              loading ? (
+                <View style={{justifyContent: 'center', alignItems: 'center'}}>
+                  <ActivityIndicator size="large" color={colors.text} style={{ marginBottom: 16 }} />
+                  <Text style={[styles.loadingText, { color: colors.text }]}>Yükleniyor</Text>
+                </View>
+              ) : (
+                <View style={{justifyContent: 'center', alignItems: 'center'}}>
+                  <Text style={[typography.styles.caption, { color: colors.text, textAlign: 'center', fontSize: 16 }]}>Desteye bir kart ekle</Text>
+                </View>
+              )
+            }
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={[styles.cardItemGlass, {backgroundColor: colors.cards}]}
@@ -695,6 +727,16 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 }); 
 

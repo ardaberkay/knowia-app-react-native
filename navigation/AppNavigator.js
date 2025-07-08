@@ -23,12 +23,14 @@ import DeckCardsScreen from '../screens/DeckCardsScreen';
 import CardDetailScreen from '../screens/CardDetailScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function MainTabs() {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   return (
     <Tab.Navigator
       tabBar={props => <CustomTabBar {...props} />}
@@ -90,10 +92,10 @@ function MainTabs() {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Anasayfa', tabBarLabel: 'Anasayfa' }} />
-      <Tab.Screen name="Create" component={CreateScreen} options={{ title: 'Deste Oluştur', tabBarLabel: 'Oluştur', headerShown: true, headerTitleAlign: 'center', headerRight: () => <ProfileAvatarButton />}} />
-      <Tab.Screen name="Library" component={LibraryScreen} options={{ title: 'Kitaplığım', tabBarLabel: 'Kitaplığım', headerShown: true, headerTitleAlign: 'center', headerRight: () => <ProfileAvatarButton />}} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profilim', tabBarLabel: 'Profilim' }} />
+      <Tab.Screen name="Home" component={HomeScreen} options={{ title: t('tabs.home', 'Anasayfa'), tabBarLabel: t('tabs.home', 'Anasayfa') }} />
+      <Tab.Screen name="Create" component={CreateScreen} options={{ title: t('tabs.createDeck', 'Deste Oluştur'), tabBarLabel: t('tabs.create', 'Oluştur'), headerShown: true, headerTitleAlign: 'center', headerRight: () => <ProfileAvatarButton />}} />
+      <Tab.Screen name="Library" component={LibraryScreen} options={{ title: t('tabs.library', 'Kitaplığım'), tabBarLabel: t('tabs.library', 'Kitaplığım'), headerShown: true, headerTitleAlign: 'center', headerRight: () => <ProfileAvatarButton />}} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: t('tabs.profile', 'Profilim'), tabBarLabel: t('tabs.profile', 'Profilim') }} />
     </Tab.Navigator>
   );
 }
