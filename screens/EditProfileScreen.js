@@ -8,6 +8,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import { Buffer } from 'buffer';
+import { useTranslation } from 'react-i18next';
 
 export default function EditProfileScreen({ navigation }) {
   const { colors } = useTheme();
@@ -23,6 +24,7 @@ export default function EditProfileScreen({ navigation }) {
   const [initialState, setInitialState] = useState({});
   const [imageChanged, setImageChanged] = useState(false);
   const [imageFilePath, setImageFilePath] = useState(null); // storage path
+  const { t } = useTranslation();
 
   useEffect(() => {
     (async () => {
@@ -40,7 +42,7 @@ export default function EditProfileScreen({ navigation }) {
         });
         setImageFilePath(data.image_url ? getStoragePathFromUrl(data.image_url) : null);
       } catch (err) {
-        setError(err.message || 'Profil yüklenemedi');
+        setError(err.message || t('common.profileUpdatedError', 'Profil yüklenemedi'));
       } finally {
         setLoading(false);
       }
@@ -77,7 +79,7 @@ export default function EditProfileScreen({ navigation }) {
     } catch (err) {
       console.log('Fotoğraf seçme hatası:', err);
       if (err?.message) {
-        Alert.alert('Hata', 'Fotoğraf seçilemedi.');
+        Alert.alert(t('common.error', 'Hata'), t('common.imageNotSelected', 'Fotoğraf seçilemedi.'));
       }
     }
   };
@@ -90,14 +92,14 @@ export default function EditProfileScreen({ navigation }) {
         const { data, error } = await supabase.storage.from('avatars').remove([imageFilePath]);
         console.log('Silme sonucu (removePhoto):', data, error);
         if (error) {
-          Alert.alert('Hata', 'Fotoğraf silinemedi: ' + error.message);
+          Alert.alert(t('common.error', 'Hata'), t('common.imageRemoveError', 'Fotoğraf silinemedi: ') + error.message);
         }
       }
       setImageUrl('');
       setImageChanged(true);
       setImageFilePath(null);
     } catch (err) {
-      Alert.alert('Hata', 'Fotoğraf silinemedi.');
+      Alert.alert(t('common.error', 'Hata'), t('common.imageRemoveError', 'Fotoğraf silinemedi.'));
     }
   };
 
@@ -106,12 +108,12 @@ export default function EditProfileScreen({ navigation }) {
     setSaving(true);
     setError(null);
     if (username.length < 3 || username.length > 9) {
-      setError('Kullanıcı adı 3 ile 9 karakter arasında olmalıdır');
+        setError(t('common.usernameLengthError', 'Kullanıcı adı 3 ile 9 karakter arasında olmalıdır'));
       setSaving(false);
       return;
     }
     if (password && password !== passwordConfirm) {
-      setError('Şifreler eşleşmiyor');
+      setError(t('common.passwordMatchError', 'Şifreler eşleşmiyor'));
       setSaving(false);
       return;
     }
@@ -124,7 +126,7 @@ export default function EditProfileScreen({ navigation }) {
         const { data, error } = await supabase.storage.from('avatars').remove([imageFilePath]);
         console.log('Silme sonucu (handleSave):', data, error);
         if (error) {
-          Alert.alert('Hata', 'Fotoğraf silinemedi: ' + error.message);
+          Alert.alert(t('common.error', 'Hata'), t('common.imageRemoveError', 'Fotoğraf silinemedi: ') + error.message);
         }
       }
       // 2. Fotoğraf değiştiyse yeni fotoğrafı yükle
@@ -164,12 +166,12 @@ export default function EditProfileScreen({ navigation }) {
         const { error: passError } = await supabase.auth.updateUser({ password });
         if (passError) throw passError;
       }
-      Alert.alert('Başarılı', 'Profil güncellendi!', [
-        { text: 'Tamam', onPress: () => navigation.goBack() }
+      Alert.alert(t('common.success', 'Başarılı'), t('common.profileUpdated', 'Profil güncellendi!'), [
+        { text: t('common.ok', 'Tamam'), onPress: () => navigation.goBack() }
       ]);
     } catch (err) {
       console.log('Profil güncelleme hatası:', err);
-      setError(err.message || 'Profil güncellenemedi');
+      setError(err.message || t('common.profileUpdatedError', 'Profil güncellenemedi'));
     } finally {
       setSaving(false);
     }
@@ -217,36 +219,36 @@ export default function EditProfileScreen({ navigation }) {
             <Image source={imageUrl ? { uri: imageUrl } : require('../assets/avatar-default.png')} style={styles.avatarLarge} />
             <View style={styles.avatarButtonRow}>
               <TouchableOpacity style={[styles.removeButton, {backgroundColor: colors.actionButton}]} onPress={handleRemovePhoto}>
-                <Text style={[typography.styles.button, styles.removeButtonText]}>Kaldır</Text>
+                <Text style={[typography.styles.button, styles.removeButtonText]}>{t('editProfile.removePhoto', "Kaldır")}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.changeButton]} onPress={handlePickImage}>
-                <Text style={[typography.styles.button, styles.changeButtonText]}>Değiştir</Text>
+                <Text style={[typography.styles.button, styles.changeButtonText]}>{t('editProfile.changePhoto', "Değiştir")}</Text>
               </TouchableOpacity>
             </View>
           </View>
-          <Text style={[typography.styles.body, { color: colors.text, marginBottom: 8, marginTop: 8 }]}>Kullanıcı Adı</Text>
+          <Text style={[typography.styles.body, { color: colors.text, marginBottom: 8, marginTop: 8 }]}>{t('editProfile.userName', "Kullanıcı Adı")}</Text>
           <TextInput
             style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border, backgroundColor: colors.blurView }]}
-            placeholder="Kullanıcı Adı"
+            placeholder={t('editProfile.userNamePlaceholder', "Kullanıcı Adı")}
             placeholderTextColor={colors.muted}
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
           />
-          <Text style={[typography.styles.body, { color: colors.text, marginBottom: 8 }]}>E-posta</Text>
+          <Text style={[typography.styles.body, { color: colors.text, marginBottom: 8 }]}>{t('editProfile.email', "E-posta")}</Text>
           <TextInput
             style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border, backgroundColor: colors.blurView }]}
-            placeholder="E-posta"
+            placeholder={t('editProfile.emailPlaceholder', "E-posta")}
             placeholderTextColor={colors.muted}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
             keyboardType="email-address"
           />
-          <Text style={[typography.styles.body, { color: colors.text, marginBottom: 8 }]}>Yeni Şifre</Text>
+          <Text style={[typography.styles.body, { color: colors.text, marginBottom: 8 }]}>{t('editProfile.newPassword', "Yeni Şifre")}</Text>
           <TextInput
             style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border, backgroundColor: colors.blurView }]}
-            placeholder="Yeni Şifre (değiştirmek için doldurun)"
+            placeholder={t('editProfile.newPasswordPlaceholder', "Yeni Şifre (değiştirmek için doldurun)")}
             placeholderTextColor={colors.muted}
             value={password}
             onChangeText={setPassword}
@@ -255,7 +257,7 @@ export default function EditProfileScreen({ navigation }) {
           />
           <TextInput
             style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border, backgroundColor: colors.blurView }]}
-            placeholder="Yeni Şifreyi Tekrar Girin"
+            placeholder={t('editProfile.confirmPasswordPlaceholder', "Yeni Şifreyi Tekrar Girin")}
             placeholderTextColor={colors.muted}
             value={passwordConfirm}
             onChangeText={setPasswordConfirm}
@@ -268,14 +270,14 @@ export default function EditProfileScreen({ navigation }) {
               onPress={handleCancel}
               disabled={saving}
             >
-              <Text style={[typography.styles.button, { color: colors.buttonColor }]}>İptal Et</Text>
+              <Text style={[typography.styles.button, { color: colors.buttonColor }]}>{t('editProfile.undo', "İptal Et")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.saveButton, { backgroundColor: colors.buttonColor }, saving && styles.saveButtonDisabled]}
               onPress={handleSave}
               disabled={saving}
             >
-              <Text style={[typography.styles.button, { color: colors.buttonText }]}>{saving ? 'Kaydediliyor...' : 'Kaydet'}</Text>
+              <Text style={[typography.styles.button, { color: colors.buttonText }]}>{saving ? t('editProfile.saving', "Kaydediliyor...") : t('editProfile.save', "Kaydet")}</Text>
             </TouchableOpacity>
           </View>
         </View>

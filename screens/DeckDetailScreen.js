@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Alert as RNAlert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 export default function DeckDetailScreen({ route, navigation }) {
   const { deck } = route.params;
@@ -39,11 +40,12 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [editLoading, setEditLoading] = useState(false);
   const [cardsModalVisible, setCardsModalVisible] = useState(false);
   const [searchBarShouldFocus, setSearchBarShouldFocus] = useState(false);
+  const { t } = useTranslation();
 
   if (!deck) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }] }>
-        <Text style={[styles.errorText, typography.styles.body, { color: colors.error }]}>Deste bilgisi bulunamadı.</Text>
+        <Text style={[styles.errorText, typography.styles.body, { color: colors.error }]}>{t('deckDetail.errorMessage', 'Deste bilgisi bulunamadı.')}</Text>
       </SafeAreaView>
     );
   }
@@ -147,7 +149,7 @@ export default function DeckDetailScreen({ route, navigation }) {
       setIsStarted(true);
       navigation.navigate('SwipeDeck', { deck });
     } catch (error) {
-      Alert.alert('Hata', 'Deste başlatılamadı.');
+      Alert.alert(t('deckDetail.error', 'Hata'), t('deckDetail.errorMessageDeck', 'Deste başlatılamadı.'));
     }
   };
 
@@ -325,7 +327,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                     deck.description = editDescription.trim() || null;
                     setEditMode(false);
                   } catch (e) {
-                    Alert.alert('Hata', 'Deste güncellenemedi.');
+                    Alert.alert(t('deckDetail.error', 'Hata'), t('deckDetail.errorMessageDeckUpdate', 'Deste güncellenemedi.'));
                   } finally {
                     setEditLoading(false);
                   }
@@ -353,7 +355,7 @@ export default function DeckDetailScreen({ route, navigation }) {
           <View style={[styles.infoCardGlass, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow, width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
               <MaterialCommunityIcons name="information-outline" size={20} color={colors.buttonColor} style={{ marginRight: 6}} />
-              <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text}]}>Detaylar</Text>
+              <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text}]}>{t('deckDetail.details', 'Detaylar')}</Text>
             </View>
             {editMode ? (
               <TextInput
@@ -374,7 +376,7 @@ export default function DeckDetailScreen({ route, navigation }) {
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <MaterialCommunityIcons name="chart-bar" size={20} color={colors.buttonColor} style={{ marginRight: 6}} />
-              <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>İlerleme</Text>
+              <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>{t('deckDetail.progress', 'İlerleme')}</Text>
             </View>
             <View style={[styles.statBadgeModern, { marginLeft: 8 }] }>
               <Ionicons name="layers" size={18} color="#fff" style={{ marginRight: 4 }} />
@@ -386,11 +388,11 @@ export default function DeckDetailScreen({ route, navigation }) {
               <View style={[styles.progressFillModern, { width: `${Math.round(progress * 100)}%` }]} />
             </View>
             {progressLoading ? (
-              <Text style={[styles.progressText, typography.styles.caption, { color: colors.muted }]}>Yükleniyor...</Text>
+              <Text style={[styles.progressText, typography.styles.caption, { color: colors.muted }]}>{t('common.loading', 'Yükleniyor...')}</Text>
             ) : progress === 0 ? (
-              <Text style={[styles.progressText, typography.styles.caption, { color: colors.muted }]}>Henüz çalışılmadı</Text>
+              <Text style={[styles.progressText, typography.styles.caption, { color: colors.muted }]}>{t('common.notStarted', 'Henüz çalışılmadı')}</Text>
             ) : (
-              <Text style={[styles.progressText, typography.styles.caption, { color: colors.buttonColor }]}>%{Math.round(progress * 100)} Tamamlandı</Text>
+              <Text style={[styles.progressText, typography.styles.caption, { color: colors.buttonColor }]}>%{Math.round(progress * 100)} {t('deckDetail.completed', 'Tamamlandı')}</Text>
             )}
           </View>
         </View>
@@ -400,7 +402,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             <View style={[styles.cardsHeaderRow, { justifyContent: 'space-between', alignItems: 'center' }] }>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Ionicons name="albums-outline" size={22} color={colors.buttonColor} style={{ marginRight: 8 }} />
-                <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>Kartlar</Text>
+                <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>{t('deckDetail.cards', 'Kartlar')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={26} color={colors.buttonColor} />
             </View>
@@ -416,14 +418,14 @@ export default function DeckDetailScreen({ route, navigation }) {
             onPress={() => navigation.navigate('AddCard', { deck })}
           >
             <MaterialCommunityIcons name="plus" size={22} color={colors.buttonColor} style={{ marginRight: 6 }} />
-            <Text style={[styles.favButtonTextModern, typography.styles.button, { color: colors.buttonColor }]}>Kart Ekle</Text>
+            <Text style={[styles.favButtonTextModern, typography.styles.button, { color: colors.buttonColor }]}>{t('deckDetail.addCard', 'Kart Ekle')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.startButtonModern, { flex: 1, minWidth: 0, borderWidth: 1, borderColor: colors.buttonBorder || 'transparent' }]}
             onPress={handleStart}
           >
             <Ionicons name="play" size={20} color={colors.buttonText} style={{ marginRight: 6 }} />
-            <Text style={[styles.startButtonTextModern, typography.styles.button, { color: colors.buttonText }]}>Başla</Text>
+            <Text style={[styles.startButtonTextModern, typography.styles.button, { color: colors.buttonText }]}>{t('deckDetail.start', 'Başla')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -445,7 +447,7 @@ export default function DeckDetailScreen({ route, navigation }) {
           {currentUserId && deck.user_id === currentUserId && (
             <TouchableOpacity style={[styles.sheetItem, { borderBottomColor: colors.border }]} onPress={() => { setMenuVisible(false); navigation.navigate('DeckEdit', { deck }); }}>
               <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
-              <Text style={[styles.sheetItemText, { color: colors.text }]}>Desteyi Düzenle</Text>
+              <Text style={[styles.sheetItemText, { color: colors.text }]}>{t('deckDetail.edit', 'Desteyi Düzenle')}</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity style={[styles.sheetItem, { borderBottomColor: colors.border }]} onPress={() => { setMenuVisible(false); handleAddFavorite(); }}>
@@ -456,16 +458,16 @@ export default function DeckDetailScreen({ route, navigation }) {
               style={{ marginRight: 12 }}
             />
             <Text style={[styles.sheetItemText, { color: isFavorite ? '#F98A21' : colors.text }]}>
-              {isFavorite ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
+              {isFavorite ? t('deckDetail.removeFavorite', 'Favorilerden Çıkar') : t('deckDetail.addFavorite', 'Favorilere Ekle')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.sheetItem, { borderBottomColor: colors.border }]} onPress={() => { setMenuVisible(false); /* Deste Sil fonksiyonu */ }}>
             <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
-            <Text style={[styles.sheetItemText, { color: '#E74C3C' }]}>Desteyi Sil</Text>
+            <Text style={[styles.sheetItemText, { color: '#E74C3C' }]}>{t('deckDetail.deleteDeck', 'Desteyi Sil')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.sheetItem, { borderBottomColor: 'transparent' }]} onPress={() => setMenuVisible(false)}>
             <MaterialCommunityIcons name="close" size={22} color={colors.text} style={{ marginRight: 12 }} />
-            <Text style={[styles.sheetItemText, { color: colors.text }]}>Kapat</Text>
+            <Text style={[styles.sheetItemText, { color: colors.text }]}>{t('deckDetail.close', 'Kapat')}</Text>
           </TouchableOpacity>
         </View>
       </Modal>

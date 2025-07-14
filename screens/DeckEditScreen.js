@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { typography } from '../theme/typography';
 import { useTheme } from '../theme/theme';
+import { useTranslation } from 'react-i18next';
 
 export default function DeckEditScreen() {
   const route = useRoute();
@@ -17,6 +18,7 @@ export default function DeckEditScreen() {
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   const resetForm = () => {
     setName(deck.name || '');
@@ -27,7 +29,7 @@ export default function DeckEditScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Hata', 'Deste adı zorunludur.');
+      Alert.alert(t("common.error", "Hata"), t("common.requiredNameDeck", "Deste adı zorunludur."));
       return;
     }
     setLoading(true);
@@ -42,10 +44,10 @@ export default function DeckEditScreen() {
         })
         .eq('id', deck.id);
       if (error) throw error;
-      Alert.alert('Başarılı', 'Deste güncellendi.');
+      Alert.alert(t("common.success", "Başarılı"), t("common.successDeckMessage", "Deste güncellendi."));
       navigation.goBack();
     } catch (e) {
-      Alert.alert('Hata', e.message || 'Deste güncellenemedi.');
+      Alert.alert(t("common.error", "Hata"), e.message || t("common.errorDeckMessage", "Deste güncellenemedi."));
     } finally {
       setLoading(false);
     }
@@ -53,8 +55,8 @@ export default function DeckEditScreen() {
 
   const handleShowDetails = () => {
     Alert.alert(
-      'Toplulukta Paylaş Ayrıntıları',
-      'Bu deste toplulukla paylaşıldığında diğer kullanıcılar tarafından da görüntülenebilir ve kullanılabilir. Paylaşımı istediğin zaman kapatabilirsin.'
+      t("create.shareDetails", "Toplulukta Paylaş Ayrıntıları"),
+      t("create.shareDetailsText", "Bu deste toplulukla paylaşıldığında diğer kullanıcılar tarafından da görüntülenebilir ve kullanılabilir. Paylaşımı istediğin zaman kapatabilirsin.")
     );
   };
 
@@ -70,11 +72,11 @@ export default function DeckEditScreen() {
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="book" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Deste Adı *</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("create.name", "Deste Adı")} *</Text>
             </View>
             <TextInput
               style={[styles.input, typography.styles.body, {borderColor: colors.border, color: colors.text}]}
-              placeholder="Örn: İngilizce"
+              placeholder={t("create.nameExam", "Örn: İngilizce")}
               placeholderTextColor={colors.muted}
               value={name}
               onChangeText={setName}
@@ -84,12 +86,12 @@ export default function DeckEditScreen() {
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="swap-horizontal" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Karşılığı</Text>
-              <Text style={[styles.optional, typography.styles.caption, { color: colors.muted }]}> (opsiyonel)</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("create.toName", "Karşılığı")}</Text>
+              <Text style={[styles.optional, typography.styles.caption, { color: colors.muted }]}> {t("create.optional", "opsiyonel")}</Text>
             </View>
             <TextInput
               style={[styles.input, typography.styles.body, {borderColor: colors.border, color: colors.text}]}
-              placeholder="Örn: Türkçe"
+              placeholder={t("create.toNameExam", "Örn: Türkçe")}
               placeholderTextColor={colors.muted}
               value={toName}
               onChangeText={setToName}
@@ -98,12 +100,12 @@ export default function DeckEditScreen() {
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="document-text" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Açıklama</Text>
-              <Text style={[styles.optional, typography.styles.caption, { color: colors.muted }]}> (opsiyonel)</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("create.description", "Açıklama")}</Text>
+              <Text style={[styles.optional, typography.styles.caption, { color: colors.muted }]}> {t("create.optional", "opsiyonel")}</Text>
             </View>
             <TextInput
               style={[styles.input, typography.styles.body, { height: 120, textAlignVertical: 'top', borderColor: colors.border, color: colors.text }]}
-              placeholder="Deste hakkında açıklama..."
+              placeholder={t("create.descriptionExam", "Deste hakkında açıklama...")}
               placeholderTextColor={colors.muted}
               value={description}
               onChangeText={setDescription}
@@ -114,7 +116,7 @@ export default function DeckEditScreen() {
             <View style={styles.switchRow}>
               <View style={styles.labelRow}>
                 <Ionicons name="people" size={20} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Toplulukla paylaş</Text>
+                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("create.isShared", "Toplulukla paylaş")}</Text>
               </View>
               <Switch
                 value={isShared}
@@ -126,7 +128,7 @@ export default function DeckEditScreen() {
           </View>
           <View style={styles.detailsRow}>
             <TouchableOpacity onPress={handleShowDetails} activeOpacity={0.7}>
-              <Text style={[styles.detailsText, typography.styles.link, { color: colors.secondary }]}>Ayrıntılar</Text>
+              <Text style={[styles.detailsText, typography.styles.link, { color: colors.secondary }]}>{t("create.details", "Ayrıntılar")}</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.buttonRowModern}>
@@ -135,14 +137,14 @@ export default function DeckEditScreen() {
               onPress={() => navigation.goBack()}
               disabled={loading}
             >
-              <Text style={[styles.favButtonTextModern, typography.styles.button]}>Geri Al</Text>
+              <Text style={[styles.favButtonTextModern, typography.styles.button]}>{t("create.removeChanges", "Geri Al")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.startButtonModern, loading && { opacity: 0.7 }]}
               onPress={handleSave}
               disabled={loading}
             >
-              <Text style={[styles.startButtonTextModern, typography.styles.button]}>{loading ? 'Kaydediliyor...' : 'Kaydet'}</Text>
+              <Text style={[styles.startButtonTextModern, typography.styles.button]}>{loading ? t("create.saving", "Kaydediliyor...") : t("create.save", "Kaydet")}</Text>
             </TouchableOpacity>
           </View>
         </View>

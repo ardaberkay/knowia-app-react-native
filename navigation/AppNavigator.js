@@ -94,7 +94,7 @@ function MainTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: t('tabs.home', 'Anasayfa'), tabBarLabel: t('tabs.home', 'Anasayfa') }} />
       <Tab.Screen name="Create" component={CreateScreen} options={{ title: t('tabs.createDeck', 'Deste Oluştur'), tabBarLabel: t('tabs.create', 'Oluştur'), headerShown: true, headerTitleAlign: 'center', headerRight: () => <ProfileAvatarButton />}} />
-      <Tab.Screen name="Library" component={LibraryScreen} options={{ title: t('tabs.library', 'Kitaplığım'), tabBarLabel: t('tabs.library', 'Kitaplığım'), headerShown: true, headerTitleAlign: 'center', headerRight: () => <ProfileAvatarButton />}} />
+      <Tab.Screen name="Library" component={LibraryScreen} options={{ title: t('tabs.myLibrary', 'Kitaplığım'), tabBarLabel: t('tabs.library', 'Kitaplığım'), headerShown: true, headerTitleAlign: 'center', headerRight: () => <ProfileAvatarButton />}} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: t('tabs.profile', 'Profilim'), tabBarLabel: t('tabs.profile', 'Profilim') }} />
     </Tab.Navigator>
   );
@@ -103,6 +103,7 @@ function MainTabs() {
 export default function AppNavigator() {
   const { colors } = useTheme();
   const { session, loading } = useAuth();
+  const { t } = useTranslation();
 
   if (loading) {
     return null; // veya bir loading ekranı
@@ -118,7 +119,7 @@ export default function AppNavigator() {
       ) : (
         <>
           <Stack.Screen name="MainTabs" component={MainTabs} />
-          <Stack.Screen name="DeckDetail" component={DeckDetailScreen} options={{ headerShown: true, title: 'Deste Bilgisi', headerTitleAlign: 'center' }} />
+          <Stack.Screen name="DeckDetail" component={DeckDetailScreen} options={{ headerShown: true, title: t('tabs.deckInfo', 'Deste Bilgisi'), headerTitleAlign: 'center' }} />
           <Stack.Screen
             name="CategoryDeckList"
             component={CategoryDeckListScreen}
@@ -128,12 +129,12 @@ export default function AppNavigator() {
               headerTitleAlign: 'center',
             })}
           />
-          <Stack.Screen name="SwipeDeck" component={SwipeDeckScreen} options={{ headerShown: true, title: 'Kartları Öğren', headerTitleAlign: 'center' }} />
-          <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: 'Profili Düzenle', headerTitleAlign: 'center' }} />
-          <Stack.Screen name="DeckEdit" component={DeckEditScreen} options={{ headerShown: true, title: 'Desteyi Düzenle', headerTitleAlign: 'center' }} />
+          <Stack.Screen name="SwipeDeck" component={SwipeDeckScreen} options={{ headerShown: true, title: t('tabs.deckCards', 'Kartları Öğren'), headerTitleAlign: 'center' }} />
+          <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: t('tabs.profileEdit', 'Profili Düzenle'), headerTitleAlign: 'center' }} />
+          <Stack.Screen name="DeckEdit" component={DeckEditScreen} options={{ headerShown: true, title: t('tabs.deckEdit', 'Desteyi Düzenle'), headerTitleAlign: 'center' }} />
           <Stack.Screen name="AddCard" component={AddCardScreen} options={({ navigation }) => ({
             headerShown: true,
-            title: 'Kart Ekle',
+            title: t('tabs.addCard', 'Kart Ekle'),
             headerTitleAlign: 'center',
             headerRight: () => (
               <TouchableOpacity
@@ -150,9 +151,9 @@ export default function AppNavigator() {
               </TouchableOpacity>
             ),
           })} />
-          <Stack.Screen name="EditCard" component={EditCardScreen} options={{ headerShown: true, title: 'Kartı Düzenle', headerTitleAlign: 'center' }} />
-          <Stack.Screen name="DeckCards" component={DeckCardsScreen} options={{ headerShown: true, title: 'Kartlar', headerTitleAlign: 'center' }} />
-          <Stack.Screen name="CardDetail" component={CardDetailScreen} options={{ headerShown: true, title: 'Kart Detayı', headerTitleAlign: 'center' }} />
+          <Stack.Screen name="EditCard" component={EditCardScreen} options={{ headerShown: true, title: t('tabs.editCard', 'Kartı Düzenle'), headerTitleAlign: 'center' }} />
+          <Stack.Screen name="DeckCards" component={DeckCardsScreen} options={{ headerShown: true, title: t('tabs.cards', 'Kartlar'), headerTitleAlign: 'center' }} />
+          <Stack.Screen name="CardDetail" component={CardDetailScreen} options={{ headerShown: true, title: t('tabs.cardDetail', 'Kart Detayı'), headerTitleAlign: 'center' }} />
         </>
       )}
     </Stack.Navigator>

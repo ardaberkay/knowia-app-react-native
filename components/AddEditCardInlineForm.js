@@ -9,6 +9,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import { Buffer } from 'buffer';
+import { useTranslation } from 'react-i18next';
 
 export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) {
   const { colors } = useTheme();
@@ -19,6 +20,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
   const [image, setImage] = useState(card?.image || '');
   const [imageChanged, setImageChanged] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
 
   const handlePickImage = async () => {
     try {
@@ -37,7 +39,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
         setImageChanged(true);
       }
     } catch (err) {
-      Alert.alert('Hata', 'Fotoğraf seçilemedi.');
+      Alert.alert(t('common.error', 'Hata'), t('common.imageNotSelected', 'Fotoğraf seçilemedi.'));
     }
   };
 
@@ -48,7 +50,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
 
   const handleUpdateCard = async () => {
     if (!question.trim() || !answer.trim()) {
-      Alert.alert('Hata', 'Soru ve cevap zorunludur.');
+      Alert.alert(t('common.error', 'Hata'), t('common.requiredFields', 'Soru ve cevap zorunludur.'));
       return;
     }
     setLoading(true);
@@ -88,7 +90,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
       if (error) throw error;
       onSave(data[0]);
     } catch (e) {
-      Alert.alert('Hata', e.message || 'Kart güncellenemedi.');
+      Alert.alert(t('common.error', 'Hata'), e.message || t('common.cardNotSaved', 'Kart güncellenemedi.'));
     } finally {
       setLoading(false);
     }
@@ -106,30 +108,30 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="image" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Kart Görseli</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.image", "Kart Görseli")}</Text>
             </View>
             {image ? (
               <View style={{ alignItems: 'center', marginBottom: 8 }}>
                 <Image source={{ uri: image }} style={styles.cardImage} />
                 <TouchableOpacity onPress={handleRemoveImage} style={styles.removeImageButton}>
-                  <Text style={styles.removeImageButtonText}>Kaldır</Text>
+                  <Text style={styles.removeImageButtonText}>{t("cardDetail.removeImage", "Görseli Kaldır")}</Text>
                 </TouchableOpacity>
               </View>
             ) : (
               <TouchableOpacity onPress={handlePickImage} style={styles.addImageButton}>
                 <Ionicons name="add" size={24} color="#F98A21" />
-                <Text style={styles.addImageButtonText}>Fotoğraf Ekle</Text>
+                <Text style={styles.addImageButtonText}>{t("cardDetail.addImage", "Fotoğraf Ekle")}</Text>
               </TouchableOpacity>
             )}
           </View>
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="help-circle-outline" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Soru *</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.question", "Soru")} *</Text>
             </View>
             <TextInput
               style={[styles.input, typography.styles.body, {color: colors.text, borderColor: colors.border}]}
-              placeholder="Kartın sorusu"
+              placeholder={t("cardDetail.questionPlaceholder", "Kartın sorusu")}
               placeholderTextColor={colors.muted}
               value={question}
               onChangeText={setQuestion}
@@ -139,11 +141,11 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="checkmark-circle-outline" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Cevap *</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.answer", "Cevap")} *</Text>
             </View>
             <TextInput
               style={[styles.input, typography.styles.body, {color: colors.text, borderColor: colors.border}]}
-              placeholder="Kartın cevabı"
+              placeholder={t("cardDetail.answerPlaceholder", "Kartın cevabı")}
               placeholderTextColor={colors.muted}
               value={answer}
               onChangeText={setAnswer}
@@ -153,11 +155,11 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="bulb-outline" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Örnek</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.example", "Örnek")}</Text>
             </View>
             <TextInput
               style={[styles.input, typography.styles.body, {color: colors.text, borderColor: colors.border}]}
-              placeholder="Örnek cümle (opsiyonel)"
+              placeholder={t("cardDetail.examplePlaceholder", "Örnek cümle (opsiyonel)")}
               placeholderTextColor={colors.muted}
               value={example}
               onChangeText={setExample}
@@ -167,11 +169,11 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="document-text-outline" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Not</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.note", "Not")}</Text>
             </View>
             <TextInput
               style={[styles.input, typography.styles.body, {color: colors.text, borderColor: colors.border}]}
-              placeholder="Not (opsiyonel)"
+              placeholder={t("cardDetail.notePlaceholder", "Not (opsiyonel)")}
               placeholderTextColor={colors.muted}
               value={note}
               onChangeText={setNote}
@@ -188,14 +190,14 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               onPress={onCancel}
               disabled={loading}
             >
-              <Text style={[styles.cancelButtonTextCustom, typography.styles.button]}>İptal Et</Text>
+              <Text style={[styles.cancelButtonTextCustom, typography.styles.button]}>{t("cardDetail.cancel", "İptal Et")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.startButtonModern, loading && { opacity: 0.7 }]}
               onPress={handleUpdateCard}
               disabled={loading}
             >
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={[styles.startButtonTextModern, typography.styles.button]}>Kaydet</Text>}
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={[styles.startButtonTextModern, typography.styles.button]}>{t("cardDetail.save", "Kaydet")}</Text>}
             </TouchableOpacity>
           </View>
         </ScrollView>

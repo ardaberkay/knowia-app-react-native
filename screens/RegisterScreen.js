@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ImageBackgr
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
+import { useTranslation } from 'react-i18next';
 
 export default function RegisterScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -11,11 +12,12 @@ export default function RegisterScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   const handleRegister = async () => {
     if (loading) return;
     if (password !== confirmPassword) {
-      Alert.alert('Hata', 'Şifreler eşleşmiyor');
+      Alert.alert(t('register.error', 'Hata'), t('register.passwordMatchError', 'Şifreler eşleşmiyor'));
       return;
     }
 
@@ -25,9 +27,9 @@ export default function RegisterScreen({ navigation }) {
       if (error) throw error;
       
       Alert.alert(
-        'Başarılı',
-        'Kayıt işlemi tamamlandı. Lütfen e-posta adresinizi doğrulayın.',
-        [{ text: 'Tamam', onPress: () => navigation.navigate('Login') }]
+        t('register.success', 'Başarılı'),
+        t('register.successMessage', 'Kayıt işlemi tamamlandı. Lütfen e-posta adresinizi doğrulayın.'),
+        [{ text: t('register.ok', 'Tamam'), onPress: () => navigation.navigate('Login') }]
       );
     } catch (error) {
       Alert.alert('Hata', error.message);
@@ -43,11 +45,11 @@ export default function RegisterScreen({ navigation }) {
       resizeMode="cover"
     >
       <View style={styles.container}>
-        <Text style={[styles.subtitle, typography.styles.subtitle, { color: '#fff' }]}>Kayıt Ol</Text>
+        <Text style={[styles.subtitle, typography.styles.subtitle, { color: '#fff' }]}>{t('register.register', 'Kayıt Ol')}</Text>
         <View style={styles.form}>
           <TextInput
             style={[styles.input, typography.styles.body, { borderColor: colors.border, color: colors.text }]}
-            placeholder="E-posta"
+            placeholder={t('register.emailPlaceholder', 'E-posta')}
             placeholderTextColor={colors.muted}
             value={email}
             onChangeText={setEmail}
@@ -56,7 +58,7 @@ export default function RegisterScreen({ navigation }) {
           />
           <TextInput
             style={[styles.input, typography.styles.body, { borderColor: colors.border, color: colors.text }]}
-            placeholder="Şifre"
+            placeholder={t('register.passwordPlaceholder', 'Şifre')}
             placeholderTextColor={colors.muted}
             value={password}
             onChangeText={setPassword}
@@ -64,7 +66,7 @@ export default function RegisterScreen({ navigation }) {
           />
           <TextInput
             style={[styles.input, typography.styles.body, { borderColor: colors.border, color: colors.text }]}
-            placeholder="Şifre Tekrar"
+            placeholder={t('register.confirmPasswordPlaceholder', 'Şifre Tekrar')}
             placeholderTextColor={colors.muted}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
@@ -77,7 +79,7 @@ export default function RegisterScreen({ navigation }) {
             disabled={loading}
           >
             <Text style={[styles.buttonText, typography.styles.button, { color: colors.buttonText }]}>
-              {loading ? 'Kayıt yapılıyor...' : 'Kayıt Ol'}
+              {loading ? t('register.registering', 'Kayıt yapılıyor...') : t('register.register', 'Kayıt Ol')}
             </Text>
           </TouchableOpacity>
 
@@ -86,8 +88,8 @@ export default function RegisterScreen({ navigation }) {
             onPress={() => navigation.navigate('Login')}
           >
             <Text style={[styles.linkText, typography.styles.link, { color: colors.secondary }]}>
-              Zaten hesabınız var mı?{' '}
-              <Text style={typography.styles.linkBold}>Giriş yapın</Text>
+              {t('register.didUAcc', 'Zaten hesabınız var mı?')} {' '}
+              <Text style={typography.styles.linkBold}>{t('register.login', 'Giriş yapın')}</Text>
             </Text>
           </TouchableOpacity>
         </View>

@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -11,6 +12,8 @@ export default function LoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const { login, signInWithGoogle } = useAuth();
   const { colors } = useTheme();
+  const { t } = useTranslation();
+
 
   const handleLogin = async () => {
     if (loading) return;
@@ -20,7 +23,7 @@ export default function LoginScreen({ navigation }) {
       const { error } = await login(email, password);
       if (error) throw error;
     } catch (error) {
-      Alert.alert('Hata', error.message);
+      Alert.alert(t('login.error', 'Hata'), error.message);
     } finally {
       setLoading(false);
     }
@@ -40,7 +43,7 @@ export default function LoginScreen({ navigation }) {
       }
     } catch (error) {
       console.log('Google giriş catch bloğu:', error);
-      Alert.alert('Hata', error.message);
+      Alert.alert(t('login.error', 'Hata'), error.message);
     } finally {
       setLoading(false);
     }
@@ -53,12 +56,12 @@ export default function LoginScreen({ navigation }) {
       resizeMode="cover"
     >
       <View style={styles.container}>
-        <Text style={[styles.subtitle, typography.styles.subtitle, { color: '#fff' }]}>Giriş Yap</Text>
+        <Text style={[styles.subtitle, typography.styles.subtitle, { color: '#fff' }]}>{t('login.login', 'Giriş Yap')}</Text>
 
         <View style={styles.form}>
           <TextInput
             style={[styles.input, typography.styles.body]}
-            placeholder="E-posta"
+            placeholder={t('login.emailPlaceholder', 'E-posta')}
             placeholderTextColor={colors.muted}
             value={email}
             onChangeText={setEmail}
@@ -67,7 +70,7 @@ export default function LoginScreen({ navigation }) {
           />
           <TextInput
             style={[styles.input, typography.styles.body]}
-            placeholder="Şifre"
+            placeholder={t('login.passwordPlaceholder', 'Şifre')}
             placeholderTextColor={colors.muted}
             value={password}
             onChangeText={setPassword}
@@ -77,10 +80,10 @@ export default function LoginScreen({ navigation }) {
           <View style={styles.buttonRow}>
             <TouchableOpacity
               style={[styles.button, styles.forgotButton, { flex: 1 }]}
-              onPress={() => Alert.alert('Şifremi Unuttum', 'Şifre sıfırlama işlemi başlatılacak.')}
+              onPress={() => Alert.alert(t('login.forgotPassword', 'Şifremi Unuttum'), t('login.forgotPasswordMessage', 'Şifre sıfırlama işlemi başlatılacak.'))}
               disabled={loading}
             >
-              <Text style={[styles.buttonText, typography.styles.button, { color: '#4A4A4A' }]}>Şifremi Unuttum</Text>
+              <Text style={[styles.buttonText, typography.styles.button, { color: '#4A4A4A' }]}>{t('login.forgotPassword', 'Şifremi Unuttum')}</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.button, { backgroundColor: colors.buttonColor, flex: 1 }, loading && styles.buttonDisabled]}
@@ -88,14 +91,14 @@ export default function LoginScreen({ navigation }) {
               disabled={loading}
             >
               <Text style={[styles.buttonText, typography.styles.button, { color: colors.buttonText }]}> 
-                {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+                {loading ? t('login.loading', 'Giriş yapılıyor...') : t('login.login', 'Giriş Yap')}
               </Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.divider}>
             <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-            <Text style={[styles.dividerText, typography.styles.caption, { color: colors.muted }]}>veya</Text>
+            <Text style={[styles.dividerText, typography.styles.caption, { color: colors.muted }]}>{t('login.or', 'veya')}</Text>
             <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
           </View>
 
@@ -115,8 +118,8 @@ export default function LoginScreen({ navigation }) {
             onPress={() => navigation.navigate('Register')}
           >
             <Text style={[styles.linkText, typography.styles.link, { color: colors.secondary }]}>
-              Hesabın yok mu?{' '}
-              <Text style={typography.styles.linkBold}>Kayıt ol</Text>
+              {t('login.didUAcc', 'Hesabın yok mu?')} {' '}
+              <Text style={typography.styles.linkBold}>{t('login.register', 'Kayıt ol')}</Text>
             </Text>
           </TouchableOpacity>
         </View>

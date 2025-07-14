@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { useTranslation } from 'react-i18next';
 
 serve(async (req) => {
   // Supabase client'ı başlat
@@ -6,6 +7,7 @@ serve(async (req) => {
   const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const { createClient } = await import('https://esm.sh/@supabase/supabase-js');
   const supabase = createClient(supabaseUrl, supabaseKey);
+  const { t } = useTranslation();
 
   // Push token'ı olan kullanıcıları bul
   const { data: users, error } = await supabase
@@ -36,9 +38,9 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         to: user.expo_push_token,
-        sound: 'default',
-        title: 'Knowia seni özledi!',
-        body: 'Tekrar öğrenmeye devam etmek ister misin?',
+        sound: 'default', 
+        title: t('notifications.title', 'Knowia ile öğrenme zamanı!'),
+        body: t('notifications.body', 'Bugün de bir adım at ve hedeflerine yaklaş!'),
       }),
     });
   }

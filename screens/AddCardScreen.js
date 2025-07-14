@@ -12,6 +12,7 @@ import * as FileSystem from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
 import { Buffer } from 'buffer';
 import * as Sharing from 'expo-sharing';
+import { useTranslation } from 'react-i18next';
 
 export default function AddCardScreen() {
   const navigation = useNavigation();
@@ -28,6 +29,7 @@ export default function AddCardScreen() {
   const [csvModalVisible, setCsvModalVisible] = useState(false);
   const [csvPreview, setCsvPreview] = useState(null);
   const [csvLoading, setCsvLoading] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (route.params?.openCsvModal) {
@@ -53,7 +55,7 @@ export default function AddCardScreen() {
         setImageChanged(true);
       }
     } catch (err) {
-      Alert.alert('Hata', 'Fotoğraf seçilemedi.');
+      Alert.alert(t('common.error', 'Hata'), t('common.imageNotSelected', 'Fotoğraf seçilemedi.'));
     }
   };
 
@@ -64,7 +66,7 @@ export default function AddCardScreen() {
 
   const handleCreateCard = async () => {
     if (!question.trim() || !answer.trim()) {
-      Alert.alert('Hata', 'Soru ve cevap zorunludur.');
+      Alert.alert(t('common.error', 'Hata'), t('common.questionAndAnswerRequired', 'Soru ve cevap zorunludur.'));
       return;
     }
     setLoading(true);
@@ -97,11 +99,11 @@ export default function AddCardScreen() {
           image: imageUrl || null,
         });
       if (error) throw error;
-      Alert.alert('Başarılı', 'Kart eklendi!', [
+      Alert.alert(t('common.success', 'Başarılı'), t('common.addCardSuccess', 'Kart eklendi!'), [
         { text: 'Tamam', onPress: () => navigation.goBack() }
       ]);
     } catch (e) {
-      Alert.alert('Hata', e.message || 'Kart eklenemedi.');
+      Alert.alert(t('common.error', 'Hata'), e.message || t('common.addCardError', 'Kart eklenemedi.'));
     } finally {
       setLoading(false);
     }
@@ -115,16 +117,16 @@ export default function AddCardScreen() {
     if (await Sharing.isAvailableAsync()) {
       await Sharing.shareAsync(fileUri);
     } else {
-      Alert.alert('Paylaşım desteklenmiyor', 'Dosya yolu: ' + fileUri);
+      Alert.alert(t('addCard.errorUpload', 'Paylaşım desteklenmiyor'), t('addCard.fileUri', 'Dosya yolu: ') + fileUri);
     }
   };
 
   // Header mapping sistemi
   const VALID_FIELDS = {
-    'question': ['soru', 'question', 'q', 'sorular', 'soru metni', 'Soru', 'S', 'SORU'],
-    'answer': ['cevap', 'answer', 'a', 'cevaplar', 'cevap metni', 'Cevap', 'C', 'CEVAP'],
-    'example': ['örnek', 'example', 'e', 'örnekler', 'örnek cümle', 'Örnek', 'Ö', 'ÖRNEK', 'ornek'],
-    'note': ['not', 'note', 'n', 'notlar', 'açıklama', 'Not', 'N', 'NOT']
+    'question': ['soru', 'question', 'q', 'sorular', 'soru metni', 'Soru', 'S', 'SORU', 'Question'],
+    'answer': ['cevap', 'answer', 'a', 'cevaplar', 'cevap metni', 'Cevap', 'C', 'CEVAP', 'Answer'],
+    'example': ['örnek', 'example', 'e', 'örnekler', 'örnek cümle', 'Örnek', 'Ö', 'ÖRNEK', 'ornek', 'Example'],
+    'note': ['not', 'note', 'n', 'notlar', 'açıklama', 'Not', 'N', 'NOT', 'Note']
   };
 
   // Header işleme
@@ -145,7 +147,7 @@ export default function AddCardScreen() {
         ignoredColumns.push({
           column: header,
           index: index + 1,
-          reason: 'Tanımlanmamış alan'
+          reason: t('common.unDefinedField', 'Tanımlanmamış alan')
         });
       }
     });
@@ -159,21 +161,21 @@ export default function AddCardScreen() {
       errors.push({
         type: 'EMPTY_QUESTION',
         row: rowNumber,
-        message: 'Soru alanı boş olamaz'
+        message: t("addCard.emptyQuestion", "Soru alanı boş olamaz")
       });
     }
     if (!card.answer || card.answer.trim() === '') {
       errors.push({
         type: 'EMPTY_ANSWER',
         row: rowNumber,
-        message: 'Cevap alanı boş olamaz'
+        message: t("addCard.emptyAnswer", "Cevap alanı boş olamaz")
       });
     }
     if (card.question && card.question.length > 500) {
       errors.push({
         type: 'QUESTION_TOO_LONG',
         row: rowNumber,
-        message: 'Soru 500 karakterden uzun olamaz'
+        message: t("addCard.questionTooLong", "Soru 500 karakterden uzun olamaz")
       });
     }
     return {
@@ -193,7 +195,7 @@ export default function AddCardScreen() {
     if (columnMap.question === undefined || columnMap.answer === undefined) {
       return {
         validCards: [],
-        errors: [{ type: 'MISSING_REQUIRED_HEADERS', message: 'Soru ve Cevap sütunları gerekli' }],
+        errors: [{ type: 'MISSING_REQUIRED_HEADERS', message: t('common.missingRequiredHeaders', 'Soru ve cevap sütunları gerekli') }],
         ignoredColumns: ignoredColumns,
         totalRows: lines.length - 1
       };
@@ -229,7 +231,7 @@ export default function AddCardScreen() {
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const file = result.assets[0];
         if (!file.name.toLowerCase().endsWith('.csv')) {
-          Alert.alert('Hata', 'Lütfen bir CSV dosyası seçin.');
+          Alert.alert(t('common.error', 'Hata'), t('common.pleaseSelectCSV', 'Lütfen bir CSV dosyası seçin.'));
           setCsvLoading(false);
           return;
         }
@@ -248,7 +250,7 @@ export default function AddCardScreen() {
         });
       }
     } catch (error) {
-      Alert.alert('Hata', 'CSV dosyası okunamadı: ' + error.message);
+      Alert.alert(t('common.error', 'Hata'), t('common.csvReadError', 'CSV dosyası okunamadı: ') + error.message);
     } finally {
       setCsvLoading(false);
     }
@@ -274,25 +276,25 @@ export default function AddCardScreen() {
         />
         <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.background, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingTop: 24, paddingBottom: 32, paddingHorizontal: 24, elevation: 16 }}>
           <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 }} />
-          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: colors.text, textAlign: 'center' }}>CSV ile Toplu Kart Yükleme</Text>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: colors.text, textAlign: 'center' }}>{t('addCard.csvUpload', 'CSV ile Toplu Kart Yükleme')}</Text>
           <Text style={{ color: colors.muted, fontSize: 15, marginBottom: 18, textAlign: 'center' }}>
-            Kartlarınızı Excel veya Google Sheets'te aşağıdaki gibi hazırlayın ve CSV olarak kaydedin. Sadece ilk iki sütun zorunludur:
+            {t('addCard.csvUploadDescriptionFirst', 'Kartlarınızı Excel veya Google Sheets\'te aşağıdaki gibi hazırlayın ve CSV olarak kaydedin. Sadece ilk iki sütun zorunludur:')}
             {'\n'}
-            <Text style={{ fontWeight: 'bold', color: colors.text }}>Soru, Cevap, Örnek (opsiyonel), Not (opsiyonel)</Text>
+            <Text style={{ fontWeight: 'bold', color: colors.text }}>{t('addCard.csvUploadDescriptionSecond', 'Soru, Cevap, Örnek (opsiyonel), Not (opsiyonel)')}</Text>
             {'\n'}
-            Her satır bir kartı temsil eder. Boş satırlar veya eksik zorunlu alanlar atlanır.
+            {t('addCard.csvUploadDescriptionThird', 'Her satır bir kartı temsil eder. Boş satırlar veya eksik zorunlu alanlar atlanır.')}
           </Text>
           {csvPreview ? (
             <View style={{ marginBottom: 16 }}>
-              <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>Dosya: {csvPreview.fileName}</Text>
-              <Text style={{ color: colors.text, fontSize: 15 }}>Toplam satır: {csvPreview.totalRows}</Text>
-              <Text style={{ color: colors.text, fontSize: 15 }}>Geçerli kart: {csvPreview.allValidCards.length}</Text>
-              <Text style={{ color: colors.text, fontSize: 15, marginBottom: 6 }}>Geçersiz kart: {csvPreview.allErrors.length}</Text>
+              <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>{t('addCard.file', 'Dosya: ')} {csvPreview.fileName}</Text>
+              <Text style={{ color: colors.text, fontSize: 15 }}>{t('addCard.totalRows', 'Toplam satır: ')} {csvPreview.totalRows}</Text>
+              <Text style={{ color: colors.text, fontSize: 15 }}>{t('addCard.validCards', 'Geçerli kart: ')} {csvPreview.allValidCards.length}</Text>
+              <Text style={{ color: colors.text, fontSize: 15, marginBottom: 6 }}>{t('addCard.invalidCards', 'Geçersiz kart: ')} {csvPreview.allErrors.length}</Text>
               {csvPreview.errors.length > 0 && (
                 <View style={{ marginTop: 8, marginBottom: 8 }}>
-                  <Text style={{ color: '#D32F2F', fontWeight: 'bold', fontSize: 15, marginBottom: 4 }}>Hatalar (ilk 5):</Text>
+                  <Text style={{ color: '#D32F2F', fontWeight: 'bold', fontSize: 15, marginBottom: 4 }}>{t('addCard.errors', 'Hatalar (ilk 5):')}</Text>
                   {csvPreview.errors.map((err, idx) => (
-                    <Text key={idx} style={{ color: '#D32F2F', fontSize: 14 }}>• Satır {err.row}: {err.message}</Text>
+                    <Text key={idx} style={{ color: '#D32F2F', fontSize: 14 }}>• {t('addCard.errorRow', 'Satır ')} {err.row}: {err.message}</Text>
                   ))}
                 </View>
               )}
@@ -300,7 +302,7 @@ export default function AddCardScreen() {
                 onPress={async () => {
                   // Kartları topluca ekle (Supabase)
                   if (!csvPreview.allValidCards.length) {
-                    Alert.alert('Hata', 'Geçerli kart yok.');
+                    Alert.alert(t('addCard.error', 'Hata'), t('addCard.noValidCards', 'Geçerli kart yok.'));
                     return;
                   }
                   let successCount = 0;
@@ -327,14 +329,14 @@ export default function AddCardScreen() {
                       }
                     }
                     Alert.alert(
-                      'İçe Aktarma Tamamlandı',
-                      `${successCount} kart başarıyla eklendi.${errorCount > 0 ? ` ${errorCount} kart eklenemedi.` : ''}`,
+                      t('addCard.importCompleted', 'İçe Aktarma Tamamlandı'),
+                      `${successCount} ${t('addCard.importCompletedMessage', 'kart başarıyla eklendi.')}${errorCount > 0 ? ` ${errorCount} ${t('addCard.importCompletedError', 'kart eklenemedi.')}` : ''}`,
                       [
-                        { text: 'Tamam', onPress: () => { setCsvPreview(null); setCsvModalVisible(false); } }
+                        { text: t('addCard.ok', 'Tamam'), onPress: () => { setCsvPreview(null); setCsvModalVisible(false); } }
                       ]
                     );
                   } catch (e) {
-                    Alert.alert('Hata', 'Kartlar eklenirken bir hata oluştu: ' + e.message);
+                    Alert.alert(t('addCard.error', 'Hata'), t('addCard.errorImport', 'Kartlar eklenirken bir hata oluştu: ') + e.message);
                   } finally {
                     setCsvLoading(false);
                   }
@@ -342,7 +344,7 @@ export default function AddCardScreen() {
                 style={{ backgroundColor: colors.buttonColor || '#007AFF', borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 10 }}
                 disabled={csvLoading}
               >
-                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{csvLoading ? 'Yükleniyor...' : 'Kartları İçe Aktar'}</Text>
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{csvLoading ? t('addCard.loading', 'Yükleniyor...') : t('addCard.importCards', 'Kartları İçe Aktar')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setCsvPreview(null)}
@@ -366,14 +368,14 @@ export default function AddCardScreen() {
                 onPress={handleDownloadTemplate}
                 style={{ backgroundColor: '#F98A21', borderRadius: 8, paddingVertical: 12, paddingHorizontal: 18, marginRight: 8 }}
               >
-                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>Örnek CSV İndir</Text>
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>{t('addCard.downloadTemplate', 'Örnek CSV İndir')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handlePickCSV}
                 style={{ backgroundColor: colors.blurView, borderRadius: 8, paddingVertical: 12, paddingHorizontal: 18, borderWidth: 1, borderColor: colors.border }}
                 disabled={csvLoading}
               >
-                <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15 }}>{csvLoading ? 'Yükleniyor...' : 'CSV Dosyası Seç'}</Text>
+                <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15 }}>{csvLoading ? t('addCard.loading', 'Yükleniyor...') : t('addCard.selectCSV', 'CSV Dosyası Seç')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -384,30 +386,30 @@ export default function AddCardScreen() {
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="image" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Kart Görseli</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.image", "Kart Görseli")}</Text>
             </View>
             {image ? (
               <View style={{ alignItems: 'center', marginBottom: 8 }}>
                 <Image source={{ uri: image }} style={styles.cardImage} />
                 <TouchableOpacity onPress={handleRemoveImage} style={[styles.removeImageButton, {backgroundColor: colors.actionButton}]}>
-                  <Text style={styles.removeImageButtonText}>Kaldır</Text>
+                  <Text style={styles.removeImageButtonText}>{t("addCard.removeImage", "Kaldır")}</Text>
                 </TouchableOpacity>
               </View>
             ) : (
               <TouchableOpacity onPress={handlePickImage} style={[styles.addImageButton, {backgroundColor: colors.actionButton}]}>
                 <Ionicons name="add" size={24} color="#F98A21" />
-                <Text style={styles.addImageButtonText}>Fotoğraf Ekle</Text>
+                <Text style={styles.addImageButtonText}>{t("addCard.addImage", "Fotoğraf Ekle")}</Text>
               </TouchableOpacity>
             )}
           </View>
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="help-circle-outline" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Soru *</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.question", "Soru")} *</Text>
             </View>
             <TextInput
               style={[styles.input, typography.styles.body, {color: colors.text, borderColor: colors.border}]}
-              placeholder="Kartın sorusu"
+              placeholder={t("addCard.questionPlaceholder", "Kartın sorusu")}
               placeholderTextColor={colors.muted}
               value={question}
               onChangeText={setQuestion}
@@ -417,11 +419,11 @@ export default function AddCardScreen() {
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="checkmark-circle-outline" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Cevap *</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.answer", "Cevap")} *</Text>
             </View>
             <TextInput
               style={[styles.input, typography.styles.body, {color: colors.text, borderColor: colors.border}]}
-              placeholder="Kartın cevabı"
+              placeholder={t("addCard.answerPlaceholder", "Kartın cevabı")}
               placeholderTextColor={colors.muted}
               value={answer}
               onChangeText={setAnswer}
@@ -431,11 +433,11 @@ export default function AddCardScreen() {
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="bulb-outline" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Örnek</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.example", "Örnek")}</Text>
             </View>
             <TextInput
               style={[styles.input, typography.styles.body, {color: colors.text, borderColor: colors.border}]}
-              placeholder="Örnek cümle (opsiyonel)"
+              placeholder={t("addCard.examplePlaceholder", "Örnek cümle (opsiyonel)")}
               placeholderTextColor={colors.muted}
               value={example}
               onChangeText={setExample}
@@ -445,11 +447,11 @@ export default function AddCardScreen() {
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="document-text-outline" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Not</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.note", "Not")}</Text>
             </View>
             <TextInput
               style={[styles.input, typography.styles.body, {color: colors.text, borderColor: colors.border}]}
-              placeholder="Not (opsiyonel)"
+              placeholder={t("addCard.notePlaceholder", "Not (opsiyonel)")}
               placeholderTextColor={colors.muted}
               value={note}
               onChangeText={setNote}
@@ -469,14 +471,14 @@ export default function AddCardScreen() {
               }}
               disabled={loading}
             >
-              <Text style={[styles.startButtonTextModern, { color: colors.buttonColor }, typography.styles.button]}>Geri Al</Text>
+              <Text style={[styles.startButtonTextModern, { color: colors.buttonColor }, typography.styles.button]}>{t("addCard.undo", "Geri Al")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.startButtonModern, loading && { opacity: 0.7 }, { borderWidth: 1, borderColor: colors.buttonBorder || 'transparent' }]}
               onPress={handleCreateCard}
               disabled={loading}
             >
-              <Text style={[styles.startButtonTextModern, typography.styles.button]}>{loading ? 'Ekleniyor...' : 'Kartı Oluştur'}</Text>
+              <Text style={[styles.startButtonTextModern, typography.styles.button]}>{loading ? t("addCard.creatingCard", "Kart oluşturuluyor...") : t("addCard.createCard", "Kartı Oluştur")}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

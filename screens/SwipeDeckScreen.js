@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { Ionicons, MaterialIcons, MaterialCommunityIcons, Entypo } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import logoasil from '../assets/logoasil.png';
+import { useTranslation } from 'react-i18next';
 
 const { width, height } = Dimensions.get('window');
 
@@ -39,6 +40,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const [hasLearningCard, setHasLearningCard] = useState(false);
   const [autoPlay, setAutoPlay] = useState(false);
   const autoPlayTimeout = useRef(null);
+  const { t } = useTranslation();
 
   // Sayaç kutuları için renkler
   const leftInactiveColor = '#f3a14c'; // Bir tık daha koyu turuncu
@@ -336,7 +338,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}> 
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.buttonColor} />
-          <Text style={[styles.loadingText, { color: colors.text }]}>Kartlar Yükleniyor</Text>
+          <Text style={[styles.loadingText, { color: colors.text }]}>{t('swipeDeck.loading', "Kartlar Yükleniyor")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -349,7 +351,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
         <View style={{ width: '100%', alignItems: 'center', marginTop: 110}}>
           <Image source={logoasil} style={{ width: 260, height: 260, resizeMode: 'cover' }} />
           <Text style={[typography.styles.h2, { color: colors.text, textAlign: 'center', marginTop: 16 , fontSize: 22}]}> 
-            {progress === totalCardCount ? 'Bravo! Tüm Kartları Tamamladın' : 'Kalan Kartları Öğrenmeye Vakit Var'}
+            {progress === totalCardCount ? t('swipeDeck.bravo', "Bravo! Tüm Kartları Tamamladın") : t('swipeDeck.learnTime', "Kalan Kartları Öğrenmeye Vakit Var")}
           </Text>
           <View style={{ width: 72, height: 1, backgroundColor: colors.orWhite, borderRadius: 2, alignSelf: 'center', marginTop: 16,marginBottom: 16 }} />
           <View style={styles.deckProgressBox}>
@@ -412,19 +414,19 @@ export default function SwipeDeckScreen({ route, navigation }) {
       <View style={[styles.horizontalButtonRow, { backgroundColor: colors.buttonColor }]}>
         <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: 1, borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(15)}>
           <MaterialCommunityIcons name="repeat" size={20} color={colors.text} style={{ marginRight: 6 }} />
-          <Text style={[styles.horizontalButtonText, { color: colors.text }]}>15 dk</Text>
+          <Text style={[styles.horizontalButtonText, { color: colors.text }]}>{t('swipeDeck.minutes', "15 dk")}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: 1, borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(60)}>
           <Ionicons name="time-outline" size={20} color={colors.text} style={{ marginRight: 6 }} />
-          <Text style={[styles.horizontalButtonText, { color: colors.text }]}>1 sa</Text>
+          <Text style={[styles.horizontalButtonText, { color: colors.text }]}>{t('swipeDeck.hours', "1 sa")}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: 1, borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(24 * 60)}>
           <Ionicons name="calendar-outline" size={20} color={colors.text} style={{ marginRight: 6 }} />
-          <Text style={[styles.horizontalButtonText, { color: colors.text }]}>1 gün</Text>
+          <Text style={[styles.horizontalButtonText, { color: colors.text }]}>{t('swipeDeck.days', "1 gün")}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.horizontalButton} onPress={() => handleSkip(7 * 24 * 60)}>
           <Ionicons name="star-outline" size={20} color={colors.text} style={{ marginRight: 6 }} />
-          <Text style={[styles.horizontalButtonText, { color: colors.text }]}>7 gün</Text>
+          <Text style={[styles.horizontalButtonText, { color: colors.text }]}>{t('swipeDeck.sevenDays', "7 gün")}</Text>
         </TouchableOpacity>
       </View>
       {/* Geri alma butonu */}

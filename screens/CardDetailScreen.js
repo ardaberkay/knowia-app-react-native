@@ -6,18 +6,20 @@ import { typography } from '../theme/typography';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../lib/supabase';
+import { useTranslation } from 'react-i18next';
 
 export default function CardDetailScreen() {
   const route = useRoute();
   const navigation = useNavigation();
   const { colors } = useTheme();
   const { card: initialCard, isOwner } = route.params;
-
+  const { t } = useTranslation();
   const [card, setCard] = useState(initialCard);
   const [menuVisible, setMenuVisible] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [favLoading, setFavLoading] = useState(false);
+
 
   useEffect(() => {
     const fetchUserAndFavoriteStatus = async () => {
@@ -70,19 +72,19 @@ export default function CardDetailScreen() {
 
   const handleDelete = () => {
     Alert.alert(
-      'Kartı Sil',
-      'Bu kartı kalıcı olarak silmek istediğinizden emin misiniz?',
+      t('cardDetail.deleteCard', 'Kartı Sil'),
+      t('cardDetail.deleteCardConfirmation', 'Bu kartı kalıcı olarak silmek istediğinizden emin misiniz?'),
       [
-        { text: 'İptal', style: 'cancel' },
+        { text: t('cardDetail.cancel', 'İptal'), style: 'cancel' },
         {
-          text: 'Sil',
+          text: t('cardDetail.delete', 'Sil'),
           style: 'destructive',
           onPress: async () => {
             try {
               await supabase.from('cards').delete().eq('id', card.id);
               navigation.goBack();
             } catch (error) {
-              Alert.alert('Hata', 'Kart silinirken bir hata oluştu.');
+              Alert.alert(t('cardDetail.error', 'Hata'), t('cardDetail.deleteCardError', 'Kart silinirken bir hata oluştu.'));
             }
           },
         },
@@ -114,17 +116,17 @@ export default function CardDetailScreen() {
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={styles.labelRow}>
               <Ionicons name="image" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>Kart Görseli</Text>
+              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t('cardDetail.image', 'Kart Görseli')}</Text>
             </View>
             <View style={{ alignItems: 'center', marginBottom: 8 }}>
               <Image source={{ uri: card.image }} style={styles.cardImage} />
             </View>
           </View>
         )}
-        <DetailField label="Soru" value={card?.question} iconName="help-circle-outline" />
-        <DetailField label="Cevap" value={card?.answer} iconName="checkmark-circle-outline" />
-        <DetailField label="Örnek" value={card?.example} iconName="bulb-outline" />
-        <DetailField label="Not" value={card?.note} iconName="document-text-outline" />
+        <DetailField label={t('cardDetail.question', 'Soru')} value={card?.question} iconName="help-circle-outline" />
+        <DetailField label={t('cardDetail.answer', 'Cevap')} value={card?.answer} iconName="checkmark-circle-outline" />
+        <DetailField label={t('cardDetail.example', 'Örnek')} value={card?.example} iconName="bulb-outline" />
+        <DetailField label={t('cardDetail.note', 'Not')} value={card?.note} iconName="document-text-outline" />
         
         {card?.created_at && (
           <Text style={[typography.styles.caption, { color: colors.muted, marginTop: 24, marginBottom: 8, textAlign: 'center', fontSize: 14 }]}>
@@ -156,7 +158,7 @@ export default function CardDetailScreen() {
               }}
             >
               <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
-              <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Kartı Düzenle</Text>
+              <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>{t('cardDetail.edit', 'Kartı Düzenle')}</Text>  
             </TouchableOpacity>
           )}
 
@@ -172,7 +174,7 @@ export default function CardDetailScreen() {
               style={{ marginRight: 12 }}
             />
             <Text style={{ fontSize: 16, fontWeight: '500', color: isFavorite ? '#F98A21' : colors.text }}>
-              {isFavorite ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
+              {isFavorite ? t('cardDetail.removeFavorite', 'Favorilerden Çıkar') : t('cardDetail.addFavorite', 'Favorilere Ekle')}
             </Text>
           </TouchableOpacity>
 
@@ -185,13 +187,13 @@ export default function CardDetailScreen() {
               }}
             >
               <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
-              <Text style={{ fontSize: 16, fontWeight: '500', color: '#E74C3C' }}>Kartı Sil</Text>
+              <Text style={{ fontSize: 16, fontWeight: '500', color: '#E74C3C' }}>{t('cardDetail.deleteCard', 'Kartı Sil')}</Text>
             </TouchableOpacity>
           )}
 
           <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16 }} onPress={() => setMenuVisible(false)}>
             <MaterialCommunityIcons name="close" size={22} color={colors.text} style={{ marginRight: 12 }} />
-            <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Kapat</Text>
+            <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>{t('cardDetail.close', 'Kapat')}</Text>
           </TouchableOpacity>
         </View>
       </Modal>

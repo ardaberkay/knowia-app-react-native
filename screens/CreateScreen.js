@@ -28,7 +28,7 @@ export default function CreateScreen() {
 
   const handleCreate = async () => {
     if (!name.trim()) {
-      Alert.alert('Hata', 'Deste adı zorunludur.');
+      Alert.alert(t('create.error', 'Hata'), t('create.requiredName', 'Deste adı zorunludur.'));
       return;
     }
     setLoading(true);
@@ -52,7 +52,7 @@ export default function CreateScreen() {
       resetForm();
       navigation.navigate('DeckDetail', { deck: data });
     } catch (e) {
-      Alert.alert('Hata', e.message || 'Deste oluşturulamadı.');
+      Alert.alert(t('create.errorMessage', 'Hata'), e.message || t('create.error', 'Deste oluşturulamadı.'));
     } finally {
       setLoading(false);
     }

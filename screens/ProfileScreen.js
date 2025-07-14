@@ -39,7 +39,7 @@ export default function ProfileScreen() {
         }
       } catch (e) {
         setNotificationsEnabled(false);
-        setError('Profil yüklenemedi');
+        setError(t('profile.errorMessageProfile', 'Profil yüklenemedi'));
       } finally {
         setLoading(false);
       }
@@ -50,7 +50,7 @@ export default function ProfileScreen() {
   const handleInviteFriends = async () => {
     try {
       await Share.share({
-        message: 'Bilgi evreninde öğrenme yolunu Knowia ile bul! Ücretsiz kaydol: https://seninuygulaman.com/davet',
+        message: t('profile.inviteMessage', 'Bilgi evreninde öğrenme yolunu Knowia ile bul! Ücretsiz kaydol:') + 'https://seninuygulaman.com/davet',
       });
     } catch (error) {
       // Paylaşım iptal edildiyse veya hata olursa sessiz geç
@@ -119,7 +119,7 @@ export default function ProfileScreen() {
       onPress: () => setLanguageModalVisible(true),
       right: (
         <Text style={{ color: colors.text, marginRight: 8 }}>
-          {selectedLanguage === 'tr' ? 'Türkçe' : 'English'}
+          {selectedLanguage === 'tr' ? 'Türkçe' : selectedLanguage === 'en' ? 'English' : selectedLanguage === 'es' ? 'Spanish' : selectedLanguage === 'fr' ? 'French' : selectedLanguage === 'pt' ? 'Portuguese' : selectedLanguage === 'ar' ? 'Arabic' : ''}
         </Text>
       ),
     },
@@ -148,7 +148,7 @@ export default function ProfileScreen() {
       const { error } = await logout();
       if (error) throw error;
     } catch (error) {
-      alert('Çıkış yapılırken bir hata oluştu');
+      alert(t('profile.logoutError', 'Çıkış yapılırken bir hata oluştu'));
     }
   };
 
@@ -178,7 +178,7 @@ export default function ProfileScreen() {
         {(loading || themeLoading) ? (
           <ProfileSkeleton />
         ) : error ? (
-          <Text style={[typography.styles.body, { color: colors.error }]}>Hata: {error}</Text>
+          <Text style={[typography.styles.body, { color: colors.error }]}>{t('profile.error', 'Hata')}: {error}</Text>
         ) : profile ? (
           <>
             <Image source={
@@ -231,6 +231,42 @@ export default function ProfileScreen() {
           >
             <Text style={{ color: selectedLanguage === 'en' ? colors.secondary : colors.text, fontWeight: selectedLanguage === 'en' ? 'bold' : 'normal' }}>
               English
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{ paddingVertical: 12 }}
+            onPress={() => handleLanguageChange('es')}
+            disabled={selectedLanguage === 'es'}
+          >
+            <Text style={{ color: selectedLanguage === 'es' ? colors.secondary : colors.text, fontWeight: selectedLanguage === 'es' ? 'bold' : 'normal' }}>
+              Spanish
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{ paddingVertical: 12 }}
+            onPress={() => handleLanguageChange('fr')}
+            disabled={selectedLanguage === 'fr'}
+          >
+            <Text style={{ color: selectedLanguage === 'fr' ? colors.secondary : colors.text, fontWeight: selectedLanguage === 'fr' ? 'bold' : 'normal' }}>
+              French
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{ paddingVertical: 12 }}
+            onPress={() => handleLanguageChange('pt')}
+            disabled={selectedLanguage === 'pt'}
+          >
+            <Text style={{ color: selectedLanguage === 'pt' ? colors.secondary : colors.text, fontWeight: selectedLanguage === 'pt' ? 'bold' : 'normal' }}>
+              Portuguese
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{ paddingVertical: 12 }}
+            onPress={() => handleLanguageChange('ar')}
+            disabled={selectedLanguage === 'ar'}
+          >
+            <Text style={{ color: selectedLanguage === 'ar' ? colors.secondary : colors.text, fontWeight: selectedLanguage === 'ar' ? 'bold' : 'normal' }}>
+              Arabic
             </Text>
           </TouchableOpacity>
         </View>

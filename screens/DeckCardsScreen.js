@@ -7,6 +7,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { supabase } from '../lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import AddEditCardInlineForm from '../components/AddEditCardInlineForm';
+import { useTranslation } from 'react-i18next';
 
 export default function DeckCardsScreen({ route, navigation }) {
   const { deck } = route.params;
@@ -27,7 +28,7 @@ export default function DeckCardsScreen({ route, navigation }) {
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const spinValue = useRef(new Animated.Value(0)).current;
-
+  const { t } = useTranslation();
   const screenHeight = Dimensions.get('window').height;
 
   useEffect(() => {
@@ -206,7 +207,7 @@ export default function DeckCardsScreen({ route, navigation }) {
             <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
               <View style={detailStyles.labelRow}>
                 <Ionicons name="image" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>Kart Görseli</Text>
+                <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.image", "Kart Görseli")}</Text>
           </View>
               <View style={{ alignItems: 'center', marginBottom: 8 }}>
                 <Image source={{ uri: selectedCard.image }} style={detailStyles.cardImage} />
@@ -217,7 +218,7 @@ export default function DeckCardsScreen({ route, navigation }) {
           <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={detailStyles.labelRow}>
               <Ionicons name="help-circle-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-              <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>Soru</Text>
+              <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.question", "Soru")}</Text>
                   </View>
             <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard?.question}</Text>
           </View>
@@ -226,7 +227,7 @@ export default function DeckCardsScreen({ route, navigation }) {
             <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
               <View style={detailStyles.labelRow}>
                 <Ionicons name="checkmark-circle-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>Cevap</Text>
+                <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.answer", "Cevap")}</Text>
                     </View>
               <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard.answer}</Text>
             </View>
@@ -236,7 +237,7 @@ export default function DeckCardsScreen({ route, navigation }) {
             <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
               <View style={detailStyles.labelRow}>
                 <Ionicons name="bulb-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>Örnek</Text>
+                <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.example", "Örnek")}</Text>
                     </View>
               <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard.example}</Text>
             </View>
@@ -246,14 +247,14 @@ export default function DeckCardsScreen({ route, navigation }) {
             <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
               <View style={detailStyles.labelRow}>
                 <Ionicons name="document-text-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>Not</Text>
+                <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.note", "Not")}</Text>
               </View>
               <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard.note}</Text>
             </View>
           ) : null}
           {/* Oluşturulma tarihi */}
               {selectedCard?.created_at ? (
-            <Text style={[typography.styles.caption, { color: colors.muted, marginTop: 24, marginBottom: 8, textAlign: 'center', fontSize: 14 }]}>Oluşturulma {new Date(selectedCard.created_at).toLocaleString('tr-TR')}</Text>
+            <Text style={[typography.styles.caption, { color: colors.muted, marginTop: 24, marginBottom: 8, textAlign: 'center', fontSize: 14 }]}>{t("cardDetail.createdAt", "Oluşturulma Tarihi")} {new Date(selectedCard.created_at).toLocaleString('tr-TR')}</Text>
               ) : null}
             </ScrollView>
             {/* Kart Detay Hamburger Menü Modal */}
@@ -276,7 +277,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                 onPress={() => { setCardMenuVisible(false); setEditMode(true); }}
                   >
                     <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
-                    <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Kartı Düzenle</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>{t("cardDetail.edit", "Kartı Düzenle")}</Text>
                   </TouchableOpacity>
                 )}
                 {/* Favorilere Ekle/Çıkar */}
@@ -310,17 +311,17 @@ export default function DeckCardsScreen({ route, navigation }) {
                     style={{ marginRight: 12 }}
                   />
                   <Text style={{ fontSize: 16, fontWeight: '500', color: favoriteCards.includes(selectedCard.id) ? '#F98A21' : colors.text }}>
-                    {favoriteCards.includes(selectedCard.id) ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
+                    {favoriteCards.includes(selectedCard.id) ? t("cardDetail.removeFavorite", "Favorilerden Çıkar") : t("cardDetail.addFavorite", "Favorilere Ekle")}
                   </Text>
                 </TouchableOpacity>
                 {/* Kartı Sil sadece kendi kartıysa */}
                 {currentUserId && deck.user_id === currentUserId && (
                   <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
                     onPress={async () => {
-                      Alert.alert('Kartı Sil', 'Bu kartı silmek istediğine emin misin?', [
-                        { text: 'İptal', style: 'cancel' },
+                      Alert.alert(t("cardDetail.deleteConfirmation", "Kart Silinsin mi?"), t("cardDetail.deleteConfirm", "Kartı silmek istediğinize emin misiniz?"), [
+                        { text: t("cardDetail.cancel", "İptal"), style: 'cancel' },
                         {
-                          text: 'Sil', style: 'destructive', onPress: async () => {
+                          text: t("cardDetail.delete", "Sil"), style: 'destructive', onPress: async () => {
                             await supabase
                               .from('cards')
                               .delete()
@@ -335,12 +336,12 @@ export default function DeckCardsScreen({ route, navigation }) {
                     }}
                   >
                     <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
-                    <Text style={{ fontSize: 16, fontWeight: '500', color: '#E74C3C' }}>Kartı Sil</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '500', color: '#E74C3C' }}>{t("cardDetail.deleteDeck", "Kartı Sil")}</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16 }} onPress={() => setCardMenuVisible(false)}>
                   <MaterialCommunityIcons name="close" size={22} color={colors.text} style={{ marginRight: 12 }} />
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Kapat</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>{t("cardDetail.close", "Kapat")}</Text>
                 </TouchableOpacity>
               </View>
             </Modal>
@@ -355,7 +356,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                 <Ionicons name="search" size={20} color="#B0B0B0" style={[styles.cardsSearchIcon, { marginRight: 0 }]} />
                 <TextInput
                   style={[styles.cardsSearchBarModern, typography.styles.body]}
-                  placeholder="Kartlarda ara..."
+                  placeholder={t("common.searchPlaceholder", "Kartlarda ara...")}
                   value={search}
                   onChangeText={setSearch}
                   placeholderTextColor={colors.muted}
@@ -407,13 +408,13 @@ export default function DeckCardsScreen({ route, navigation }) {
                   borderColor: '#F98A21',
                 }}>
                   <TouchableOpacity onPress={() => { setCardSort('original'); setFilterModalVisible(false); }} style={{ paddingVertical: 8, paddingHorizontal: 14, backgroundColor: cardSort === 'original' ? '#F98A21' : 'transparent', borderRadius: 8 }}>
-                    <Text style={{ color: cardSort === 'original' ? '#fff' : colors.text, fontWeight: cardSort === 'original' ? 'bold' : 'normal', fontSize: 15 }}>Varsayılan</Text>
+                    <Text style={{ color: cardSort === 'original' ? '#fff' : colors.text, fontWeight: cardSort === 'original' ? 'bold' : 'normal', fontSize: 15 }}>{t('deckDetail.default', 'Varsayılan')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => { setCardSort('az'); setFilterModalVisible(false); }} style={{ paddingVertical: 8, paddingHorizontal: 14, backgroundColor: cardSort === 'az' ? '#F98A21' : 'transparent', borderRadius: 8 }}>
                     <Text style={{ color: cardSort === 'az' ? '#fff' : colors.text, fontWeight: cardSort === 'az' ? 'bold' : 'normal', fontSize: 15 }}>A-Z</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => { setCardSort('fav'); setFilterModalVisible(false); }} style={{ paddingVertical: 8, paddingHorizontal: 14, backgroundColor: cardSort === 'fav' ? '#F98A21' : 'transparent', borderRadius: 8 }}>
-                    <Text style={{ color: cardSort === 'fav' ? '#fff' : colors.text, fontWeight: cardSort === 'fav' ? 'bold' : 'normal', fontSize: 15 }}>Favoriler</Text>
+                    <Text style={{ color: cardSort === 'fav' ? '#fff' : colors.text, fontWeight: cardSort === 'fav' ? 'bold' : 'normal', fontSize: 15 }}>{t('deckDetail.fav', 'Favoriler')}</Text>
                   </TouchableOpacity>
                 </View>
               </TouchableOpacity>
@@ -435,7 +436,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                   <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
                     <View style={detailStyles.labelRow}>
                       <Ionicons name="image" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                      <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>Kart Görseli</Text>
+                      <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.image", "Kart Görseli")}</Text>
                     </View>
                     <View style={{ alignItems: 'center', marginBottom: 8 }}>
                       <Image source={{ uri: selectedCard.image }} style={detailStyles.cardImage} />
@@ -446,7 +447,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                 <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
                   <View style={detailStyles.labelRow}>
                     <Ionicons name="help-circle-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                    <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>Soru*</Text>
+                    <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.question", "Soru")} *</Text>
                   </View>
                   <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard?.question}</Text>
                 </View>
@@ -455,7 +456,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                   <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
                     <View style={detailStyles.labelRow}>
                       <Ionicons name="checkmark-circle-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                      <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>Cevap *</Text>
+                      <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.answer", "Cevap")} *</Text>
                     </View>
                     <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard.answer}</Text>
                   </View>
@@ -465,7 +466,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                   <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
                     <View style={detailStyles.labelRow}>
                       <Ionicons name="bulb-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                      <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>Örnek</Text>
+                      <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.example", "Örnek")}</Text>
                     </View>
                     <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard.example}</Text>
                   </View>
@@ -475,7 +476,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                   <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
                     <View style={detailStyles.labelRow}>
                       <Ionicons name="document-text-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                      <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>Not</Text>
+                      <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.note", "Not")}</Text>
                     </View>
                     <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard.note}</Text>
                   </View>
@@ -496,11 +497,11 @@ export default function DeckCardsScreen({ route, navigation }) {
               loading ? (
                 <View style={{justifyContent: 'center', alignItems: 'center'}}>
                   <ActivityIndicator size="large" color={colors.text} style={{ marginBottom: 16 }} />
-                  <Text style={[styles.loadingText, { color: colors.text }]}>Yükleniyor</Text>
+                  <Text style={[styles.loadingText, { color: colors.text }]}>{t('common.loading', 'Yükleniyor')}</Text>
                 </View>
               ) : (
                 <View style={{justifyContent: 'center', alignItems: 'center'}}>
-                  <Text style={[typography.styles.caption, { color: colors.text, textAlign: 'center', fontSize: 16 }]}>Desteye bir kart ekle</Text>
+                  <Text style={[typography.styles.caption, { color: colors.text, textAlign: 'center', fontSize: 16 }]}>{t('deckDetail.addToDeck', 'Desteye bir kart ekle')}</Text>
                 </View>
               )
             }
@@ -540,10 +541,13 @@ export default function DeckCardsScreen({ route, navigation }) {
                       <TouchableOpacity
                         style={{ marginTop: 20 }}
                         onPress={() => {
-                          Alert.alert('Kartı Sil', 'Bu kartı silmek istediğine emin misin?', [
-                            { text: 'İptal', style: 'cancel' },
-                            {
-                              text: 'Sil', style: 'destructive', onPress: async () => {
+                          Alert.alert(
+                            t('cardDetail.deleteConfirmation', 'Kart Silinsin mi?'),
+                            t('cardDetail.deleteConfirm', 'Kartı silmek istediğinize emin misiniz?'),
+                            [
+                              { text: t('cardDetail.cancel', 'İptal'), style: 'cancel' },
+                              {
+                                text: t('cardDetail.delete', 'Sil'), style: 'destructive', onPress: async () => {
                                 await supabase
                                   .from('cards')
                                   .delete()

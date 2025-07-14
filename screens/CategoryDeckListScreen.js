@@ -4,11 +4,13 @@ import { useNavigation, useTheme } from '@react-navigation/native';
 import { typography } from '../theme/typography';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 export default function CategoryDeckListScreen({ route }) {
   const { title, decks } = route.params;
   const navigation = useNavigation();
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   const [search, setSearch] = useState('');
 
@@ -58,7 +60,7 @@ export default function CategoryDeckListScreen({ route }) {
                 style={styles.deckProfileAvatar}
               />
               <Text style={styles.deckProfileUsername} numberOfLines={1} ellipsizeMode="tail">
-                {item.profiles?.username || 'Kullanıcı'}
+                {item.profiles?.username || 'User'}
               </Text>
             </View>
             <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
@@ -93,7 +95,7 @@ export default function CategoryDeckListScreen({ route }) {
           <Ionicons name="search" size={20} color="#B0B0B0" style={styles.searchIcon} />
           <TextInput
             style={styles.searchBar}
-            placeholder="Deste ara..."
+            placeholder={t("common.searchDeckPlaceholder", "Deste ara...")}
             placeholderTextColor="#B0B0B0"
             value={search}
             onChangeText={setSearch}
@@ -108,7 +110,7 @@ export default function CategoryDeckListScreen({ route }) {
         numColumns={2}
         style={{ backgroundColor: colors.background, flex: 1 }}
         contentContainerStyle={styles.decksContainer}
-        ListEmptyComponent={<Text style={[styles.emptyText, typography.styles.caption]}>Henüz deste bulunmuyor</Text>}
+        ListEmptyComponent={<Text style={[styles.emptyText, typography.styles.caption]}>{t("common.noDecks", "Henüz deste bulunmuyor")}</Text>}
         showsVerticalScrollIndicator={false}
       />
     </View>

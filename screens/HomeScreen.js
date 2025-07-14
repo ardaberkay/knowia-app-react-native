@@ -90,7 +90,7 @@ const DECK_CATEGORIES = {
       setDecks(decksData);
     } catch (err) {
       setError(err.message);
-      Alert.alert('Hata', 'Desteler yüklenirken bir hata oluştu');
+        Alert.alert(t('home.errorMessage', 'Hata'), t('home.errorMessageDeck', 'Desteler yüklenirken bir hata oluştu'));
     } finally {
       setLoading(false);
     }
@@ -105,15 +105,6 @@ const DECK_CATEGORIES = {
       setProfile(null);
     } finally {
       setProfileLoading(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      const { error } = await logout();
-      if (error) throw error;
-    } catch (error) {
-      Alert.alert('Hata', 'Çıkış yapılırken bir hata oluştu');
     }
   };
 
@@ -203,7 +194,7 @@ const DECK_CATEGORIES = {
             ))}
           </ScrollView>
         ) : limitedDecks.length === 0 ? (
-          <Text style={[styles.emptyText, typography.styles.caption]}>Henüz deste bulunmuyor</Text>
+          <Text style={[styles.emptyText, typography.styles.caption]}>{t('home.noDecks', 'Henüz deste bulunmuyor')}</Text>
         ) : (
           <ScrollView 
             horizontal
