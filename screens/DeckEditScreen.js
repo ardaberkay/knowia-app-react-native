@@ -133,18 +133,26 @@ export default function DeckEditScreen() {
           </View>
           <View style={styles.buttonRowModern}>
             <TouchableOpacity
-              style={[styles.favButtonModern]}
+              style={[
+                styles.favButtonModern,
+                { flex: 1, minWidth: 0, marginRight: 10 },
+                loading && { opacity: 0.7 }
+              ]}
               onPress={() => navigation.goBack()}
               disabled={loading}
             >
-              <Text style={[styles.favButtonTextModern, typography.styles.button]}>{t("create.removeChanges", "Geri Al")}</Text>
+              <Text style={[styles.favButtonTextModern, typography.styles.button, { color: '#F98A21' }]}>{t("create.removeChanges", "Geri Al")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.startButtonModern, loading && { opacity: 0.7 }]}
+              style={[
+                styles.startButtonModern,
+                { flex: 1, minWidth: 0, borderWidth: 1, borderColor: colors.buttonBorder || 'transparent' },
+                loading && { opacity: 0.7 }
+              ]}
               onPress={handleSave}
               disabled={loading}
             >
-              <Text style={[styles.startButtonTextModern, typography.styles.button]}>{loading ? t("create.saving", "Kaydediliyor...") : t("create.save", "Kaydet")}</Text>
+              <Text style={[styles.startButtonTextModern, typography.styles.button, { color: '#fff' }]}>{loading ? t("create.saving", "Kaydediliyor...") : t("create.save", "Kaydet")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -206,7 +214,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 14,
     marginHorizontal: 18,
-    marginTop: 70,
+    marginTop: 110,
   },
   favButtonModern: {
     flex: 1,
@@ -223,12 +231,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
-    paddingHorizontal: 18,
+    paddingHorizontal: 5,
   },
   favButtonTextModern: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#F98A21',
   },
   startButtonModern: {
     flex: 1,
@@ -243,12 +250,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
-    marginLeft: 8,
   },
   startButtonTextModern: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#fff',
   },
   detailsRow: {
     alignSelf: 'flex-end',

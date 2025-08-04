@@ -182,7 +182,8 @@
     "deleteCard": "Kartı Sil",
     "deleteCardConfirmation": "Bu kartı kalıcı olarak silmek istediğinizden emin misiniz?",
     "error": "Hata",
-    "deleteCardError": "Kart silinirken bir hata oluştu."
+    "deleteCardError": "Kart silinirken bir hata oluştu.",
+    "cardDetail": "Kart Detayı"
   },
   "addCard": {
     "question": "Soru",
@@ -295,6 +296,10 @@
   },
   "notifications": {
     "title": "Knowia ile öğrenme zamanı!",
-    "body": "Bugün de bir adım at ve hedeflerine yaklaş!"
+    "body": "Bugün de bir adım at ve hedeflerine yaklaş!",
+    "error": "Hata",
+    "errorMessage": "Bir hata oluştu",
+    "errorMessageNotification": "Push bildirim izni verilmedi!",
+    "errorMessageNotificationDevice": "Push bildirimleri için gerçek bir cihaz gereklidir."
   }
 }

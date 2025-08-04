@@ -177,7 +177,8 @@
     "phNote": "Note",
     "optional": "optional",
     "save": "Save",
-    "addToDeck": "Add a card to the deck"
+    "addToDeck": "Add a card to the deck",
+    "cardDetail": "Card Detail"
   },
   "addCard": {
     "question": "Question",
@@ -290,6 +291,10 @@
   },
   "notifications": {
     "title": "It's time to learn with Knowia!",
-    "body": "Take a step today and get closer to your goals!"
+    "body": "Take a step today and get closer to your goals!",
+    "error": "Error",
+    "errorMessage": "An error occurred",
+    "errorMessageNotification": "Notification permission not granted!",
+    "errorMessageNotificationDevice": "A physical device is required to receive notifications."
   }
 } 

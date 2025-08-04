@@ -177,7 +177,8 @@
       "phNote": "ملاحظة",
       "optional": "اختياري",
       "save": "حفظ",
-      "addToDeck": "إضافة بطاقة إلى المجموعة"
+      "addToDeck": "إضافة بطاقة إلى المجموعة",
+      "cardDetail": "تفاصيل البطاقة"
     },
     "addCard": {
       "question": "السؤال",
@@ -290,6 +291,10 @@
     },
     "notifications": {
       "title": "حان وقت التعلم مع Knowia!",
-      "body": "اتخذ خطوة اليوم واقترب من أهدافك!"
+      "body": "اتخذ خطوة اليوم واقترب من أهدافك!",
+      "error": "خطأ",
+      "errorMessage": "حدث خطأ",
+      "errorMessageNotification": "إذن الإشعارات غير مسموح به!",
+      "errorMessageNotificationDevice": "جهاز حقيقي مطلوب للحصول على الإشعارات."
     }
   }

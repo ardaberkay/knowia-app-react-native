@@ -177,7 +177,8 @@
       "phNote": "Nota",
       "optional": "opcional",
       "save": "Salvar",
-      "addToDeck": "Adicionar um cartão ao baralho"
+      "addToDeck": "Adicionar um cartão ao baralho",
+      "cardDetail": "Detalhe do Cartão"
     },
     "addCard": {
       "question": "Pergunta",
@@ -290,6 +291,10 @@
     },
     "notifications": {
       "title": "É hora de aprender com a Knowia!",
-      "body": "Dê um passo hoje e aproxime-se dos seus objetivos"
+      "body": "Dê um passo hoje e aproxime-se dos seus objetivos",
+      "error": "Erro",
+      "errorMessage": "Ocorreu um erro",
+      "errorMessageNotification": "Permissão de notificação não concedida!",
+      "errorMessageNotificationDevice": "Um dispositivo físico é necessário para receber notificações."
     }
   }

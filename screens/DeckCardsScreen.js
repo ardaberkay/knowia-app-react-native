@@ -201,7 +201,7 @@ export default function DeckCardsScreen({ route, navigation }) {
         end={{ x: 1, y: 1 }}
         style={{ flex: 1 }}
       >
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 18, paddingBottom: 8, flexGrow: 1 }} showsVerticalScrollIndicator={true}>
+                 <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 18, paddingBottom: 8, flexGrow: 1 }} showsVerticalScrollIndicator={false}>
           {/* Görsel */}
           {selectedCard?.image ? (
             <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
@@ -347,7 +347,7 @@ export default function DeckCardsScreen({ route, navigation }) {
             </Modal>
       </LinearGradient>
     ) : (
-      <View style={{ flex: 1, backgroundColor: colors.background, paddingHorizontal: 18, paddingTop: 18 }}>
+             <View style={{ flex: 1, backgroundColor: colors.background, paddingHorizontal: 18, paddingTop: 18 }}>
         {!selectedCard && (
           <>
             {/* Search Bar & Filter */}
@@ -430,7 +430,7 @@ export default function DeckCardsScreen({ route, navigation }) {
               end={{ x: 1, y: 1 }}
               style={{ flex: 1 }}
             >
-              <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 8, flexGrow: 1 }} showsVerticalScrollIndicator={true}>
+                             <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 8, flexGrow: 1 }} showsVerticalScrollIndicator={false}>
                 {/* Görsel */}
                 {selectedCard?.image ? (
                   <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
@@ -488,48 +488,65 @@ export default function DeckCardsScreen({ route, navigation }) {
               </ScrollView>
             </LinearGradient>
         ) : (
-          <FlatList
-            data={filteredCards}
-            keyExtractor={item => item.id?.toString()}
-            showsVerticalScrollIndicator={true}
-            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: 24, paddingTop: 8 }}
-            ListEmptyComponent={
-              loading ? (
-                <View style={{justifyContent: 'center', alignItems: 'center'}}>
-                  <ActivityIndicator size="large" color={colors.text} style={{ marginBottom: 16 }} />
-                  <Text style={[styles.loadingText, { color: colors.text }]}>{t('common.loading', 'Yükleniyor')}</Text>
-                </View>
-              ) : (
-                <View style={{justifyContent: 'center', alignItems: 'center'}}>
-                  <Text style={[typography.styles.caption, { color: colors.text, textAlign: 'center', fontSize: 16 }]}>{t('deckDetail.addToDeck', 'Desteye bir kart ekle')}</Text>
-                </View>
-              )
-            }
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[styles.cardItemGlass, {backgroundColor: colors.cards}]}
-                activeOpacity={0.93}
-                onPress={() => {
-                  setEditMode(false);
-                  setSelectedCard(item);
-                }}
-              >
+                     <FlatList
+             data={filteredCards}
+             keyExtractor={item => item.id?.toString()}
+             showsVerticalScrollIndicator={false}
+             contentContainerStyle={{ flexGrow: 1, paddingBottom: 24, paddingTop: 8 }}
+                         ListEmptyComponent={
+               loading ? (
+                 <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', height: 400}}>
+                   <ActivityIndicator size="large" color={colors.text} style={{ marginBottom: 16 }} />
+                   <Text style={[styles.loadingText, { color: colors.text }]}>{t('common.loading', 'Yükleniyor')}</Text>
+                 </View>
+               ) : (
+                 <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', height: 400}}>
+                   <Text style={[typography.styles.caption, { color: colors.text, textAlign: 'center', fontSize: 16 }]}>{t('deckDetail.addToDeck', 'Desteye bir kart ekle')}</Text>
+                 </View>
+               )
+             }
+                         renderItem={({ item }) => (
+               <TouchableOpacity
+                 style={[
+                   styles.cardItemGlass,
+                   { backgroundColor: colors.cardBackground }
+                 ]}
+                 activeOpacity={0.85}
+                 onPress={() => {
+                   setEditMode(false);
+                   setSelectedCard(item);
+                 }}
+               >
                 <View style={styles.cardTopRow}>
-                  <View style={styles.cardTextCol}>
-                    <Text style={[styles.cardQuestion, typography.styles.body]} numberOfLines={1} ellipsizeMode="tail">
-                      {item.question}
-                    </Text>
-                    <View style={styles.cardDivider} />
-                    <Text style={[styles.cardAnswer, typography.styles.body, {color: colors.text}]} numberOfLines={1} ellipsizeMode="tail">
-                      {item.answer}
-                    </Text>
-                  </View>
+                                     <View style={styles.cardTextCol}>
+                     <Text style={[
+                       styles.cardQuestion, 
+                       typography.styles.body,
+                       { color: colors.cardQuestionText }
+                     ]} numberOfLines={1} ellipsizeMode="tail">
+                       {item.question}
+                     </Text>
+                     <View style={[
+                       styles.cardDivider,
+                       { backgroundColor: colors.cardDivider }
+                     ]} />
+                     <Text style={[
+                       styles.cardAnswer, 
+                       typography.styles.body,
+                       { color: colors.cardAnswerText }
+                     ]} numberOfLines={1} ellipsizeMode="tail">
+                       {item.answer}
+                     </Text>
+                   </View>
                   <View style={{ alignItems: 'center' }}>
-                    <TouchableOpacity
-                      style={styles.cardFavIconBtn}
-                      onPress={() => handleToggleFavoriteCard(item.id)}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
+                                         <TouchableOpacity
+                       style={[
+                         styles.cardFavIconBtn,
+                         { backgroundColor: colors.cardButtonBackground }
+                       ]}
+                       onPress={() => handleToggleFavoriteCard(item.id)}
+                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                     >
                       <MaterialCommunityIcons
                         name={favoriteCards.includes(item.id) ? 'heart' : 'heart-outline'}
                         size={22}
@@ -539,7 +556,12 @@ export default function DeckCardsScreen({ route, navigation }) {
                     {/* Çöp kutusu ikonu sadece destenin sahibi ise */}
                     {currentUserId && deck.user_id === currentUserId && (
                       <TouchableOpacity
-                        style={{ marginTop: 20 }}
+                                                 style={{ 
+                           marginTop: 8,
+                           padding: 8,
+                           backgroundColor: colors.cardButtonBackground,
+                           borderRadius: 12,
+                         }}
                         onPress={() => {
                           Alert.alert(
                             t('cardDetail.deleteConfirmation', 'Kart Silinsin mi?'),
@@ -629,51 +651,52 @@ const styles = StyleSheet.create({
   cardItemGlass: {
     width: '100%',
     minHeight: 110,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    marginBottom: 14,
-    padding: 16,
-    borderWidth: 2,
-    borderColor: '#F98A21',
-    shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: '#E8E4DD', // Light theme için varsayılan
+    borderRadius: 20,
+    marginBottom: 12,
+    padding: 20,
+    borderWidth: 0,
     justifyContent: 'center',
     alignItems: 'flex-start',
   },
   cardQuestion: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    color: '#F98A21',
+    fontWeight: '600',
+    fontSize: 17,
+    color: '#1C1C1C', // Light theme için varsayılan
     marginBottom: 8,
+    letterSpacing: 0.3,
+    marginTop: 4,
   },
   cardDivider: {
-    height: 1,
-    backgroundColor: '#ffe0c3',
+    height: 2,
+    backgroundColor: '#F98A21', // Light theme için varsayılan
     alignSelf: 'stretch',
-    marginVertical: 6,
-    borderRadius: 1,
+    marginVertical: 8,
+    borderRadius: 2,
   },
   cardAnswer: {
     fontSize: 15,
-
-    marginTop: 2,
+    color: '#4A4A4A', // Light theme için varsayılan
+    marginTop: 4,
+    fontWeight: '400',
+    letterSpacing: 0.2,
   },
   cardTopRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     width: '100%',
-    marginBottom: 4,
+
   },
   cardTextCol: {
     width: '80%',
     maxWidth: 320,
   },
   cardFavIconBtn: {
-    padding: 2,
+    padding: 8,
+    backgroundColor: '#ffffff', // Light theme için varsayılan
+    borderRadius: 12,
+    marginBottom: 4,
   },
   cardDetailImage: {
     width: 120,

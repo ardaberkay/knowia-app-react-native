@@ -190,21 +190,25 @@ export default function EditCardScreen() {
           <View style={styles.buttonRowModern}>
             <TouchableOpacity
               style={[
-                styles.startButtonModern,
-                styles.cancelButtonCustom,
+                styles.favButtonModern,
+                { flex: 1, minWidth: 0, marginRight: 10 },
                 loading && { opacity: 0.7 }
               ]}
               onPress={() => navigation.goBack()}
               disabled={loading}
             >
-              <Text style={[styles.cancelButtonTextCustom, typography.styles.button]}>{t("cardDetail.cancel", "İptal Et")}</Text>
+              <Text style={[styles.favButtonTextModern, typography.styles.button, { color: '#F98A21' }]}>{t("cardDetail.cancel", "İptal Et")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.startButtonModern, loading && { opacity: 0.7 }]}
+              style={[
+                styles.startButtonModern,
+                { flex: 1, minWidth: 0, borderWidth: 1, borderColor: colors.buttonBorder || 'transparent' },
+                loading && { opacity: 0.7 }
+              ]}
               onPress={handleUpdateCard}
               disabled={loading}
             >
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={[styles.startButtonTextModern, typography.styles.button]}>{t("cardDetail.save", "Kaydet")}</Text>}
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={[styles.startButtonTextModern, typography.styles.button, { color: '#fff' }]}>{t("cardDetail.save", "Kaydet")}</Text>}
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -302,6 +306,27 @@ const styles = StyleSheet.create({
     marginTop: 30,
     marginBottom: 30,
   },
+  favButtonModern: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#F98A21',
+    borderRadius: 10,
+    paddingVertical: 13,
+    justifyContent: 'center',
+    shadowColor: '#F98A21',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    paddingHorizontal: 5,
+  },
+  favButtonTextModern: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   startButtonModern: {
     flex: 1,
     flexDirection: 'row',
@@ -318,16 +343,6 @@ const styles = StyleSheet.create({
   },
   startButtonTextModern: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  cancelButtonCustom: {
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#F98A21',
-  },
-  cancelButtonTextCustom: {
-    color: '#F98A21',
     fontWeight: 'bold',
   },
 }); 

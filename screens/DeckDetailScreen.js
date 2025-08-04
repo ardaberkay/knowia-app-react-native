@@ -299,11 +299,11 @@ export default function DeckDetailScreen({ route, navigation }) {
               </>
             ) : (
               <>
-                <Text style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%' }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
+                <Text style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
                 {deck.to_name && (
                   <View style={{ width: '100%', alignItems: 'center' }}>
-                    <View style={styles.dividerLine} />
-                    <Text style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', marginTop: 2 }]} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
+                    <View style={[styles.dividerLine, { backgroundColor: colors.buttonColor }]} />
+                    <Text style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', marginTop: 2, color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
                   </View>
                 )}
               </>
@@ -404,7 +404,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                 <Ionicons name="albums-outline" size={22} color={colors.buttonColor} style={{ marginRight: 8 }} />
                 <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>{t('deckDetail.cards', 'Kartlar')}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={26} color={colors.buttonColor} />
+              <Ionicons name="chevron-forward" size={26} color={colors.headText} />
             </View>
           </View>
         </TouchableOpacity>
@@ -907,18 +907,18 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   cardsHeaderCard: {
-
     borderRadius: 18,
     width: '100%',
     maxWidth: 440,
     alignSelf: 'center',
-    marginTop: 18,
+    marginTop: 4,
     padding: 16,
-
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.10,
     shadowRadius: 8,
     elevation: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cardsSearchBarRow: {
     flexDirection: 'row',
@@ -1009,7 +1009,9 @@ const styles = StyleSheet.create({
   cardsHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'center',
+    marginVertical: 6,
+    width: '100%',
   },
   cardsHeaderIcon: {
     marginRight: 8,
@@ -1103,7 +1105,6 @@ const styles = StyleSheet.create({
   dividerLine: {
     width: '60%',
     height: 1,
-    backgroundColor: '#ffe0c3',
     alignSelf: 'center',
     marginVertical: 6,
   },

@@ -146,12 +146,12 @@ export default function LibraryScreen() {
               <View style={styles.deckHeaderModern}>
                 {item.to_name ? (
                   <>
-                    <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
-                    <View style={{ width: 60, height: 2, backgroundColor: '#fff', borderRadius: 1, marginVertical: 10 }} />
-                    <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{item.to_name}</Text>
+                    <Text style={[styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+                    <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10 }} />
+                    <Text style={[styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{item.to_name}</Text>
                   </>
                 ) : (
-                  <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+                  <Text style={[styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
                 )}
               </View>
             </View>
@@ -270,12 +270,12 @@ export default function LibraryScreen() {
                 <View style={styles.deckHeaderModern}>
                   {item.to_name ? (
                     <>
-                      <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
-                      <View style={{ width: 60, height: 2, backgroundColor: '#fff', borderRadius: 1, marginVertical: 10 }} />
-                      <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{item.to_name}</Text>
+                      <Text style={[styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+                      <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10 }} />
+                      <Text style={[styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{item.to_name}</Text>
                     </>
                   ) : (
-                    <Text style={styles.deckTitleModern} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+                    <Text style={[styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
                   )}
                 </View>
               </View>
@@ -380,11 +380,11 @@ export default function LibraryScreen() {
             style={styles.deckCardGradient}
           >
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <Text style={[styles.deckTitleModern, typography.styles.body, { textAlign: 'center' }]} numberOfLines={2}>
+              <Text style={[styles.deckTitleModern, typography.styles.body, { textAlign: 'center' }, {color: colors.headText}]} numberOfLines={2}>
                 {item.question}
               </Text>
-              <View style={{ width: 60, height: 2, backgroundColor: '#fff', borderRadius: 1, marginVertical: 10 }} />
-              <Text style={{ color: '#F98A21', fontWeight: 'bold', fontSize: 17, textAlign: 'center' }} numberOfLines={2}>{item.answer}</Text>
+              <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10 }} />
+              <Text style={{ color: '#F98A21', fontWeight: 'bold', fontSize: 17, textAlign: 'center', color: colors.headText }} numberOfLines={2}>{item.answer}</Text>
             </View>
             <View style={{ position: 'absolute', left: 15, bottom: 15, backgroundColor: '#F98A21', borderRadius: 12, width: 40, height: 25, justifyContent: 'center', alignItems: 'center'}}>
               <MaterialCommunityIcons
@@ -551,7 +551,6 @@ export default function LibraryScreen() {
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
       <ActivityIndicator size="large" color={colors.text} style={{ marginBottom: 16 }} />
-      <Text style={[styles.loadingText, { color: colors.text }]}>Yükleniyor...</Text>
     </View>
   );
 
@@ -790,13 +789,14 @@ const styles = StyleSheet.create({
   },
   searchBarContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 10,
+    paddingVertical: 10, // Adjusted to ensure equal spacing
     backgroundColor: 'transparent',
   },
   searchBarRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+
   },
   searchBarWrapperSmall: {
     flex: 1,

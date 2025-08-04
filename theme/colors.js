@@ -21,7 +21,15 @@ export const lightColors = {
     cards: '#ffffff',
     orWhite: '#F98A21',
     actionButton: '#fff8f0',
-    inProgressBar: '#d9d9d9'
+    inProgressBar: '#d9d9d9',
+    headText: '#F98A21',
+    divider: '#FFFFFF',
+    // Kart renkleri
+    cardBackground: '#E8E4DD',
+    cardQuestionText: '#1C1C1C',
+    cardAnswerText: '#4A4A4A',
+    cardDivider: '#F98A21',
+    cardButtonBackground: '#ffffff'
 };
 
 export const darkColors = {
@@ -47,4 +55,13 @@ export const darkColors = {
     cards: '#1E1E1E',
     orWhite: '#FFFFFF',
     actionButton: '#FEFEFE',
-    inProgressBar: '#dddddd'};
+    inProgressBar: '#dddddd',
+    headText: '#F0F0F0',
+    divider: '#F98A21',
+    // Kart renkleri
+    cardBackground: '#3A3A3A',
+    cardQuestionText: '#FFFFFF',
+    cardAnswerText: '#E0E0E0',
+    cardDivider: '#F98A21',
+    cardButtonBackground: '#2C2C2C'
+};

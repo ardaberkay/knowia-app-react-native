@@ -177,7 +177,8 @@
       "phNote": "Note",
       "optional": "optionnel",
       "save": "Enregistrer",
-      "addToDeck": "Ajouter une carte au paquet"
+      "addToDeck": "Ajouter une carte au paquet",
+      "cardDetail": "Détail de la Carte"
     },
     "addCard": {
       "question": "Question",
@@ -290,6 +291,10 @@
     },
     "notifications": {
       "title": "Il est temps d'apprendre avec Knowia!",
-      "body": "Faites un pas aujourd'hui et rapprochez-vous de vos objectifs!"
+      "body": "Faites un pas aujourd'hui et rapprochez-vous de vos objectifs!",
+      "error": "Erreur",
+      "errorMessage": "Une erreur s'est produite",
+      "errorMessageNotification": "Permission de notification non accordée !",
+      "errorMessageNotificationDevice": "Un appareil physique est nécessaire pour recevoir des notifications."
     }
   }

@@ -1,6 +1,8 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { supabase } from '../lib/supabase';
+import i18n from '../lib/i18n';
+
 
 /**
  * Kullanıcıdan push bildirim izni alır ve Expo push token'ı Supabase'deki profiles tablosuna kaydeder.
@@ -12,7 +14,7 @@ export async function registerForPushNotificationsAsync(userId) {
 
   // Sadece gerçek cihazda çalışır, emulator/simülatörde çalışmaz!
   if (!Device.isDevice) {
-    alert('Push bildirimleri için gerçek bir cihaz gereklidir.');
+    alert(i18n.t('notifications.errorMessageNotificationDevice', 'Push bildirimleri için gerçek bir cihaz gereklidir.'));
     return null;
   }
 
@@ -24,7 +26,7 @@ export async function registerForPushNotificationsAsync(userId) {
     finalStatus = status;
   }
   if (finalStatus !== 'granted') {
-    alert('Push bildirim izni verilmedi!');
+    alert(i18n.t('notifications.errorMessageNotification', 'Push bildirim izni verilmedi!'));
     return null;
   }
 

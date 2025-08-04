@@ -100,7 +100,7 @@ export default function AddCardScreen() {
         });
       if (error) throw error;
       Alert.alert(t('common.success', 'Başarılı'), t('common.addCardSuccess', 'Kart eklendi!'), [
-        { text: 'Tamam', onPress: () => navigation.goBack() }
+        { text: t('common.ok', 'Tamam'), onPress: () => navigation.goBack() }
       ]);
     } catch (e) {
       Alert.alert(t('common.error', 'Hata'), e.message || t('common.addCardError', 'Kart eklenemedi.'));

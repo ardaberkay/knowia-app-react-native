@@ -42,7 +42,7 @@ export default function CardDetailScreen() {
 
   useEffect(() => {
     navigation.setOptions({
-      title: 'Kart Detayı',
+      title: t('cardDetail.cardDetail', 'Kart Detayı'),
       headerRight: () => (
         <TouchableOpacity onPress={() => setMenuVisible(true)} style={{ marginRight: 8 }}>
           <MaterialCommunityIcons name="dots-horizontal" size={28} color={colors.text} />
@@ -130,7 +130,7 @@ export default function CardDetailScreen() {
         
         {card?.created_at && (
           <Text style={[typography.styles.caption, { color: colors.muted, marginTop: 24, marginBottom: 8, textAlign: 'center', fontSize: 14 }]}>
-            Oluşturulma {new Date(card.created_at).toLocaleString('tr-TR')}
+            {t('cardDetail.createdAt', 'Oluşturulma')} {new Date(card.created_at).toLocaleString('tr-TR')}
           </Text>
         )}
       </ScrollView>
