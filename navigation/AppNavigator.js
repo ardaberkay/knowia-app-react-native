@@ -52,7 +52,7 @@ function MainTabs() {
         tabBarLabelStyle: {
           fontSize: 12,
           marginBottom: 4,
-          fontFamily: 'Inter-Light',
+          fontFamily: 'Inter',
           textAlign: 'center',
           marginBottom: 10,
           marginTop: -8
@@ -105,12 +105,24 @@ export default function AppNavigator() {
   const { session, loading } = useAuth();
   const { t } = useTranslation();
 
+  console.log('AppNavigator render:', { session, loading });
+
   if (loading) {
+    console.log('Loading state, null döndürülüyor');
     return null; // veya bir loading ekranı
   }
 
+  console.log('Session durumu:', session ? 'Var' : 'Yok');
+
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, headerStyle: { backgroundColor: colors.tabBarBackground } }}>
+    <Stack.Navigator screenOptions={{ 
+      headerShown: false, 
+      headerStyle: { backgroundColor: colors.tabBarBackground },
+      headerTitleStyle: {
+        fontFamily: 'Inter-SemiBold',
+        fontSize: 18
+      }
+    }}>
       {!session ? (
         <>
           <Stack.Screen name="Login" component={LoginScreen} />

@@ -171,7 +171,7 @@ const DECK_CATEGORIES = {
         <View style={styles.sectionHeaderGradient}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Ionicons name={getCategoryIcon(category)} size={22} color="#F98A21" style={{ marginRight: 8 }} />
-            <Text style={[styles.sectionTitle, { color: colors.subtext }]}>{DECK_CATEGORIES[category]}</Text>
+            <Text style={[typography.styles.h2, { color: colors.subtext }]}>{DECK_CATEGORIES[category]}</Text>
           </View>
           <TouchableOpacity style={styles.seeAllButton} onPress={handleSeeAll} activeOpacity={0.7}>
             <View style={styles.seeAllContent}>
@@ -223,27 +223,27 @@ const DECK_CATEGORIES = {
                         source={deck.profiles?.image_url ? { uri: deck.profiles.image_url } : require('../assets/avatar-default.png')}
                         style={styles.deckProfileAvatar}
                       />
-                      <Text style={styles.deckProfileUsername} numberOfLines={1} ellipsizeMode="tail">
-                        {deck.profiles?.username || 'Kullanıcı'}
-                      </Text>
+                                             <Text style={[typography.styles.body, styles.deckProfileUsername]} numberOfLines={1} ellipsizeMode="tail">
+                         {deck.profiles?.username || 'Kullanıcı'}
+                       </Text>
                     </View>
                     <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
                       <View style={styles.deckHeaderModern}>
-                        {deck.to_name ? (
-                          <>
-                            <Text style={[styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
-                            <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10 }} />
-                            <Text style={[styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
-                          </>
-                        ) : (
-                          <Text style={[styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
-                        )}
+                                                 {deck.to_name ? (
+                           <>
+                             <Text style={[typography.styles.body, styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
+                             <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10 }} />
+                             <Text style={[typography.styles.body, styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
+                           </>
+                         ) : (
+                           <Text style={[typography.styles.body, styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
+                         )}
                       </View>
                     </View>
                     <View style={styles.deckStatsModern}>
                       <View style={styles.deckCountBadge}>
                         <Ionicons name="layers" size={13} color="#fff" style={{ marginRight: 3 }} />
-                        <Text style={styles.deckCountBadgeText}>{deck.card_count || 0}</Text>
+                                                 <Text style={[typography.styles.body, styles.deckCountBadgeText]}>{deck.card_count || 0}</Text>
                       </View>
                     </View>
                   </View>
@@ -329,7 +329,7 @@ const DECK_CATEGORIES = {
                   onPress={() => { setActiveDeckMenuId(null); navigation.navigate('DeckEdit', { deck: selectedDeck }); }}
                 >
                   <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>{t('home.edit', 'Düzenle')}</Text>
+                  <Text style={[typography.styles.body, { fontSize: 16, fontWeight: '500', color: colors.text }]}>{t('home.edit', 'Düzenle')}</Text>
                 </TouchableOpacity>
               )}
               {/* Favorilere Ekle/Çıkar herkes için */}
@@ -349,7 +349,7 @@ const DECK_CATEGORIES = {
                   color={isFavorite ? '#F98A21' : colors.text}
                   style={{ marginRight: 12 }}
                 />
-                <Text style={{ fontSize: 16, fontWeight: '500', color: isFavorite ? '#F98A21' : colors.text }}>
+                <Text style={[typography.styles.body, { fontSize: 16, fontWeight: '500', color: isFavorite ? '#F98A21' : colors.text }]}>
                   {isFavorite ? t('home.removeFavorite', 'Favorilerden Çıkar') : t('home.addFavorite', 'Favorilere Ekle')}
                 </Text>
               </TouchableOpacity>
@@ -359,12 +359,12 @@ const DECK_CATEGORIES = {
                   onPress={() => handleDeleteDeck(selectedDeck.id)}
                 >
                   <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: '#E74C3C' }}>{t('home.deleteDeck', 'Desteyi Sil')}</Text>
+                  <Text style={[typography.styles.body, { fontSize: 16, fontWeight: '500', color: '#E74C3C' }]}>{t('home.deleteDeck', 'Desteyi Sil')}</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16 }} onPress={() => setActiveDeckMenuId(null)}>
                 <MaterialCommunityIcons name="close" size={22} color={colors.text} style={{ marginRight: 12 }} />
-                <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>{t('home.close', 'Kapat')}</Text>
+                <Text style={[typography.styles.body, { fontSize: 16, fontWeight: '500', color: colors.text }]}>{t('home.close', 'Kapat')}</Text>
               </TouchableOpacity>
             </>;
           })()}
@@ -443,10 +443,10 @@ const styles = StyleSheet.create({
     marginRight: 8,
     marginBottom: 8,
     shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
     borderWidth: 0,
     width: 130,
     height: 180,
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#F98A21',
-    lineHeight: 20,
+    maxWidth: '97%',
   },
   deckStatsModern: {
     flexDirection: 'row',
@@ -565,10 +565,10 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   deckProfileUsername: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#888',
-    fontWeight: '600',
-    paddingRight: 40,
+    fontWeight: '700',
+    maxWidth: '80%',
   },
   logoImage: {
     width: 120,

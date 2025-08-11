@@ -59,7 +59,7 @@ export default function CategoryDeckListScreen({ route }) {
                 source={item.profiles?.image_url ? { uri: item.profiles.image_url } : require('../assets/avatar-default.png')}
                 style={styles.deckProfileAvatar}
               />
-              <Text style={styles.deckProfileUsername} numberOfLines={1} ellipsizeMode="tail">
+              <Text style={[typography.styles.body, { fontSize: 15, color: '#888', fontWeight: '700', maxWidth: '89%', paddingLeft: 5 }]} numberOfLines={1} ellipsizeMode="tail">
                 {item.profiles?.username || 'User'}
               </Text>
             </View>
@@ -67,19 +67,19 @@ export default function CategoryDeckListScreen({ route }) {
               <View style={styles.deckHeaderModern}>
                 {item.to_name ? (
                   <>
-                    <Text style={[styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+                    <Text style={[typography.styles.body, { fontSize: 17, fontWeight: '700', color: colors.headText, textAlign: 'center', maxWidth: 110, alignSelf: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
                     <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10 }} />
-                    <Text style={[styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{item.to_name}</Text>
+                    <Text style={[typography.styles.body, { fontSize: 17, fontWeight: '700', color: colors.headText, textAlign: 'center', maxWidth: 110, alignSelf: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{item.to_name}</Text>
                   </>
                 ) : (
-                  <Text style={[styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+                  <Text style={[typography.styles.body, { fontSize: 17, fontWeight: '700', color: colors.headText, textAlign: 'center', maxWidth: 110, alignSelf: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
                 )}
               </View>
             </View>
             <View style={styles.deckStatsModern}>
               <View style={styles.deckCountBadge}>
                 <Ionicons name="layers" size={16} color="#fff" style={{ marginRight: 3 }} />
-                <Text style={styles.deckCountBadgeText}>{item.card_count || 0}</Text>
+                <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: 15 }]}>{item.card_count || 0}</Text>
               </View>
             </View>
           </View>
@@ -135,10 +135,10 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     marginBottom: 14,
     shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
     borderWidth: 0,
   },
   deckCardGradient: {
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   deckProfileAvatar: {
     width: 30,
     height: 30,
-    borderRadius: 11,
+    borderRadius: 15,
     marginRight: 4,
   },
   deckProfileUsername: {

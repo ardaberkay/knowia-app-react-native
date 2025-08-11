@@ -333,7 +333,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                   }
                 }}
               >
-                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Kaydet</Text>
+                <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: 16 }]}>Kaydet</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={{ backgroundColor: '#eee', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 }}
@@ -345,29 +345,34 @@ export default function DeckDetailScreen({ route, navigation }) {
                   setEditDescription(deck.description || '');
                 }}
               >
-                <Text style={{ color: '#333', fontWeight: 'bold', fontSize: 16 }}>İptal</Text>
+                <Text style={[typography.styles.body, { color: '#333', fontWeight: 'bold', fontSize: 16 }]}>İptal</Text>
               </TouchableOpacity>
             </View>
           )}
         </View>
         {/* Açıklama Kutusu (Glassmorphism) */}
         {deck.description && (
-          <View style={[styles.infoCardGlass, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow, width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
+          <View style={[styles.infoCardGlass, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow, width: '100%', maxWidth: 440, alignSelf: 'center', height: 140 }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
               <MaterialCommunityIcons name="information-outline" size={20} color={colors.buttonColor} style={{ marginRight: 6}} />
-              <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text}]}>{t('deckDetail.details', 'Detaylar')}</Text>
+              <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.text}]}>{t('deckDetail.details', 'Detaylar')}</Text>
             </View>
             {editMode ? (
-              <TextInput
-                style={[styles.deckDescription, typography.styles.body, { color: colors.text, backgroundColor: '#fff8f0', borderRadius: 8, padding: 8, minHeight: 40 }]}
-                value={editDescription}
-                onChangeText={setEditDescription}
-                placeholder="Deste açıklaması..."
-                multiline
-                maxLength={300}
-              />
+              <View style={{ flex: 1 }}>
+                <TextInput
+                  style={[styles.deckDescription, typography.styles.body, { color: colors.text, backgroundColor: '#fff8f0', borderRadius: 8, padding: 8, minHeight: 40, flex: 1, textAlignVertical: 'top' }]}
+                  value={editDescription}
+                  onChangeText={setEditDescription}
+                  placeholder="Deste açıklaması..."
+                  multiline
+                  maxLength={300}
+                  scrollEnabled
+                />
+              </View>
             ) : (
-              <Text style={[styles.deckDescription, typography.styles.body, { color: colors.subtext }]}>{deck.description}</Text>
+              <ScrollView style={{ flex: 1 }} nestedScrollEnabled={true} showsVerticalScrollIndicator={true}>
+                <Text style={[styles.deckDescription, typography.styles.body, { color: colors.subtext }]}>{deck.description}</Text>
+              </ScrollView>
             )}
           </View>
         )}
@@ -376,15 +381,15 @@ export default function DeckDetailScreen({ route, navigation }) {
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <MaterialCommunityIcons name="chart-bar" size={20} color={colors.buttonColor} style={{ marginRight: 6}} />
-              <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>{t('deckDetail.progress', 'İlerleme')}</Text>
+              <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.text }]}>{t('deckDetail.progress', 'İlerleme')}</Text>
             </View>
             <View style={[styles.statBadgeModern, { marginLeft: 8 }] }>
               <Ionicons name="layers" size={18} color="#fff" style={{ marginRight: 4 }} />
-              <Text style={styles.statBadgeTextModern}>{deck.card_count || 0}</Text>
+              <Text style={[typography.styles.body, styles.statBadgeTextModern]}>{deck.card_count || 0}</Text>
             </View>
           </View>
           <View style={styles.progressContainerModern}>
-            <View style={styles.progressBarModern}>
+            <View style={[styles.progressBarModern, { backgroundColor: colors.progressBar }]}>
               <View style={[styles.progressFillModern, { width: `${Math.round(progress * 100)}%` }]} />
             </View>
             {progressLoading ? (
@@ -392,7 +397,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             ) : progress === 0 ? (
               <Text style={[styles.progressText, typography.styles.caption, { color: colors.muted }]}>{t('common.notStarted', 'Henüz çalışılmadı')}</Text>
             ) : (
-              <Text style={[styles.progressText, typography.styles.caption, { color: colors.buttonColor }]}>%{Math.round(progress * 100)} {t('deckDetail.completed', 'Tamamlandı')}</Text>
+              <Text style={[typography.styles.body, styles.progressText, { color: colors.buttonColor }]}>%{Math.round(progress * 100)} {t('deckDetail.completed', 'Tamamlandı')}</Text>
             )}
           </View>
         </View>
@@ -402,7 +407,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             <View style={[styles.cardsHeaderRow, { justifyContent: 'space-between', alignItems: 'center' }] }>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Ionicons name="albums-outline" size={22} color={colors.buttonColor} style={{ marginRight: 8 }} />
-                <Text style={[styles.sectionTitle, typography.styles.subtitle, { color: colors.text }]}>{t('deckDetail.cards', 'Kartlar')}</Text>
+                <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.text }]}>{t('deckDetail.cards', 'Kartlar')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={26} color={colors.headText} />
             </View>
@@ -447,7 +452,7 @@ export default function DeckDetailScreen({ route, navigation }) {
           {currentUserId && deck.user_id === currentUserId && (
             <TouchableOpacity style={[styles.sheetItem, { borderBottomColor: colors.border }]} onPress={() => { setMenuVisible(false); navigation.navigate('DeckEdit', { deck }); }}>
               <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
-              <Text style={[styles.sheetItemText, { color: colors.text }]}>{t('deckDetail.edit', 'Desteyi Düzenle')}</Text>
+              <Text style={[typography.styles.body, styles.sheetItemText, { color: colors.text }]}>{t('deckDetail.edit', 'Desteyi Düzenle')}</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity style={[styles.sheetItem, { borderBottomColor: colors.border }]} onPress={() => { setMenuVisible(false); handleAddFavorite(); }}>
@@ -457,17 +462,17 @@ export default function DeckDetailScreen({ route, navigation }) {
               color={isFavorite ? '#F98A21' : colors.text}
               style={{ marginRight: 12 }}
             />
-            <Text style={[styles.sheetItemText, { color: isFavorite ? '#F98A21' : colors.text }]}>
+            <Text style={[typography.styles.body, styles.sheetItemText, { color: isFavorite ? '#F98A21' : colors.text }]}>
               {isFavorite ? t('deckDetail.removeFavorite', 'Favorilerden Çıkar') : t('deckDetail.addFavorite', 'Favorilere Ekle')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.sheetItem, { borderBottomColor: colors.border }]} onPress={() => { setMenuVisible(false); /* Deste Sil fonksiyonu */ }}>
             <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
-            <Text style={[styles.sheetItemText, { color: '#E74C3C' }]}>{t('deckDetail.deleteDeck', 'Desteyi Sil')}</Text>
+            <Text style={[typography.styles.body, styles.sheetItemText, { color: '#E74C3C' }]}>{t('deckDetail.deleteDeck', 'Desteyi Sil')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.sheetItem, { borderBottomColor: 'transparent' }]} onPress={() => setMenuVisible(false)}>
             <MaterialCommunityIcons name="close" size={22} color={colors.text} style={{ marginRight: 12 }} />
-            <Text style={[styles.sheetItemText, { color: colors.text }]}>{t('deckDetail.close', 'Kapat')}</Text>
+            <Text style={[typography.styles.body, styles.sheetItemText, { color: colors.text }]}>{t('deckDetail.close', 'Kapat')}</Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -659,7 +664,6 @@ const styles = StyleSheet.create({
   progressBarModern: {
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#ffe0c3',
     overflow: 'hidden',
     marginBottom: 8,
   },

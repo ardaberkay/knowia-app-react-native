@@ -29,7 +29,8 @@ export const lightColors = {
     cardQuestionText: '#1C1C1C',
     cardAnswerText: '#4A4A4A',
     cardDivider: '#F98A21',
-    cardButtonBackground: '#ffffff'
+    cardButtonBackground: '#ffffff',
+    progressBar: '#ffe0c3',
 };
 
 export const darkColors = {
@@ -63,5 +64,6 @@ export const darkColors = {
     cardQuestionText: '#FFFFFF',
     cardAnswerText: '#E0E0E0',
     cardDivider: '#F98A21',
-    cardButtonBackground: '#2C2C2C'
+    cardButtonBackground: '#2C2C2C',
+    progressBar: '#4A4A4A'
 };

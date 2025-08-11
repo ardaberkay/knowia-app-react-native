@@ -123,17 +123,21 @@ export default function CardDetailScreen() {
             </View>
           </View>
         )}
-        <DetailField label={t('cardDetail.question', 'Soru')} value={card?.question} iconName="help-circle-outline" />
+        <DetailField label={t('cardDetail.question', 'Soru')} value={card?.question} iconName="chatbubble-outline" />
         <DetailField label={t('cardDetail.answer', 'Cevap')} value={card?.answer} iconName="checkmark-circle-outline" />
         <DetailField label={t('cardDetail.example', 'Örnek')} value={card?.example} iconName="bulb-outline" />
         <DetailField label={t('cardDetail.note', 'Not')} value={card?.note} iconName="document-text-outline" />
         
+        {/* Kartın oluşturulma tarihi - ScrollView içinde en altta */}
         {card?.created_at && (
-          <Text style={[typography.styles.caption, { color: colors.muted, marginTop: 24, marginBottom: 8, textAlign: 'center', fontSize: 14 }]}>
-            {t('cardDetail.createdAt', 'Oluşturulma')} {new Date(card.created_at).toLocaleString('tr-TR')}
-          </Text>
+          <View style={styles.dateContainer}>
+            <Text style={[typography.styles.caption, { color: colors.muted, textAlign: 'center', fontSize: 14}]}>
+              {t('cardDetail.createdAt', 'Oluşturulma')} {new Date(card.created_at).toLocaleString('tr-TR')}
+            </Text>
+          </View>
         )}
       </ScrollView>
+      
        {/* Menü Modal */}
        <Modal
         visible={menuVisible}
@@ -236,5 +240,9 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
     backgroundColor: '#f2f2f2',
     alignSelf: 'center',
+  },
+  dateContainer: {
+    marginTop: 'auto',
+    marginBottom: 12
   },
 }); 

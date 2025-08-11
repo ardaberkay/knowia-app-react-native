@@ -141,24 +141,24 @@ export default function LibraryScreen() {
           style={styles.deckCardGradient}
         >
           <View style={{ height: 3, width: '90%', alignSelf: 'center', backgroundColor: colors.buttonColor, borderTopLeftRadius: 18, borderTopRightRadius: 18, marginTop: 8 }} />
-          <View style={styles.deckCardContentModern}>
-            <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-              <View style={styles.deckHeaderModern}>
-                {item.to_name ? (
-                  <>
-                    <Text style={[styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
-                    <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10 }} />
-                    <Text style={[styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{item.to_name}</Text>
-                  </>
-                ) : (
-                  <Text style={[styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
-                )}
-              </View>
+                  <View style={styles.deckCardContentModern}>
+          <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+            <View style={styles.deckHeaderModern}>
+              {item.to_name ? (
+                <>
+                  <Text style={[typography.styles.body, { color: colors.headText, fontSize: 17, fontWeight: '700', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+                  <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10 }} />
+                  <Text style={[typography.styles.body, { color: colors.headText, fontSize: 17, fontWeight: '700', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{item.to_name}</Text>
+                </>
+              ) : (
+                <Text style={[typography.styles.body, { color: colors.headText, fontSize: 17, fontWeight: '700', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+              )}
             </View>
+          </View>
             <View style={styles.deckStatsModern}>
               <View style={styles.deckCountBadge}>
                 <Ionicons name="layers" size={14} color="#fff" style={{ marginRight: 3 }} />
-                <Text style={styles.deckCountBadgeText}>{item.card_count || 0}</Text>
+                <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: 14 }]}>{item.card_count || 0}</Text>
               </View>
             </View>
           </View>
@@ -262,7 +262,7 @@ export default function LibraryScreen() {
                   source={item.profiles && item.profiles.image_url ? { uri: item.profiles.image_url } : require('../assets/avatar-default.png')}
                   style={styles.deckProfileAvatar}
                 />
-                <Text style={[styles.deckProfileUsername, {color: colors.orWhite,}]} numberOfLines={1} ellipsizeMode="tail">
+                <Text style={[typography.styles.body, {color: '#888', fontSize: 16, fontWeight: '700'}]} numberOfLines={1} ellipsizeMode="tail">
                   {(item.profiles && item.profiles.username) || 'Kullanıcı'}
                 </Text>
               </View>
@@ -270,19 +270,19 @@ export default function LibraryScreen() {
                 <View style={styles.deckHeaderModern}>
                   {item.to_name ? (
                     <>
-                      <Text style={[styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+                      <Text style={[typography.styles.body, { color: colors.headText, fontSize: 17, fontWeight: '700', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
                       <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10 }} />
-                      <Text style={[styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{item.to_name}</Text>
+                      <Text style={[typography.styles.body, { color: colors.headText, fontSize: 17, fontWeight: '700', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{item.to_name}</Text>
                     </>
                   ) : (
-                    <Text style={[styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+                    <Text style={[typography.styles.body, { color: colors.headText, fontSize: 17, fontWeight: '700', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
                   )}
                 </View>
               </View>
               <View style={styles.deckStatsModern}>
                 <View style={styles.deckCountBadge}>
                   <Ionicons name="layers" size={14} color="#fff" style={{ marginRight: 3 }} />
-                  <Text style={styles.deckCountBadgeText}>{item.card_count || 0}</Text>
+                  <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: 14 }]}>{item.card_count || 0}</Text>
                 </View>
               </View>
             </View>
@@ -379,12 +379,22 @@ export default function LibraryScreen() {
             end={{ x: 0, y: 0 }}
             style={styles.deckCardGradient}
           >
+            {/* Kağıt katlanma efekti - sol üst köşe */}
+            <View style={styles.foldedCornerContainer}>
+              {/* Ana katlanma */}
+              <View style={styles.foldedCornerMain} />
+              {/* Gölge efekti */}
+              <View style={styles.foldedCornerShadow} />
+              {/* İç katman */}
+              <View style={styles.foldedCornerInner} />
+            </View>
+            
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <Text style={[styles.deckTitleModern, typography.styles.body, { textAlign: 'center' }, {color: colors.headText}]} numberOfLines={2}>
+              <Text style={[typography.styles.body, { textAlign: 'center', fontSize: 17, fontWeight: '700', color: colors.headText }]} numberOfLines={2}>
                 {item.question}
               </Text>
               <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10 }} />
-              <Text style={{ color: '#F98A21', fontWeight: 'bold', fontSize: 17, textAlign: 'center', color: colors.headText }} numberOfLines={2}>{item.answer}</Text>
+              <Text style={[typography.styles.body, { textAlign: 'center', fontSize: 17, fontWeight: '700', color: colors.headText }]} numberOfLines={2}>{item.answer}</Text>
             </View>
             <View style={{ position: 'absolute', left: 15, bottom: 15, backgroundColor: '#F98A21', borderRadius: 12, width: 40, height: 25, justifyContent: 'center', alignItems: 'center'}}>
               <MaterialCommunityIcons
@@ -737,10 +747,10 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     marginBottom: 16,
     shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 2,
     borderWidth: 0,
   },
   deckCardContentModern: {
@@ -940,4 +950,49 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
+  foldedCornerContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    zIndex: 5,
+  },
+  foldedCornerMain: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 0,
+    height: 0,
+    borderTopWidth: 20,
+    borderRightWidth: 20,
+    borderTopColor: 'rgba(249, 138, 33, 0.4)',
+    borderRightColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  foldedCornerShadow: {
+    position: 'absolute',
+    top: 1,
+    left: 1,
+    width: 0,
+    height: 0,
+    borderTopWidth: 23,
+    borderRightWidth: 23,
+    borderTopColor: 'rgba(249, 138, 33, 0.2)',
+    borderRightColor: 'transparent',
+  },
+  foldedCornerInner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 0,
+    height: 0,
+    borderTopWidth: 22,
+    borderRightWidth: 22,
+    borderTopColor: 'rgba(249, 138, 33, 0.6)',
+    borderRightColor: 'transparent',
+  },
+
 }); 

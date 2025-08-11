@@ -10,14 +10,21 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('AuthContext useEffect çalıştı');
+    
     // Mevcut oturumu kontrol et
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      console.log('Session check sonucu:', { session, error });
       setSession(session);
+      setLoading(false);
+    }).catch(err => {
+      console.error('Session check hatası:', err);
       setLoading(false);
     });
 
     // Oturum değişikliklerini dinle
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('Auth state change:', _event, session);
       setSession(session);
     });
 

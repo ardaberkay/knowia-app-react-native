@@ -713,7 +713,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={{ width: '100%', alignItems: 'center', marginTop: 110}}>
           <Image source={logoasil} style={{ width: 260, height: 260, resizeMode: 'cover' }} />
-          <Text style={[typography.styles.h2, { color: colors.text, textAlign: 'center', marginTop: 16 , fontSize: 22}]}> 
+          <Text style={[typography.styles.h2, { color: colors.text, textAlign: 'center', marginTop: 16 }]}> 
             {progress === totalCardCount ? t('swipeDeck.bravo', "Bravo! Tüm Kartları Tamamladın") : t('swipeDeck.learnTime', "Kalan Kartları Öğrenmeye Vakit Var")}
           </Text>
           <View style={{ width: 72, height: 1, backgroundColor: colors.orWhite, borderRadius: 2, alignSelf: 'center', marginTop: 16,marginBottom: 16 }} />
@@ -904,8 +904,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 999,
   },
   counterText: {
-    fontWeight: 'bold',
-    fontSize: 18,
+    ...typography.styles.button,
     color: '#fff',
   },
   horizontalButtonRow: {
@@ -933,8 +932,7 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
   },
   horizontalButtonText: {
-    fontWeight: 'bold',
-    fontSize: 16,
+    ...typography.styles.button,
   },
   undoButton: {
     position: 'absolute',
@@ -958,8 +956,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   deckProgressText: {
-    fontWeight: 'bold',
-    fontSize: 18,
+    ...typography.styles.subtitle,
   },
   progressBarContainer: {
     width: '91%',
@@ -994,9 +991,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
+    ...typography.styles.subtitle,
     marginTop: 18,
-    fontSize: 18,
-    fontWeight: '600',
     textAlign: 'center',
   },
 }); 

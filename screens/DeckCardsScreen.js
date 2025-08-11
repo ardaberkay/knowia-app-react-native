@@ -217,7 +217,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                 {/* Soru */}
           <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
             <View style={detailStyles.labelRow}>
-              <Ionicons name="help-circle-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
+              <Ionicons name="chatbubble-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
               <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.question", "Soru")}</Text>
                   </View>
             <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard?.question}</Text>
@@ -252,10 +252,15 @@ export default function DeckCardsScreen({ route, navigation }) {
               <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard.note}</Text>
             </View>
           ) : null}
-          {/* Oluşturulma tarihi */}
-              {selectedCard?.created_at ? (
-            <Text style={[typography.styles.caption, { color: colors.muted, marginTop: 24, marginBottom: 8, textAlign: 'center', fontSize: 14 }]}>{t("cardDetail.createdAt", "Oluşturulma Tarihi")} {new Date(selectedCard.created_at).toLocaleString('tr-TR')}</Text>
-              ) : null}
+                {/* Oluşturulma tarihi - ScrollView içinde, sayfanın alt kısmında */}
+                {selectedCard?.created_at ? (
+                  <View style={{ paddingHorizontal: 18, marginTop: 'auto', marginBottom: 24 }}>
+                    <Text style={[typography.styles.caption, { color: colors.muted, textAlign: 'center', fontSize: 14 }]}>
+                      {t("cardDetail.createdAt", "Oluşturulma Tarihi")} {new Date(selectedCard.created_at).toLocaleString('tr-TR')}
+                    </Text>
+                  </View>
+                ) : null}
+
             </ScrollView>
             {/* Kart Detay Hamburger Menü Modal */}
             <Modal
@@ -277,7 +282,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                 onPress={() => { setCardMenuVisible(false); setEditMode(true); }}
                   >
                     <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
-                    <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>{t("cardDetail.edit", "Kartı Düzenle")}</Text>
+                    <Text style={[typography.styles.body, { fontSize: 16, fontWeight: '500', color: colors.text }]}>{t("cardDetail.edit", "Kartı Düzenle")}</Text>
                   </TouchableOpacity>
                 )}
                 {/* Favorilere Ekle/Çıkar */}
@@ -310,7 +315,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                     color={favoriteCards.includes(selectedCard.id) ? '#F98A21' : colors.text}
                     style={{ marginRight: 12 }}
                   />
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: favoriteCards.includes(selectedCard.id) ? '#F98A21' : colors.text }}>
+                  <Text style={[typography.styles.body, { fontSize: 16, fontWeight: '500', color: favoriteCards.includes(selectedCard.id) ? '#F98A21' : colors.text }]}>
                     {favoriteCards.includes(selectedCard.id) ? t("cardDetail.removeFavorite", "Favorilerden Çıkar") : t("cardDetail.addFavorite", "Favorilere Ekle")}
                   </Text>
                 </TouchableOpacity>
@@ -336,12 +341,12 @@ export default function DeckCardsScreen({ route, navigation }) {
                     }}
                   >
                     <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
-                    <Text style={{ fontSize: 16, fontWeight: '500', color: '#E74C3C' }}>{t("cardDetail.deleteDeck", "Kartı Sil")}</Text>
+                    <Text style={[typography.styles.body, { fontSize: 16, fontWeight: '500', color: '#E74C3C' }]}>{t("cardDetail.deleteDeck", "Kartı Sil")}</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16 }} onPress={() => setCardMenuVisible(false)}>
                   <MaterialCommunityIcons name="close" size={22} color={colors.text} style={{ marginRight: 12 }} />
-                  <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>{t("cardDetail.close", "Kapat")}</Text>
+                  <Text style={[typography.styles.body, { fontSize: 16, fontWeight: '500', color: colors.text }]}>{t("cardDetail.close", "Kapat")}</Text>
                 </TouchableOpacity>
               </View>
             </Modal>
@@ -481,9 +486,13 @@ export default function DeckCardsScreen({ route, navigation }) {
                     <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard.note}</Text>
                   </View>
                 ) : null}
-                {/* Oluşturulma tarihi */}
+                {/* Oluşturulma tarihi - ScrollView içinde, sayfanın alt kısmında */}
                 {selectedCard?.created_at ? (
-                  <Text style={[typography.styles.caption, { color: colors.muted, marginTop: 24, marginBottom: 8, textAlign: 'center', fontSize: 14 }]}>Oluşturulma {new Date(selectedCard.created_at).toLocaleString('tr-TR')}</Text>
+                  <View style={{ paddingHorizontal: 18, marginTop: 'auto', marginBottom: 24 }}>
+                    <Text style={[typography.styles.caption, { color: colors.muted, textAlign: 'center', fontSize: 14 }]}>
+                      {t("cardDetail.createdAt", "Oluşturulma Tarihi")} {new Date(selectedCard.created_at).toLocaleString('tr-TR')}
+                    </Text>
+                  </View>
                 ) : null}
               </ScrollView>
             </LinearGradient>
