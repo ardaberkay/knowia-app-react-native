@@ -23,6 +23,7 @@
       "all": "Todo",
       "decks": "Barajas",
       "cards": "Tarjetas",
+      "card": "Tarjeta",
       "myDecks": "Mis Barajas",
       "favorites": "Favoritos",
       "searchPlaceholder": "Buscar baraja/tarjeta...",
@@ -248,7 +249,10 @@
       "sevenDays": "7 días",
       "bravo": "¡Bravo! Has completado todas las tarjetas",
       "learnTime": "Tiempo para aprender las tarjetas restantes",
-      "loading": "Cargando tarjetas"
+      "loading": "Cargando tarjetas",
+      "answer": "Respuesta",
+      "example": "Ejemplo",
+      "note": "Nota"
     },
     "login": {
       "error": "Error",

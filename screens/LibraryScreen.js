@@ -379,14 +379,10 @@ export default function LibraryScreen() {
             end={{ x: 0, y: 0 }}
             style={styles.deckCardGradient}
           >
-            {/* Kağıt katlanma efekti - sol üst köşe */}
-            <View style={styles.foldedCornerContainer}>
-              {/* Ana katlanma */}
-              <View style={styles.foldedCornerMain} />
-              {/* Gölge efekti */}
-              <View style={styles.foldedCornerShadow} />
-              {/* İç katman */}
-              <View style={styles.foldedCornerInner} />
+            {/* Tip rozeti - sol alt */}
+            <View style={[styles.typeChip, styles.typeChipBottomLeft]}>
+              <MaterialCommunityIcons name="card-text-outline" size={14} color="#fff" />
+              <Text style={styles.typeChipText}>{t('library.card', 'Kart')}</Text>
             </View>
             
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -396,14 +392,7 @@ export default function LibraryScreen() {
               <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10 }} />
               <Text style={[typography.styles.body, { textAlign: 'center', fontSize: 17, fontWeight: '700', color: colors.headText }]} numberOfLines={2}>{item.answer}</Text>
             </View>
-            <View style={{ position: 'absolute', left: 15, bottom: 15, backgroundColor: '#F98A21', borderRadius: 12, width: 40, height: 25, justifyContent: 'center', alignItems: 'center'}}>
-              <MaterialCommunityIcons
-                name="card-text-outline"
-                size={18}
-                color="#fff"
-                style={{}}
-              />
-            </View>
+            
             {/* Kebap Menü İkonu */}
             <TouchableOpacity
               style={{ position: 'absolute', bottom: 18, right: 12, zIndex: 10 }}
@@ -889,6 +878,27 @@ const styles = StyleSheet.create({
     padding: 16,
     justifyContent: 'space-between',
   },
+  typeChip: {
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: '#F98A21',
+    zIndex: 10,
+  },
+  typeChipBottomLeft: {
+    left: 16,
+    bottom: 16,
+  },
+  typeChipText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+    marginLeft: 4,
+  },
+  
   deckProfileRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -950,49 +960,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  foldedCornerContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    zIndex: 5,
-  },
-  foldedCornerMain: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 0,
-    height: 0,
-    borderTopWidth: 20,
-    borderRightWidth: 20,
-    borderTopColor: 'rgba(249, 138, 33, 0.4)',
-    borderRightColor: 'transparent',
-    shadowColor: '#000',
-    shadowOffset: { width: 1, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  foldedCornerShadow: {
-    position: 'absolute',
-    top: 1,
-    left: 1,
-    width: 0,
-    height: 0,
-    borderTopWidth: 23,
-    borderRightWidth: 23,
-    borderTopColor: 'rgba(249, 138, 33, 0.2)',
-    borderRightColor: 'transparent',
-  },
-  foldedCornerInner: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 0,
-    height: 0,
-    borderTopWidth: 22,
-    borderRightWidth: 22,
-    borderTopColor: 'rgba(249, 138, 33, 0.6)',
-    borderRightColor: 'transparent',
-  },
+  
 
 }); 

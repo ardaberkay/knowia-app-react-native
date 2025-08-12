@@ -31,6 +31,8 @@ export const lightColors = {
     cardDivider: '#F98A21',
     cardButtonBackground: '#ffffff',
     progressBar: '#ffe0c3',
+    foldedCorner: '#f9b97a',
+    progressBarSwipe: '#ffe0c3'
 };
 
 export const darkColors = {
@@ -65,5 +67,7 @@ export const darkColors = {
     cardAnswerText: '#E0E0E0',
     cardDivider: '#F98A21',
     cardButtonBackground: '#2C2C2C',
-    progressBar: '#4A4A4A'
+    progressBar: '#4A4A4A',
+    foldedCorner: '#F98A21',
+    progressBarSwipe: '#FFFFFF'
 };

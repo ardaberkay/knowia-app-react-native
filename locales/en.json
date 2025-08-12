@@ -23,6 +23,7 @@
     "all": "All",
     "decks": "Decks",
     "cards": "Cards",
+    "card": "Card",
     "myDecks": "My Decks",
     "favorites": "Favorites",
     "searchPlaceholder": "Search deck/card...",
@@ -248,7 +249,10 @@
     "sevenDays": "7 days",
     "bravo": "Bravo! You've completed all cards",
     "learnTime": "Time to learn the remaining cards",
-    "loading": "Cards are loading"
+    "loading": "Cards are loading",
+    "answer": "Answer",
+    "example": "Example",
+    "note": "Note"
   },
   "login": {
     "error": "Error",

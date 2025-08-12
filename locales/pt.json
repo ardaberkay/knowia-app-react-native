@@ -23,6 +23,7 @@
       "all": "Todos",
       "decks": "Baralhos",
       "cards": "Cartões",
+      "card": "Cartão",
       "myDecks": "Meus Baralhos",
       "favorites": "Favoritos",
       "searchPlaceholder": "Pesquisar baralho/cartão...",
@@ -248,7 +249,10 @@
       "sevenDays": "7 dias",
       "bravo": "Bravo! Você completou todos os cartões",
       "learnTime": "Hora de aprender os cartões restantes",
-      "loading": "Carregando cartões"
+      "loading": "Carregando cartões",
+      "answer": "Resposta",
+      "example": "Exemplo",
+      "note": "Nota"
     },
     "login": {
       "error": "Erro",

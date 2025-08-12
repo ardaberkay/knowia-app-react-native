@@ -9,6 +9,7 @@ import { Ionicons, MaterialIcons, MaterialCommunityIcons, Entypo } from '@expo/v
 import { LinearGradient } from 'expo-linear-gradient';
 import logoasil from '../assets/logoasil.png';
 import { useTranslation } from 'react-i18next';
+import { addFavoriteCard, removeFavoriteCard, getFavoriteCards } from '../services/FavoriteService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -41,6 +42,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const [autoPlay, setAutoPlay] = useState(false);
   const autoPlayTimeout = useRef(null);
   const { t } = useTranslation();
+  const [favoriteIds, setFavoriteIds] = useState(new Set());
 
   // Sayaç kutuları için renkler
   const leftInactiveColor = '#f3a14c'; // Bir tık daha koyu turuncu
@@ -57,6 +59,14 @@ export default function SwipeDeckScreen({ route, navigation }) {
       // Kullanıcıyı al
       const { data: { user } } = await supabase.auth.getUser();
       setUserId(user.id);
+      // Mevcut favori kartları yükle ve UI'ı senkronla
+      try {
+        const favCards = await getFavoriteCards(user.id);
+        const favSet = new Set((favCards || []).map((c) => c.id));
+        setFavoriteIds(favSet);
+      } catch (e) {
+        // sessiz geç
+      }
       // Eksik user_card_progress kayıtlarını oluştur
       await ensureUserCardProgress(deck.id, user.id);
       // Kartları user_card_progress üzerinden çek (status: 'new' veya 'learning')
@@ -211,6 +221,37 @@ export default function SwipeDeckScreen({ route, navigation }) {
     }
   };
 
+  const toggleFavorite = useCallback(async (cardId) => {
+    if (!userId) return;
+    setFavoriteIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(cardId)) {
+        next.delete(cardId);
+      } else {
+        next.add(cardId);
+      }
+      return next;
+    });
+    try {
+      if (favoriteIds.has(cardId)) {
+        await removeFavoriteCard(userId, cardId);
+      } else {
+        await addFavoriteCard(userId, cardId);
+      }
+    } catch (e) {
+      // Hata olursa UI'ı geri al
+      setFavoriteIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(cardId)) {
+          next.delete(cardId);
+        } else {
+          next.add(cardId);
+        }
+        return next;
+      });
+    }
+  }, [userId, favoriteIds]);
+
   // Auto play fonksiyonu
   useEffect(() => {
     if (!autoPlay) return;
@@ -237,7 +278,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     };
   }, []);
 
-  const FlipCard = ({ card, cardIndex, currentIndex }) => {
+  const FlipCard = ({ card, cardIndex, currentIndex, isFavorite, onToggleFavorite }) => {
     // Modern Content Divider bileşeni
     const ModernDivider = ({ type = 'default' }) => {
       const dividerStyles = {
@@ -594,6 +635,27 @@ export default function SwipeDeckScreen({ route, navigation }) {
       return null;
     };
 
+    // Pill başlık bileşeni (etiket + ikon)
+    const Pill = ({ label, icon, color = colors.buttonColor }) => (
+      <View
+        style={{
+          alignSelf: 'center',
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: 5,
+          paddingHorizontal: 10,
+          borderRadius: 999,
+          borderWidth: 1,
+          borderColor: color,
+          backgroundColor: 'rgba(0,0,0,0.02)',
+          marginBottom: 10,
+        }}
+      >
+        {icon ? <View style={{ marginRight: 6 }}>{icon}</View> : null}
+        <Text style={{ color, fontWeight: '700', fontSize: 15, letterSpacing: 0.3 }}>{label}</Text>
+      </View>
+    );
+
 
     // Eğer kart yoksa veya stack'teki alttaki kartsa, placeholder göster
     if (!card || !card.cards || cardIndex > currentIndex) {
@@ -652,6 +714,18 @@ export default function SwipeDeckScreen({ route, navigation }) {
               end={{ x: 1, y: 1 }}
               style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
             />
+            <Pressable
+              onPressIn={(e) => e.stopPropagation()}
+              onPress={(e) => { e.stopPropagation(); onToggleFavorite && onToggleFavorite(); }}
+              style={styles.favoriteButton}
+              hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+            >
+              <Ionicons
+                name={isFavorite ? 'heart' : 'heart-outline'}
+                size={26}
+                color={isFavorite ? colors.buttonColor : colors.text}
+              />
+            </Pressable>
             <View style={[styles.imageContainer, { backgroundColor: 'transparent', marginTop: 32 }]}> 
               {card.cards.image && (
                 <Image
@@ -671,24 +745,47 @@ export default function SwipeDeckScreen({ route, navigation }) {
               end={{ x: 1, y: 1 }}
               style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
             />
-                         <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center', paddingVertical: 18, marginTop: 32 }}>
-               <Text style={[typography.styles.h2, { color: colors.text, marginBottom: 14 }]}>{card.cards.answer}</Text>
-               
-               {/* Cevap ile Example arasındaki modern divider */}
-               <ConditionalDivider 
-                 hasExample={!!card.cards.example} 
-                 hasNote={!!card.cards.note} 
+             <Pressable
+               onPressIn={(e) => e.stopPropagation()}
+               onPress={(e) => { e.stopPropagation(); onToggleFavorite && onToggleFavorite(); }}
+               style={styles.favoriteButton}
+               hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+             >
+               <Ionicons
+                 name={isFavorite ? 'heart' : 'heart-outline'}
+                 size={26}
+                 color={isFavorite ? colors.buttonColor : colors.text}
                />
-               
-               {card.cards.example && <Text style={[{ color: colors.subtext, marginBottom: 14 }, typography.styles.subtitle]}>{card.cards.example}</Text>}
-               
-               {/* Example ile Note arasındaki modern ayırıcı */}
-               <ExampleNoteDivider 
-                 hasExample={!!card.cards.example} 
-                 hasNote={!!card.cards.note} 
+             </Pressable>
+             <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center', paddingVertical: 18, marginTop: 32 }}>
+               {/* Answer */}
+               <Pill
+                 label={t('swipeDeck.answer', 'Answer')}
+                 icon={<Ionicons name="checkmark-circle" size={14} color={colors.buttonColor} />}
                />
-               
-               {card.cards.note && <Text style={[typography.styles.body, { color: colors.subtext }]}>{card.cards.note}</Text>}
+               <Text style={[typography.styles.h2, { color: colors.text, marginBottom: 30, textAlign: 'center' }]}>{card.cards.answer}</Text>
+
+               {/* Example */}
+               {card.cards.example && (
+                 <>
+                   <Pill
+                     label={t('swipeDeck.example', 'Example')}
+                     icon={<Ionicons name="book-outline" size={14} color={colors.buttonColor} />}
+                   />
+                   <Text style={[{ color: colors.subtext, marginBottom: 30, textAlign: 'center' }, typography.styles.subtitle]}>{card.cards.example}</Text>
+                 </>
+               )}
+
+               {/* Note */}
+               {card.cards.note && (
+                 <>
+                   <Pill
+                     label={t('swipeDeck.note', 'Note')}
+                     icon={<Ionicons name="document-text-outline" size={14} color={colors.buttonColor} />}
+                   />
+                   <Text style={[typography.styles.subtitle, { color: colors.subtext, textAlign: 'center' }]}>{card.cards.note}</Text>
+                 </>
+               )}
              </View>
           </Animated.View>
         </Pressable>
@@ -756,7 +853,16 @@ export default function SwipeDeckScreen({ route, navigation }) {
           ref={swiperRef}
           cards={cards}
           cardIndex={currentIndex}
-          renderCard={(card, i) => <FlipCard card={card} cardIndex={i} currentIndex={currentIndex} key={card.card_id} />}
+          renderCard={(card, i) => (
+            <FlipCard
+              card={card}
+              cardIndex={i}
+              currentIndex={currentIndex}
+              key={card.card_id}
+              isFavorite={favoriteIds.has(card.card_id)}
+              onToggleFavorite={() => toggleFavorite(card.card_id)}
+            />
+          )}
           onSwipedLeft={(i) => { handleSwipe(i, 'left'); setCurrentIndex(i + 1); }}
           onSwipedRight={(i) => { handleSwipe(i, 'right'); setCurrentIndex(i + 1); }}
           stackSize={2}
@@ -808,7 +914,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
         )}
       </TouchableOpacity>
       {/* Progress Bar (undoButton'un hemen üstünde) */}
-      <View style={[styles.progressBarContainer, { backgroundColor: colors.title }]}>
+      <View style={[styles.progressBarContainer, { backgroundColor: colors.progressBarSwipe }]}>
         <View style={[styles.progressBarFill, { width: totalCardCount > 0 ? `${((leftCount + initialLearnedCount + rightCount) / totalCardCount) * 100}%` : '0%', backgroundColor: colors.buttonColor }]} />
       </View>
     </SafeAreaView>
@@ -957,6 +1063,7 @@ const styles = StyleSheet.create({
   },
   deckProgressText: {
     ...typography.styles.subtitle,
+    fontWeight: '700',
   },
   progressBarContainer: {
     width: '91%',
@@ -984,6 +1091,17 @@ const styles = StyleSheet.create({
     zIndex: 30,
     borderRadius: 24,
     backgroundColor: 'transparent',
+  },
+  favoriteButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent'
   },
   loadingContainer: {
     flex: 1,

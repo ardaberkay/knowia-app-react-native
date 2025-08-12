@@ -23,6 +23,7 @@
       "all": "Tout",
       "decks": "Paquets",
       "cards": "Cartes",
+      "card": "Carte",
       "myDecks": "Mes Paquets",
       "favorites": "Favoris",
       "searchPlaceholder": "Rechercher paquet/carte...",
@@ -248,7 +249,10 @@
       "sevenDays": "7 jours",
       "bravo": "Bravo ! Vous avez complété toutes les cartes",
       "learnTime": "Temps pour apprendre les cartes restantes",
-      "loading": "Chargement des cartes"
+      "loading": "Chargement des cartes",
+      "answer": "Réponse",
+      "example": "Exemple",
+      "note": "Note"
     },
     "login": {
       "error": "Erreur",

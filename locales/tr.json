@@ -23,6 +23,7 @@
     "all": "Tümü",
     "decks": "Desteler",
     "cards": "Kartlar",
+    "card": "Kart",
     "myDecks": "Destelerim",
     "favorites": "Favorilerim",
     "searchPlaceholder": "Deste/Kart ara...",
@@ -253,7 +254,10 @@
     "sevenDays": "7 gün",
     "bravo": "Bravo! Tüm Kartları Tamamladın",
     "learnTime": "Kalan Kartları Öğrenmeye Vakit Var",
-    "loading": "Kartlar Yükleniyor"
+    "loading": "Kartlar Yükleniyor",
+    "answer": "Cevap",
+    "example": "Örnek",
+    "note": "Not"
   },
   "login": {
     "error": "Hata",

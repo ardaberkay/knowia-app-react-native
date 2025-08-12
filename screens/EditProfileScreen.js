@@ -264,20 +264,28 @@ export default function EditProfileScreen({ navigation }) {
             autoCapitalize="none"
             secureTextEntry
           />
-          <View style={styles.bottomButtonBar}>
+          <View style={styles.buttonRowModern}>
             <TouchableOpacity
-              style={[styles.cancelButton, { borderColor: colors.buttonColor }]}
+              style={[
+                styles.favButtonModern,
+                { flex: 1, minWidth: 0, marginRight: 10 },
+                saving && { opacity: 0.7 }
+              ]}
               onPress={handleCancel}
               disabled={saving}
             >
-              <Text style={[typography.styles.button, { color: colors.buttonColor }]}>{t('editProfile.undo', "İptal Et")}</Text>
+              <Text style={[styles.favButtonTextModern, typography.styles.button, { color: '#F98A21' }]}>{t('editProfile.undo', "İptal Et")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.saveButton, { backgroundColor: colors.buttonColor }, saving && styles.saveButtonDisabled]}
+              style={[
+                styles.startButtonModern,
+                { flex: 1, minWidth: 0, borderWidth: 1, borderColor: colors.buttonBorder || 'transparent' },
+                saving && { opacity: 0.7 }
+              ]}
               onPress={handleSave}
               disabled={saving}
             >
-              <Text style={[typography.styles.button, { color: colors.buttonText }]}>{saving ? t('editProfile.saving', "Kaydediliyor...") : t('editProfile.save', "Kaydet")}</Text>
+              <Text style={[styles.startButtonTextModern, typography.styles.button, { color: '#fff' }]}>{saving ? t('editProfile.saving', "Kaydediliyor...") : t('editProfile.save', "Kaydet")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -370,31 +378,49 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#fff',
   },
-  bottomButtonBar: {
+  buttonRowModern: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 12,
-    paddingHorizontal: 0,
-    paddingTop: 8,
-    marginTop: 150,
+    gap: 14,
+    marginHorizontal: 18,
+    marginTop: 'auto'
   },
-  saveButton: {
-    minWidth: 140,
-    maxWidth: 180,
-    paddingVertical: 12,
-    borderRadius: 24,
+  favButtonModern: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-  saveButtonDisabled: {
-    opacity: 0.7,
-  },
-  cancelButton: {
-    minWidth: 140,
-    maxWidth: 180,
-    paddingVertical: 12,
-    borderRadius: 24,
-    alignItems: 'center',
+    backgroundColor: '#fff',
     borderWidth: 2,
-    backgroundColor: 'transparent',
+    borderColor: '#F98A21',
+    borderRadius: 10,
+    paddingVertical: 13,
+    justifyContent: 'center',
+    shadowColor: '#F98A21',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    paddingHorizontal: 5,
+  },
+  favButtonTextModern: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  startButtonModern: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F98A21',
+    borderRadius: 10,
+    paddingVertical: 13,
+    justifyContent: 'center',
+    shadowColor: '#F98A21',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  startButtonTextModern: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 }); 
