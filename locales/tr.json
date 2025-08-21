@@ -99,6 +99,8 @@
     "noDecks": "Henüz deste bulunmuyor",
     "loading": "Yükleniyor...",
     "notStarted": "Henüz çalışılmadı",
+    "chapters": "Bölümler",
+    "chapterCards": "Bölüm Kartları",
     "addCardSuccess": "Kart eklendi!",
     "addCardError": "Kart eklenemedi.",
     "unDefinedField": "Tanımlanmamış alan",
@@ -130,12 +132,15 @@
     "editCard": "Kartı Düzenle",
     "cards": "Kartlar",
     "cardDetail": "Kart Detayı",
+    "chapters": "Bölümler",
+    "chapterCards": "Bölüm Kartları",
     "allDecks": "Tüm Desteler"
   },
   "deckDetail": {
     "start": "Başla",
     "addCard": "Kart Ekle",
     "cards": "Kartlar",
+    "chapters": "Bölümler",
     "progress": "İlerleme",
     "details": "Detaylar",
     "completed": "Tamamlandı",
@@ -153,7 +158,12 @@
     "errorMessage": "Deste bilgisi bulunamadı.",
     "error": "Hata",
     "errorMessageDeck": "Deste başlatılamadı.",
-    "errorMessageDeckUpdate": "Deste güncellenemedi."
+    "errorMessageDeckUpdate": "Deste güncellenemedi.",
+    "shareWithCommunity": "Toplulukta Paylaş",
+    "shareDetails": "Toplulukta Paylaşma Ayrıntıları",
+    "shareDetailsText": "Bu deste toplulukla paylaşıldığında diğer kullanıcılar tarafından da görüntülenebilir ve kullanılabilir. Paylaşımı istediğin zaman kapatabilirsin.",
+    "shareUpdated": "Paylaşım ayarları güncellendi",
+    "shareUpdateError": "Paylaşım ayarları güncellenemedi"
   },
   "cardDetail": {
     "question": "Soru",
@@ -266,7 +276,7 @@
     "login": "Giriş Yap",
     "loginWithGoogle": "Google ile Giriş Yap",
     "loginWithEmail": "Email ile Giriş Yap",
-    "loginWithEmailPlaceholder": "Email adresiniz",
+    "loginWithEmailPlaceholder": "E-Posta",
     "email": "E-posta",
     "password": "Şifre",
     "emailPlaceholder": "Email adresiniz",
@@ -274,7 +284,7 @@
     "forgotPassword": "Şifremi Unuttum",
     "forgotPasswordMessage": "Şifre sıfırlama işlemi başlatılacak.",
     "loading": "Giriş yapılıyor...",
-    "or": "veya",
+    "or": "YA DA",
     "didUAcc": "Hesabın yok mu?",
     "register": "Kayıt ol"
   },
@@ -296,7 +306,8 @@
     "registering": "Kayıt yapılıyor...",
     "registeringWithGoogle": "Google ile kayıt yapılıyor...",
     "didUAcc": "Zaten hesabınız var mı?",
-    "login": "Giriş yapın"
+    "login": "Giriş yapın",
+    "emailPlaceholder": "E-posta"
   },
   "notifications": {
     "title": "Knowia ile öğrenme zamanı!",
@@ -305,5 +316,16 @@
     "errorMessage": "Bir hata oluştu",
     "errorMessageNotification": "Push bildirim izni verilmedi!",
     "errorMessageNotificationDevice": "Push bildirimleri için gerçek bir cihaz gereklidir."
+  },
+  "chapters": {
+    "title": "Bölümler",
+    "noChapters": "Henüz Bölüm Yok",
+    "noChaptersDesc": "Bu destede henüz bölüm oluşturulmamış."
+  },
+  "chapterCards": {
+    "title": "Bölüm Kartları",
+    "searchPlaceholder": "Kartlarda ara...",
+    "noCards": "Henüz Kart Yok",
+    "noCardsDesc": "Bu bölümde henüz kart oluşturulmamış."
   }
 }

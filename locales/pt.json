@@ -152,7 +152,12 @@
       "errorMessage": "Informações do baralho não encontradas.",
       "error": "Erro",
       "errorMessageDeck": "Não foi possível iniciar o baralho.",
-      "errorMessageDeckUpdate": "Não foi possível atualizar o baralho."
+      "errorMessageDeckUpdate": "Não foi possível atualizar o baralho.",
+      "shareWithCommunity": "Compartilhar com a comunidade",
+      "shareDetails": "Detalhes do Compartilhamento Comunitário",
+      "shareDetailsText": "Quando este deck é compartilhado com a comunidade, pode ser visualizado e usado por outros usuários. Você pode desativar o compartilhamento a qualquer momento.",
+      "shareUpdated": "Configurações de compartilhamento atualizadas",
+      "shareUpdateError": "Não foi possível atualizar as configurações de compartilhamento"
     },
     "cardDetail": {
       "question": "Pergunta",
@@ -269,7 +274,7 @@
       "forgotPassword": "Esqueceu a Senha",
       "forgotPasswordMessage": "O processo de redefinição de senha será iniciado.",
       "loading": "Entrando...",
-      "or": "ou",
+      "or": "OU",
       "didUAcc": "Não tem uma conta?",
       "register": "Registrar-se"
     },
@@ -291,7 +296,8 @@
       "registering": "Registrando...",
       "registeringWithGoogle": "Registrando com Google...",
       "didUAcc": "Já tem uma conta?",
-      "login": "Entrar"
+      "login": "Entrar",
+      "emailPlaceholder": "Email"
     },
     "notifications": {
       "title": "É hora de aprender com a Knowia!",

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Switch, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView, SafeAreaView } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,9 +12,7 @@ export default function CreateScreen() {
   const [name, setName] = useState('');
   const [toName, setToName] = useState('');
   const [description, setDescription] = useState('');
-  const [isShared, setIsShared] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
   const navigation = useNavigation();
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -23,7 +21,6 @@ export default function CreateScreen() {
     setName('');
     setToName('');
     setDescription('');
-    setIsShared(false);
   };
 
   const handleCreate = async () => {
@@ -41,7 +38,7 @@ export default function CreateScreen() {
           name: name.trim(),
           to_name: toName.trim() || null,
           description: description.trim() || null,
-          is_shared: isShared,
+          is_shared: false,
           is_admin_created: false,
           card_count: 0,
           is_started: false,
@@ -58,12 +55,7 @@ export default function CreateScreen() {
     }
   };
 
-  const handleShowDetails = () => {
-    Alert.alert(
-      t('create.shareDetails', 'Toplulukta Paylaşma Ayrıntıları'),
-      t('create.shareDetailsText', 'Bu deste toplulukla paylaşıldığında diğer kullanıcılar tarafından da görüntülenebilir ve kullanılabilir. Paylaşımı istediğin zaman kapatabilirsin.')
-    );
-  };
+
 
   return (
     <LinearGradient
@@ -116,25 +108,7 @@ export default function CreateScreen() {
               multiline
             />
           </View>
-          <View style={[styles.inputCard, styles.switchCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
-            <View style={styles.switchRow}>
-              <View style={styles.labelRow}>
-                <Ionicons name="people" size={20} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t('create.isShared', 'Toplulukla paylaş')}</Text>
-              </View>
-              <Switch
-                value={isShared}
-                onValueChange={setIsShared}
-                trackColor={{ false: '#e0e0e0', true: '#5AA3F0' }}
-                thumbColor={isShared ? colors.secondary : '#f4f3f4'}
-              />
-            </View>
-          </View>
-          <View style={styles.detailsRow}>
-            <TouchableOpacity onPress={handleShowDetails} activeOpacity={0.7}>
-              <Text style={[styles.detailsText, typography.styles.link, { color: colors.secondary }]}>{t('create.details', 'Ayrıntılar')}</Text>
-            </TouchableOpacity>
-          </View>
+
           <View style={styles.buttonRowModern}>
             <TouchableOpacity
               style={[
@@ -185,22 +159,7 @@ const styles = StyleSheet.create({
     elevation: 4,
     overflow: 'hidden',
   },
-  switchCard: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  labelIcon: {
-    marginRight: 8,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
+
   input: {
     borderWidth: 1,
     borderColor: '#eee',
@@ -209,11 +168,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
     fontSize: 16,
   },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
+
   buttonRowModern: {
     flexDirection: 'row',
     gap: 14,
@@ -259,14 +214,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  detailsRow: {
-    alignSelf: 'flex-end',
-    paddingRight: 10,
-    marginTop: -10,
-  },
-  detailsText: {
-    textDecorationLine: 'underline',
-  },
+
   optional: {
     marginLeft: 4,
     alignSelf: 'flex-end',

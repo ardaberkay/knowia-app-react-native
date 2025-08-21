@@ -152,7 +152,12 @@
       "errorMessage": "لم يتم العثور على معلومات المجموعة.",
       "error": "خطأ",
       "errorMessageDeck": "تعذر بدء المجموعة.",
-      "errorMessageDeckUpdate": "تعذر تحديث المجموعة."
+      "errorMessageDeckUpdate": "تعذر تحديث المجموعة.",
+      "shareWithCommunity": "مشاركة مع المجتمع",
+      "shareDetails": "تفاصيل المشاركة المجتمعية",
+      "shareDetailsText": "عند مشاركة هذه المجموعة مع المجتمع، يمكن للمستخدمين الآخرين عرضها واستخدامها. يمكنك تعطيل المشاركة في أي وقت.",
+      "shareUpdated": "تم تحديث إعدادات المشاركة",
+      "shareUpdateError": "تعذر تحديث إعدادات المشاركة"
     },
     "cardDetail": {
       "question": "السؤال",
@@ -291,7 +296,8 @@
       "registering": "جاري التسجيل...",
       "registeringWithGoogle": "جاري التسجيل باستخدام Google...",
       "didUAcc": "هل لديك حساب بالفعل؟",
-      "login": "تسجيل الدخول"
+      "login": "تسجيل الدخول",
+      "emailPlaceholder": "البريد الإلكتروني"
     },
     "notifications": {
       "title": "حان وقت التعلم مع Knowia!",

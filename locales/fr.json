@@ -152,7 +152,12 @@
       "errorMessage": "Informations du paquet introuvables.",
       "error": "Erreur",
       "errorMessageDeck": "Le paquet n'a pas pu être démarré.",
-      "errorMessageDeckUpdate": "Le paquet n'a pas pu être mis à jour."
+      "errorMessageDeckUpdate": "Le paquet n'a pas pu être mis à jour.",
+      "shareWithCommunity": "Partager avec la communauté",
+      "shareDetails": "Détails du partage communautaire",
+      "shareDetailsText": "Lorsque ce deck est partagé avec la communauté, il peut être consulté et utilisé par d'autres utilisateurs. Vous pouvez désactiver le partage à tout moment.",
+      "shareUpdated": "Paramètres de partage mis à jour",
+      "shareUpdateError": "Impossible de mettre à jour les paramètres de partage"
     },
     "cardDetail": {
       "question": "Question",
@@ -269,7 +274,7 @@
       "forgotPassword": "Mot de Passe Oublié",
       "forgotPasswordMessage": "Le processus de réinitialisation du mot de passe va commencer.",
       "loading": "Connexion...",
-      "or": "ou",
+      "or": "OU",
       "didUAcc": "Vous n'avez pas de compte ?",
       "register": "S'inscrire"
     },
@@ -291,7 +296,8 @@
       "registering": "Inscription...",
       "registeringWithGoogle": "Inscription avec Google...",
       "didUAcc": "Vous avez déjà un compte ?",
-      "login": "Se Connecter"
+      "login": "Se Connecter",
+      "emailPlaceholder": "Email"
     },
     "notifications": {
       "title": "Il est temps d'apprendre avec Knowia!",

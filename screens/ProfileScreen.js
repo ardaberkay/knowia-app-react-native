@@ -9,7 +9,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { ProfileSkeleton } from '../components/DeckSkeleton';
 import { useTranslation } from 'react-i18next';
-import Modal from 'react-native-modal';
+import LanguageSelector from '../components/LanguageSelector';
 
 export default function ProfileScreen() {
   const { colors, isDarkMode, toggleTheme, themePreference, loading: themeLoading } = useTheme();
@@ -22,7 +22,6 @@ export default function ProfileScreen() {
   const { logout } = useAuth();
   const { t, i18n } = useTranslation();
   const [isLanguageModalVisible, setLanguageModalVisible] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState(i18n.language);
 
   useEffect(() => {
     const checkNotificationStatus = async () => {
@@ -84,7 +83,6 @@ export default function ProfileScreen() {
   };
 
   const handleLanguageChange = async (lng) => {
-    setSelectedLanguage(lng);
     await i18n.changeLanguage(lng);
     setLanguageModalVisible(false);
   };
@@ -119,7 +117,7 @@ export default function ProfileScreen() {
       onPress: () => setLanguageModalVisible(true),
       right: (
         <Text style={{ color: colors.text, marginRight: 8 }}>
-          {selectedLanguage === 'tr' ? 'Türkçe' : selectedLanguage === 'en' ? 'English' : selectedLanguage === 'es' ? 'Spanish' : selectedLanguage === 'fr' ? 'French' : selectedLanguage === 'pt' ? 'Portuguese' : selectedLanguage === 'ar' ? 'Arabic' : ''}
+          {i18n.language === 'tr' ? 'Türkçe' : i18n.language === 'en' ? 'English' : i18n.language === 'es' ? 'Spanish' : i18n.language === 'fr' ? 'French' : i18n.language === 'pt' ? 'Portuguese' : i18n.language === 'ar' ? 'Arabic' : ''}
         </Text>
       ),
     },
@@ -211,66 +209,12 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-      {/* Dil seçici modal */}
-      <Modal isVisible={isLanguageModalVisible} onBackdropPress={() => setLanguageModalVisible(false)}>
-        <View style={{ backgroundColor: colors.background, borderRadius: 16, padding: 24 }}>
-          <Text style={[typography.styles.h2, { color: colors.text, marginBottom: 16 }]}>{t('profile.language')}</Text>
-          <TouchableOpacity
-            style={{ paddingVertical: 12 }}
-            onPress={() => handleLanguageChange('tr')}
-            disabled={selectedLanguage === 'tr'}
-          >
-            <Text style={{ color: selectedLanguage === 'tr' ? colors.secondary : colors.text, fontWeight: selectedLanguage === 'tr' ? 'bold' : 'normal' }}>
-              Türkçe
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={{ paddingVertical: 12 }}
-            onPress={() => handleLanguageChange('en')}
-            disabled={selectedLanguage === 'en'}
-          >
-            <Text style={{ color: selectedLanguage === 'en' ? colors.secondary : colors.text, fontWeight: selectedLanguage === 'en' ? 'bold' : 'normal' }}>
-              English
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={{ paddingVertical: 12 }}
-            onPress={() => handleLanguageChange('es')}
-            disabled={selectedLanguage === 'es'}
-          >
-            <Text style={{ color: selectedLanguage === 'es' ? colors.secondary : colors.text, fontWeight: selectedLanguage === 'es' ? 'bold' : 'normal' }}>
-              Spanish
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={{ paddingVertical: 12 }}
-            onPress={() => handleLanguageChange('fr')}
-            disabled={selectedLanguage === 'fr'}
-          >
-            <Text style={{ color: selectedLanguage === 'fr' ? colors.secondary : colors.text, fontWeight: selectedLanguage === 'fr' ? 'bold' : 'normal' }}>
-              French
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={{ paddingVertical: 12 }}
-            onPress={() => handleLanguageChange('pt')}
-            disabled={selectedLanguage === 'pt'}
-          >
-            <Text style={{ color: selectedLanguage === 'pt' ? colors.secondary : colors.text, fontWeight: selectedLanguage === 'pt' ? 'bold' : 'normal' }}>
-              Portuguese
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={{ paddingVertical: 12 }}
-            onPress={() => handleLanguageChange('ar')}
-            disabled={selectedLanguage === 'ar'}
-          >
-            <Text style={{ color: selectedLanguage === 'ar' ? colors.secondary : colors.text, fontWeight: selectedLanguage === 'ar' ? 'bold' : 'normal' }}>
-              Arabic
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </Modal>
+      {/* Dil seçici component */}
+      <LanguageSelector
+        isVisible={isLanguageModalVisible}
+        onClose={() => setLanguageModalVisible(false)}
+        onLanguageChange={handleLanguageChange}
+      />
     </View>
   );
 }

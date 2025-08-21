@@ -21,6 +21,8 @@ import AddCardScreen from '../screens/AddCardScreen';
 import EditCardScreen from '../screens/EditCardScreen';
 import DeckCardsScreen from '../screens/DeckCardsScreen';
 import CardDetailScreen from '../screens/CardDetailScreen';
+import ChaptersScreen from '../screens/ChaptersScreen';
+import ChapterCardsScreen from '../screens/ChapterCardsScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -165,6 +167,8 @@ export default function AppNavigator() {
           })} />
           <Stack.Screen name="EditCard" component={EditCardScreen} options={{ headerShown: true, title: t('tabs.editCard', 'Kartı Düzenle'), headerTitleAlign: 'center' }} />
           <Stack.Screen name="DeckCards" component={DeckCardsScreen} options={{ headerShown: true, title: t('tabs.cards', 'Kartlar'), headerTitleAlign: 'center' }} />
+          <Stack.Screen name="Chapters" component={ChaptersScreen} options={{ headerShown: true, title: t('tabs.chapters', 'Bölümler'), headerTitleAlign: 'center' }} />
+          <Stack.Screen name="ChapterCards" component={ChapterCardsScreen} options={{ headerShown: true, title: t('tabs.chapterCards', 'Bölüm Kartları'), headerTitleAlign: 'center' }} />
           <Stack.Screen name="CardDetail" component={CardDetailScreen} options={{ headerShown: true, title: t('tabs.cardDetail', 'Kart Detayı'), headerTitleAlign: 'center' }} />
         </>
       )}

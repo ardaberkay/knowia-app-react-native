@@ -98,6 +98,8 @@
     "noDecks": "No decks yet",
     "loading": "Loading...",
     "notStarted": "Not started yet",
+    "chapters": "Chapters",
+    "chapterCards": "Chapter Cards",
     "addCardSuccess": "Card added!",
     "addCardError": "Card could not be added.",
     "unDefinedField": "Undefined field",
@@ -129,12 +131,15 @@
     "editCard": "Edit Card",
     "cards": "Cards",
     "cardDetail": "Card Detail",
+    "chapters": "Chapters",
+    "chapterCards": "Chapter Cards",
     "allDecks": "All Decks"
   },
   "deckDetail": {
     "start": "Start",
     "addCard": "Add Card",
     "cards": "Cards",
+    "chapters": "Chapters",
     "progress": "Progress",
     "details": "Details",
     "completed": "Completed",
@@ -152,7 +157,12 @@
     "errorMessage": "Deck information not found.",
     "error": "Error",
     "errorMessageDeck": "Deck could not be started.",
-    "errorMessageDeckUpdate": "Deck could not be updated."
+    "errorMessageDeckUpdate": "Deck could not be updated.",
+    "shareWithCommunity": "Share with community",
+    "shareDetails": "Community Sharing Details",
+    "shareDetailsText": "When this deck is shared with the community, it can be viewed and used by other users. You can disable sharing at any time.",
+    "shareUpdated": "Sharing settings updated",
+    "shareUpdateError": "Sharing settings could not be updated"
   },
   "cardDetail": {
     "question": "Question",
@@ -266,10 +276,10 @@
     "password": "Password",
     "emailPlaceholder": "Your email address",
     "passwordPlaceholder": "Your password",
-    "forgotPassword": "Forgot Password",
+    "forgotPassword": "Forgot Password?",
     "forgotPasswordMessage": "Password reset process will be started.",
     "loading": "Logging in...",
-    "or": "or",
+    "or": "OR",
     "didUAcc": "Don't have an account?",
     "register": "Register"
   },
@@ -291,7 +301,8 @@
     "registering": "Registering...",
     "registeringWithGoogle": "Registering with Google...",
     "didUAcc": "Already have an account?",
-    "login": "Login"
+    "login": "Login",
+    "emailPlaceholder": "Email"
   },
   "notifications": {
     "title": "It's time to learn with Knowia!",
@@ -300,5 +311,16 @@
     "errorMessage": "An error occurred",
     "errorMessageNotification": "Notification permission not granted!",
     "errorMessageNotificationDevice": "A physical device is required to receive notifications."
+  },
+  "chapters": {
+    "title": "Chapters",
+    "noChapters": "No Chapters Yet",
+    "noChaptersDesc": "No chapters have been created for this deck yet."
+  },
+  "chapterCards": {
+    "title": "Chapter Cards",
+    "searchPlaceholder": "Search in cards...",
+    "noCards": "No Cards Yet",
+    "noCardsDesc": "No cards have been created for this chapter yet."
   }
 } 

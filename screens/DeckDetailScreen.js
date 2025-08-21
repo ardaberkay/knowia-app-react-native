@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, Modal, FlatList, TextInput, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, Modal, FlatList, TextInput, Pressable, Image, Switch } from 'react-native';
 import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
 import { setDeckStarted } from '../services/DeckService';
@@ -40,11 +40,13 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [editLoading, setEditLoading] = useState(false);
   const [cardsModalVisible, setCardsModalVisible] = useState(false);
   const [searchBarShouldFocus, setSearchBarShouldFocus] = useState(false);
+  const [isShared, setIsShared] = useState(deck.is_shared || false);
+  const [shareLoading, setShareLoading] = useState(false);
   const { t } = useTranslation();
 
   if (!deck) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }] }>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <Text style={[styles.errorText, typography.styles.body, { color: colors.error }]}>{t('deckDetail.errorMessage', 'Deste bilgisi bulunamadı.')}</Text>
       </SafeAreaView>
     );
@@ -238,6 +240,56 @@ export default function DeckDetailScreen({ route, navigation }) {
     }
   };
 
+  const updateShareSetting = async (newValue) => {
+    if (shareLoading) return;
+    setShareLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('decks')
+        .update({ is_shared: newValue })
+        .eq('id', deck.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setIsShared(newValue);
+      deck.is_shared = newValue;
+      Alert.alert(t('common.success', 'Success'), t('deckDetail.shareUpdated', 'Sharing settings updated'));
+    } catch (e) {
+      Alert.alert(t('common.error', 'Error'), t('deckDetail.shareUpdateError', 'Sharing settings could not be updated'));
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
+  const handleToggleShare = (nextValue) => {
+    if (shareLoading) return;
+    if (nextValue) {
+      Alert.alert(
+        t('common.warning', 'Uyarı'),
+        t(
+          'deckDetail.shareConfirmMessage',
+          'Desteyi toplulukta paylaştıktan sonra bölümlerde herhangi bir değisiklik yapamayacaksın. Onaylıyor musun?'
+        ),
+        [
+          { text: t('common.no', 'Hayır'), style: 'cancel' },
+          { text: t('common.yes', 'Evet'), onPress: () => updateShareSetting(true) },
+        ],
+        { cancelable: true }
+      );
+    } else {
+      updateShareSetting(false);
+    }
+  };
+
+  const handleShowShareDetails = () => {
+    Alert.alert(
+      t('deckDetail.shareDetails', 'Community Sharing Details'),
+      t('deckDetail.shareDetailsText', 'When this deck is shared with the community, it can be viewed and used by other users. You can disable sharing at any time.')
+    );
+  };
+
   // Header'a yatay kebab ekle
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -275,7 +327,7 @@ export default function DeckDetailScreen({ route, navigation }) {
       style={styles.bgGradient}
     >
       <View style={{ flex: 1, paddingHorizontal: 18 }}>
-        <View style={[styles.infoCardGlass, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow, alignItems: 'center', paddingBottom: 28, marginTop: 12, width: '100%', maxWidth: 440, alignSelf: 'center' }] }>
+        <View style={[styles.infoCardGlass, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow, alignItems: 'center', marginTop: 12, paddingVertical: 15, width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
           <View style={{ width: '100%' }}>
             {editMode ? (
               <>
@@ -351,39 +403,43 @@ export default function DeckDetailScreen({ route, navigation }) {
           )}
         </View>
         {/* Açıklama Kutusu (Glassmorphism) */}
-        {deck.description && (
-          <View style={[styles.infoCardGlass, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow, width: '100%', maxWidth: 440, alignSelf: 'center', height: 140 }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-              <MaterialCommunityIcons name="information-outline" size={20} color={colors.buttonColor} style={{ marginRight: 6}} />
-              <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.text}]}>{t('deckDetail.details', 'Detaylar')}</Text>
-            </View>
-            {editMode ? (
-              <View style={{ flex: 1 }}>
-                <TextInput
-                  style={[styles.deckDescription, typography.styles.body, { color: colors.text, backgroundColor: '#fff8f0', borderRadius: 8, padding: 8, minHeight: 40, flex: 1, textAlignVertical: 'top' }]}
-                  value={editDescription}
-                  onChangeText={setEditDescription}
-                  placeholder="Deste açıklaması..."
-                  multiline
-                  maxLength={300}
-                  scrollEnabled
-                />
-              </View>
-            ) : (
-              <ScrollView style={{ flex: 1 }} nestedScrollEnabled={true} showsVerticalScrollIndicator={true}>
-                <Text style={[styles.deckDescription, typography.styles.body, { color: colors.subtext }]}>{deck.description}</Text>
-              </ScrollView>
-            )}
+        <View style={[styles.infoCardGlass, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow, width: '100%', maxWidth: 440, alignSelf: 'center', height: 140 }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <MaterialCommunityIcons name="information-outline" size={20} color={colors.buttonColor} style={{ marginRight: 6 }} />
+            <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.text }]}>{t('deckDetail.details', 'Detaylar')}</Text>
           </View>
-        )}
+          {editMode ? (
+            <View style={{ flex: 1 }}>
+              <TextInput
+                style={[styles.deckDescription, typography.styles.body, { color: colors.text, backgroundColor: '#fff8f0', borderRadius: 8, padding: 8, minHeight: 40, flex: 1, textAlignVertical: 'top' }]}
+                value={editDescription}
+                onChangeText={setEditDescription}
+                placeholder="Deste açıklaması..."
+                multiline
+                maxLength={300}
+                scrollEnabled
+              />
+            </View>
+          ) : deck.description && deck.description.trim().length > 0 ? (
+            <ScrollView style={{ flex: 1 }} nestedScrollEnabled={true} showsVerticalScrollIndicator={true}>
+              <Text style={[styles.deckDescription, typography.styles.body, { color: colors.subtext }]}>{deck.description}</Text>
+            </ScrollView>
+          ) : (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <Text style={[styles.deckDescription, typography.styles.body, { color: colors.muted, textAlign: 'center' }]}>
+                {t('deckDetail.noDescription', 'Deste için detay verilmemiş.')}
+              </Text>
+            </View>
+          )}
+        </View>
         {/* İlerleme Kutusu (Glassmorphism) */}
         <View style={[styles.infoCardGlass, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow, width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <MaterialCommunityIcons name="chart-bar" size={20} color={colors.buttonColor} style={{ marginRight: 6}} />
+              <MaterialCommunityIcons name="chart-bar" size={20} color={colors.buttonColor} style={{ marginRight: 6 }} />
               <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.text }]}>{t('deckDetail.progress', 'İlerleme')}</Text>
             </View>
-            <View style={[styles.statBadgeModern, { marginLeft: 8 }] }>
+            <View style={[styles.statBadgeModern, { marginLeft: 8 }]}>
               <Ionicons name="layers" size={18} color="#fff" style={{ marginRight: 4 }} />
               <Text style={[typography.styles.body, styles.statBadgeTextModern]}>{deck.card_count || 0}</Text>
             </View>
@@ -401,22 +457,55 @@ export default function DeckDetailScreen({ route, navigation }) {
             )}
           </View>
         </View>
-        {/* Kartlar Başlığı */}
-        <TouchableOpacity onPress={() => navigation.navigate('DeckCards', { deck })} activeOpacity={0.8}>
-          <View style={[styles.cardsHeaderCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
-            <View style={[styles.cardsHeaderRow, { justifyContent: 'space-between', alignItems: 'center' }] }>
+        {/* Kartlar ve Bölümler */}
+        <View style={[styles.cardsHeaderCard, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow }]}>
+          <TouchableOpacity onPress={() => navigation.navigate('DeckCards', { deck })} activeOpacity={0.8} style={styles.sectionButton}>
+            <View style={[styles.cardsHeaderRow, { justifyContent: 'space-between', alignItems: 'center' }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Ionicons name="albums-outline" size={22} color={colors.buttonColor} style={{ marginRight: 8 }} />
                 <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.text }]}>{t('deckDetail.cards', 'Kartlar')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={26} color={colors.headText} />
             </View>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+          
+          <View style={[styles.divider, { backgroundColor: colors.border, marginVertical: -5 }]} />
+          
+          <TouchableOpacity onPress={() => navigation.navigate('Chapters', { deck })} activeOpacity={0.8} style={styles.sectionButton}>
+            <View style={[styles.cardsHeaderRow, { justifyContent: 'space-between', alignItems: 'center' }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <MaterialCommunityIcons name="book-open-variant" size={22} color={colors.buttonColor} style={{ marginRight: 8 }} />
+                <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.text }]}>{t('deckDetail.chapters', 'Bölümler')}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={26} color={colors.headText} />
+            </View>
+          </TouchableOpacity>
+        </View>
         <View style={{ height: 12 }} />
+        {/* Toplulukla Paylaş Kutusu (Glassmorphism) */}
+        {currentUserId && deck.user_id === currentUserId && (
+          <View style={[styles.infoCardGlass, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow, width: '100%', maxWidth: 440, alignSelf: 'center', paddingVertical: 10 }]}>
+            <View style={styles.switchRow}>
+              <View style={styles.labelRow}>
+                <Ionicons name="people" size={20} color="#F98A21" style={styles.labelIcon} />
+                <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('deckDetail.shareWithCommunity', 'Toplulukla Paylaş')}</Text>
+                <TouchableOpacity onPress={handleShowShareDetails} activeOpacity={0.7} style={{ marginLeft: 8, marginTop: 2 }}>
+                  <MaterialCommunityIcons name="information-outline" size={20} color={colors.muted} />
+                </TouchableOpacity>
+              </View>
+              <Switch
+                value={isShared}
+                onValueChange={handleToggleShare}
+                trackColor={{ false: '#e0e0e0', true: '#5AA3F0' }}
+                thumbColor={isShared ? colors.secondary : '#f4f3f4'}
+                disabled={shareLoading}
+              />
+            </View>
+          </View>
+        )}
       </View>
       {/* Sabit alt buton barı */}
-      <SafeAreaView style={[styles.fixedButtonBar, { borderTopLeftRadius: 18, borderTopRightRadius: 18, ...Platform.select({ android: { paddingBottom: 18 }, ios: {} }) }] } edges={['bottom']}>
+      <SafeAreaView style={[styles.fixedButtonBar, { borderTopLeftRadius: 18, borderTopRightRadius: 18, ...Platform.select({ android: { paddingBottom: 18 }, ios: {} }) }]} edges={['bottom']}>
         <View style={styles.buttonRowModern}>
           <TouchableOpacity
             style={[styles.favButtonModern, { flex: 1, minWidth: 0, marginRight: 10 }]}
@@ -799,7 +888,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 20,
     marginHorizontal: 18,
-    marginBottom: 16,
+    marginBottom: 10,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.10,
     shadowRadius: 8,
@@ -915,8 +1004,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 440,
     alignSelf: 'center',
-    marginTop: 4,
-    padding: 16,
+
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.10,
     shadowRadius: 8,
@@ -1111,5 +1199,40 @@ const styles = StyleSheet.create({
     height: 1,
     alignSelf: 'center',
     marginVertical: 6,
+  },
+  sectionButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  divider: {
+    height: 1,
+    marginHorizontal: 16,
+    width: '100%',
+  },
+  // Share with community styles
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  labelIcon: {
+    marginRight: 8,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  detailsRow: {
+    alignSelf: 'flex-end',
+    paddingRight: 10,
+    marginTop: -10,
+  },
+  detailsText: {
+    textDecorationLine: 'underline',
   },
 });

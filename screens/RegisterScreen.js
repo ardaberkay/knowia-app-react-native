@@ -4,12 +4,15 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function RegisterScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { register } = useAuth();
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -45,36 +48,63 @@ export default function RegisterScreen({ navigation }) {
       resizeMode="cover"
     >
       <View style={styles.container}>
-        <Text style={[styles.subtitle, typography.styles.subtitle, { color: '#fff' }]}>{t('register.register', 'Kayıt Ol')}</Text>
         <View style={styles.form}>
-          <TextInput
-            style={[styles.input, typography.styles.body, { borderColor: colors.border, color: colors.text }]}
-            placeholder={t('register.emailPlaceholder', 'E-posta')}
-            placeholderTextColor={colors.muted}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-          <TextInput
-            style={[styles.input, typography.styles.body, { borderColor: colors.border, color: colors.text }]}
-            placeholder={t('register.passwordPlaceholder', 'Şifre')}
-            placeholderTextColor={colors.muted}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-          <TextInput
-            style={[styles.input, typography.styles.body, { borderColor: colors.border, color: colors.text }]}
-            placeholder={t('register.confirmPasswordPlaceholder', 'Şifre Tekrar')}
-            placeholderTextColor={colors.muted}
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-          />
-
+          <View style={[styles.inputContainer, { borderColor: colors.border }]}>
+            <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
+              <Ionicons name="mail-outline" size={22} color={colors.muted} />
+            </View>
+            <TextInput
+              style={[styles.input, typography.styles.body, { color: colors.text }]}
+              placeholder={t('register.emailPlaceholder', 'Email')}
+              placeholderTextColor={colors.muted}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+          </View>
+          <View style={[styles.inputContainer, { borderColor: colors.border }]}>
+            <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
+              <Ionicons name="lock-closed-outline" size={22} color={colors.muted} />
+            </View>
+            <TextInput
+              style={[styles.input, typography.styles.body, { color: colors.text }]}
+              placeholder={t('register.passwordPlaceholder', 'Şifre')}
+              placeholderTextColor={colors.muted}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword(prev => !prev)}
+              style={{justifyContent: 'center', alignItems: 'center', width: 28, height: 22}}
+              disabled={loading}
+            >
+              <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={22} color={colors.muted} />
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.inputContainer, { borderColor: colors.border }]}>
+            <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
+              <Ionicons name="lock-closed-outline" size={22} color={colors.muted} />
+            </View>
+            <TextInput
+              style={[styles.input, typography.styles.body, { color: colors.text }]}
+              placeholder={t('register.confirmPasswordPlaceholder', 'Şifre Tekrar')}
+              placeholderTextColor={colors.muted}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={!showConfirmPassword}
+            />
+            <TouchableOpacity
+              onPress={() => setShowConfirmPassword(prev => !prev)}
+              style={{justifyContent: 'center', alignItems: 'center', width: 28, height: 22}}
+              disabled={loading}
+            >
+              <Ionicons name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'} size={22} color={colors.muted} />
+            </TouchableOpacity>
+          </View>
           <TouchableOpacity 
-            style={[styles.button, { backgroundColor: '#FF992B'}, loading && styles.buttonDisabled]}
+            style={[styles.button, { backgroundColor: '#FF992B', borderWidth: 1, borderColor: colors.border}, loading && styles.buttonDisabled]}
             onPress={handleRegister}
             disabled={loading}
           >
@@ -82,7 +112,6 @@ export default function RegisterScreen({ navigation }) {
               {loading ? t('register.registering', 'Kayıt yapılıyor...') : t('register.register', 'Kayıt Ol')}
             </Text>
           </TouchableOpacity>
-
           <TouchableOpacity 
             style={styles.linkButton}
             onPress={() => navigation.navigate('Login')}
@@ -117,11 +146,19 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   input: {
+    flex: 1,
+    paddingVertical: 12,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.5)',
-    padding: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 10,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    gap: 8,
   },
   button: {
     padding: 15,
