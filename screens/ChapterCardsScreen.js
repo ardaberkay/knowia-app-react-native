@@ -40,11 +40,17 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const fetchChapterCards = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('cards')
         .select('id, question, answer, image, example, note, created_at')
-        .eq('chapter_id', chapter.id)
+        .eq('deck_id', deck.id)
         .order('created_at', { ascending: false });
+      if (chapter?.id) {
+        query = query.eq('chapter_id', chapter.id);
+      } else {
+        query = query.is('chapter_id', null);
+      }
+      const { data, error } = await query;
       
       if (error) throw error;
       setCards(data || []);
@@ -163,7 +169,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, typography.styles.h1, { color: colors.text }]}>
-            {t('chapterCards.title', 'Bölüm Kartları')}
+            {chapter?.name || t('chapters.unassigned', 'Atanmamış')}
           </Text>
           <View style={styles.headerSpacer} />
         </View>

@@ -8,6 +8,8 @@ import { supabase } from '../lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import AddEditCardInlineForm from '../components/AddEditCardInlineForm';
 import { useTranslation } from 'react-i18next';
+import CardListItem from '../components/CardListItem';
+import SearchBar from '../components/SearchBar';
 
 export default function DeckCardsScreen({ route, navigation }) {
   const { deck } = route.params;
@@ -326,7 +328,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                       Alert.alert(t("cardDetail.deleteConfirmation", "Kart Silinsin mi?"), t("cardDetail.deleteConfirm", "Kartı silmek istediğinize emin misiniz?"), [
                         { text: t("cardDetail.cancel", "İptal"), style: 'cancel' },
                         {
-                          text: t("cardDetail.delete", "Sil"), style: 'destructive', onPress: async () => {
+                          text: t('cardDetail.delete', 'Sil'), style: 'destructive', onPress: async () => {
                             await supabase
                               .from('cards')
                               .delete()
@@ -356,17 +358,13 @@ export default function DeckCardsScreen({ route, navigation }) {
         {!selectedCard && (
           <>
             {/* Search Bar & Filter */}
-            <View style={[styles.cardsSearchBarRow, { marginBottom: 0 }]}>
-              <View style={[styles.cardsSearchBarWrapperModern, { marginRight: 0, marginBottom: 0 }]}>
-                <Ionicons name="search" size={20} color="#B0B0B0" style={[styles.cardsSearchIcon, { marginRight: 0 }]} />
-                <TextInput
-                  style={[styles.cardsSearchBarModern, typography.styles.body]}
-                  placeholder={t("common.searchPlaceholder", "Kartlarda ara...")}
-                  value={search}
-                  onChangeText={setSearch}
-                  placeholderTextColor={colors.muted}
-                />
-              </View>
+            <View style={[styles.cardsSearchBarRow, { marginBottom: 12 }]}>
+              <SearchBar
+                value={search}
+                onChangeText={setSearch}
+                placeholder={t("common.searchPlaceholder", "Kartlarda ara...")}
+                style={{ marginRight: 0, marginBottom: 0 }}
+              />
               <TouchableOpacity
                 ref={filterIconRef}
                 style={[styles.cardsFilterIconButton, { marginLeft: 8 }]}
@@ -381,10 +379,6 @@ export default function DeckCardsScreen({ route, navigation }) {
               >
                 <Ionicons name="filter" size={24} color="#F98A21" />
               </TouchableOpacity>
-            </View>
-            {/* Divider */}
-            <View style={{ alignItems: 'center', marginTop: 15, marginBottom: 8 }}>
-              <View style={{ width: '15%', height: 3, backgroundColor: '#E9E9E9', borderRadius: 1 }} />
             </View>
             {/* Filter Modal */}
             <Modal
@@ -515,87 +509,36 @@ export default function DeckCardsScreen({ route, navigation }) {
                )
              }
                          renderItem={({ item }) => (
-               <TouchableOpacity
-                 style={[
-                   styles.cardItemGlass,
-                   { backgroundColor: colors.cardBackground }
-                 ]}
-                 activeOpacity={0.85}
-                 onPress={() => {
-                   setEditMode(false);
-                   setSelectedCard(item);
-                 }}
-               >
-                <View style={styles.cardTopRow}>
-                                     <View style={styles.cardTextCol}>
-                     <Text style={[
-                       styles.cardQuestion, 
-                       typography.styles.body,
-                       { color: colors.cardQuestionText }
-                     ]} numberOfLines={1} ellipsizeMode="tail">
-                       {item.question}
-                     </Text>
-                     <View style={[
-                       styles.cardDivider,
-                       { backgroundColor: colors.cardDivider }
-                     ]} />
-                     <Text style={[
-                       styles.cardAnswer, 
-                       typography.styles.body,
-                       { color: colors.cardAnswerText }
-                     ]} numberOfLines={1} ellipsizeMode="tail">
-                       {item.answer}
-                     </Text>
-                   </View>
-                  <View style={{ alignItems: 'center' }}>
-                                         <TouchableOpacity
-                       style={[
-                         styles.cardFavIconBtn,
-                         { backgroundColor: colors.cardButtonBackground }
-                       ]}
-                       onPress={() => handleToggleFavoriteCard(item.id)}
-                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                     >
-                      <MaterialCommunityIcons
-                        name={favoriteCards.includes(item.id) ? 'heart' : 'heart-outline'}
-                        size={22}
-                        color={favoriteCards.includes(item.id) ? '#F98A21' : '#B0B0B0'}
-                      />
-                    </TouchableOpacity>
-                    {/* Çöp kutusu ikonu sadece destenin sahibi ise */}
-                    {currentUserId && deck.user_id === currentUserId && (
-                      <TouchableOpacity
-                                                 style={{ 
-                           marginTop: 8,
-                           padding: 8,
-                           backgroundColor: colors.cardButtonBackground,
-                           borderRadius: 12,
-                         }}
-                        onPress={() => {
-                          Alert.alert(
-                            t('cardDetail.deleteConfirmation', 'Kart Silinsin mi?'),
-                            t('cardDetail.deleteConfirm', 'Kartı silmek istediğinize emin misiniz?'),
-                            [
-                              { text: t('cardDetail.cancel', 'İptal'), style: 'cancel' },
-                              {
-                                text: t('cardDetail.delete', 'Sil'), style: 'destructive', onPress: async () => {
-                                await supabase
-                                  .from('cards')
-                                  .delete()
-                                  .eq('id', item.id);
-                                setCards(cards.filter(c => c.id !== item.id));
-                                setOriginalCards(originalCards.filter(c => c.id !== item.id));
-                              }
-                            }
-                          ]);
-                        }}
-                      >
-                        <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-              </TouchableOpacity>
+              <CardListItem
+                question={item.question}
+                answer={item.answer}
+                onPress={() => {
+                  setEditMode(false);
+                  setSelectedCard(item);
+                }}
+                onToggleFavorite={() => handleToggleFavoriteCard(item.id)}
+                isFavorite={favoriteCards.includes(item.id)}
+                onDelete={async () => {
+                  Alert.alert(
+                    t('cardDetail.deleteConfirmation', 'Kart Silinsin mi?'),
+                    t('cardDetail.deleteConfirm', 'Kartı silmek istediğinize emin misiniz?'),
+                    [
+                      { text: t('cardDetail.cancel', 'İptal'), style: 'cancel' },
+                      {
+                        text: t('cardDetail.delete', 'Sil'), style: 'destructive', onPress: async () => {
+                          await supabase
+                            .from('cards')
+                            .delete()
+                            .eq('id', item.id);
+                          setCards(cards.filter(c => c.id !== item.id));
+                          setOriginalCards(originalCards.filter(c => c.id !== item.id));
+                        }
+                      }
+                    ]
+                  );
+                }}
+                canDelete={currentUserId && deck.user_id === currentUserId}
+              />
             )}
           />
         )}
@@ -661,7 +604,7 @@ const styles = StyleSheet.create({
     width: '100%',
     minHeight: 110,
     backgroundColor: '#E8E4DD', // Light theme için varsayılan
-    borderRadius: 20,
+    borderRadius: 30,
     marginBottom: 12,
     padding: 20,
     borderWidth: 0,

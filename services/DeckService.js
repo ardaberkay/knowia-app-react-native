@@ -12,7 +12,6 @@ export const getDecksByCategory = async (category) => {
       query = query
         .eq('user_id', user.id)
         .eq('is_admin_created', false)
-        .eq('is_shared', false);
       break;
     case 'defaultDecks':
       query = query

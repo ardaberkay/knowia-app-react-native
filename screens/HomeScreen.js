@@ -1,30 +1,32 @@
 import { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Dimensions, ActivityIndicator, Image, Modal, Platform } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Dimensions, ActivityIndicator, Image, Modal, Platform, RefreshControl } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { getDecksByCategory } from '../services/DeckService';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { Iconify } from 'react-native-iconify';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { typography } from '../theme/typography';
 import React from 'react';
-import { LinearGradient } from 'expo-linear-gradient';
 import { getCurrentUserProfile, updateLastActiveAt } from '../services/ProfileService';
 import { registerForPushNotificationsAsync } from '../services/NotificationService';
 import { supabase } from '../lib/supabase';
 import { getFavoriteDecks } from '../services/FavoriteService';
 import DeckSkeleton from '../components/DeckSkeleton';
 import { useTranslation } from 'react-i18next';
+import DeckCard from '../components/DeckCard';
+import DeckActionSheet from '../components/DeckActionSheet';
 
 
 
 // Kategoriye göre ikon seçen yardımcı fonksiyon
 function getCategoryIcon(category) {
   switch (category) {
-    case 'inProgressDecks': return 'book';
-    case 'defaultDecks': return 'cube';
-    case 'communityDecks': return 'people';
-    default: return 'albums';
+    case 'inProgressDecks': return 'dashicons:welcome-learn-more';
+    case 'defaultDecks': return 'mdi:resource-description-framework';
+    case 'communityDecks': return 'fluent:people-community-20-filled';
+    default: return 'solar:user-bold';
   }
 }
 
@@ -40,6 +42,7 @@ export default function HomeScreen() {
   const [activeDeckMenuId, setActiveDeckMenuId] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [favoriteDecks, setFavoriteDecks] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   const { t } = useTranslation();
 
@@ -93,6 +96,25 @@ const DECK_CATEGORIES = {
         Alert.alert(t('home.errorMessage', 'Hata'), t('home.errorMessageDeck', 'Desteler yüklenirken bir hata oluştu'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    try {
+      setRefreshing(true);
+      await Promise.all([
+        loadDecks(),
+        loadProfile(),
+        (async () => {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user?.id) {
+            const decks = await getFavoriteDecks(user.id);
+            setFavoriteDecks(decks || []);
+          }
+        })(),
+      ]);
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -170,7 +192,7 @@ const DECK_CATEGORIES = {
       <>
         <View style={styles.sectionHeaderGradient}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name={getCategoryIcon(category)} size={22} color="#F98A21" style={{ marginRight: 8 }} />
+          <Iconify icon={getCategoryIcon(category)} size={26} color="#F98A21" style={{ marginRight: 8 }} />
             <Text style={[typography.styles.h2, { color: colors.subtext }]}>{DECK_CATEGORIES[category]}</Text>
           </View>
           <TouchableOpacity style={styles.seeAllButton} onPress={handleSeeAll} activeOpacity={0.7}>
@@ -205,56 +227,14 @@ const DECK_CATEGORIES = {
             snapToAlignment="start"
           >
             {limitedDecks.map((deck) => (
-              <TouchableOpacity
+              <DeckCard
                 key={`deck-${deck.id}`}
-                style={styles.deckCardModern}
-                onPress={() => handleDeckPress(deck)}
-                activeOpacity={0.93}
-              >
-                <LinearGradient
-                  colors={colors.deckGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.deckCardGradient}
-                >
-                  <View style={styles.deckCardContentModern}>
-                    <View style={styles.deckProfileRow}>
-                      <Image
-                        source={deck.profiles?.image_url ? { uri: deck.profiles.image_url } : require('../assets/avatar-default.png')}
-                        style={styles.deckProfileAvatar}
-                      />
-                                             <Text style={[typography.styles.body, styles.deckProfileUsername]} numberOfLines={1} ellipsizeMode="tail">
-                         {deck.profiles?.username || 'Kullanıcı'}
-                       </Text>
-                    </View>
-                    <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-                      <View style={styles.deckHeaderModern}>
-                                                 {deck.to_name ? (
-                           <>
-                             <Text style={[typography.styles.body, styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
-                             <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10 }} />
-                             <Text style={[typography.styles.body, styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
-                           </>
-                         ) : (
-                           <Text style={[typography.styles.body, styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
-                         )}
-                      </View>
-                    </View>
-                    <View style={styles.deckStatsModern}>
-                      <View style={styles.deckCountBadge}>
-                        <Ionicons name="layers" size={13} color="#fff" style={{ marginRight: 3 }} />
-                                                 <Text style={[typography.styles.body, styles.deckCountBadgeText]}>{deck.card_count || 0}</Text>
-                      </View>
-                    </View>
-                  </View>
-                  <TouchableOpacity
-                    style={{ position: 'absolute', bottom: 8, right: 5, zIndex: 10 }}
-                    onPress={() => setActiveDeckMenuId(deck.id)}
-                  >
-                    <MaterialCommunityIcons name="dots-vertical" size={24} color={colors.orWhite} />
-                  </TouchableOpacity>
-                </LinearGradient>
-              </TouchableOpacity>
+                deck={deck}
+                colors={colors}
+                typography={typography}
+                onPress={handleDeckPress}
+                onOpenMenu={setActiveDeckMenuId}
+              />
             ))}
             {showEndIcon && (
               <View style={styles.endIconContainer}>
@@ -292,7 +272,16 @@ const DECK_CATEGORIES = {
           </TouchableOpacity>
         </View>
       </View>
-      <ScrollView style={[styles.content, { backgroundColor: colors.background }]}> 
+      <ScrollView style={[styles.content, { backgroundColor: colors.background }]} 
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.text}
+            colors={[colors.buttonColor]}
+          />
+        }
+      > 
         {Object.keys(DECK_CATEGORIES).map((category, index) => (
           <React.Fragment key={`category-${category}`}>
             {index > 0 && <View style={[styles.categoryDivider, { backgroundColor: colors.border }]} />}
@@ -302,74 +291,35 @@ const DECK_CATEGORIES = {
           </React.Fragment>
         ))}
       </ScrollView>
-      {/* Bottom Sheet Modal - sadece bir kez, en dışta */}
-      <Modal
-        visible={!!activeDeckMenuId}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setActiveDeckMenuId(null)}
-      >
-        <TouchableOpacity
-          style={{ flex: 1, backgroundColor: 'transparent' }}
-          activeOpacity={1}
-          onPress={() => setActiveDeckMenuId(null)}
-        />
-        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.background, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingTop: 12, paddingBottom: 32, paddingHorizontal: 24, elevation: 16 }}>
-          <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 }} />
-          {/* Seçili deste */}
-          {(() => {
-            const allDecks = Object.values(decks).flat();
-            const selectedDeck = allDecks.find(d => d.id === activeDeckMenuId);
-            if (!selectedDeck) return null;
-            const isFavorite = favoriteDecks.some(fav => fav.id === selectedDeck.id);
-            return <>
-              {/* Düzenle en üstte, sadece kendi destesi ise */}
-              {selectedDeck.user_id === currentUserId && (
-                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
-                  onPress={() => { setActiveDeckMenuId(null); navigation.navigate('DeckEdit', { deck: selectedDeck }); }}
-                >
-                  <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
-                  <Text style={[typography.styles.body, { fontSize: 16, fontWeight: '500', color: colors.text }]}>{t('home.edit', 'Düzenle')}</Text>
-                </TouchableOpacity>
-              )}
-              {/* Favorilere Ekle/Çıkar herkes için */}
-              <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
-                onPress={async () => {
-                  if (isFavorite) {
-                    await handleRemoveFavoriteDeck(selectedDeck.id);
-                  } else {
-                    await handleAddFavoriteDeck(selectedDeck.id);
-                  }
-                  setActiveDeckMenuId(null);
-                }}
-              >
-                <MaterialCommunityIcons
-                  name={isFavorite ? 'heart' : 'heart-outline'}
-                  size={22}
-                  color={isFavorite ? '#F98A21' : colors.text}
-                  style={{ marginRight: 12 }}
-                />
-                <Text style={[typography.styles.body, { fontSize: 16, fontWeight: '500', color: isFavorite ? '#F98A21' : colors.text }]}>
-                  {isFavorite ? t('home.removeFavorite', 'Favorilerden Çıkar') : t('home.addFavorite', 'Favorilere Ekle')}
-                </Text>
-              </TouchableOpacity>
-              {/* Desteyi Sil sadece kendi destesi ise */}
-              {selectedDeck.user_id === currentUserId && (
-                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
-                  onPress={() => handleDeleteDeck(selectedDeck.id)}
-                >
-                  <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
-                  <Text style={[typography.styles.body, { fontSize: 16, fontWeight: '500', color: '#E74C3C' }]}>{t('home.deleteDeck', 'Desteyi Sil')}</Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16 }} onPress={() => setActiveDeckMenuId(null)}>
-                <MaterialCommunityIcons name="close" size={22} color={colors.text} style={{ marginRight: 12 }} />
-                <Text style={[typography.styles.body, { fontSize: 16, fontWeight: '500', color: colors.text }]}>{t('home.close', 'Kapat')}</Text>
-              </TouchableOpacity>
-            </>;
-          })()}
-        </View>
-      </Modal>
+      {/* Bottom Sheet Modal - reusable component */}
+      {(() => {
+        const allDecks = Object.values(decks).flat();
+        const selectedDeck = allDecks.find(d => d.id === activeDeckMenuId);
+        const isFavorite = selectedDeck ? favoriteDecks.some(fav => fav.id === selectedDeck.id) : false;
+        const canEdit = selectedDeck ? selectedDeck.user_id === currentUserId : false;
+        return (
+          <DeckActionSheet
+            visible={!!activeDeckMenuId}
+            deck={selectedDeck}
+            colors={colors}
+            typography={typography}
+            isFavorite={isFavorite}
+            canEdit={canEdit}
+            onClose={() => setActiveDeckMenuId(null)}
+            onEdit={() => { setActiveDeckMenuId(null); if (selectedDeck) { navigation.navigate('DeckEdit', { deck: selectedDeck }); } }}
+            onToggleFavorite={async () => {
+              if (!selectedDeck) return;
+              if (isFavorite) {
+                await handleRemoveFavoriteDeck(selectedDeck.id);
+              } else {
+                await handleAddFavoriteDeck(selectedDeck.id);
+              }
+              setActiveDeckMenuId(null);
+            }}
+            onDelete={() => { if (selectedDeck) { handleDeleteDeck(selectedDeck.id); } }}
+          />
+        );
+      })()}
     </View>
   );
 }

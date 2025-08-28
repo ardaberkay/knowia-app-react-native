@@ -11,7 +11,6 @@ import CategoryDeckListScreen from '../screens/CategoryDeckListScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import { useTheme } from '../theme/theme';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import SwipeDeckScreen from '../screens/SwipeDeckScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import ProfileAvatarButton from '../components/ProfileAvatarButton';
@@ -26,6 +25,7 @@ import ChapterCardsScreen from '../screens/ChapterCardsScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { Iconify } from 'react-native-iconify';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -69,19 +69,20 @@ function MainTabs() {
           justifyContent: 'center',
         },
         tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
+          let homeIcon;
           if (route.name === 'Home') {
-            iconName = focused ? 'home' : 'home-outline';
+            homeIcon = focused ? 'solar:home-smile-bold' : 'solar:home-angle-broken';
           } else if (route.name === 'Create') {
-            iconName = focused ? 'plus-circle' : 'plus-circle-outline';
+            homeIcon = focused ? 'fluent:note-add-20-filled' : 'fluent:note-add-20-regular';
           } else if (route.name === 'Library') {
-            iconName = 'bookshelf';
+            homeIcon = focused ? 'solar:library-bold-duotone' : 'solar:library-line-duotone';
           } else if (route.name === 'Profile') {
-            iconName = focused ? 'account-circle' : 'account-circle-outline';
+            homeIcon = focused ? 'solar:user-bold' : 'solar:user-broken';
           }
+
           return (
-            <MaterialCommunityIcons
-              name={iconName}
+            <Iconify
+              icon={homeIcon}
               size={28}
               color={color}
               style={{

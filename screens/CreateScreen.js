@@ -66,41 +66,41 @@ export default function CreateScreen() {
     >
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
-          <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
+          <View style={[styles.inputCard, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow }]}>
             <View style={styles.labelRow}>
               <Ionicons name="book" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t('create.name', 'Deste Adı')} *</Text>
+              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.name', 'Deste Adı')} *</Text>
             </View>
             <TextInput
-              style={[styles.input, typography.styles.body, {color: colors.text}]}
+              style={[styles.input, typography.styles.body, { color: colors.text }]}
               placeholder={t('create.nameExam', 'Örn: İngilizce')}
               placeholderTextColor={colors.muted}
               value={name}
               onChangeText={setName}
             />
           </View>
-          <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
+          <View style={[styles.inputCard, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow }]}>
             <View style={styles.labelRow}>
               <Ionicons name="swap-horizontal" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t('create.toName', 'Karşılığı')}</Text>
+              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.toName', 'Karşılığı')}</Text>
               <Text style={[styles.optional, typography.styles.caption, { color: colors.muted }]}> ({t('create.optional', 'opsiyonel')})</Text>
             </View>
             <TextInput
-              style={[styles.input, typography.styles.body, {color: colors.text}]}
+              style={[styles.input, typography.styles.body, { color: colors.text }]}
               placeholder={t('create.toNameExam', 'Örn: Türkçe')}
               placeholderTextColor={colors.muted}
               value={toName}
               onChangeText={setToName}
             />
           </View>
-          <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
+          <View style={[styles.inputCard, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow }]}>
             <View style={styles.labelRow}>
               <Ionicons name="document-text" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t('create.description', 'Açıklama')}</Text>
+              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.description', 'Açıklama')}</Text>
               <Text style={[styles.optional, typography.styles.caption, { color: colors.muted }]}> ({t('create.optional', 'opsiyonel')})</Text>
             </View>
             <TextInput
-              style={[styles.input, typography.styles.body, { height: 120, textAlignVertical: 'top', color: colors.text}]}
+              style={[styles.input, typography.styles.body, { height: 120, textAlignVertical: 'top', color: colors.text }]}
               placeholder={t('create.descriptionExam', 'Deste hakkında açıklama...')}
               placeholderTextColor={colors.muted}
               value={description}
@@ -158,6 +158,14 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
     overflow: 'hidden',
+
+  },
+
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+    gap: 8,
   },
 
   input: {
@@ -173,7 +181,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 14,
     marginHorizontal: 18,
-    marginTop: 70,
+    marginTop: "auto",
   },
   favButtonModern: {
     flex: 1,

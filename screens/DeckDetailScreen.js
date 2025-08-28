@@ -8,7 +8,8 @@ import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+ 
+import { Iconify } from 'react-native-iconify';
 import { Alert as RNAlert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -298,7 +299,7 @@ export default function DeckDetailScreen({ route, navigation }) {
           onPress={() => setMenuVisible(true)}
           style={{ marginRight: 8 }}
         >
-          <MaterialCommunityIcons name="dots-horizontal" size={28} color={colors.text} />
+          <Iconify icon="iconamoon:menu-kebab-horizontal" size={28} color={colors.text} />
         </TouchableOpacity>
       ),
     });
@@ -405,7 +406,7 @@ export default function DeckDetailScreen({ route, navigation }) {
         {/* Açıklama Kutusu (Glassmorphism) */}
         <View style={[styles.infoCardGlass, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow, width: '100%', maxWidth: 440, alignSelf: 'center', height: 140 }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-            <MaterialCommunityIcons name="information-outline" size={20} color={colors.buttonColor} style={{ marginRight: 6 }} />
+            <Iconify icon="mage:checklist-note" size={20} color={colors.buttonColor} style={{ marginRight: 6 }} />
             <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.text }]}>{t('deckDetail.details', 'Detaylar')}</Text>
           </View>
           {editMode ? (
@@ -436,11 +437,11 @@ export default function DeckDetailScreen({ route, navigation }) {
         <View style={[styles.infoCardGlass, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow, width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <MaterialCommunityIcons name="chart-bar" size={20} color={colors.buttonColor} style={{ marginRight: 6 }} />
+              <Iconify icon="solar:chart-2-bold-duotone" size={20} color={colors.buttonColor} style={{ marginRight: 6 }} />
               <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.text }]}>{t('deckDetail.progress', 'İlerleme')}</Text>
             </View>
             <View style={[styles.statBadgeModern, { marginLeft: 8 }]}>
-              <Ionicons name="layers" size={18} color="#fff" style={{ marginRight: 4 }} />
+              <Iconify icon="ri:stack-fill" size={18} color="#fff" style={{ marginRight: 4 }} />
               <Text style={[typography.styles.body, styles.statBadgeTextModern]}>{deck.card_count || 0}</Text>
             </View>
           </View>
@@ -462,7 +463,7 @@ export default function DeckDetailScreen({ route, navigation }) {
           <TouchableOpacity onPress={() => navigation.navigate('DeckCards', { deck })} activeOpacity={0.8} style={styles.sectionButton}>
             <View style={[styles.cardsHeaderRow, { justifyContent: 'space-between', alignItems: 'center' }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Ionicons name="albums-outline" size={22} color={colors.buttonColor} style={{ marginRight: 8 }} />
+                <Iconify icon="ph:cards-three" size={22} color={colors.buttonColor} style={{ marginRight: 8 }} />
                 <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.text }]}>{t('deckDetail.cards', 'Kartlar')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={26} color={colors.headText} />
@@ -474,7 +475,7 @@ export default function DeckDetailScreen({ route, navigation }) {
           <TouchableOpacity onPress={() => navigation.navigate('Chapters', { deck })} activeOpacity={0.8} style={styles.sectionButton}>
             <View style={[styles.cardsHeaderRow, { justifyContent: 'space-between', alignItems: 'center' }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <MaterialCommunityIcons name="book-open-variant" size={22} color={colors.buttonColor} style={{ marginRight: 8 }} />
+                <Iconify icon="streamline-flex:module-puzzle-2" size={22} color={colors.buttonColor} style={{ marginRight: 8 }} />
                 <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.text }]}>{t('deckDetail.chapters', 'Bölümler')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={26} color={colors.headText} />
@@ -487,10 +488,10 @@ export default function DeckDetailScreen({ route, navigation }) {
           <View style={[styles.infoCardGlass, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow, width: '100%', maxWidth: 440, alignSelf: 'center', paddingVertical: 10 }]}>
             <View style={styles.switchRow}>
               <View style={styles.labelRow}>
-                <Ionicons name="people" size={20} color="#F98A21" style={styles.labelIcon} />
+                <Iconify icon="fluent:people-community-20-filled" size={20} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('deckDetail.shareWithCommunity', 'Toplulukla Paylaş')}</Text>
                 <TouchableOpacity onPress={handleShowShareDetails} activeOpacity={0.7} style={{ marginLeft: 8, marginTop: 2 }}>
-                  <MaterialCommunityIcons name="information-outline" size={20} color={colors.muted} />
+                  <Iconify icon="material-symbols:info-outline" size={20} color={colors.muted} />
                 </TouchableOpacity>
               </View>
               <Switch
@@ -511,14 +512,14 @@ export default function DeckDetailScreen({ route, navigation }) {
             style={[styles.favButtonModern, { flex: 1, minWidth: 0, marginRight: 10 }]}
             onPress={() => navigation.navigate('AddCard', { deck })}
           >
-            <MaterialCommunityIcons name="plus" size={22} color={colors.buttonColor} style={{ marginRight: 6 }} />
+            <Iconify icon="streamline-ultimate:card-add-1-bold" size={22} color={colors.buttonColor} style={{ marginRight: 6 }} />
             <Text style={[styles.favButtonTextModern, typography.styles.button, { color: colors.buttonColor }]}>{t('deckDetail.addCard', 'Kart Ekle')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.startButtonModern, { flex: 1, minWidth: 0, borderWidth: 1, borderColor: colors.buttonBorder || 'transparent' }]}
             onPress={handleStart}
           >
-            <Ionicons name="play" size={20} color={colors.buttonText} style={{ marginRight: 6 }} />
+            <Iconify icon="mingcute:google-play-fill" size={20} color={colors.buttonText} style={{ marginRight: 6 }} />
             <Text style={[styles.startButtonTextModern, typography.styles.button, { color: colors.buttonText }]}>{t('deckDetail.start', 'Başla')}</Text>
           </TouchableOpacity>
         </View>
@@ -540,13 +541,13 @@ export default function DeckDetailScreen({ route, navigation }) {
           {/* Desteyi Düzenle sadece sahibi ise */}
           {currentUserId && deck.user_id === currentUserId && (
             <TouchableOpacity style={[styles.sheetItem, { borderBottomColor: colors.border }]} onPress={() => { setMenuVisible(false); navigation.navigate('DeckEdit', { deck }); }}>
-              <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
+              <Iconify icon="akar-icons:edit" size={22} color={colors.text} style={{ marginRight: 12 }} />
               <Text style={[typography.styles.body, styles.sheetItemText, { color: colors.text }]}>{t('deckDetail.edit', 'Desteyi Düzenle')}</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity style={[styles.sheetItem, { borderBottomColor: colors.border }]} onPress={() => { setMenuVisible(false); handleAddFavorite(); }}>
-            <MaterialCommunityIcons
-              name={isFavorite ? 'heart' : 'heart-outline'}
+            <Iconify
+              icon={isFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
               size={22}
               color={isFavorite ? '#F98A21' : colors.text}
               style={{ marginRight: 12 }}
@@ -556,11 +557,11 @@ export default function DeckDetailScreen({ route, navigation }) {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.sheetItem, { borderBottomColor: colors.border }]} onPress={() => { setMenuVisible(false); /* Deste Sil fonksiyonu */ }}>
-            <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
+            <Iconify icon="mdi:garbage" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
             <Text style={[typography.styles.body, styles.sheetItemText, { color: '#E74C3C' }]}>{t('deckDetail.deleteDeck', 'Desteyi Sil')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.sheetItem, { borderBottomColor: 'transparent' }]} onPress={() => setMenuVisible(false)}>
-            <MaterialCommunityIcons name="close" size={22} color={colors.text} style={{ marginRight: 12 }} />
+            <Iconify icon="ic:round-plus" size={22} color={colors.text} style={{ marginRight: 12 }} />
             <Text style={[typography.styles.body, styles.sheetItemText, { color: colors.text }]}>{t('deckDetail.close', 'Kapat')}</Text>
           </TouchableOpacity>
         </View>

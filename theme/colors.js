@@ -1,6 +1,5 @@
 export const lightColors = {
     background: '#FFFDF9',
-    cardBackground: '#F5F3EF',
     buttonColor: '#F98A21',
     secondary: '#2F80ED',
     text: '#1C1C1C',
@@ -25,19 +24,25 @@ export const lightColors = {
     headText: '#F98A21',
     divider: '#FFFFFF',
     // Kart renkleri
-    cardBackground: '#E8E4DD',
+    cardBackground: '#FFF8F0',
     cardQuestionText: '#1C1C1C',
     cardAnswerText: '#4A4A4A',
     cardDivider: '#F98A21',
     cardButtonBackground: '#ffffff',
     progressBar: '#ffe0c3',
     foldedCorner: '#f9b97a',
-    progressBarSwipe: '#ffe0c3'
+    progressBarSwipe: '#ffe0c3',
+    cardBorder: '#E9E9E9',
+    shadowColor: "#000",
+    shadowOpacity: 0.08,   // Hafif gölge
+    shadowRadius: 8,       // Gölge yumuşaklığı
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+    iconBackground: 'rgba(0,0,0,0.05)',
 };
 
 export const darkColors = {
     background: '#1C1C1C',
-    cardBackground: '#2C2C2C',
     buttonColor: '#F98A21',
     secondary: '#2F80ED', 
     text: '#FFFFFF',
@@ -62,12 +67,20 @@ export const darkColors = {
     headText: '#F0F0F0',
     divider: '#F98A21',
     // Kart renkleri
-    cardBackground: '#3A3A3A',
+    cardBackground: '#2C2C2C',
     cardQuestionText: '#FFFFFF',
     cardAnswerText: '#E0E0E0',
     cardDivider: '#F98A21',
     cardButtonBackground: '#2C2C2C',
     progressBar: '#4A4A4A',
     foldedCorner: '#F98A21',
-    progressBarSwipe: '#FFFFFF'
+    progressBarSwipe: '#FFFFFF',
+    cardBorder: '#333333',
+    shadowColor: "#000",
+    shadowOpacity: 0.3,    // Light Mode'a göre biraz daha belirgin
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+    iconBackground: 'rgba(255, 255, 255, 0.1)',
+
 };
