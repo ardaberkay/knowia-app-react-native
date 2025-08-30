@@ -299,7 +299,7 @@ export default function DeckDetailScreen({ route, navigation }) {
           onPress={() => setMenuVisible(true)}
           style={{ marginRight: 8 }}
         >
-          <Iconify icon="iconamoon:menu-kebab-horizontal" size={28} color={colors.text} />
+          <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={28} color={colors.text} />
         </TouchableOpacity>
       ),
     });
@@ -321,19 +321,15 @@ export default function DeckDetailScreen({ route, navigation }) {
   };
 
   return (
-    <LinearGradient
-      colors={colors.deckGradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.bgGradient}
-    >
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    
       <View style={{ flex: 1, paddingHorizontal: 18 }}>
-        <View style={[styles.infoCardGlass, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow, alignItems: 'center', marginTop: 12, paddingVertical: 15, width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
+        <View style={[styles.infoCardGlass, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, shadowColor: colors.shadowColor, shadowOffset: colors.shadowOffset, shadowOpacity: colors.shadowOpacity, shadowRadius: colors.shadowRadius, elevation: colors.elevation, alignItems: 'center', marginTop: 12, paddingVertical: 15, width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
           <View style={{ width: '100%' }}>
             {editMode ? (
               <>
                 <TextInput
-                  style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', fontWeight: 'bold', fontSize: 24, color: colors.text, backgroundColor: '#fff8f0', borderRadius: 8, marginBottom: 4, padding: 6 }]}
+                  style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', fontWeight: 'bold', fontSize: 24, color: colors.cardQuestionText, backgroundColor: '#fff8f0', borderRadius: 8, marginBottom: 4, padding: 6 }]}
                   value={editName}
                   onChangeText={setEditName}
                   placeholder="Deste Adı"
@@ -342,7 +338,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                 <View style={{ width: '100%', alignItems: 'center' }}>
                   <View style={styles.dividerLine} />
                   <TextInput
-                    style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', marginTop: 2, color: colors.text, backgroundColor: '#fff8f0', borderRadius: 8, padding: 6 }]}
+                    style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', marginTop: 2, color: colors.cardAnswerText, backgroundColor: '#fff8f0', borderRadius: 8, padding: 6 }]}
                     value={editToName}
                     onChangeText={setEditToName}
                     placeholder="Hedef Dil/Alan (isteğe bağlı)"
@@ -352,11 +348,11 @@ export default function DeckDetailScreen({ route, navigation }) {
               </>
             ) : (
               <>
-                <Text style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
+                <Text style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', color: colors.cardQuestionText }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
                 {deck.to_name && (
                   <View style={{ width: '100%', alignItems: 'center' }}>
-                    <View style={[styles.dividerLine, { backgroundColor: colors.buttonColor }]} />
-                    <Text style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', marginTop: 2, color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
+                    <View style={[styles.dividerLine, { backgroundColor: colors.cardDivider }]} />
+                    <Text style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', marginTop: 2, color: colors.cardAnswerText }]} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
                   </View>
                 )}
               </>
@@ -404,15 +400,15 @@ export default function DeckDetailScreen({ route, navigation }) {
           )}
         </View>
         {/* Açıklama Kutusu (Glassmorphism) */}
-        <View style={[styles.infoCardGlass, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow, width: '100%', maxWidth: 440, alignSelf: 'center', height: 140 }]}>
+        <View style={[styles.infoCardGlass, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, shadowColor: colors.shadowColor, shadowOffset: colors.shadowOffset, shadowOpacity: colors.shadowOpacity, shadowRadius: colors.shadowRadius, elevation: colors.elevation, width: '100%', maxWidth: 440, alignSelf: 'center', height: 140 }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
             <Iconify icon="mage:checklist-note" size={20} color={colors.buttonColor} style={{ marginRight: 6 }} />
-            <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.text }]}>{t('deckDetail.details', 'Detaylar')}</Text>
+            <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.cardQuestionText }]}>{t('deckDetail.details', 'Detaylar')}</Text>
           </View>
           {editMode ? (
             <View style={{ flex: 1 }}>
               <TextInput
-                style={[styles.deckDescription, typography.styles.body, { color: colors.text, backgroundColor: '#fff8f0', borderRadius: 8, padding: 8, minHeight: 40, flex: 1, textAlignVertical: 'top' }]}
+                style={[styles.deckDescription, typography.styles.body, { color: colors.cardQuestionText, backgroundColor: '#fff8f0', borderRadius: 8, padding: 8, minHeight: 40, flex: 1, textAlignVertical: 'top' }]}
                 value={editDescription}
                 onChangeText={setEditDescription}
                 placeholder="Deste açıklaması..."
@@ -423,22 +419,22 @@ export default function DeckDetailScreen({ route, navigation }) {
             </View>
           ) : deck.description && deck.description.trim().length > 0 ? (
             <ScrollView style={{ flex: 1 }} nestedScrollEnabled={true} showsVerticalScrollIndicator={true}>
-              <Text style={[styles.deckDescription, typography.styles.body, { color: colors.subtext }]}>{deck.description}</Text>
+              <Text style={[styles.deckDescription, typography.styles.body, { color: colors.cardAnswerText }]}>{deck.description}</Text>
             </ScrollView>
           ) : (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <Text style={[styles.deckDescription, typography.styles.body, { color: colors.muted, textAlign: 'center' }]}>
+              <Text style={[styles.deckDescription, typography.styles.body, { color: colors.cardAnswerText, textAlign: 'center' }]}>
                 {t('deckDetail.noDescription', 'Deste için detay verilmemiş.')}
               </Text>
             </View>
           )}
         </View>
         {/* İlerleme Kutusu (Glassmorphism) */}
-        <View style={[styles.infoCardGlass, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow, width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
+        <View style={[styles.infoCardGlass, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, shadowColor: colors.shadowColor, shadowOffset: colors.shadowOffset, shadowOpacity: colors.shadowOpacity, shadowRadius: colors.shadowRadius, elevation: colors.elevation, width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Iconify icon="solar:chart-2-bold-duotone" size={20} color={colors.buttonColor} style={{ marginRight: 6 }} />
-              <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.text }]}>{t('deckDetail.progress', 'İlerleme')}</Text>
+              <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.cardQuestionText }]}>{t('deckDetail.progress', 'İlerleme')}</Text>
             </View>
             <View style={[styles.statBadgeModern, { marginLeft: 8 }]}>
               <Iconify icon="ri:stack-fill" size={18} color="#fff" style={{ marginRight: 4 }} />
@@ -452,21 +448,21 @@ export default function DeckDetailScreen({ route, navigation }) {
             {progressLoading ? (
               <Text style={[styles.progressText, typography.styles.caption, { color: colors.muted }]}>{t('common.loading', 'Yükleniyor...')}</Text>
             ) : progress === 0 ? (
-              <Text style={[styles.progressText, typography.styles.caption, { color: colors.muted }]}>{t('common.notStarted', 'Henüz çalışılmadı')}</Text>
+              <Text style={[styles.progressText, typography.styles.caption, { color: colors.cardAnswerText }]}>{t('common.notStarted', 'Henüz çalışılmadı')}</Text>
             ) : (
-              <Text style={[typography.styles.body, styles.progressText, { color: colors.buttonColor }]}>%{Math.round(progress * 100)} {t('deckDetail.completed', 'Tamamlandı')}</Text>
+              <Text style={[typography.styles.body, styles.progressText, { color: colors.cardQuestionText }]}>%{Math.round(progress * 100)} {t('deckDetail.completed', 'Tamamlandı')}</Text>
             )}
           </View>
         </View>
         {/* Kartlar ve Bölümler */}
-        <View style={[styles.cardsHeaderCard, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow }]}>
+        <View style={[styles.cardsHeaderCard,  { backgroundColor:  colors.cardBackground, borderColor: colors.cardBorder, shadowColor: colors.shadowColor, shadowOffset: colors.shadowOffset, shadowOpacity: colors.shadowOpacity, shadowRadius: colors.shadowRadius, elevation: colors.elevation }]}>
           <TouchableOpacity onPress={() => navigation.navigate('DeckCards', { deck })} activeOpacity={0.8} style={styles.sectionButton}>
             <View style={[styles.cardsHeaderRow, { justifyContent: 'space-between', alignItems: 'center' }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Iconify icon="ph:cards-three" size={22} color={colors.buttonColor} style={{ marginRight: 8 }} />
-                <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.text }]}>{t('deckDetail.cards', 'Kartlar')}</Text>
+                <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.cardQuestionText }]}>{t('deckDetail.cards', 'Kartlar')}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={26} color={colors.headText} />
+              <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={23} color={colors.headText} />
             </View>
           </TouchableOpacity>
           
@@ -476,20 +472,20 @@ export default function DeckDetailScreen({ route, navigation }) {
             <View style={[styles.cardsHeaderRow, { justifyContent: 'space-between', alignItems: 'center' }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Iconify icon="streamline-flex:module-puzzle-2" size={22} color={colors.buttonColor} style={{ marginRight: 8 }} />
-                <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.text }]}>{t('deckDetail.chapters', 'Bölümler')}</Text>
+                <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.cardQuestionText }]}>{t('deckDetail.chapters', 'Bölümler')}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={26} color={colors.headText} />
+              <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={23} color={colors.headText} />
             </View>
           </TouchableOpacity>
         </View>
         <View style={{ height: 12 }} />
         {/* Toplulukla Paylaş Kutusu (Glassmorphism) */}
         {currentUserId && deck.user_id === currentUserId && (
-          <View style={[styles.infoCardGlass, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow, width: '100%', maxWidth: 440, alignSelf: 'center', paddingVertical: 10 }]}>
+          <View style={[styles.infoCardGlass, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, shadowColor: colors.shadowColor, shadowOffset: colors.shadowOffset, shadowOpacity: colors.shadowOpacity, shadowRadius: colors.shadowRadius, elevation: colors.elevation, width: '100%', maxWidth: 440, alignSelf: 'center', paddingVertical: 10 }]}>
             <View style={styles.switchRow}>
               <View style={styles.labelRow}>
                 <Iconify icon="fluent:people-community-20-filled" size={20} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('deckDetail.shareWithCommunity', 'Toplulukla Paylaş')}</Text>
+                <Text style={[styles.label, typography.styles.body, { color: colors.cardQuestionText }]}>{t('deckDetail.shareWithCommunity', 'Toplulukla Paylaş')}</Text>
                 <TouchableOpacity onPress={handleShowShareDetails} activeOpacity={0.7} style={{ marginLeft: 8, marginTop: 2 }}>
                   <Iconify icon="material-symbols:info-outline" size={20} color={colors.muted} />
                 </TouchableOpacity>
@@ -561,12 +557,12 @@ export default function DeckDetailScreen({ route, navigation }) {
             <Text style={[typography.styles.body, styles.sheetItemText, { color: '#E74C3C' }]}>{t('deckDetail.deleteDeck', 'Desteyi Sil')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.sheetItem, { borderBottomColor: 'transparent' }]} onPress={() => setMenuVisible(false)}>
-            <Iconify icon="ic:round-plus" size={22} color={colors.text} style={{ marginRight: 12 }} />
+            <Iconify icon="material-symbols:close-rounded" size={22} color={colors.text} style={{ marginRight: 12 }} />
             <Text style={[typography.styles.body, styles.sheetItemText, { color: colors.text }]}>{t('deckDetail.close', 'Kapat')}</Text>
           </TouchableOpacity>
         </View>
       </Modal>
-    </LinearGradient>
+      </View>
   );
 }
 
@@ -890,6 +886,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginHorizontal: 18,
     marginBottom: 10,
+    borderWidth: 1,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.10,
     shadowRadius: 8,
@@ -1005,7 +1002,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 440,
     alignSelf: 'center',
-
+    borderWidth: 1,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.10,
     shadowRadius: 8,

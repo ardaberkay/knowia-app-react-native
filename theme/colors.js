@@ -32,7 +32,7 @@ export const lightColors = {
     progressBar: '#ffe0c3',
     foldedCorner: '#f9b97a',
     progressBarSwipe: '#ffe0c3',
-    cardBorder: '#E9E9E9',
+    cardBorder: '#EEEEEE',
     shadowColor: "#000",
     shadowOpacity: 0.08,   // Hafif gölge
     shadowRadius: 8,       // Gölge yumuşaklığı

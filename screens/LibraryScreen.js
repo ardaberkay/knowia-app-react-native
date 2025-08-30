@@ -9,6 +9,7 @@ import { getFavoriteDecks, getFavoriteCards } from '../services/FavoriteService'
 import { supabase } from '../lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
+import SegmentedControl from '@react-native-segmented-control/segmented-control';
 
 export default function LibraryScreen() {
   const { colors, isDark } = useTheme();
@@ -44,6 +45,15 @@ export default function LibraryScreen() {
   ];
 
   const DROPDOWN_WIDTH = 140; // Dropdown menü genişliği
+
+  // Segmented Control için tab değerleri
+  const tabValues = [t('library.myDecks', 'Destelerim'), t('library.favorites', 'Favorilerim')];
+
+  // Segmented Control değişikliği için handler
+  const handleTabChange = (selectedIndex) => {
+    const newTab = selectedIndex === 0 ? 'myDecks' : 'favorites';
+    setActiveTab(newTab);
+  };
 
   useEffect(() => {
     const fetchDecks = async () => {
@@ -555,20 +565,25 @@ export default function LibraryScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }] }>
-      {/* Sekmeler */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'myDecks' && [styles.activeTab, { backgroundColor: colors.libraryTab }]]}
-          onPress={() => setActiveTab('myDecks')}
-        >
-          <Text style={[styles.tabText, activeTab === 'myDecks' && styles.activeTabText]}>{t('library.myDecks', 'Destelerim')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'favorites' && [styles.activeTab, { backgroundColor: colors.libraryTab }]]}
-          onPress={() => setActiveTab('favorites')}
-        >
-          <Text style={[styles.tabText, activeTab === 'favorites' && styles.activeTabText]}>{t('library.favorites', 'Favorilerim')}</Text>
-        </TouchableOpacity>
+      {/* Segmented Control Sekmeler */}
+      <View style={styles.segmentedControlContainer}>
+        <SegmentedControl
+          values={tabValues}
+          selectedIndex={activeTab === 'myDecks' ? 0 : 1}
+          onChange={(event) => {
+            handleTabChange(event.nativeEvent.selectedSegmentIndex);
+          }}
+          style={styles.segmentedControl}
+          appearance="light"
+          fontStyle={{ fontSize: 16, fontWeight: '600' }}
+          activeFontStyle={{ fontSize: 16, fontWeight: '700' }}
+          tintColor={colors.libraryTab || '#F98A21'}
+          backgroundColor={colors.background}
+          activeTextColor={colors.background}
+          inactiveTextColor={colors.text || '#666'}
+          borderColor={colors.cardBorder}
+          enableMoments={false}
+        />
       </View>
       {/* Arama ve Filtre Butonu */}
       <View style={styles.searchBarContainer}>
@@ -703,29 +718,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  tabContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 8,
+  segmentedControlContainer: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
     backgroundColor: 'transparent',
   },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  activeTab: {
-    borderBottomColor: '#F98A21',
-  },
-  tabText: {
-    fontSize: 16,
-    color: '#888',
-    fontWeight: '600',
-  },
-  activeTabText: {
-    color: '#F98A21',
+  segmentedControl: {
+    borderWidth: 1,
+    borderColor: '#444444',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    height: 44,
+    marginHorizontal: '15%',
+    borderRadius: 35,
   },
   decksContainer: {
     paddingHorizontal: 16,
@@ -960,6 +968,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  
+
 
 }); 

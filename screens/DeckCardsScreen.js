@@ -1,15 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ScrollView, Image, Platform, BackHandler, Modal, Alert, Dimensions, Animated, Easing, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ScrollView, Platform, BackHandler, Alert, Dimensions, Animated, Easing, ActivityIndicator } from 'react-native';
 import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Iconify } from 'react-native-iconify';
+
 import { supabase } from '../lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import AddEditCardInlineForm from '../components/AddEditCardInlineForm';
 import { useTranslation } from 'react-i18next';
 import CardListItem from '../components/CardListItem';
 import SearchBar from '../components/SearchBar';
+import FilterIcon from '../components/FilterIcon';
+import CardDetailView from '../components/CardDetailView';
+import CardActionMenu from '../components/CardActionMenu';
 
 export default function DeckCardsScreen({ route, navigation }) {
   const { deck } = route.params;
@@ -24,9 +29,6 @@ export default function DeckCardsScreen({ route, navigation }) {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [cardMenuVisible, setCardMenuVisible] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
-  const filterIconRef = useRef(null);
-  const [filterModalVisible, setFilterModalVisible] = useState(false);
-  const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const spinValue = useRef(new Animated.Value(0)).current;
@@ -126,7 +128,7 @@ export default function DeckCardsScreen({ route, navigation }) {
       navigation.setOptions({
         headerRight: () => (
           <TouchableOpacity onPress={() => setCardMenuVisible(true)} style={{ marginRight: 8 }}>
-            <MaterialCommunityIcons name="dots-horizontal" size={28} color={colors.text} />
+            <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={28} color={colors.text} />
           </TouchableOpacity>
         ),
       });
@@ -197,162 +199,50 @@ export default function DeckCardsScreen({ route, navigation }) {
         onCancel={() => setEditMode(false)}
       />
     ) : selectedCard ? (
-      <LinearGradient
-        colors={colors.deckGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ flex: 1 }}
-      >
-                 <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 18, paddingBottom: 8, flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-          {/* Görsel */}
-          {selectedCard?.image ? (
-            <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
-              <View style={detailStyles.labelRow}>
-                <Ionicons name="image" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.image", "Kart Görseli")}</Text>
-          </View>
-              <View style={{ alignItems: 'center', marginBottom: 8 }}>
-                <Image source={{ uri: selectedCard.image }} style={detailStyles.cardImage} />
-          </View>
-            </View>
-              ) : null}
-                {/* Soru */}
-          <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
-            <View style={detailStyles.labelRow}>
-              <Ionicons name="chatbubble-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-              <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.question", "Soru")}</Text>
-                  </View>
-            <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard?.question}</Text>
-          </View>
-                {/* Cevap */}
-                {selectedCard?.answer ? (
-            <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
-              <View style={detailStyles.labelRow}>
-                <Ionicons name="checkmark-circle-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.answer", "Cevap")}</Text>
-                    </View>
-              <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard.answer}</Text>
-            </View>
-                ) : null}
-                {/* Örnek */}
-                {selectedCard?.example ? (
-            <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
-              <View style={detailStyles.labelRow}>
-                <Ionicons name="bulb-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.example", "Örnek")}</Text>
-                    </View>
-              <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard.example}</Text>
-            </View>
-                ) : null}
-                {/* Not */}
-                {selectedCard?.note ? (
-            <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
-              <View style={detailStyles.labelRow}>
-                <Ionicons name="document-text-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.note", "Not")}</Text>
-              </View>
-              <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard.note}</Text>
-            </View>
-          ) : null}
-                {/* Oluşturulma tarihi - ScrollView içinde, sayfanın alt kısmında */}
-                {selectedCard?.created_at ? (
-                  <View style={{ paddingHorizontal: 18, marginTop: 'auto', marginBottom: 24 }}>
-                    <Text style={[typography.styles.caption, { color: colors.muted, textAlign: 'center', fontSize: 14 }]}>
-                      {t("cardDetail.createdAt", "Oluşturulma Tarihi")} {new Date(selectedCard.created_at).toLocaleString('tr-TR')}
-                    </Text>
-                  </View>
-                ) : null}
-
-            </ScrollView>
-            {/* Kart Detay Hamburger Menü Modal */}
-            <Modal
-              visible={cardMenuVisible}
-              animationType="slide"
-              transparent
-              onRequestClose={() => setCardMenuVisible(false)}
-            >
-              <TouchableOpacity
-                style={{ flex: 1, backgroundColor: 'transparent' }}
-                activeOpacity={1}
-                onPress={() => setCardMenuVisible(false)}
-              />
-              <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.background, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingTop: 12, paddingBottom: 32, paddingHorizontal: 24, elevation: 16 }}>
-                <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 }} />
-                {/* Kartı Düzenle sadece kendi kartıysa */}
-                {currentUserId && deck.user_id === currentUserId && (
-                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
-                onPress={() => { setCardMenuVisible(false); setEditMode(true); }}
-                  >
-                    <MaterialCommunityIcons name="pencil" size={22} color={colors.text} style={{ marginRight: 12 }} />
-                    <Text style={[typography.styles.body, { fontSize: 16, fontWeight: '500', color: colors.text }]}>{t("cardDetail.edit", "Kartı Düzenle")}</Text>
-                  </TouchableOpacity>
-                )}
-                {/* Favorilere Ekle/Çıkar */}
-                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
-                  onPress={async () => {
-                    setFavLoading(true);
-                    try {
-                      const { data: { user } } = await supabase.auth.getUser();
-                      if (favoriteCards.includes(selectedCard.id)) {
-                        await supabase
-                          .from('favorite_cards')
-                          .delete()
-                          .eq('user_id', user.id)
-                          .eq('card_id', selectedCard.id);
-                        setFavoriteCards(favoriteCards.filter(id => id !== selectedCard.id));
-                      } else {
-                        await supabase
-                          .from('favorite_cards')
-                          .insert({ user_id: user.id, card_id: selectedCard.id });
-                        setFavoriteCards([...favoriteCards, selectedCard.id]);
-                      }
-                    } catch (e) {}
-                    setFavLoading(false);
-                    setCardMenuVisible(false);
-                  }}
-                >
-                  <MaterialCommunityIcons
-                    name={favoriteCards.includes(selectedCard.id) ? 'heart' : 'heart-outline'}
-                    size={22}
-                    color={favoriteCards.includes(selectedCard.id) ? '#F98A21' : colors.text}
-                    style={{ marginRight: 12 }}
-                  />
-                  <Text style={[typography.styles.body, { fontSize: 16, fontWeight: '500', color: favoriteCards.includes(selectedCard.id) ? '#F98A21' : colors.text }]}>
-                    {favoriteCards.includes(selectedCard.id) ? t("cardDetail.removeFavorite", "Favorilerden Çıkar") : t("cardDetail.addFavorite", "Favorilere Ekle")}
-                  </Text>
-                </TouchableOpacity>
-                {/* Kartı Sil sadece kendi kartıysa */}
-                {currentUserId && deck.user_id === currentUserId && (
-                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
-                    onPress={async () => {
-                      Alert.alert(t("cardDetail.deleteConfirmation", "Kart Silinsin mi?"), t("cardDetail.deleteConfirm", "Kartı silmek istediğinize emin misiniz?"), [
-                        { text: t("cardDetail.cancel", "İptal"), style: 'cancel' },
-                        {
-                          text: t('cardDetail.delete', 'Sil'), style: 'destructive', onPress: async () => {
-                            await supabase
-                              .from('cards')
-                              .delete()
-                              .eq('id', selectedCard.id);
-                            setCards(cards.filter(c => c.id !== selectedCard.id));
-                            setOriginalCards(originalCards.filter(c => c.id !== selectedCard.id));
-                            setSelectedCard(null);
-                            setCardMenuVisible(false);
-                          }
-                        }
-                      ]);
-                    }}
-                  >
-                    <MaterialCommunityIcons name="delete" size={22} color="#E74C3C" style={{ marginRight: 12 }} />
-                    <Text style={[typography.styles.body, { fontSize: 16, fontWeight: '500', color: '#E74C3C' }]}>{t("cardDetail.deleteDeck", "Kartı Sil")}</Text>
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16 }} onPress={() => setCardMenuVisible(false)}>
-                  <MaterialCommunityIcons name="close" size={22} color={colors.text} style={{ marginRight: 12 }} />
-                  <Text style={[typography.styles.body, { fontSize: 16, fontWeight: '500', color: colors.text }]}>{t("cardDetail.close", "Kapat")}</Text>
-                </TouchableOpacity>
-              </View>
-            </Modal>
-      </LinearGradient>
+      <>
+        <CardDetailView card={selectedCard} />
+        <CardActionMenu
+          visible={cardMenuVisible}
+          onClose={() => setCardMenuVisible(false)}
+          card={selectedCard}
+          deck={deck}
+          currentUserId={currentUserId}
+          isFavorite={favoriteCards.includes(selectedCard.id)}
+          onToggleFavorite={async () => {
+            setFavLoading(true);
+            try {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (favoriteCards.includes(selectedCard.id)) {
+                await supabase
+                  .from('favorite_cards')
+                  .delete()
+                  .eq('user_id', user.id)
+                  .eq('card_id', selectedCard.id);
+                setFavoriteCards(favoriteCards.filter(id => id !== selectedCard.id));
+              } else {
+                await supabase
+                  .from('favorite_cards')
+                  .insert({ user_id: user.id, card_id: selectedCard.id });
+                setFavoriteCards([...favoriteCards, selectedCard.id]);
+              }
+            } catch (e) {}
+            setFavLoading(false);
+            setCardMenuVisible(false);
+          }}
+          onEdit={() => setEditMode(true)}
+          onDelete={async () => {
+            await supabase
+              .from('cards')
+              .delete()
+              .eq('id', selectedCard.id);
+            setCards(cards.filter(c => c.id !== selectedCard.id));
+            setOriginalCards(originalCards.filter(c => c.id !== selectedCard.id));
+            setSelectedCard(null);
+            setCardMenuVisible(false);
+          }}
+          favLoading={favLoading}
+        />
+      </>
     ) : (
              <View style={{ flex: 1, backgroundColor: colors.background, paddingHorizontal: 18, paddingTop: 18 }}>
         {!selectedCard && (
@@ -365,59 +255,13 @@ export default function DeckCardsScreen({ route, navigation }) {
                 placeholder={t("common.searchPlaceholder", "Kartlarda ara...")}
                 style={{ marginRight: 0, marginBottom: 0 }}
               />
-              <TouchableOpacity
-                ref={filterIconRef}
-                style={[styles.cardsFilterIconButton, { marginLeft: 8 }]}
-                onPress={() => {
-                  if (filterIconRef.current) {
-                    filterIconRef.current.measureInWindow((x, y, width, height) => {
-                      setDropdownPos({ x, y, width, height });
-                      setFilterModalVisible(true);
-                    });
-                  }
-                }}
-              >
-                <Ionicons name="filter" size={24} color="#F98A21" />
-              </TouchableOpacity>
+              <FilterIcon
+                style={{ marginLeft: 8 }}
+                value={cardSort}
+                onChange={setCardSort}
+              />
             </View>
-            {/* Filter Modal */}
-            <Modal
-              visible={filterModalVisible}
-              transparent
-              animationType="fade"
-              onRequestClose={() => setFilterModalVisible(false)}
-            >
-              <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setFilterModalVisible(false)}>
-                <View style={{
-                  position: 'absolute',
-                  left: Math.max(8, dropdownPos.x + dropdownPos.width - 140),
-                  top: Platform.OS === 'android' ? dropdownPos.y + dropdownPos.height : dropdownPos.y + dropdownPos.height + 4,
-                  minWidth: 120,
-                  maxWidth: 140,
-                  backgroundColor: colors.background,
-                  borderRadius: 14,
-                  paddingVertical: 6,
-                  paddingHorizontal: 0,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.10,
-                  shadowRadius: 8,
-                  elevation: 8,
-                  borderWidth: 1,
-                  borderColor: '#F98A21',
-                }}>
-                  <TouchableOpacity onPress={() => { setCardSort('original'); setFilterModalVisible(false); }} style={{ paddingVertical: 8, paddingHorizontal: 14, backgroundColor: cardSort === 'original' ? '#F98A21' : 'transparent', borderRadius: 8 }}>
-                    <Text style={{ color: cardSort === 'original' ? '#fff' : colors.text, fontWeight: cardSort === 'original' ? 'bold' : 'normal', fontSize: 15 }}>{t('deckDetail.default', 'Varsayılan')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => { setCardSort('az'); setFilterModalVisible(false); }} style={{ paddingVertical: 8, paddingHorizontal: 14, backgroundColor: cardSort === 'az' ? '#F98A21' : 'transparent', borderRadius: 8 }}>
-                    <Text style={{ color: cardSort === 'az' ? '#fff' : colors.text, fontWeight: cardSort === 'az' ? 'bold' : 'normal', fontSize: 15 }}>A-Z</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => { setCardSort('fav'); setFilterModalVisible(false); }} style={{ paddingVertical: 8, paddingHorizontal: 14, backgroundColor: cardSort === 'fav' ? '#F98A21' : 'transparent', borderRadius: 8 }}>
-                    <Text style={{ color: cardSort === 'fav' ? '#fff' : colors.text, fontWeight: cardSort === 'fav' ? 'bold' : 'normal', fontSize: 15 }}>{t('deckDetail.fav', 'Favoriler')}</Text>
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            </Modal>
+            {/* Filter Modal is managed inside FilterIcon */}
           </>
         )}
         {/* Kartlar Listesi veya Detay */}
@@ -429,66 +273,7 @@ export default function DeckCardsScreen({ route, navigation }) {
               end={{ x: 1, y: 1 }}
               style={{ flex: 1 }}
             >
-                             <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 8, flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-                {/* Görsel */}
-                {selectedCard?.image ? (
-                  <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
-                    <View style={detailStyles.labelRow}>
-                      <Ionicons name="image" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                      <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.image", "Kart Görseli")}</Text>
-                    </View>
-                    <View style={{ alignItems: 'center', marginBottom: 8 }}>
-                      <Image source={{ uri: selectedCard.image }} style={detailStyles.cardImage} />
-                    </View>
-                  </View>
-                ) : null}
-                {/* Soru */}
-                <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
-                  <View style={detailStyles.labelRow}>
-                    <Ionicons name="help-circle-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                    <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.question", "Soru")} *</Text>
-                  </View>
-                  <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard?.question}</Text>
-                </View>
-                {/* Cevap */}
-                {selectedCard?.answer ? (
-                  <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
-                    <View style={detailStyles.labelRow}>
-                      <Ionicons name="checkmark-circle-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                      <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.answer", "Cevap")} *</Text>
-                    </View>
-                    <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard.answer}</Text>
-                  </View>
-                ) : null}
-                {/* Örnek */}
-                {selectedCard?.example ? (
-                  <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
-                    <View style={detailStyles.labelRow}>
-                      <Ionicons name="bulb-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                      <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.example", "Örnek")}</Text>
-                    </View>
-                    <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard.example}</Text>
-                  </View>
-                ) : null}
-                {/* Not */}
-                {selectedCard?.note ? (
-                  <View style={[detailStyles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
-                    <View style={detailStyles.labelRow}>
-                      <Ionicons name="document-text-outline" size={20} color="#F98A21" style={detailStyles.labelIcon} />
-                      <Text style={[detailStyles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.note", "Not")}</Text>
-                    </View>
-                    <Text style={[typography.styles.body, { fontSize: 16, color: colors.text, borderRadius: 8, padding: 12 }]}>{selectedCard.note}</Text>
-                  </View>
-                ) : null}
-                {/* Oluşturulma tarihi - ScrollView içinde, sayfanın alt kısmında */}
-                {selectedCard?.created_at ? (
-                  <View style={{ paddingHorizontal: 18, marginTop: 'auto', marginBottom: 24 }}>
-                    <Text style={[typography.styles.caption, { color: colors.muted, textAlign: 'center', fontSize: 14 }]}>
-                      {t("cardDetail.createdAt", "Oluşturulma Tarihi")} {new Date(selectedCard.created_at).toLocaleString('tr-TR')}
-                    </Text>
-                  </View>
-                ) : null}
-              </ScrollView>
+              <CardDetailView card={selectedCard} />
             </LinearGradient>
         ) : (
                      <FlatList
@@ -587,19 +372,7 @@ const styles = StyleSheet.create({
     color: '#222',
     borderWidth: 0,
   },
-  cardsFilterIconButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fffff',
-    borderRadius: 30,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#F98A21',
-    height: 48,
-    aspectRatio: 1,
-  },
+
   cardItemGlass: {
     width: '100%',
     minHeight: 110,
@@ -720,40 +493,4 @@ const styles = StyleSheet.create({
 }); 
 
 
-const detailStyles = StyleSheet.create({
-  inputCard: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 18,
-    marginHorizontal: 18,
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 8,
-    elevation: 4,
-    overflow: 'hidden',
-    alignSelf: 'auto',
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  labelIcon: {
-    marginRight: 8,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  cardImage: {
-    width: 120,
-    height: 160,
-    borderRadius: 18,
-    marginBottom: 8,
-    resizeMode: 'contain',
-    backgroundColor: '#f2f2f2',
-    alignSelf: 'center',
-  },
-});
+

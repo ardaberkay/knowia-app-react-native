@@ -10,6 +10,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import { Buffer } from 'buffer';
 import { useTranslation } from 'react-i18next';
+import { Iconify } from 'react-native-iconify';
 
 export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) {
   const { colors } = useTheme();
@@ -97,21 +98,26 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
   };
 
   return (
-    <LinearGradient
-      colors={colors.deckGradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={{ flex: 1 }}
+    <ScrollView
+      colors={colors.backgroundColor}
     >
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.formContainer}>
-          <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
+          <View style={[styles.inputCard, {
+            backgroundColor: colors.cardBackground,
+            borderColor: colors.cardBorder,
+            shadowColor: colors.shadowColor,
+            shadowOffset: colors.shadowOffset,
+            shadowOpacity: colors.shadowOpacity,
+            shadowRadius: colors.shadowRadius,
+            elevation: colors.elevation,
+          }]}>
             <View style={styles.labelRow}>
-              <Ionicons name="image" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.image", "Kart Görseli")}</Text>
+              <Iconify icon="mage:image-fill" size={20} color="#F98A21" style={styles.labelIcon} />
+              <Text style={[styles.label, typography.styles.body, {color: colors.cardQuestionText}]}>{t("cardDetail.image", "Kart Görseli")}</Text>
             </View>
             {image ? (
-              <View style={{ alignItems: 'center', marginBottom: 8 }}>
+              <View style={styles.imageContainer}>
                 <Image source={{ uri: image }} style={styles.cardImage} />
                 <TouchableOpacity onPress={handleRemoveImage} style={styles.removeImageButton}>
                   <Text style={styles.removeImageButtonText}>{t("cardDetail.removeImage", "Görseli Kaldır")}</Text>
@@ -119,18 +125,26 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               </View>
             ) : (
               <TouchableOpacity onPress={handlePickImage} style={styles.addImageButton}>
-                <Ionicons name="add" size={24} color="#F98A21" />
+                <Iconify icon="ic:round-plus" size={24} color="#F98A21" />
                 <Text style={styles.addImageButtonText}>{t("cardDetail.addImage", "Fotoğraf Ekle")}</Text>
               </TouchableOpacity>
             )}
           </View>
-          <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
+          <View style={[styles.inputCard, {
+            backgroundColor: colors.cardBackground,
+            borderColor: colors.cardBorder,
+            shadowColor: colors.shadowColor,
+            shadowOffset: colors.shadowOffset,
+            shadowOpacity: colors.shadowOpacity,
+            shadowRadius: colors.shadowRadius,
+            elevation: colors.elevation,
+          }]}>
             <View style={styles.labelRow}>
-              <Ionicons name="help-circle-outline" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.question", "Soru")} *</Text>
+              <Iconify icon="uil:comment-alt-question" size={20} color="#F98A21" style={styles.labelIcon} />
+              <Text style={[styles.label, typography.styles.body, {color: colors.cardQuestionText}]}>{t("cardDetail.question", "Soru")} *</Text>
             </View>
             <TextInput
-              style={[styles.input, typography.styles.body, {color: colors.text, borderColor: colors.border}]}
+              style={[styles.input, typography.styles.body, {color: colors.cardAnswerText, borderColor: colors.border}]}
               placeholder={t("cardDetail.questionPlaceholder", "Kartın sorusu")}
               placeholderTextColor={colors.muted}
               value={question}
@@ -138,13 +152,21 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               multiline
             />
           </View>
-          <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
+          <View style={[styles.inputCard, {
+            backgroundColor: colors.cardBackground,
+            borderColor: colors.cardBorder,
+            shadowColor: colors.shadowColor,
+            shadowOffset: colors.shadowOffset,
+            shadowOpacity: colors.shadowOpacity,
+            shadowRadius: colors.shadowRadius,
+            elevation: colors.elevation,
+          }]}>
             <View style={styles.labelRow}>
-              <Ionicons name="checkmark-circle-outline" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.answer", "Cevap")} *</Text>
+              <Iconify icon="uil:comment-alt-check" size={20} color="#F98A21" style={styles.labelIcon} />
+              <Text style={[styles.label, typography.styles.body, {color: colors.cardQuestionText}]}>{t("cardDetail.answer", "Cevap")} *</Text>
             </View>
             <TextInput
-              style={[styles.input, typography.styles.body, {color: colors.text, borderColor: colors.border}]}
+              style={[styles.input, typography.styles.body, {color: colors.cardAnswerText, borderColor: colors.border}]}
               placeholder={t("cardDetail.answerPlaceholder", "Kartın cevabı")}
               placeholderTextColor={colors.muted}
               value={answer}
@@ -152,13 +174,21 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               multiline
             />
           </View>
-          <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
+          <View style={[styles.inputCard, {
+            backgroundColor: colors.cardBackground,
+            borderColor: colors.cardBorder,
+            shadowColor: colors.shadowColor,
+            shadowOffset: colors.shadowOffset,
+            shadowOpacity: colors.shadowOpacity,
+            shadowRadius: colors.shadowRadius,
+            elevation: colors.elevation,
+          }]}>
             <View style={styles.labelRow}>
-              <Ionicons name="bulb-outline" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.example", "Örnek")}</Text>
+              <Iconify icon="lucide:lightbulb" size={20} color="#F98A21" style={styles.labelIcon} />
+              <Text style={[styles.label, typography.styles.body, {color: colors.cardQuestionText}]}>{t("cardDetail.example", "Örnek")}</Text>
             </View>
             <TextInput
-              style={[styles.input, typography.styles.body, {color: colors.text, borderColor: colors.border}]}
+              style={[styles.input, typography.styles.body, {color: colors.cardAnswerText, borderColor: colors.border}]}
               placeholder={t("cardDetail.examplePlaceholder", "Örnek cümle (opsiyonel)")}
               placeholderTextColor={colors.muted}
               value={example}
@@ -166,13 +196,21 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               multiline
             />
           </View>
-          <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
+          <View style={[styles.inputCard, {
+            backgroundColor: colors.cardBackground,
+            borderColor: colors.cardBorder,
+            shadowColor: colors.shadowColor,
+            shadowOffset: colors.shadowOffset,
+            shadowOpacity: colors.shadowOpacity,
+            shadowRadius: colors.shadowRadius,
+            elevation: colors.elevation,
+          }]}>
             <View style={styles.labelRow}>
-              <Ionicons name="document-text-outline" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.note", "Not")}</Text>
+              <Iconify icon="material-symbols-light:stylus-note" size={20} color="#F98A21" style={styles.labelIcon} />
+              <Text style={[styles.label, typography.styles.body, {color: colors.cardQuestionText}]}>{t("cardDetail.note", "Not")}</Text>
             </View>
             <TextInput
-              style={[styles.input, typography.styles.body, {color: colors.text, borderColor: colors.border}]}
+              style={[styles.input, typography.styles.body, {color: colors.cardAnswerText, borderColor: colors.border}]}
               placeholder={t("cardDetail.notePlaceholder", "Not (opsiyonel)")}
               placeholderTextColor={colors.muted}
               value={note}
@@ -206,7 +244,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </ScrollView>
   );
 }
 
@@ -220,16 +258,13 @@ const styles = StyleSheet.create({
   },
   inputCard: {
     width: '100%',
-    maxWidth: 440,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 24,
+    padding: 20,
     marginBottom: 18,
     marginHorizontal: 18,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 8,
-    elevation: 4,
-    overflow: 'hidden',
+    borderWidth: 1,
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
     alignSelf: 'center',
   },
   labelRow: {
@@ -242,21 +277,24 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   input: {
     borderWidth: 1,
+    width: '100%',
     borderRadius: 8,
     padding: 12,
-    marginBottom: 0,
+    marginTop: 8,
     fontSize: 16,
-
+    maxHeight: 150,
+    flex: 1,
+    minHeight: 40,
   },
   cardImage: {
-    width: 120,
-    height: 160,
-    borderRadius: 18,
-    marginBottom: 8,
+    width: 100,
+    height: 130,
+    borderRadius: 16,
     resizeMode: 'contain',
     backgroundColor: 'transparent',
     alignSelf: 'center',
@@ -266,11 +304,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff8f0',
     borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: '#F98A21',
-    marginTop: 6,
+    marginTop: 8,
+    alignSelf: 'center',
   },
   addImageButtonText: {
     color: '#F98A21',
@@ -283,15 +322,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#F98A21',
     borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 18,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 8,
+    alignSelf: 'center',
   },
   removeImageButtonText: {
     color: '#F98A21',
     fontWeight: 'bold',
     fontSize: 15,
+  },
+  imageContainer: {
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 8,
+    alignSelf: 'center',
   },
   buttonRowModern: {
     flexDirection: 'row',

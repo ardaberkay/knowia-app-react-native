@@ -8,14 +8,14 @@ export default function SearchBar({ value, onChangeText, placeholder, style }) {
   const { colors } = useTheme();
 
   return (
-    <View style={[styles.wrapper, { borderColor: colors.cardBorder}, style]}>
+    <View style={[styles.wrapper, { borderColor: '#4A4A4A'}, style]}>
       <Iconify icon="iconamoon:search" size={20} color="#B0B0B0" style={styles.icon} />
       <TextInput
         style={[styles.input, typography.styles.body, { color: colors.text }]}
         placeholder={placeholder}
         value={value}
         onChangeText={onChangeText}
-        placeholderTextColor={colors.muted}
+        placeholderTextColor={'#A0A0A0'}
       />
     </View>
   );
@@ -34,6 +34,7 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginRight: 6,
+    marginLeft: 4,
   },
   input: {
     flex: 1,
