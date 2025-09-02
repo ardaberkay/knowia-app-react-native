@@ -41,7 +41,9 @@
       "cancel": "Annuler",
       "delete": "Supprimer",
       "deleteCardConfirmation": "Supprimer la carte ?",
-      "deleteCardConfirm": "Cette action ne peut pas être annulée. Êtes-vous sûr ?"
+      "deleteCardConfirm": "Cette action ne peut pas être annulée. Êtes-vous sûr ?",
+      "addFavoriteDeckCta": "Ajoutez un paquet à vos favoris",
+      "favoriteDecksTitle": "Paquets Favoris"
     },
     "home": {
       "inProgressDecks": "Paquets d'Étude",

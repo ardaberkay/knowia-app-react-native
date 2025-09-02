@@ -41,7 +41,10 @@
       "cancel": "Cancelar",
       "delete": "Eliminar",
       "deleteCardConfirmation": "¿Eliminar la tarjeta?",
-      "deleteCardConfirm": "Esta acción no se puede deshacer. ¿Estás seguro?"
+      "deleteCardConfirm": "Esta acción no se puede deshacer. ¿Estás seguro?",
+      "addFavoriteDeckCta": "Agrega una baraja a tus favoritos",
+      "favoriteDecksTitle": "Barajas Favoritas",
+      "favoriteCardsTitle": "Tarjetas Favoritas"
     },
     "home": {
       "inProgressDecks": "Barajas de Estudio",

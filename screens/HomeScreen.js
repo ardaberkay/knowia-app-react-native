@@ -15,7 +15,7 @@ import { supabase } from '../lib/supabase';
 import { getFavoriteDecks } from '../services/FavoriteService';
 import DeckSkeleton from '../components/DeckSkeleton';
 import { useTranslation } from 'react-i18next';
-import DeckCard from '../components/DeckCard';
+import DeckCard from '../components/DeckCardStyle';
 import DeckActionSheet from '../components/DeckActionSheet';
 
 

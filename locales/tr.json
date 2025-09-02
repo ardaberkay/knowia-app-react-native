@@ -41,7 +41,10 @@
     "cancel": "İptal",
     "delete": "Sil",
     "deleteCardConfirmation": "Kart Silinsin mi?",
-    "deleteCardConfirm": "Bu işlemi geri alamazsınız. Emin misiniz?"
+    "deleteCardConfirm": "Bu işlemi geri alamazsınız. Emin misiniz?",
+    "addFavoriteDeckCta": "Favorilerine bir deste ekle",
+    "favoriteDecksTitle": "Favori Destelerim",
+    "favoriteCardsTitle": "Favori Kartlarım"
   },
   "home": {
     "inProgressDecks": "Çalıştığım Desteler",

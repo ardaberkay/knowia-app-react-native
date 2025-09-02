@@ -41,7 +41,10 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "deleteCardConfirmation": "Delete the card?",
-    "deleteCardConfirm": "This action cannot be undone. Are you sure?"
+    "deleteCardConfirm": "This action cannot be undone. Are you sure?",
+    "addFavoriteDeckCta": "Add a deck to your favorites",
+    "favoriteDecksTitle": "Favorite Decks",
+    "favoriteCardsTitle": "Favorite Cards"
   },
   "home": {
     "inProgressDecks": "Study Decks",

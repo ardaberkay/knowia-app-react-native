@@ -41,7 +41,9 @@
       "cancel": "Cancelar",
       "delete": "Excluir",
       "deleteCardConfirmation": "Excluir o cartão?",
-      "deleteCardConfirm": "Esta ação não pode ser desfeita. Tem certeza?"
+      "deleteCardConfirm": "Esta ação não pode ser desfeita. Tem certeza?",
+      "addFavoriteDeckCta": "Adicione um baralho aos seus favoritos",
+      "favoriteDecksTitle": "Baralhos Favoritos"
     },
     "home": {
       "inProgressDecks": "Baralhos de Estudo",

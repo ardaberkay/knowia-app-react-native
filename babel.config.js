@@ -63,6 +63,8 @@ module.exports = function (api) {
             'iconamoon:menu-kebab-horizontal-bold',
             'material-symbols:close-rounded',
             'material-symbols:arrow-forward-ios-rounded',
+            'game-icons:card-pick',
+            'ph:cards-fill'
           ],
         },
       ],

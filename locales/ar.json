@@ -41,7 +41,9 @@
       "cancel": "إلغاء",
       "delete": "حذف",
       "deleteCardConfirmation": "هل تريد حذف البطاقة؟",
-      "deleteCardConfirm": "لا يمكن التراجع عن هذا الإجراء. هل أنت متأكد؟"
+      "deleteCardConfirm": "لا يمكن التراجع عن هذا الإجراء. هل أنت متأكد؟",
+      "addFavoriteDeckCta": "أضف مجموعة إلى المفضلة",
+      "favoriteDecksTitle": "المجموعات المفضلة"
     },
     "home": {
       "inProgressDecks": "مجموعات الدراسة",
