@@ -5,6 +5,7 @@ import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { Iconify } from 'react-native-iconify';
 import LanguageSelector from '../components/LanguageSelector';
 
 export default function LoginScreen({ navigation }) {
@@ -70,14 +71,14 @@ export default function LoginScreen({ navigation }) {
             style={styles.languageButton}
             onPress={() => setLanguageModalVisible(true)}
           >
-            <Ionicons name="language" size={20} color="#fff" />
+            <Iconify icon="material-symbols:translate-rounded" size={20} color="#fff" />
             <Text style={[styles.languageButtonText, { color: '#fff' }]}>
               {i18n.language === 'tr' ? 'Türkçe' : i18n.language === 'en' ? 'English' : i18n.language === 'es' ? 'Spanish' : i18n.language === 'fr' ? 'French' : i18n.language === 'pt' ? 'Portuguese' : i18n.language === 'ar' ? 'Arabic' : ''}
             </Text>
           </TouchableOpacity>
           <View style={styles.inputContainer}>
             <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
-              <Ionicons name="mail-outline" size={22} color={colors.muted} /></View>
+              <Iconify icon="tabler:mail-filled" size={22} color={colors.muted} /></View>
             <TextInput
               style={[styles.input, typography.styles.body]}
               placeholder={t('login.emailPlaceholder', 'E-posta')}
@@ -90,7 +91,7 @@ export default function LoginScreen({ navigation }) {
           </View>
           <View style={styles.inputContainer}>
             <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
-              <Ionicons name="lock-closed-outline" size={22} color={colors.muted} /></View>
+              <Iconify icon="carbon:password" size={22} color={colors.muted} /></View>
             <TextInput
               style={[styles.input, typography.styles.body]}
               placeholder={t('login.passwordPlaceholder', 'Şifre')}
@@ -104,7 +105,7 @@ export default function LoginScreen({ navigation }) {
               style={{justifyContent: 'center', alignItems: 'center', width: 28, height: 22}}
               disabled={loading}
             >
-              <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={22} color={colors.muted} />
+              <Iconify icon={showPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={22} color={colors.muted} />
             </TouchableOpacity>
           </View>
 
@@ -136,7 +137,7 @@ export default function LoginScreen({ navigation }) {
             onPress={handleGoogleLogin}
             disabled={loading}
           >
-            <Ionicons name="logo-google" size={24} color="#DB4437" />
+            <Iconify icon="logos:google-icon" size={24} color="#DB4437" />
             <Text style={[styles.googleButtonText, typography.styles.button, { color: colors.text }]}>
               {t('login.loginWithGoogle', 'Google ile devam et')}
             </Text>

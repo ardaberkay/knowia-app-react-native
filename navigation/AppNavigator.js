@@ -22,6 +22,8 @@ import DeckCardsScreen from '../screens/DeckCardsScreen';
 import CardDetailScreen from '../screens/CardDetailScreen';
 import ChaptersScreen from '../screens/ChaptersScreen';
 import ChapterCardsScreen from '../screens/ChapterCardsScreen';
+import FavoriteDecks from '../screens/FavoriteDecks';
+import FavoriteCards from '../screens/FavoriteCards';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -171,6 +173,8 @@ export default function AppNavigator() {
           <Stack.Screen name="Chapters" component={ChaptersScreen} options={{ headerShown: true, title: t('tabs.chapters', 'Bölümler'), headerTitleAlign: 'center' }} />
           <Stack.Screen name="ChapterCards" component={ChapterCardsScreen} options={{ headerShown: true, title: t('tabs.chapterCards', 'Bölüm Kartları'), headerTitleAlign: 'center' }} />
           <Stack.Screen name="CardDetail" component={CardDetailScreen} options={{ headerShown: true, title: t('tabs.cardDetail', 'Kart Detayı'), headerTitleAlign: 'center' }} />
+          <Stack.Screen name="FavoriteDecks" component={FavoriteDecks} options={{ headerShown: true, title: t('tabs.favoriteDecks', 'Favori Desteler'), headerTitleAlign: 'center' }} />
+          <Stack.Screen name="FavoriteCards" component={FavoriteCards} options={{ headerShown: true, title: t('tabs.favoriteCards', 'Favori Kartlar'), headerTitleAlign: 'center' }} />
         </>
       )}
     </Stack.Navigator>

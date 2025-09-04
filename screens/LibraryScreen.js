@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, Modal, Alert, ActivityIndicator, Animated, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, Modal, Alert, ActivityIndicator, Animated, ScrollView, RefreshControl, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
@@ -14,6 +14,8 @@ import PagerView from 'react-native-pager-view';
 import SearchBar from '../components/SearchBar';
 import FilterIcon from '../components/FilterIcon';
 import CardListItem from '../components/CardListItem';
+import LottieView from 'lottie-react-native';
+import MyDecksList from '../components/MyDecksList';
 
 export default function LibraryScreen() {
   const { colors, isDark } = useTheme();
@@ -34,6 +36,8 @@ export default function LibraryScreen() {
   const [favCardsQuery, setFavCardsQuery] = useState('');
   const [favCardsSort, setFavCardsSort] = useState('original');
   const [favoriteCards, setFavoriteCards] = useState([]);
+  const [myDecksQuery, setMyDecksQuery] = useState('');
+  const [myDecksSort, setMyDecksSort] = useState('original');
 
   const screenWidth = Dimensions.get('window').width;
   const horizontalPadding = 16 * 2;
@@ -69,25 +73,26 @@ export default function LibraryScreen() {
 
   useEffect(() => {
     if (activeTab === 'favorites' && !favoritesFetched) {
-      const fetchFavorites = async () => {
-        setFavoritesLoading(true);
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          const decks = await getFavoriteDecks(user.id);
-          setFavoriteDecks(decks || []);
-          const cards = await getFavoriteCards(user.id);
-          setFavoriteCards(cards || []);
-          setFavoritesFetched(true);
-        } catch (e) {
-          setFavoriteDecks([]);
-          setFavoriteCards([]);
-        } finally {
-          setFavoritesLoading(false);
-        }
-      };
       fetchFavorites();
     }
   }, [activeTab, favoritesFetched]);
+
+  const fetchFavorites = async () => {
+    setFavoritesLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const decks = await getFavoriteDecks(user.id);
+      setFavoriteDecks(decks || []);
+      const cards = await getFavoriteCards(user.id);
+      setFavoriteCards(cards || []);
+      setFavoritesFetched(true);
+    } catch (e) {
+      setFavoriteDecks([]);
+      setFavoriteCards([]);
+    } finally {
+      setFavoritesLoading(false);
+    }
+  };
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setCurrentUserId(user?.id));
@@ -159,6 +164,26 @@ export default function LibraryScreen() {
     }
     if (favCardsSort === 'az') {
       list.sort((a, b) => (a.question || '').localeCompare(b.question || ''));
+    } else if (favCardsSort === 'fav') {
+      // Favori kartlar zaten favori olduğu için burada bir değişiklik yapmıyoruz
+      // Sadece orijinal sıralamayı koruyoruz
+    } else {
+      list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+    return list;
+  })();
+
+  const filteredMyDecks = (() => {
+    let list = myDecks.slice();
+    if (myDecksQuery && myDecksQuery.trim()) {
+      const q = myDecksQuery.toLowerCase();
+      list = list.filter(d => (d.name || '').toLowerCase().includes(q) || (d.to_name || '').toLowerCase().includes(q));
+    }
+    if (myDecksSort === 'az') {
+      list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    } else if (myDecksSort === 'fav') {
+      // Sadece favori desteleri göster
+      list = list.filter(d => favoriteDecks.some(favDeck => favDeck.id === d.id));
     } else {
       list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     }
@@ -168,18 +193,19 @@ export default function LibraryScreen() {
   // Yükleniyor ekranı
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color={colors.text} style={{ marginBottom: 16 }} />
+      <LottieView source={require('../assets/handAnimation.json')} autoPlay loop style={{ width: 300, height: 300 }} />
     </View>
   );
 
   return (
     <View style={[styles.container]}>
       {/* Pill Tabs + Animated Indicator */}
-      <View style={styles.segmentedControlContainer}>
-        <View
-          style={[styles.pillContainer, { borderColor: colors.cardBordaer || '#444444', backgroundColor: colors.background }]}
-          onLayout={(e) => setPillWidth(e.nativeEvent.layout.width)}
-        >
+      <View style={styles.segmentedControlContainer} pointerEvents="box-none">
+        <View style={[styles.segmentedControlInner, { backgroundColor: colors.background }]}>
+          <View
+            style={[styles.pillContainer, { borderColor: colors.cardBordaer || '#444444', backgroundColor: colors.background }]}
+            onLayout={(e) => setPillWidth(e.nativeEvent.layout.width)}
+          >
           <Animated.View
             pointerEvents="none"
             style={[
@@ -209,9 +235,9 @@ export default function LibraryScreen() {
               {t('library.favorites', 'Favorilerim')}
             </Text>
           </TouchableOpacity>
+          </View>
         </View>
       </View>
-      {/* Arama ve filtre kaldırıldı */}
       {/* PagerView: 0 - MyDecks, 1 - Favorites */}
       <PagerView
         ref={pagerRef}
@@ -231,145 +257,34 @@ export default function LibraryScreen() {
           {loading ? (
             renderLoading()
           ) : (
-            (() => {
-              const rows = [];
-              let i = 0;
-              while (i < myDecks.length) {
-                const first = myDecks[i];
-                const second = myDecks[i + 1];
-                rows.push({ type: 'double', items: [first, second].filter(Boolean) });
-                i += 2;
-                if (i < myDecks.length) {
-                  rows.push({ type: 'single', item: myDecks[i] });
-                  i += 1;
+            <MyDecksList
+              decks={filteredMyDecks}
+              favoriteDecks={favoriteDecks}
+              onToggleFavorite={async (deckId) => {
+                if (favoriteDecks.some(d => d.id === deckId)) {
+                  await handleRemoveFavoriteDeck(deckId);
+                } else {
+                  await handleAddFavoriteDeck(deckId);
                 }
-              }
-              return (
-            <FlatList
-                  data={rows}
-                  keyExtractor={(_, idx) => `row_${idx}`}
-                  renderItem={({ item: row }) => (
-                    row.type === 'double' ? (
-                      <View style={[styles.myDecksList, styles.myDeckRow]}>
-                        {row.items.map((deck, idx) => (
-                          <TouchableOpacity
-                            key={`${deck.id}_${idx}`}
-                            activeOpacity={0.93}
-                            onPress={() => navigation.navigate('DeckDetail', { deck })}
-                            style={[styles.myDeckCardVertical, idx === 0 ? { marginRight: 8 } : { marginLeft: 8 }]}
-                          >
-                            <LinearGradient
-                              colors={colors.deckGradient}
-                              start={{ x: 0, y: 0 }}
-                              end={{ x: 1, y: 1 }}
-                              style={styles.myDeckGradient}
-                            >
-                              <View style={{ position: 'absolute', bottom: 12, left: 12 }}>
-                                <View style={styles.deckCountBadge}>
-                                  <Iconify icon="ri:stack-fill" size={18} color="#fff" style={{ marginRight: 6 }} />
-                                  <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: 16 }]}>{deck.card_count || 0}</Text>
-                                </View>
-                              </View>
-                              <TouchableOpacity
-                                style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
-                                onPress={async () => {
-                                  if (favoriteDecks.some(d => d.id === deck.id)) {
-                                    await handleRemoveFavoriteDeck(deck.id);
-                                  } else {
-                                    await handleAddFavoriteDeck(deck.id);
-                                  }
-                                }}
-                                activeOpacity={0.7}
-                              >
-                                <Iconify
-                                  icon={favoriteDecks.some(d => d.id === deck.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-                                  size={24}
-                                  color={favoriteDecks.some(d => d.id === deck.id) ? '#F98A21' : colors.text}
-                                />
-                              </TouchableOpacity>
-                              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                                {deck.to_name ? (
-                                  <>
-                                    <Text style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
-                                    <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 8 }} />
-                                    <Text style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
-                                  </>
-                                ) : (
-                                  <Text style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
-                                )}
-                              </View>
-                              <TouchableOpacity
-                                style={{ position: 'absolute', bottom: 12, right: 12, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
-                                onPress={() => handleDeleteDeck(deck.id)}
-                                activeOpacity={0.7}
-                              >
-                                <Iconify icon="mdi:garbage" size={22} color="#E74C3C" />
-                              </TouchableOpacity>
-                            </LinearGradient>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    ) : (
-                      <View style={styles.myDecksList}>
-                        <TouchableOpacity
-                          activeOpacity={0.93}
-                          onPress={() => navigation.navigate('DeckDetail', { deck: row.item })}
-                          style={styles.myDeckCardHorizontal}
-                        >
-                          <LinearGradient
-                            colors={colors.deckGradient}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={styles.myDeckGradient}
-                          >
-                            <View style={{ position: 'absolute', bottom: 12, left: 12 }}>
-                              <View style={styles.deckCountBadge}>
-                                <Iconify icon="ri:stack-fill" size={18} color="#fff" style={{ marginRight: 6 }} />
-                                <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: 16 }]}>{row.item.card_count || 0}</Text>
-                              </View>
-                            </View>
-                            <TouchableOpacity
-                              style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
-                              onPress={async () => {
-                                if (favoriteDecks.some(d => d.id === row.item.id)) {
-                                  await handleRemoveFavoriteDeck(row.item.id);
-                                } else {
-                                  await handleAddFavoriteDeck(row.item.id);
-                                }
-                              }}
-                              activeOpacity={0.7}
-                            >
-                              <Iconify
-                                icon={favoriteDecks.some(d => d.id === row.item.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-                                size={24}
-                                color={favoriteDecks.some(d => d.id === row.item.id) ? '#F98A21' : colors.text}
-                              />
-                            </TouchableOpacity>
-                            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                              {row.item.to_name ? (
-                                <>
-                                  <Text style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{row.item.name}</Text>
-                                  <View style={{ width: 70, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10 }} />
-                                  <Text style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{row.item.to_name}</Text>
-                                </>
-                              ) : (
-                                <Text style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{row.item.name}</Text>
-                              )}
-                            </View>
-                            <TouchableOpacity
-                              style={{ position: 'absolute', bottom: 12, right: 12, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
-                              onPress={() => handleDeleteDeck(row.item.id)}
-                              activeOpacity={0.7}
-                            >
-                              <Iconify icon="mdi:garbage" size={22} color="#E74C3C" />
-                            </TouchableOpacity>
-                          </LinearGradient>
-                        </TouchableOpacity>
-                      </View>
-                    )
-                  )}
-              ListEmptyComponent={<Text style={[styles.emptyText, typography.styles.caption]}>{t('library.noDecks', 'Henüz deste bulunmuyor')}</Text>}
-              showsVerticalScrollIndicator={false}
+              }}
+              onDeleteDeck={handleDeleteDeck}
+              onPressDeck={(deck) => navigation.navigate('DeckDetail', { deck })}
+              ListHeaderComponent={(
+                <View style={{ marginBottom: 5, backgroundColor: colors.background, marginTop: '22%'  }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: '93%', alignSelf: 'center' }}>
+                    <SearchBar
+                      value={myDecksQuery}
+                      onChangeText={setMyDecksQuery}
+                      placeholder={t('common.searchPlaceholder', 'Destelerde ara...')}
+                      style={{ flex: 1 }}
+                    />
+                    <FilterIcon
+                      value={myDecksSort}
+                      onChange={setMyDecksSort}
+                    />
+                  </View>
+                </View>
+              )}
               refreshing={loading}
               onRefresh={() => {
                 setLoading(true);
@@ -379,33 +294,44 @@ export default function LibraryScreen() {
                 });
               }}
             />
-              );
-            })()
           )}
         </View>
         {/* Page 1: Favorites */}
-        <View key="favorites" style={{ flex: 1 }}>
+        <View key="favorites" style={{ flex: 1, marginHorizontal: 10 }}>
           {favoritesLoading ? (
             renderLoading()
           ) : (
-            <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={{ flex: 1, backgroundColor: colors.background }}
+              contentContainerStyle={{ paddingBottom: '22%', marginTop: '22%' }}
+              showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl
+                  refreshing={favoritesLoading}
+                  onRefresh={fetchFavorites}
+                  tintColor={colors.buttonColor}
+                  colors={[colors.buttonColor]}
+                />
+              }
+            >
               <View style={styles.favoriteSliderWrapper}>
+                <View style={styles.favoriteHeaderRow}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Iconify icon="ph:cards-fill" size={26} color="#F98A21" />
+                    <Text style={[styles.favoriteHeaderTitle, { color: colors.text }]}>
+                      {t('library.favoriteDecksTitle', 'Favori Destelerim')}
+                    </Text>
+                  </View>
+                  <TouchableOpacity activeOpacity={0.8} style={[styles.seeAllButton, { borderColor: colors.secondary }]} onPress={() => navigation.navigate('FavoriteDecks')}>
+                    <Text style={[styles.seeAllText, { color: colors.secondary }]}>
+                      {t('library.all', 'Tümü')}
+                    </Text>
+                    <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={15} color={colors.secondary}/>
+                  </TouchableOpacity>
+                </View>
+
                 {favoriteDecks && favoriteDecks.length > 0 ? (
                   <>
-                    <View style={styles.favoriteHeaderRow}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Iconify icon="ph:cards-fill" size={26} color="#F98A21" />
-                        <Text style={[styles.favoriteHeaderTitle, { color: colors.text }]}>
-                          {t('library.favoriteDecksTitle', 'Favori Destelerim')}
-                        </Text>
-                      </View>
-                      <TouchableOpacity activeOpacity={0.8} style={[styles.seeAllButton, { borderColor: colors.secondary }]} onPress={() => { /* TODO: navigate to all favorites page */ }}>
-                        <Text style={[styles.seeAllText, { color: colors.secondary }]}>
-                          {t('library.all', 'Tümü')}
-                        </Text>
-                        <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={15} color={colors.secondary}/>
-                      </TouchableOpacity>
-                    </View>
                     <PagerView
                       style={styles.favoriteSlider}
                       initialPage={0}
@@ -429,7 +355,6 @@ export default function LibraryScreen() {
                                 end={{ x: 1, y: 1 }}
                                 style={styles.favoriteSlideGradient}
                               >
-                                {/* Favorite toggle - top right */}
                                 <TouchableOpacity
                                   style={{ position: 'absolute', top: 13, right: 13, zIndex: 10, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
                                   onPress={async () => {
@@ -448,7 +373,7 @@ export default function LibraryScreen() {
                                   />
                                 </TouchableOpacity>
                                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                                  <View style={[styles.deckHeaderModern, { flexDirection: 'column' }]}>
+                                  <View style={[styles.deckHeaderModern, { flexDirection: 'column' }]}> 
                                     {deck.to_name ? (
                                       <>
                                         <Text style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
@@ -460,10 +385,9 @@ export default function LibraryScreen() {
                                     )}
                                   </View>
                                 </View>
-                                {/* Card count - bottom left */}
                                 <View style={{ position: 'absolute', left: 16, bottom: 16 }}>
                                   <View style={styles.deckCountBadge}>
-                                    <Iconify icon="ri:stack-fill" size={18} color="#fff" style={{ marginRight: 6 }} />
+                                    <Iconify icon="ri:stack-fill" size={18} color="#fff" style={{ marginRight: 4 }} />
                                     <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: 18 }]}>{deck.card_count || 0}</Text>
                                   </View>
                                 </View>
@@ -472,7 +396,6 @@ export default function LibraryScreen() {
                           </View>
                         ))}
                     </PagerView>
-                    {/* Dots */}
                     <View style={styles.favoriteSliderDots}>
                       {favoriteDecks
                         .slice()
@@ -485,60 +408,66 @@ export default function LibraryScreen() {
                           />
                         ))}
                     </View>
-                    {/* Favorite Cards Section Header + Controls */}
-                    <View style={[styles.favoriteHeaderRow, { marginTop: 40 }]}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Iconify icon="mdi:cards" size={26} color="#F98A21" marginTop={3} />
-                        <Text style={[styles.favoriteHeaderTitle, { color: colors.text }]}>
-                          {t('library.favoriteCardsTitle', 'Favori Kartlarım')}
-                        </Text>
-                      </View>
-                      <TouchableOpacity activeOpacity={0.8} style={[styles.seeAllButton, { borderColor: colors.secondary }]} onPress={() => { /* TODO: navigate to all favorites page */ }}>
-                        <Text style={[styles.seeAllText, { color: colors.secondary }]}>
-                          {t('library.all', 'Tümü')}
-                        </Text>
-                        <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={15} color={colors.secondary}  />
-                      </TouchableOpacity>
-                    </View>
-                    <View style={{ margin: 5 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: '98%', alignSelf: 'center' }}>
-                        <SearchBar
-                          value={favCardsQuery}
-                          onChangeText={setFavCardsQuery}
-                          placeholder={t('common.searchPlaceholder', 'Kartlarda ara...')}
-                          style={{ flex: 1 }}
-                        />
-                        <FilterIcon
-                          value={favCardsSort}
-                          onChange={setFavCardsSort}
-                        />
-                      </View>
-                      {/* Favorite Cards List */}
-                      <View style={{ marginTop: 14, paddingHorizontal: 4 }}>
-                        {filteredFavoriteCards.map((card) => (
-                          <CardListItem
-                            key={String(card.id)}
-                            question={card.question}
-                            answer={card.answer}
-                            isFavorite={true}
-                            onPress={() => navigation.navigate('CardDetail', { card, isOwner: myDecks.some(d => d.id === card.deck_id) })}
-                            onToggleFavorite={() => handleRemoveFavoriteCard(card.id)}
-                            canDelete={false}
-                          />
-                        ))}
-                        {filteredFavoriteCards.length === 0 ? (
-                          <Text style={[styles.emptyText, typography.styles.caption]}>{t('library.noFavorites', 'Henüz favori bulunmuyor')}</Text>
-                        ) : null}
-                      </View>
-                    </View>
                   </>
                 ) : (
                   <View style={styles.favoriteSliderEmpty}>
+                    <Image
+                      source={require('../assets/logoasil.png')}
+                      style={{ position: 'absolute', alignSelf: 'center', width: 300, height: 300, opacity: 0.2 }}
+                      resizeMode="contain"
+                    />
                     <Text style={[typography.styles.body, { color: colors.text, textAlign: 'center', fontSize: 16 }]}>
                       {t('library.addFavoriteDeckCta', 'Favorilerine bir deste ekle')}
                     </Text>
                   </View>
                 )}
+
+                {/* Favorite Cards Section Header + Controls */}
+                <View style={[styles.favoriteHeaderRow, { marginTop: 40 }]}> 
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Iconify icon="mdi:cards" size={26} color="#F98A21" marginTop={3} />
+                    <Text style={[styles.favoriteHeaderTitle, { color: colors.text }]}> 
+                      {t('library.favoriteCardsTitle', 'Favori Kartlarım')}
+                    </Text>
+                  </View>
+                  <TouchableOpacity activeOpacity={0.8} style={[styles.seeAllButton, { borderColor: colors.secondary }]} onPress={() => navigation.navigate('FavoriteCards')}>
+                    <Text style={[styles.seeAllText, { color: colors.secondary }]}> 
+                      {t('library.all', 'Tümü')}
+                    </Text>
+                    <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={15} color={colors.secondary}  />
+                  </TouchableOpacity>
+                </View>
+                <View style={{ margin: 5 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: '98%', alignSelf: 'center' }}>
+                    <SearchBar
+                      value={favCardsQuery}
+                      onChangeText={setFavCardsQuery}
+                      placeholder={t('common.searchPlaceholder', 'Kartlarda ara...')}
+                      style={{ flex: 1 }}
+                    />
+                    <FilterIcon
+                      value={favCardsSort}
+                      onChange={setFavCardsSort}
+                    />
+                  </View>
+                  {/* Favorite Cards List */}
+                  <View style={{ marginTop: 14, paddingHorizontal: 4 }}>
+                    {filteredFavoriteCards.map((card) => (
+                      <CardListItem
+                        key={String(card.id)}
+                        question={card.question}
+                        answer={card.answer}
+                        isFavorite={true}
+                        onPress={() => navigation.navigate('CardDetail', { card, isOwner: myDecks.some(d => d.id === card.deck_id) })}
+                        onToggleFavorite={() => handleRemoveFavoriteCard(card.id)}
+                        canDelete={false}
+                      />
+                    ))}
+                    {filteredFavoriteCards.length === 0 ? (
+                      <Text style={[styles.emptyText, typography.styles.caption]}>{t('library.noFavorites', 'Henüz favori bulunmuyor')}</Text>
+                    ) : null}
+                  </View>
+                </View>
               </View>
             </ScrollView>
           )}
@@ -551,15 +480,31 @@ export default function LibraryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginHorizontal: 10,
   },
   segmentedControlContainer: {
+    width: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+  },
+  segmentedControlInner: {
     paddingHorizontal: 24,
-    paddingVertical: 24,
+    paddingVertical: 16,
     backgroundColor: 'transparent',
-    marginTop: 10,
-    borderBottomEndRadius: 55,
-    borderBottomStartRadius: 55,
+    borderBottomEndRadius: 70,
+    borderBottomStartRadius: 70,
+    overflow: 'hidden',
+    shadowColor: '#333333',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 1,
+    borderColor: '#333333',
+    borderBottomWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
   },
   pillContainer: {
     borderWidth: 1,
@@ -597,7 +542,7 @@ const styles = StyleSheet.create({
   // My Decks list styles
   myDecksList: {
     paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingVertical: 7,
   },
   myDeckRow: {
     flexDirection: 'row',
@@ -609,7 +554,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   myDeckCardHorizontal: {
-    height: 160,
+    height: 180,
     borderRadius: 18,
     overflow: 'hidden',
   },
@@ -656,8 +601,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 16,
     backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#F98A21',
   },
   favoriteSlideItem: {
     paddingHorizontal: 16,
@@ -689,7 +632,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F98A21',
     borderRadius: 14,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 2,
     marginRight: 8,
   },

@@ -5,6 +5,7 @@ import { useTheme } from '../theme/theme';
 import { typography } from '../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
+import { Iconify } from 'react-native-iconify';
 
 export default function RegisterScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -51,7 +52,7 @@ export default function RegisterScreen({ navigation }) {
         <View style={styles.form}>
           <View style={[styles.inputContainer, { borderColor: colors.border }]}>
             <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
-              <Ionicons name="mail-outline" size={22} color={colors.muted} />
+              <Iconify icon="tabler:mail-filled" size={22} color={colors.muted} />
             </View>
             <TextInput
               style={[styles.input, typography.styles.body, { color: colors.text }]}
@@ -65,7 +66,7 @@ export default function RegisterScreen({ navigation }) {
           </View>
           <View style={[styles.inputContainer, { borderColor: colors.border }]}>
             <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
-              <Ionicons name="lock-closed-outline" size={22} color={colors.muted} />
+              <Iconify icon="carbon:password" size={22} color={colors.muted} />
             </View>
             <TextInput
               style={[styles.input, typography.styles.body, { color: colors.text }]}
@@ -80,12 +81,12 @@ export default function RegisterScreen({ navigation }) {
               style={{justifyContent: 'center', alignItems: 'center', width: 28, height: 22}}
               disabled={loading}
             >
-              <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={22} color={colors.muted} />
+              <Iconify icon={showPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={22} color={colors.muted} />
             </TouchableOpacity>
           </View>
           <View style={[styles.inputContainer, { borderColor: colors.border }]}>
             <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
-              <Ionicons name="lock-closed-outline" size={22} color={colors.muted} />
+              <Iconify icon="carbon:password" size={22} color={colors.muted} />
             </View>
             <TextInput
               style={[styles.input, typography.styles.body, { color: colors.text }]}
@@ -100,7 +101,7 @@ export default function RegisterScreen({ navigation }) {
               style={{justifyContent: 'center', alignItems: 'center', width: 28, height: 22}}
               disabled={loading}
             >
-              <Ionicons name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'} size={22} color={colors.muted} />
+              <Iconify icon={showConfirmPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={22} color={colors.muted} />
             </TouchableOpacity>
           </View>
           <TouchableOpacity 

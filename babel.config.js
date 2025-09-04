@@ -64,7 +64,8 @@ module.exports = function (api) {
             'material-symbols:close-rounded',
             'material-symbols:arrow-forward-ios-rounded',
             'game-icons:card-pick',
-            'ph:cards-fill'
+            'ph:cards-fill',
+            'logos:google-icon'
           ],
         },
       ],
