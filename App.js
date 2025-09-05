@@ -8,7 +8,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import { useTheme } from './theme/theme';
-import AddCardScreen from './screens/AddCardScreen';
+import AddCardScreen from './screens/cards/CreateCardScreen';
 import './lib/i18n';
 
 // Splash screen'i otomatik gizlemeyi engelle
