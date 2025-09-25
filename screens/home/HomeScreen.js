@@ -16,7 +16,6 @@ import { getFavoriteDecks } from '../../services/FavoriteService';
 import DeckSkeleton from '../../components/skeleton/DeckSkeleton';
 import { useTranslation } from 'react-i18next';
 import DeckCard from '../../components/ui/DeckUi';
-import DeckActionSheet from '../../components/modals/DeckActionSheet';
 
 
 
@@ -39,7 +38,6 @@ export default function HomeScreen() {
   const [error, setError] = useState(null);
   const [profile, setProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
-  const [activeDeckMenuId, setActiveDeckMenuId] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [favoriteDecks, setFavoriteDecks] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -148,31 +146,6 @@ const DECK_CATEGORIES = {
     setFavoriteDecks(decks || []);
   };
 
-  const handleDeleteDeck = (deckId) => {
-      Alert.alert(
-          t('home.deleteConfirmation', 'Deste Silinsin mi?'),
-          t('home.deleteConfirm', 'Desteyi silmek istediğinize emin misiniz?'),
-      [
-        { text: t('home.cancel', 'İptal'), style: 'cancel' },
-        {
-          text: t('home.delete', 'Sil'),
-          style: 'destructive',
-          onPress: async () => {
-            await supabase.from('decks').delete().eq('id', deckId);
-            setDecks(prev => {
-              const newDecks = { ...prev };
-              Object.keys(newDecks).forEach(cat => {
-                newDecks[cat] = newDecks[cat].filter(deck => deck.id !== deckId);
-              });
-              return newDecks;
-            });
-            setFavoriteDecks(prev => prev.filter(deck => deck.id !== deckId));
-            setActiveDeckMenuId(null);
-          }
-        }
-      ]
-    );
-  };
 
   const renderDeckSection = (category) => {
     const categoryDecks = decks[category] || [];
@@ -233,7 +206,15 @@ const DECK_CATEGORIES = {
                 colors={colors}
                 typography={typography}
                 onPress={handleDeckPress}
-                onOpenMenu={setActiveDeckMenuId}
+                onToggleFavorite={async (deckId) => {
+                  const isFavorite = favoriteDecks.some(fav => fav.id === deckId);
+                  if (isFavorite) {
+                    await handleRemoveFavoriteDeck(deckId);
+                  } else {
+                    await handleAddFavoriteDeck(deckId);
+                  }
+                }}
+                isFavorite={favoriteDecks.some(fav => fav.id === deck.id)}
               />
             ))}
             {showEndIcon && (
@@ -291,35 +272,6 @@ const DECK_CATEGORIES = {
           </React.Fragment>
         ))}
       </ScrollView>
-      {/* Bottom Sheet Modal - reusable component */}
-      {(() => {
-        const allDecks = Object.values(decks).flat();
-        const selectedDeck = allDecks.find(d => d.id === activeDeckMenuId);
-        const isFavorite = selectedDeck ? favoriteDecks.some(fav => fav.id === selectedDeck.id) : false;
-        const canEdit = selectedDeck ? selectedDeck.user_id === currentUserId : false;
-        return (
-          <DeckActionSheet
-            visible={!!activeDeckMenuId}
-            deck={selectedDeck}
-            colors={colors}
-            typography={typography}
-            isFavorite={isFavorite}
-            canEdit={canEdit}
-            onClose={() => setActiveDeckMenuId(null)}
-            onEdit={() => { setActiveDeckMenuId(null); if (selectedDeck) { navigation.navigate('DeckEdit', { deck: selectedDeck }); } }}
-            onToggleFavorite={async () => {
-              if (!selectedDeck) return;
-              if (isFavorite) {
-                await handleRemoveFavoriteDeck(selectedDeck.id);
-              } else {
-                await handleAddFavoriteDeck(selectedDeck.id);
-              }
-              setActiveDeckMenuId(null);
-            }}
-            onDelete={() => { if (selectedDeck) { handleDeleteDeck(selectedDeck.id); } }}
-          />
-        );
-      })()}
     </View>
   );
 }
@@ -395,7 +347,6 @@ const styles = StyleSheet.create({
   seeAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 8,
     paddingHorizontal: 2,
     paddingVertical: 2,
     paddingVertical: 4,

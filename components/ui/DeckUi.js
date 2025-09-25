@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { TouchableOpacity, View, Image, Text, StyleSheet, Animated } from 'react-native';
+import React from 'react';
+import { TouchableOpacity, View, Image, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
 
@@ -8,60 +8,17 @@ export default function DeckCard({
   colors,
   typography,
   onPress,
-  onOpenMenu,
+  onToggleFavorite,
+  isFavorite = false,
 }) {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const opacityAnim = useRef(new Animated.Value(1)).current;
-
-  const handlePressIn = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 0.95,
-        useNativeDriver: true,
-        tension: 300,
-        friction: 10,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 0.8,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-        tension: 300,
-        friction: 10,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
 
   return (
-    <Animated.View
-      style={[
-        styles.deckCardModern,
-        {
-          transform: [{ scale: scaleAnim }],
-          opacity: opacityAnim,
-        },
-      ]}
-    >
+    <View style={styles.deckCardModern}>
       <TouchableOpacity
         key={`deck-${deck.id}`}
         style={styles.touchableContainer}
         onPress={() => onPress(deck)}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        activeOpacity={1}
+        activeOpacity={0.7}
       >
       <LinearGradient
         colors={colors.deckGradient}
@@ -100,14 +57,19 @@ export default function DeckCard({
           </View>
         </View>
         <TouchableOpacity
-          style={{ position: 'absolute', bottom: 8, right: 8, backgroundColor: colors.iconBackground, padding: 4, borderRadius: 999, zIndex: 10 }}
-          onPress={() => onOpenMenu(deck.id)}
+          style={{ position: 'absolute', bottom: 8, right: 8, backgroundColor: colors.iconBackground, padding: 5, borderRadius: 999, zIndex: 10 }}
+          onPress={() => onToggleFavorite(deck.id)}
+          activeOpacity={0.7}
         >
-          <Iconify icon="iconamoon:menu-kebab-vertical-bold" size={22} color={colors.orWhite} />
+          <Iconify
+            icon={isFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
+            size={20}
+            color={isFavorite ? '#F98A21' : colors.orWhite}
+          />
         </TouchableOpacity>
       </LinearGradient>
       </TouchableOpacity>
-    </Animated.View>
+    </View>
   );
 }
 
@@ -148,7 +110,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: -18,
     left: 2,
-    bottom: 0,
+    bottom: 1,
   },
   deckCountBadge: {
     flexDirection: 'row',
@@ -156,7 +118,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F98A21',
     borderRadius: 12,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 2,
   },
   deckCountBadgeText: {
     color: '#fff',

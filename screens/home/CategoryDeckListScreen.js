@@ -105,26 +105,6 @@ export default function CategoryDeckListScreen({ route }) {
     }
   };
 
-  const handleDeleteDeck = async (deckId) => {
-    try {
-      const { error } = await supabase
-        .from('decks')
-        .delete()
-        .eq('id', deckId);
-      
-      if (error) throw error;
-      
-      // Navigate back or refresh the list
-      navigation.goBack();
-    } catch (error) {
-      console.error('Error deleting deck:', error);
-    }
-  };
-
-  const handleEditDeck = (deck) => {
-    navigation.navigate('DeckEdit', { deck });
-  };
-
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -161,9 +141,7 @@ export default function CategoryDeckListScreen({ route }) {
         decks={filteredDecks}
         favoriteDecks={favoriteDecks}
         onToggleFavorite={handleToggleFavorite}
-        onDeleteDeck={handleDeleteDeck}
         onPressDeck={handleDeckPress}
-        onEditDeck={handleEditDeck}
         ListHeaderComponent={ListHeaderComponent}
         refreshing={refreshing}
         onRefresh={handleRefresh}

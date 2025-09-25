@@ -330,5 +330,23 @@
     "searchPlaceholder": "Kartlarda ara...",
     "noCards": "Henüz Kart Yok",
     "noCardsDesc": "Bu bölümde henüz kart oluşturulmamış."
+  },
+  "categories": {
+    "1": "Dil",
+    "2": "Bilim",
+    "3": "Matematik",
+    "4": "Tarih",
+    "5": "Coğrafya",
+    "6": "Sanat ve Kültür",
+    "7": "Kişisel Gelişim",
+    "8": "Genel Kültür"
+  },
+  "categorySelector": {
+    "title": "Kategori Seçiniz"
+  },
+  "createDeck": {
+    "categoryLabel": "Kategori *",
+    "selectCategory": "Kategori seçiniz",
+    "selectCategoryA11y": "Kategori seç"
   }
 }

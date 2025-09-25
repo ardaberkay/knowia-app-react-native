@@ -25,6 +25,7 @@ export const lightColors = {
     divider: '#FFFFFF',
     // Kart renkleri
     cardBackground: '#FFF8F0',
+    cardBackgroundTransparent: 'rgba(255, 248, 240, 0.85)',
     cardQuestionText: '#1C1C1C',
     cardAnswerText: '#4A4A4A',
     cardDivider: '#F98A21',
@@ -68,6 +69,7 @@ export const darkColors = {
     divider: '#F98A21',
     // Kart renkleri
     cardBackground: '#2C2C2C',
+    cardBackgroundTransparent: 'rgba(44, 44, 44, 0.75)',
     cardQuestionText: '#FFFFFF',
     cardAnswerText: '#E0E0E0',
     cardDivider: '#F98A21',

@@ -308,5 +308,23 @@
       "errorMessage": "حدث خطأ",
       "errorMessageNotification": "إذن الإشعارات غير مسموح به!",
       "errorMessageNotificationDevice": "جهاز حقيقي مطلوب للحصول على الإشعارات."
-    }
+    },
+  "categories": {
+    "1": "اللغة",
+    "2": "العلوم",
+    "3": "الرياضيات",
+    "4": "التاريخ",
+    "5": "الجغرافيا",
+    "6": "الفن والثقافة",
+    "7": "التنمية الشخصية",
+    "8": "الثقافة العامة"
+  },
+  "categorySelector": {
+    "title": "اختر الفئة"
+  },
+  "createDeck": {
+    "categoryLabel": "الفئة *",
+    "selectCategory": "اختر الفئة",
+    "selectCategoryA11y": "اختر الفئة"
+  }
   }

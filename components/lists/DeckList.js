@@ -1,27 +1,22 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
-import DeckActionSheet from '../modals/DeckActionSheet';
 
 export default function DeckList({
   decks,
   favoriteDecks,
   onToggleFavorite,
-  onDeleteDeck,
   onPressDeck,
-  onEditDeck,
   ListHeaderComponent,
   refreshing = false,
   onRefresh,
 }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const [actionSheetVisible, setActionSheetVisible] = useState(false);
-  const [selectedDeck, setSelectedDeck] = useState(null);
 
   const rows = useMemo(() => {
     const builtRows = [];
@@ -59,36 +54,6 @@ export default function DeckList({
     return builtRows;
   }, [decks]);
 
-  const handleKebabPress = (deck) => {
-    setSelectedDeck(deck);
-    setActionSheetVisible(true);
-  };
-
-  const handleCloseActionSheet = () => {
-    setActionSheetVisible(false);
-    setSelectedDeck(null);
-  };
-
-  const handleDeleteDeck = () => {
-    if (selectedDeck) {
-      onDeleteDeck(selectedDeck.id);
-      handleCloseActionSheet();
-    }
-  };
-
-  const handleEditDeck = () => {
-    if (selectedDeck) {
-      onEditDeck(selectedDeck);
-      handleCloseActionSheet();
-    }
-  };
-
-  const handleToggleFavorite = () => {
-    if (selectedDeck) {
-      onToggleFavorite(selectedDeck.id);
-      handleCloseActionSheet();
-    }
-  };
 
   const renderDoubleRow = (row) => (
     <View style={[styles.deckList, styles.deckRow]}>
@@ -132,14 +97,14 @@ export default function DeckList({
               )}
             </View>
             <TouchableOpacity
-              style={{ position: 'absolute', bottom: 12, right: 12, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
-              onPress={() => handleKebabPress(deck)}
+              style={{ position: 'absolute', bottom: 8, right: 12, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999, zIndex: 10 }}
+              onPress={() => onToggleFavorite(deck.id)}
               activeOpacity={0.7}
             >
               <Iconify
-                icon="iconamoon:menu-kebab-vertical-bold"
+                icon={favoriteDecks.includes(deck.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
                 size={22}
-                color={colors.text}
+                color={favoriteDecks.includes(deck.id) ? '#F98A21' : colors.text}
               />
             </TouchableOpacity>
           </LinearGradient>
@@ -189,14 +154,14 @@ export default function DeckList({
             )}
           </View>
           <TouchableOpacity
-            style={{ position: 'absolute', bottom: 12, right: 12, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
-            onPress={() => handleKebabPress(row.item)}
+            style={{ position: 'absolute', bottom: 9, right: 12, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999, zIndex: 10 }}
+            onPress={() => onToggleFavorite(row.item.id)}
             activeOpacity={0.7}
           >
             <Iconify
-              icon="iconamoon:menu-kebab-vertical-bold"
+              icon={favoriteDecks.includes(row.item.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
               size={22}
-              color={colors.text}
+              color={favoriteDecks.includes(row.item.id) ? '#F98A21' : colors.text}
             />
           </TouchableOpacity>
         </LinearGradient>
@@ -205,36 +170,23 @@ export default function DeckList({
   );
 
   return (
-    <>
-      <FlatList
-        data={rows}
-        keyExtractor={(_, idx) => `row_${idx}`}
-        contentContainerStyle={{ paddingBottom: '10%'}}
-        ListHeaderComponent={ListHeaderComponent}
-        renderItem={({ item: row }) => (row.type === 'double' ? renderDoubleRow(row) : renderSingleRow(row))}
-        ListEmptyComponent={<Text style={[styles.emptyText, typography.styles.caption]}>{t('library.noDecks', 'Henüz deste bulunmuyor')}</Text>}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.buttonColor}
-            colors={[colors.buttonColor]}
-          />
-        }
-      />
-      
-      <DeckActionSheet
-        visible={actionSheetVisible}
-        deck={selectedDeck}
-        colors={colors}
-        typography={typography}
-        onClose={handleCloseActionSheet}
-        onEdit={handleEditDeck}
-        onToggleFavorite={handleToggleFavorite}
-        onDelete={handleDeleteDeck}
-      />
-    </>
+    <FlatList
+      data={rows}
+      keyExtractor={(_, idx) => `row_${idx}`}
+      contentContainerStyle={{ paddingBottom: '10%'}}
+      ListHeaderComponent={ListHeaderComponent}
+      renderItem={({ item: row }) => (row.type === 'double' ? renderDoubleRow(row) : renderSingleRow(row))}
+      ListEmptyComponent={<Text style={[styles.emptyText, typography.styles.caption]}>{t('library.noDecks', 'Henüz deste bulunmuyor')}</Text>}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={colors.buttonColor}
+          colors={[colors.buttonColor]}
+        />
+      }
+    />
   );
 }
 

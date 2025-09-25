@@ -308,5 +308,23 @@
       "errorMessage": "Ocorreu um erro",
       "errorMessageNotification": "Permissão de notificação não concedida!",
       "errorMessageNotificationDevice": "Um dispositivo físico é necessário para receber notificações."
-    }
+    },
+  "categories": {
+    "1": "Idioma",
+    "2": "Ciência",
+    "3": "Matemática",
+    "4": "História",
+    "5": "Geografia",
+    "6": "Arte e Cultura",
+    "7": "Desenvolvimento Pessoal",
+    "8": "Cultura Geral"
+  },
+  "categorySelector": {
+    "title": "Selecionar Categoria"
+  },
+  "createDeck": {
+    "categoryLabel": "Categoria *",
+    "selectCategory": "Selecionar categoria",
+    "selectCategoryA11y": "Selecionar categoria"
+  }
   }

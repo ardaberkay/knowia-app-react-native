@@ -325,5 +325,23 @@
     "searchPlaceholder": "Search in cards...",
     "noCards": "No Cards Yet",
     "noCardsDesc": "No cards have been created for this chapter yet."
+  },
+  "categories": {
+    "1": "Language",
+    "2": "Science",
+    "3": "Mathematics",
+    "4": "History",
+    "5": "Geography",
+    "6": "Art & Culture",
+    "7": "Personal Development",
+    "8": "General Knowledge"
+  },
+  "categorySelector": {
+    "title": "Select Category"
+  },
+  "createDeck": {
+    "categoryLabel": "Category*",
+    "selectCategory": "Select category",
+    "selectCategoryA11y": "Select category"
   }
 } 

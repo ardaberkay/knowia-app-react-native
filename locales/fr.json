@@ -308,5 +308,23 @@
       "errorMessage": "Une erreur s'est produite",
       "errorMessageNotification": "Permission de notification non accordée !",
       "errorMessageNotificationDevice": "Un appareil physique est nécessaire pour recevoir des notifications."
-    }
+    },
+  "categories": {
+    "1": "Langue",
+    "2": "Science",
+    "3": "Mathématiques",
+    "4": "Histoire",
+    "5": "Géographie",
+    "6": "Art et Culture",
+    "7": "Développement Personnel",
+    "8": "Culture Générale"
+  },
+  "categorySelector": {
+    "title": "Sélectionner une Catégorie"
+  },
+  "createDeck": {
+    "categoryLabel": "Catégorie *",
+    "selectCategory": "Sélectionner une catégorie",
+    "selectCategoryA11y": "Sélectionner une catégorie"
+  }
   }
