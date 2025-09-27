@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, Modal, FlatList, TextInput, Pressable, Image, Switch } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, Modal, FlatList, TextInput, Pressable, Image, Switch, Animated } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { setDeckStarted } from '../../services/DeckService';
@@ -12,6 +12,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
 import { Alert as RNAlert } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import CircularProgress from '../../components/ui/CircularProgress';
+import CreateButton from '../../components/tools/CreateButton';
 
 export default function DeckDetailScreen({ route, navigation }) {
   const { deck } = route.params;
@@ -34,15 +36,13 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [cardDetailModalVisible, setCardDetailModalVisible] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
-  const [editMode, setEditMode] = useState(false);
-  const [editName, setEditName] = useState(deck.name);
-  const [editToName, setEditToName] = useState(deck.to_name || '');
-  const [editDescription, setEditDescription] = useState(deck.description || '');
-  const [editLoading, setEditLoading] = useState(false);
+  const [shareComponentVisible, setShareComponentVisible] = useState(false);
+  const shareComponentOpacity = useRef(new Animated.Value(0)).current;
   const [cardsModalVisible, setCardsModalVisible] = useState(false);
   const [searchBarShouldFocus, setSearchBarShouldFocus] = useState(false);
   const [isShared, setIsShared] = useState(deck.is_shared || false);
   const [shareLoading, setShareLoading] = useState(false);
+  const [categoryInfo, setCategoryInfo] = useState(deck.categories || null);
   const { t } = useTranslation();
 
   if (!deck) {
@@ -53,28 +53,77 @@ export default function DeckDetailScreen({ route, navigation }) {
     );
   }
 
+  const fetchProgress = async () => {
+    setProgressLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Bu destedeki toplam kart sayısını çek
+      const { data: totalCards, error: totalError } = await supabase
+        .from('cards')
+        .select('id')
+        .eq('deck_id', deck.id);
+      
+      if (totalError) throw totalError;
+      const total = totalCards ? totalCards.length : 0;
+      
+      // Bu destedeki kart ID'lerini al
+      const cardIds = totalCards.map(card => card.id);
+      
+      // Kullanıcının bu destedeki öğrendiği kart sayısını çek
+      const { data: progressData, error } = await supabase
+        .from('user_card_progress')
+        .select('card_id, status')
+        .eq('user_id', user.id)
+        .in('card_id', cardIds)
+        .eq('status', 'learned');
+      
+      if (error) throw error;
+      const learned = progressData ? progressData.length : 0;
+      
+      setProgress(total > 0 ? learned / total : 0);
+    } catch (e) {
+      console.error('Progress fetch error:', e);
+      setProgress(0);
+    } finally {
+      setProgressLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchProgress = async () => {
-      setProgressLoading(true);
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        const { data: progressData, error } = await supabase
-          .from('user_card_progress')
-          .select('card_id, status, cards(deck_id)')
-          .eq('user_id', user.id)
-          .eq('cards.deck_id', deck.id);
-        if (error) throw error;
-        const learned = (progressData || []).filter(p => p.status === 'learned').length;
-        const total = deck.card_count || 0;
-        setProgress(total > 0 ? learned / total : 0);
-      } catch (e) {
-        setProgress(0);
-      } finally {
-        setProgressLoading(false);
-      }
-    };
     fetchProgress();
   }, [deck.id]);
+
+  // Sayfa focus olduğunda progress ve deck verisini güncelle
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', async () => {
+      // Progress'i güncelle
+      fetchProgress();
+      
+      // Deck verisini güncelle (kategori bilgisi dahil)
+      try {
+        const { data, error } = await supabase
+          .from('decks')
+          .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)')
+          .eq('id', deck.id)
+          .single();
+        
+        if (error) throw error;
+        
+        // Deck verisini güncelle
+        if (data) {
+          // Route params'ı güncelle
+          route.params.deck = data;
+          // Category info'yu güncelle
+          setCategoryInfo(data.categories);
+        }
+      } catch (e) {
+        console.error('Deck verisi güncellenemedi:', e);
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, deck.id]);
 
   useEffect(() => {
     const fetchCards = async () => {
@@ -134,6 +183,18 @@ export default function DeckDetailScreen({ route, navigation }) {
     const fetchUserId = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUserId(user?.id || null);
+      
+      // Eğer kullanıcı deste sahibi ise animasyonlu olarak share component'i göster
+      if (user?.id && deck.user_id === user.id) {
+        setShareComponentVisible(true);
+        
+        // Sadece fade-in animasyonu - sade ve profesyonel
+        Animated.timing(shareComponentOpacity, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }).start();
+      }
     };
     fetchUserId();
   }, []);
@@ -145,6 +206,7 @@ export default function DeckDetailScreen({ route, navigation }) {
       setSearchBarShouldFocus(false);
     }
   }, [cardsModalVisible]);
+
 
   const handleStart = async () => {
     try {
@@ -320,139 +382,114 @@ export default function DeckDetailScreen({ route, navigation }) {
     setSearchBarShouldFocus(false);
   };
 
+  // Kategori ikonunu sort_order değerine göre al
+  const getCategoryIcon = (sortOrder) => {
+    const icons = {
+      1: "famicons:language", // Dil
+      2: "material-symbols:science", // Bilim
+      3: "mdi:math-compass", // Matematik
+      4: "game-icons:tied-scroll", // Tarih
+      5: "arcticons:world-geography-alt", // Coğrafya
+      6: "map:museum", // Sanat ve Kültür
+      7: "ic:outline-self-improvement", // Kişisel Gelişim
+      8: "hugeicons:knowledge-01" // Genel Kültür
+    };
+    return icons[sortOrder] || "material-symbols:category-outline-rounded";
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
     
       <View style={{ flex: 1, paddingHorizontal: 18 }}>
-        <View style={[styles.infoCardGlass, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, shadowColor: colors.shadowColor, shadowOffset: colors.shadowOffset, shadowOpacity: colors.shadowOpacity, shadowRadius: colors.shadowRadius, elevation: colors.elevation, alignItems: 'center', marginTop: 12, paddingVertical: 15, width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
-          <View style={{ width: '100%' }}>
-            {editMode ? (
-              <>
-                <TextInput
-                  style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', fontWeight: 'bold', fontSize: 24, color: colors.cardQuestionText, backgroundColor: '#fff8f0', borderRadius: 8, marginBottom: 4, padding: 6 }]}
-                  value={editName}
-                  onChangeText={setEditName}
-                  placeholder="Deste Adı"
-                  maxLength={60}
-                />
-                <View style={{ width: '100%', alignItems: 'center' }}>
-                  <View style={styles.dividerLine} />
-                  <TextInput
-                    style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', marginTop: 2, color: colors.cardAnswerText, backgroundColor: '#fff8f0', borderRadius: 8, padding: 6 }]}
-                    value={editToName}
-                    onChangeText={setEditToName}
-                    placeholder="Hedef Dil/Alan (isteğe bağlı)"
-                    maxLength={60}
-                  />
+        {/* Birleşik Deck Info Kartı */}
+        <View style={[styles.infoCardGlass, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, shadowColor: colors.shadowColor, shadowOffset: colors.shadowOffset, shadowOpacity: colors.shadowOpacity, shadowRadius: colors.shadowRadius, elevation: colors.elevation, width: '100%', maxWidth: 440, alignSelf: 'center', marginTop: 12, paddingVertical: 20 }]}>
+          
+          {/* Unified Deck Header Section */}
+          <View style={{ width: '100%', alignItems: 'center', marginBottom: 20 }}>
+            <View
+              style={[styles.unifiedDeckHeader, { 
+                backgroundColor: colors.cardBackground,
+                borderColor: colors.cardBorder,
+                shadowColor: colors.shadowColor,
+              }]}
+            >
+              {/* Left Side - Category Icon */}
+              {categoryInfo && (
+                <View style={styles.leftSection}>
+                  <LinearGradient
+                    colors={[colors.buttonColor + '25', colors.buttonColor + '15']}
+                    style={[styles.categoryIconSection, { 
+                      borderColor: colors.buttonColor,
+                    }]}
+                  >
+                    <Iconify 
+                      icon={getCategoryIcon(categoryInfo.sort_order)} 
+                      size={50} 
+                      color={colors.buttonColor} 
+                    />
+                  </LinearGradient>
                 </View>
-              </>
-            ) : (
-              <>
-                <Text style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', color: colors.cardQuestionText }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
+              )}
+              
+              {/* Center Divider */}
+              <View style={[styles.centerDivider, { backgroundColor: colors.cardDivider }]} />
+              
+              {/* Right Side - Deck Names */}
+              <View style={styles.rightSection}>
+                <Text style={[styles.deckTitleUnified, { color: colors.cardQuestionText }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
                 {deck.to_name && (
-                  <View style={{ width: '100%', alignItems: 'center' }}>
-                    <View style={[styles.dividerLine, { backgroundColor: colors.cardDivider }]} />
-                    <Text style={[styles.deckTitleModern, { textAlign: 'center', alignSelf: 'center', width: '100%', marginTop: 2, color: colors.cardAnswerText }]} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
-                  </View>
+                  <>
+                    <View style={[styles.miniDivider, { backgroundColor: colors.cardDivider }]} />
+                    <Text style={[styles.deckSubtitleUnified, { color: colors.cardQuestionText }]} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
+                  </>
                 )}
-              </>
-            )}
-          </View>
-          {editMode && (
-            <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 10, gap: 10 }}>
-              <TouchableOpacity
-                style={{ backgroundColor: '#F98A21', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 18, marginRight: 6 }}
-                disabled={editLoading}
-                onPress={async () => {
-                  setEditLoading(true);
-                  try {
-                    const { error } = await supabase
-                      .from('decks')
-                      .update({ name: editName.trim(), to_name: editToName.trim() || null, description: editDescription.trim() || null })
-                      .eq('id', deck.id);
-                    if (error) throw error;
-                    deck.name = editName.trim();
-                    deck.to_name = editToName.trim() || null;
-                    deck.description = editDescription.trim() || null;
-                    setEditMode(false);
-                  } catch (e) {
-                    Alert.alert(t('deckDetail.error', 'Hata'), t('deckDetail.errorMessageDeckUpdate', 'Deste güncellenemedi.'));
-                  } finally {
-                    setEditLoading(false);
-                  }
-                }}
-              >
-                <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: 16 }]}>Kaydet</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{ backgroundColor: '#eee', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 }}
-                disabled={editLoading}
-                onPress={() => {
-                  setEditMode(false);
-                  setEditName(deck.name);
-                  setEditToName(deck.to_name || '');
-                  setEditDescription(deck.description || '');
-                }}
-              >
-                <Text style={[typography.styles.body, { color: '#333', fontWeight: 'bold', fontSize: 16 }]}>İptal</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-        {/* Açıklama Kutusu (Glassmorphism) */}
-        <View style={[styles.infoCardGlass, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, shadowColor: colors.shadowColor, shadowOffset: colors.shadowOffset, shadowOpacity: colors.shadowOpacity, shadowRadius: colors.shadowRadius, elevation: colors.elevation, width: '100%', maxWidth: 440, alignSelf: 'center', height: 140 }]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-            <Iconify icon="mage:checklist-note" size={20} color={colors.buttonColor} style={{ marginRight: 6 }} />
-            <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.cardQuestionText }]}>{t('deckDetail.details', 'Detaylar')}</Text>
-          </View>
-          {editMode ? (
-            <View style={{ flex: 1 }}>
-              <TextInput
-                style={[styles.deckDescription, typography.styles.body, { color: colors.cardQuestionText, backgroundColor: '#fff8f0', borderRadius: 8, padding: 8, minHeight: 40, flex: 1, textAlignVertical: 'top' }]}
-                value={editDescription}
-                onChangeText={setEditDescription}
-                placeholder="Deste açıklaması..."
-                multiline
-                maxLength={300}
-                scrollEnabled
-              />
-            </View>
-          ) : deck.description && deck.description.trim().length > 0 ? (
-            <ScrollView style={{ flex: 1 }} nestedScrollEnabled={true} showsVerticalScrollIndicator={true}>
-              <Text style={[styles.deckDescription, typography.styles.body, { color: colors.cardAnswerText }]}>{deck.description}</Text>
-            </ScrollView>
-          ) : (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <Text style={[styles.deckDescription, typography.styles.body, { color: colors.cardAnswerText, textAlign: 'center' }]}>
-                {t('deckDetail.noDescription', 'Deste için detay verilmemiş.')}
-              </Text>
-            </View>
-          )}
-        </View>
-        {/* İlerleme Kutusu (Glassmorphism) */}
-        <View style={[styles.infoCardGlass, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, shadowColor: colors.shadowColor, shadowOffset: colors.shadowOffset, shadowOpacity: colors.shadowOpacity, shadowRadius: colors.shadowRadius, elevation: colors.elevation, width: '100%', maxWidth: 440, alignSelf: 'center' }]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, justifyContent: 'space-between' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Iconify icon="solar:chart-2-bold-duotone" size={20} color={colors.buttonColor} style={{ marginRight: 6 }} />
-              <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.cardQuestionText }]}>{t('deckDetail.progress', 'İlerleme')}</Text>
-            </View>
-            <View style={[styles.statBadgeModern, { marginLeft: 8 }]}>
-              <Iconify icon="ri:stack-fill" size={18} color="#fff" style={{ marginRight: 4 }} />
-              <Text style={[typography.styles.body, styles.statBadgeTextModern]}>{deck.card_count || 0}</Text>
+              </View>
             </View>
           </View>
-          <View style={styles.progressContainerModern}>
-            <View style={[styles.progressBarModern, { backgroundColor: colors.progressBar }]}>
-              <View style={[styles.progressFillModern, { width: `${Math.round(progress * 100)}%` }]} />
+
+          {/* Progress Section - Compact */}
+          <View style={{ marginBottom: 24, alignItems: 'center', position: 'relative' }}>
+            {/* Card Count - Top Right */}
+            <View style={[styles.cardCountTopRight, { backgroundColor: colors.buttonColor }]}>
+              <Iconify icon="ri:stack-fill" size={17} color="#fff" style={{ marginRight: 3 }} />
+              <Text style={[typography.styles.caption, styles.cardCountTextTopRight]}>{deck.card_count || 0}</Text>
             </View>
+            
+            <CircularProgress 
+              progress={progress} 
+              size={175} 
+              strokeWidth={12}
+              showText={!progressLoading}
+              containerStyle={{ marginVertical: 0 }}
+            />
             {progressLoading ? (
-              <Text style={[styles.progressText, typography.styles.caption, { color: colors.muted }]}>{t('common.loading', 'Yükleniyor...')}</Text>
+              <Text style={[styles.progressText, typography.styles.caption, { color: colors.muted, textAlign: 'center', marginTop: 8 }]}>{t('common.loading', 'Yükleniyor...')}</Text>
             ) : progress === 0 ? (
-              <Text style={[styles.progressText, typography.styles.caption, { color: colors.cardAnswerText }]}>{t('common.notStarted', 'Henüz çalışılmadı')}</Text>
+              <Text style={[styles.progressText, typography.styles.caption, { color: colors.cardAnswerText, textAlign: 'center', marginTop: 8 }]}>{t('common.notStarted', 'Henüz çalışılmadı')}</Text>
             ) : (
-              <Text style={[typography.styles.body, styles.progressText, { color: colors.cardQuestionText }]}>%{Math.round(progress * 100)} {t('deckDetail.completed', 'Tamamlandı')}</Text>
+              <Text style={[typography.styles.body, styles.progressText, { color: colors.cardQuestionText, textAlign: 'center', marginTop: 8 }]}>{t('deckDetail.completed', 'Tamamlandı')}</Text>
             )}
           </View>
+
+          {/* Details Section - Prominent */}
+          <View style={{ marginBottom: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+              <Iconify icon="mage:checklist-note" size={22} color={colors.buttonColor} style={{ marginRight: 8 }} />
+              <Text style={[typography.styles.body, styles.sectionTitle, { color: colors.cardQuestionText, fontSize: 18 }]}>{t('deckDetail.details', 'Detaylar')}</Text>
+            </View>
+            {deck.description && deck.description.trim().length > 0 ? (
+              <ScrollView style={{ maxHeight: 70 }} nestedScrollEnabled={true} showsVerticalScrollIndicator={true}>
+                <Text style={[styles.deckDescription, typography.styles.body, { color: colors.cardAnswerText, fontSize: 16, lineHeight: 24 }]}>{deck.description}</Text>
+              </ScrollView>
+            ) : (
+              <View style={{ height: 50, justifyContent: 'center', alignItems: 'center', borderRadius: 12, padding: 16 }}>
+                <Text style={[styles.deckDescription, typography.styles.body, { color: colors.muted, textAlign: 'center', fontSize: 16 }]}>
+                  {t('deckDetail.noDescription', 'Deste için detay verilmemiş.')}
+                </Text>
+              </View>
+            )}
+          </View>
+
         </View>
         {/* Kartlar ve Bölümler */}
         <View style={[styles.cardsHeaderCard,  { backgroundColor:  colors.cardBackground, borderColor: colors.cardBorder, shadowColor: colors.shadowColor, shadowOffset: colors.shadowOffset, shadowOpacity: colors.shadowOpacity, shadowRadius: colors.shadowRadius, elevation: colors.elevation }]}>
@@ -480,8 +517,32 @@ export default function DeckDetailScreen({ route, navigation }) {
         </View>
         <View style={{ height: 12 }} />
         {/* Toplulukla Paylaş Kutusu (Glassmorphism) */}
-        {currentUserId && deck.user_id === currentUserId && (
-          <View style={[styles.infoCardGlass, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, shadowColor: colors.shadowColor, shadowOffset: colors.shadowOffset, shadowOpacity: colors.shadowOpacity, shadowRadius: colors.shadowRadius, elevation: colors.elevation, width: '100%', maxWidth: 440, alignSelf: 'center', paddingVertical: 10 }]}>
+        {shareComponentVisible && (
+          <Animated.View 
+            style={[
+              styles.infoCardGlass, 
+              { 
+                backgroundColor: colors.cardBackground, 
+                borderColor: colors.cardBorder, 
+                shadowColor: colors.shadowColor, 
+                shadowOffset: colors.shadowOffset, 
+                shadowOpacity: colors.shadowOpacity, 
+                shadowRadius: colors.shadowRadius, 
+                elevation: colors.elevation, 
+                width: '100%', 
+                maxWidth: 440, 
+                alignSelf: 'center', 
+                paddingVertical: 10,
+                opacity: shareComponentOpacity,
+                transform: [{
+                  translateY: shareComponentOpacity.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [-30, 0],
+                  })
+                }]
+              }
+            ]}
+          >
             <View style={styles.switchRow}>
               <View style={styles.labelRow}>
                 <Iconify icon="fluent:people-community-20-filled" size={20} color="#F98A21" style={styles.labelIcon} />
@@ -498,28 +559,31 @@ export default function DeckDetailScreen({ route, navigation }) {
                 disabled={shareLoading}
               />
             </View>
-          </View>
+          </Animated.View>
         )}
       </View>
       {/* Sabit alt buton barı */}
-      <SafeAreaView style={[styles.fixedButtonBar, { borderTopLeftRadius: 18, borderTopRightRadius: 18, ...Platform.select({ android: { paddingBottom: 18 }, ios: {} }) }]} edges={['bottom']}>
-        <View style={styles.buttonRowModern}>
+      
+        <View style={[styles.buttonRowModern, { gap: 12 }]}>
           <TouchableOpacity
-            style={[styles.favButtonModern, { flex: 1, minWidth: 0, marginRight: 10 }]}
+            style={[styles.secondaryButton, { 
+              flex: 1,
+              backgroundColor: colors.cardBackground,
+              borderColor: colors.buttonColor,
+              shadowColor: colors.buttonColor,
+            }]}
             onPress={() => navigation.navigate('AddCard', { deck })}
           >
-            <Iconify icon="streamline-ultimate:card-add-1-bold" size={22} color={colors.buttonColor} style={{ marginRight: 6 }} />
-            <Text style={[styles.favButtonTextModern, typography.styles.button, { color: colors.buttonColor }]}>{t('deckDetail.addCard', 'Kart Ekle')}</Text>
+            <Iconify icon="streamline-ultimate:card-add-1-bold" size={20} color={colors.buttonColor} style={{ marginRight: 6 }} />
+            <Text style={[styles.secondaryButtonText, typography.styles.button, { color: colors.buttonColor }]}>{t('deckDetail.addCard', 'Kart Ekle')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.startButtonModern, { flex: 1, minWidth: 0, borderWidth: 1, borderColor: colors.buttonBorder || 'transparent' }]}
+          <CreateButton
             onPress={handleStart}
-          >
-            <Iconify icon="mingcute:google-play-fill" size={20} color={colors.buttonText} style={{ marginRight: 6 }} />
-            <Text style={[styles.startButtonTextModern, typography.styles.button, { color: colors.buttonText }]}>{t('deckDetail.start', 'Başla')}</Text>
-          </TouchableOpacity>
+            text={t('deckDetail.start', 'Başla')}
+            style={{ flex: 1}}
+          />
         </View>
-      </SafeAreaView>
+
       {/* Modal Bottom Sheet Menü */}
       <Modal
         visible={menuVisible}
@@ -689,13 +753,13 @@ const styles = StyleSheet.create({
   },
   // Modern stiller
   headerCardModern: {
-    borderRadius: 20,
+    borderRadius: 28,
     padding: 24,
     marginBottom: 18,
     shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 4, height: 6 },
     shadowOpacity: 0.15,
-    shadowRadius: 6,
+    shadowRadius: 10,
     elevation: 6,
     alignItems: 'center',
     backgroundColor: 'transparent',
@@ -719,8 +783,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F98A21',
     borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
   },
   statBadgeTextModern: {
     color: '#fff',
@@ -733,16 +797,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   infoCardModern: {
-    borderRadius: 18,
+    borderRadius: 28,
     padding: 20,
     marginHorizontal: 18,
     marginBottom: 16,
     backgroundColor: '#fff',
     shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 4, height: 6 },
     shadowOpacity: 0.10,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 10,
+    elevation: 5,
   },
   progressContainerModern: {
     marginTop: 8,
@@ -761,19 +825,20 @@ const styles = StyleSheet.create({
   bottomButtonContainerModern: {
     padding: 18,
     backgroundColor: '#fff',
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: -2 },
+    shadowOffset: { width: 4, height: -2 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowRadius: 10,
     elevation: 8,
   },
   buttonRowModern: {
     flexDirection: 'row',
-    gap: 14,
     marginHorizontal: 18,
-    marginTop: 8,
+    marginVertical: 18,
+    marginTop: 'auto',
+    alignItems: 'stretch',
   },
   favButtonModern: {
     flex: 1,
@@ -833,13 +898,13 @@ const styles = StyleSheet.create({
   },
   floatingCard: {
     width: '88%',
-    borderRadius: 24,
+    borderRadius: 28,
     padding: 28,
     alignItems: 'center',
     shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 4, height: 6 },
     shadowOpacity: 0.15,
-    shadowRadius: 6,
+    shadowRadius: 10,
     elevation: 6,
     backgroundColor: 'rgba(255,255,255,0.35)',
     borderWidth: 1,
@@ -882,15 +947,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   infoCardGlass: {
-    borderRadius: 18,
+    borderRadius: 28,
     padding: 20,
     marginHorizontal: 18,
-    marginBottom: 10,
+    marginBottom: 11,
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 4, height: 6 },
     shadowOpacity: 0.10,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 10,
+    elevation: 5,
     overflow: 'hidden',
   },
   progressContainerGlass: {
@@ -957,12 +1022,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   fixedButtonBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingVertical: 18,
-    paddingHorizontal: 18,
+    
+
   },
   sheetOverlay: {
     flex: 1,
@@ -998,15 +1059,15 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   cardsHeaderCard: {
-    borderRadius: 18,
+    borderRadius: 28,
     width: '100%',
     maxWidth: 440,
     alignSelf: 'center',
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 4, height: 6 },
     shadowOpacity: 0.10,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 10,
+    elevation: 5,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1065,16 +1126,16 @@ const styles = StyleSheet.create({
     width: '100%',
     minHeight: 110,
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 28,
     marginBottom: 14,
     padding: 16,
     borderWidth: 2,
     borderColor: '#F98A21',
     shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 4, height: 6 },
     shadowOpacity: 0.10,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 10,
+    elevation: 5,
     justifyContent: 'center',
     alignItems: 'flex-start',
   },
@@ -1122,11 +1183,12 @@ const styles = StyleSheet.create({
   },
   cardDetailContainer: {
     backgroundColor: '#fff',
-    borderRadius: 24,
+    borderRadius: 28,
     padding: 24,
     width: '90%',
     alignItems: 'center',
     shadowColor: '#000',
+    shadowOffset: { width: 4, height: 6 },
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 12,
@@ -1232,5 +1294,93 @@ const styles = StyleSheet.create({
   },
   detailsText: {
     textDecorationLine: 'underline',
+  },
+  // Unified Deck Header Styles
+  unifiedDeckHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    borderRadius: 28,
+    borderWidth: 2,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 10,
+    minHeight: 120,
+  },
+  leftSection: {
+    width: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryIconSection: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centerDivider: {
+    width: 2,
+    height: 60,
+    borderRadius: 1,
+    marginHorizontal: 16,
+  },
+  rightSection: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingLeft: 8,
+  },
+  deckTitleUnified: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  deckSubtitleUnified: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  miniDivider: {
+    width: '60%',
+    height: 1,
+    borderRadius: 1,
+    marginVertical: 4,
+  },
+  // Card Count Top Right Styles
+  cardCountTopRight: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    zIndex: 10,
+  },
+  cardCountTextTopRight: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 17,
+  },
+  // Secondary Button Styles
+  secondaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 25,
+    borderWidth: 2,
+    paddingVertical: 14,
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

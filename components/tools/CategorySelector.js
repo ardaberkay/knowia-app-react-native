@@ -21,7 +21,7 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
   const getCategoryIcon = (sortOrder) => {
     const icons = {
       1: "famicons:language", // Dil
-      2: "healthicons:life-science", // Bilim
+      2: "material-symbols:science", // Bilim
       3: "mdi:math-compass", // Matematik
       4: "game-icons:tied-scroll", // Tarih
       5: "arcticons:world-geography-alt", // Coğrafya

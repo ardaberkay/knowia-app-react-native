@@ -5,7 +5,7 @@ export const getFavoriteDecks = async (userId) => {
   // Eğer foreign key ilişkisi varsa join ile çek
   const { data, error } = await supabase
     .from('favorite_decks')
-    .select('deck_id, decks(*, profiles:profiles(username, image_url))')
+    .select('deck_id, decks(*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order))')
     .eq('user_id', userId);
 
   if (error) throw error;

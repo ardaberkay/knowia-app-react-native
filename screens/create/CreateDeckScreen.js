@@ -7,8 +7,9 @@ import { typography } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
-import { LinearGradient } from 'expo-linear-gradient';
 import CategorySelector from '../../components/tools/CategorySelector';
+import UndoButton from '../../components/tools/UndoButton';
+import CreateButton from '../../components/tools/CreateButton';
 
 export default function CreateScreen() {
   const [name, setName] = useState('');
@@ -26,7 +27,7 @@ export default function CreateScreen() {
   const getCategoryIcon = (sortOrder) => {
     const icons = {
       1: "famicons:language", // Dil
-      2: "healthicons:life-science", // Bilim
+      2: "material-symbols:science", // Bilim
       3: "mdi:math-compass", // Matematik
       4: "game-icons:tied-scroll", // Tarih
       5: "arcticons:world-geography-alt", // Coğrafya
@@ -248,7 +249,7 @@ export default function CreateScreen() {
             ]}
           >
             <View style={styles.labelRow}>
-              <Iconify icon="material-symbols:category-outline-rounded" size={21} color="#F98A21" style={styles.labelIcon} />
+              <Iconify icon="mdi:category-plus-outline" size={21} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('createDeck.categoryLabel', 'Kategori')}</Text>
             </View>
             <TouchableOpacity
@@ -274,31 +275,15 @@ export default function CreateScreen() {
           </View>
 
           <View style={styles.buttonRowModern}>
-            <TouchableOpacity
-              style={[
-                styles.undoButton,
-                { borderColor: colors.border }
-              ]}
+            <UndoButton
               onPress={resetForm}
               disabled={loading}
-            >
-              <Text style={[styles.undoButtonText, { color: colors.text }]}>{t('create.removeChanges', 'Geri Al')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.createButton}
+            />
+            <CreateButton
               onPress={handleCreate}
               disabled={loading}
-            >
-              <LinearGradient
-                colors={['#F98A21', '#FF6B35']}
-                locations={[0, 0.99]}
-                style={styles.gradientButton}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                <Text style={styles.createButtonText}>{loading ? t('create.creating', 'Oluşturuluyor...') : t('create.create', 'Oluştur')}</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+              loading={loading}
+            />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -358,41 +343,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 20,
     marginTop: "auto",
-  },
-  undoButton: {
-    flex: 1,
-    borderRadius: 99,
-    borderWidth: 1.5,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  undoButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  createButton: {
-    flex: 2,
-    borderRadius: 99,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  createButtonText: {
-    fontSize: 17,
-    fontWeight: '500',
-    color: '#FFFFFF',
-  },
-  gradientButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 99,
   },
 
   optional: {

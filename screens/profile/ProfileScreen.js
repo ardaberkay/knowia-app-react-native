@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator, Share, Switch } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -10,6 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { ProfileSkeleton } from '../../components/skeleton/DeckSkeleton';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from '../../components/tools/LanguageSelector';
+import { Iconify } from 'react-native-iconify';
 
 export default function ProfileScreen() {
   const { colors, isDarkMode, toggleTheme, themePreference, loading: themeLoading } = useTheme();
@@ -46,7 +47,7 @@ export default function ProfileScreen() {
     checkNotificationStatus();
   }, []);
 
-  const handleInviteFriends = async () => {
+  const handleInviteFriends = useCallback(async () => {
     try {
       await Share.share({
         message: t('profile.inviteMessage', 'Bilgi evreninde öğrenme yolunu Knowia ile bul! Ücretsiz kaydol:') + 'https://seninuygulaman.com/davet',
@@ -54,7 +55,7 @@ export default function ProfileScreen() {
     } catch (error) {
       // Paylaşım iptal edildiyse veya hata olursa sessiz geç
     }
-  };
+  }, [t]);
 
   const handleToggleNotifications = async (value) => {
     if (value) {
@@ -82,17 +83,18 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleLanguageChange = async (lng) => {
+  const handleLanguageChange = useCallback(async (lng) => {
     await i18n.changeLanguage(lng);
     setLanguageModalVisible(false);
-  };
+  }, [i18n]);
 
   // Menü kategorileri
-  const accountItems = [
+  const accountItems = useMemo(() => [
     { label: t('profile.edit'), onPress: () => navigation.navigate('EditProfile') },
     { label: t('profile.invite'), onPress: handleInviteFriends },
-  ];
-  const appSettingsItems = [
+  ], [t, navigation, handleInviteFriends]);
+
+  const appSettingsItems = useMemo(() => [
     {
       label: t('profile.night_mode'),
       right: (
@@ -116,9 +118,12 @@ export default function ProfileScreen() {
       label: t('profile.language'),
       onPress: () => setLanguageModalVisible(true),
       right: (
-        <Text style={{ color: colors.text, marginRight: 8 }}>
+        <View style={styles.languageRow}>
+          <Iconify icon={i18n.language === 'tr' ? 'twemoji:flag-for-flag-turkey' : i18n.language === 'en' ? 'twemoji:flag-england' : i18n.language === 'es' ? 'twemoji:flag-spain' : i18n.language === 'fr' ? 'twemoji:flag-france' : i18n.language === 'pt' ? 'twemoji:flag-portugal' : i18n.language === 'ar' ? 'twemoji:flag-saudi-arabia' : ''} size={20} />
+        <Text style={{ color: colors.text, marginRight: 8, fontSize: 15 }}>
           {i18n.language === 'tr' ? 'Türkçe' : i18n.language === 'en' ? 'English' : i18n.language === 'es' ? 'Spanish' : i18n.language === 'fr' ? 'French' : i18n.language === 'pt' ? 'Portuguese' : i18n.language === 'ar' ? 'Arabic' : ''}
         </Text>
+        </View>
       ),
     },
     {
@@ -134,12 +139,13 @@ export default function ProfileScreen() {
       ),
       onPress: () => {},
     },
-  ];
-  const infoItems = [
+  ], [t, toggleTheme, themePreference, isDarkMode, colors, i18n.language, notificationsEnabled, handleToggleNotifications]);
+
+  const infoItems = useMemo(() => [
     { label: t('profile.about'), onPress: () => alert(t('profile.about')) },
     { label: t('profile.feedback'), onPress: () => alert(t('profile.feedback')) },
     { label: t('profile.terms'), onPress: () => alert(t('profile.terms')) },
-  ];
+  ], [t]);
 
   const handleLogout = async () => {
     try {
@@ -290,5 +296,10 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     textAlign: 'center',
+  },
+  languageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
 }); 

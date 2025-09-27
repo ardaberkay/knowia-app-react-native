@@ -5,7 +5,7 @@ export const getDecksByCategory = async (category) => {
   
   let query = supabase
     .from('decks')
-    .select('*, profiles:profiles(username, image_url)');
+    .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)');
 
   switch(category) {
     case 'myDecks':

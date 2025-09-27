@@ -79,7 +79,15 @@ module.exports = function (api) {
             'icon-park-outline:translation',
             'fluent-emoji-high-contrast:amphora',
             'flowbite:caret-down-solid',
-            'material-symbols:category-outline-rounded'
+            'material-symbols:category-outline-rounded',
+            'mdi:category-plus-outline',
+            'material-symbols:science',
+            'twemoji:flag-for-flag-turkey',
+            'twemoji:flag-england',
+            'twemoji:flag-saudi-arabia',
+            'twemoji:flag-spain',
+            'twemoji:flag-portugal',
+            'twemoji:flag-france'
           ],
         },
       ],

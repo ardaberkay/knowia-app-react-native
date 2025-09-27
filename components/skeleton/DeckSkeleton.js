@@ -23,8 +23,8 @@ const profileSkeletonStyles = StyleSheet.create({
     marginBottom: 32,
   },
   avatarSkeleton: {
-    width: 140,
-    height: 196,
+    width: 100,
+    height: 100,
     borderRadius: 50,
     marginRight: 20,
   },
