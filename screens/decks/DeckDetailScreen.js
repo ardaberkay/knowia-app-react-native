@@ -23,6 +23,7 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [favLoading, setFavLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressLoading, setProgressLoading] = useState(true);
+  const [learnedCardsCount, setLearnedCardsCount] = useState(0);
   const [menuVisible, setMenuVisible] = useState(false);
   const [cards, setCards] = useState([]);
   const [search, setSearch] = useState('');
@@ -82,6 +83,7 @@ export default function DeckDetailScreen({ route, navigation }) {
       const learned = progressData ? progressData.length : 0;
       
       setProgress(total > 0 ? learned / total : 0);
+      setLearnedCardsCount(learned);
     } catch (e) {
       console.error('Progress fetch error:', e);
       setProgress(0);
@@ -90,9 +92,12 @@ export default function DeckDetailScreen({ route, navigation }) {
     }
   };
 
+  // Progress'i hemen yüklemeye başla (deck varsa)
   useEffect(() => {
-    fetchProgress();
-  }, [deck.id]);
+    if (deck?.id) {
+      fetchProgress();
+    }
+  }, [deck?.id]); // deck.id varsa hemen başla
 
   // Sayfa focus olduğunda progress ve deck verisini güncelle
   useEffect(() => {
@@ -448,27 +453,30 @@ export default function DeckDetailScreen({ route, navigation }) {
           </View>
 
           {/* Progress Section - Compact */}
-          <View style={{ marginBottom: 24, alignItems: 'center', position: 'relative' }}>
+          <View style={{ marginBottom: 15, alignItems: 'center', position: 'relative' }}>
             {/* Card Count - Top Right */}
             <View style={[styles.cardCountTopRight, { backgroundColor: colors.buttonColor }]}>
               <Iconify icon="ri:stack-fill" size={17} color="#fff" style={{ marginRight: 3 }} />
               <Text style={[typography.styles.caption, styles.cardCountTextTopRight]}>{deck.card_count || 0}</Text>
             </View>
             
+            {/* Learned Cards Count - Top Left */}
+            <View style={[styles.learnedCardsTopLeft, { backgroundColor: colors.secondary }]}>
+              <Iconify icon="dashicons:welcome-learn-more" size={17} color="#fff" style={{ marginRight: 3 }} />
+              <Text style={[typography.styles.caption, styles.learnedCardsTextTopLeft]}>{learnedCardsCount}</Text>
+            </View>
+            
             <CircularProgress 
               progress={progress} 
-              size={175} 
-              strokeWidth={12}
+              size={185} 
+              strokeWidth={13}
               showText={!progressLoading}
-              containerStyle={{ marginVertical: 0 }}
+              containerStyle={{ marginTop: 25 }}
+              shouldAnimate={!progressLoading}
             />
-            {progressLoading ? (
-              <Text style={[styles.progressText, typography.styles.caption, { color: colors.muted, textAlign: 'center', marginTop: 8 }]}>{t('common.loading', 'Yükleniyor...')}</Text>
-            ) : progress === 0 ? (
-              <Text style={[styles.progressText, typography.styles.caption, { color: colors.cardAnswerText, textAlign: 'center', marginTop: 8 }]}>{t('common.notStarted', 'Henüz çalışılmadı')}</Text>
-            ) : (
-              <Text style={[typography.styles.body, styles.progressText, { color: colors.cardQuestionText, textAlign: 'center', marginTop: 8 }]}>{t('deckDetail.completed', 'Tamamlandı')}</Text>
-            )}
+            {progressLoading ? null : progress === 0 ? (
+              <Text style={[styles.progressText, typography.styles.caption, { color: colors.cardAnswerText, textAlign: 'center',}]}>{t('common.notStarted', 'Henüz çalışılmadı')}</Text>
+            ) : null}
           </View>
 
           {/* Details Section - Prominent */}
@@ -564,7 +572,7 @@ export default function DeckDetailScreen({ route, navigation }) {
       </View>
       {/* Sabit alt buton barı */}
       
-        <View style={[styles.buttonRowModern, { gap: 12 }]}>
+        <View style={styles.buttonRowModern}>
           <TouchableOpacity
             style={[styles.secondaryButton, { 
               flex: 1,
@@ -580,7 +588,9 @@ export default function DeckDetailScreen({ route, navigation }) {
           <CreateButton
             onPress={handleStart}
             text={t('deckDetail.start', 'Başla')}
-            style={{ flex: 1}}
+            style={{ flex: 1,}}
+            showIcon={true}
+            iconName="streamline:startup-solid"
           />
         </View>
 
@@ -835,10 +845,10 @@ const styles = StyleSheet.create({
   },
   buttonRowModern: {
     flexDirection: 'row',
-    marginHorizontal: 18,
-    marginVertical: 18,
+    gap: 20,
     marginTop: 'auto',
-    alignItems: 'stretch',
+    paddingHorizontal: 16,
+    paddingBottom: 18,
   },
   favButtonModern: {
     flex: 1,
@@ -1370,12 +1380,29 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 17,
   },
+  // Learned Cards Count Top Left Styles
+  learnedCardsTopLeft: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    zIndex: 10,
+  },
+  learnedCardsTextTopLeft: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 17,
+  },
   // Secondary Button Styles
   secondaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 25,
+    borderRadius: 30,
     borderWidth: 2,
     paddingVertical: 14,
   },

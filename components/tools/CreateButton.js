@@ -3,8 +3,9 @@ import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
+import { Iconify } from 'react-native-iconify';
 
-export default function CreateButton({ onPress, disabled = false, text, loading = false, style, textStyle, colors }) {
+export default function CreateButton({ onPress, disabled = false, text, loading = false, style, textStyle, colors, showIcon = false, iconName }) {
   const { colors: themeColors } = useTheme();
   const { t } = useTranslation();
 
@@ -26,6 +27,14 @@ export default function CreateButton({ onPress, disabled = false, text, loading 
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
       >
+        {showIcon && iconName && (
+          <Iconify 
+            icon={iconName} 
+            size={20} 
+            color="#fff" 
+            style={{ marginRight: 6 }} 
+          />
+        )}
         <Text style={[
           styles.createButtonText,
           textStyle
@@ -56,6 +65,7 @@ const styles = StyleSheet.create({
   gradientButton: {
     paddingVertical: 16,
     paddingHorizontal: 18,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 99,

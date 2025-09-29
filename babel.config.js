@@ -87,7 +87,11 @@ module.exports = function (api) {
             'twemoji:flag-saudi-arabia',
             'twemoji:flag-spain',
             'twemoji:flag-portugal',
-            'twemoji:flag-france'
+            'twemoji:flag-france',
+            'material-symbols-light:stylus-note',
+            'streamline:startup-solid',
+            'material-symbols-light:digital-wellbeing-outline-rounded',
+            'material-symbols-light:digital-wellbeing-rounded'
           ],
         },
       ],

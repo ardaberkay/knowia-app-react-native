@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, Animated } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -10,9 +10,12 @@ const CircularProgress = ({
   strokeWidth = 8, 
   showText = true,
   textStyle = {},
-  containerStyle = {}
+  containerStyle = {},
+  shouldAnimate = false
 }) => {
   const { colors } = useTheme();
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const textOpacityAnim = useRef(new Animated.Value(0)).current;
   
   // Progress 0-1 arasında olmalı
   const normalizedProgress = Math.max(0, Math.min(1, progress));
@@ -40,8 +43,38 @@ const CircularProgress = ({
   
   const progressColor = getProgressColor();
   
+  // Entrance animasyonu
+  useEffect(() => {
+    if (shouldAnimate) {
+      Animated.parallel([
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 120,
+          friction: 8,
+          overshootClamping: false,
+          restDisplacementThreshold: 0.01,
+          restSpeedThreshold: 0.7,
+        }),
+        Animated.timing(textOpacityAnim, {
+          toValue: 1,
+          duration: 600,
+          delay: 0,
+          useNativeDriver: true,
+        })
+      ]).start();
+    }
+  }, [shouldAnimate]);
+
   return (
-    <View style={[{ alignItems: 'center', justifyContent: 'center' }, containerStyle]}>
+    <Animated.View style={[
+      { 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        transform: [{ scale: scaleAnim }]
+      }, 
+      containerStyle
+    ]}>
       <Svg width={size} height={size / 2 + strokeWidth / 2} viewBox={`0 0 ${size} ${size / 2 + strokeWidth / 2}`}>
         <Defs>
           <LinearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -81,27 +114,29 @@ const CircularProgress = ({
       
       {/* Progress text */}
       {showText && (
-        <View style={{
+        <Animated.View style={{
           position: 'absolute',
-          top: size / 2 - 20,
+          top: size / 2 - 22,
           alignItems: 'center',
-          justifyContent: 'center'
+          justifyContent: 'center',
+          opacity: textOpacityAnim,
         }}>
           <Text style={[
             typography.styles.body,
             {
-              fontSize: 18,
+              fontSize: 40,
               fontWeight: 'bold',
               color: colors.cardQuestionText || '#333',
-              textAlign: 'center'
+              textAlign: 'center',
+              marginTop: -30,
             },
             textStyle
           ]}>
             {Math.round(progressPercent)}%
           </Text>
-        </View>
+        </Animated.View>
       )}
-    </View>
+    </Animated.View>
   );
 };
 
