@@ -200,7 +200,7 @@ export default function DeckCardsScreen({ route, navigation }) {
       />
     ) : selectedCard ? (
       <>
-        <CardDetailView card={selectedCard} />
+        <CardDetailView card={selectedCard} cards={cards} onSelectCard={setSelectedCard} />
         <CardActionMenu
           visible={cardMenuVisible}
           onClose={() => setCardMenuVisible(false)}
@@ -273,7 +273,7 @@ export default function DeckCardsScreen({ route, navigation }) {
               end={{ x: 1, y: 1 }}
               style={{ flex: 1 }}
             >
-              <CardDetailView card={selectedCard} />
+              <CardDetailView card={selectedCard} cards={cards} onSelectCard={setSelectedCard} />
             </LinearGradient>
         ) : (
                      <FlatList

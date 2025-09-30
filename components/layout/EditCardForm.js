@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Image, ScrollView, ActivityIndicator } from 'react-native';
 import { supabase } from '../../lib/supabase';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { typography } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
@@ -11,6 +10,8 @@ import * as FileSystem from 'expo-file-system';
 import { Buffer } from 'buffer';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
+import CreateButton from '../tools/CreateButton';
+import UndoButton from '../tools/UndoButton';
 
 export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) {
   const { colors } = useTheme();
@@ -98,26 +99,27 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
   };
 
   return (
-    <ScrollView
-      colors={colors.backgroundColor}
+    <ScrollView 
+      contentContainerStyle={[styles.formContainer, { backgroundColor: colors.background }]}
+      style={{ flex: 1 }}
     >
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.formContainer}>
-          <View style={[styles.inputCard, {
-            backgroundColor: colors.cardBackground,
+          <View style={[styles.inputCard, { 
+            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
             borderColor: colors.cardBorder,
+            borderWidth: 1,
             shadowColor: colors.shadowColor,
             shadowOffset: colors.shadowOffset,
             shadowOpacity: colors.shadowOpacity,
             shadowRadius: colors.shadowRadius,
             elevation: colors.elevation,
           }]}>
-            <View style={styles.labelRow}>
-              <Iconify icon="mage:image-fill" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.cardQuestionText}]}>{t("cardDetail.image", "Kart Görseli")}</Text>
-            </View>
+            <View style={{ flex: 1 }}>
+              <View style={styles.labelRow}>
+                <Iconify icon="mage:image-fill" size={24} color="#F98A21" style={styles.labelIcon} />
+                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.image", "Kart Görseli")}</Text>
+              </View>
             {image ? (
-              <View style={styles.imageContainer}>
+              <View style={{ alignItems: 'center', marginBottom: 8 }}>
                 <Image source={{ uri: image }} style={styles.cardImage} />
                 <TouchableOpacity onPress={handleRemoveImage} style={styles.removeImageButton}>
                   <Text style={styles.removeImageButtonText}>{t("cardDetail.removeImage", "Görseli Kaldır")}</Text>
@@ -129,121 +131,121 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
                 <Text style={styles.addImageButtonText}>{t("cardDetail.addImage", "Fotoğraf Ekle")}</Text>
               </TouchableOpacity>
             )}
+            </View>
           </View>
-          <View style={[styles.inputCard, {
-            backgroundColor: colors.cardBackground,
+          <View style={[styles.inputCard, { 
+            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
             borderColor: colors.cardBorder,
+            borderWidth: 1,
             shadowColor: colors.shadowColor,
             shadowOffset: colors.shadowOffset,
             shadowOpacity: colors.shadowOpacity,
             shadowRadius: colors.shadowRadius,
             elevation: colors.elevation,
           }]}>
-            <View style={styles.labelRow}>
-              <Iconify icon="uil:comment-alt-question" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.cardQuestionText}]}>{t("cardDetail.question", "Soru")} *</Text>
+            <View style={{ flex: 1 }}>
+              <View style={styles.labelRow}>
+                <Iconify icon="uil:comment-alt-question" size={24} color="#F98A21" style={styles.labelIcon} />
+                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.question", "Soru")} *</Text>
+              </View>
+              <TextInput
+                style={[styles.input, typography.styles.body, {color: colors.text}]}
+                placeholder={t("cardDetail.questionPlaceholder", "Kartın sorusu")}
+                placeholderTextColor={colors.muted}
+                value={question}
+                onChangeText={setQuestion}
+                multiline
+              />
             </View>
-            <TextInput
-              style={[styles.input, typography.styles.body, {color: colors.cardAnswerText, borderColor: colors.border}]}
-              placeholder={t("cardDetail.questionPlaceholder", "Kartın sorusu")}
-              placeholderTextColor={colors.muted}
-              value={question}
-              onChangeText={setQuestion}
-              multiline
-            />
           </View>
-          <View style={[styles.inputCard, {
-            backgroundColor: colors.cardBackground,
+          <View style={[styles.inputCard, { 
+            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
             borderColor: colors.cardBorder,
+            borderWidth: 1,
             shadowColor: colors.shadowColor,
             shadowOffset: colors.shadowOffset,
             shadowOpacity: colors.shadowOpacity,
             shadowRadius: colors.shadowRadius,
             elevation: colors.elevation,
           }]}>
-            <View style={styles.labelRow}>
-              <Iconify icon="uil:comment-alt-check" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.cardQuestionText}]}>{t("cardDetail.answer", "Cevap")} *</Text>
+            <View style={{ flex: 1 }}>
+              <View style={styles.labelRow}>
+                <Iconify icon="uil:comment-alt-check" size={24} color="#F98A21" style={styles.labelIcon} />
+                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.answer", "Cevap")} *</Text>
+              </View>
+              <TextInput
+                style={[styles.input, typography.styles.body, {color: colors.text}]}
+                placeholder={t("cardDetail.answerPlaceholder", "Kartın cevabı")}
+                placeholderTextColor={colors.muted}
+                value={answer}
+                onChangeText={setAnswer}
+                multiline
+              />
             </View>
-            <TextInput
-              style={[styles.input, typography.styles.body, {color: colors.cardAnswerText, borderColor: colors.border}]}
-              placeholder={t("cardDetail.answerPlaceholder", "Kartın cevabı")}
-              placeholderTextColor={colors.muted}
-              value={answer}
-              onChangeText={setAnswer}
-              multiline
-            />
           </View>
-          <View style={[styles.inputCard, {
-            backgroundColor: colors.cardBackground,
+          <View style={[styles.inputCard, { 
+            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
             borderColor: colors.cardBorder,
+            borderWidth: 1,
             shadowColor: colors.shadowColor,
             shadowOffset: colors.shadowOffset,
             shadowOpacity: colors.shadowOpacity,
             shadowRadius: colors.shadowRadius,
             elevation: colors.elevation,
           }]}>
-            <View style={styles.labelRow}>
-              <Iconify icon="lucide:lightbulb" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.cardQuestionText}]}>{t("cardDetail.example", "Örnek")}</Text>
+            <View style={{ flex: 1 }}>
+              <View style={styles.labelRow}>
+                <Iconify icon="lucide:lightbulb" size={24} color="#F98A21" style={styles.labelIcon} />
+                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.example", "Örnek")}</Text>
+              </View>
+              <TextInput
+                style={[styles.input, typography.styles.body, {color: colors.text}]}
+                placeholder={t("cardDetail.examplePlaceholder", "Örnek cümle (opsiyonel)")}
+                placeholderTextColor={colors.muted}
+                value={example}
+                onChangeText={setExample}
+                multiline
+              />
             </View>
-            <TextInput
-              style={[styles.input, typography.styles.body, {color: colors.cardAnswerText, borderColor: colors.border}]}
-              placeholder={t("cardDetail.examplePlaceholder", "Örnek cümle (opsiyonel)")}
-              placeholderTextColor={colors.muted}
-              value={example}
-              onChangeText={setExample}
-              multiline
-            />
           </View>
-          <View style={[styles.inputCard, {
-            backgroundColor: colors.cardBackground,
+          <View style={[styles.inputCard, { 
+            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
             borderColor: colors.cardBorder,
+            borderWidth: 1,
             shadowColor: colors.shadowColor,
             shadowOffset: colors.shadowOffset,
             shadowOpacity: colors.shadowOpacity,
             shadowRadius: colors.shadowRadius,
             elevation: colors.elevation,
           }]}>
-            <View style={styles.labelRow}>
-              <Iconify icon="material-symbols-light:stylus-note" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.cardQuestionText}]}>{t("cardDetail.note", "Not")}</Text>
+            <View style={{ flex: 1 }}>
+              <View style={styles.labelRow}>
+                <Iconify icon="material-symbols-light:stylus-note" size={24} color="#F98A21" style={styles.labelIcon} />
+                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.note", "Not")}</Text>
+              </View>
+              <TextInput
+                style={[styles.input, typography.styles.body, {color: colors.text}]}
+                placeholder={t("cardDetail.notePlaceholder", "Not (opsiyonel)")}
+                placeholderTextColor={colors.muted}
+                value={note}
+                onChangeText={setNote}
+                multiline
+              />
             </View>
-            <TextInput
-              style={[styles.input, typography.styles.body, {color: colors.cardAnswerText, borderColor: colors.border}]}
-              placeholder={t("cardDetail.notePlaceholder", "Not (opsiyonel)")}
-              placeholderTextColor={colors.muted}
-              value={note}
-              onChangeText={setNote}
-              multiline
-            />
           </View>
           <View style={styles.buttonRowModern}>
-            <TouchableOpacity
-              style={[
-                styles.favButtonModern,
-                { flex: 1, minWidth: 0, marginRight: 10 },
-                loading && { opacity: 0.7 }
-              ]}
+            <UndoButton
               onPress={onCancel}
               disabled={loading}
-            >
-              <Text style={[styles.favButtonTextModern, typography.styles.button, { color: '#F98A21' }]}>{t("cardDetail.cancel", "İptal Et")}</Text>
-            </TouchableOpacity>
-                         <TouchableOpacity
-               style={[
-                 styles.startButtonModern,
-                 { flex: 1, minWidth: 0, borderWidth: 1, borderColor: colors.buttonBorder || 'transparent' },
-                 loading && { opacity: 0.7 }
-               ]}
-               onPress={handleUpdateCard}
-               disabled={loading}
-             >
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={[styles.startButtonTextModern, typography.styles.button, { color: '#fff' }]}>{t("cardDetail.save", "Kaydet")}</Text>}
-            </TouchableOpacity>
+              text={t("cardDetail.cancel", "İptal Et")}
+            />
+            <CreateButton
+              onPress={handleUpdateCard}
+              disabled={loading}
+              loading={loading}
+              text={t("cardDetail.save", "Kaydet")}
+            />
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
     </ScrollView>
   );
 }
@@ -255,61 +257,57 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     paddingTop: 16,
+
   },
   inputCard: {
     width: '100%',
-    borderRadius: 24,
+    maxWidth: 440,
+    borderRadius: 28,
     padding: 20,
-    marginBottom: 18,
-    marginHorizontal: 18,
-    borderWidth: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
-    alignSelf: 'center',
+    marginBottom: 11,
+    shadowOffset: { width: 4, height: 6},
+    shadowOpacity: 0.10,
+    shadowRadius: 10,
+    elevation: 5,
+    overflow: 'hidden',
   },
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 10,
   },
   labelIcon: {
     marginRight: 8,
   },
   label: {
     fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: 0.3,
+    fontWeight: '500',
   },
   input: {
-    borderWidth: 1,
-    width: '100%',
+    borderWidth: 0.15,
+    borderColor: '#eee',
     borderRadius: 8,
     padding: 12,
-    marginTop: 8,
+    marginBottom: 0,
     fontSize: 16,
-    maxHeight: 150,
-    flex: 1,
-    minHeight: 40,
   },
   cardImage: {
-    width: 100,
-    height: 130,
-    borderRadius: 16,
-    resizeMode: 'contain',
-    backgroundColor: 'transparent',
-    alignSelf: 'center',
+    width: 120,
+    height: 160,
+    borderRadius: 18,
+    marginBottom: 8,
+    resizeMode: 'cover',
+    backgroundColor: '#f2f2f2',
   },
   addImageButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff8f0',
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    borderRadius: 28,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
     borderWidth: 1,
     borderColor: '#F98A21',
-    marginTop: 8,
-    alignSelf: 'center',
+    marginTop: 6,
   },
   addImageButtonText: {
     color: '#F98A21',
@@ -318,71 +316,24 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   removeImageButton: {
-    backgroundColor: '#fff',
+    backgroundColor: '#F98A21',
     borderWidth: 1,
     borderColor: '#F98A21',
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    borderRadius: 28,
+    paddingVertical: 6,
+    paddingHorizontal: 18,
     alignItems: 'center',
-    marginTop: 8,
-    alignSelf: 'center',
+    marginTop: 4,
+    
   },
   removeImageButtonText: {
-    color: '#F98A21',
+    color: '#fff',
     fontWeight: 'bold',
     fontSize: 15,
   },
-  imageContainer: {
-    alignItems: 'center',
-    marginTop: 8,
-    gap: 8,
-    alignSelf: 'center',
-  },
   buttonRowModern: {
     flexDirection: 'row',
-    gap: 14,
-    marginHorizontal: 18,
-    marginTop: 30,
-    marginBottom: 30,
-  },
-  favButtonModern: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#F98A21',
-    borderRadius: 10,
-    paddingVertical: 13,
-    justifyContent: 'center',
-    shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-    paddingHorizontal: 5,
-  },
-  favButtonTextModern: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  startButtonModern: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F98A21',
-    borderRadius: 10,
-    paddingVertical: 13,
-    justifyContent: 'center',
-    shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  startButtonTextModern: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    gap: 20,
+    marginTop: 4,
   },
 }); 

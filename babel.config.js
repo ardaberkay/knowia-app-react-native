@@ -91,7 +91,9 @@ module.exports = function (api) {
             'material-symbols-light:stylus-note',
             'streamline:startup-solid',
             'material-symbols-light:digital-wellbeing-outline-rounded',
-            'material-symbols-light:digital-wellbeing-rounded'
+            'material-symbols-light:digital-wellbeing-rounded',
+            'ion:chevron-back',
+            'ion:chevron-forward'
           ],
         },
       ],
