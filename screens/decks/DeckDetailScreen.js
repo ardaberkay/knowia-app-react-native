@@ -405,7 +405,7 @@ export default function DeckDetailScreen({ route, navigation }) {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
     
-      <View style={{ flex: 1, paddingHorizontal: 18 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 16 }}>
         {/* Birleşik Deck Info Kartı */}
         <View style={[styles.infoCardGlass, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, shadowColor: colors.shadowColor, shadowOffset: colors.shadowOffset, shadowOpacity: colors.shadowOpacity, shadowRadius: colors.shadowRadius, elevation: colors.elevation, width: '100%', maxWidth: 440, alignSelf: 'center', marginTop: 12, paddingVertical: 20 }]}>
           
@@ -569,7 +569,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             </View>
           </Animated.View>
         )}
-      </View>
+      </ScrollView>
       {/* Sabit alt buton barı */}
       
         <View style={styles.buttonRowModern}>

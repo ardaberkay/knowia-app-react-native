@@ -93,7 +93,10 @@ module.exports = function (api) {
             'material-symbols-light:digital-wellbeing-outline-rounded',
             'material-symbols-light:digital-wellbeing-rounded',
             'ion:chevron-back',
-            'ion:chevron-forward'
+            'ion:chevron-forward',
+            'heroicons:language',
+            'heroicons:puzzle-piece-solid',
+            'uil:dna'
           ],
         },
       ],

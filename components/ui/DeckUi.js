@@ -11,6 +11,32 @@ export default function DeckCard({
   onToggleFavorite,
   isFavorite = false,
 }) {
+  // Kategoriye göre renkleri al (Supabase sort_order kullanarak)
+  const getCategoryColors = (sortOrder) => {
+    if (colors.categoryColors && colors.categoryColors[sortOrder]) {
+      return colors.categoryColors[sortOrder];
+    }
+    // Varsayılan renkler (Tarih kategorisi - sort_order: 4)
+    return ['#6F8EAD', '#3F5E78'];
+  };
+
+  // Kategori ikonunu sort_order değerine göre al
+  const getCategoryIcon = (sortOrder) => {
+    const icons = {
+      1: "famicons:language", // Dil
+      2: "material-symbols:science", // Bilim
+      3: "mdi:math-compass", // Matematik
+      4: "game-icons:tied-scroll", // Tarih
+      5: "arcticons:world-geography-alt", // Coğrafya
+      6: "map:museum", // Sanat ve Kültür
+      7: "ic:outline-self-improvement", // Kişisel Gelişim
+      8: "hugeicons:knowledge-01" // Genel Kültür
+    };
+    return icons[sortOrder] || "material-symbols:category";
+  };
+
+  const gradientColors = getCategoryColors(deck.categories?.sort_order);
+  const categoryIcon = getCategoryIcon(deck.categories?.sort_order);
 
   return (
     <View style={styles.deckCardModern}>
@@ -21,11 +47,20 @@ export default function DeckCard({
         activeOpacity={0.7}
       >
       <LinearGradient
-        colors={colors.deckGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        colors={gradientColors}
+        start={{ x: 0, y: 1 }}
+        end={{ x: 1, y: 0 }}
         style={styles.deckCardGradient}
       >
+        {/* Background Overlay Icon - en altta z-index */}
+        <View style={styles.backgroundOverlayIcon}>
+          <Iconify
+            icon={categoryIcon}
+            size={240}
+            color="rgba(255, 255, 255, 0.3)"
+            style={styles.overlayIcon}
+          />
+        </View>
         <View style={styles.deckCardContentModern}>
           <View style={styles.deckProfileRow}>
             <Image
@@ -143,6 +178,24 @@ const styles = StyleSheet.create({
     color: '#888',
     fontWeight: '700',
     maxWidth: '80%',
+  },
+  backgroundOverlayIcon: {
+    position: 'absolute',
+    bottom: -30, // Yarısının taşması için daha aşağıda
+    left: -30, // Yarısının taşması için daha solda
+    width: 120,
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 0, // En altta kalması için
+    overflow: 'hidden', // Taşan kısmı gizle
+// Çapraz yönlendirme
+  },
+  overlayIcon: {
+    // Background overlay efekti için text shadow
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 6,
   },
 });
 

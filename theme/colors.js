@@ -11,7 +11,7 @@ export const lightColors = {
     muted: '#8C8C8C',
     buttonText: '#FFFFFF',
     tabBarBackground: '#FFFFFF',
-    deckGradient: ["#fff8f0", "#ffe0c3", "#f9b97a"],
+    deckGradient: ['#A8C5F0', '#D6E4FA'],
     appbar: '#ffffff',
     title: '#000000',
     libraryTab: '#fff8f0',
@@ -40,6 +40,17 @@ export const lightColors = {
     shadowOffset: { width: 0, height: 3 },
     elevation: 2,
     iconBackground: 'rgba(0,0,0,0.05)',
+    // Kategori bazlı renkler (Supabase sort_order ile eşleşen)
+    categoryColors: {
+        1: ['#6F8EAD', '#3F5E78'], // Dil
+        2: ['#577DA3', '#3E7C8A'], // Bilim
+        3: ['#A691B8', '#7B5F90'], // Matematik
+        4: ['#A88D6B', '#7A5F3A'], // Tarih
+        5: ['#8CAE6C', '#5F7F1F'], // Coğrafya
+        6: ['#DE8FA5', '#BF5E70'], // Sanat ve Kültür
+        7: ['#D2B45E', '#B8902D'], // Kişisel Gelişim
+        8: ['#7AA3A3', '#4F7C7C'], // Genel Kültür
+    },
 };
 
 export const darkColors = {
@@ -55,7 +66,7 @@ export const darkColors = {
     muted: '#BDBDBD',
     buttonText: '#FFFFFF',
     tabBarBackground: '#1C1C1C',
-    deckGradient: ['#2C2C2C', '#4A3E2D', '#F98A21'],
+    deckGradient: ['#2A3C57', '#1F2D42'],
     appbar: '#1C1C1C',
     title: '#FFFFFF',
     libraryTab: '#2C2C2C',
@@ -84,5 +95,16 @@ export const darkColors = {
     shadowOffset: { width: 0, height: 3 },
     elevation: 2,
     iconBackground: 'rgba(255, 255, 255, 0.1)',
+    // Kategori bazlı renkler (Supabase sort_order ile eşleşen)
+    categoryColors: {
+        1: ['#6F8EAD', '#3F5E78'], // Dil
+        2: ['#577DA3', '#3E7C8A'], // Bilim
+        3: ['#A691B8', '#7B5F90'], // Matematik
+        4: ['#A88D6B', '#7A5F3A'], // Tarih
+        5: ['#8CAE6C', '#5F7F1F'], // Coğrafya
+        6: ['#DE8FA5', '#BF5E70'], // Sanat ve Kültür
+        7: ['#D2B45E', '#B8902D'], // Kişisel Gelişim
+        8: ['#7AA3A3', '#4F7C7C'], // Genel Kültür
+    },
 
 };

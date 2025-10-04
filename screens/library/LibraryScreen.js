@@ -69,7 +69,7 @@ export default function LibraryScreen() {
       } catch (e) {
         setMyDecks([]);
       } finally {
-        setLoading(false);
+        // setLoading(false); // Sürekli loading için yorum satırına alındı
       }
     };
     fetchDecks();
@@ -197,7 +197,7 @@ export default function LibraryScreen() {
   // Yükleniyor ekranı
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
-      <LottieView source={require('../../assets/handAnimation.json')} autoPlay loop style={{ width: 300, height: 300 }} />
+      <LottieView source={require('../../assets/loading-question.json')} autoPlay loop style={{ width: 300, height: 300 }} />
     </View>
   );
 
