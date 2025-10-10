@@ -96,7 +96,13 @@ module.exports = function (api) {
             'ion:chevron-forward',
             'heroicons:language',
             'heroicons:puzzle-piece-solid',
-            'uil:dna'
+            'lucide:dna',
+            'game-icons:brain',
+            'streamline-ultimate:module-puzzle-2-bold',
+            'vaadin:puzzle-piece',
+            'clarity:atom-solid',
+            'fluent:brain-24-filled',
+            'hugeicons:language-skill'
           ],
         },
       ],

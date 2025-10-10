@@ -2,6 +2,47 @@ import React from 'react';
 import { TouchableOpacity, View, Image, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
+import MaskedView from '@react-native-masked-view/masked-view';
+
+// Fade efekti için yardımcı bileşen
+const FadeText = ({ text, style, maxWidth = 120, maxChars = 15 }) => {
+  // Karakter sayısına göre fade gösterimi
+  const shouldShowFade = text && text.length > maxChars;
+  
+  if (!shouldShowFade) {
+    return (
+      <Text 
+        style={[style, { maxWidth }]} 
+        numberOfLines={1}
+        ellipsizeMode="clip"
+      >
+        {text}
+      </Text>
+    );
+  }
+  
+  return (
+    <MaskedView
+      style={[styles.maskedView, { maxWidth }]}
+      maskElement={
+        <LinearGradient
+          colors={['black', 'black', 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.maskGradient}
+        />
+      }
+    >
+      <Text 
+        style={style} 
+        numberOfLines={1}
+        ellipsizeMode="clip"
+      >
+        {text}
+      </Text>
+    </MaskedView>
+  );
+};
 
 export default function DeckCard({
   deck,
@@ -23,20 +64,24 @@ export default function DeckCard({
   // Kategori ikonunu sort_order değerine göre al
   const getCategoryIcon = (sortOrder) => {
     const icons = {
-      1: "famicons:language", // Dil
-      2: "material-symbols:science", // Bilim
+      1: "hugeicons:language-skill", // Dil
+      2: "clarity:atom-solid", // Bilim
       3: "mdi:math-compass", // Matematik
       4: "game-icons:tied-scroll", // Tarih
       5: "arcticons:world-geography-alt", // Coğrafya
       6: "map:museum", // Sanat ve Kültür
       7: "ic:outline-self-improvement", // Kişisel Gelişim
-      8: "hugeicons:knowledge-01" // Genel Kültür
+      8: "streamline-ultimate:module-puzzle-2-bold" // Genel Kültür
     };
     return icons[sortOrder] || "material-symbols:category";
   };
 
+
   const gradientColors = getCategoryColors(deck.categories?.sort_order);
   const categoryIcon = getCategoryIcon(deck.categories?.sort_order);
+  
+  // Fade efekti için gradient renkleri - kartın arka plan rengine uyumlu
+  const fadeGradientColors = [`${gradientColors[1]}00`, `${gradientColors[1]}80`, `${gradientColors[1]}CC`];
 
   return (
     <View style={styles.deckCardModern}>
@@ -52,13 +97,13 @@ export default function DeckCard({
         end={{ x: 1, y: 0 }}
         style={styles.deckCardGradient}
       >
-        {/* Background Overlay Icon - en altta z-index */}
-        <View style={styles.backgroundOverlayIcon}>
+        {/* Background Category Icon - sadece yarısı görünecek şekilde */}
+        <View style={styles.backgroundCategoryIcon}>
           <Iconify
             icon={categoryIcon}
-            size={240}
-            color="rgba(255, 255, 255, 0.3)"
-            style={styles.overlayIcon}
+            size={120}
+            color="rgba(0, 0, 0, 0.1)"
+            style={styles.categoryIconStyle}
           />
         </View>
         <View style={styles.deckCardContentModern}>
@@ -67,20 +112,38 @@ export default function DeckCard({
               source={deck.profiles?.image_url ? { uri: deck.profiles.image_url } : require('../../assets/avatar-default.png')}
               style={styles.deckProfileAvatar}
             />
-            <Text style={[typography.styles.body, styles.deckProfileUsername]} numberOfLines={1} ellipsizeMode="tail">
-              {deck.profiles?.username || 'Kullanıcı'}
-            </Text>
+            <FadeText 
+              text={deck.profiles?.username || 'Kullanıcı'} 
+              style={[typography.styles.body, styles.deckProfileUsername]} 
+              maxWidth={'80%'}
+              maxChars={12}
+            />
           </View>
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <View style={styles.deckHeaderModern}>
               {deck.to_name ? (
                 <>
-                  <Text style={[typography.styles.body, styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
+                  <FadeText 
+                    text={deck.name} 
+                    style={[typography.styles.body, styles.deckTitleModern, { color: colors.headText }]} 
+                    maxWidth={'95%'}
+                    maxChars={12}
+                  />
                   <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10 }} />
-                  <Text style={[typography.styles.body, styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
+                  <FadeText 
+                    text={deck.to_name} 
+                    style={[typography.styles.body, styles.deckTitleModern, { color: colors.headText }]} 
+                    maxWidth={'95%'}
+                    maxChars={12}
+                  />
                 </>
               ) : (
-                <Text style={[typography.styles.body, styles.deckTitleModern, { color: colors.headText }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
+                <FadeText 
+                  text={deck.name} 
+                  style={[typography.styles.body, styles.deckTitleModern, { color: colors.headText }]} 
+                  maxWidth={'95%'}
+                  maxChars={12}
+                />
               )}
             </View>
           </View>
@@ -116,6 +179,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     width: 140,
     height: 196,
+    overflow: 'hidden', // Taşan kısımları gizle
   },
   touchableContainer: {
     flex: 1,
@@ -138,7 +202,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#F98A21',
-    maxWidth: '97%',
+    maxWidth: '95%',
   },
   deckStatsModern: {
     flexDirection: 'row',
@@ -175,27 +239,38 @@ const styles = StyleSheet.create({
   },
   deckProfileUsername: {
     fontSize: 14,
-    color: '#888',
+    color: '#BDBDBD',
     fontWeight: '700',
-    maxWidth: '80%',
+ 
   },
-  backgroundOverlayIcon: {
+  backgroundCategoryIcon: {
     position: 'absolute',
-    bottom: -30, // Yarısının taşması için daha aşağıda
-    left: -30, // Yarısının taşması için daha solda
-    width: 120,
-    height: 120,
+    left: -60, // İkonun yarısının taşması için
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 0, // En altta kalması için
     overflow: 'hidden', // Taşan kısmı gizle
-// Çapraz yönlendirme
   },
-  overlayIcon: {
-    // Background overlay efekti için text shadow
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 3 },
-    textShadowRadius: 6,
+  categoryIconStyle: {
+    // Subtle background effect için
+    opacity: 0.8,
+  },
+  // Fade efekti için stiller
+  fadeTextContainer: {
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  fadeText: {
+    // Text stilleri buraya gelecek
+  },
+  maskedView: {
+    // flex: 1 kaldırıldı
+  },
+  maskGradient: {
+    flexDirection: 'row',
+    height: '100%',
   },
 });
 

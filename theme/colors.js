@@ -98,7 +98,7 @@ export const darkColors = {
     // Kategori bazlı renkler (Supabase sort_order ile eşleşen)
     categoryColors: {
         1: ['#6F8EAD', '#3F5E78'], // Dil
-        2: ['#577DA3', '#3E7C8A'], // Bilim
+        2: ['#6B82C4', '#4A5E9B'], // Bilim
         3: ['#A691B8', '#7B5F90'], // Matematik
         4: ['#A88D6B', '#7A5F3A'], // Tarih
         5: ['#8CAE6C', '#5F7F1F'], // Coğrafya
