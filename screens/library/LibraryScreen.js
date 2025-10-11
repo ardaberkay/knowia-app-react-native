@@ -69,7 +69,7 @@ export default function LibraryScreen() {
       } catch (e) {
         setMyDecks([]);
       } finally {
-        // setLoading(false); // Sürekli loading için yorum satırına alındı
+        setLoading(false);
       }
     };
     fetchDecks();
@@ -197,7 +197,8 @@ export default function LibraryScreen() {
   // Yükleniyor ekranı
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
-      <LottieView source={require('../../assets/orange-walk.json')} autoPlay loop style={{ width: 300, height: 300 }} />
+      <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: 200, height: 200 }} />
+      <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100 }} />
     </View>
   );
 
@@ -740,6 +741,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     minHeight: 200,
+    flexDirection: 'column',
+    gap: -65,
   },
   loadingText: {
     fontSize: 18,

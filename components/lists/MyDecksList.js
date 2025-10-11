@@ -19,6 +19,30 @@ export default function MyDecksList({
   const { colors } = useTheme();
   const { t } = useTranslation();
 
+  // Kategoriye göre renkleri al (Supabase sort_order kullanarak)
+  const getCategoryColors = (sortOrder) => {
+    if (colors.categoryColors && colors.categoryColors[sortOrder]) {
+      return colors.categoryColors[sortOrder];
+    }
+    // Varsayılan renkler (Tarih kategorisi - sort_order: 4)
+    return ['#6F8EAD', '#3F5E78'];
+  };
+
+  // Kategori ikonunu sort_order değerine göre al
+  const getCategoryIcon = (sortOrder) => {
+    const icons = {
+      1: "hugeicons:language-skill", // Dil
+      2: "clarity:atom-solid", // Bilim
+      3: "mdi:math-compass", // Matematik
+      4: "game-icons:tied-scroll", // Tarih
+      5: "arcticons:world-geography-alt", // Coğrafya
+      6: "map:museum", // Sanat ve Kültür
+      7: "ic:outline-self-improvement", // Kişisel Gelişim
+      8: "streamline-ultimate:module-puzzle-2-bold" // Genel Kültür
+    };
+    return icons[sortOrder] || "material-symbols:category";
+  };
+
   const rows = useMemo(() => {
     const builtRows = [];
     let i = 0;
@@ -31,10 +55,25 @@ export default function MyDecksList({
         const wouldLeaveOne = (total - (i + 3)) === 1;
         const first = decks[i];
         const second = decks[i + 1];
-        builtRows.push({ type: 'double', items: [first, second].filter(Boolean) });
+        builtRows.push({ 
+          type: 'double', 
+          items: [first, second].filter(Boolean).map(deck => ({
+            ...deck,
+            gradientColors: getCategoryColors(deck.categories?.sort_order),
+            categoryIcon: getCategoryIcon(deck.categories?.sort_order)
+          }))
+        });
         i += 2;
         if (!wouldLeaveOne) {
-          builtRows.push({ type: 'single', item: decks[i] });
+          const singleDeck = decks[i];
+          builtRows.push({ 
+            type: 'single', 
+            item: {
+              ...singleDeck,
+              gradientColors: getCategoryColors(singleDeck.categories?.sort_order),
+              categoryIcon: getCategoryIcon(singleDeck.categories?.sort_order)
+            }
+          });
           i += 1;
         }
         continue;
@@ -43,12 +82,27 @@ export default function MyDecksList({
       if (remaining === 2) {
         const first = decks[i];
         const second = decks[i + 1];
-        builtRows.push({ type: 'double', items: [first, second].filter(Boolean) });
+        builtRows.push({ 
+          type: 'double', 
+          items: [first, second].filter(Boolean).map(deck => ({
+            ...deck,
+            gradientColors: getCategoryColors(deck.categories?.sort_order),
+            categoryIcon: getCategoryIcon(deck.categories?.sort_order)
+          }))
+        });
         i += 2;
         continue;
       }
 
-      builtRows.push({ type: 'double', items: [decks[i]].filter(Boolean) });
+      const singleDeck = decks[i];
+      builtRows.push({ 
+        type: 'double', 
+        items: [{
+          ...singleDeck,
+          gradientColors: getCategoryColors(singleDeck.categories?.sort_order),
+          categoryIcon: getCategoryIcon(singleDeck.categories?.sort_order)
+        }].filter(Boolean)
+      });
       i += 1;
     }
 
@@ -62,14 +116,23 @@ export default function MyDecksList({
           key={`${deck.id}_${idx}`}
           activeOpacity={0.93}
           onPress={() => onPressDeck(deck)}
-          style={[styles.myDeckCardVertical, idx === 0 ? { marginRight: 8 } : { marginLeft: 8 }]}
+          style={[styles.myDeckCardVertical, idx === 0 ? { marginRight: 5 } : { marginLeft: 5 }]}
         >
           <LinearGradient
-            colors={colors.deckGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+            colors={deck.gradientColors}
+            start={{ x: 0, y: 1 }}
+            end={{ x: 1, y: 0 }}
             style={styles.myDeckGradient}
           >
+            {/* Background Category Icon */}
+            <View style={styles.backgroundCategoryIcon}>
+              <Iconify
+                icon={deck.categoryIcon}
+                size={80}
+                color="rgba(0, 0, 0, 0.1)"
+                style={styles.categoryIconStyle}
+              />
+            </View>
             <View style={{ position: 'absolute', bottom: 12, left: 12 }}>
               <View style={styles.deckCountBadge}>
                 <Iconify icon="ri:stack-fill" size={18} color="#fff" style={{ marginRight: 3 }} />
@@ -83,7 +146,7 @@ export default function MyDecksList({
             >
               <Iconify
                 icon={favoriteDecks.some(d => d.id === deck.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-                size={24}
+                size={21}
                 color={favoriteDecks.some(d => d.id === deck.id) ? '#F98A21' : colors.text}
               />
             </TouchableOpacity>
@@ -99,11 +162,11 @@ export default function MyDecksList({
               )}
             </View>
             <TouchableOpacity
-              style={{ position: 'absolute', bottom: 12, right: 12, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
+              style={{ position: 'absolute', bottom: 7, right: 10, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
               onPress={() => onDeleteDeck(deck.id)}
               activeOpacity={0.7}
             >
-              <Iconify icon="mdi:garbage" size={22} color="#E74C3C" />
+              <Iconify icon="mdi:garbage" size={21} color="#E74C3C" />
             </TouchableOpacity>
           </LinearGradient>
         </TouchableOpacity>
@@ -119,11 +182,20 @@ export default function MyDecksList({
         style={styles.myDeckCardHorizontal}
       >
         <LinearGradient
-          colors={colors.deckGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          colors={row.item.gradientColors}
+          start={{ x: 0, y: 1 }}
+          end={{ x: 1, y: 0 }}
           style={styles.myDeckGradient}
         >
+          {/* Background Category Icon */}
+          <View style={styles.backgroundCategoryIcon}>
+            <Iconify
+              icon={row.item.categoryIcon}
+              size={100}
+              color="rgba(0, 0, 0, 0.1)"
+              style={styles.categoryIconStyle}
+            />
+          </View>
           <View style={{ position: 'absolute', bottom: 12, left: 12 }}>
             <View style={styles.deckCountBadge}>
               <Iconify icon="ri:stack-fill" size={18} color="#fff" style={{ marginRight: 4 }} />
@@ -131,13 +203,13 @@ export default function MyDecksList({
             </View>
           </View>
           <TouchableOpacity
-            style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
+            style={{ position: 'absolute', top: 8, right: 10, zIndex: 10, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
             onPress={() => onToggleFavorite(row.item.id)}
             activeOpacity={0.7}
           >
             <Iconify
               icon={favoriteDecks.some(d => d.id === row.item.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-              size={24}
+              size={22}
               color={favoriteDecks.some(d => d.id === row.item.id) ? '#F98A21' : colors.text}
             />
           </TouchableOpacity>
@@ -153,7 +225,7 @@ export default function MyDecksList({
             )}
           </View>
           <TouchableOpacity
-            style={{ position: 'absolute', bottom: 12, right: 12, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
+            style={{ position: 'absolute', bottom: 8, right: 10, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
             onPress={() => onDeleteDeck(row.item.id)}
             activeOpacity={0.7}
           >
@@ -168,7 +240,7 @@ export default function MyDecksList({
     <FlatList
       data={rows}
       keyExtractor={(_, idx) => `row_${idx}`}
-      contentContainerStyle={{ paddingBottom: '10%'}}
+      contentContainerStyle={{ paddingBottom: '10%', }}
       ListHeaderComponent={ListHeaderComponent}
       renderItem={({ item: row }) => (row.type === 'double' ? renderDoubleRow(row) : renderSingleRow(row))}
       ListEmptyComponent={<Text style={[styles.emptyText, typography.styles.caption]}>{t('library.noDecks', 'Henüz deste bulunmuyor')}</Text>}
@@ -189,15 +261,15 @@ export default function MyDecksList({
 
 const styles = StyleSheet.create({
   myDecksList: {
-    paddingHorizontal: 20,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
   myDeckRow: {
     flexDirection: 'row',
   },
   myDeckCardVertical: {
     flex: 1,
-    height: 235,
+    height: 240,
     borderRadius: 18,
     overflow: 'hidden',
   },
@@ -225,6 +297,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     marginTop: 20,
+  },
+  backgroundCategoryIcon: {
+    position: 'absolute',
+    left: -50, // İkonun yarısının taşması için
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 0, // En altta kalması için
+    overflow: 'hidden', // Taşan kısmı gizle
+  },
+  categoryIconStyle: {
+    // Subtle background effect için
+    opacity: 0.8,
   },
 });
 

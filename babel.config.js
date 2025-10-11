@@ -102,7 +102,8 @@ module.exports = function (api) {
             'vaadin:puzzle-piece',
             'clarity:atom-solid',
             'fluent:brain-24-filled',
-            'hugeicons:language-skill'
+            'hugeicons:language-skill',
+            'garden:puzzle-piece-fill-16'
           ],
         },
       ],
