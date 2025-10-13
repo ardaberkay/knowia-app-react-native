@@ -28,7 +28,7 @@ const FadeText = ({ text, style, maxWidth = 120, maxChars = 15 }) => {
         <LinearGradient
           colors={['black', 'black', 'transparent']}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
+          end={{ x: 1.15, y: 0 }}
           style={styles.maskGradient}
         />
       }
@@ -80,8 +80,6 @@ export default function DeckCard({
   const gradientColors = getCategoryColors(deck.categories?.sort_order);
   const categoryIcon = getCategoryIcon(deck.categories?.sort_order);
   
-  // Fade efekti için gradient renkleri - kartın arka plan rengine uyumlu
-  const fadeGradientColors = [`${gradientColors[1]}00`, `${gradientColors[1]}80`, `${gradientColors[1]}CC`];
 
   return (
     <View style={styles.deckCardModern}>
@@ -115,7 +113,7 @@ export default function DeckCard({
             <FadeText 
               text={deck.profiles?.username || 'Kullanıcı'} 
               style={[typography.styles.body, styles.deckProfileUsername]} 
-              maxWidth={'80%'}
+              maxWidth={'75%'}
               maxChars={12}
             />
           </View>
@@ -252,6 +250,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 0, // En altta kalması için
     overflow: 'hidden', // Taşan kısmı gizle
+    top: 5
   },
   categoryIconStyle: {
     // Subtle background effect için

@@ -155,8 +155,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerContainer: {
-    paddingTop: 24,
-    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingHorizontal: 12,
     paddingBottom: 16,
   },
   searchRow: {

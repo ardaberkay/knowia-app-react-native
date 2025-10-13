@@ -16,6 +16,47 @@ import FilterIcon from '../../components/tools/FilterIcon';
 import CardListItem from '../../components/lists/CardList';
 import LottieView from 'lottie-react-native';
 import MyDecksList from '../../components/lists/MyDecksList';
+import MaskedView from '@react-native-masked-view/masked-view';
+
+// Fade efekti için yardımcı bileşen
+const FadeText = ({ text, style, maxWidth, maxChars }) => {
+  // Karakter sayısına göre fade gösterimi
+  const shouldShowFade = text && text.length > maxChars;
+  
+  if (!shouldShowFade) {
+    return (
+      <Text 
+        style={[style, { maxWidth }]} 
+        numberOfLines={1}
+        ellipsizeMode="clip"
+      >
+        {text}
+      </Text>
+    );
+  }
+  
+  return (
+    <MaskedView
+      style={[styles.maskedView, { maxWidth }]}
+      maskElement={
+        <LinearGradient
+          colors={['black', 'black', 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1.15, y: 0 }}
+          style={styles.maskGradient}
+        />
+      }
+    >
+      <Text 
+        style={style} 
+        numberOfLines={1}
+        ellipsizeMode="clip"
+      >
+        {text}
+      </Text>
+    </MaskedView>
+  );
+};
 
 export default function LibraryScreen() {
   const { colors, isDark } = useTheme();
@@ -46,6 +87,30 @@ export default function LibraryScreen() {
   const cardWidth = (screenWidth - horizontalPadding - cardSpacing) / numColumns;
   const cardAspectRatio = 120 / 168;
   const cardHeight = cardWidth / cardAspectRatio;
+
+  // Kategoriye göre renkleri al (Supabase sort_order kullanarak)
+  const getCategoryColors = (sortOrder) => {
+    if (colors.categoryColors && colors.categoryColors[sortOrder]) {
+      return colors.categoryColors[sortOrder];
+    }
+    // Varsayılan renkler (Tarih kategorisi - sort_order: 4)
+    return ['#6F8EAD', '#3F5E78'];
+  };
+
+  // Kategori ikonunu sort_order değerine göre al
+  const getCategoryIcon = (sortOrder) => {
+    const icons = {
+      1: "hugeicons:language-skill", // Dil
+      2: "clarity:atom-solid", // Bilim
+      3: "mdi:math-compass", // Matematik
+      4: "game-icons:tied-scroll", // Tarih
+      5: "arcticons:world-geography-alt", // Coğrafya
+      6: "map:museum", // Sanat ve Kültür
+      7: "ic:outline-self-improvement", // Kişisel Gelişim
+      8: "streamline-ultimate:module-puzzle-2-bold" // Genel Kültür
+    };
+    return icons[sortOrder] || "material-symbols:category";
+  };
 
   // Search and filter removed
 
@@ -280,7 +345,7 @@ export default function LibraryScreen() {
               onPressDeck={(deck) => navigation.navigate('DeckDetail', { deck })}
               ListHeaderComponent={(
                 <View style={{ backgroundColor: colors.background, marginTop: '22%'  }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: '93%', alignSelf: 'center', marginBottom: 5 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: '95%', alignSelf: 'center', marginBottom: 5 }}>
                     <SearchBar
                       value={myDecksQuery}
                       onChangeText={setMyDecksQuery}
@@ -359,13 +424,35 @@ export default function LibraryScreen() {
                               style={{ flex: 1 }}
                             >
                               <LinearGradient
-                                colors={colors.deckGradient}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 1 }}
+                                colors={getCategoryColors(deck.categories?.sort_order)}
+                                start={{ x: 0, y: 1 }}
+                                end={{ x: 1, y: 0 }}
                                 style={styles.favoriteSlideGradient}
                               >
+                                {/* Background Category Icon */}
+                                <View style={styles.backgroundCategoryIcon}>
+                                  <Iconify
+                                    icon={getCategoryIcon(deck.categories?.sort_order)}
+                                    size={150}
+                                    color="rgba(0, 0, 0, 0.1)"
+                                    style={styles.categoryIconStyle}
+                                  />
+                                </View>
+                                {/* Profile Section */}
+                                <View style={[styles.deckProfileRow, { position: 'absolute', top: 'auto', bottom: 10, left: 10, zIndex: 10 }]}>
+                                  <Image
+                                    source={deck.profiles?.image_url ? { uri: deck.profiles.image_url } : require('../../assets/avatar-default.png')}
+                                    style={styles.deckProfileAvatar}
+                                  />
+                                  <FadeText 
+                                    text={deck.profiles?.username || 'Kullanıcı'} 
+                                    style={[typography.styles.body, styles.deckProfileUsername]} 
+                                    maxWidth={'100%'}
+                                    maxChars={16}
+                                  />
+                                </View>
                                 <TouchableOpacity
-                                  style={{ position: 'absolute', top: 13, right: 13, zIndex: 10, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
+                                  style={{ position: 'absolute', top: 10, right: 12, zIndex: 10, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
                                   onPress={async () => {
                                     if (favoriteDecks.some(d => d.id === deck.id)) {
                                       await handleRemoveFavoriteDeck(deck.id);
@@ -385,19 +472,34 @@ export default function LibraryScreen() {
                                   <View style={[styles.deckHeaderModern, { flexDirection: 'column' }]}> 
                                     {deck.to_name ? (
                                       <>
-                                        <Text style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
-                                        <View style={{ width: 70, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10 }} />
-                                        <Text style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
+                                        <FadeText 
+                                          text={deck.name} 
+                                          style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} 
+                                          maxWidth={'100%'}
+                                          maxChars={35}
+                                        />
+                                        <View style={{ width: 70, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10, alignSelf: 'center' }} />
+                                        <FadeText 
+                                          text={deck.to_name} 
+                                          style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} 
+                                          maxWidth={'100%'}
+                                          maxChars={35}
+                                        />
                                       </>
                                     ) : (
-                                      <Text style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
+                                      <FadeText 
+                                        text={deck.name} 
+                                        style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} 
+                                        maxWidth={'100%'}
+                                        maxChars={35}
+                                      />
                                     )}
                                   </View>
                                 </View>
-                                <View style={{ position: 'absolute', left: 16, bottom: 16 }}>
+                                <View style={{ position: 'absolute', bottom: 12, right: 8 }}>
                                   <View style={styles.deckCountBadge}>
                                     <Iconify icon="ri:stack-fill" size={18} color="#fff" style={{ marginRight: 4 }} />
-                                    <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: 18 }]}>{deck.card_count || 0}</Text>
+                                    <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: 16 }]}>{deck.card_count || 0}</Text>
                                   </View>
                                 </View>
                               </LinearGradient>
@@ -599,7 +701,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
   },
   favoriteSlider: {
-    height: 200,
+    height: 215,
     borderRadius: 18,
     overflow: 'hidden',
   },
@@ -694,13 +796,13 @@ const styles = StyleSheet.create({
   deckProfileAvatar: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    marginRight: 8,
+    borderRadius: 99,
+    marginRight: 6,
   },
   deckProfileUsername: {
-    fontSize: 16,
-    fontWeight: '600',
-
+    fontSize: 15,
+    color: '#BDBDBD',
+    fontWeight: '700',
   },
   modalLabel: {
     fontSize: 13,
@@ -748,6 +850,29 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  backgroundCategoryIcon: {
+    position: 'absolute',
+    left: -160, // İkonun yarısının taşması için
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 0, // En altta kalması için
+    overflow: 'hidden', // Taşan kısmı gizle
+    top: 0
+  },
+  categoryIconStyle: {
+    // Subtle background effect için
+    opacity: 0.8,
+  },
+  // Fade efekti için stiller
+  maskedView: {
+    // flex: 1 kaldırıldı
+  },
+  maskGradient: {
+    flexDirection: 'row',
+    height: '100%',
   },
 
 

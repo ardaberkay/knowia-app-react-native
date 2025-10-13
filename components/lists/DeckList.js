@@ -2,9 +2,50 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
+import MaskedView from '@react-native-masked-view/masked-view';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
+
+// Fade efekti için yardımcı bileşen
+const FadeText = ({ text, style, maxWidth, maxChars }) => {
+  // Karakter sayısına göre fade gösterimi
+  const shouldShowFade = text && text.length > maxChars;
+  
+  if (!shouldShowFade) {
+    return (
+      <Text 
+        style={[style, { maxWidth }]} 
+        numberOfLines={1}
+        ellipsizeMode="clip"
+      >
+        {text}
+      </Text>
+    );
+  }
+  
+  return (
+    <MaskedView
+      style={[styles.maskedView, { maxWidth }]}
+      maskElement={
+        <LinearGradient
+          colors={['black', 'black', 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1.15, y: 0 }}
+          style={styles.maskGradient}
+        />
+      }
+    >
+      <Text 
+        style={style} 
+        numberOfLines={1}
+        ellipsizeMode="clip"
+      >
+        {text}
+      </Text>
+    </MaskedView>
+  );
+};
 
 export default function DeckList({
   decks,
@@ -18,6 +59,30 @@ export default function DeckList({
   const { colors } = useTheme();
   const { t } = useTranslation();
 
+  // Kategoriye göre renkleri al (Supabase sort_order kullanarak)
+  const getCategoryColors = (sortOrder) => {
+    if (colors.categoryColors && colors.categoryColors[sortOrder]) {
+      return colors.categoryColors[sortOrder];
+    }
+    // Varsayılan renkler (Tarih kategorisi - sort_order: 4)
+    return ['#6F8EAD', '#3F5E78'];
+  };
+
+  // Kategori ikonunu sort_order değerine göre al
+  const getCategoryIcon = (sortOrder) => {
+    const icons = {
+      1: "hugeicons:language-skill", // Dil
+      2: "clarity:atom-solid", // Bilim
+      3: "mdi:math-compass", // Matematik
+      4: "game-icons:tied-scroll", // Tarih
+      5: "arcticons:world-geography-alt", // Coğrafya
+      6: "map:museum", // Sanat ve Kültür
+      7: "ic:outline-self-improvement", // Kişisel Gelişim
+      8: "streamline-ultimate:module-puzzle-2-bold" // Genel Kültür
+    };
+    return icons[sortOrder] || "material-symbols:category";
+  };
+
   const rows = useMemo(() => {
     const builtRows = [];
     let i = 0;
@@ -30,10 +95,25 @@ export default function DeckList({
         const wouldLeaveOne = (total - (i + 3)) === 1;
         const first = decks[i];
         const second = decks[i + 1];
-        builtRows.push({ type: 'double', items: [first, second].filter(Boolean) });
+        builtRows.push({ 
+          type: 'double', 
+          items: [first, second].filter(Boolean).map(deck => ({
+            ...deck,
+            gradientColors: getCategoryColors(deck.categories?.sort_order),
+            categoryIcon: getCategoryIcon(deck.categories?.sort_order)
+          }))
+        });
         i += 2;
         if (!wouldLeaveOne) {
-          builtRows.push({ type: 'single', item: decks[i] });
+          const singleDeck = decks[i];
+          builtRows.push({ 
+            type: 'single', 
+            item: {
+              ...singleDeck,
+              gradientColors: getCategoryColors(singleDeck.categories?.sort_order),
+              categoryIcon: getCategoryIcon(singleDeck.categories?.sort_order)
+            }
+          });
           i += 1;
         }
         continue;
@@ -42,12 +122,27 @@ export default function DeckList({
       if (remaining === 2) {
         const first = decks[i];
         const second = decks[i + 1];
-        builtRows.push({ type: 'double', items: [first, second].filter(Boolean) });
+        builtRows.push({ 
+          type: 'double', 
+          items: [first, second].filter(Boolean).map(deck => ({
+            ...deck,
+            gradientColors: getCategoryColors(deck.categories?.sort_order),
+            categoryIcon: getCategoryIcon(deck.categories?.sort_order)
+          }))
+        });
         i += 2;
         continue;
       }
 
-      builtRows.push({ type: 'double', items: [decks[i]].filter(Boolean) });
+      const singleDeck = decks[i];
+      builtRows.push({ 
+        type: 'double', 
+        items: [{
+          ...singleDeck,
+          gradientColors: getCategoryColors(singleDeck.categories?.sort_order),
+          categoryIcon: getCategoryIcon(singleDeck.categories?.sort_order)
+        }].filter(Boolean)
+      });
       i += 1;
     }
 
@@ -62,22 +157,35 @@ export default function DeckList({
           key={`${deck.id}_${idx}`}
           activeOpacity={0.93}
           onPress={() => onPressDeck(deck)}
-          style={[styles.deckCardVertical, idx === 0 ? { marginRight: 8 } : { marginLeft: 8 }]}
+          style={[styles.deckCardVertical, idx === 0 ? { marginRight: 5 } : { marginLeft: 5 }]}
         >
           <LinearGradient
-            colors={colors.deckGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+            colors={deck.gradientColors}
+            start={{ x: 0, y: 1 }}
+            end={{ x: 1, y: 0 }}
             style={styles.deckGradient}
           >
+            {/* Background Category Icon */}
+            <View style={styles.backgroundCategoryIcon}>
+              <Iconify
+                icon={deck.categoryIcon}
+                size={150}
+                color="rgba(0, 0, 0, 0.1)"
+                style={styles.categoryIconStyle}
+              />
+            </View>
+            {/* Profile Section */}
             <View style={styles.deckProfileRow}>
               <Image
                 source={deck.profiles?.image_url ? { uri: deck.profiles.image_url } : require('../../assets/avatar-default.png')}
                 style={styles.deckProfileAvatar}
               />
-              <Text style={[typography.styles.body, styles.deckProfileUsername]} numberOfLines={1} ellipsizeMode="tail">
-                {deck.profiles?.username || 'Kullanıcı'}
-              </Text>
+              <FadeText 
+                text={deck.profiles?.username || 'Kullanıcı'} 
+                style={[typography.styles.body, styles.deckProfileUsername]} 
+                maxWidth={'100%'}
+                maxChars={15}
+              />
             </View>
             <View style={{ position: 'absolute', bottom: 12, left: 12 }}>
               <View style={styles.deckCountBadge}>
@@ -85,28 +193,43 @@ export default function DeckList({
                 <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: 16 }]}>{deck.card_count || 0}</Text>
               </View>
             </View>
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: -20 }}>
-              {deck.to_name ? (
-                <>
-                  <Text style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
-                  <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 8 }} />
-                  <Text style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
-                </>
-              ) : (
-                <Text style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
-              )}
-            </View>
             <TouchableOpacity
-              style={{ position: 'absolute', bottom: 8, right: 12, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999, zIndex: 10 }}
+              style={{ position: 'absolute', bottom: 8, right: 10, zIndex: 10, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
               onPress={() => onToggleFavorite(deck.id)}
               activeOpacity={0.7}
             >
               <Iconify
                 icon={favoriteDecks.includes(deck.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-                size={22}
+                size={21}
                 color={favoriteDecks.includes(deck.id) ? '#F98A21' : colors.text}
               />
             </TouchableOpacity>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              {deck.to_name ? (
+                <>
+                  <FadeText 
+                    text={deck.name} 
+                    style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]} 
+                    maxWidth={'100%'}
+                    maxChars={16}
+                  />
+                  <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 8 }} />
+                  <FadeText 
+                    text={deck.to_name} 
+                    style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]} 
+                    maxWidth={'100%'}
+                    maxChars={16}
+                  />
+                </>
+              ) : (
+                <FadeText 
+                  text={deck.name} 
+                  style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]} 
+                  maxWidth={'100%'}
+                  maxChars={16}
+                />
+              )}
+            </View>
           </LinearGradient>
         </TouchableOpacity>
       ))}
@@ -114,47 +237,48 @@ export default function DeckList({
   );
 
   const renderSingleRow = (row) => (
-    <View style={[styles.deckList, styles.deckRow]}>
+    <View style={styles.deckList}>
       <TouchableOpacity
-        key={`${row.item.id}_single`}
         activeOpacity={0.93}
         onPress={() => onPressDeck(row.item)}
         style={styles.deckCardHorizontal}
       >
         <LinearGradient
-          colors={colors.deckGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          colors={row.item.gradientColors}
+          start={{ x: 0, y: 1 }}
+          end={{ x: 1, y: 0 }}
           style={styles.deckGradient}
         >
-          <View style={styles.deckProfileRow}>
+          {/* Background Category Icon */}
+          <View style={[styles.backgroundCategoryIcon, { left: -175, top: 1 }]}>
+            <Iconify
+              icon={row.item.categoryIcon}
+              size={140}
+              color="rgba(0, 0, 0, 0.1)"
+              style={styles.categoryIconStyle}
+            />
+          </View>
+          {/* Profile Section */}
+          <View style={[styles.deckProfileRow, { top: 'auto', bottom: 8 }]}>
             <Image
               source={row.item.profiles?.image_url ? { uri: row.item.profiles.image_url } : require('../../assets/avatar-default.png')}
               style={styles.deckProfileAvatar}
             />
-            <Text style={[typography.styles.body, styles.deckProfileUsername]} numberOfLines={1} ellipsizeMode="tail">
-              {row.item.profiles?.username || 'Kullanıcı'}
-            </Text>
+            <FadeText 
+              text={row.item.profiles?.username || 'Kullanıcı'} 
+              style={[typography.styles.body, styles.deckProfileUsername]} 
+              maxWidth={'100%'}
+              maxChars={16}
+            />
           </View>
-          <View style={{ position: 'absolute', bottom: 12, left: 12 }}>
+          <View style={{ position: 'absolute', bottom: 10, right: 12 }}>
             <View style={styles.deckCountBadge}>
-              <Iconify icon="ri:stack-fill" size={18} color="#fff" style={{ marginRight: 3 }} />
+              <Iconify icon="ri:stack-fill" size={18} color="#fff" style={{ marginRight: 4 }} />
               <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: 16 }]}>{row.item.card_count || 0}</Text>
             </View>
           </View>
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: -20 }}>
-            {row.item.to_name ? (
-              <>
-                <Text style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{row.item.name}</Text>
-                <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 8 }} />
-                <Text style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{row.item.to_name}</Text>
-              </>
-            ) : (
-              <Text style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{row.item.name}</Text>
-            )}
-          </View>
           <TouchableOpacity
-            style={{ position: 'absolute', bottom: 9, right: 12, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999, zIndex: 10 }}
+            style={{ position: 'absolute', top: 8, right: 10, zIndex: 10, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
             onPress={() => onToggleFavorite(row.item.id)}
             activeOpacity={0.7}
           >
@@ -164,6 +288,32 @@ export default function DeckList({
               color={favoriteDecks.includes(row.item.id) ? '#F98A21' : colors.text}
             />
           </TouchableOpacity>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            {row.item.to_name ? (
+              <>
+                <FadeText 
+                  text={row.item.name} 
+                  style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} 
+                  maxWidth={'100%'}
+                  maxChars={35}
+                />
+                <View style={{ width: 70, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10 }} />
+                <FadeText 
+                  text={row.item.to_name} 
+                  style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} 
+                  maxWidth={'100%'}
+                  maxChars={35}
+                />
+              </>
+            ) : (
+              <FadeText 
+                text={row.item.name} 
+                style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} 
+                maxWidth={'100%'}
+                maxChars={35}
+              />
+            )}
+          </View>
         </LinearGradient>
       </TouchableOpacity>
     </View>
@@ -173,7 +323,7 @@ export default function DeckList({
     <FlatList
       data={rows}
       keyExtractor={(_, idx) => `row_${idx}`}
-      contentContainerStyle={{ paddingBottom: '10%'}}
+      contentContainerStyle={{ paddingBottom: '10%', }}
       ListHeaderComponent={ListHeaderComponent}
       renderItem={({ item: row }) => (row.type === 'double' ? renderDoubleRow(row) : renderSingleRow(row))}
       ListEmptyComponent={<Text style={[styles.emptyText, typography.styles.caption]}>{t('library.noDecks', 'Henüz deste bulunmuyor')}</Text>}
@@ -186,21 +336,23 @@ export default function DeckList({
           colors={[colors.buttonColor]}
         />
       }
+      refreshing={refreshing}
+      onRefresh={onRefresh}
     />
   );
 }
 
 const styles = StyleSheet.create({
   deckList: {
-    paddingHorizontal: 20,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
   deckRow: {
     flexDirection: 'row',
   },
   deckCardVertical: {
     flex: 1,
-    height: 235,
+    height: 240,
     borderRadius: 18,
     overflow: 'hidden',
   },
@@ -208,7 +360,6 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 18,
     overflow: 'hidden',
-    width: '100%',
   },
   deckGradient: {
     flex: 1,
@@ -223,27 +374,53 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    marginRight: 8,
+    marginRight: 2,
   },
   emptyText: {
     fontSize: 14,
     textAlign: 'center',
     marginTop: 20,
   },
+  backgroundCategoryIcon: {
+    position: 'absolute',
+    left: -75, // İkonun yarısının taşması için
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 0, // En altta kalması için
+    overflow: 'hidden', // Taşan kısmı gizle
+  },
+  categoryIconStyle: {
+    // Subtle background effect için
+    opacity: 0.8,
+  },
+  // Fade efekti için stiller
+  maskedView: {
+    // flex: 1 kaldırıldı
+  },
+  maskGradient: {
+    flexDirection: 'row',
+    height: '100%',
+  },
   deckProfileRow: {
+    position: 'absolute',
     flexDirection: 'row',
     alignItems: 'center',
+    zIndex: 10,
+    top: 8,
+    left: 10,
   },
   deckProfileAvatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    marginRight: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 99,
+    marginRight: 6,
   },
   deckProfileUsername: {
-    fontSize: 14,
-    color: '#888',
-    fontWeight: '600',
-    flex: 1,
+    fontSize: 15,
+    color: '#BDBDBD',
+    fontWeight: '700',
+    width: '95%',
   },
 });

@@ -2,9 +2,50 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
+import MaskedView from '@react-native-masked-view/masked-view';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
+
+// Fade efekti için yardımcı bileşen
+const FadeText = ({ text, style, maxWidth, maxChars }) => {
+  // Karakter sayısına göre fade gösterimi
+  const shouldShowFade = text && text.length > maxChars;
+  
+  if (!shouldShowFade) {
+    return (
+      <Text 
+        style={[style, { maxWidth }]} 
+        numberOfLines={1}
+        ellipsizeMode="clip"
+      >
+        {text}
+      </Text>
+    );
+  }
+  
+  return (
+    <MaskedView
+      style={[styles.maskedView, { maxWidth }]}
+      maskElement={
+        <LinearGradient
+          colors={['black', 'black', 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1.15, y: 0 }}
+          style={styles.maskGradient}
+        />
+      }
+    >
+      <Text 
+        style={style} 
+        numberOfLines={1}
+        ellipsizeMode="clip"
+      >
+        {text}
+      </Text>
+    </MaskedView>
+  );
+};
 
 export default function MyDecksList({
   decks,
@@ -128,7 +169,7 @@ export default function MyDecksList({
             <View style={styles.backgroundCategoryIcon}>
               <Iconify
                 icon={deck.categoryIcon}
-                size={80}
+                size={150}
                 color="rgba(0, 0, 0, 0.1)"
                 style={styles.categoryIconStyle}
               />
@@ -153,12 +194,27 @@ export default function MyDecksList({
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
               {deck.to_name ? (
                 <>
-                  <Text style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
+                  <FadeText 
+                    text={deck.name} 
+                    style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]} 
+                    maxWidth={'100%'}
+                    maxChars={16}
+                  />
                   <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 8 }} />
-                  <Text style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
+                  <FadeText 
+                    text={deck.to_name} 
+                    style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]} 
+                    maxWidth={'100%'}
+                    maxChars={16}
+                  />
                 </>
               ) : (
-                <Text style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
+                <FadeText 
+                  text={deck.name} 
+                  style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]} 
+                  maxWidth={'100%'}
+                  maxChars={16}
+                />
               )}
             </View>
             <TouchableOpacity
@@ -188,10 +244,10 @@ export default function MyDecksList({
           style={styles.myDeckGradient}
         >
           {/* Background Category Icon */}
-          <View style={styles.backgroundCategoryIcon}>
+          <View style={[styles.backgroundCategoryIcon, { left: -175, top: 1 }]}>
             <Iconify
               icon={row.item.categoryIcon}
-              size={100}
+              size={140}
               color="rgba(0, 0, 0, 0.1)"
               style={styles.categoryIconStyle}
             />
@@ -216,12 +272,27 @@ export default function MyDecksList({
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             {row.item.to_name ? (
               <>
-                <Text style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{row.item.name}</Text>
+                <FadeText 
+                  text={row.item.name} 
+                  style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} 
+                  maxWidth={'100%'}
+                  maxChars={35}
+                />
                 <View style={{ width: 70, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10 }} />
-                <Text style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{row.item.to_name}</Text>
+                <FadeText 
+                  text={row.item.to_name} 
+                  style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} 
+                  maxWidth={'100%'}
+                  maxChars={35}
+                />
               </>
             ) : (
-              <Text style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">{row.item.name}</Text>
+              <FadeText 
+                text={row.item.name} 
+                style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} 
+                maxWidth={'100%'}
+                maxChars={35}
+              />
             )}
           </View>
           <TouchableOpacity
@@ -300,7 +371,7 @@ const styles = StyleSheet.create({
   },
   backgroundCategoryIcon: {
     position: 'absolute',
-    left: -50, // İkonun yarısının taşması için
+    left: -75, // İkonun yarısının taşması için
     width: '100%',
     height: '100%',
     justifyContent: 'center',
@@ -311,6 +382,14 @@ const styles = StyleSheet.create({
   categoryIconStyle: {
     // Subtle background effect için
     opacity: 0.8,
+  },
+  // Fade efekti için stiller
+  maskedView: {
+    // flex: 1 kaldırıldı
+  },
+  maskGradient: {
+    flexDirection: 'row',
+    height: '100%',
   },
 });
 

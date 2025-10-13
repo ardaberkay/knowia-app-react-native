@@ -49,7 +49,12 @@ export default function DeckCardsScreen({ route, navigation }) {
         setLoading(true);
         const { data, error } = await supabase
           .from('cards')
-          .select('id, question, answer, image, example, note, created_at')
+          .select(`
+            id, question, answer, image, example, note, created_at,
+            deck:decks(
+              id, name, categories:categories(id, name, sort_order)
+            )
+          `)
           .eq('deck_id', deck.id)
           .order('created_at', { ascending: false });
         if (error) throw error;

@@ -7,9 +7,10 @@ import { supabase } from '../../lib/supabase';
 import { getFavoriteDecks } from '../../services/FavoriteService';
 import SearchBar from '../../components/tools/SearchBar';
 import FilterIcon from '../../components/tools/FilterIcon';
-import MyDecksList from '../../components/lists/MyDecksList';
+import DeckList from '../../components/lists/DeckList';
 import LottieView from 'lottie-react-native';
 import { typography } from '../../theme/typography';
+import { StyleSheet } from 'react-native';
 
 export default function FavoriteDecks() {
   const navigation = useNavigation();
@@ -75,8 +76,9 @@ export default function FavoriteDecks() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background, marginVertical: 10 }}>
       {loading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
-          <LottieView source={require('../../assets/handAnimation.json')} autoPlay loop style={{ width: 300, height: 300 }} />
+        <View style={styles.loadingContainer}>
+          <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: 200, height: 200 }} />
+          <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100 }} />
         </View>
       ) : filteredDecks.length === 0 ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -90,9 +92,9 @@ export default function FavoriteDecks() {
           </Text>
         </View>
       ) : (
-        <MyDecksList
+        <DeckList
           decks={filteredDecks}
-          favoriteDecks={favoriteDecks}
+          favoriteDecks={favoriteDecks.map(d => d.id)}
           onToggleFavorite={async (deckId) => {
             if (favoriteDecks.some(d => d.id === deckId)) {
               await handleRemoveFavoriteDeck(deckId);
@@ -100,11 +102,10 @@ export default function FavoriteDecks() {
               await handleAddFavoriteDeck(deckId);
             }
           }}
-          onDeleteDeck={() => { /* optional: no delete in favorites screen */ }}
           onPressDeck={(deck) => navigation.navigate('DeckDetail', { deck })}
           ListHeaderComponent={(
-            <View style={{ margin: 5, backgroundColor: colors.background }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: '94%', alignSelf: 'center' }}>
+            <View style={{backgroundColor: colors.background, marginVertical: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: '95%', alignSelf: 'center' }}>
                 <SearchBar
                   value={query}
                   onChangeText={setQuery}
@@ -126,4 +127,13 @@ export default function FavoriteDecks() {
   );
 }
 
-
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 200,
+    flexDirection: 'column',
+    gap: -65,
+  },
+});

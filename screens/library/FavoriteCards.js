@@ -10,6 +10,7 @@ import FilterIcon from '../../components/tools/FilterIcon';
 import CardListItem from '../../components/lists/CardList';
 import LottieView from 'lottie-react-native';
 import { typography } from '../../theme/typography';
+import { StyleSheet } from 'react-native';
 
 export default function FavoriteCards() {
   const navigation = useNavigation();
@@ -67,8 +68,9 @@ export default function FavoriteCards() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background, marginVertical: 10 }}>
       {loading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
-          <LottieView source={require('../../assets/handAnimation.json')} autoPlay loop style={{ width: 300, height: 300 }} />
+        <View style={styles.loadingContainer}>
+          <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: 200, height: 200 }} />
+          <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100 }} />
         </View>
       ) : filteredCards.length === 0 ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -116,4 +118,13 @@ export default function FavoriteCards() {
   );
 }
 
-
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 200,
+    flexDirection: 'column',
+    gap: -65,
+  },
+});
