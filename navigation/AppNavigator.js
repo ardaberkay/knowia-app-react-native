@@ -45,10 +45,7 @@ function MainTabs() {
         tabBarInactiveTintColor: colors.subtext,
         tabBarHideOnKeyboard: true,
         tabBarStyle: {
-          backgroundColor: colors.tabBarBackground,
-          borderTopColor: colors.border,
-          borderTopWidth: 1,
-          height: 64,
+          display: 'none', // Varsayılan tab bar'ı gizle, custom tab bar kullanacağız
         },
         headerStyle: {
           backgroundColor: colors.tabBarBackground,

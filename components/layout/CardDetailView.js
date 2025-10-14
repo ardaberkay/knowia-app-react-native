@@ -244,6 +244,58 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
                         onPress={() => flipCard(cardId)}
                         style={styles.cardTouchable}
                       >
+                        {/* Soru İkonu - Ön Yüz */}
+                        <Animated.View 
+                          style={[
+                            styles.quarterCircleContainer,
+                            {
+                              opacity: flipAnimations.current[cardId]?.interpolate({
+                                inputRange: [0, 0.5, 1],
+                                outputRange: [1, 0, 0],
+                                extrapolate: 'clamp',
+                              }) || 1,
+                            }
+                          ]}
+                        >
+                          <View style={[styles.quarterCircle, { backgroundColor: colors.buttonColor }]}>
+                            <Iconify icon="uil:comment-alt-question" size={26} color="rgba(255, 255, 255, 0.9)" />
+                          </View>
+                        </Animated.View>
+
+                        {/* Flip İkonu - Sağ Üst Köşe */}
+                        <Animated.View 
+                          style={[
+                            styles.flipIconContainer,
+                            {
+                              opacity: flipAnimations.current[cardId]?.interpolate({
+                                inputRange: [0, 0.5, 1],
+                                outputRange: [1, 0, 0],
+                                extrapolate: 'clamp',
+                              }) || 1,
+                            }
+                          ]}
+                        >
+                          <Iconify icon="fluent:card-ui-portrait-flip-24-regular" size={24} color="rgba(255, 255, 255, 0.9)" />
+                        </Animated.View>
+
+                        {/* Cevap İkonu - Arka Yüz */}
+                        <Animated.View 
+                          style={[
+                            styles.quarterCircleContainer,
+                            {
+                              opacity: flipAnimations.current[cardId]?.interpolate({
+                                inputRange: [0, 0.5, 1],
+                                outputRange: [0, 0, 1],
+                                extrapolate: 'clamp',
+                              }) || 0,
+                            }
+                          ]}
+                        >
+                          <View style={[styles.quarterCircle, { backgroundColor: colors.buttonColor, transform: [{ rotateY: '180deg' }] }]}>
+                            <Iconify icon="uil:comment-alt-check" size={26} color="rgba(255, 255, 255, 0.9)" />
+                          </View>
+                        </Animated.View>
+
                         {/* Ön yüz */}
                         <Animated.View
                           style={[
@@ -254,12 +306,6 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
                             },
                           ]}
                         >
-                          {/* Soru İkonu - Çeyrek Çember */}
-                          <View style={styles.quarterCircleContainer}>
-                            <View style={[styles.quarterCircle, { backgroundColor: colors.buttonColor }]}>
-                              <Iconify icon="uil:comment-alt-question" size={24} color="rgba(255, 255, 255, 0.9)" />
-                            </View>
-                          </View>
                           <View style={styles.cardContent}>
                             <Text style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText }]} numberOfLines={3}>
                               {item?.question || item?.name || item?.title || t('cardDetail.unnamed', 'İsimsiz Kart')}
@@ -277,12 +323,6 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
                             },
                           ]}
                         >
-                          {/* Cevap İkonu - Çeyrek Çember */}
-                          <View style={styles.quarterCircleContainer}>
-                            <View style={[styles.quarterCircle, { backgroundColor: colors.buttonColor }]}>
-                              <Iconify icon="uil:comment-alt-check" size={24} color="rgba(255, 255, 255, 0.9)" />
-                            </View>
-                          </View>
                           <View style={styles.cardContent}>
                             <Text style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText, transform: [{ scaleX: -1 }] }]} numberOfLines={4}>
                               {item?.answer || t('cardDetail.noAnswer', 'Cevap yok')}
@@ -586,12 +626,36 @@ const styles = StyleSheet.create({
   },
   quarterCircleContainer: {
     position: 'absolute',
-    top: -15,
-    left: -15,
+    top: 0,
+    left: 0,
     zIndex: 1,
     width: 40,
     height: 40,
     overflow: 'hidden',
+  },
+  flipIconContainer: {
+    position: 'absolute',
+    top: 7,
+    right: 0,
+    zIndex: 1,
+    width: 32,
+    height: 32,
+    overflow: 'hidden',
+  },
+  flipIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#F98A21',
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
   },
   quarterCircle: {
     width: 40,

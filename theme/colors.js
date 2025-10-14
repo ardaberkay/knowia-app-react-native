@@ -39,6 +39,10 @@ export const lightColors = {
     shadowRadius: 8,       // Gölge yumuşaklığı
     shadowOffset: { width: 0, height: 3 },
     elevation: 2,
+    // Yüzen tab bar için özel renkler
+    floatingTabBarShadow: 'rgba(0,0,0,0.15)',
+    floatingTabBarBorder: 'rgba(217, 217, 217, 0.3)',
+    floatingTabBarBackground: '#F5F5F5', // Daha koyu gri ton
     iconBackground: 'rgba(0,0,0,0.05)',
     // Kategori bazlı renkler (Supabase sort_order ile eşleşen)
     categoryColors: {
@@ -94,6 +98,10 @@ export const darkColors = {
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
     elevation: 2,
+    // Yüzen tab bar için özel renkler
+    floatingTabBarShadow: 'rgba(0,0,0,0.25)',
+    floatingTabBarBorder: 'rgba(122, 122, 122, 0.3)',
+    floatingTabBarBackground: '#222222', // Dark mode için daha koyu ton
     iconBackground: 'rgba(255, 255, 255, 0.1)',
     // Kategori bazlı renkler (Supabase sort_order ile eşleşen)
     categoryColors: {

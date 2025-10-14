@@ -103,7 +103,9 @@ module.exports = function (api) {
             'clarity:atom-solid',
             'fluent:brain-24-filled',
             'hugeicons:language-skill',
-            'garden:puzzle-piece-fill-16'
+            'garden:puzzle-piece-fill-16',
+            'fluent:card-ui-portrait-flip-24-regular',
+            'fluent:card-ui-portrait-flip-24-filled'
           ],
         },
       ],
