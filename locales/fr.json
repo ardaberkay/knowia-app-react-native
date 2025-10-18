@@ -63,7 +63,10 @@
       "logoutError": "Une erreur s'est produite lors de la déconnexion",
       "errorMessage": "Erreur",
       "errorMessageDeck": "Les paquets n'ont pas pu être chargés",
-      "noDecks": "Pas encore de paquets"
+      "noDecks": "Pas encore de paquets",
+      "popularDecks": "Paquets Populaires",
+      "popularDecksSubtitle": "Maîtrisez vos connaissances avec les paquets les plus populaires et tendance",
+      "exploreButton": "Explorer"
     },
     "create": {
       "name": "Nom du Paquet",

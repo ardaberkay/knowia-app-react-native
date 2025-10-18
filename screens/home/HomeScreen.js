@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Dimensions, ActivityIndicator, Image, Modal, Platform, RefreshControl } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDecksByCategory } from '../../services/DeckService';
 import { useNavigation } from '@react-navigation/native';
@@ -16,6 +17,7 @@ import { getFavoriteDecks } from '../../services/FavoriteService';
 import DeckSkeleton from '../../components/skeleton/DeckSkeleton';
 import { useTranslation } from 'react-i18next';
 import DeckCard from '../../components/ui/DeckUi';
+import GlassBlurCard from '../../components/ui/GlassBlurCard';
 
 
 
@@ -65,10 +67,10 @@ const DECK_CATEGORIES = {
 
   // Profil yüklendiğinde push bildirim izni iste ve token'ı kaydet + last_active_at güncelle
   useEffect(() => {
-    if (profile?.id) {
+    /*if (profile?.id) {
       registerForPushNotificationsAsync(profile.id);
       updateLastActiveAt(profile.id);
-    }
+    }*/
   }, [profile]);
 
   const loadDecks = async () => {
@@ -147,6 +149,50 @@ const DECK_CATEGORIES = {
   };
 
 
+  const renderPopularDecksCard = () => {
+    return (
+      <GlassBlurCard style={styles.popularDecksCard}>
+        <View style={styles.popularDecksContent}>
+          <View style={styles.popularDecksTextContainer}>
+            <View style={styles.popularDecksTitleContainer}>
+              <Iconify icon="fluent:arrow-trending-sparkle-24-filled" size={26} color="#F98A21" style={{ marginRight: 6 }} />
+              <Text style={[typography.styles.h2, { color: colors.text}]}>
+                {t('home.popularDecks', 'Popüler Desteler')}
+              </Text>
+            </View>
+            <Text style={[typography.styles.caption, { color: colors.muted, marginBottom: 8, lineHeight: 22 }]}>
+              {t('home.popularDecksSubtitle', 'En popüler ve trend destelerle bilginizi pekiştirin')}
+            </Text>
+            <TouchableOpacity 
+              style={styles.exploreButton}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={['#F98A21', '#FF6B35']}
+                locations={[0, 0.99]}
+                style={styles.gradientButton}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Text style={styles.exploreButtonText}>
+                  {t('home.exploreButton', 'Keşfet')}
+                </Text>
+                <Iconify icon="streamline:trending-content-remix" size={16} color="#FFFFFF" style={{ marginLeft: 6 }} />
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.popularDecksImageContainer}>
+            <Image
+              source={require('../../assets/item.png')}
+              style={styles.popularDecksImage}
+              resizeMode="contain"
+            />
+          </View>
+        </View>
+      </GlassBlurCard>
+    );
+  };
+
   const renderDeckSection = (category) => {
     const categoryDecks = decks[category] || [];
     const limitedDecks = categoryDecks; // Tüm desteler gösterilecek
@@ -162,11 +208,11 @@ const DECK_CATEGORIES = {
     const showEndIcon = categoryDecks.length > 10;
 
     return (
-      <>
+      <GlassBlurCard style={styles.glassCard}>
         <View style={styles.sectionHeaderGradient}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Iconify icon={getCategoryIcon(category)} size={26} color="#F98A21" style={{ marginRight: 8, marginTop: 1 }} />
-            <Text style={[typography.styles.h2, { color: colors.subtext }]}>{DECK_CATEGORIES[category]}</Text>
+            <Text style={[typography.styles.h2, { color: colors.text }]}>{DECK_CATEGORIES[category]}</Text>
           </View>
           <TouchableOpacity style={[styles.seeAllButton, { borderColor: colors.secondary }]} onPress={handleSeeAll} activeOpacity={0.7}>
             <View style={styles.seeAllContent}>
@@ -224,7 +270,7 @@ const DECK_CATEGORIES = {
             )}
           </ScrollView>
         )}
-      </>
+      </GlassBlurCard>
     );
   };
 
@@ -253,7 +299,10 @@ const DECK_CATEGORIES = {
           </TouchableOpacity>
         </View>
       </View>
-      <ScrollView style={[styles.content, { backgroundColor: colors.background }]} 
+      <ScrollView 
+        style={[styles.content, { backgroundColor: colors.background }]} 
+        contentContainerStyle={styles.scrollContentContainer}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -263,12 +312,10 @@ const DECK_CATEGORIES = {
           />
         }
       > 
+        {renderPopularDecksCard()}
         {Object.keys(DECK_CATEGORIES).map((category, index) => (
           <React.Fragment key={`category-${category}`}>
-            {index > 0 && <View style={[styles.categoryDivider, { backgroundColor: colors.border }]} />}
-            <View style={styles.section}>
-              {renderDeckSection(category)}
-            </View>
+            {renderDeckSection(category)}
           </React.Fragment>
         ))}
       </ScrollView>
@@ -318,6 +365,9 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  scrollContentContainer: {
+    paddingBottom: '25%',
+  },
   section: {
     marginVertical: 16,
   },
@@ -325,19 +375,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginLeft: 16,
-    marginRight: 16,
-    marginBottom: 5,
+    marginBottom: 12,
     borderRadius: 12,
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
   },
   decksContainer: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingBottom: 8,
   },
   emptyText: {
     fontSize: 14,
@@ -351,8 +398,9 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     paddingVertical: 4,
     paddingHorizontal: 12,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderRadius: 30,
+    backgroundColor: 'rgba(29, 71, 117, 0.6)',
   },
   seeAllContent: {
     flexDirection: 'row',
@@ -405,5 +453,57 @@ const styles = StyleSheet.create({
   logoImage: {
     width: 120,
     height: 44,
+  },
+  glassCard: {
+    // GlassBlurCard component handles its own margins
+  },
+  popularDecksCard: {
+    marginTop: 16,
+  },
+  popularDecksContent: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+  },
+  popularDecksTextContainer: {
+    flex: 1,
+    marginRight: 10,
+    justifyContent: 'space-between',
+  },
+  popularDecksTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  popularDecksImageContainer: {
+    width: 150,
+    height: 150,
+    marginTop: 12,
+  },
+  popularDecksImage: {
+    width: 160,
+    height: 160,
+  },
+  exploreButton: {
+    borderRadius: 99,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    alignSelf: 'flex-start',
+    minWidth: 110,
+  },
+  gradientButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 99,
+  },
+  exploreButtonText: {
+    fontSize: 17,
+    fontWeight: '500',
+    color: '#FFFFFF',
   },
 }); 

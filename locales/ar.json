@@ -63,7 +63,10 @@
       "logoutError": "حدث خطأ أثناء تسجيل الخروج",
       "errorMessage": "خطأ",
       "errorMessageDeck": "تعذر تحميل المجموعات",
-      "noDecks": "لا توجد مجموعات بعد"
+      "noDecks": "لا توجد مجموعات بعد",
+      "popularDecks": "المجموعات الشائعة",
+      "popularDecksSubtitle": "أتقن معرفتك مع أكثر المجموعات شعبية وترند",
+      "exploreButton": "استكشاف"
     },
     "create": {
       "name": "اسم المجموعة",

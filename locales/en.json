@@ -64,7 +64,10 @@
     "logoutError": "An error occurred while logging out",
     "errorMessage": "Error",
     "errorMessageDeck": "Decks could not be loaded",
-    "noDecks": "No decks yet"
+    "noDecks": "No decks yet",
+    "popularDecks": "Popular Decks",
+    "popularDecksSubtitle": "Master your knowledge with the most popular and trending decks",
+    "exploreButton": "Explore"
   },
   "create": {
     "name": "Deck Name",

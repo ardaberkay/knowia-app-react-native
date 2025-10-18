@@ -105,7 +105,9 @@ module.exports = function (api) {
             'hugeicons:language-skill',
             'garden:puzzle-piece-fill-16',
             'fluent:card-ui-portrait-flip-24-regular',
-            'fluent:card-ui-portrait-flip-24-filled'
+            'fluent:card-ui-portrait-flip-24-filled',
+            'fluent:arrow-trending-sparkle-24-filled',
+            'streamline:trending-content-remix'
           ],
         },
       ],

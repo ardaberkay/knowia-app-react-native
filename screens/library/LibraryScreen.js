@@ -291,7 +291,7 @@ export default function LibraryScreen() {
                     })
                   }
                 ],
-                backgroundColor: colors.libraryTab || '#F98A21',
+                backgroundColor: colors.buttonColor || '#F98A21',
               }
             ]}
           />
