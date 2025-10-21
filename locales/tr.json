@@ -44,7 +44,8 @@
     "deleteCardConfirm": "Bu işlemi geri alamazsınız. Emin misiniz?",
     "addFavoriteDeckCta": "Favorilerine bir deste ekle",
     "favoriteDecksTitle": "Favori Destelerim",
-    "favoriteCardsTitle": "Favori Kartlarım"
+    "favoriteCardsTitle": "Favori Kartlarım",
+    "myDecksSubtitle": "  Oluşturduğun destelerle kendi öğrenme yolculuğunu tasarla; keşfet, pekiştir ve hedeflerine doğru ilerle"
   },
   "home": {
     "inProgressDecks": "Çalıştığım Desteler",

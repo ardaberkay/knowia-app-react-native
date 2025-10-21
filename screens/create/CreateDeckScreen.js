@@ -343,6 +343,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 20,
     marginTop: "auto",
+    marginBottom: 80,
   },
 
   optional: {

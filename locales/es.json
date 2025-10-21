@@ -44,7 +44,8 @@
       "deleteCardConfirm": "Esta acción no se puede deshacer. ¿Estás seguro?",
       "addFavoriteDeckCta": "Agrega una baraja a tus favoritos",
       "favoriteDecksTitle": "Barajas Favoritas",
-      "favoriteCardsTitle": "Tarjetas Favoritas"
+      "favoriteCardsTitle": "Tarjetas Favoritas",
+      "myDecksSubtitle": "  Diseña tu propio viaje de aprendizaje con tus barajas creadas; descubre, refuerza y avanza hacia tus metas"
     },
     "home": {
       "inProgressDecks": "Barajas de Estudio",

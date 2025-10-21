@@ -17,6 +17,7 @@ import CardListItem from '../../components/lists/CardList';
 import LottieView from 'lottie-react-native';
 import MyDecksList from '../../components/lists/MyDecksList';
 import MaskedView from '@react-native-masked-view/masked-view';
+import GlassBlurCard from '../../components/ui/GlassBlurCard';
 
 // Fade efekti için yardımcı bileşen
 const FadeText = ({ text, style, maxWidth, maxChars }) => {
@@ -259,6 +260,46 @@ export default function LibraryScreen() {
     return list;
   })();
 
+  // MyDecks Card
+  const renderMyDecksCard = () => {
+    return (
+      <GlassBlurCard style={styles.myDecksCard}>
+        <View style={styles.myDecksContent}>
+          <View style={styles.myDecksTextContainer}>
+            <View style={styles.myDecksTitleContainer}>
+              <Iconify icon="ph:cards-fill" size={26} color="#F98A21" style={{ marginRight: 6 }} />
+              <Text style={[typography.styles.h2, { color: colors.text}]}>
+                {t('library.myDecks', 'Destelerim')}
+              </Text>
+            </View>
+            <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: 22, marginRight: 3 }]}>
+              {t('library.myDecksSubtitle', ' Oluşturduğun destelerle kendi öğrenme yolculuğunu tasarla; keşfet, pekiştir ve hedeflerine doğru ilerle')}
+            </Text>
+          </View>
+          <View style={styles.myDecksImageContainer}>
+            <Image
+              source={require('../../assets/mydecks-item.png')}
+              style={styles.myDecksImage}
+              resizeMode="contain"
+            />
+          </View>
+        </View>
+        <View style={styles.myDecksSearchContainer}>
+          <SearchBar
+            value={myDecksQuery}
+            onChangeText={setMyDecksQuery}
+            placeholder={t('common.searchPlaceholder', 'Destelerde ara...')}
+            style={{ flex: 1 }}
+          />
+          <FilterIcon
+            value={myDecksSort}
+            onChange={setMyDecksSort}
+          />
+        </View>
+      </GlassBlurCard>
+    );
+  };
+
   // Yükleniyor ekranı
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
@@ -343,22 +384,7 @@ export default function LibraryScreen() {
               }}
               onDeleteDeck={handleDeleteDeck}
               onPressDeck={(deck) => navigation.navigate('DeckDetail', { deck })}
-              ListHeaderComponent={(
-                <View style={{ backgroundColor: colors.background, marginTop: '22%'  }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: '95%', alignSelf: 'center', marginBottom: 5 }}>
-                    <SearchBar
-                      value={myDecksQuery}
-                      onChangeText={setMyDecksQuery}
-                      placeholder={t('common.searchPlaceholder', 'Destelerde ara...')}
-                      style={{ flex: 1 }}
-                    />
-                    <FilterIcon
-                      value={myDecksSort}
-                      onChange={setMyDecksSort}
-                    />
-                  </View>
-                </View>
-              )}
+              ListHeaderComponent={renderMyDecksCard}
               refreshing={loading}
               onRefresh={() => {
                 setLoading(true);
@@ -873,6 +899,39 @@ const styles = StyleSheet.create({
   maskGradient: {
     flexDirection: 'row',
     height: '100%',
+  },
+  // MyDecks Card styles
+  myDecksCard: {
+    marginTop: '21%',
+  },
+  myDecksContent: {
+    flexDirection: 'row',
+  },
+  myDecksTextContainer: {
+    flex: 1,
+    marginRight: 15,
+    gap: 5,
+  },
+  myDecksTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: '5%',
+  },
+  myDecksImageContainer: {
+    width: 150,
+    height: 150,
+    marginTop: 12,
+  },
+  myDecksImage: {
+    width: 160,
+    height: 160,
+  },
+  myDecksSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 12,
+    paddingTop: 8,
   },
 
 

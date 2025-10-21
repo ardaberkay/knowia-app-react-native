@@ -43,7 +43,9 @@
       "deleteCardConfirmation": "هل تريد حذف البطاقة؟",
       "deleteCardConfirm": "لا يمكن التراجع عن هذا الإجراء. هل أنت متأكد؟",
       "addFavoriteDeckCta": "أضف مجموعة إلى المفضلة",
-      "favoriteDecksTitle": "المجموعات المفضلة"
+      "favoriteDecksTitle": "المجموعات المفضلة",
+      "favoriteCardsTitle": "البطاقات المفضلة",
+      "myDecksSubtitle": "  صمم رحلتك التعليمية الخاصة بمجموعاتك المُنشأة؛ اكتشف، عزز وتقدم نحو أهدافك"
     },
     "home": {
       "inProgressDecks": "مجموعات الدراسة",
