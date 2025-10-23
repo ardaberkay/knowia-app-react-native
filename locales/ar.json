@@ -330,6 +330,8 @@
   "createDeck": {
     "categoryLabel": "الفئة *",
     "selectCategory": "اختر الفئة",
-    "selectCategoryA11y": "اختر الفئة"
+    "selectCategoryA11y": "اختر الفئة",
+    "title": "أنشئ مجموعتك",
+    "motivationText": "   صمم رحلتك التعليمية مع المجموعات الشخصية. أنشئ ونظم وأتقن معرفتك خطوة بخطوة."
   }
   }

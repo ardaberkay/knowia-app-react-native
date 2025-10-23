@@ -346,6 +346,8 @@
   "createDeck": {
     "categoryLabel": "Category*",
     "selectCategory": "Select category",
-    "selectCategoryA11y": "Select category"
+    "selectCategoryA11y": "Select category",
+    "title": "Create Your Deck",
+    "motivationText": "   Design your learning journey with personalized decks. Create, organize and master your knowledge step by step."
   }
 } 

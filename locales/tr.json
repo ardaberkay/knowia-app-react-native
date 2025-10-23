@@ -351,6 +351,8 @@
   "createDeck": {
     "categoryLabel": "Kategori *",
     "selectCategory": "Kategori seçiniz",
-    "selectCategoryA11y": "Kategori seç"
+    "selectCategoryA11y": "Kategori seç",
+    "title": "Deste Oluştur",
+    "motivationText": "   Kişiselleştirilmiş destelerle öğrenme yolculuğunu tasarla. Bilgini adım adım oluştur, düzenle ve öğren."
   }
 }

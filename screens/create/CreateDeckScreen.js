@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView, SafeAreaView, Image } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import { Iconify } from 'react-native-iconify';
 import CategorySelector from '../../components/tools/CategorySelector';
 import UndoButton from '../../components/tools/UndoButton';
 import CreateButton from '../../components/tools/CreateButton';
+import GlassBlurCard from '../../components/ui/GlassBlurCard';
 
 export default function CreateScreen() {
   const [name, setName] = useState('');
@@ -101,6 +102,26 @@ export default function CreateScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
+          {/* GlassBlurCard Header */}
+          <GlassBlurCard style={styles.headerCard}>
+            <View style={styles.headerContent}>
+              <View style={styles.headerTextContainer}>
+                <Text style={[styles.headerTitle, typography.styles.h2, { color: colors.text }]}>
+                  {t('createDeck.title', 'Deste Oluştur')}
+                </Text>
+                <Text style={[styles.headerSubtitle, typography.styles.body, { color: colors.muted }]}>
+                  {t('createDeck.motivationText', 'Kişiselleştirilmiş kartlarla öğrenme yolculuğunu tasarla. Bilgini adım adım oluştur, düzenle ve öğren.')}
+                </Text>
+              </View>
+              <View style={styles.headerImageContainer}>
+                <Image 
+                  source={require('../../assets/create-deck-item.png')} 
+                  style={styles.headerImage}
+                  resizeMode="contain"
+                />
+              </View>
+            </View>
+          </GlassBlurCard>
           <View
             style={[
               styles.inputCard,
@@ -309,6 +330,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     paddingTop: 16,
+  },
+  headerCard: {
+    width: '100%',
+    maxWidth: 440,
+    marginBottom: 12,
+  },
+  headerTitle: {
+    marginBottom: 8,
+    fontWeight: 'bold',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 4,
+  },
+  headerTextContainer: {
+    flex: 1,
+  },
+  headerSubtitle: {
+    lineHeight: 20,
+  },
+  headerImageContainer: {
+    width: 120,
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+    right: -10,
+    top: 10,
+
+  },
+  headerImage: {
+    width: '100%',
+    height: '100%',
   },
   inputCard: {
     width: '100%',

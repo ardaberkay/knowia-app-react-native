@@ -330,6 +330,8 @@
   "createDeck": {
     "categoryLabel": "Categoría *",
     "selectCategory": "Seleccionar categoría",
-    "selectCategoryA11y": "Seleccionar categoría"
+    "selectCategoryA11y": "Seleccionar categoría",
+    "title": "Crea tu Baraja",
+    "motivationText": "   Diseña tu viaje de aprendizaje con barajas personalizadas. Crea, organiza y domina tu conocimiento paso a paso."
   }
   }
