@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Modal } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, Modal, Image, ScrollView } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { typography } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
-import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
-import { Buffer } from 'buffer';
 import * as Sharing from 'expo-sharing';
 import { useTranslation } from 'react-i18next';
+import { Iconify } from 'react-native-iconify';
+import GlassBlurCard from '../../components/ui/GlassBlurCard';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { Buffer } from 'buffer';
+import CreateButton from '../../components/tools/CreateButton';
+import UndoButton from '../../components/tools/UndoButton';
 
 export default function AddCardScreen() {
   const navigation = useNavigation();
@@ -38,6 +41,16 @@ export default function AddCardScreen() {
     }
   }, [route.params?.openCsvModal]);
 
+  const handleCardSaved = (card) => {
+    Alert.alert(t('common.success', 'Başarılı'), t('common.addCardSuccess', 'Kart eklendi!'), [
+      { text: t('common.ok', 'Tamam'), onPress: () => navigation.goBack() }
+    ]);
+  };
+
+  const handleCancel = () => {
+    navigation.goBack();
+  };
+
   const handlePickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -61,7 +74,7 @@ export default function AddCardScreen() {
 
   const handleRemoveImage = () => {
     setImage('');
-    setImageChanged(false);
+    setImageChanged(true);
   };
 
   const handleCreateCard = async () => {
@@ -88,7 +101,7 @@ export default function AddCardScreen() {
         imageUrl = urlData.publicUrl;
       }
       // Kartı ekle
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('cards')
         .insert({
           deck_id: deck.id,
@@ -97,16 +110,24 @@ export default function AddCardScreen() {
           example: example.trim() || null,
           note: note.trim() || null,
           image: imageUrl || null,
-        });
+        })
+        .select();
       if (error) throw error;
-      Alert.alert(t('common.success', 'Başarılı'), t('common.addCardSuccess', 'Kart eklendi!'), [
-        { text: t('common.ok', 'Tamam'), onPress: () => navigation.goBack() }
-      ]);
+      handleCardSaved(data[0]);
     } catch (e) {
       Alert.alert(t('common.error', 'Hata'), e.message || t('common.addCardError', 'Kart eklenemedi.'));
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleResetForm = () => {
+    setQuestion('');
+    setAnswer('');
+    setExample('');
+    setNote('');
+    setImage('');
+    setImageChanged(false);
   };
 
   // CSV şablonunu indirme fonksiyonu
@@ -257,12 +278,7 @@ export default function AddCardScreen() {
   };
 
   return (
-    <LinearGradient
-      colors={colors.deckGradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={{ flex: 1 }}
-    >
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Modal
         visible={csvModalVisible}
         animationType="slide"
@@ -382,108 +398,194 @@ export default function AddCardScreen() {
         </View>
       </Modal>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.formContainer}>
-          <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
-            <View style={styles.labelRow}>
-              <Ionicons name="image" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.image", "Kart Görseli")}</Text>
+        <ScrollView 
+          contentContainerStyle={[styles.formContainer, { backgroundColor: colors.background }]}
+          style={{ flex: 1 }}
+        >
+          {/* GlassBlurCard Header */}
+          <GlassBlurCard style={[styles.headerCard, { borderRadius: 28 }]}>
+            <View style={styles.headerContent}>
+              <View style={styles.headerTitleContainer}>
+                <Iconify icon="hugeicons:file-add" size={26} color="#F98A21" style={{ marginRight: 6 }} />
+                <Text style={[typography.styles.h2, { color: colors.text}]}>
+                  {t('addCard.title', 'Kart Oluştur')}
+                </Text>
+              </View>
+              <View style={styles.headerBottomRow}>
+                <View style={styles.headerTextColumn}>
+                  <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: 22, flex: 1, alignSelf: 'flex-start' }]}>
+                    {t('addCard.motivationText', 'Bilgini pekiştirmek için soru-cevap kartları oluştur ve öğrenme sürecini hızlandır.')}
+                  </Text>
+                  <TouchableOpacity 
+                    style={styles.howToCreateButton}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      // TODO: Navigate to how-to-create-card screen
+                      console.log('How to create card pressed');
+                    }}
+                  >
+                    <Iconify icon="material-symbols:info-outline" size={16} color={colors.secondary} style={{ marginRight: 4 }} />
+                    <Text style={[typography.styles.caption, { color: colors.secondary, fontWeight: '600', textDecorationLine: 'underline' }]}>
+                      {t('addCard.howToCreate', 'Nasıl Oluşturulur?')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.headerImageContainer}>
+                  <Image
+                    source={require('../../assets/create-card-item.png')}
+                    style={styles.headerImage}
+                    resizeMode="contain"
+                  />
+                </View>
+              </View>
             </View>
+          </GlassBlurCard>
+          <View style={[styles.inputCard, { 
+            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+            borderColor: colors.cardBorder,
+            borderWidth: 1,
+            shadowColor: colors.shadowColor,
+            shadowOffset: colors.shadowOffset,
+            shadowOpacity: colors.shadowOpacity,
+            shadowRadius: colors.shadowRadius,
+            elevation: colors.elevation,
+          }]}>
+            <View style={{ flex: 1 }}>
+              <View style={styles.labelRow}>
+                <Iconify icon="mage:image-fill" size={24} color="#F98A21" style={styles.labelIcon} />
+                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.image", "Kart Görseli")}</Text>
+              </View>
             {image ? (
               <View style={{ alignItems: 'center', marginBottom: 8 }}>
                 <Image source={{ uri: image }} style={styles.cardImage} />
-                <TouchableOpacity onPress={handleRemoveImage} style={[styles.removeImageButton, {backgroundColor: colors.actionButton}]}>
-                  <Text style={styles.removeImageButtonText}>{t("addCard.removeImage", "Kaldır")}</Text>
+                <TouchableOpacity onPress={handleRemoveImage} style={styles.removeImageButton}>
+                  <Text style={styles.removeImageButtonText}>{t("addCard.removeImage", "Görseli Kaldır")}</Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity onPress={handlePickImage} style={[styles.addImageButton, {backgroundColor: colors.actionButton}]}>
-                <Ionicons name="add" size={24} color="#F98A21" />
+              <TouchableOpacity onPress={handlePickImage} style={styles.addImageButton}>
+                <Iconify icon="ic:round-plus" size={24} color="#F98A21" />
                 <Text style={styles.addImageButtonText}>{t("addCard.addImage", "Fotoğraf Ekle")}</Text>
               </TouchableOpacity>
             )}
-          </View>
-          <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
-            <View style={styles.labelRow}>
-              <Ionicons name="help-circle-outline" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.question", "Soru")} *</Text>
             </View>
-            <TextInput
-              style={[styles.input, typography.styles.body, {color: colors.text, borderColor: colors.border}]}
-              placeholder={t("addCard.questionPlaceholder", "Kartın sorusu")}
-              placeholderTextColor={colors.muted}
-              value={question}
-              onChangeText={setQuestion}
-              multiline
-            />
           </View>
-          <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
-            <View style={styles.labelRow}>
-              <Ionicons name="checkmark-circle-outline" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.answer", "Cevap")} *</Text>
+          <View style={[styles.inputCard, { 
+            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+            borderColor: colors.cardBorder,
+            borderWidth: 1,
+            shadowColor: colors.shadowColor,
+            shadowOffset: colors.shadowOffset,
+            shadowOpacity: colors.shadowOpacity,
+            shadowRadius: colors.shadowRadius,
+            elevation: colors.elevation,
+          }]}>
+            <View style={{ flex: 1 }}>
+              <View style={styles.labelRow}>
+                <Iconify icon="uil:comment-alt-question" size={24} color="#F98A21" style={styles.labelIcon} />
+                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.question", "Soru")} *</Text>
+              </View>
+              <TextInput
+                style={[styles.input, typography.styles.body, {color: colors.text}]}
+                placeholder={t("addCard.questionPlaceholder", "Kartın sorusu")}
+                placeholderTextColor={colors.muted}
+                value={question}
+                onChangeText={setQuestion}
+                multiline
+              />
             </View>
-            <TextInput
-              style={[styles.input, typography.styles.body, {color: colors.text, borderColor: colors.border}]}
-              placeholder={t("addCard.answerPlaceholder", "Kartın cevabı")}
-              placeholderTextColor={colors.muted}
-              value={answer}
-              onChangeText={setAnswer}
-              multiline
-            />
           </View>
-          <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
-            <View style={styles.labelRow}>
-              <Ionicons name="bulb-outline" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.example", "Örnek")}</Text>
+          <View style={[styles.inputCard, { 
+            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+            borderColor: colors.cardBorder,
+            borderWidth: 1,
+            shadowColor: colors.shadowColor,
+            shadowOffset: colors.shadowOffset,
+            shadowOpacity: colors.shadowOpacity,
+            shadowRadius: colors.shadowRadius,
+            elevation: colors.elevation,
+          }]}>
+            <View style={{ flex: 1 }}>
+              <View style={styles.labelRow}>
+                <Iconify icon="uil:comment-alt-check" size={24} color="#F98A21" style={styles.labelIcon} />
+                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.answer", "Cevap")} *</Text>
+              </View>
+              <TextInput
+                style={[styles.input, typography.styles.body, {color: colors.text}]}
+                placeholder={t("addCard.answerPlaceholder", "Kartın cevabı")}
+                placeholderTextColor={colors.muted}
+                value={answer}
+                onChangeText={setAnswer}
+                multiline
+              />
             </View>
-            <TextInput
-              style={[styles.input, typography.styles.body, {color: colors.text, borderColor: colors.border}]}
-              placeholder={t("addCard.examplePlaceholder", "Örnek cümle (opsiyonel)")}
-              placeholderTextColor={colors.muted}
-              value={example}
-              onChangeText={setExample}
-              multiline
-            />
           </View>
-          <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}>
-            <View style={styles.labelRow}>
-              <Ionicons name="document-text-outline" size={20} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.note", "Not")}</Text>
+          <View style={[styles.inputCard, { 
+            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+            borderColor: colors.cardBorder,
+            borderWidth: 1,
+            shadowColor: colors.shadowColor,
+            shadowOffset: colors.shadowOffset,
+            shadowOpacity: colors.shadowOpacity,
+            shadowRadius: colors.shadowRadius,
+            elevation: colors.elevation,
+          }]}>
+            <View style={{ flex: 1 }}>
+              <View style={styles.labelRow}>
+                <Iconify icon="lucide:lightbulb" size={24} color="#F98A21" style={styles.labelIcon} />
+                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.example", "Örnek")}</Text>
+              </View>
+              <TextInput
+                style={[styles.input, typography.styles.body, {color: colors.text}]}
+                placeholder={t("addCard.examplePlaceholder", "Örnek cümle (opsiyonel)")}
+                placeholderTextColor={colors.muted}
+                value={example}
+                onChangeText={setExample}
+                multiline
+              />
             </View>
-            <TextInput
-              style={[styles.input, typography.styles.body, {color: colors.text, borderColor: colors.border}]}
-              placeholder={t("addCard.notePlaceholder", "Not (opsiyonel)")}
-              placeholderTextColor={colors.muted}
-              value={note}
-              onChangeText={setNote}
-              multiline
-            />
+          </View>
+          <View style={[styles.inputCard, { 
+            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+            borderColor: colors.cardBorder,
+            borderWidth: 1,
+            shadowColor: colors.shadowColor,
+            shadowOffset: colors.shadowOffset,
+            shadowOpacity: colors.shadowOpacity,
+            shadowRadius: colors.shadowRadius,
+            elevation: colors.elevation,
+          }]}>
+            <View style={{ flex: 1 }}>
+              <View style={styles.labelRow}>
+                <Iconify icon="material-symbols-light:stylus-note" size={24} color="#F98A21" style={styles.labelIcon} />
+                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.note", "Not")}</Text>
+              </View>
+              <TextInput
+                style={[styles.input, typography.styles.body, {color: colors.text}]}
+                placeholder={t("addCard.notePlaceholder", "Not (opsiyonel)")}
+                placeholderTextColor={colors.muted}
+                value={note}
+                onChangeText={setNote}
+                multiline
+              />
+            </View>
           </View>
           <View style={styles.buttonRowModern}>
-            <TouchableOpacity
-              style={[styles.startButtonModern, { backgroundColor: '#fff', marginRight: 10, borderColor: colors.buttonColor || 'transparent' }]}
-              onPress={() => {
-                setQuestion('');
-                setAnswer('');
-                setExample('');
-                setNote('');
-                setImage('');
-                setImageChanged(false);
-              }}
+            <UndoButton
+              onPress={handleResetForm}
               disabled={loading}
-            >
-              <Text style={[styles.startButtonTextModern, { color: colors.buttonColor }, typography.styles.button]}>{t("addCard.undo", "Geri Al")}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.startButtonModern, loading && { opacity: 0.7 }, { borderWidth: 1, borderColor: colors.buttonBorder || 'transparent' }]}
+              text={t("addCard.undo", "Geri Al")}
+            />
+            <CreateButton
               onPress={handleCreateCard}
               disabled={loading}
-            >
-              <Text style={[styles.startButtonTextModern, typography.styles.button]}>{loading ? t("addCard.creatingCard", "Kart oluşturuluyor...") : t("addCard.createCard", "Kartı Oluştur")}</Text>
-            </TouchableOpacity>
+              loading={loading}
+              text={t("addCard.createCard", "Kartı Oluştur")}
+            />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -493,24 +595,61 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     padding: 16,
-    paddingTop: 16,
+    paddingTop: 8,
+  },
+  headerCard: {
+    width: '100%',
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  headerContent: {
+    paddingVertical: 8,
+  },
+  headerTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  headerBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerTextColumn: {
+    flex: 1,
+    marginRight: 12,
+  },
+  howToCreateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+  },
+  headerImageContainer: {
+    width: 120,
+    height: 120,
+    marginLeft: 12,
+  },
+  headerImage: {
+    width: 140,
+    height: 140,
+    alignSelf: 'flex-end',
+    top: '-10%',
   },
   inputCard: {
     width: '100%',
     maxWidth: 440,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 18,
-    shadowOffset: { width: 0, height: 4 },
+    borderRadius: 28,
+    padding: 20,
+    marginBottom: 11,
+    shadowOffset: { width: 4, height: 6},
     shadowOpacity: 0.10,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 10,
+    elevation: 5,
     overflow: 'hidden',
   },
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 10,
   },
   labelIcon: {
     marginRight: 8,
@@ -520,7 +659,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   input: {
-    borderWidth: 1,
+    borderWidth: 0.15,
+    borderColor: '#eee',
     borderRadius: 8,
     padding: 12,
     marginBottom: 0,
@@ -531,14 +671,13 @@ const styles = StyleSheet.create({
     height: 160,
     borderRadius: 18,
     marginBottom: 8,
-    resizeMode: 'contain',
+    resizeMode: 'cover',
     backgroundColor: '#f2f2f2',
   },
   addImageButton: {
     flexDirection: 'row',
     alignItems: 'center',
-
-    borderRadius: 10,
+    borderRadius: 28,
     paddingVertical: 10,
     paddingHorizontal: 18,
     borderWidth: 1,
@@ -552,46 +691,23 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   removeImageButton: {
-    backgroundColor: '#fff',
+    backgroundColor: '#F98A21',
     borderWidth: 1,
     borderColor: '#F98A21',
-    borderRadius: 8,
+    borderRadius: 28,
     paddingVertical: 6,
     paddingHorizontal: 18,
     alignItems: 'center',
     marginTop: 4,
   },
   removeImageButtonText: {
-    color: '#F98A21',
+    color: '#fff',
     fontWeight: 'bold',
     fontSize: 15,
   },
   buttonRowModern: {
     flexDirection: 'row',
-    gap: 14,
-    marginHorizontal: 18,
-    marginTop: 30,
-    marginBottom: 30,
+    gap: 20,
+    marginTop: 4,
   },
-  startButtonModern: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F98A21',
-    borderRadius: 10,
-    paddingVertical: 13,
-    justifyContent: 'center',
-    shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-    borderWidth: 1,
-  },
-  startButtonTextModern: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
-
-  },
-}); 
+});

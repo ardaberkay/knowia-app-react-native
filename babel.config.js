@@ -107,7 +107,9 @@ module.exports = function (api) {
             'fluent:card-ui-portrait-flip-24-regular',
             'fluent:card-ui-portrait-flip-24-filled',
             'fluent:arrow-trending-sparkle-24-filled',
-            'streamline:trending-content-remix'
+            'streamline:trending-content-remix',
+            'fluent:tab-add-24-regular',
+            'hugeicons:file-add'
           ],
         },
       ],

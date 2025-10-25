@@ -199,6 +199,9 @@
     "cardDetail": "Card Detail"
   },
   "addCard": {
+    "title": "Create Card",
+    "motivationText": "   Create question-answer cards to reinforce your knowledge and accelerate your learning process.",
+    "howToCreate": "How to Create?",
     "question": "Question",
     "answer": "Answer",
     "example": "Example",
@@ -348,6 +351,7 @@
     "selectCategory": "Select category",
     "selectCategoryA11y": "Select category",
     "title": "Create Your Deck",
-    "motivationText": "   Design your learning journey with personalized decks. Create, organize and master your knowledge step by step."
+    "motivationText": "   Design your learning journey with personalized decks and master your knowledge.",
+    "howToCreate": "How to Create?"
   }
 } 

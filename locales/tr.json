@@ -204,6 +204,9 @@
     "cardDetail": "Kart Detayı"
   },
   "addCard": {
+    "title": "Kart Oluştur",
+    "motivationText": "   Bilgini pekiştirmek için soru-cevap kartları oluştur ve öğrenme sürecini hızlandır.",
+    "howToCreate": "Nasıl Oluşturulur?",
     "question": "Soru",
     "answer": "Cevap",
     "example": "Örnek",
@@ -352,7 +355,8 @@
     "categoryLabel": "Kategori *",
     "selectCategory": "Kategori seçiniz",
     "selectCategoryA11y": "Kategori seç",
-    "title": "Deste Oluştur",
-    "motivationText": "   Kişiselleştirilmiş destelerle öğrenme yolculuğunu tasarla. Bilgini adım adım oluştur, düzenle ve öğren."
+    "title": "Desteni Oluştur",
+    "motivationText": "   Kişiselleştirilmiş destelerle öğrenme yolculuğunu tasarla ve bilgini pekiştir.",
+    "howToCreate": "Nasıl Oluşturulur?"
   }
 }

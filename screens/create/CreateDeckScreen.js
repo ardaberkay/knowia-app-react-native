@@ -103,22 +103,40 @@ export default function CreateScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
           {/* GlassBlurCard Header */}
-          <GlassBlurCard style={styles.headerCard}>
+          <GlassBlurCard style={[styles.headerCard, { borderRadius: 28 }]}>
             <View style={styles.headerContent}>
-              <View style={styles.headerTextContainer}>
-                <Text style={[styles.headerTitle, typography.styles.h2, { color: colors.text }]}>
-                  {t('createDeck.title', 'Deste Oluştur')}
-                </Text>
-                <Text style={[styles.headerSubtitle, typography.styles.body, { color: colors.muted }]}>
-                  {t('createDeck.motivationText', 'Kişiselleştirilmiş kartlarla öğrenme yolculuğunu tasarla. Bilgini adım adım oluştur, düzenle ve öğren.')}
+              <View style={styles.headerTitleContainer}>
+                <Iconify icon="fluent:tab-add-24-regular" size={26} color="#F98A21" style={{ marginRight: 6 }} />
+                <Text style={[typography.styles.h2, { color: colors.text}]}>
+                  {t('createDeck.title', 'Desteni Oluştur')}
                 </Text>
               </View>
-              <View style={styles.headerImageContainer}>
-                <Image 
-                  source={require('../../assets/create-deck-item.png')} 
-                  style={styles.headerImage}
-                  resizeMode="contain"
-                />
+              <View style={styles.headerBottomRow}>
+                <View style={styles.headerTextColumn}>
+                  <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: 22, flex: 1, alignSelf: 'flex-start' }]}>
+                    {t('createDeck.motivationText', 'Kişiselleştirilmiş destelerle öğrenme yolculuğunu tasarla ve bilgini pekiştir.')}
+                  </Text>
+                  <TouchableOpacity 
+                    style={styles.howToCreateButton}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      // TODO: Navigate to how-to-create screen
+                      console.log('How to create pressed');
+                    }}
+                  >
+                    <Iconify icon="material-symbols:info-outline" size={16} color={colors.secondary} style={{ marginRight: 4 }} />
+                    <Text style={[typography.styles.caption, { color: colors.secondary, fontWeight: '600', textDecorationLine: 'underline' }]}>
+                      {t('createDeck.howToCreate', 'Nasıl Oluşturulur?')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.headerImageContainer}>
+                  <Image
+                    source={require('../../assets/create-deck-item.png')}
+                    style={styles.headerImage}
+                    resizeMode="contain"
+                  />
+                </View>
               </View>
             </View>
           </GlassBlurCard>
@@ -329,41 +347,43 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     padding: 16,
-    paddingTop: 16,
+    paddingTop: 8,
   },
   headerCard: {
     width: '100%',
-    maxWidth: 440,
     marginBottom: 12,
   },
-  headerTitle: {
-    marginBottom: 8,
-    fontWeight: 'bold',
-  },
   headerContent: {
+    paddingVertical: 8,
+  },
+  headerTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 4,
+    marginBottom: 8,
   },
-  headerTextContainer: {
+  headerBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerTextColumn: {
     flex: 1,
+    marginRight: 12,
   },
-  headerSubtitle: {
-    lineHeight: 20,
+  howToCreateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
   },
   headerImageContainer: {
     width: 120,
     height: 120,
-    justifyContent: 'center',
-    alignItems: 'center',
-    right: -10,
-    top: 10,
-
+    marginLeft: 12,
   },
   headerImage: {
-    width: '100%',
-    height: '100%',
+    width: 140,
+    height: 140,
+    alignSelf: 'flex-end',
+    top: '-10%',
   },
   inputCard: {
     width: '100%',
