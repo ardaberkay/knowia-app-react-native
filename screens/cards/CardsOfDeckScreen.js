@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ScrollView, Platform, BackHandler, Alert, Dimensions, Animated, Easing, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ScrollView, Platform, BackHandler, Alert, Dimensions, Animated, Easing, ActivityIndicator, Image } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +15,7 @@ import SearchBar from '../../components/tools/SearchBar';
 import FilterIcon from '../../components/tools/FilterIcon';
 import CardDetailView from '../../components/layout/CardDetailView';
 import CardActionMenu from '../../components/modals/CardActionSheet';
+import GlassBlurCard from '../../components/ui/GlassBlurCard';
 
 export default function DeckCardsScreen({ route, navigation }) {
   const { deck } = route.params;
@@ -249,26 +250,7 @@ export default function DeckCardsScreen({ route, navigation }) {
         />
       </>
     ) : (
-             <View style={{ flex: 1, backgroundColor: colors.background, paddingHorizontal: 18, paddingTop: 18 }}>
-        {!selectedCard && (
-          <>
-            {/* Search Bar & Filter */}
-            <View style={[styles.cardsSearchBarRow, { marginBottom: 12 }]}>
-              <SearchBar
-                value={search}
-                onChangeText={setSearch}
-                placeholder={t("common.searchPlaceholder", "Kartlarda ara...")}
-                style={{ marginRight: 0, marginBottom: 0 }}
-              />
-              <FilterIcon
-                style={{ marginLeft: 8 }}
-                value={cardSort}
-                onChange={setCardSort}
-              />
-            </View>
-            {/* Filter Modal is managed inside FilterIcon */}
-          </>
-        )}
+             <View style={{ flex: 1, backgroundColor: colors.background }}>
         {/* Kartlar Listesi veya Detay */}
         <View style={{ flex: 1, minHeight: 0 }}>
           {selectedCard ? (
@@ -285,7 +267,45 @@ export default function DeckCardsScreen({ route, navigation }) {
              data={filteredCards}
              keyExtractor={item => item.id?.toString()}
              showsVerticalScrollIndicator={false}
-             contentContainerStyle={{ flexGrow: 1, paddingBottom: 24, paddingTop: 8 }}
+             contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+             ListHeaderComponent={
+               !selectedCard && (
+                 <GlassBlurCard style={styles.cardsBlurCard}>
+                   <View style={styles.cardsBlurContent}>
+                     <View style={styles.cardsBlurTextContainer}>
+                       <View style={styles.cardsBlurTitleContainer}>
+                         <Iconify icon="mdi:cards" size={26} color="#F98A21" style={{ marginRight: 6 }} />
+                         <Text style={[typography.styles.h2, { color: colors.text}]}>
+                           {t('deckDetail.cards', 'Kartlar')}
+                         </Text>
+                       </View>
+                       <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: 22, marginRight: 3 }]}>
+                         {t('deckDetail.cardsSubtitle', 'Destendeki kartları keşfet, öğren ve hatırla')}
+                       </Text>
+                     </View>
+                     <View style={styles.cardsBlurImageContainer}>
+                       <Image
+                         source={require('../../assets/cards-item.png')}
+                         style={styles.cardsBlurImage}
+                         resizeMode="contain"
+                       />
+                     </View>
+                   </View>
+                   <View style={styles.cardsBlurSearchContainer}>
+                     <SearchBar
+                       value={search}
+                       onChangeText={setSearch}
+                       placeholder={t("common.searchPlaceholder", "Kartlarda ara...")}
+                       style={{ flex: 1 }}
+                     />
+                     <FilterIcon
+                       value={cardSort}
+                       onChange={setCardSort}
+                     />
+                   </View>
+                 </GlassBlurCard>
+               )
+             }
                          ListEmptyComponent={
                loading ? (
                  <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', height: 400}}>
@@ -299,36 +319,38 @@ export default function DeckCardsScreen({ route, navigation }) {
                )
              }
                          renderItem={({ item }) => (
-              <CardListItem
-                question={item.question}
-                answer={item.answer}
-                onPress={() => {
-                  setEditMode(false);
-                  setSelectedCard(item);
-                }}
-                onToggleFavorite={() => handleToggleFavoriteCard(item.id)}
-                isFavorite={favoriteCards.includes(item.id)}
-                onDelete={async () => {
-                  Alert.alert(
-                    t('cardDetail.deleteConfirmation', 'Kart Silinsin mi?'),
-                    t('cardDetail.deleteConfirm', 'Kartı silmek istediğinize emin misiniz?'),
-                    [
-                      { text: t('cardDetail.cancel', 'İptal'), style: 'cancel' },
-                      {
-                        text: t('cardDetail.delete', 'Sil'), style: 'destructive', onPress: async () => {
-                          await supabase
-                            .from('cards')
-                            .delete()
-                            .eq('id', item.id);
-                          setCards(cards.filter(c => c.id !== item.id));
-                          setOriginalCards(originalCards.filter(c => c.id !== item.id));
+              <View style={styles.cardListItem}>
+                <CardListItem
+                  question={item.question}
+                  answer={item.answer}
+                  onPress={() => {
+                    setEditMode(false);
+                    setSelectedCard(item);
+                  }}
+                  onToggleFavorite={() => handleToggleFavoriteCard(item.id)}
+                  isFavorite={favoriteCards.includes(item.id)}
+                  onDelete={async () => {
+                    Alert.alert(
+                      t('cardDetail.deleteConfirmation', 'Kart Silinsin mi?'),
+                      t('cardDetail.deleteConfirm', 'Kartı silmek istediğinize emin misiniz?'),
+                      [
+                        { text: t('cardDetail.cancel', 'İptal'), style: 'cancel' },
+                        {
+                          text: t('cardDetail.delete', 'Sil'), style: 'destructive', onPress: async () => {
+                            await supabase
+                              .from('cards')
+                              .delete()
+                              .eq('id', item.id);
+                            setCards(cards.filter(c => c.id !== item.id));
+                            setOriginalCards(originalCards.filter(c => c.id !== item.id));
+                          }
                         }
-                      }
-                    ]
-                  );
-                }}
-                canDelete={currentUserId && deck.user_id === currentUserId}
-              />
+                      ]
+                    );
+                  }}
+                  canDelete={currentUserId && deck.user_id === currentUserId}
+                />
+              </View>
             )}
           />
         )}
@@ -494,6 +516,44 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  // Cards Blur Card styles
+  cardsBlurCard: {
+    marginTop: 10,
+    marginBottom: 14,
+  },
+  cardsBlurContent: {
+    flexDirection: 'row',
+  },
+  cardsBlurTextContainer: {
+    flex: 1,
+    marginRight: 15,
+    gap: 5,
+  },
+  cardsBlurTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: '5%',
+  },
+  cardsBlurImageContainer: {
+    width: 150,
+    height: 150,
+    marginTop: 12,
+  },
+  cardsBlurImage: {
+    width: 160,
+    height: 160,
+  },
+  cardsBlurSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 12,
+    paddingTop: 8,
+  },
+  cardListItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 0,
   },
 }); 
 
