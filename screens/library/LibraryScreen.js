@@ -574,7 +574,7 @@ export default function LibraryScreen() {
                     <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={15} color={colors.secondary}  />
                   </TouchableOpacity>
                 </View>
-                <View style={{ margin: 5 }}>
+                <View style={{ marginVertical: 5 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: '98%', alignSelf: 'center' }}>
                     <SearchBar
                       value={favCardsQuery}
@@ -903,9 +903,11 @@ const styles = StyleSheet.create({
   // MyDecks Card styles
   myDecksCard: {
     marginTop: '21%',
+
   },
   myDecksContent: {
     flexDirection: 'row',
+
   },
   myDecksTextContainer: {
     flex: 1,

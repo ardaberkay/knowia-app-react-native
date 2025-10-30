@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ScrollView, Platform, BackHandler, Alert, Dimensions, Animated, Easing, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ScrollView, Platform, BackHandler, Alert, Dimensions, Animated, Easing, ActivityIndicator } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,7 +15,7 @@ import SearchBar from '../../components/tools/SearchBar';
 import FilterIcon from '../../components/tools/FilterIcon';
 import CardDetailView from '../../components/layout/CardDetailView';
 import CardActionMenu from '../../components/modals/CardActionSheet';
-import GlassBlurCard from '../../components/ui/GlassBlurCard';
+ 
 
 export default function DeckCardsScreen({ route, navigation }) {
   const { deck } = route.params;
@@ -270,40 +270,18 @@ export default function DeckCardsScreen({ route, navigation }) {
              contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
              ListHeaderComponent={
                !selectedCard && (
-                 <GlassBlurCard style={styles.cardsBlurCard}>
-                   <View style={styles.cardsBlurContent}>
-                     <View style={styles.cardsBlurTextContainer}>
-                       <View style={styles.cardsBlurTitleContainer}>
-                         <Iconify icon="mdi:cards" size={26} color="#F98A21" style={{ marginRight: 6 }} />
-                         <Text style={[typography.styles.h2, { color: colors.text}]}>
-                           {t('deckDetail.cards', 'Kartlar')}
-                         </Text>
-                       </View>
-                       <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: 22, marginRight: 3 }]}>
-                         {t('deckDetail.cardsSubtitle', 'Destendeki kartları keşfet, öğren ve hatırla')}
-                       </Text>
-                     </View>
-                     <View style={styles.cardsBlurImageContainer}>
-                       <Image
-                         source={require('../../assets/cards-item.png')}
-                         style={styles.cardsBlurImage}
-                         resizeMode="contain"
-                       />
-                     </View>
-                   </View>
-                   <View style={styles.cardsBlurSearchContainer}>
-                     <SearchBar
-                       value={search}
-                       onChangeText={setSearch}
-                       placeholder={t("common.searchPlaceholder", "Kartlarda ara...")}
-                       style={{ flex: 1 }}
-                     />
-                     <FilterIcon
-                       value={cardSort}
-                       onChange={setCardSort}
-                     />
-                   </View>
-                 </GlassBlurCard>
+                <View style={styles.cardsBlurSearchContainer}>
+                  <SearchBar
+                    value={search}
+                    onChangeText={setSearch}
+                    placeholder={t("common.searchPlaceholder", "Kartlarda ara...")}
+                    style={{ flex: 1 }}
+                  />
+                  <FilterIcon
+                    value={cardSort}
+                    onChange={setCardSort}
+                  />
+                </View>
                )
              }
                          ListEmptyComponent={
@@ -517,39 +495,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  // Cards Blur Card styles
-  cardsBlurCard: {
-    marginTop: 10,
-    marginBottom: 14,
-  },
-  cardsBlurContent: {
-    flexDirection: 'row',
-  },
-  cardsBlurTextContainer: {
-    flex: 1,
-    marginRight: 15,
-    gap: 5,
-  },
-  cardsBlurTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: '5%',
-  },
-  cardsBlurImageContainer: {
-    width: 150,
-    height: 150,
-    marginTop: 12,
-  },
-  cardsBlurImage: {
-    width: 160,
-    height: 160,
-  },
+  
   cardsBlurSearchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     marginTop: 12,
     paddingTop: 8,
+    paddingBottom: 8,
+    paddingHorizontal: 12,
+    marginBottom: 8,
   },
   cardListItem: {
     paddingHorizontal: 12,

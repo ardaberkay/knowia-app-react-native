@@ -67,7 +67,7 @@
     "errorMessageDeck": "Decks could not be loaded",
     "noDecks": "No decks yet",
     "popularDecks": "Popular Decks",
-    "popularDecksSubtitle": "Master your knowledge with the most popular and trending decks",
+    "popularDecksSubtitle": "   Master your knowledge with the most popular and trending decks",
     "exploreButton": "Explore"
   },
   "create": {

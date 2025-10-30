@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { listChapters, distributeUnassignedEvenly, getNextOrdinal, createChapter, deleteChapter } from '../../services/ChapterService';
+import CreateButton from '../../components/tools/CreateButton';
 import { supabase } from '../../lib/supabase';
 
 export default function ChaptersScreen({ route, navigation }) {
@@ -67,19 +68,18 @@ export default function ChaptersScreen({ route, navigation }) {
     try {
       const next = await getNextOrdinal(deck.id);
       const inserted = await createChapter(deck.id, next);
-      setChapters([...chapters, inserted].sort((a,b) => a.ordinal - b.ordinal));
+      // Ordinal'e göre sırala, aynı ordinal'de yeni eklenenler altta (created_at ascending)
+      setChapters([...chapters, inserted].sort((a,b) => {
+        if (a.ordinal !== b.ordinal) return a.ordinal - b.ordinal;
+        return new Date(a.created_at) - new Date(b.created_at);
+      }));
     } catch (e) {
       Alert.alert(t('common.error', 'Hata'), e.message || t('chapters.createError', 'Bölüm eklenemedi.'));
     }
   };
 
   return (
-    <LinearGradient
-      colors={colors.deckGradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.bgGradient}
-    >
+    <View style={[styles.bgGradient, { backgroundColor: colors.background }]}>
       <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
         {loading ? (
           <View style={styles.emptyState}>
@@ -100,46 +100,71 @@ export default function ChaptersScreen({ route, navigation }) {
             <Text style={[styles.emptyStateText, typography.styles.body, { color: colors.subtext }]}>
               {t('chapters.noChaptersDesc', 'Bu destede henüz bölüm oluşturulmamış.')}
             </Text>
-            {isOwner && (
-              <TouchableOpacity onPress={handleAddChapter} style={[styles.actionBtn, { backgroundColor: colors.buttonColor, marginTop: 16 }]}>
-                <MaterialCommunityIcons name="plus" size={20} color={colors.buttonText} style={{ marginRight: 8 }} />
-                <Text style={[typography.styles.button, { color: colors.buttonText }]}>{t('chapters.add', 'Bölüm Ekle')}</Text>
-              </TouchableOpacity>
-            )}
           </View>
         ) : (
           <View style={{ flex: 1 }}>
-            {isOwner && (
-              <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
-                <TouchableOpacity onPress={handleAddChapter} style={[styles.actionBtn, { backgroundColor: colors.buttonColor }]}>
-                  <MaterialCommunityIcons name="plus" size={20} color={colors.buttonText} style={{ marginRight: 8 }} />
-                  <Text style={[typography.styles.button, { color: colors.buttonText }]}>{t('chapters.add', 'Bölüm Ekle')}</Text>
-                </TouchableOpacity>
-              </View>
-            )}
             <FlatList
               data={chapters}
               keyExtractor={(item) => item.id}
               contentContainerStyle={{ padding: 16 }}
               ListHeaderComponent={(
-                <TouchableOpacity
-                  onPress={() => navigation.navigate('ChapterCards', { chapter: { id: null, name: t('chapters.unassigned', 'Atanmamış') }, deck })}
-                  activeOpacity={0.8}
-                  style={[styles.chapterItem, { borderColor: colors.border, backgroundColor: colors.blurView }]}
-                >
-                  <MaterialCommunityIcons name="alert-circle-outline" size={20} color={colors.buttonColor} style={{ marginRight: 8 }} />
-                  <Text style={[typography.styles.body, { color: colors.text }]}>{t('chapters.unassigned', 'Atanmamış')}</Text>
-                </TouchableOpacity>
+                <View>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('ChapterCards', { chapter: { id: null, name: t('chapters.unassigned', 'Atanmamış') }, deck })}
+                    activeOpacity={0.8}
+                    style={[
+                      styles.chapterItem,
+                      {
+                        backgroundColor: colors.cardBackground,
+                        borderColor: colors.cardBorder,
+                        shadowColor: colors.shadowColor,
+                        shadowOffset: colors.shadowOffset,
+                        shadowOpacity: colors.shadowOpacity,
+                        shadowRadius: colors.shadowRadius,
+                        elevation: colors.elevation,
+                      },
+                    ]}
+                  >
+                    <MaterialCommunityIcons name="alert-circle-outline" size={20} color={colors.buttonColor} style={{ marginRight: 8 }} />
+                    <Text style={[typography.styles.body, { color: colors.text }]}>{t('chapters.unassigned', 'Atanmamış')}</Text>
+                  </TouchableOpacity>
+                  {isOwner && (
+                    <View style={{ paddingBottom: 10, alignItems: 'flex-end' }}>
+                      <CreateButton
+                        onPress={handleDistribute}
+                        disabled={distLoading}
+                        loading={distLoading}
+                        text={t('chapters.distribute', 'Sihirbazla dağıt')}
+                        showIcon={true}
+                        iconName="ion:chevron-forward"
+                        style={{ flex: 0, borderRadius: 999 }}
+                        textStyle={[typography.styles.button]}
+                      />
+                    </View>
+                  )}
+                </View>
               )}
-              renderItem={({ item }) => (
+              renderItem={({ item, index }) => (
                 <View style={[styles.chapterRow, { borderColor: colors.border }]}>
                   <TouchableOpacity
-                    onPress={() => navigation.navigate('ChapterCards', { chapter: { id: item.id, name: `Bölüm ${item.ordinal}` }, deck })}
+                    onPress={() => navigation.navigate('ChapterCards', { chapter: { id: item.id, name: `Bölüm ${index + 1}` }, deck })}
                     activeOpacity={0.8}
-                    style={[styles.chapterItem, { borderColor: 'transparent', backgroundColor: colors.blurView, flex: 1 }]}
+                    style={[
+                      styles.chapterItem,
+                      {
+                        backgroundColor: colors.cardBackground,
+                        borderColor: colors.cardBorder,
+                        shadowColor: colors.shadowColor,
+                        shadowOffset: colors.shadowOffset,
+                        shadowOpacity: colors.shadowOpacity,
+                        shadowRadius: colors.shadowRadius,
+                        elevation: colors.elevation,
+                        flex: 1,
+                      },
+                    ]}
                   >
                     <MaterialCommunityIcons name="book" size={20} color={colors.buttonColor} style={{ marginRight: 8 }} />
-                    <Text style={[typography.styles.body, { color: colors.text }]}>Bölüm {item.ordinal}</Text>
+                    <Text style={[typography.styles.body, { color: colors.text }]}>Bölüm {index + 1}</Text>
                   </TouchableOpacity>
                   {isOwner && (
                     <TouchableOpacity
@@ -164,18 +189,20 @@ export default function ChaptersScreen({ route, navigation }) {
                 </View>
               )}
             />
-            {isOwner && (
-              <View style={{ padding: 16 }}>
-                <TouchableOpacity disabled={distLoading} onPress={handleDistribute} style={[styles.distributeBtn, { backgroundColor: colors.buttonColor, opacity: distLoading ? 0.7 : 1 }]}>
-                  <MaterialCommunityIcons name="shuffle-variant" size={20} color={colors.buttonText} style={{ marginRight: 8 }} />
-                  <Text style={[typography.styles.button, { color: colors.buttonText }]}>{t('chapters.distribute', 'Sihirbazla dağıt')}</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+            
           </View>
         )}
+        {isOwner && (
+          <TouchableOpacity
+            onPress={handleAddChapter}
+            activeOpacity={0.85}
+            style={[styles.fab, { backgroundColor: colors.buttonColor }]}
+          >
+            <MaterialCommunityIcons name="plus" size={28} color={colors.buttonText} />
+          </TouchableOpacity>
+        )}
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -204,10 +231,26 @@ const styles = StyleSheet.create({
   chapterItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: 16,
+    borderRadius: 28,
+    borderWidth: 1,
+    marginBottom: 14,
+    shadowOffset: { width: 4, height: 6 },
+    shadowOpacity: 0.10,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  chapterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  deleteBtn: {
+    padding: 8,
     borderRadius: 12,
     borderWidth: 1,
-    marginBottom: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   distributeBtn: {
     flexDirection: 'row',
@@ -215,5 +258,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 12,
     borderRadius: 10,
+  },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 24,
+    width: 70,
+    height: 70,
+    borderRadius: 99,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
   },
 });

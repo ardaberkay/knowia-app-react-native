@@ -46,6 +46,13 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [categoryInfo, setCategoryInfo] = useState(deck.categories || null);
   const { t } = useTranslation();
 
+  // Header scroll affordance states
+  const nameScrollRef = useRef(null);
+  const [nameHasOverflow, setNameHasOverflow] = useState(false);
+  const [nameContainerWidth, setNameContainerWidth] = useState(0);
+  const [nameContentWidth, setNameContentWidth] = useState(0);
+  const [showNameScrollbar, setShowNameScrollbar] = useState(false);
+
   if (!deck) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -402,6 +409,21 @@ export default function DeckDetailScreen({ route, navigation }) {
     return icons[sortOrder] || "material-symbols:category-outline-rounded";
   };
 
+  // Kategori rengine göre renk belirle
+  const getCategoryColor = (sortOrder) => {
+    const palette = {
+      1: '#3B82F6', // Dil - mavi
+      2: '#10B981', // Bilim - yeşil
+      3: '#8B5CF6', // Matematik - mor
+      4: '#F59E0B', // Tarih - amber
+      5: '#06B6D4', // Coğrafya - camgöbeği
+      6: '#EF4444', // Sanat ve Kültür - kırmızı
+      7: '#F472B6', // Kişisel Gelişim - pembe
+      8: '#6366F1', // Genel Kültür - indigo
+    };
+    return palette[sortOrder] || colors.buttonColor;
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
     
@@ -422,32 +444,63 @@ export default function DeckDetailScreen({ route, navigation }) {
               {categoryInfo && (
                 <View style={styles.leftSection}>
                   <LinearGradient
-                    colors={[colors.buttonColor + '25', colors.buttonColor + '15']}
+                    colors={[getCategoryColor(categoryInfo.sort_order) + '25', getCategoryColor(categoryInfo.sort_order) + '15']}
                     style={[styles.categoryIconSection, { 
-                      borderColor: colors.buttonColor,
+                      borderColor: getCategoryColor(categoryInfo.sort_order),
                     }]}
                   >
                     <Iconify 
                       icon={getCategoryIcon(categoryInfo.sort_order)} 
                       size={50} 
-                      color={colors.buttonColor} 
+                      color={getCategoryColor(categoryInfo.sort_order)} 
                     />
                   </LinearGradient>
                 </View>
               )}
               
               {/* Center Divider */}
-              <View style={[styles.centerDivider, { backgroundColor: colors.cardDivider }]} />
+              <View style={[styles.centerDivider, { backgroundColor: colors.progressBar || '#e0e0e0' }]} />
               
-              {/* Right Side - Deck Names */}
-              <View style={styles.rightSection}>
-                <Text style={[styles.deckTitleUnified, { color: colors.cardQuestionText }]} numberOfLines={1} ellipsizeMode="tail">{deck.name}</Text>
-                {deck.to_name && (
-                  <>
-                    <View style={[styles.miniDivider, { backgroundColor: colors.cardDivider }]} />
-                    <Text style={[styles.deckSubtitleUnified, { color: colors.cardQuestionText }]} numberOfLines={1} ellipsizeMode="tail">{deck.to_name}</Text>
-                  </>
-                )}
+              {/* Right Side - Deck Names (horizontal scroll when overflow) */}
+              <View style={styles.rightSection} onLayout={(e) => setNameContainerWidth(e.nativeEvent.layout.width)}>
+                <ScrollView
+                  horizontal
+                  ref={nameScrollRef}
+                  showsHorizontalScrollIndicator={showNameScrollbar && nameHasOverflow}
+                  contentContainerStyle={{ alignItems: 'flex-start', justifyContent: 'flex-start', paddingHorizontal: 0 }}
+                  style={{ width: '100%' }}
+                  onContentSizeChange={(w) => {
+                    setNameContentWidth(w);
+                    const overflow = w > nameContainerWidth + 2;
+                    if (overflow && !nameHasOverflow) {
+                      setNameHasOverflow(true);
+                      // Show scrollbar briefly, then perform a small nudge
+                      setShowNameScrollbar(true);
+                      setTimeout(() => setShowNameScrollbar(false), 1800);
+                      requestAnimationFrame(() => {
+                        if (nameScrollRef.current) {
+                          try {
+                            nameScrollRef.current.scrollTo({ x: 18, animated: true });
+                            setTimeout(() => {
+                              nameScrollRef.current && nameScrollRef.current.scrollTo({ x: 0, animated: true });
+                            }, 700);
+                          } catch {}
+                        }
+                      });
+                    }
+                  }}
+                >
+                  <View style={{ alignItems: 'flex-start', justifyContent: 'flex-start', paddingHorizontal: 4 }}>
+                    <Text style={[styles.deckTitleUnified, { color: colors.cardQuestionText }]} numberOfLines={1}>{deck.name}</Text>
+                    {deck.to_name && (
+                      <>
+                        <View style={[styles.miniDivider, { backgroundColor: colors.cardDivider }]} />
+                        <Text style={[styles.deckSubtitleUnified, { color: colors.cardQuestionText }]} numberOfLines={1}>{deck.to_name}</Text>
+                      </>
+                    )}
+                  </View>
+                </ScrollView>
+                {/* Right-edge hint removed to avoid magnifier effect */}
               </View>
             </View>
           </View>
@@ -469,14 +522,12 @@ export default function DeckDetailScreen({ route, navigation }) {
             <CircularProgress 
               progress={progress} 
               size={185} 
-              strokeWidth={13}
+              strokeWidth={22}
               showText={!progressLoading}
               containerStyle={{ marginTop: 25 }}
               shouldAnimate={!progressLoading}
+            fullCircle={true}
             />
-            {progressLoading ? null : progress === 0 ? (
-              <Text style={[styles.progressText, typography.styles.caption, { color: colors.cardAnswerText, textAlign: 'center',}]}>{t('common.notStarted', 'Henüz çalışılmadı')}</Text>
-            ) : null}
           </View>
 
           {/* Details Section - Prominent */}

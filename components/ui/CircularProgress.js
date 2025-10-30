@@ -11,18 +11,20 @@ const CircularProgress = ({
   showText = true,
   textStyle = {},
   containerStyle = {},
-  shouldAnimate = false
+  shouldAnimate = false,
+  fullCircle = false,
 }) => {
   const { colors } = useTheme();
-  const scaleAnim = useRef(new Animated.Value(0)).current;
-  const textOpacityAnim = useRef(new Animated.Value(0)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+  const textScaleAnim = useRef(new Animated.Value(1)).current;
   
   // Progress 0-1 arasında olmalı
   const normalizedProgress = Math.max(0, Math.min(1, progress));
   
-  // Yarım daire için radius ve circumference hesaplama
+  // Daire için radius ve circumference hesaplama (yarım veya tam)
   const radius = (size - strokeWidth) / 2;
-  const circumference = Math.PI * radius; // Yarım daire için π * radius
+  const circumference = (fullCircle ? 2 * Math.PI : Math.PI) * radius;
   
   // Progress'e göre stroke-dasharray hesaplama
   const strokeDasharray = circumference;
@@ -42,40 +44,30 @@ const CircularProgress = ({
   };
   
   const progressColor = getProgressColor();
-  
-  // Entrance animasyonu
+
+  // Progress dolum animasyonu
   useEffect(() => {
     if (shouldAnimate) {
-      Animated.parallel([
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          useNativeDriver: true,
-          tension: 120,
-          friction: 8,
-          overshootClamping: false,
-          restDisplacementThreshold: 0.01,
-          restSpeedThreshold: 0.7,
-        }),
-        Animated.timing(textOpacityAnim, {
-          toValue: 1,
-          duration: 600,
-          delay: 0,
-          useNativeDriver: true,
-        })
-      ]).start();
+      progressAnim.setValue(0);
+      Animated.timing(progressAnim, {
+        toValue: normalizedProgress,
+        duration: 900,
+        useNativeDriver: false,
+      }).start();
+      // Yüzdelik metin için boing (spring) animasyonu
+      textScaleAnim.setValue(0.7);
+      Animated.spring(textScaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        bounciness: 14,
+        speed: 12,
+      }).start();
     }
-  }, [shouldAnimate]);
+  }, [normalizedProgress, shouldAnimate]);
 
   return (
-    <Animated.View style={[
-      { 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        transform: [{ scale: scaleAnim }]
-      }, 
-      containerStyle
-    ]}>
-      <Svg width={size} height={size / 2 + strokeWidth / 2} viewBox={`0 0 ${size} ${size / 2 + strokeWidth / 2}`}>
+    <Animated.View style={[{ alignItems: 'center', justifyContent: 'center' }, containerStyle]}>
+      <Svg width={size} height={fullCircle ? size : (size / 2 + strokeWidth / 2)} viewBox={`0 0 ${size} ${fullCircle ? size : (size / 2 + strokeWidth / 2)}`}>
         <Defs>
           <LinearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
             <Stop offset="0%" stopColor={progressColor} stopOpacity="0.8" />
@@ -83,7 +75,7 @@ const CircularProgress = ({
           </LinearGradient>
         </Defs>
         
-        {/* Background circle (yarım daire) */}
+        {/* Background circle */}
         <Circle
           cx={size / 2}
           cy={size / 2}
@@ -92,13 +84,13 @@ const CircularProgress = ({
           strokeWidth={strokeWidth}
           fill="transparent"
           strokeLinecap="round"
-          strokeDasharray={`${circumference} ${circumference}`}
-          strokeDashoffset={circumference / 2}
+          strokeDasharray={fullCircle ? undefined : `${circumference} ${circumference}`}
+          strokeDashoffset={fullCircle ? 0 : circumference / 2}
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
         
-        {/* Progress circle (yarım daire) */}
-        <Circle
+        {/* Progress circle */}
+        <AnimatedCircle
           cx={size / 2}
           cy={size / 2}
           r={radius}
@@ -106,8 +98,8 @@ const CircularProgress = ({
           strokeWidth={strokeWidth}
           fill="transparent"
           strokeLinecap="round"
-          strokeDasharray={strokeDasharray}
-          strokeDashoffset={strokeDashoffset + circumference / 2}
+          strokeDasharray={[Animated.multiply(progressAnim, circumference), circumference]}
+          strokeDashoffset={fullCircle ? 0 : circumference / 2}
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
       </Svg>
@@ -116,24 +108,26 @@ const CircularProgress = ({
       {showText && (
         <Animated.View style={{
           position: 'absolute',
-          top: size / 2 - 22,
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
           alignItems: 'center',
           justifyContent: 'center',
-          opacity: textOpacityAnim,
         }}>
-          <Text style={[
+          <Animated.Text style={[
             typography.styles.body,
             {
               fontSize: 40,
               fontWeight: 'bold',
               color: colors.cardQuestionText || '#333',
               textAlign: 'center',
-              marginTop: -30,
+              transform: [{ scale: shouldAnimate ? textScaleAnim : 1 }],
             },
             textStyle
           ]}>
             {Math.round(progressPercent)}%
-          </Text>
+          </Animated.Text>
         </Animated.View>
       )}
     </Animated.View>

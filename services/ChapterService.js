@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase';
 
 /**
- * List chapters for a deck ordered by ordinal then created_at
+ * List chapters for a deck ordered by ordinal then created_at (newest at bottom)
  * @param {string} deckId
  */
 export async function listChapters(deckId) {
@@ -10,7 +10,7 @@ export async function listChapters(deckId) {
     .select('id, ordinal, created_at')
     .eq('deck_id', deckId)
     .order('ordinal', { ascending: true })
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true }); // Yeni eklenenler altta olacak (ascending = eski önce, yeni sonra)
   if (error) throw error;
   return data || [];
 }
