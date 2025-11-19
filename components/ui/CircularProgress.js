@@ -62,6 +62,9 @@ const CircularProgress = ({
         bounciness: 14,
         speed: 12,
       }).start();
+    } else {
+      // Animasyon yoksa direkt progress değerini set et
+      progressAnim.setValue(normalizedProgress);
     }
   }, [normalizedProgress, shouldAnimate]);
 

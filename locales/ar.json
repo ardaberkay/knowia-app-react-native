@@ -327,6 +327,14 @@
   "categorySelector": {
     "title": "اختر الفئة"
   },
+  "chapters": {
+    "title": "الفصول",
+    "noChapters": "لا توجد فصول بعد",
+    "noChaptersDesc": "لم يتم إنشاء فصول لهذه المجموعة بعد.",
+    "learning": "بطاقات قيد التعلم",
+    "learned": "البطاقات المتعلمة",
+    "total": "إجمالي البطاقات"
+  },
   "createDeck": {
     "categoryLabel": "الفئة *",
     "selectCategory": "اختر الفئة",

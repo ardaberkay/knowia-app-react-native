@@ -330,7 +330,10 @@
   "chapters": {
     "title": "Bölümler",
     "noChapters": "Henüz Bölüm Yok",
-    "noChaptersDesc": "Bu destede henüz bölüm oluşturulmamış."
+    "noChaptersDesc": "Bu destede henüz bölüm oluşturulmamış.",
+    "learning": "Öğreniliyor",
+    "learned": "Öğrenilen Kartlar",
+    "total": "Toplam Kart"
   },
   "chapterCards": {
     "title": "Bölüm Kartları",

@@ -12,6 +12,7 @@ export default function GlassBlurCard({ children, style, intensity = 50 }) {
         intensity={intensity}
         tint={isDarkMode ? 'dark' : 'light'}
         style={styles.blurView}
+
       >
         <View style={[
           styles.content,

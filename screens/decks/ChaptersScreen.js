@@ -5,8 +5,10 @@ import { typography } from '../../theme/typography';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { listChapters, distributeUnassignedEvenly, getNextOrdinal, createChapter, deleteChapter } from '../../services/ChapterService';
+import { Iconify } from 'react-native-iconify';
+import { listChapters, distributeUnassignedEvenly, getNextOrdinal, createChapter, getChaptersProgress } from '../../services/ChapterService';
 import CreateButton from '../../components/tools/CreateButton';
+import CircularProgress from '../../components/ui/CircularProgress';
 import { supabase } from '../../lib/supabase';
 
 export default function ChaptersScreen({ route, navigation }) {
@@ -17,6 +19,8 @@ export default function ChaptersScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [distLoading, setDistLoading] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
+  const [progressMap, setProgressMap] = useState(new Map());
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -24,10 +28,20 @@ export default function ChaptersScreen({ route, navigation }) {
       if (!deck?.id) { setLoading(false); return; }
       try {
         const { data: { user } } = await supabase.auth.getUser();
+        if (!mounted) return;
         // Owner can edit only if deck is not shared (treat undefined as not shared)
-        if (mounted) setIsOwner(user?.id === deck.user_id && !deck.is_shared);
+        setIsOwner(user?.id === deck.user_id && !deck.is_shared);
+        setCurrentUserId(user?.id || null);
         const data = await listChapters(deck.id);
-        if (mounted) setChapters(data);
+        if (mounted) {
+          setChapters(data);
+          // Load progress for all chapters
+          if (user?.id) {
+            const chaptersWithUnassigned = [{ id: null }, ...data];
+            const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, user.id);
+            if (mounted) setProgressMap(progress);
+          }
+        }
       } catch (e) {
         // noop
       } finally {
@@ -37,6 +51,21 @@ export default function ChaptersScreen({ route, navigation }) {
     load();
     return () => { mounted = false; };
   }, [deck?.id]);
+
+  // Refresh progress when screen comes into focus
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', async () => {
+      if (!deck?.id || !currentUserId || chapters.length === 0) return;
+      try {
+        const chaptersWithUnassigned = [{ id: null }, ...chapters];
+        const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, currentUserId);
+        setProgressMap(progress);
+      } catch (e) {
+        // noop
+      }
+    });
+    return unsubscribe;
+  }, [navigation, deck?.id, currentUserId, chapters]);
 
   const handleDistribute = async () => {
     if (!deck?.id) return;
@@ -48,6 +77,12 @@ export default function ChaptersScreen({ route, navigation }) {
     try {
       await distributeUnassignedEvenly(deck.id, chapters.map(c => c.id));
       Alert.alert(t('common.success', 'Başarılı'), t('chapters.distributed', 'Atanmamış kartlar bölümlere dağıtıldı.'));
+      // Refresh progress after distribution
+      if (currentUserId) {
+        const chaptersWithUnassigned = [{ id: null }, ...chapters];
+        const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, currentUserId);
+        setProgressMap(progress);
+      }
     } catch (e) {
       Alert.alert(t('common.error', 'Hata'), e.message || t('chapters.distributeError', 'Dağıtım yapılamadı.'));
     } finally {
@@ -69,10 +104,17 @@ export default function ChaptersScreen({ route, navigation }) {
       const next = await getNextOrdinal(deck.id);
       const inserted = await createChapter(deck.id, next);
       // Ordinal'e göre sırala, aynı ordinal'de yeni eklenenler altta (created_at ascending)
-      setChapters([...chapters, inserted].sort((a,b) => {
+      const updatedChapters = [...chapters, inserted].sort((a,b) => {
         if (a.ordinal !== b.ordinal) return a.ordinal - b.ordinal;
         return new Date(a.created_at) - new Date(b.created_at);
-      }));
+      });
+      setChapters(updatedChapters);
+      // Refresh progress for new chapter
+      if (currentUserId) {
+        const chaptersWithUnassigned = [{ id: null }, ...updatedChapters];
+        const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, currentUserId);
+        setProgressMap(progress);
+      }
     } catch (e) {
       Alert.alert(t('common.error', 'Hata'), e.message || t('chapters.createError', 'Bölüm eklenemedi.'));
     }
@@ -107,6 +149,7 @@ export default function ChaptersScreen({ route, navigation }) {
               data={chapters}
               keyExtractor={(item) => item.id}
               contentContainerStyle={{ padding: 16 }}
+              showsVerticalScrollIndicator={false}
               ListHeaderComponent={(
                 <View>
                   <TouchableOpacity
@@ -125,8 +168,10 @@ export default function ChaptersScreen({ route, navigation }) {
                       },
                     ]}
                   >
-                    <MaterialCommunityIcons name="alert-circle-outline" size={20} color={colors.buttonColor} style={{ marginRight: 8 }} />
-                    <Text style={[typography.styles.body, { color: colors.text }]}>{t('chapters.unassigned', 'Atanmamış')}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <MaterialCommunityIcons name="alert-circle-outline" size={20} color={colors.buttonColor} style={{ marginRight: 8 }} />
+                      <Text style={[typography.styles.body, { color: colors.text }]}>{t('chapters.unassigned', 'Atanmamış')}</Text>
+                    </View>
                   </TouchableOpacity>
                   {isOwner && (
                     <View style={{ paddingBottom: 10, alignItems: 'flex-end' }}>
@@ -144,8 +189,10 @@ export default function ChaptersScreen({ route, navigation }) {
                   )}
                 </View>
               )}
-              renderItem={({ item, index }) => (
-                <View style={[styles.chapterRow, { borderColor: colors.border }]}>
+              renderItem={({ item, index }) => {
+                const chapterProgress = progressMap.get(item.id) || { total: 0, learned: 0, progress: 0 };
+                const learningCount = chapterProgress.total - chapterProgress.learned;
+                return (
                   <TouchableOpacity
                     onPress={() => navigation.navigate('ChapterCards', { chapter: { id: item.id, name: `Bölüm ${index + 1}` }, deck })}
                     activeOpacity={0.8}
@@ -159,35 +206,66 @@ export default function ChaptersScreen({ route, navigation }) {
                         shadowOpacity: colors.shadowOpacity,
                         shadowRadius: colors.shadowRadius,
                         elevation: colors.elevation,
-                        flex: 1,
                       },
                     ]}
                   >
-                    <MaterialCommunityIcons name="book" size={20} color={colors.buttonColor} style={{ marginRight: 8 }} />
-                    <Text style={[typography.styles.body, { color: colors.text }]}>Bölüm {index + 1}</Text>
+                    {/* Chapter Header */}
+                    <View style={styles.chapterHeader}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={22} color={colors.buttonColor} style={{ marginRight: 8 }} />
+                          <Text style={[typography.styles.body, styles.chapterTitle, { color: colors.text }]}>Bölüm {index + 1}</Text>
+                        </View>
+                        <Iconify icon="ion:chevron-forward" size={26} color={colors.buttonColor} />
+                      </View>
+                    </View>
+                    
+                    {/* Divider */}
+                    <View style={[styles.chapterDivider, { backgroundColor: colors.border }]} />
+                    
+                    {/* Progress and Stats Section */}
+                    <View style={styles.chapterContent}>
+                      <View style={styles.progressContainer}>
+                        <CircularProgress
+                          progress={chapterProgress?.progress || 0}
+                          size={78}
+                          strokeWidth={9}
+                          showText={true}
+                          shouldAnimate={false}
+                          fullCircle={true}
+                          textStyle={{ fontSize: 16, fontWeight: '900', color: colors.text }}
+                        />
+                      </View>
+                      
+                      <View style={styles.statsContainer}>
+                        {/* Learning */}
+                        <View style={styles.statRow}>
+                          <Iconify icon="mdi:fire" size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
+                          <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
+                            {t('chapters.learning', 'Learning')}: {learningCount}
+                          </Text>
+                        </View>
+                        
+                        {/* Learned */}
+                        <View style={styles.statRow}>
+                          <Iconify icon="dashicons:welcome-learn-more" size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
+                          <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
+                            {t('chapters.learned', 'Learned')}: {chapterProgress.learned}
+                          </Text>
+                        </View>
+                        
+                        {/* Total */}
+                        <View style={styles.statRow}>
+                          <Iconify icon="ri:stack-fill" size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
+                          <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
+                            {t('chapters.total', 'Total')}: {chapterProgress.total}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
                   </TouchableOpacity>
-                  {isOwner && (
-                    <TouchableOpacity
-                      onPress={async () => {
-                        Alert.alert(
-                          t('common.warning', 'Uyarı'),
-                          t('chapters.deleteConfirm', 'Bu bölümü silmek istiyor musun? Kartlar atanmamışa taşınacaktır.'),
-                          [
-                            { text: t('common.no', 'Hayır'), style: 'cancel' },
-                            { text: t('common.yes', 'Evet'), style: 'destructive', onPress: async () => {
-                                try { await deleteChapter(item.id); setChapters(chapters.filter(c => c.id !== item.id)); }
-                                catch(e){ Alert.alert(t('common.error','Hata'), e.message || t('chapters.deleteError','Silinemedi')); }
-                              } }
-                          ]
-                        );
-                      }}
-                      style={[styles.deleteBtn, { borderColor: colors.border }]}
-                    >
-                      <MaterialCommunityIcons name="delete-outline" size={20} color={'#E74C3C'} />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
+                );
+              }}
             />
             
           </View>
@@ -196,9 +274,17 @@ export default function ChaptersScreen({ route, navigation }) {
           <TouchableOpacity
             onPress={handleAddChapter}
             activeOpacity={0.85}
-            style={[styles.fab, { backgroundColor: colors.buttonColor }]}
+            style={styles.fab}
           >
-            <MaterialCommunityIcons name="plus" size={28} color={colors.buttonText} />
+            <LinearGradient
+              colors={['#F98A21', '#FF6B35']}
+              locations={[0, 0.99]}
+              style={styles.fabGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <MaterialCommunityIcons name="plus" size={28} color="#FFFFFF" />
+            </LinearGradient>
           </TouchableOpacity>
         )}
       </SafeAreaView>
@@ -229,10 +315,9 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   chapterItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 28,
+    flexDirection: 'column',
+    padding: 20,
+    borderRadius: 40,
     borderWidth: 1,
     marginBottom: 14,
     shadowOffset: { width: 4, height: 6 },
@@ -240,17 +325,37 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 5,
   },
-  chapterRow: {
+  chapterHeader: {
+    marginBottom: 12,
+  },
+  chapterTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  chapterDivider: {
+    height: 1,
+    width: '100%',
+    marginBottom: 16,
+    opacity: 0.3,
+  },
+  chapterContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 16,
+  },
+  progressContainer: {
+    marginRight: 8,
+  },
+  statsContainer: {
+    flex: 1,
     gap: 8,
   },
-  deleteBtn: {
-    padding: 8,
-    borderRadius: 12,
-    borderWidth: 1,
+  statRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+  },
+  statText: {
+    fontSize: 15,
   },
   distributeBtn: {
     flexDirection: 'row',
@@ -266,12 +371,18 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 99,
+    overflow: 'hidden',
+    shadowColor: '#F98A21',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  fabGradient: {
+    width: '100%',
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
+    borderRadius: 99,
   },
 });

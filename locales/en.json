@@ -325,7 +325,10 @@
   "chapters": {
     "title": "Chapters",
     "noChapters": "No Chapters Yet",
-    "noChaptersDesc": "No chapters have been created for this deck yet."
+    "noChaptersDesc": "No chapters have been created for this deck yet.",
+    "learning": "Learning Cards",
+    "learned": "Learned Cards",
+    "total": "Total Cards"
   },
   "chapterCards": {
     "title": "Chapter Cards",

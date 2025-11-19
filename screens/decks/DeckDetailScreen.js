@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, Modal, FlatList, TextInput, Pressable, Image, Switch, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, Modal, FlatList, TextInput, Pressable, Image, Switch } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { setDeckStarted } from '../../services/DeckService';
@@ -8,6 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
  
 import { Iconify } from 'react-native-iconify';
 import { Alert as RNAlert } from 'react-native';
@@ -38,7 +39,6 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [selectedCard, setSelectedCard] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [shareComponentVisible, setShareComponentVisible] = useState(false);
-  const shareComponentOpacity = useRef(new Animated.Value(0)).current;
   const [cardsModalVisible, setCardsModalVisible] = useState(false);
   const [searchBarShouldFocus, setSearchBarShouldFocus] = useState(false);
   const [isShared, setIsShared] = useState(deck.is_shared || false);
@@ -196,16 +196,9 @@ export default function DeckDetailScreen({ route, navigation }) {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUserId(user?.id || null);
       
-      // Eğer kullanıcı deste sahibi ise animasyonlu olarak share component'i göster
+      // Eğer kullanıcı deste sahibi ise share component'i göster
       if (user?.id && deck.user_id === user.id) {
         setShareComponentVisible(true);
-        
-        // Sadece fade-in animasyonu - sade ve profesyonel
-        Animated.timing(shareComponentOpacity, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }).start();
       }
     };
     fetchUserId();
@@ -427,7 +420,7 @@ export default function DeckDetailScreen({ route, navigation }) {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
     
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 16 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
         {/* Birleşik Deck Info Kartı */}
         <View style={[styles.infoCardGlass, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, shadowColor: colors.shadowColor, shadowOffset: colors.shadowOffset, shadowOpacity: colors.shadowOpacity, shadowRadius: colors.shadowRadius, elevation: colors.elevation, width: '100%', maxWidth: 440, alignSelf: 'center', marginTop: 12, paddingVertical: 20 }]}>
           
@@ -577,7 +570,7 @@ export default function DeckDetailScreen({ route, navigation }) {
         <View style={{ height: 12 }} />
         {/* Toplulukla Paylaş Kutusu (Glassmorphism) */}
         {shareComponentVisible && (
-          <Animated.View 
+          <View 
             style={[
               styles.infoCardGlass, 
               { 
@@ -592,13 +585,6 @@ export default function DeckDetailScreen({ route, navigation }) {
                 maxWidth: 440, 
                 alignSelf: 'center', 
                 paddingVertical: 10,
-                opacity: shareComponentOpacity,
-                transform: [{
-                  translateY: shareComponentOpacity.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [-30, 0],
-                  })
-                }]
               }
             ]}
           >
@@ -618,32 +604,38 @@ export default function DeckDetailScreen({ route, navigation }) {
                 disabled={shareLoading}
               />
             </View>
-          </Animated.View>
+          </View>
         )}
       </ScrollView>
       {/* Sabit alt buton barı */}
-      
-        <View style={styles.buttonRowModern}>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { 
-              flex: 1,
-              backgroundColor: colors.cardBackground,
-              borderColor: colors.buttonColor,
-              shadowColor: colors.buttonColor,
-            }]}
-            onPress={() => navigation.navigate('AddCard', { deck })}
-          >
-            <Iconify icon="streamline-ultimate:card-add-1-bold" size={20} color={colors.buttonColor} style={{ marginRight: 6 }} />
-            <Text style={[styles.secondaryButtonText, typography.styles.button, { color: colors.buttonColor }]}>{t('deckDetail.addCard', 'Kart Ekle')}</Text>
-          </TouchableOpacity>
-          <CreateButton
-            onPress={handleStart}
-            text={t('deckDetail.start', 'Başla')}
-            style={{ flex: 1,}}
-            showIcon={true}
-            iconName="streamline:startup-solid"
-          />
+      <View style={[styles.fixedButtonBarOuter, { shadowColor: colors.shadowColor, shadowOffset: colors.shadowOffset, shadowOpacity: colors.shadowOpacity, shadowRadius: colors.shadowRadius, elevation: colors.elevation }]}>
+        <View style={styles.fixedButtonBarInner}>
+        <View style={styles.fixedButtonBarBlurContainer}>
+        <BlurView intensity={8} tint="default" experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFillObject} />
+            <View style={styles.buttonRowModern}>
+              <TouchableOpacity
+                style={[styles.secondaryButton, { 
+                  flex: 1,
+                  backgroundColor: colors.cardBackground,
+                  borderColor: colors.buttonColor,
+                  shadowColor: colors.buttonColor,
+                }]}
+                onPress={() => navigation.navigate('AddCard', { deck })}
+              >
+                <Iconify icon="streamline-ultimate:card-add-1-bold" size={20} color={colors.buttonColor} style={{ marginRight: 6 }} />
+                <Text style={[styles.secondaryButtonText, typography.styles.button, { color: colors.buttonColor }]}>{t('deckDetail.addCard', 'Kart Ekle')}</Text>
+              </TouchableOpacity>
+              <CreateButton
+                onPress={handleStart}
+                text={t('deckDetail.start', 'Başla')}
+                style={{ flex: 1,}}
+                showIcon={true}
+                iconName="streamline:startup-solid"
+              />
+            </View>
+          </View>
         </View>
+      </View>
 
       {/* Modal Bottom Sheet Menü */}
       <Modal
@@ -899,7 +891,7 @@ const styles = StyleSheet.create({
     gap: 20,
     marginTop: 'auto',
     paddingHorizontal: 16,
-    paddingBottom: 18,
+    backgroundColor: 'transparent',
   },
   favButtonModern: {
     flex: 1,
@@ -1083,8 +1075,28 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   fixedButtonBar: {
-    
-
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'transparent',
+  },
+  fixedButtonBarOuter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'transparent',
+  },
+  fixedButtonBarInner: {
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    overflow: 'hidden',
+  },
+  fixedButtonBarBlurContainer: {
+    position: 'relative',
+    paddingVertical: 18,
+    backgroundColor: 'transparent',
   },
   sheetOverlay: {
     flex: 1,

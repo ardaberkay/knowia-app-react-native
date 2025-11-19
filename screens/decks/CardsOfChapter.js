@@ -136,12 +136,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
   if (loading) {
     return (
-      <LinearGradient
-        colors={colors.deckGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.bgGradient}
-      >
+      <View style={[styles.bgGradient, { backgroundColor: colors.background }]}>
         <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
           <View style={styles.loadingContainer}>
             <Text style={[styles.loadingText, typography.styles.body, { color: colors.text }]}>
@@ -149,31 +144,13 @@ export default function ChapterCardsScreen({ route, navigation }) {
             </Text>
           </View>
         </SafeAreaView>
-      </LinearGradient>
+      </View>
     );
   }
 
   return (
-    <LinearGradient
-      colors={colors.deckGradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.bgGradient}
-    >
+    <View style={[styles.bgGradient, { backgroundColor: colors.background }]}>
       <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, typography.styles.h1, { color: colors.text }]}>
-            {chapter?.name || t('chapters.unassigned', 'Atanmamış')}
-          </Text>
-          <View style={styles.headerSpacer} />
-        </View>
-
         <View style={styles.deckInfoCard}>
           <Text style={[styles.deckName, typography.styles.h2, { color: colors.headText }]} numberOfLines={1}>
             {deck.name}
@@ -228,7 +205,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
           )}
         </View>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -240,22 +217,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 18,
     paddingVertical: 16,
   },
-  backButton: {
-    padding: 8,
-    borderRadius: 8,
-  },
   headerTitle: {
-    flex: 1,
     textAlign: 'center',
-    marginHorizontal: 16,
-  },
-  headerSpacer: {
-    width: 40,
   },
   deckInfoCard: {
     backgroundColor: 'rgba(255,255,255,0.15)',
@@ -263,6 +230,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginHorizontal: 18,
     marginBottom: 20,
+    marginTop: 20,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',

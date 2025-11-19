@@ -327,6 +327,14 @@
   "categorySelector": {
     "title": "Sélectionner une Catégorie"
   },
+  "chapters": {
+    "title": "Chapitres",
+    "noChapters": "Pas Encore de Chapitres",
+    "noChaptersDesc": "Aucun chapitre n'a encore été créé pour ce paquet.",
+    "learning": "Cartes en Apprentissage",
+    "learned": "Cartes Apprises",
+    "total": "Total des Cartes"
+  },
   "createDeck": {
     "categoryLabel": "Catégorie *",
     "selectCategory": "Sélectionner une catégorie",

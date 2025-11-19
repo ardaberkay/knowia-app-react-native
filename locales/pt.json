@@ -327,6 +327,14 @@
   "categorySelector": {
     "title": "Selecionar Categoria"
   },
+  "chapters": {
+    "title": "Capítulos",
+    "noChapters": "Ainda Não Há Capítulos",
+    "noChaptersDesc": "Ainda não foram criados capítulos para este baralho.",
+    "learning": "Cartões em Aprendizado",
+    "learned": "Cartões Aprendidos",
+    "total": "Total de Cartões"
+  },
   "createDeck": {
     "categoryLabel": "Categoria *",
     "selectCategory": "Selecionar categoria",

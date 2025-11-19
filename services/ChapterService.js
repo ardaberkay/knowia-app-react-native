@@ -71,4 +71,128 @@ export async function deleteChapter(chapterId) {
   return true;
 }
 
+/**
+ * Get progress for a chapter (total cards and learned cards count)
+ * @param {string} chapterId - Chapter ID (null for unassigned cards)
+ * @param {string} deckId - Deck ID
+ * @param {string} userId - User ID
+ * @returns {Promise<{total: number, learned: number, progress: number}>}
+ */
+export async function getChapterProgress(chapterId, deckId, userId) {
+  try {
+    // Get total cards in this chapter
+    let cardsQuery = supabase
+      .from('cards')
+      .select('id')
+      .eq('deck_id', deckId);
+    
+    if (chapterId) {
+      cardsQuery = cardsQuery.eq('chapter_id', chapterId);
+    } else {
+      cardsQuery = cardsQuery.is('chapter_id', null);
+    }
+    
+    const { data: cards, error: cardsError } = await cardsQuery;
+    if (cardsError) throw cardsError;
+    
+    const total = cards?.length || 0;
+    if (total === 0) {
+      return { total: 0, learned: 0, progress: 0 };
+    }
+    
+    // Get learned cards count
+    const cardIds = cards.map(c => c.id);
+    const { data: progressData, error: progressError } = await supabase
+      .from('user_card_progress')
+      .select('card_id')
+      .eq('user_id', userId)
+      .in('card_id', cardIds)
+      .eq('status', 'learned');
+    
+    if (progressError) throw progressError;
+    const learned = progressData?.length || 0;
+    const progress = total > 0 ? learned / total : 0;
+    
+    return { total, learned, progress };
+  } catch (error) {
+    console.error('Error getting chapter progress:', error);
+    return { total: 0, learned: 0, progress: 0 };
+  }
+}
+
+/**
+ * Get progress for multiple chapters at once
+ * @param {Array<{id: string|null}>} chapters - Array of chapters (id can be null for unassigned)
+ * @param {string} deckId - Deck ID
+ * @param {string} userId - User ID
+ * @returns {Promise<Map<string, {total: number, learned: number, progress: number}>>}
+ */
+export async function getChaptersProgress(chapters, deckId, userId) {
+  const progressMap = new Map();
+  
+  // Get all card IDs for this deck grouped by chapter
+  const { data: allCards, error: cardsError } = await supabase
+    .from('cards')
+    .select('id, chapter_id')
+    .eq('deck_id', deckId);
+  
+  if (cardsError) {
+    console.error('Error fetching cards:', cardsError);
+    return progressMap;
+  }
+  
+  // Group cards by chapter_id
+  const cardsByChapter = new Map();
+  chapters.forEach(ch => {
+    const key = ch.id || 'unassigned';
+    cardsByChapter.set(key, []);
+  });
+  
+  (allCards || []).forEach(card => {
+    const key = card.chapter_id || 'unassigned';
+    if (cardsByChapter.has(key)) {
+      cardsByChapter.get(key).push(card.id);
+    }
+  });
+  
+  // Get all card IDs
+  const allCardIds = (allCards || []).map(c => c.id);
+  if (allCardIds.length === 0) {
+    chapters.forEach(ch => {
+      progressMap.set(ch.id || 'unassigned', { total: 0, learned: 0, progress: 0 });
+    });
+    return progressMap;
+  }
+  
+  // Get learned cards for all chapters at once
+  const { data: progressData, error: progressError } = await supabase
+    .from('user_card_progress')
+    .select('card_id')
+    .eq('user_id', userId)
+    .in('card_id', allCardIds)
+    .eq('status', 'learned');
+  
+  if (progressError) {
+    console.error('Error fetching progress:', progressError);
+    chapters.forEach(ch => {
+      progressMap.set(ch.id || 'unassigned', { total: 0, learned: 0, progress: 0 });
+    });
+    return progressMap;
+  }
+  
+  const learnedCardIds = new Set((progressData || []).map(p => p.card_id));
+  
+  // Calculate progress for each chapter
+  chapters.forEach(ch => {
+    const key = ch.id || 'unassigned';
+    const cardIds = cardsByChapter.get(key) || [];
+    const total = cardIds.length;
+    const learned = cardIds.filter(id => learnedCardIds.has(id)).length;
+    const progress = total > 0 ? learned / total : 0;
+    progressMap.set(key, { total, learned, progress });
+  });
+  
+  return progressMap;
+}
+
 

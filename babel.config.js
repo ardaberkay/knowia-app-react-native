@@ -109,7 +109,11 @@ module.exports = function (api) {
             'fluent:arrow-trending-sparkle-24-filled',
             'streamline:trending-content-remix',
             'fluent:tab-add-24-regular',
-            'hugeicons:file-add'
+            'hugeicons:file-add',
+            'streamline-freehand:plugin-jigsaw-puzzle',
+            'ion:chevron-forward-circle-outline',
+            'mdi:fire'
+
           ],
         },
       ],
