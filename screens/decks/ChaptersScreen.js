@@ -10,6 +10,7 @@ import { listChapters, distributeUnassignedEvenly, getNextOrdinal, createChapter
 import CreateButton from '../../components/tools/CreateButton';
 import CircularProgress from '../../components/ui/CircularProgress';
 import { supabase } from '../../lib/supabase';
+import LottieView from 'lottie-react-native';
 
 export default function ChaptersScreen({ route, navigation }) {
   const { colors } = useTheme();
@@ -120,14 +121,19 @@ export default function ChaptersScreen({ route, navigation }) {
     }
   };
 
+  // Yükleniyor ekranı
+  const renderLoading = () => (
+    <View style={styles.loadingContainer}>
+      <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: 200, height: 200 }} />
+      <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100 }} />
+    </View>
+  );
+
   return (
     <View style={[styles.bgGradient, { backgroundColor: colors.background }]}>
       <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
         {loading ? (
-          <View style={styles.emptyState}>
-            <MaterialCommunityIcons name="progress-clock" size={48} color={colors.muted} />
-            <Text style={[styles.emptyStateText, typography.styles.body, { color: colors.subtext }]}> {t('common.loading', 'Yükleniyor...')} </Text>
-          </View>
+          renderLoading()
         ) : chapters.length === 0 ? (
           <View style={styles.emptyState}>
             <MaterialCommunityIcons
@@ -384,5 +390,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 99,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 200,
+    flexDirection: 'column',
+    gap: -65,
   },
 });

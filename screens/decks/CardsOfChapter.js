@@ -1,22 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, FlatList, TextInput } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
-import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
+import SearchBar from '../../components/tools/SearchBar';
 
 export default function ChapterCardsScreen({ route, navigation }) {
   const { chapter, deck } = route.params;
   const { colors } = useTheme();
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [favoriteCards, setFavoriteCards] = useState([]);
   const [search, setSearch] = useState('');
   const [filteredCards, setFilteredCards] = useState([]);
-  const [favoriteCards, setFavoriteCards] = useState([]);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -106,30 +104,31 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
   const renderCardItem = ({ item: card }) => (
     <TouchableOpacity
-      style={[styles.cardItem, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow }]}
+      style={[
+        styles.cardItem,
+        {
+          backgroundColor: colors.cardBackground,
+          borderColor: colors.cardBorder,
+          shadowColor: colors.shadowColor,
+          shadowOffset: colors.shadowOffset,
+          shadowOpacity: colors.shadowOpacity,
+          shadowRadius: colors.shadowRadius,
+          elevation: colors.elevation,
+        },
+      ]}
       onPress={() => handleCardPress(card)}
-      activeOpacity={0.8}
+      activeOpacity={0.85}
     >
-      <View style={styles.cardContent}>
-        <View style={styles.cardTextContainer}>
-          <Text style={[styles.cardQuestion, typography.styles.body, { color: colors.text }]} numberOfLines={2}>
+      <View style={styles.topRow}>
+        <View style={styles.textCol}>
+          <Text style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]} numberOfLines={1}>
             {card.question}
           </Text>
-          <View style={[styles.cardDivider, { backgroundColor: colors.border }]} />
-          <Text style={[styles.cardAnswer, typography.styles.caption, { color: colors.subtext }]} numberOfLines={2}>
+          <View style={[styles.divider, { backgroundColor: colors.cardDivider }]} />
+          <Text style={[styles.answer, typography.styles.body, { color: colors.cardAnswerText }]} numberOfLines={1}>
             {card.answer}
           </Text>
         </View>
-        <TouchableOpacity
-          style={styles.favoriteButton}
-          onPress={() => handleToggleFavoriteCard(card.id)}
-        >
-          <MaterialCommunityIcons
-            name={favoriteCards.includes(card.id) ? 'heart' : 'heart-outline'}
-            size={20}
-            color={favoriteCards.includes(card.id) ? '#F98A21' : colors.muted}
-          />
-        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
@@ -162,21 +161,12 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
         {/* Arama Çubuğu */}
         <View style={styles.searchContainer}>
-          <View style={[styles.searchBar, { backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow }]}>
-            <Ionicons name="search" size={20} color={colors.muted} style={styles.searchIcon} />
-            <TextInput
-              style={[styles.searchInput, { color: colors.text }]}
-              placeholder={t('chapterCards.searchPlaceholder', 'Kartlarda ara...')}
-              placeholderTextColor={colors.muted}
-              value={search}
-              onChangeText={setSearch}
-            />
-            {search.length > 0 && (
-              <TouchableOpacity onPress={() => setSearch('')} style={styles.clearButton}>
-                <Ionicons name="close-circle" size={20} color={colors.muted} />
-              </TouchableOpacity>
-            )}
-          </View>
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            placeholder={t('chapterCards.searchPlaceholder', 'Kartlarda ara...')}
+            style={{ flex: 1 }}
+          />
         </View>
 
         <View style={styles.content}>
@@ -246,28 +236,8 @@ const styles = StyleSheet.create({
   searchContainer: {
     paddingHorizontal: 18,
     marginBottom: 20,
-  },
-  searchBar: {
     flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  searchIcon: {
-    marginRight: 12,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    padding: 0,
-  },
-  clearButton: {
-    padding: 4,
+    width: '100%',
   },
   content: {
     flex: 1,
@@ -277,40 +247,47 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   cardItem: {
-    borderRadius: 18,
+    width: '100%',
+    minHeight: 110,
+    borderRadius: 30,
+    marginBottom: 12,
     padding: 20,
-    marginBottom: 16,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  cardContent: {
-    flexDirection: 'row',
+    borderWidth: 1,
+    justifyContent: 'center',
     alignItems: 'flex-start',
   },
-  cardTextContainer: {
-    flex: 1,
-    marginRight: 16,
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    width: '100%',
   },
-  cardQuestion: {
-    fontSize: 16,
+  textCol: {
+    width: '100%',
+  },
+  question: {
     fontWeight: '600',
+    fontSize: 17,
     marginBottom: 8,
-    lineHeight: 22,
+    letterSpacing: 0.3,
+    marginTop: 4,
   },
-  cardDivider: {
-    height: 1,
+  divider: {
+    height: 2,
+    alignSelf: 'stretch',
     marginVertical: 8,
-    borderRadius: 1,
+    borderRadius: 2,
   },
-  cardAnswer: {
-    fontSize: 14,
-    lineHeight: 20,
+  answer: {
+    fontSize: 15,
+    marginTop: 4,
+    fontWeight: '400',
+    letterSpacing: 0.2,
   },
-  favoriteButton: {
+  iconBtn: {
     padding: 8,
-    borderRadius: 20,
+    borderRadius: 12,
+    marginBottom: 4,
   },
   emptyState: {
     flex: 1,
