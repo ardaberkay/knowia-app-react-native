@@ -159,28 +159,37 @@ export async function getChaptersProgress(chapters, deckId, userId) {
   const allCardIds = (allCards || []).map(c => c.id);
   if (allCardIds.length === 0) {
     chapters.forEach(ch => {
-      progressMap.set(ch.id || 'unassigned', { total: 0, learned: 0, progress: 0 });
+      progressMap.set(ch.id || 'unassigned', { total: 0, learned: 0, learning: 0, progress: 0 });
     });
     return progressMap;
   }
   
   // Get learned cards for all chapters at once
-  const { data: progressData, error: progressError } = await supabase
+  const { data: learnedData, error: learnedError } = await supabase
     .from('user_card_progress')
     .select('card_id')
     .eq('user_id', userId)
     .in('card_id', allCardIds)
     .eq('status', 'learned');
   
-  if (progressError) {
-    console.error('Error fetching progress:', progressError);
+  // Get learning cards (only status = 'learning', excluding 'new' and 'learned')
+  const { data: learningData, error: learningError } = await supabase
+    .from('user_card_progress')
+    .select('card_id')
+    .eq('user_id', userId)
+    .in('card_id', allCardIds)
+    .eq('status', 'learning');
+  
+  if (learnedError || learningError) {
+    console.error('Error fetching progress:', learnedError || learningError);
     chapters.forEach(ch => {
-      progressMap.set(ch.id || 'unassigned', { total: 0, learned: 0, progress: 0 });
+      progressMap.set(ch.id || 'unassigned', { total: 0, learned: 0, learning: 0, progress: 0 });
     });
     return progressMap;
   }
   
-  const learnedCardIds = new Set((progressData || []).map(p => p.card_id));
+  const learnedCardIds = new Set((learnedData || []).map(p => p.card_id));
+  const learningCardIds = new Set((learningData || []).map(p => p.card_id));
   
   // Calculate progress for each chapter
   chapters.forEach(ch => {
@@ -188,8 +197,9 @@ export async function getChaptersProgress(chapters, deckId, userId) {
     const cardIds = cardsByChapter.get(key) || [];
     const total = cardIds.length;
     const learned = cardIds.filter(id => learnedCardIds.has(id)).length;
+    const learning = cardIds.filter(id => learningCardIds.has(id)).length;
     const progress = total > 0 ? learned / total : 0;
-    progressMap.set(key, { total, learned, progress });
+    progressMap.set(key, { total, learned, learning, progress });
   });
   
   return progressMap;

@@ -196,8 +196,8 @@ export default function ChaptersScreen({ route, navigation }) {
                 </View>
               )}
               renderItem={({ item, index }) => {
-                const chapterProgress = progressMap.get(item.id) || { total: 0, learned: 0, progress: 0 };
-                const learningCount = chapterProgress.total - chapterProgress.learned;
+                const chapterProgress = progressMap.get(item.id) || { total: 0, learned: 0, learning: 0, progress: 0 };
+                const learningCount = chapterProgress.learning || 0;
                 return (
                   <TouchableOpacity
                     onPress={() => navigation.navigate('ChapterCards', { chapter: { id: item.id, name: `Bölüm ${index + 1}` }, deck })}

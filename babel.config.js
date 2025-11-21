@@ -112,8 +112,10 @@ module.exports = function (api) {
             'hugeicons:file-add',
             'streamline-freehand:plugin-jigsaw-puzzle',
             'ion:chevron-forward-circle-outline',
-            'mdi:fire'
-
+            'mdi:fire',
+            'streamline-freehand:view-eye-off',
+            'lucide:edit',
+            'basil:eye-closed-outline'
           ],
         },
       ],

@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import SearchBar from '../../components/tools/SearchBar';
+import CardDetailView from '../../components/layout/CardDetailView';
 
 export default function ChapterCardsScreen({ route, navigation }) {
   const { chapter, deck } = route.params;
@@ -15,6 +16,9 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const [favoriteCards, setFavoriteCards] = useState([]);
   const [search, setSearch] = useState('');
   const [filteredCards, setFilteredCards] = useState([]);
+  const [cardStatusMap, setCardStatusMap] = useState(new Map());
+  const [chapterStats, setChapterStats] = useState({ total: 0, learning: 0, learned: 0, new: 0 });
+  const [selectedCard, setSelectedCard] = useState(null);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -40,7 +44,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
       setLoading(true);
       let query = supabase
         .from('cards')
-        .select('id, question, answer, image, example, note, created_at')
+        .select('id, question, answer, image, example, note, created_at, deck:decks(id, categories(sort_order))')
         .eq('deck_id', deck.id)
         .order('created_at', { ascending: false });
       if (chapter?.id) {
@@ -52,11 +56,107 @@ export default function ChapterCardsScreen({ route, navigation }) {
       
       if (error) throw error;
       setCards(data || []);
+      
+      // Kartları çektikten hemen sonra status'leri de çek
+      if (data && data.length > 0) {
+        await fetchCardStatusesForCards(data.map(c => c.id));
+      } else {
+        setCardStatusMap(new Map());
+        setChapterStats({ total: 0, learning: 0, learned: 0, new: 0 });
+      }
     } catch (error) {
       console.error('Error fetching chapter cards:', error);
       setCards([]);
+      setCardStatusMap(new Map());
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCardStatusesForCards = async (cardIds) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !cardIds || cardIds.length === 0) {
+        // Progress kaydı olmayan kartlar için 'new' varsay
+        const statusMap = new Map();
+        if (cardIds && cardIds.length > 0) {
+          cardIds.forEach(cardId => {
+            statusMap.set(cardId, 'new');
+          });
+          setCardStatusMap(statusMap);
+          setChapterStats({ 
+            total: cardIds.length, 
+            learning: 0, 
+            learned: 0, 
+            new: cardIds.length 
+          });
+        } else {
+          setCardStatusMap(new Map());
+          setChapterStats({ total: 0, learning: 0, learned: 0, new: 0 });
+        }
+        return;
+      }
+      
+      // Kullanıcının bu kartlar için status bilgilerini al
+      const { data: progressData, error: progressError } = await supabase
+        .from('user_card_progress')
+        .select('card_id, status')
+        .eq('user_id', user.id)
+        .in('card_id', cardIds);
+      
+      if (progressError) throw progressError;
+      
+      // Map oluştur: card_id -> status
+      const statusMap = new Map();
+      (progressData || []).forEach(item => {
+        statusMap.set(item.card_id, item.status);
+      });
+      
+      // Progress kaydı olmayan kartlar için 'new' varsay
+      cardIds.forEach(cardId => {
+        if (!statusMap.has(cardId)) {
+          statusMap.set(cardId, 'new');
+        }
+      });
+      
+      setCardStatusMap(statusMap);
+      
+      // İstatistikleri hesapla
+      if (cardIds && cardIds.length > 0) {
+        const stats = {
+          total: cardIds.length,
+          learning: 0,
+          learned: 0,
+          new: 0,
+        };
+        statusMap.forEach((status) => {
+          if (status === 'learning') stats.learning++;
+          else if (status === 'learned') stats.learned++;
+          else stats.new++;
+        });
+        setChapterStats(stats);
+      } else {
+        setChapterStats({ total: 0, learning: 0, learned: 0, new: 0 });
+      }
+    } catch (error) {
+      console.error('Error fetching card statuses:', error);
+      // Hata durumunda da tüm kartları 'new' olarak işaretle
+      if (cardIds && cardIds.length > 0) {
+        const statusMap = new Map();
+        cardIds.forEach(cardId => {
+          statusMap.set(cardId, 'new');
+        });
+        setCardStatusMap(statusMap);
+        setChapterStats({ 
+          total: cardIds.length, 
+          learning: 0, 
+          learned: 0, 
+          new: cardIds.length 
+        });
+      } else {
+        setCardStatusMap(new Map());
+        setChapterStats({ total: 0, learning: 0, learned: 0, new: 0 });
+      }
     }
   };
 
@@ -98,40 +198,70 @@ export default function ChapterCardsScreen({ route, navigation }) {
   };
 
   const handleCardPress = (card) => {
-    // Kart detay modalını aç
-    // Bu kısım DeckDetailScreen'deki gibi implement edilebilir
+    setSelectedCard(card);
   };
 
-  const renderCardItem = ({ item: card }) => (
-    <TouchableOpacity
-      style={[
-        styles.cardItem,
-        {
-          backgroundColor: colors.cardBackground,
-          borderColor: colors.cardBorder,
-          shadowColor: colors.shadowColor,
-          shadowOffset: colors.shadowOffset,
-          shadowOpacity: colors.shadowOpacity,
-          shadowRadius: colors.shadowRadius,
-          elevation: colors.elevation,
-        },
-      ]}
-      onPress={() => handleCardPress(card)}
-      activeOpacity={0.85}
-    >
-      <View style={styles.topRow}>
-        <View style={styles.textCol}>
-          <Text style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]} numberOfLines={1}>
-            {card.question}
-          </Text>
-          <View style={[styles.divider, { backgroundColor: colors.cardDivider }]} />
-          <Text style={[styles.answer, typography.styles.body, { color: colors.cardAnswerText }]} numberOfLines={1}>
-            {card.answer}
-          </Text>
+  const renderCardItem = ({ item: card }) => {
+    const status = cardStatusMap.get(card.id) || 'new';
+    let statusIcon = 'streamline-freehand:view-eye-off'; // default: new
+    
+    if (status === 'learning') {
+      statusIcon = 'mdi:fire';
+    } else if (status === 'learned') {
+      statusIcon = 'dashicons:welcome-learn-more';
+    }
+    
+    return (
+      <TouchableOpacity
+        style={[
+          styles.cardItem,
+          {
+            backgroundColor: colors.cardBackground,
+            borderColor: colors.cardBorder,
+            shadowColor: colors.shadowColor,
+            shadowOffset: colors.shadowOffset,
+            shadowOpacity: colors.shadowOpacity,
+            shadowRadius: colors.shadowRadius,
+            elevation: colors.elevation,
+          },
+        ]}
+        onPress={() => handleCardPress(card)}
+        activeOpacity={0.85}
+      >
+        <View style={styles.cardContent}>
+          {/* Sol bölüm - 3/4 genişlik */}
+          <View style={[
+            styles.leftSection,
+            {
+              borderRightColor: colors.cardBorder,
+            }
+          ]}>
+            <Text style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]} numberOfLines={1}>
+              {card.question}
+            </Text>
+            <View style={[styles.divider, { backgroundColor: colors.cardDivider }]} />
+            <Text style={[styles.answer, typography.styles.body, { color: colors.cardAnswerText }]} numberOfLines={1}>
+              {card.answer}
+            </Text>
+          </View>
+          
+          {/* Sağ bölüm - 1/4 genişlik, daha koyu renk */}
+          <View style={[
+            styles.rightSection,
+            {
+              backgroundColor: colors.cardBackground ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.1)',
+            }
+          ]}>
+            <Iconify 
+              icon={statusIcon} 
+              size={50} 
+              color={'#444444'} 
+            />
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
@@ -147,16 +277,68 @@ export default function ChapterCardsScreen({ route, navigation }) {
     );
   }
 
+  // Kart detay görünümü gösteriliyorsa
+  if (selectedCard) {
+    return (
+      <CardDetailView 
+        card={selectedCard} 
+        cards={cards} 
+        onSelectCard={setSelectedCard}
+        showCreatedAt={true}
+      />
+    );
+  }
+
   return (
     <View style={[styles.bgGradient, { backgroundColor: colors.background }]}>
       <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
         <View style={styles.deckInfoCard}>
-          <Text style={[styles.deckName, typography.styles.h2, { color: colors.headText }]} numberOfLines={1}>
-            {deck.name}
-          </Text>
-          <Text style={[styles.chapterName, typography.styles.body, { color: colors.buttonColor }]} numberOfLines={1}>
-            {chapter.name}
-          </Text>
+          {/* Bölüm Başlığı */}
+          <View style={styles.chapterHeader}>
+            <Iconify 
+              icon="streamline-freehand:plugin-jigsaw-puzzle" 
+              size={28} 
+              color={colors.buttonColor} 
+            />
+            <Text style={[styles.chapterName, typography.styles.h2, { color: colors.headText }]} numberOfLines={1}>
+              {chapter.name}
+            </Text>
+          </View>
+          
+          {/* İstatistikler */}
+          <View style={[styles.statsRow, { borderTopColor: colors.border || 'rgba(255,255,255,0.1)' }]}>
+            {/* Total */}
+            <View style={styles.statItem}>
+              <Iconify icon="ri:stack-fill" size={18} color={colors.buttonColor} style={{ marginRight: 6 }} />
+              <Text style={[styles.statText, { color: colors.text }]}>
+                {chapterStats.total}
+              </Text>
+            </View>
+            
+            {/* New */}
+            <View style={styles.statItem}>
+              <Iconify icon="streamline-freehand:view-eye-off" size={18} color={colors.buttonColor} style={{ marginRight: 6 }} />
+              <Text style={[styles.statText, { color: colors.text }]}>
+                {chapterStats.new}
+              </Text>
+            </View>
+            
+            {/* Learning */}
+            <View style={styles.statItem}>
+              <Iconify icon="mdi:fire" size={18} color={colors.buttonColor} style={{ marginRight: 6 }} />
+              <Text style={[styles.statText, { color: colors.text }]}>
+                {chapterStats.learning}
+              </Text>
+            </View>
+            
+            {/* Learned */}
+            <View style={styles.statItem}>
+              <Iconify icon="dashicons:welcome-learn-more" size={18} color={colors.buttonColor} style={{ marginRight: 6 }} />
+              <Text style={[styles.statText, { color: colors.text }]}>
+                {chapterStats.learned}
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* Arama Çubuğu */}
@@ -172,8 +354,8 @@ export default function ChapterCardsScreen({ route, navigation }) {
         <View style={styles.content}>
           {cards.length === 0 ? (
             <View style={styles.emptyState}>
-              <MaterialCommunityIcons 
-                name="cards-outline" 
+              <Iconify 
+                icon="ph:cards-three" 
                 size={64} 
                 color={colors.muted} 
               />
@@ -216,22 +398,39 @@ const styles = StyleSheet.create({
   },
   deckInfoCard: {
     backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 16,
+    borderRadius: 28,
     padding: 20,
     marginHorizontal: 18,
     marginBottom: 20,
     marginTop: 20,
-    alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
   },
-  deckName: {
-    textAlign: 'center',
-    marginBottom: 4,
+  chapterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    gap: 10,
   },
   chapterName: {
-    textAlign: 'center',
-    fontWeight: '500',
+    fontWeight: '600',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingTop: 12,
+    borderTopWidth: 1,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   searchContainer: {
     paddingHorizontal: 18,
@@ -251,19 +450,29 @@ const styles = StyleSheet.create({
     minHeight: 110,
     borderRadius: 30,
     marginBottom: 12,
-    padding: 20,
+    padding: 0,
     borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
+    overflow: 'hidden',
   },
-  topRow: {
+  cardContent: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
     width: '100%',
+    minHeight: 110,
+    alignSelf: 'stretch',
   },
-  textCol: {
-    width: '100%',
+  leftSection: {
+    flex: 3,
+    padding: 20,
+    justifyContent: 'center',
+    borderRightWidth: 2,
+    minHeight: 110,
+  },
+  rightSection: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+    minHeight: 110,
   },
   question: {
     fontWeight: '600',
