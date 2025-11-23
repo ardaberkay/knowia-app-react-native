@@ -333,13 +333,27 @@
     "noChaptersDesc": "Bu destede henüz bölüm oluşturulmamış.",
     "learning": "Öğreniliyor",
     "learned": "Öğrenilen Kartlar",
-    "total": "Toplam Kart"
+    "total": "Toplam Kart",
+    "unassigned": "Atanmamış Kartlar",
+    "distributed": "Atanmamış kartlar bölümlere dağıtıldı.",
+    "needChapters": "Dağıtım için en az bir bölüm oluşturmalısın.",
+    "distributeError": "Dağıtım yapılamadı.",
+    "chapter": "Bölüm"
   },
   "chapterCards": {
     "title": "Bölüm Kartları",
     "searchPlaceholder": "Kartlarda ara...",
     "noCards": "Henüz Kart Yok",
-    "noCardsDesc": "Bu bölümde henüz kart oluşturulmamış."
+    "noCardsDesc": "Bu bölümde henüz kart oluşturulmamış.",
+    "selectAll": "Tümünü Seç",
+    "deselectAll": "Tümünü Kaldır",
+    "selected": "seçili",
+    "move": "Taşı",
+    "noCardsSelected": "Lütfen en az bir kart seçin.",
+    "cardsMoved": "{{count}} kart bölüme taşındı.",
+    "moveError": "Kartlar taşınamadı.",
+    "selectChapter": "Bölüm Seç",
+    "noChapters": "Henüz bölüm yok"
   },
   "categories": {
     "1": "Dil",

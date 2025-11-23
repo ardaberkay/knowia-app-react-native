@@ -333,7 +333,27 @@
     "noChaptersDesc": "Aún no se han creado capítulos para esta baraja.",
     "learning": "Cartas en Aprendizaje",
     "learned": "Cartas Aprendidas",
-    "total": "Total de Cartas"
+    "total": "Total de Cartas",
+    "unassigned": "Cartas Sin Asignar",
+    "distributed": "Las cartas sin asignar han sido distribuidas a los capítulos.",
+    "needChapters": "Necesitas crear al menos un capítulo para la distribución.",
+    "distributeError": "No se pudo completar la distribución.",
+    "chapter": "Capítulo"
+  },
+  "chapterCards": {
+    "title": "Cartas del Capítulo",
+    "searchPlaceholder": "Buscar en cartas...",
+    "noCards": "Aún No Hay Cartas",
+    "noCardsDesc": "Aún no se han creado cartas para este capítulo.",
+    "selectAll": "Seleccionar Todo",
+    "deselectAll": "Deseleccionar Todo",
+    "selected": "seleccionado",
+    "move": "Mover",
+    "noCardsSelected": "Por favor selecciona al menos una carta.",
+    "cardsMoved": "{{count}} cartas movidas al capítulo.",
+    "moveError": "No se pudieron mover las cartas.",
+    "selectChapter": "Seleccionar Capítulo",
+    "noChapters": "Aún no hay capítulos"
   },
   "createDeck": {
     "categoryLabel": "Categoría *",

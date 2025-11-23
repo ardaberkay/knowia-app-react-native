@@ -333,7 +333,27 @@
     "noChaptersDesc": "لم يتم إنشاء فصول لهذه المجموعة بعد.",
     "learning": "بطاقات قيد التعلم",
     "learned": "البطاقات المتعلمة",
-    "total": "إجمالي البطاقات"
+    "total": "إجمالي البطاقات",
+    "unassigned": "البطاقات غير المخصصة",
+    "distributed": "تم توزيع البطاقات غير المخصصة على الفصول.",
+    "needChapters": "تحتاج إلى إنشاء فصل واحد على الأقل للتوزيع.",
+    "distributeError": "تعذر إكمال التوزيع.",
+    "chapter": "الفصل"
+  },
+  "chapterCards": {
+    "title": "بطاقات الفصل",
+    "searchPlaceholder": "بحث في البطاقات...",
+    "noCards": "لا توجد بطاقات بعد",
+    "noCardsDesc": "لم يتم إنشاء بطاقات لهذا الفصل بعد.",
+    "selectAll": "تحديد الكل",
+    "deselectAll": "إلغاء تحديد الكل",
+    "selected": "محدد",
+    "move": "نقل",
+    "noCardsSelected": "يرجى تحديد بطاقة واحدة على الأقل.",
+    "cardsMoved": "تم نقل {{count}} بطاقة إلى الفصل.",
+    "moveError": "تعذر نقل البطاقات.",
+    "selectChapter": "اختر الفصل",
+    "noChapters": "لا توجد فصول بعد"
   },
   "createDeck": {
     "categoryLabel": "الفئة *",

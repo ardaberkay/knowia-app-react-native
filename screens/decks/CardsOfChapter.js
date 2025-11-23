@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList } from 'react-native';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Alert, Modal } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { supabase } from '../../lib/supabase';
@@ -7,6 +7,9 @@ import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import SearchBar from '../../components/tools/SearchBar';
 import CardDetailView from '../../components/layout/CardDetailView';
+import { listChapters, distributeUnassignedEvenly } from '../../services/ChapterService';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function ChapterCardsScreen({ route, navigation }) {
   const { chapter, deck } = route.params;
@@ -19,12 +22,66 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const [cardStatusMap, setCardStatusMap] = useState(new Map());
   const [chapterStats, setChapterStats] = useState({ total: 0, learning: 0, learned: 0, new: 0 });
   const [selectedCard, setSelectedCard] = useState(null);
+  const [isOwner, setIsOwner] = useState(false);
+  const [distLoading, setDistLoading] = useState(false);
+  const [chapters, setChapters] = useState([]);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [selectedCards, setSelectedCards] = useState(new Set());
+  const [showChapterModal, setShowChapterModal] = useState(false);
+  const [moveLoading, setMoveLoading] = useState(false);
   const { t } = useTranslation();
 
   useEffect(() => {
     fetchChapterCards();
     fetchFavoriteCards();
-  }, [chapter.id]);
+    checkOwnerAndLoadChapters();
+  }, [chapter.id, deck?.id]);
+
+  const checkOwnerAndLoadChapters = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && deck) {
+        setCurrentUserId(user.id);
+        setIsOwner(user.id === deck.user_id && !deck.is_shared);
+        // Bölümleri yükle (hem dağıtım hem de aktarım için)
+        const data = await listChapters(deck.id);
+        setChapters(data);
+      }
+    } catch (e) {
+      // noop
+    }
+  };
+
+  // Navigation header'a edit butonu ekle (sadece atanmamış kartlar için)
+  useLayoutEffect(() => {
+    if (!chapter?.id && currentUserId && deck?.user_id === currentUserId && !deck?.is_shared) {
+      navigation.setOptions({
+        headerRight: () => (
+          <TouchableOpacity
+            onPress={() => {
+              setEditMode(!editMode);
+              if (editMode) {
+                setSelectedCards(new Set());
+              }
+            }}
+            style={{ marginRight: 16 }}
+            activeOpacity={0.7}
+          >
+            <Iconify 
+              icon={editMode ? "mingcute:close-fill" : "lucide:edit"} 
+              size={22} 
+              color="#FFFFFF" 
+            />
+          </TouchableOpacity>
+        ),
+      });
+    } else {
+      navigation.setOptions({
+        headerRight: () => null,
+      });
+    }
+  }, [navigation, chapter?.id, currentUserId, deck?.user_id, deck?.is_shared, editMode]);
 
   useEffect(() => {
     if (!search.trim()) {
@@ -201,6 +258,75 @@ export default function ChapterCardsScreen({ route, navigation }) {
     setSelectedCard(card);
   };
 
+  const handleDistribute = async () => {
+    if (!deck?.id) return;
+    if (!chapters?.length) {
+      Alert.alert(t('common.error', 'Hata'), t('chapters.needChapters', 'Dağıtım için en az bir bölüm oluşturmalısın.'));
+      return;
+    }
+    setDistLoading(true);
+    try {
+      await distributeUnassignedEvenly(deck.id, chapters.map(c => c.id));
+      Alert.alert(t('common.success', 'Başarılı'), t('chapters.distributed', 'Atanmamış kartlar bölümlere dağıtıldı.'));
+      // Kartları yeniden yükle
+      await fetchChapterCards();
+    } catch (e) {
+      Alert.alert(t('common.error', 'Hata'), e.message || t('chapters.distributeError', 'Dağıtım yapılamadı.'));
+    } finally {
+      setDistLoading(false);
+    }
+  };
+
+  const handleToggleCardSelection = (cardId) => {
+    const newSelected = new Set(selectedCards);
+    if (newSelected.has(cardId)) {
+      newSelected.delete(cardId);
+    } else {
+      newSelected.add(cardId);
+    }
+    setSelectedCards(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedCards.size === filteredCards.length) {
+      setSelectedCards(new Set());
+    } else {
+      setSelectedCards(new Set(filteredCards.map(c => c.id)));
+    }
+  };
+
+  const handleMoveToChapter = async (targetChapterId) => {
+    if (selectedCards.size === 0) {
+      Alert.alert(t('common.error', 'Hata'), t('chapterCards.noCardsSelected', 'Lütfen en az bir kart seçin.'));
+      return;
+    }
+    setMoveLoading(true);
+    try {
+      const cardIds = Array.from(selectedCards);
+      const { error } = await supabase
+        .from('cards')
+        .update({ chapter_id: targetChapterId || null })
+        .in('id', cardIds);
+      
+      if (error) throw error;
+      
+      Alert.alert(
+        t('common.success', 'Başarılı'),
+        t('chapterCards.cardsMoved', '{{count}} kart bölüme taşındı.', { count: selectedCards.size })
+      );
+      
+      // Seçimleri temizle ve kartları yeniden yükle
+      setSelectedCards(new Set());
+      setEditMode(false);
+      setShowChapterModal(false);
+      await fetchChapterCards();
+    } catch (e) {
+      Alert.alert(t('common.error', 'Hata'), e.message || t('chapterCards.moveError', 'Kartlar taşınamadı.'));
+    } finally {
+      setMoveLoading(false);
+    }
+  };
+
   const renderCardItem = ({ item: card }) => {
     const status = cardStatusMap.get(card.id) || 'new';
     let statusIcon = 'streamline-freehand:view-eye-off'; // default: new
@@ -210,6 +336,8 @@ export default function ChapterCardsScreen({ route, navigation }) {
     } else if (status === 'learned') {
       statusIcon = 'dashicons:welcome-learn-more';
     }
+
+    const isSelected = selectedCards.has(card.id);
     
     return (
       <TouchableOpacity
@@ -217,7 +345,8 @@ export default function ChapterCardsScreen({ route, navigation }) {
           styles.cardItem,
           {
             backgroundColor: colors.cardBackground,
-            borderColor: colors.cardBorder,
+            borderColor: editMode && isSelected ? colors.buttonColor : colors.cardBorder,
+            borderWidth: editMode && isSelected ? 2 : 1,
             shadowColor: colors.shadowColor,
             shadowOffset: colors.shadowOffset,
             shadowOpacity: colors.shadowOpacity,
@@ -225,27 +354,54 @@ export default function ChapterCardsScreen({ route, navigation }) {
             elevation: colors.elevation,
           },
         ]}
-        onPress={() => handleCardPress(card)}
+        onPress={() => {
+          if (editMode) {
+            handleToggleCardSelection(card.id);
+          } else {
+            handleCardPress(card);
+          }
+        }}
         activeOpacity={0.85}
       >
         <View style={styles.cardContent}>
-          {/* Sol bölüm - 3/4 genişlik */}
+          {/* Edit mode'da checkbox */}
+          {editMode && (
+            <View style={styles.checkboxContainer}>
+              <TouchableOpacity
+                onPress={() => handleToggleCardSelection(card.id)}
+                style={[
+                  styles.checkbox,
+                  {
+                    backgroundColor: isSelected ? colors.buttonColor : 'transparent',
+                    borderColor: colors.buttonColor,
+                  }
+                ]}
+              >
+                {isSelected && (
+                  <Iconify icon="mingcute:close-fill" size={18} color="#FFFFFF" />
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+          
+          {/* Sol bölüm - edit mode'da kısaltılmış genişlik */}
           <View style={[
             styles.leftSection,
             {
               borderRightColor: colors.cardBorder,
+              flex: editMode ? 2 : 3,
             }
           ]}>
             <Text style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]} numberOfLines={1}>
               {card.question}
             </Text>
             <View style={[styles.divider, { backgroundColor: colors.cardDivider }]} />
-            <Text style={[styles.answer, typography.styles.body, { color: colors.cardAnswerText }]} numberOfLines={1}>
+            <Text style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]} numberOfLines={1}>
               {card.answer}
             </Text>
           </View>
           
-          {/* Sağ bölüm - 1/4 genişlik, daha koyu renk */}
+          {/* Sağ bölüm - sabit genişlik, daha koyu renk */}
           <View style={[
             styles.rightSection,
             {
@@ -292,63 +448,112 @@ export default function ChapterCardsScreen({ route, navigation }) {
   return (
     <View style={[styles.bgGradient, { backgroundColor: colors.background }]}>
       <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
-        <View style={styles.deckInfoCard}>
-          {/* Bölüm Başlığı */}
-          <View style={styles.chapterHeader}>
-            <Iconify 
-              icon="streamline-freehand:plugin-jigsaw-puzzle" 
-              size={28} 
-              color={colors.buttonColor} 
-            />
-            <Text style={[styles.chapterName, typography.styles.h2, { color: colors.headText }]} numberOfLines={1}>
-              {chapter.name}
-            </Text>
+        {/* Sabit Header Container */}
+        <View style={[styles.fixedHeaderContainer, { backgroundColor: colors.cardBackground }]}>
+          <View style={styles.deckInfoCard}>
+            {/* Bölüm Başlığı */}
+            <View style={styles.chapterHeader}>
+              {chapter?.id ? (
+                <Iconify 
+                  icon="streamline-freehand:plugin-jigsaw-puzzle" 
+                  size={28} 
+                  color={colors.buttonColor} 
+                />
+              ) : (
+                <MaterialCommunityIcons 
+                  name="alert-circle-outline" 
+                  size={28} 
+                  color={colors.buttonColor} 
+                />
+              )}
+              <Text style={[styles.chapterName, typography.styles.h2, { color: colors.headText }]} numberOfLines={1}>
+                {chapter.name}
+              </Text>
+            </View>
+            
+            {/* İstatistikler */}
+            <View style={[styles.statsRow, { borderTopColor: colors.border || 'rgba(255,255,255,0.1)' }]}>
+              {/* Total */}
+              <View style={styles.statItem}>
+                <Iconify icon="ri:stack-fill" size={18} color={colors.buttonColor} style={{ marginRight: 6 }} />
+                <Text style={[styles.statText, { color: colors.text }]}>
+                  {chapterStats.total}
+                </Text>
+              </View>
+              
+              {/* New */}
+              <View style={styles.statItem}>
+                <Iconify icon="basil:eye-closed-outline" size={22} color={colors.buttonColor} style={{ marginRight: 6 }} />
+                <Text style={[styles.statText, { color: colors.text }]}>
+                  {chapterStats.new}
+                </Text>
+              </View>
+              
+              {/* Learning */}
+              <View style={styles.statItem}>
+                <Iconify icon="mdi:fire" size={20} color={colors.buttonColor} style={{ marginRight: 6 }} />
+                <Text style={[styles.statText, { color: colors.text }]}>
+                  {chapterStats.learning}
+                </Text>
+              </View>
+              
+              {/* Learned */}
+              <View style={styles.statItem}>
+                <Iconify icon="dashicons:welcome-learn-more" size={20} color={colors.buttonColor} style={{ marginRight: 6 }} />
+                <Text style={[styles.statText, { color: colors.text }]}>
+                  {chapterStats.learned}
+                </Text>
+              </View>
+            </View>
           </View>
-          
-          {/* İstatistikler */}
-          <View style={[styles.statsRow, { borderTopColor: colors.border || 'rgba(255,255,255,0.1)' }]}>
-            {/* Total */}
-            <View style={styles.statItem}>
-              <Iconify icon="ri:stack-fill" size={18} color={colors.buttonColor} style={{ marginRight: 6 }} />
-              <Text style={[styles.statText, { color: colors.text }]}>
-                {chapterStats.total}
-              </Text>
-            </View>
-            
-            {/* New */}
-            <View style={styles.statItem}>
-              <Iconify icon="streamline-freehand:view-eye-off" size={18} color={colors.buttonColor} style={{ marginRight: 6 }} />
-              <Text style={[styles.statText, { color: colors.text }]}>
-                {chapterStats.new}
-              </Text>
-            </View>
-            
-            {/* Learning */}
-            <View style={styles.statItem}>
-              <Iconify icon="mdi:fire" size={18} color={colors.buttonColor} style={{ marginRight: 6 }} />
-              <Text style={[styles.statText, { color: colors.text }]}>
-                {chapterStats.learning}
-              </Text>
-            </View>
-            
-            {/* Learned */}
-            <View style={styles.statItem}>
-              <Iconify icon="dashicons:welcome-learn-more" size={18} color={colors.buttonColor} style={{ marginRight: 6 }} />
-              <Text style={[styles.statText, { color: colors.text }]}>
-                {chapterStats.learned}
-              </Text>
-            </View>
-          </View>
-        </View>
 
-        {/* Arama Çubuğu */}
-        <View style={styles.searchContainer}>
-          <SearchBar
-            value={search}
-            onChangeText={setSearch}
-            placeholder={t('chapterCards.searchPlaceholder', 'Kartlarda ara...')}
-            style={{ flex: 1 }}
-          />
+          {/* Arama Çubuğu */}
+          <View style={styles.searchContainer}>
+            <SearchBar
+              value={search}
+              onChangeText={setSearch}
+              placeholder={t('chapterCards.searchPlaceholder', 'Kartlarda ara...')}
+              style={{ flex: 1 }}
+            />
+          </View>
+
+          {/* Edit mode'da seçim butonları */}
+          {editMode && (
+            <View style={[styles.editModeBar, { backgroundColor: 'transparent' }]}>
+              <TouchableOpacity
+                onPress={handleSelectAll}
+                style={styles.editModeButton}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.editModeButtonText, { color: colors.buttonColor }]}>
+                  {selectedCards.size === filteredCards.length 
+                    ? t('chapterCards.deselectAll', 'Tümünü Kaldır')
+                    : t('chapterCards.selectAll', 'Tümünü Seç')}
+                </Text>
+              </TouchableOpacity>
+              <Text style={[styles.editModeText, { color: colors.text }]}>
+                {selectedCards.size} {t('chapterCards.selected', 'seçili')}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowChapterModal(true)}
+                style={[
+                  styles.moveButton, 
+                  { 
+                    backgroundColor: colors.buttonColor,
+                    opacity: selectedCards.size > 0 ? 1 : 0,
+                  }
+                ]}
+                activeOpacity={0.7}
+                disabled={selectedCards.size === 0}
+                pointerEvents={selectedCards.size > 0 ? 'auto' : 'none'}
+              >
+                <Iconify icon="ion:chevron-forward" size={20} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <Text style={[styles.moveButtonText, { color: '#FFFFFF' }]}>
+                  {t('chapterCards.move', 'Taşı')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         <View style={styles.content}>
@@ -376,6 +581,87 @@ export default function ChapterCardsScreen({ route, navigation }) {
             />
           )}
         </View>
+        
+        {/* Floating Action Button - Atanmamış kartlar için dağıtım butonu */}
+        {!chapter?.id && !editMode && currentUserId && deck?.user_id === currentUserId && !deck?.is_shared && (
+          <TouchableOpacity
+            onPress={handleDistribute}
+            disabled={distLoading}
+            activeOpacity={0.85}
+            style={styles.fab}
+          >
+            <LinearGradient
+              colors={['#F98A21', '#FF6B35']}
+              locations={[0, 0.99]}
+              style={styles.fabGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              {distLoading ? (
+                <Iconify icon="svg-spinners:ring-resize" size={28} color="#FFFFFF" />
+              ) : (
+                <Iconify icon="ion:chevron-forward" size={28} color="#FFFFFF" />
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
+
+        {/* Bölüm Seçim Modal */}
+        <Modal
+          visible={showChapterModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowChapterModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { backgroundColor: colors.cardBackground }]}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, typography.styles.h3, { color: colors.text }]}>
+                  {t('chapterCards.selectChapter', 'Bölüm Seç')}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setShowChapterModal(false)}
+                  style={styles.modalCloseButton}
+                >
+                  <Iconify icon="mingcute:close-fill" size={24} color={colors.text} />
+                </TouchableOpacity>
+              </View>
+              
+              <FlatList
+                data={chapters}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item, index }) => (
+                  <TouchableOpacity
+                    onPress={() => handleMoveToChapter(item.id)}
+                    style={[styles.chapterOption, { borderBottomColor: colors.border }]}
+                    activeOpacity={0.7}
+                    disabled={moveLoading}
+                  >
+                    <Iconify 
+                      icon="streamline-freehand:plugin-jigsaw-puzzle" 
+                      size={20} 
+                      color={colors.buttonColor} 
+                      style={{ marginRight: 12 }} 
+                    />
+                    <Text style={[styles.chapterOptionText, { color: colors.text }]}>
+                      {t('chapters.chapter', 'Bölüm')} {index + 1}
+                    </Text>
+                    {moveLoading && (
+                      <Iconify icon="svg-spinners:ring-resize" size={20} color={colors.buttonColor} />
+                    )}
+                  </TouchableOpacity>
+                )}
+                ListEmptyComponent={
+                  <View style={styles.emptyChapters}>
+                    <Text style={[styles.emptyChaptersText, { color: colors.subtext }]}>
+                      {t('chapterCards.noChapters', 'Henüz bölüm yok')}
+                    </Text>
+                  </View>
+                }
+              />
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </View>
   );
@@ -396,15 +682,18 @@ const styles = StyleSheet.create({
   headerTitle: {
     textAlign: 'center',
   },
-  deckInfoCard: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 28,
-    padding: 20,
+  fixedHeaderContainer: {
+    borderRadius: 44,
     marginHorizontal: 18,
-    marginBottom: 20,
     marginTop: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    marginBottom: 20,
+    paddingBottom: 20,
+    overflow: 'hidden',
+  },
+  deckInfoCard: {
+    backgroundColor: 'transparent',
+    padding: 20,
+    paddingBottom: 0,
   },
   chapterHeader: {
     flexDirection: 'row',
@@ -434,7 +723,7 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     paddingHorizontal: 18,
-    marginBottom: 20,
+    paddingTop: 12,
     flexDirection: 'row',
     width: '100%',
   },
@@ -464,11 +753,11 @@ const styles = StyleSheet.create({
     flex: 3,
     padding: 20,
     justifyContent: 'center',
-    borderRightWidth: 2,
+    borderRightWidth: 5,
     minHeight: 110,
   },
   rightSection: {
-    flex: 1,
+    width: '25%',
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 20,
@@ -520,5 +809,114 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
+  },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 24,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    overflow: 'hidden',
+  },
+  fabGradient: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 35,
+  },
+  checkboxContainer: {
+    padding: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editModeBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    marginHorizontal: 18,
+    marginTop: 12,
+    marginBottom: 10,
+    minHeight: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  editModeButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  editModeButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  editModeText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  moveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+  },
+  moveButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '70%',
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
+  },
+  modalTitle: {
+    fontWeight: '600',
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  chapterOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 18,
+    borderBottomWidth: 1,
+  },
+  chapterOptionText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  emptyChapters: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyChaptersText: {
+    fontSize: 14,
   },
 });

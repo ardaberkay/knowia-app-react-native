@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useLayoutEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Iconify } from 'react-native-iconify';
-import { listChapters, distributeUnassignedEvenly, getNextOrdinal, createChapter, getChaptersProgress } from '../../services/ChapterService';
+import { listChapters, distributeUnassignedEvenly, getNextOrdinal, createChapter, getChaptersProgress, deleteChapter } from '../../services/ChapterService';
 import CreateButton from '../../components/tools/CreateButton';
 import CircularProgress from '../../components/ui/CircularProgress';
 import { supabase } from '../../lib/supabase';
@@ -22,6 +22,7 @@ export default function ChaptersScreen({ route, navigation }) {
   const [isOwner, setIsOwner] = useState(false);
   const [progressMap, setProgressMap] = useState(new Map());
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -67,6 +68,31 @@ export default function ChaptersScreen({ route, navigation }) {
     });
     return unsubscribe;
   }, [navigation, deck?.id, currentUserId, chapters]);
+
+  // Navigation header'a edit butonu ekle
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => {
+        // Kullanıcı deste sahibiyse ve deste paylaşılmamışsa göster
+        if (!currentUserId || !deck?.user_id || currentUserId !== deck.user_id || deck.is_shared) {
+          return null;
+        }
+        return (
+          <TouchableOpacity
+            onPress={() => setEditMode(!editMode)}
+            style={{ marginRight: 16 }}
+            activeOpacity={0.7}
+          >
+            <Iconify 
+              icon={editMode ? "mingcute:close-fill" : "lucide:edit"} 
+              size={22} 
+              color="#FFFFFF" 
+            />
+          </TouchableOpacity>
+        );
+      },
+    });
+  }, [navigation, currentUserId, deck?.user_id, deck?.is_shared, editMode]);
 
   const handleDistribute = async () => {
     if (!deck?.id) return;
@@ -121,6 +147,40 @@ export default function ChaptersScreen({ route, navigation }) {
     }
   };
 
+  const handleDeleteChapter = async (chapterId) => {
+    Alert.alert(
+      t('chapters.deleteTitle', 'Bölümü Sil'),
+      t('chapters.deleteMessage', 'Bu bölümü silmek istediğinize emin misiniz? Bölümdeki kartlar atanmamış kartlara taşınacak.'),
+      [
+        {
+          text: t('common.cancel', 'İptal'),
+          style: 'cancel',
+        },
+        {
+          text: t('common.delete', 'Sil'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteChapter(chapterId);
+              // Bölümü listeden kaldır
+              const updatedChapters = chapters.filter(c => c.id !== chapterId);
+              setChapters(updatedChapters);
+              // Progress'i güncelle
+              if (currentUserId) {
+                const chaptersWithUnassigned = [{ id: null }, ...updatedChapters];
+                const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, currentUserId);
+                setProgressMap(progress);
+              }
+              Alert.alert(t('common.success', 'Başarılı'), t('chapters.deleted', 'Bölüm silindi.'));
+            } catch (e) {
+              Alert.alert(t('common.error', 'Hata'), e.message || t('chapters.deleteError', 'Bölüm silinemedi.'));
+            }
+          },
+        },
+      ]
+    );
+  };
+
   // Yükleniyor ekranı
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
@@ -154,7 +214,7 @@ export default function ChaptersScreen({ route, navigation }) {
             <FlatList
               data={chapters}
               keyExtractor={(item) => item.id}
-              contentContainerStyle={{ padding: 16 }}
+              contentContainerStyle={{ padding: 16, paddingBottom: '22%' }}
               showsVerticalScrollIndicator={false}
               ListHeaderComponent={(
                 <View>
@@ -179,20 +239,6 @@ export default function ChaptersScreen({ route, navigation }) {
                       <Text style={[typography.styles.body, { color: colors.text }]}>{t('chapters.unassigned', 'Atanmamış')}</Text>
                     </View>
                   </TouchableOpacity>
-                  {isOwner && (
-                    <View style={{ paddingBottom: 10, alignItems: 'flex-end' }}>
-                      <CreateButton
-                        onPress={handleDistribute}
-                        disabled={distLoading}
-                        loading={distLoading}
-                        text={t('chapters.distribute', 'Sihirbazla dağıt')}
-                        showIcon={true}
-                        iconName="ion:chevron-forward"
-                        style={{ flex: 0, borderRadius: 999 }}
-                        textStyle={[typography.styles.button]}
-                      />
-                    </View>
-                  )}
                 </View>
               )}
               renderItem={({ item, index }) => {
@@ -200,13 +246,18 @@ export default function ChaptersScreen({ route, navigation }) {
                 const learningCount = chapterProgress.learning || 0;
                 return (
                   <TouchableOpacity
-                    onPress={() => navigation.navigate('ChapterCards', { chapter: { id: item.id, name: `Bölüm ${index + 1}` }, deck })}
+                    onPress={() => {
+                      if (!editMode) {
+                        navigation.navigate('ChapterCards', { chapter: { id: item.id, name: `${t('chapters.chapter', 'Bölüm')} ${index + 1}` }, deck });
+                      }
+                    }}
                     activeOpacity={0.8}
                     style={[
                       styles.chapterItem,
                       {
                         backgroundColor: colors.cardBackground,
-                        borderColor: colors.cardBorder,
+                        borderColor: editMode ? colors.buttonColor : colors.cardBorder,
+                        borderWidth: 1,
                         shadowColor: colors.shadowColor,
                         shadowOffset: colors.shadowOffset,
                         shadowOpacity: colors.shadowOpacity,
@@ -220,9 +271,19 @@ export default function ChaptersScreen({ route, navigation }) {
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                           <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={22} color={colors.buttonColor} style={{ marginRight: 8 }} />
-                          <Text style={[typography.styles.body, styles.chapterTitle, { color: colors.text }]}>Bölüm {index + 1}</Text>
+                          <Text style={[typography.styles.body, styles.chapterTitle, { color: colors.text }]}>{t('chapters.chapter', 'Bölüm')} {index + 1}</Text>
                         </View>
-                        <Iconify icon="ion:chevron-forward" size={26} color={colors.buttonColor} />
+                        {editMode ? (
+                          <TouchableOpacity
+                            onPress={() => handleDeleteChapter(item.id)}
+                            style={styles.deleteButton}
+                            activeOpacity={0.7}
+                          >
+                            <Iconify icon="mdi:garbage" size={24} color="#FF4444" />
+                          </TouchableOpacity>
+                        ) : (
+                          <Iconify icon="ion:chevron-forward" size={26} color={colors.buttonColor} />
+                        )}
                       </View>
                     </View>
                     
@@ -289,7 +350,7 @@ export default function ChaptersScreen({ route, navigation }) {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <MaterialCommunityIcons name="plus" size={28} color="#FFFFFF" />
+              <Iconify icon="ic:round-plus" size={30} color="#FFFFFF" />
             </LinearGradient>
           </TouchableOpacity>
         )}
@@ -363,12 +424,9 @@ const styles = StyleSheet.create({
   statText: {
     fontSize: 15,
   },
-  distributeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 10,
+  deleteButton: {
+    padding: 8,
+    borderRadius: 8,
   },
   fab: {
     position: 'absolute',

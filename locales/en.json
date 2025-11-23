@@ -328,13 +328,27 @@
     "noChaptersDesc": "No chapters have been created for this deck yet.",
     "learning": "Learning Cards",
     "learned": "Learned Cards",
-    "total": "Total Cards"
+    "total": "Total Cards",
+    "unassigned": "Unassigned Cards",
+    "distributed": "Unassigned cards have been distributed to chapters.",
+    "needChapters": "You need to create at least one chapter for distribution.",
+    "distributeError": "Distribution could not be completed.",
+    "chapter": "Chapter"
   },
   "chapterCards": {
     "title": "Chapter Cards",
     "searchPlaceholder": "Search in cards...",
     "noCards": "No Cards Yet",
-    "noCardsDesc": "No cards have been created for this chapter yet."
+    "noCardsDesc": "No cards have been created for this chapter yet.",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
+    "selected": "selected",
+    "move": "Move",
+    "noCardsSelected": "Please select at least one card.",
+    "cardsMoved": "{{count}} cards moved to chapter.",
+    "moveError": "Cards could not be moved.",
+    "selectChapter": "Select Chapter",
+    "noChapters": "No chapters yet"
   },
   "categories": {
     "1": "Language",

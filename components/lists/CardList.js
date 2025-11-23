@@ -37,7 +37,7 @@ export default function CardListItem({
             {question}
           </Text>
           <View style={[styles.divider, { backgroundColor: colors.cardDivider }]} />
-          <Text style={[styles.answer, typography.styles.body, { color: colors.cardAnswerText }]} numberOfLines={1}>
+          <Text style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]} numberOfLines={1}>
             {answer}
           </Text>
         </View>

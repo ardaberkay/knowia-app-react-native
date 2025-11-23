@@ -333,7 +333,27 @@
     "noChaptersDesc": "Aucun chapitre n'a encore été créé pour ce paquet.",
     "learning": "Cartes en Apprentissage",
     "learned": "Cartes Apprises",
-    "total": "Total des Cartes"
+    "total": "Total des Cartes",
+    "unassigned": "Cartes Non Assignées",
+    "distributed": "Les cartes non assignées ont été distribuées aux chapitres.",
+    "needChapters": "Vous devez créer au moins un chapitre pour la distribution.",
+    "distributeError": "La distribution n'a pas pu être complétée.",
+    "chapter": "Chapitre"
+  },
+  "chapterCards": {
+    "title": "Cartes du Chapitre",
+    "searchPlaceholder": "Rechercher dans les cartes...",
+    "noCards": "Pas Encore de Cartes",
+    "noCardsDesc": "Aucune carte n'a encore été créée pour ce chapitre.",
+    "selectAll": "Tout Sélectionner",
+    "deselectAll": "Tout Désélectionner",
+    "selected": "sélectionné",
+    "move": "Déplacer",
+    "noCardsSelected": "Veuillez sélectionner au moins une carte.",
+    "cardsMoved": "{{count}} cartes déplacées vers le chapitre.",
+    "moveError": "Les cartes n'ont pas pu être déplacées.",
+    "selectChapter": "Sélectionner un Chapitre",
+    "noChapters": "Pas encore de chapitres"
   },
   "createDeck": {
     "categoryLabel": "Catégorie *",
