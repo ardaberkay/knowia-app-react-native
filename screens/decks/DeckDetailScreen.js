@@ -15,6 +15,8 @@ import CircularProgress from '../../components/ui/CircularProgress';
 import { useAuth } from '../../contexts/AuthContext';
 import { listChapters } from '../../services/ChapterService';
 
+const AnimatedFabContainer = Animated.createAnimatedComponent(View);
+
 export default function DeckDetailScreen({ route, navigation }) {
   const { deck } = route.params;
   const { colors } = useTheme();
@@ -59,13 +61,39 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [fabMenuOpen, setFabMenuOpen] = useState(false);
   const fabMenuAnimation = useRef(new Animated.Value(0)).current;
   const [chapters, setChapters] = useState([]);
-  const [selectedChapter, setSelectedChapter] = useState(null);
+  // "Aksiyon" özel bölümü - tüm kartları gösterir
+  const ACTION_CHAPTER = { id: 'action', name: 'Aksiyon', ordinal: null };
+  const [selectedChapter, setSelectedChapter] = useState(ACTION_CHAPTER);
+  const [inlineChapterListVisible, setInlineChapterListVisible] = useState(false);
   const screenWidth = Dimensions.get('window').width;
   const fabRightPosition = 20; // FAB butonunun sağdan mesafesi
   const fabButtonWidth = 56;
   const fabGap = 12;
   const fabTotalWidth = fabButtonWidth + fabGap + fabButtonWidth; // İki buton + gap
   const panelMaxWidth = screenWidth - fabRightPosition - fabTotalWidth - 20; // Sol padding için 20
+  const fabExpandedWidth = fabMenuAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [fabButtonWidth, fabButtonWidth + panelMaxWidth],
+  });
+  const fabContentPadding = fabMenuAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 16],
+  });
+  const fabContentTranslate = fabMenuAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [20, 0],
+  });
+  const fabContentOpacity = fabMenuAnimation.interpolate({
+    inputRange: [0, 0.2, 1],
+    outputRange: [0, 0, 1],
+    extrapolate: 'clamp',
+  });
+
+  useEffect(() => {
+    if (!fabMenuOpen && inlineChapterListVisible) {
+      setInlineChapterListVisible(false);
+    }
+  }, [fabMenuOpen, inlineChapterListVisible]);
 
   if (!deck) {
     return (
@@ -234,16 +262,16 @@ export default function DeckDetailScreen({ route, navigation }) {
     const fetchChapters = async () => {
       try {
         const data = await listChapters(deck.id);
-        // Unassigned chapter'ı da ekle (başta)
-        const chaptersWithUnassigned = [{ id: null, ordinal: null }, ...(data || [])];
-        setChapters(chaptersWithUnassigned);
-        // İlk chapter'ı varsayılan olarak seç (unassigned)
-        if (!selectedChapter) {
-          setSelectedChapter(chaptersWithUnassigned[0]);
+        const availableChapters = data || [];
+        setChapters(availableChapters);
+        // Eğer selectedChapter null veya action değilse ve chapters varsa ilkini seç
+        // Aksi halde ACTION_CHAPTER seçili kalır (default)
+        if (selectedChapter?.id !== 'action' && !selectedChapter && availableChapters.length > 0) {
+          setSelectedChapter(availableChapters[0]);
         }
       } catch (e) {
         console.error('Error fetching chapters:', e);
-        setChapters([{ id: null, ordinal: null }]);
+        setChapters([]);
       }
     };
     if (deck?.id) {
@@ -646,118 +674,204 @@ export default function DeckDetailScreen({ route, navigation }) {
         )}
       </ScrollView>
 
-      {/* Chapter Panel - FAB butonunun yanından başlayıp sola doğru perde gibi açılan panel */}
-      <Animated.View
-        style={[
-          styles.fabChapterPanel,
-          {
-            right: fabRightPosition + fabTotalWidth,
-            opacity: fabMenuAnimation,
-            width: fabMenuAnimation.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, screenWidth - fabRightPosition - fabTotalWidth - 20],
-            }),
-          },
-        ]}
-        pointerEvents={fabMenuOpen ? 'auto' : 'none'}
-      >
-          <View style={[styles.fabChapterPanelContent, { 
-            backgroundColor: colors.cardBackground,
-            borderColor: colors.buttonColor,
-            shadowColor: colors.buttonColor,
-          }]}>
-            {/* Seçili Chapter Bilgisi */}
-            {selectedChapter && (
-              <View style={styles.fabChapterInfo}>
-                <View style={styles.fabChapterInfoRow}>
-                  <Iconify icon="streamline-flex:module-puzzle-2" size={20} color={colors.buttonColor} />
-                  <Text style={[styles.fabChapterInfoTitle, { color: colors.buttonColor }]}>
-                    {selectedChapter.ordinal ? `Bölüm ${selectedChapter.ordinal}` : 'Atanmamış Kartlar'}
-                  </Text>
-                </View>
-                <Text style={[styles.fabChapterInfoSubtitle, { color: colors.muted }]}>
-                  {selectedChapter.ordinal 
-                    ? `${t('deckDetail.chapterSelected', 'Bu bölüm seçili')}`
-                    : `${t('deckDetail.unassignedCards', 'Bölüme atanmamış kartlar')}`
-                  }
-                </Text>
-              </View>
-            )}
-
-            {/* Chapter Listesi */}
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.fabChapterList}
-            >
-              {chapters.map((chapter, index) => {
-                const isSelected = (selectedChapter?.id === chapter.id) || 
-                                  (selectedChapter?.id === null && chapter.id === null);
-                return (
-                  <TouchableOpacity
-                    key={chapter.id || 'unassigned'}
-                    style={[
-                      styles.fabChapterItem,
-                      { 
-                        backgroundColor: isSelected ? colors.buttonColor : 'transparent',
-                        borderColor: isSelected ? colors.buttonColor : colors.border || '#e0e0e0',
-                      }
-                    ]}
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      setSelectedChapter(chapter);
-                      setFabMenuOpen(false);
-                    }}
-                  >
-                    <Text 
-                      style={[
-                        styles.fabChapterItemText,
-                        { 
-                          color: isSelected ? '#fff' : colors.text,
-                          fontWeight: isSelected ? '700' : '500',
-                        }
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {chapter.ordinal ? `${chapter.ordinal}` : '?'}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </Animated.View>
-
       {/* Floating Action Buttons */}
       <View style={[styles.fabContainer, { backgroundColor: 'transparent' }]}>
-        {/* Ana FAB Butonları - Sabit sağda */}
-        <TouchableOpacity
-          style={[styles.fabButton, styles.fabButtonLeft, { 
-            backgroundColor: fabMenuOpen ? colors.buttonColor : colors.cardBackground,
-            borderColor: colors.buttonColor,
-            shadowColor: colors.buttonColor,
-          }]}
-          activeOpacity={0.8}
-          onPress={() => setFabMenuOpen(!fabMenuOpen)}
-        >
-          <Iconify 
-            icon="streamline-flex:module-puzzle-2" 
-            size={24} 
-            color={fabMenuOpen ? "#fff" : colors.buttonColor} 
-          />
-        </TouchableOpacity>
-        
+        <View style={styles.fabLeftColumn}>
+          {fabMenuOpen && inlineChapterListVisible && (
+            <Animated.View
+              style={[
+                styles.fabInlineDropdown,
+                {
+                  width: fabExpandedWidth,
+                  opacity: fabContentOpacity,
+                  transform: [{ translateX: fabContentTranslate }],
+                  backgroundColor: colors.buttonColor,
+                },
+              ]}
+            >
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.fabChapterListVertical}
+              >
+                {/* Aksiyon Bölümü - Her zaman en üstte */}
+                <TouchableOpacity
+                  style={[
+                    styles.fabChapterItemVertical,
+                    {
+                      backgroundColor: selectedChapter?.id === 'action'
+                        ? colors.cardBackground
+                        : 'rgba(255,255,255,0.15)',
+                      borderColor: selectedChapter?.id === 'action'
+                        ? colors.cardBackground
+                        : 'rgba(255,255,255,0.35)',
+                    },
+                  ]}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setSelectedChapter(ACTION_CHAPTER);
+                    setInlineChapterListVisible(false);
+                  }}
+                >
+                  <View style={styles.fabChapterItemBadge}>
+                    <Text
+                      style={[
+                        styles.fabChapterItemBadgeText,
+                        { color: selectedChapter?.id === 'action' ? colors.buttonColor : '#fff' },
+                      ]}
+                    >
+                      ⚡
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.fabChapterItemVerticalText,
+                      {
+                        color: '#fff',
+                        fontWeight: selectedChapter?.id === 'action' ? '700' : '500',
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {t('deckDetail.action', 'Aksiyon')}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Diğer Bölümler */}
+                {chapters.length > 0 && chapters.map((chapter) => {
+                  const isSelected = selectedChapter?.id === chapter.id;
+                  return (
+                    <TouchableOpacity
+                      key={chapter.id}
+                      style={[
+                        styles.fabChapterItemVertical,
+                        {
+                          backgroundColor: isSelected
+                            ? colors.cardBackground
+                            : 'rgba(255,255,255,0.15)',
+                          borderColor: isSelected
+                            ? colors.cardBackground
+                            : 'rgba(255,255,255,0.35)',
+                        },
+                      ]}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        setSelectedChapter(chapter);
+                        setInlineChapterListVisible(false);
+                      }}
+                    >
+                      <View style={styles.fabChapterItemBadge}>
+                        <Text
+                          style={[
+                            styles.fabChapterItemBadgeText,
+                            { color: isSelected ? colors.buttonColor : '#fff' },
+                          ]}
+                        >
+                          {chapter.ordinal ?? '-'}
+                        </Text>
+                      </View>
+                      <Text
+                        style={[
+                          styles.fabChapterItemVerticalText,
+                          {
+                            color: '#fff',
+                            fontWeight: isSelected ? '700' : '500',
+                          },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {chapter.name || t('deckDetail.unnamedChapter', 'İsimsiz Bölüm')}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </Animated.View>
+          )}
+
+          {/* Ana FAB Butonu */}
+          <AnimatedFabContainer
+            style={[
+              styles.fabButton,
+              styles.fabButtonLeft,
+              {
+                backgroundColor: colors.buttonColor,
+                borderColor: colors.buttonColor,
+                width: fabExpandedWidth,
+                paddingLeft: fabContentPadding,
+                justifyContent: fabMenuOpen ? 'flex-end' : 'center',
+              },
+            ]}
+          >
+            <Pressable
+              style={styles.fabMorphTouchableArea}
+              android_ripple={{ color: 'rgba(255,255,255,0.15)' }}
+              onPress={() => {
+                if (!fabMenuOpen) {
+                  setFabMenuOpen(true);
+                  return;
+                }
+                setInlineChapterListVisible(!inlineChapterListVisible);
+              }}
+            >
+              <Animated.View
+                style={[
+                  styles.fabMorphContent,
+                  {
+                    opacity: fabContentOpacity,
+                    transform: [{ translateX: fabContentTranslate }],
+                  },
+                ]}
+                pointerEvents={fabMenuOpen ? 'auto' : 'none'}
+              >
+                <View style={styles.fabSelectedChapterPreview}>
+                  <View style={styles.fabChapterInfoRow}>
+                    <Iconify icon="streamline-flex:module-puzzle-2" size={20} color="#fff" />
+                    <Text style={[styles.fabChapterInfoTitle, { color: '#fff' }]}>
+                      {selectedChapter?.id === 'action'
+                        ? t('deckDetail.action', 'Aksiyon')
+                        : selectedChapter?.ordinal
+                        ? `${t('deckDetail.chapter', { defaultValue: 'Bölüm' })} ${selectedChapter.ordinal}`
+                        : t('deckDetail.unassignedShort', 'Seçilmedi')}
+                    </Text>
+                  </View>
+                </View>
+              </Animated.View>
+            </Pressable>
+            <TouchableOpacity
+              style={styles.fabIconWrapper}
+              activeOpacity={0.8}
+              onPress={() => {
+                setFabMenuOpen(!fabMenuOpen);
+                if (fabMenuOpen) {
+                  setInlineChapterListVisible(false);
+                }
+              }}
+            >
+              <Iconify icon="streamline-flex:module-puzzle-2" size={24} color="#fff" />
+            </TouchableOpacity>
+          </AnimatedFabContainer>
+        </View>
+
         <TouchableOpacity
           style={[styles.fabButton, styles.fabButtonRight, { 
             backgroundColor: colors.buttonColor,
-            shadowColor: colors.buttonColor,
+            borderColor: colors.buttonColor,
           }]}
           activeOpacity={0.8}
           onPress={() => {
-            // Sağ buton için fonksiyon
+            if (!selectedChapter) {
+              Alert.alert(
+                t('deckDetail.selectChapter', 'Bölüm Seç'),
+                t('deckDetail.selectChapterMessage', 'Lütfen önce bir bölüm seçin.')
+              );
+              return;
+            }
+            // Aksiyon seçiliyse chapter parametresi gönderme (tüm kartlar gösterilecek)
+            const chapterParam = selectedChapter.id === 'action' ? undefined : selectedChapter;
+            navigation.navigate('SwipeDeck', { deck, chapter: chapterParam });
           }}
         >
-          <Iconify icon="streamline:startup-solid" size={24} color="#fff" />
+          <Iconify icon="streamline:startup-solid" size={20} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -1570,48 +1684,54 @@ const styles = StyleSheet.create({
     bottom: 20,
     flexDirection: 'row',
     gap: 12,
-    alignItems: 'center',
+    alignItems: 'flex-end',
     zIndex: 1000,
   },
   fabButton: {
-    width: 56,
-    height: 56,
+    width: 60,
+    height: 60,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
   fabButtonLeft: {
     borderWidth: 2,
-  },
-  fabButtonRight: {
-    // Sağ buton için özel stil yok, varsayılan fabButton stilini kullanıyor
-  },
-  fabChapterPanel: {
-    position: 'absolute',
-    bottom: 20,
-    height: 56,
-    overflow: 'hidden',
-    zIndex: 1001,
-  },
-  fabChapterPanelContent: {
-    height: '100%',
-    borderRadius: 28,
-    borderWidth: 2,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-    paddingLeft: 16,
-    paddingRight: 16,
-    paddingVertical: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'flex-end',
     overflow: 'hidden',
+  },
+  fabButtonRight: {
+    borderWidth: 2,
+  },
+  fabMorphContent: {
+    flex: 1,
+    height: '100%',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    gap: 12,
+    marginRight: 12,
+    paddingVertical: 12,
+  },
+  fabMorphTouchableArea: {
+    flex: 1,
+    height: '100%',
+    borderRadius: 28,
+    overflow: 'hidden',
+  },
+  fabSelectedChapterPreview: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingRight: 12,
+  },
+  fabIconWrapper: {
+    width: 56,
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   fabChapterInfo: {
     flex: 1,
@@ -1631,24 +1751,55 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 2,
   },
-  fabChapterList: {
+  fabLeftColumn: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+  },
+  fabInlineDropdown: {
+    marginBottom: 8,
+    borderRadius: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    maxHeight: 200,
+  },
+  fabChapterListVertical: {
+    gap: 8,
+    paddingRight: 8,
+  },
+  fabChapterItemVertical: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-  },
-  fabChapterItem: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1,
-    minWidth: 40,
-    height: 40,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 6,
+  },
+  fabChapterItemBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 10,
   },
-  fabChapterItemText: {
+  fabChapterItemBadgeText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  fabChapterItemVerticalText: {
+    flex: 1,
     fontSize: 14,
-    fontWeight: '600',
+  },
+  fabChapterEmptyText: {
+    color: '#fff',
+    opacity: 0.8,
+    fontSize: 13,
+    paddingHorizontal: 4,
   },
   fabMenuOverlay: {
     position: 'absolute',
@@ -1658,5 +1809,26 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: 'transparent',
     zIndex: 998,
+  },
+  chapterListModalOverlay: {
+    height: 0,
+  },
+  chapterListModal: {
+    height: 0,
+  },
+  chapterListHeader: {
+    height: 0,
+  },
+  chapterListTitle: {
+    height: 0,
+  },
+  chapterListScroll: {
+    height: 0,
+  },
+  chapterListItem: {
+    height: 0,
+  },
+  chapterListItemText: {
+    height: 0,
   },
 });
