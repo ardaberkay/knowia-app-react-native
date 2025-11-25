@@ -1,25 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, Modal, FlatList, TextInput, Pressable, Image, Switch } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, Modal, FlatList, TextInput, Pressable, Image, Switch, Animated, Dimensions } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
-import { setDeckStarted } from '../../services/DeckService';
 import { Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
  
 import { Iconify } from 'react-native-iconify';
 import { Alert as RNAlert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import CircularProgress from '../../components/ui/CircularProgress';
-import CreateButton from '../../components/tools/CreateButton';
+import { useAuth } from '../../contexts/AuthContext';
+import { listChapters } from '../../services/ChapterService';
 
 export default function DeckDetailScreen({ route, navigation }) {
   const { deck } = route.params;
   const { colors } = useTheme();
-  const [isStarted, setIsStarted] = useState(false);
+  const { session } = useAuth();
   const [isFavorite, setIsFavorite] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -37,8 +36,13 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [cardDetailModalVisible, setCardDetailModalVisible] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
-  const [currentUserId, setCurrentUserId] = useState(null);
-  const [shareComponentVisible, setShareComponentVisible] = useState(false);
+  // Session'dan user ID'yi al (eğer varsa)
+  const initialUserId = session?.user?.id || null;
+  const [currentUserId, setCurrentUserId] = useState(initialUserId);
+  // Başlangıçta session varsa ve kullanıcı deste sahibi ise true yap
+  const [shareComponentVisible, setShareComponentVisible] = useState(
+    initialUserId ? deck.user_id === initialUserId : false
+  );
   const [cardsModalVisible, setCardsModalVisible] = useState(false);
   const [searchBarShouldFocus, setSearchBarShouldFocus] = useState(false);
   const [isShared, setIsShared] = useState(deck.is_shared || false);
@@ -52,6 +56,16 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [nameContainerWidth, setNameContainerWidth] = useState(0);
   const [nameContentWidth, setNameContentWidth] = useState(0);
   const [showNameScrollbar, setShowNameScrollbar] = useState(false);
+  const [fabMenuOpen, setFabMenuOpen] = useState(false);
+  const fabMenuAnimation = useRef(new Animated.Value(0)).current;
+  const [chapters, setChapters] = useState([]);
+  const [selectedChapter, setSelectedChapter] = useState(null);
+  const screenWidth = Dimensions.get('window').width;
+  const fabRightPosition = 20; // FAB butonunun sağdan mesafesi
+  const fabButtonWidth = 56;
+  const fabGap = 12;
+  const fabTotalWidth = fabButtonWidth + fabGap + fabButtonWidth; // İki buton + gap
+  const panelMaxWidth = screenWidth - fabRightPosition - fabTotalWidth - 20; // Sol padding için 20
 
   if (!deck) {
     return (
@@ -89,12 +103,14 @@ export default function DeckDetailScreen({ route, navigation }) {
       if (error) throw error;
       const learned = progressData ? progressData.length : 0;
       
-      setProgress(total > 0 ? learned / total : 0);
+      const calculatedProgress = total > 0 ? learned / total : 0;
+      setProgress(calculatedProgress);
       setLearnedCardsCount(learned);
+      // Progress değeri geldiğinde loading'i hemen false yap (progress hemen gösterilsin)
+      setProgressLoading(false);
     } catch (e) {
       console.error('Progress fetch error:', e);
       setProgress(0);
-    } finally {
       setProgressLoading(false);
     }
   };
@@ -128,6 +144,8 @@ export default function DeckDetailScreen({ route, navigation }) {
           route.params.deck = data;
           // Category info'yu güncelle
           setCategoryInfo(data.categories);
+          // is_shared değerini güncelle
+          setIsShared(data.is_shared || false);
         }
       } catch (e) {
         console.error('Deck verisi güncellenemedi:', e);
@@ -190,19 +208,18 @@ export default function DeckDetailScreen({ route, navigation }) {
     setFilteredCards(sortCards(cardSort, cards));
   }, [cardSort, cards, originalCards, favoriteCards]);
 
+  // Session değiştiğinde kontrol et (AuthContext'ten gelen session)
   useEffect(() => {
-    // Kullanıcı id'sini çek
-    const fetchUserId = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setCurrentUserId(user?.id || null);
-      
-      // Eğer kullanıcı deste sahibi ise share component'i göster
-      if (user?.id && deck.user_id === user.id) {
-        setShareComponentVisible(true);
-      }
-    };
-    fetchUserId();
-  }, []);
+    const userId = session?.user?.id || null;
+    setCurrentUserId(userId);
+    
+    // Eğer kullanıcı deste sahibi ise share component'i göster, değilse gizle
+    if (userId && deck.user_id === userId) {
+      setShareComponentVisible(true);
+    } else {
+      setShareComponentVisible(false);
+    }
+  }, [session, deck.user_id]);
 
   useEffect(() => {
     if (cardsModalVisible) {
@@ -212,16 +229,37 @@ export default function DeckDetailScreen({ route, navigation }) {
     }
   }, [cardsModalVisible]);
 
-
-  const handleStart = async () => {
-    try {
-      await setDeckStarted(deck.id);
-      setIsStarted(true);
-      navigation.navigate('SwipeDeck', { deck });
-    } catch (error) {
-      Alert.alert(t('deckDetail.error', 'Hata'), t('deckDetail.errorMessageDeck', 'Deste başlatılamadı.'));
+  // Chapter'ları çek
+  useEffect(() => {
+    const fetchChapters = async () => {
+      try {
+        const data = await listChapters(deck.id);
+        // Unassigned chapter'ı da ekle (başta)
+        const chaptersWithUnassigned = [{ id: null, ordinal: null }, ...(data || [])];
+        setChapters(chaptersWithUnassigned);
+        // İlk chapter'ı varsayılan olarak seç (unassigned)
+        if (!selectedChapter) {
+          setSelectedChapter(chaptersWithUnassigned[0]);
+        }
+      } catch (e) {
+        console.error('Error fetching chapters:', e);
+        setChapters([{ id: null, ordinal: null }]);
+      }
+    };
+    if (deck?.id) {
+      fetchChapters();
     }
-  };
+  }, [deck.id]);
+
+  // FAB menü animasyonu
+  useEffect(() => {
+    Animated.spring(fabMenuAnimation, {
+      toValue: fabMenuOpen ? 1 : 0,
+      useNativeDriver: false, // width animasyonu için false
+      tension: 80,
+      friction: 8,
+    }).start();
+  }, [fabMenuOpen]);
 
   // Favori kontrolü ve ekleme
   const checkFavorite = async () => {
@@ -420,7 +458,7 @@ export default function DeckDetailScreen({ route, navigation }) {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
     
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
         {/* Birleşik Deck Info Kartı */}
         <View style={[styles.infoCardGlass, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, shadowColor: colors.shadowColor, shadowOffset: colors.shadowOffset, shadowOpacity: colors.shadowOpacity, shadowRadius: colors.shadowRadius, elevation: colors.elevation, width: '100%', maxWidth: 440, alignSelf: 'center', marginTop: 12, paddingVertical: 20 }]}>
           
@@ -516,7 +554,7 @@ export default function DeckDetailScreen({ route, navigation }) {
               progress={progress} 
               size={185} 
               strokeWidth={22}
-              showText={!progressLoading}
+              showText={!progressLoading || progress > 0}
               containerStyle={{ marginTop: 25 }}
               shouldAnimate={!progressLoading}
             fullCircle={true}
@@ -607,35 +645,130 @@ export default function DeckDetailScreen({ route, navigation }) {
           </View>
         )}
       </ScrollView>
-      {/* Sabit alt buton barı */}
-      <View style={[styles.fixedButtonBarOuter, { shadowColor: colors.shadowColor, shadowOffset: colors.shadowOffset, shadowOpacity: colors.shadowOpacity, shadowRadius: colors.shadowRadius, elevation: colors.elevation }]}>
-        <View style={styles.fixedButtonBarInner}>
-        <View style={styles.fixedButtonBarBlurContainer}>
-        <BlurView intensity={8} tint="default" experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFillObject} />
-            <View style={styles.buttonRowModern}>
-              <TouchableOpacity
-                style={[styles.secondaryButton, { 
-                  flex: 1,
-                  backgroundColor: colors.cardBackground,
-                  borderColor: colors.buttonColor,
-                  shadowColor: colors.buttonColor,
-                }]}
-                onPress={() => navigation.navigate('AddCard', { deck })}
-              >
-                <Iconify icon="streamline-ultimate:card-add-1-bold" size={20} color={colors.buttonColor} style={{ marginRight: 6 }} />
-                <Text style={[styles.secondaryButtonText, typography.styles.button, { color: colors.buttonColor }]}>{t('deckDetail.addCard', 'Kart Ekle')}</Text>
-              </TouchableOpacity>
-              <CreateButton
-                onPress={handleStart}
-                text={t('deckDetail.start', 'Başla')}
-                style={{ flex: 1,}}
-                showIcon={true}
-                iconName="streamline:startup-solid"
-              />
-            </View>
+
+      {/* Chapter Panel - FAB butonunun yanından başlayıp sola doğru perde gibi açılan panel */}
+      <Animated.View
+        style={[
+          styles.fabChapterPanel,
+          {
+            right: fabRightPosition + fabTotalWidth,
+            opacity: fabMenuAnimation,
+            width: fabMenuAnimation.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, screenWidth - fabRightPosition - fabTotalWidth - 20],
+            }),
+          },
+        ]}
+        pointerEvents={fabMenuOpen ? 'auto' : 'none'}
+      >
+          <View style={[styles.fabChapterPanelContent, { 
+            backgroundColor: colors.cardBackground,
+            borderColor: colors.buttonColor,
+            shadowColor: colors.buttonColor,
+          }]}>
+            {/* Seçili Chapter Bilgisi */}
+            {selectedChapter && (
+              <View style={styles.fabChapterInfo}>
+                <View style={styles.fabChapterInfoRow}>
+                  <Iconify icon="streamline-flex:module-puzzle-2" size={20} color={colors.buttonColor} />
+                  <Text style={[styles.fabChapterInfoTitle, { color: colors.buttonColor }]}>
+                    {selectedChapter.ordinal ? `Bölüm ${selectedChapter.ordinal}` : 'Atanmamış Kartlar'}
+                  </Text>
+                </View>
+                <Text style={[styles.fabChapterInfoSubtitle, { color: colors.muted }]}>
+                  {selectedChapter.ordinal 
+                    ? `${t('deckDetail.chapterSelected', 'Bu bölüm seçili')}`
+                    : `${t('deckDetail.unassignedCards', 'Bölüme atanmamış kartlar')}`
+                  }
+                </Text>
+              </View>
+            )}
+
+            {/* Chapter Listesi */}
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.fabChapterList}
+            >
+              {chapters.map((chapter, index) => {
+                const isSelected = (selectedChapter?.id === chapter.id) || 
+                                  (selectedChapter?.id === null && chapter.id === null);
+                return (
+                  <TouchableOpacity
+                    key={chapter.id || 'unassigned'}
+                    style={[
+                      styles.fabChapterItem,
+                      { 
+                        backgroundColor: isSelected ? colors.buttonColor : 'transparent',
+                        borderColor: isSelected ? colors.buttonColor : colors.border || '#e0e0e0',
+                      }
+                    ]}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      setSelectedChapter(chapter);
+                      setFabMenuOpen(false);
+                    }}
+                  >
+                    <Text 
+                      style={[
+                        styles.fabChapterItemText,
+                        { 
+                          color: isSelected ? '#fff' : colors.text,
+                          fontWeight: isSelected ? '700' : '500',
+                        }
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {chapter.ordinal ? `${chapter.ordinal}` : '?'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           </View>
-        </View>
+        </Animated.View>
+
+      {/* Floating Action Buttons */}
+      <View style={[styles.fabContainer, { backgroundColor: 'transparent' }]}>
+        {/* Ana FAB Butonları - Sabit sağda */}
+        <TouchableOpacity
+          style={[styles.fabButton, styles.fabButtonLeft, { 
+            backgroundColor: fabMenuOpen ? colors.buttonColor : colors.cardBackground,
+            borderColor: colors.buttonColor,
+            shadowColor: colors.buttonColor,
+          }]}
+          activeOpacity={0.8}
+          onPress={() => setFabMenuOpen(!fabMenuOpen)}
+        >
+          <Iconify 
+            icon="streamline-flex:module-puzzle-2" 
+            size={24} 
+            color={fabMenuOpen ? "#fff" : colors.buttonColor} 
+          />
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.fabButton, styles.fabButtonRight, { 
+            backgroundColor: colors.buttonColor,
+            shadowColor: colors.buttonColor,
+          }]}
+          activeOpacity={0.8}
+          onPress={() => {
+            // Sağ buton için fonksiyon
+          }}
+        >
+          <Iconify icon="streamline:startup-solid" size={24} color="#fff" />
+        </TouchableOpacity>
       </View>
+
+      {/* FAB Menü Overlay - Dışarı tıklandığında kapat */}
+      {fabMenuOpen && (
+        <TouchableOpacity
+          style={styles.fabMenuOverlay}
+          activeOpacity={1}
+          onPress={() => setFabMenuOpen(false)}
+        />
+      )}
 
       {/* Modal Bottom Sheet Menü */}
       <Modal
@@ -886,13 +1019,6 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 8,
   },
-  buttonRowModern: {
-    flexDirection: 'row',
-    gap: 20,
-    marginTop: 'auto',
-    paddingHorizontal: 16,
-    backgroundColor: 'transparent',
-  },
   favButtonModern: {
     flex: 1,
     flexDirection: 'row',
@@ -1026,12 +1152,6 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: '#F98A21',
   },
-  buttonRowGlass: {
-    flexDirection: 'row',
-    gap: 14,
-    marginHorizontal: 18,
-    marginTop: 8,
-  },
   favButtonGlass: {
     flex: 1,
     flexDirection: 'row',
@@ -1079,23 +1199,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'transparent',
-  },
-  fixedButtonBarOuter: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'transparent',
-  },
-  fixedButtonBarInner: {
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    overflow: 'hidden',
-  },
-  fixedButtonBarBlurContainer: {
-    position: 'relative',
-    paddingVertical: 18,
     backgroundColor: 'transparent',
   },
   sheetOverlay: {
@@ -1460,17 +1563,100 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 17,
   },
-  // Secondary Button Styles
-  secondaryButton: {
+  // FAB Styles
+  fabContainer: {
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  fabButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  fabButtonLeft: {
+    borderWidth: 2,
+  },
+  fabButtonRight: {
+    // Sağ buton için özel stil yok, varsayılan fabButton stilini kullanıyor
+  },
+  fabChapterPanel: {
+    position: 'absolute',
+    bottom: 20,
+    height: 56,
+    overflow: 'hidden',
+    zIndex: 1001,
+  },
+  fabChapterPanelContent: {
+    height: '100%',
+    borderRadius: 28,
+    borderWidth: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    paddingLeft: 16,
+    paddingRight: 16,
+    paddingVertical: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 30,
-    borderWidth: 2,
-    paddingVertical: 14,
+    gap: 12,
+    overflow: 'hidden',
   },
-  secondaryButtonText: {
-    fontSize: 16,
+  fabChapterInfo: {
+    flex: 1,
+    minWidth: 150,
+  },
+  fabChapterInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
+  fabChapterInfoTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  fabChapterInfoSubtitle: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  fabChapterList: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  fabChapterItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    minWidth: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fabChapterItemText: {
+    fontSize: 14,
     fontWeight: '600',
+  },
+  fabMenuOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'transparent',
+    zIndex: 998,
   },
 });

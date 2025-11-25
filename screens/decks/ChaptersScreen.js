@@ -194,21 +194,6 @@ export default function ChaptersScreen({ route, navigation }) {
       <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
         {loading ? (
           renderLoading()
-        ) : chapters.length === 0 ? (
-          <View style={styles.emptyState}>
-            <MaterialCommunityIcons
-              name="book-open-page-variant"
-              size={64}
-              color={colors.muted}
-              style={{ marginBottom: 8 }}
-            />
-            <Text style={[styles.emptyStateTitle, typography.styles.h3, { color: colors.text }]}>
-              {t('chapters.noChapters', 'Henüz Bölüm Yok')}
-            </Text>
-            <Text style={[styles.emptyStateText, typography.styles.body, { color: colors.subtext }]}>
-              {t('chapters.noChaptersDesc', 'Bu destede henüz bölüm oluşturulmamış.')}
-            </Text>
-          </View>
         ) : (
           <View style={{ flex: 1 }}>
             <FlatList
@@ -216,31 +201,58 @@ export default function ChaptersScreen({ route, navigation }) {
               keyExtractor={(item) => item.id}
               contentContainerStyle={{ padding: 16, paddingBottom: '22%' }}
               showsVerticalScrollIndicator={false}
-              ListHeaderComponent={(
-                <View>
-                  <TouchableOpacity
-                    onPress={() => navigation.navigate('ChapterCards', { chapter: { id: null, name: t('chapters.unassigned', 'Atanmamış') }, deck })}
-                    activeOpacity={0.8}
-                    style={[
-                      styles.chapterItem,
-                      {
-                        backgroundColor: colors.cardBackground,
-                        borderColor: colors.cardBorder,
-                        shadowColor: colors.shadowColor,
-                        shadowOffset: colors.shadowOffset,
-                        shadowOpacity: colors.shadowOpacity,
-                        shadowRadius: colors.shadowRadius,
-                        elevation: colors.elevation,
-                      },
-                    ]}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <MaterialCommunityIcons name="alert-circle-outline" size={20} color={colors.buttonColor} style={{ marginRight: 8 }} />
-                      <Text style={[typography.styles.body, { color: colors.text }]}>{t('chapters.unassigned', 'Atanmamış')}</Text>
-                    </View>
-                  </TouchableOpacity>
+              ListHeaderComponent={() => {
+                const unassignedProgress = progressMap.get('unassigned') || { total: 0 };
+                const unassignedCount = unassignedProgress.total || 0;
+                return (
+                  <View>
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate('ChapterCards', { chapter: { id: null, name: t('chapters.unassigned', 'Atanmamış') }, deck })}
+                      activeOpacity={0.8}
+                      style={[
+                        styles.chapterItem,
+                        {
+                          backgroundColor: colors.cardBackground,
+                          borderColor: colors.cardBorder,
+                          shadowColor: colors.shadowColor,
+                          shadowOffset: colors.shadowOffset,
+                          shadowOpacity: colors.shadowOpacity,
+                          shadowRadius: colors.shadowRadius,
+                          elevation: colors.elevation,
+                        },
+                      ]}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <MaterialCommunityIcons name="alert-circle-outline" size={20} color={colors.buttonColor} style={{ marginRight: 8 }} />
+                          <Text style={[typography.styles.body, { color: colors.text }]}>{t('chapters.unassigned', 'Atanmamış')}</Text>
+                        </View>
+                        {unassignedCount > 0 && (
+                          <View style={[styles.countBadge, { backgroundColor: colors.buttonColor }]}>
+                            <Text style={[styles.countBadgeText, { color: '#FFFFFF' }]}>{unassignedCount}</Text>
+                          </View>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                );
+              }}
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <MaterialCommunityIcons
+                    name="book-open-page-variant"
+                    size={64}
+                    color={colors.muted}
+                    style={{ marginBottom: 8 }}
+                  />
+                  <Text style={[styles.emptyStateTitle, typography.styles.h3, { color: colors.text }]}>
+                    {t('chapters.noChapters', 'Henüz Bölüm Yok')}
+                  </Text>
+                  <Text style={[styles.emptyStateText, typography.styles.body, { color: colors.subtext }]}>
+                    {t('chapters.noChaptersDesc', 'Bu destede henüz bölüm oluşturulmamış.')}
+                  </Text>
                 </View>
-              )}
+              }
               renderItem={({ item, index }) => {
                 const chapterProgress = progressMap.get(item.id) || { total: 0, learned: 0, learning: 0, progress: 0 };
                 const learningCount = chapterProgress.learning || 0;
@@ -456,5 +468,17 @@ const styles = StyleSheet.create({
     minHeight: 200,
     flexDirection: 'column',
     gap: -65,
+  },
+  countBadge: {
+    minWidth: 28,
+    height: 28,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  countBadgeText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

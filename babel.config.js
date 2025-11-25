@@ -115,7 +115,8 @@ module.exports = function (api) {
             'mdi:fire',
             'streamline-freehand:view-eye-off',
             'lucide:edit',
-            'basil:eye-closed-outline'
+            'basil:eye-closed-outline',
+            'fluent:arrow-shuffle-24-filled'
           ],
         },
       ],

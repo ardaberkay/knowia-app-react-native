@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ScrollView, Platform, BackHandler, Alert, Dimensions, Animated, Easing, ActivityIndicator } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -129,7 +129,8 @@ export default function DeckCardsScreen({ route, navigation }) {
     return unsubscribe;
   }, [navigation, selectedCard]);
 
-  useEffect(() => {
+  // Header'ı ayarla - selectedCard durumuna göre
+  useLayoutEffect(() => {
     if (selectedCard && !editMode) {
       navigation.setOptions({
         headerRight: () => (
@@ -139,9 +140,18 @@ export default function DeckCardsScreen({ route, navigation }) {
         ),
       });
     } else {
-      navigation.setOptions({ headerRight: undefined });
+      navigation.setOptions({
+        headerRight: () => (
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('AddCard', { deck })} 
+            style={{ marginRight: 8 }}
+          >
+            <Iconify icon="ic:round-plus" size={28} color={colors.text} />
+          </TouchableOpacity>
+        ),
+      });
     }
-  }, [selectedCard, editMode, colors.text, navigation]);
+  }, [selectedCard, editMode, colors.text, navigation, deck]);
 
   useEffect(() => {
     if (loading) {

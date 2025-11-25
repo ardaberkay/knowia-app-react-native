@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Alert, Modal } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Alert, Dimensions, ActivityIndicator } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { supabase } from '../../lib/supabase';
@@ -10,6 +10,8 @@ import CardDetailView from '../../components/layout/CardDetailView';
 import { listChapters, distributeUnassignedEvenly } from '../../services/ChapterService';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
+import LottieView from 'lottie-react-native';
+import ChapterSelector from '../../components/modals/ChapterSelector';
 
 export default function ChapterCardsScreen({ route, navigation }) {
   const { chapter, deck } = route.params;
@@ -424,9 +426,8 @@ export default function ChapterCardsScreen({ route, navigation }) {
       <View style={[styles.bgGradient, { backgroundColor: colors.background }]}>
         <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
           <View style={styles.loadingContainer}>
-            <Text style={[styles.loadingText, typography.styles.body, { color: colors.text }]}>
-              {t('common.loading', 'Yükleniyor...')}
-            </Text>
+            <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: 200, height: 200 }} />
+            <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100 }} />
           </View>
         </SafeAreaView>
       </View>
@@ -577,7 +578,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
               renderItem={renderCardItem}
               keyExtractor={(item) => item.id.toString()}
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.cardsList}
+              contentContainerStyle={[styles.cardsList, { paddingBottom: Dimensions.get('window').height * 0.11 }]}
             />
           )}
         </View>
@@ -598,70 +599,29 @@ export default function ChapterCardsScreen({ route, navigation }) {
               end={{ x: 1, y: 0 }}
             >
               {distLoading ? (
-                <Iconify icon="svg-spinners:ring-resize" size={28} color="#FFFFFF" />
+                <ActivityIndicator size="large" color="#FFFFFF" />
               ) : (
-                <Iconify icon="ion:chevron-forward" size={28} color="#FFFFFF" />
+                <Iconify icon="fluent:arrow-shuffle-24-filled" size={28} color="#FFFFFF" />
               )}
             </LinearGradient>
           </TouchableOpacity>
         )}
 
         {/* Bölüm Seçim Modal */}
-        <Modal
-          visible={showChapterModal}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={() => setShowChapterModal(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, { backgroundColor: colors.cardBackground }]}>
-              <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, typography.styles.h3, { color: colors.text }]}>
-                  {t('chapterCards.selectChapter', 'Bölüm Seç')}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => setShowChapterModal(false)}
-                  style={styles.modalCloseButton}
-                >
-                  <Iconify icon="mingcute:close-fill" size={24} color={colors.text} />
-                </TouchableOpacity>
-              </View>
-              
-              <FlatList
-                data={chapters}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item, index }) => (
-                  <TouchableOpacity
-                    onPress={() => handleMoveToChapter(item.id)}
-                    style={[styles.chapterOption, { borderBottomColor: colors.border }]}
-                    activeOpacity={0.7}
-                    disabled={moveLoading}
-                  >
-                    <Iconify 
-                      icon="streamline-freehand:plugin-jigsaw-puzzle" 
-                      size={20} 
-                      color={colors.buttonColor} 
-                      style={{ marginRight: 12 }} 
-                    />
-                    <Text style={[styles.chapterOptionText, { color: colors.text }]}>
-                      {t('chapters.chapter', 'Bölüm')} {index + 1}
-                    </Text>
-                    {moveLoading && (
-                      <Iconify icon="svg-spinners:ring-resize" size={20} color={colors.buttonColor} />
-                    )}
-                  </TouchableOpacity>
-                )}
-                ListEmptyComponent={
-                  <View style={styles.emptyChapters}>
-                    <Text style={[styles.emptyChaptersText, { color: colors.subtext }]}>
-                      {t('chapterCards.noChapters', 'Henüz bölüm yok')}
-                    </Text>
-                  </View>
-                }
-              />
-            </View>
-          </View>
-        </Modal>
+        <ChapterSelector
+          isVisible={showChapterModal}
+          onClose={() => {
+            setShowChapterModal(false);
+            if (!moveLoading) {
+              setSelectedCards(new Set());
+              setEditMode(false);
+            }
+          }}
+          chapters={chapters}
+          onSelectChapter={(chapterId) => {
+            handleMoveToChapter(chapterId);
+          }}
+        />
       </SafeAreaView>
     </View>
   );
@@ -806,6 +766,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    minHeight: 200,
+    flexDirection: 'column',
+    gap: -65,
   },
   loadingText: {
     fontSize: 16,
@@ -875,48 +838,5 @@ const styles = StyleSheet.create({
   moveButtonText: {
     fontSize: 14,
     fontWeight: '600',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '70%',
-    paddingBottom: 40,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
-  },
-  modalTitle: {
-    fontWeight: '600',
-  },
-  modalCloseButton: {
-    padding: 4,
-  },
-  chapterOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 18,
-    borderBottomWidth: 1,
-  },
-  chapterOptionText: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  emptyChapters: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  emptyChaptersText: {
-    fontSize: 14,
   },
 });

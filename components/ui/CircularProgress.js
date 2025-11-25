@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated } from 'react-native';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { View, Text, Animated, Easing } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -16,57 +16,134 @@ const CircularProgress = ({
 }) => {
   const { colors } = useTheme();
   const progressAnim = useRef(new Animated.Value(0)).current;
-  const AnimatedCircle = Animated.createAnimatedComponent(Circle);
   const textScaleAnim = useRef(new Animated.Value(1)).current;
+  const [animatedProgress, setAnimatedProgress] = useState(0);
+  const hasAnimatedRef = useRef(false);
+  const previousProgressRef = useRef(null);
+  const previousShouldAnimateRef = useRef(null);
+  const isFirstRenderRef = useRef(true);
+  const lastUpdateTimeRef = useRef(0);
   
   // Progress 0-1 arasında olmalı
-  const normalizedProgress = Math.max(0, Math.min(1, progress));
+  const normalizedProgress = useMemo(() => Math.max(0, Math.min(1, progress)), [progress]);
   
-  // Daire için radius ve circumference hesaplama (yarım veya tam)
-  const radius = (size - strokeWidth) / 2;
-  const circumference = (fullCircle ? 2 * Math.PI : Math.PI) * radius;
+  // Daire için radius ve circumference hesaplama (yarım veya tam) - memoize edilmiş
+  const { radius, circumference } = useMemo(() => {
+    const r = (size - strokeWidth) / 2;
+    const c = (fullCircle ? 2 * Math.PI : Math.PI) * r;
+    return { radius: r, circumference: c };
+  }, [size, strokeWidth, fullCircle]);
+
+  // Progress dolum animasyonu
+  useEffect(() => {
+    let listenerId = null;
+    
+    // İlk render mı kontrol et
+    const isFirstRender = isFirstRenderRef.current;
+    const progressChanged = previousProgressRef.current !== normalizedProgress;
+    const shouldAnimateChanged = previousShouldAnimateRef.current !== shouldAnimate;
+    const previousProgress = previousProgressRef.current;
+    previousProgressRef.current = normalizedProgress;
+    previousShouldAnimateRef.current = shouldAnimate;
+    
+    // shouldAnimate true ise her zaman animasyon yap
+    // İlk render'da progress > 0 ise animasyon yap (flash'ı önlemek için)
+    const shouldDoAnimation = shouldAnimate || (isFirstRender && normalizedProgress > 0);
+    
+    // Animasyon yapılacak durumlar: ilk render, progress değişti, veya shouldAnimate false'tan true'ya geçti
+    const shouldTriggerAnimation = shouldDoAnimation && (isFirstRender || progressChanged || (shouldAnimateChanged && shouldAnimate));
+    
+    if (shouldTriggerAnimation) {
+      // Mevcut animasyonu durdur
+      progressAnim.stopAnimation();
+      
+      // İlk animasyon ise veya shouldAnimate false'tan true'ya geçtiyse 0'dan başla
+      const startFromZero = isFirstRender || (shouldAnimateChanged && shouldAnimate && previousProgress !== null);
+      
+      if (startFromZero) {
+        progressAnim.setValue(0);
+        setAnimatedProgress(0);
+        isFirstRenderRef.current = false;
+      }
+      
+      // Animasyon değerini dinle - throttle ile optimize edilmiş (her frame yerine daha az sıklıkta)
+      const throttleMs = 16; // ~60fps için
+      lastUpdateTimeRef.current = 0;
+      
+      listenerId = progressAnim.addListener(({ value }) => {
+        const now = Date.now();
+        if (now - lastUpdateTimeRef.current >= throttleMs) {
+          setAnimatedProgress(value);
+          lastUpdateTimeRef.current = now;
+        }
+      });
+      
+      Animated.timing(progressAnim, {
+        toValue: normalizedProgress,
+        duration: 900,
+        easing: Easing.out(Easing.cubic), // Daha smooth easing
+        useNativeDriver: false,
+      }).start(() => {
+        // Animasyon bittiğinde kesin değeri set et
+        setAnimatedProgress(normalizedProgress);
+        hasAnimatedRef.current = true;
+      });
+      
+      // Yüzdelik metin için boing (spring) animasyonu - shouldAnimate true ise veya ilk animasyon ise
+      if (shouldAnimate || isFirstRender) {
+        textScaleAnim.setValue(0.7);
+        Animated.spring(textScaleAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          bounciness: 14,
+          speed: 12,
+        }).start();
+      }
+    } else if (!shouldAnimate && !isFirstRender) {
+      // Animasyon yoksa ve ilk render değilse direkt progress değerini set et
+      progressAnim.setValue(normalizedProgress);
+      setAnimatedProgress(normalizedProgress);
+      hasAnimatedRef.current = false;
+    }
+    
+    // Cleanup: listener'ı kaldır
+    return () => {
+      if (listenerId !== null) {
+        progressAnim.removeListener(listenerId);
+      }
+    };
+  }, [normalizedProgress, shouldAnimate, progressAnim]);
+
+  // Animasyonlu strokeDashoffset hesaplama - memoize edilmiş
+  // shouldAnimate true ise her zaman animasyonlu progress kullan
+  // shouldAnimate false ise ama ilk render ve progress > 0 ise animasyonlu progress kullan (flash önleme)
+  // hasAnimatedRef false ise animasyon devam ediyor demektir
+  const isAnimating = shouldAnimate || (!hasAnimatedRef.current && normalizedProgress > 0);
+  const currentProgress = isAnimating ? animatedProgress : normalizedProgress;
   
-  // Progress'e göre stroke-dasharray hesaplama
-  const strokeDasharray = circumference;
-  const strokeDashoffset = circumference - (normalizedProgress * circumference);
+  const strokeDashoffset = useMemo(() => {
+    return fullCircle
+      ? circumference * (1 - currentProgress)
+      : (circumference / 2) + circumference * (1 - currentProgress);
+  }, [fullCircle, circumference, currentProgress]);
   
-  // Progress'e göre renk koyulaştırma (0-100% arasında)
-  const progressPercent = normalizedProgress * 100;
+  // Progress'e göre renk koyulaştırma (0-100% arasında) - animasyonlu progress kullan
+  const progressPercent = useMemo(() => currentProgress * 100, [currentProgress]);
   
-  // Renk interpolasyonu - progress arttıkça koyulaşır (ana tema turuncu çevresinde)
-  const getProgressColor = () => {
+  // Renk interpolasyonu - progress arttıkça koyulaşır (ana tema turuncu çevresinde) - memoize edilmiş
+  const progressColor = useMemo(() => {
     if (progressPercent === 0) return colors.progressBar || '#F1F1F1';
     if (progressPercent < 25) return '#FFD700'; // Altın sarısı
     if (progressPercent < 50) return '#FFA500'; // Turuncu
     if (progressPercent < 75) return '#F98A21'; // Ana tema turuncu
     if (progressPercent < 100) return '#FF4500'; // Kırmızı-turuncu
     return '#DC143C'; // Koyu kırmızı
-  };
+  }, [progressPercent, colors.progressBar]);
   
-  const progressColor = getProgressColor();
-
-  // Progress dolum animasyonu
-  useEffect(() => {
-    if (shouldAnimate) {
-      progressAnim.setValue(0);
-      Animated.timing(progressAnim, {
-        toValue: normalizedProgress,
-        duration: 900,
-        useNativeDriver: false,
-      }).start();
-      // Yüzdelik metin için boing (spring) animasyonu
-      textScaleAnim.setValue(0.7);
-      Animated.spring(textScaleAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-        bounciness: 14,
-        speed: 12,
-      }).start();
-    } else {
-      // Animasyon yoksa direkt progress değerini set et
-      progressAnim.setValue(normalizedProgress);
-    }
-  }, [normalizedProgress, shouldAnimate]);
+  // Text scale animasyonu için kontrol - memoize edilmiş
+  const shouldScaleText = useMemo(() => {
+    return shouldAnimate || (isFirstRenderRef.current && normalizedProgress > 0);
+  }, [shouldAnimate, normalizedProgress]);
 
   return (
     <Animated.View style={[{ alignItems: 'center', justifyContent: 'center' }, containerStyle]}>
@@ -93,7 +170,7 @@ const CircularProgress = ({
         />
         
         {/* Progress circle */}
-        <AnimatedCircle
+        <Circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
@@ -101,8 +178,8 @@ const CircularProgress = ({
           strokeWidth={strokeWidth}
           fill="transparent"
           strokeLinecap="round"
-          strokeDasharray={[Animated.multiply(progressAnim, circumference), circumference]}
-          strokeDashoffset={fullCircle ? 0 : circumference / 2}
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
       </Svg>
@@ -125,7 +202,7 @@ const CircularProgress = ({
               fontWeight: 'bold',
               color: colors.cardQuestionText || '#333',
               textAlign: 'center',
-              transform: [{ scale: shouldAnimate ? textScaleAnim : 1 }],
+              transform: [{ scale: shouldScaleText ? textScaleAnim : 1 }],
             },
             textStyle
           ]}>
@@ -137,4 +214,4 @@ const CircularProgress = ({
   );
 };
 
-export default CircularProgress;
+export default React.memo(CircularProgress);
