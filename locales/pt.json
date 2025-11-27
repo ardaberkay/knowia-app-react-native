@@ -164,7 +164,8 @@
       "shareDetails": "Detalhes do Compartilhamento Comunitário",
       "shareDetailsText": "Quando este deck é compartilhado com a comunidade, pode ser visualizado e usado por outros usuários. Você pode desativar o compartilhamento a qualquer momento.",
       "shareUpdated": "Configurações de compartilhamento atualizadas",
-      "shareUpdateError": "Não foi possível atualizar as configurações de compartilhamento"
+      "shareUpdateError": "Não foi possível atualizar as configurações de compartilhamento",
+      "action": "Ação"
     },
     "cardDetail": {
       "question": "Pergunta",

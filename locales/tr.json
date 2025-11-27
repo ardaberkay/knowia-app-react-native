@@ -170,7 +170,8 @@
     "shareDetails": "Toplulukta Paylaşma Ayrıntıları",
     "shareDetailsText": "Bu deste toplulukla paylaşıldığında diğer kullanıcılar tarafından da görüntülenebilir ve kullanılabilir. Paylaşımı istediğin zaman kapatabilirsin.",
     "shareUpdated": "Paylaşım ayarları güncellendi",
-    "shareUpdateError": "Paylaşım ayarları güncellenemedi"
+    "shareUpdateError": "Paylaşım ayarları güncellenemedi",
+    "action": "Aksiyon"
   },
   "cardDetail": {
     "question": "Soru",

@@ -169,7 +169,8 @@
     "shareDetails": "Community Sharing Details",
     "shareDetailsText": "When this deck is shared with the community, it can be viewed and used by other users. You can disable sharing at any time.",
     "shareUpdated": "Sharing settings updated",
-    "shareUpdateError": "Sharing settings could not be updated"
+    "shareUpdateError": "Sharing settings could not be updated",
+    "action": "Action"
   },
   "cardDetail": {
     "question": "Question",

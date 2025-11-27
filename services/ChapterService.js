@@ -72,6 +72,42 @@ export async function deleteChapter(chapterId) {
 }
 
 /**
+ * Reorder chapter ordinals sequentially (1, 2, 3, ...) for a deck
+ * This ensures no gaps in ordinal values after deletion
+ * @param {string} deckId
+ */
+export async function reorderChapterOrdinals(deckId) {
+  // Get all chapters ordered by current ordinal
+  const { data: chapters, error: fetchError } = await supabase
+    .from('chapters')
+    .select('id, ordinal')
+    .eq('deck_id', deckId)
+    .order('ordinal', { ascending: true })
+    .order('created_at', { ascending: true });
+  
+  if (fetchError) throw fetchError;
+  if (!chapters || chapters.length === 0) return;
+  
+  // Update ordinals sequentially (1, 2, 3, ...)
+  const updates = chapters.map((chapter, index) => ({
+    id: chapter.id,
+    ordinal: index + 1,
+  }));
+  
+  // Batch update all chapters
+  for (const update of updates) {
+    const { error } = await supabase
+      .from('chapters')
+      .update({ ordinal: update.ordinal })
+      .eq('id', update.id);
+    
+    if (error) throw error;
+  }
+  
+  return true;
+}
+
+/**
  * Get progress for a chapter (total cards and learned cards count)
  * @param {string} chapterId - Chapter ID (null for unassigned cards)
  * @param {string} deckId - Deck ID
@@ -159,7 +195,7 @@ export async function getChaptersProgress(chapters, deckId, userId) {
   const allCardIds = (allCards || []).map(c => c.id);
   if (allCardIds.length === 0) {
     chapters.forEach(ch => {
-      progressMap.set(ch.id || 'unassigned', { total: 0, learned: 0, learning: 0, progress: 0 });
+      progressMap.set(ch.id || 'unassigned', { total: 0, learned: 0, learning: 0, new: 0, progress: 0 });
     });
     return progressMap;
   }
@@ -183,7 +219,7 @@ export async function getChaptersProgress(chapters, deckId, userId) {
   if (learnedError || learningError) {
     console.error('Error fetching progress:', learnedError || learningError);
     chapters.forEach(ch => {
-      progressMap.set(ch.id || 'unassigned', { total: 0, learned: 0, learning: 0, progress: 0 });
+      progressMap.set(ch.id || 'unassigned', { total: 0, learned: 0, learning: 0, new: 0, progress: 0 });
     });
     return progressMap;
   }
@@ -198,8 +234,9 @@ export async function getChaptersProgress(chapters, deckId, userId) {
     const total = cardIds.length;
     const learned = cardIds.filter(id => learnedCardIds.has(id)).length;
     const learning = cardIds.filter(id => learningCardIds.has(id)).length;
+    const newCount = total - learned - learning; // New = total - learned - learning
     const progress = total > 0 ? learned / total : 0;
-    progressMap.set(key, { total, learned, learning, progress });
+    progressMap.set(key, { total, learned, learning, new: newCount, progress });
   });
   
   return progressMap;

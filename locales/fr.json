@@ -164,7 +164,8 @@
       "shareDetails": "Détails du partage communautaire",
       "shareDetailsText": "Lorsque ce deck est partagé avec la communauté, il peut être consulté et utilisé par d'autres utilisateurs. Vous pouvez désactiver le partage à tout moment.",
       "shareUpdated": "Paramètres de partage mis à jour",
-      "shareUpdateError": "Impossible de mettre à jour les paramètres de partage"
+      "shareUpdateError": "Impossible de mettre à jour les paramètres de partage",
+      "action": "Action"
     },
     "cardDetail": {
       "question": "Question",

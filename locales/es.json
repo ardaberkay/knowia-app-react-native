@@ -164,7 +164,8 @@
       "shareDetails": "Detalles de Compartir con la Comunidad",
       "shareDetailsText": "Cuando este mazo se comparte con la comunidad, puede ser visto y usado por otros usuarios. Puedes desactivar el compartir en cualquier momento.",
       "shareUpdated": "Configuración de compartir actualizada",
-      "shareUpdateError": "No se pudo actualizar la configuración de compartir"
+      "shareUpdateError": "No se pudo actualizar la configuración de compartir",
+      "action": "Acción"
     },
     "cardDetail": {
       "question": "Pregunta",

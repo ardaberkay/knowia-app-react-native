@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Iconify } from 'react-native-iconify';
-import { listChapters, distributeUnassignedEvenly, getNextOrdinal, createChapter, getChaptersProgress, deleteChapter } from '../../services/ChapterService';
+import { listChapters, distributeUnassignedEvenly, getNextOrdinal, createChapter, getChaptersProgress, deleteChapter, reorderChapterOrdinals } from '../../services/ChapterService';
 import CreateButton from '../../components/tools/CreateButton';
 import CircularProgress from '../../components/ui/CircularProgress';
 import { supabase } from '../../lib/supabase';
@@ -162,8 +162,10 @@ export default function ChaptersScreen({ route, navigation }) {
           onPress: async () => {
             try {
               await deleteChapter(chapterId);
-              // Bölümü listeden kaldır
-              const updatedChapters = chapters.filter(c => c.id !== chapterId);
+              // Ordinal'leri yeniden düzenle (1, 2, 3, ... şeklinde)
+              await reorderChapterOrdinals(deck.id);
+              // Bölümleri yeniden yükle (ordinal'ler güncellenmiş olacak)
+              const updatedChapters = await listChapters(deck.id);
               setChapters(updatedChapters);
               // Progress'i güncelle
               if (currentUserId) {
@@ -260,7 +262,7 @@ export default function ChaptersScreen({ route, navigation }) {
                   <TouchableOpacity
                     onPress={() => {
                       if (!editMode) {
-                        navigation.navigate('ChapterCards', { chapter: { id: item.id, name: `${t('chapters.chapter', 'Bölüm')} ${index + 1}` }, deck });
+                        navigation.navigate('ChapterCards', { chapter: { id: item.id, name: `${t('chapters.chapter', 'Bölüm')} ${item.ordinal}` }, deck });
                       }
                     }}
                     activeOpacity={0.8}
@@ -283,7 +285,7 @@ export default function ChaptersScreen({ route, navigation }) {
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                           <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={22} color={colors.buttonColor} style={{ marginRight: 8 }} />
-                          <Text style={[typography.styles.body, styles.chapterTitle, { color: colors.text }]}>{t('chapters.chapter', 'Bölüm')} {index + 1}</Text>
+                          <Text style={[typography.styles.body, styles.chapterTitle, { color: colors.text }]}>{t('chapters.chapter', 'Bölüm')} {item.ordinal}</Text>
                         </View>
                         {editMode ? (
                           <TouchableOpacity
