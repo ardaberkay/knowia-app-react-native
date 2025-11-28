@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
  
 import { Iconify } from 'react-native-iconify';
 import { Alert as RNAlert } from 'react-native';
@@ -276,6 +277,54 @@ export default function DeckDetailScreen({ route, navigation }) {
     }
   }, [cardsModalVisible]);
 
+  // Son seçilen chapter'ı AsyncStorage'dan yükle
+  const loadLastSelectedChapter = async (availableChapters) => {
+    try {
+      const storageKey = `last_selected_chapter_${deck.id}`;
+      const savedChapterId = await AsyncStorage.getItem(storageKey);
+      
+      if (savedChapterId) {
+        // Eğer "action" seçiliyse
+        if (savedChapterId === 'action') {
+          setSelectedChapter(ACTION_CHAPTER);
+          return;
+        }
+        
+        // Kaydedilmiş chapter'ı bul
+        const savedChapter = availableChapters.find(ch => ch.id === savedChapterId);
+        if (savedChapter) {
+          setSelectedChapter(savedChapter);
+          return;
+        }
+      }
+      
+      // Eğer kayıtlı chapter bulunamazsa veya yoksa, default olarak ACTION_CHAPTER seç
+      setSelectedChapter(ACTION_CHAPTER);
+    } catch (e) {
+      console.error('Error loading last selected chapter:', e);
+      // Hata durumunda default olarak ACTION_CHAPTER seç
+      setSelectedChapter(ACTION_CHAPTER);
+    }
+  };
+
+  // Seçilen chapter'ı AsyncStorage'a kaydet
+  const saveLastSelectedChapter = async (chapter) => {
+    try {
+      const storageKey = `last_selected_chapter_${deck.id}`;
+      const chapterId = chapter?.id || 'action';
+      await AsyncStorage.setItem(storageKey, chapterId);
+    } catch (e) {
+      console.error('Error saving last selected chapter:', e);
+      // Hata durumunda sessizce geç
+    }
+  };
+
+  // Chapter seçimini yap ve kaydet (wrapper fonksiyon)
+  const handleChapterSelect = (chapter) => {
+    setSelectedChapter(chapter);
+    saveLastSelectedChapter(chapter);
+  };
+
   // Chapter'ları çek
   useEffect(() => {
     const fetchChapters = async () => {
@@ -283,11 +332,9 @@ export default function DeckDetailScreen({ route, navigation }) {
         const data = await listChapters(deck.id);
         const availableChapters = data || [];
         setChapters(availableChapters);
-        // Eğer selectedChapter null veya action değilse ve chapters varsa ilkini seç
-        // Aksi halde ACTION_CHAPTER seçili kalır (default)
-        if (selectedChapter?.id !== 'action' && !selectedChapter && availableChapters.length > 0) {
-          setSelectedChapter(availableChapters[0]);
-        }
+        
+        // Son seçilen chapter'ı yükle
+        await loadLastSelectedChapter(availableChapters);
         
         // Progress bilgisini çek
         if (currentUserId && availableChapters.length > 0) {
@@ -301,6 +348,8 @@ export default function DeckDetailScreen({ route, navigation }) {
       } catch (e) {
         console.error('Error fetching chapters:', e);
         setChapters([]);
+        // Hata durumunda default olarak ACTION_CHAPTER seç
+        setSelectedChapter(ACTION_CHAPTER);
       }
     };
     if (deck?.id) {
@@ -801,7 +850,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                   ]}
                   activeOpacity={0.7}
                   onPress={() => {
-                    setSelectedChapter(ACTION_CHAPTER);
+                    handleChapterSelect(ACTION_CHAPTER);
                     setInlineChapterListVisible(false);
                   }}
                 >
@@ -876,7 +925,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                       ]}
                       activeOpacity={0.7}
                       onPress={() => {
-                        setSelectedChapter(chapter);
+                        handleChapterSelect(chapter);
                         setInlineChapterListVisible(false);
                       }}
                     >
@@ -1158,8 +1207,8 @@ export default function DeckDetailScreen({ route, navigation }) {
 
         <TouchableOpacity
           style={[styles.fabButton, styles.fabButtonRight, { 
-            backgroundColor: colors.buttonColor,
-            borderColor: colors.buttonColor,
+            borderColor: 'transparent',
+            overflow: 'hidden',
           }]}
           activeOpacity={0.8}
           onPress={() => {
@@ -1175,7 +1224,15 @@ export default function DeckDetailScreen({ route, navigation }) {
             navigation.navigate('SwipeDeck', { deck, chapter: chapterParam });
           }}
         >
-          <Iconify icon="streamline:button-play-solid" size={22} color="#fff" />
+          <LinearGradient
+            colors={['#F98A21', '#FF6B35']}
+            locations={[0, 0.99]}
+            style={styles.fabButtonGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          >
+            <Iconify icon="streamline:button-play-solid" size={22} color="#fff" />
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
@@ -2002,7 +2059,15 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   fabButtonRight: {
-    borderWidth: 2,
+    borderWidth: 0,
+  },
+  fabButtonGradient: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    borderRadius: 99,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   fabMorphContent: {
     flex: 1,
