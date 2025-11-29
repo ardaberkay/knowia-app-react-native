@@ -779,27 +779,42 @@ export default function DeckDetailScreen({ route, navigation }) {
                 <ScrollView
                   horizontal
                   ref={nameScrollRef}
+                  scrollEnabled={nameHasOverflow}
                   showsHorizontalScrollIndicator={showNameScrollbar && nameHasOverflow}
-                  contentContainerStyle={{ alignItems: 'flex-start', justifyContent: 'flex-start', paddingHorizontal: 0 }}
+                  contentContainerStyle={{ 
+                    alignItems: 'flex-start', 
+                    justifyContent: nameHasOverflow ? 'flex-start' : 'center',
+                    paddingHorizontal: 0,
+                    flexGrow: 1,
+                  }}
                   style={{ width: '100%' }}
                   onContentSizeChange={(w) => {
                     setNameContentWidth(w);
                     const overflow = w > nameContainerWidth + 2;
-                    if (overflow && !nameHasOverflow) {
-                      setNameHasOverflow(true);
-                      // Show scrollbar briefly, then perform a small nudge
-                      setShowNameScrollbar(true);
-                      setTimeout(() => setShowNameScrollbar(false), 1800);
-                      requestAnimationFrame(() => {
+                    if (overflow !== nameHasOverflow) {
+                      setNameHasOverflow(overflow);
+                      if (overflow) {
+                        // Show scrollbar briefly, then perform a small nudge
+                        setShowNameScrollbar(true);
+                        setTimeout(() => setShowNameScrollbar(false), 1800);
+                        requestAnimationFrame(() => {
+                          if (nameScrollRef.current) {
+                            try {
+                              nameScrollRef.current.scrollTo({ x: 18, animated: true });
+                              setTimeout(() => {
+                                nameScrollRef.current && nameScrollRef.current.scrollTo({ x: 0, animated: true });
+                              }, 700);
+                            } catch {}
+                          }
+                        });
+                      } else {
+                        // Overflow yoksa scroll pozisyonunu sıfırla
                         if (nameScrollRef.current) {
                           try {
-                            nameScrollRef.current.scrollTo({ x: 18, animated: true });
-                            setTimeout(() => {
-                              nameScrollRef.current && nameScrollRef.current.scrollTo({ x: 0, animated: true });
-                            }, 700);
+                            nameScrollRef.current.scrollTo({ x: 0, animated: false });
                           } catch {}
                         }
-                      });
+                      }
                     }
                   }}
                 >
@@ -2083,9 +2098,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   centerDivider: {
-    width: 2,
+    width: 1,
     height: 60,
-    borderRadius: 1,
+    borderRadius: 0.5,
     marginHorizontal: 16,
   },
   rightSection: {
@@ -2107,10 +2122,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   miniDivider: {
-    width: '60%',
+    width: '100%',
     height: 1,
-    borderRadius: 1,
+    borderRadius: 0.5,
     marginVertical: 4,
+    alignSelf: 'center',
   },
   // Card Count Top Right Styles
   cardCountTopRight: {

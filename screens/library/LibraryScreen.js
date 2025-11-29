@@ -18,6 +18,7 @@ import LottieView from 'lottie-react-native';
 import MyDecksList from '../../components/lists/MyDecksList';
 import MaskedView from '@react-native-masked-view/masked-view';
 import GlassBlurCard from '../../components/ui/GlassBlurCard';
+import MyDecksSkeleton from '../../components/skeleton/MyDecksSkeleton';
 
 // Fade efekti için yardımcı bileşen
 const FadeText = ({ text, style, maxWidth, maxChars }) => {
@@ -300,13 +301,14 @@ export default function LibraryScreen() {
     );
   };
 
-  // Yükleniyor ekranı
+  // Yükleniyor ekranı (sadece Favorites için)
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
       <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: 200, height: 200 }} />
       <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100 }} />
     </View>
   );
+
 
   return (
     <View style={[styles.container]}>
@@ -370,7 +372,7 @@ export default function LibraryScreen() {
         {/* Page 0: My Decks */}
         <View key="myDecks" style={{ flex: 1 }}>
           {loading ? (
-            renderLoading()
+            <MyDecksSkeleton />
           ) : (
             <MyDecksList
               decks={filteredMyDecks}
@@ -403,7 +405,7 @@ export default function LibraryScreen() {
           ) : (
             <ScrollView
               style={{ flex: 1, backgroundColor: colors.background }}
-              contentContainerStyle={{ paddingBottom: '22%', marginTop: '22%' }}
+              contentContainerStyle={{ paddingBottom: '18%', marginTop: '22%', flexGrow: 1 }}
               showsVerticalScrollIndicator={false}
               refreshControl={
                 <RefreshControl
@@ -703,6 +705,7 @@ const styles = StyleSheet.create({
   },
   favoriteSliderWrapper: {
     marginBottom: 12,
+    paddingBottom: '25%',
   },
   favoriteHeaderRow: {
     paddingHorizontal: 4,
@@ -935,6 +938,4 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 8,
   },
-
-
 }); 

@@ -22,7 +22,6 @@ const CircularProgress = ({
   const previousProgressRef = useRef(null);
   const previousShouldAnimateRef = useRef(null);
   const isFirstRenderRef = useRef(true);
-  const lastUpdateTimeRef = useRef(0);
   
   // Progress 0-1 arasında olmalı
   const normalizedProgress = useMemo(() => Math.max(0, Math.min(1, progress)), [progress]);
@@ -66,22 +65,20 @@ const CircularProgress = ({
         isFirstRenderRef.current = false;
       }
       
-      // Animasyon değerini dinle - throttle ile optimize edilmiş (her frame yerine daha az sıklıkta)
-      const throttleMs = 16; // ~60fps için
-      lastUpdateTimeRef.current = 0;
+      // Animasyon değerini dinle - her frame'de güncelle (maksimum smooth için)
+      let lastValue = startFromZero ? 0 : previousProgress || 0;
+      setAnimatedProgress(lastValue);
       
+      // Throttle olmadan direkt güncelleme - React.memo sayesinde gereksiz render'lar önleniyor
       listenerId = progressAnim.addListener(({ value }) => {
-        const now = Date.now();
-        if (now - lastUpdateTimeRef.current >= throttleMs) {
-          setAnimatedProgress(value);
-          lastUpdateTimeRef.current = now;
-        }
+        // Her frame'de güncelle - en smooth animasyon için
+        setAnimatedProgress(value);
       });
       
       Animated.timing(progressAnim, {
         toValue: normalizedProgress,
-        duration: 900,
-        easing: Easing.out(Easing.cubic), // Daha smooth easing
+        duration: 900, // Daha responsive için kısaltıldı
+        easing: Easing.inOut(Easing.ease), // En smooth easing - doğal ve akıcı
         useNativeDriver: false,
       }).start(() => {
         // Animasyon bittiğinde kesin değeri set et

@@ -311,7 +311,7 @@ export default function MyDecksList({
     <FlatList
       data={rows}
       keyExtractor={(_, idx) => `row_${idx}`}
-      contentContainerStyle={{ paddingBottom: '10%', }}
+      contentContainerStyle={{ paddingBottom: '25%', }}
       ListHeaderComponent={ListHeaderComponent}
       renderItem={({ item: row }) => (row.type === 'double' ? renderDoubleRow(row) : renderSingleRow(row))}
       ListEmptyComponent={<Text style={[styles.emptyText, typography.styles.caption]}>{t('library.noDecks', 'Henüz deste bulunmuyor')}</Text>}

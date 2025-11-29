@@ -235,6 +235,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'flex-start',
+    paddingBottom: '25%',
   },
   profileRow: {
     flexDirection: 'row',
@@ -274,6 +275,7 @@ const styles = StyleSheet.create({
   bottomButtonsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: 16,
     marginBottom: 32,
     gap: 12,
   },

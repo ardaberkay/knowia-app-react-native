@@ -348,6 +348,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     paddingTop: 8,
+    paddingBottom: '10%',
   },
   headerCard: {
     width: '100%',
@@ -417,7 +418,7 @@ const styles = StyleSheet.create({
   buttonRowModern: {
     flexDirection: 'row',
     gap: 20,
-    marginTop: "auto",
+    marginTop: 16,
     marginBottom: 80,
   },
 

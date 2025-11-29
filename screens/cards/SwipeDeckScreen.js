@@ -43,6 +43,16 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const autoPlayTimeout = useRef(null);
   const { t } = useTranslation();
   const [favoriteIds, setFavoriteIds] = useState(new Set());
+  const [categorySortOrder, setCategorySortOrder] = useState(null);
+
+  // Kategoriye göre renkleri al (Supabase sort_order kullanarak)
+  const getCategoryColors = (sortOrder) => {
+    if (colors.categoryColors && colors.categoryColors[sortOrder]) {
+      return colors.categoryColors[sortOrder];
+    }
+    // Varsayılan renkler (Tarih kategorisi - sort_order: 4)
+    return ['#A88D6B', '#7A5F3A'];
+  };
 
   // Sayaç kutuları için renkler
   const leftInactiveColor = '#f3a14c'; // Bir tık daha koyu turuncu
@@ -59,6 +69,22 @@ export default function SwipeDeckScreen({ route, navigation }) {
       // Kullanıcıyı al
       const { data: { user } } = await supabase.auth.getUser();
       setUserId(user.id);
+      
+      // Deck'in kategori bilgisini al
+      try {
+        const { data: deckData, error: deckError } = await supabase
+          .from('decks')
+          .select('categories(sort_order)')
+          .eq('id', deck.id)
+          .single();
+        
+        if (!deckError && deckData?.categories) {
+          setCategorySortOrder(deckData.categories.sort_order);
+        }
+      } catch (e) {
+        console.error('Error fetching deck category:', e);
+      }
+      
       // Mevcut favori kartları yükle ve UI'ı senkronla
       try {
         const favCards = await getFavoriteCards(user.id);
@@ -702,15 +728,18 @@ export default function SwipeDeckScreen({ route, navigation }) {
     );
 
 
+    // Kategori rengini al
+    const gradientColors = getCategoryColors(categorySortOrder);
+    
     // Eğer kart yoksa veya stack'teki alttaki kartsa, placeholder göster
     if (!card || !card.cards || cardIndex > currentIndex) {
       return (
         <View style={[styles.card, { opacity: 0.7 }]}> 
           <LinearGradient
-            colors={colors.deckGradient || ['#fff8f0', '#ffe0c3', '#f9b97a']}
+            colors={gradientColors}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+            style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
           />
         </View>
       );
@@ -754,10 +783,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
           {/* Ön yüz */}
           <Animated.View style={[styles.card, { backgroundColor: colors.cardBackground, justifyContent: 'flex-start' }, frontAnimatedStyle]}>
             <LinearGradient
-              colors={colors.deckGradient || ['#fff8f0', '#ffe0c3', '#f9b97a']}
+              colors={gradientColors}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+              style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
             />
             <Pressable
               onPressIn={(e) => e.stopPropagation()}
@@ -785,10 +814,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
           {/* Arka yüz */}
           <Animated.View style={[styles.card, { backgroundColor: colors.cardBackground }, backAnimatedStyle]}>
             <LinearGradient
-              colors={colors.deckGradient || ['#fff8f0', '#ffe0c3', '#f9b97a']}
+              colors={gradientColors}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+              style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
             />
              <Pressable
                onPressIn={(e) => e.stopPropagation()}
@@ -910,6 +939,14 @@ export default function SwipeDeckScreen({ route, navigation }) {
           )}
           onSwipedLeft={(i) => { handleSwipe(i, 'left'); setCurrentIndex(i + 1); }}
           onSwipedRight={(i) => { handleSwipe(i, 'right'); setCurrentIndex(i + 1); }}
+          onSwipedTop={(i) => {
+            // Yukarı swipe yapıldığında kartı geri getir
+            if (swiperRef.current) {
+              swiperRef.current.swipeBack();
+            }
+          }}
+          disableTopSwipe={true}
+          disableBottomSwipe={true}
           stackSize={2}
           showSecondCard={false}
           swipeBackCard={true}
@@ -973,7 +1010,7 @@ const styles = StyleSheet.create({
   card: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
-    borderRadius: 16,
+    borderRadius: 26,
     padding: 24,
     alignItems: 'center',
     justifyContent: 'center',
