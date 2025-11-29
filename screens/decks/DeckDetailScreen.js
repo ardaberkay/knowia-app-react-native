@@ -22,7 +22,8 @@ export default function DeckDetailScreen({ route, navigation }) {
   const { deck } = route.params;
   const { colors } = useTheme();
   const { session } = useAuth();
-  const [isFavorite, setIsFavorite] = useState(false);
+  // Favori durumunu route.params'dan al (eğer varsa), yoksa false
+  const [isFavorite, setIsFavorite] = useState(deck?.is_favorite || false);
   const [favLoading, setFavLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressLoading, setProgressLoading] = useState(true);
@@ -109,8 +110,51 @@ export default function DeckDetailScreen({ route, navigation }) {
     );
   }
 
-  const fetchProgress = async () => {
-    setProgressLoading(true);
+  // Cache'den progress'i yükle (hızlı gösterim için)
+  const loadCachedProgress = async () => {
+    try {
+      const storageKey = `deck_progress_${deck.id}_${session?.user?.id || 'guest'}`;
+      const cached = await AsyncStorage.getItem(storageKey);
+      if (cached) {
+        const cachedData = JSON.parse(cached);
+        // Cache'deki veri çok eski değilse (1 saat içindeyse) kullan
+        const cacheAge = Date.now() - (cachedData.timestamp || 0);
+        if (cacheAge < 3600000) { // 1 saat
+          setProgress(cachedData.progress || 0);
+          setLearnedCardsCount(cachedData.learned || 0);
+          setDeckStats(cachedData.stats || { total: deck.card_count || 0, learned: 0, learning: 0, new: deck.card_count || 0 });
+          setProgressLoading(false); // Cache'den geldi, loading'i kapat
+          return true; // Cache kullanıldı
+        }
+      }
+    } catch (e) {
+      console.error('Error loading cached progress:', e);
+    }
+    return false; // Cache kullanılmadı
+  };
+
+  const fetchProgress = async (useCache = true) => {
+    // Önce cache'den yükle (eğer isteniyorsa)
+    if (useCache) {
+      const cacheUsed = await loadCachedProgress();
+      if (cacheUsed) {
+        // Cache kullanıldı, arka planda güncel veriyi çek (loading gösterme)
+        // setTimeout ile biraz geciktir ki cache önce görünsün
+        setTimeout(() => {
+          fetchProgressFromAPI(false); // useCache = false ile API'den çek
+        }, 100);
+        return;
+      }
+    }
+    
+    // Cache yoksa veya kullanılmıyorsa direkt API'den çek
+    await fetchProgressFromAPI(true);
+  };
+
+  const fetchProgressFromAPI = async (showLoading = true) => {
+    if (showLoading) {
+      setProgressLoading(true);
+    }
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -143,28 +187,74 @@ export default function DeckDetailScreen({ route, navigation }) {
       const calculatedProgress = total > 0 ? learned / total : 0;
       setProgress(calculatedProgress);
       setLearnedCardsCount(learned);
-      setDeckStats({ total, learned, learning, new: newCount });
+      const stats = { total, learned, learning, new: newCount };
+      setDeckStats(stats);
+      
+      // Progress'i cache'le (gelecek kullanımlar için)
+      try {
+        const storageKey = `deck_progress_${deck.id}_${user.id}`;
+        await AsyncStorage.setItem(storageKey, JSON.stringify({
+          progress: calculatedProgress,
+          learned,
+          stats,
+          timestamp: Date.now()
+        }));
+      } catch (cacheError) {
+        console.error('Error caching progress:', cacheError);
+      }
+      
       // Progress değeri geldiğinde loading'i hemen false yap (progress hemen gösterilsin)
-      setProgressLoading(false);
+      if (showLoading) {
+        setProgressLoading(false);
+      }
     } catch (e) {
       console.error('Progress fetch error:', e);
       setProgress(0);
-      setProgressLoading(false);
+      if (showLoading) {
+        setProgressLoading(false);
+      }
     }
   };
 
-  // Progress'i hemen yüklemeye başla (deck varsa)
+  // Favori durumunu route.params'dan güncelle (eğer deck.is_favorite varsa)
+  useEffect(() => {
+    if (deck?.is_favorite !== undefined) {
+      setIsFavorite(deck.is_favorite);
+    } else if (deck?.id && session?.user?.id) {
+      // Eğer route.params'da is_favorite yoksa, fallback olarak çek
+      const fetchFavoriteStatus = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('favorite_decks')
+            .select('id')
+            .eq('user_id', session.user.id)
+            .eq('deck_id', deck.id)
+            .single();
+          setIsFavorite(!!data);
+        } catch (e) {
+          setIsFavorite(false);
+        }
+      };
+      fetchFavoriteStatus();
+    }
+  }, [deck?.is_favorite, deck?.id, session?.user?.id]);
+
+  // Progress'i hemen yüklemeye başla (deck varsa) - Cache'den önce yükle
   useEffect(() => {
     if (deck?.id) {
-      fetchProgress();
+      // Cache'den hızlıca yükle, sonra API'den güncelle
+      fetchProgress(true); // useCache = true
     }
-  }, [deck?.id]); // deck.id varsa hemen başla
+  }, [deck?.id, session?.user?.id]); // deck.id ve session değiştiğinde tekrar yükle
 
   // Sayfa focus olduğunda progress ve deck verisini güncelle
+  // ÖNEMLİ: SwipeDeckScreen'den döndüğünde learned değeri değişmiş olabilir,
+  // bu yüzden cache kullanmadan direkt güncel veriyi çekiyoruz
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', async () => {
-      // Progress'i güncelle
-      fetchProgress();
+      // Progress'i güncelle (cache kullanma, direkt güncel veriyi çek)
+      // Bu sayede SwipeDeckScreen'den döndüğünde yeni learned değeri hemen görünür
+      fetchProgressFromAPI(true);
       
       // Chapter progress bilgisini güncelle
       if (currentUserId && chapters.length > 0) {
@@ -176,24 +266,42 @@ export default function DeckDetailScreen({ route, navigation }) {
         }
       }
       
-      // Deck verisini güncelle (kategori bilgisi dahil)
+      // Deck verisini ve favori durumunu paralel olarak güncelle
       try {
-        const { data, error } = await supabase
-          .from('decks')
-          .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)')
-          .eq('id', deck.id)
-          .single();
+        const { data: { user } } = await supabase.auth.getUser();
         
-        if (error) throw error;
+        // Deck verisini ve favori durumunu paralel çek
+        const [deckResult, favoriteResult] = await Promise.all([
+          supabase
+            .from('decks')
+            .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)')
+            .eq('id', deck.id)
+            .single(),
+          user ? supabase
+            .from('favorite_decks')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('deck_id', deck.id)
+            .single() : Promise.resolve({ data: null, error: null })
+        ]);
+        
+        if (deckResult.error) throw deckResult.error;
         
         // Deck verisini güncelle
-        if (data) {
+        if (deckResult.data) {
+          // Favori durumunu deck objesine ekle
+          deckResult.data.is_favorite = !!favoriteResult.data;
           // Route params'ı güncelle
-          route.params.deck = data;
+          route.params.deck = deckResult.data;
           // Category info'yu güncelle
-          setCategoryInfo(data.categories);
+          setCategoryInfo(deckResult.data.categories);
           // is_shared değerini güncelle
-          setIsShared(data.is_shared || false);
+          setIsShared(deckResult.data.is_shared || false);
+          // Favori durumunu güncelle
+          setIsFavorite(!!favoriteResult.data);
+        } else {
+          // Favori durumunu güncelle (deck verisi yoksa bile)
+          setIsFavorite(!!favoriteResult.data);
         }
       } catch (e) {
         console.error('Deck verisi güncellenemedi:', e);
@@ -367,21 +475,25 @@ export default function DeckDetailScreen({ route, navigation }) {
     }).start();
   }, [fabMenuOpen]);
 
-  // Favori kontrolü ve ekleme
+  // Favori kontrolü ve ekleme - Deck bilgileriyle birlikte çekiliyor
   const checkFavorite = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data, error } = await supabase
-      .from('favorite_decks')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('deck_id', deck.id)
-      .single();
-    setIsFavorite(!!data);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setIsFavorite(false);
+        return;
+      }
+      const { data, error } = await supabase
+        .from('favorite_decks')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('deck_id', deck.id)
+        .single();
+      setIsFavorite(!!data);
+    } catch (e) {
+      setIsFavorite(false);
+    }
   };
-
-  React.useEffect(() => {
-    checkFavorite();
-  }, [deck.id]);
 
   const handleAddFavorite = async () => {
     setFavLoading(true);

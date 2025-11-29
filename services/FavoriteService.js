@@ -11,7 +11,11 @@ export const getFavoriteDecks = async (userId) => {
   if (error) throw error;
   // data: [{ deck_id, decks: { ...deckData, profiles: { username, image_url } } }]
   // Eğer join yoksa, deck_id'leri döndürüp, DeckService ile topluca çekebilirsin
-  return data.map(item => item.decks);
+  // Her deck'e is_favorite: true ekle (çünkü bunlar zaten favori deck'ler)
+  return data.map(item => ({
+    ...item.decks,
+    is_favorite: true
+  }));
 };
 
 // Favori Kartları Getir (ilişkili card verisiyle birlikte)

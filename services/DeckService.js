@@ -38,6 +38,37 @@ export const getDecksByCategory = async (category) => {
     throw error;
   }
 
+  // Favori durumunu ekle (eğer kullanıcı varsa)
+  if (user && data && data.length > 0) {
+    try {
+      const deckIds = data.map(deck => deck.id);
+      const { data: favoriteData, error: favoriteError } = await supabase
+        .from('favorite_decks')
+        .select('deck_id')
+        .eq('user_id', user.id)
+        .in('deck_id', deckIds);
+      
+      if (!favoriteError && favoriteData) {
+        const favoriteDeckIds = new Set(favoriteData.map(f => f.deck_id));
+        // Her deck'e is_favorite property'si ekle
+        data.forEach(deck => {
+          deck.is_favorite = favoriteDeckIds.has(deck.id);
+        });
+      }
+    } catch (e) {
+      console.error('Error fetching favorite status:', e);
+      // Hata durumunda tüm deck'leri favori değil olarak işaretle
+      data.forEach(deck => {
+        deck.is_favorite = false;
+      });
+    }
+  } else if (data) {
+    // Kullanıcı yoksa tüm deck'leri favori değil olarak işaretle
+    data.forEach(deck => {
+      deck.is_favorite = false;
+    });
+  }
+
   return data;
 };
 
