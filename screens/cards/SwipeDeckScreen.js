@@ -6,6 +6,7 @@ import { typography } from '../../theme/typography';
 import { getCardsForLearning, ensureUserCardProgress } from '../../services/CardService';
 import { supabase } from '../../lib/supabase';
 import { Ionicons, MaterialIcons, MaterialCommunityIcons, Entypo } from '@expo/vector-icons';
+import { Iconify } from 'react-native-iconify';
 import { LinearGradient } from 'expo-linear-gradient';
 import logoasil from '../../assets/logoasil.png';
 import { useTranslation } from 'react-i18next';
@@ -44,6 +45,30 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const { t } = useTranslation();
   const [favoriteIds, setFavoriteIds] = useState(new Set());
   const [categorySortOrder, setCategorySortOrder] = useState(null);
+
+  // Header'a favori butonunu ekle
+  useEffect(() => {
+    const currentCard = cards[currentIndex];
+    const isCurrentCardFavorite = currentCard ? favoriteIds.has(currentCard.card_id) : false;
+    
+    navigation.setOptions({
+      headerRight: () => (
+        currentCard ? (
+          <TouchableOpacity
+            onPress={() => toggleFavorite(currentCard.card_id)}
+            style={{ marginRight: 16 }}
+            hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+          >
+            <Iconify
+              icon={isCurrentCardFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
+              size={26}
+              color={isCurrentCardFavorite ? colors.buttonColor : colors.text}
+            />
+          </TouchableOpacity>
+        ) : null
+      ),
+    });
+  }, [navigation, cards, currentIndex, favoriteIds, colors.buttonColor, colors.text, toggleFavorite]);
 
   // Kategoriye göre renkleri al (Supabase sort_order kullanarak)
   const getCategoryColors = (sortOrder) => {
@@ -349,7 +374,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     };
   }, []);
 
-  const FlipCard = ({ card, cardIndex, currentIndex, isFavorite, onToggleFavorite }) => {
+  const FlipCard = ({ card, cardIndex, currentIndex }) => {
     // Modern Content Divider bileşeni
     const ModernDivider = ({ type = 'default' }) => {
       const dividerStyles = {
@@ -788,18 +813,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
               end={{ x: 1, y: 1 }}
               style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
             />
-            <Pressable
-              onPressIn={(e) => e.stopPropagation()}
-              onPress={(e) => { e.stopPropagation(); onToggleFavorite && onToggleFavorite(); }}
-              style={styles.favoriteButton}
-              hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
-            >
-              <Ionicons
-                name={isFavorite ? 'heart' : 'heart-outline'}
-                size={26}
-                color={isFavorite ? colors.buttonColor : colors.text}
-              />
-            </Pressable>
             <View style={[styles.imageContainer, { backgroundColor: 'transparent', marginTop: 32 }]}> 
               {card.cards.image && (
                 <Image
@@ -819,18 +832,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
               end={{ x: 1, y: 1 }}
               style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
             />
-             <Pressable
-               onPressIn={(e) => e.stopPropagation()}
-               onPress={(e) => { e.stopPropagation(); onToggleFavorite && onToggleFavorite(); }}
-               style={styles.favoriteButton}
-               hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
-             >
-               <Ionicons
-                 name={isFavorite ? 'heart' : 'heart-outline'}
-                 size={26}
-                 color={isFavorite ? colors.buttonColor : colors.text}
-               />
-             </Pressable>
              <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center', paddingVertical: 18, marginTop: 32 }}>
                {/* Answer */}
                <Pill
@@ -933,12 +934,60 @@ export default function SwipeDeckScreen({ route, navigation }) {
               cardIndex={i}
               currentIndex={currentIndex}
               key={card.card_id}
-              isFavorite={favoriteIds.has(card.card_id)}
-              onToggleFavorite={() => toggleFavorite(card.card_id)}
             />
           )}
           onSwipedLeft={(i) => { handleSwipe(i, 'left'); setCurrentIndex(i + 1); }}
           onSwipedRight={(i) => { handleSwipe(i, 'right'); setCurrentIndex(i + 1); }}
+          overlayLabels={{
+            left: {
+              element: (
+                <View style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  borderWidth: 2,
+                  borderColor: '#F98A21',
+                  borderRadius: 26,
+                }} />
+              ),
+              style: {
+                wrapper: {
+                  flexDirection: 'column',
+                  alignItems: 'flex-end',
+                  justifyContent: 'flex-start',
+                  marginTop: 0,
+                  marginLeft: 0,
+                }
+              }
+            },
+            right: {
+              element: (
+                <View style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  borderWidth: 2,
+                  borderColor: '#3e8e41',
+                  borderRadius: 26,
+                }} />
+              ),
+              style: {
+                wrapper: {
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  justifyContent: 'flex-start',
+                  marginTop: 0,
+                  marginLeft: 0,
+                }
+              }
+            }
+          }}
+          overlayOpacityHorizontalThreshold={60}
+          animateOverlayLabelsOpacity
           onSwipedTop={(i) => {
             // Yukarı swipe yapıldığında kartı geri getir
             if (swiperRef.current) {
@@ -1018,8 +1067,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -10 },
     shadowOpacity: 5,
     shadowRadius: 4,
-    borderWidth: 2,
-    borderColor: '#e5e5e5',
   },
   imageContainer: {
     width: '100%',
@@ -1173,17 +1220,6 @@ const styles = StyleSheet.create({
     zIndex: 30,
     borderRadius: 24,
     backgroundColor: 'transparent',
-  },
-  favoriteButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent'
   },
   loadingContainer: {
     flex: 1,
