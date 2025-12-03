@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl, Image, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
 import MaskedView from '@react-native-masked-view/masked-view';
@@ -55,6 +55,8 @@ export default function DeckList({
   ListHeaderComponent,
   refreshing = false,
   onRefresh,
+  showPopularityBadge = false,
+  loading = false,
 }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -187,7 +189,16 @@ export default function DeckList({
                 maxChars={15}
               />
             </View>
-            <View style={{ position: 'absolute', bottom: 12, left: 12 }}>
+            <View style={{ position: 'absolute', bottom: 12, left: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              {/* Popularity Badge */}
+              {showPopularityBadge && deck.popularity_score && deck.popularity_score > 0 && (
+                <View style={[styles.popularityBadge, { backgroundColor: 'rgba(255, 255, 255, 0.3)' }]}>
+                  <Iconify icon="mdi:fire" size={14} color="#fff" style={{ marginRight: 3 }} />
+                  <Text style={[styles.popularityBadgeText, { color: '#fff', fontSize: 13 }]}>
+                    {Math.round(deck.popularity_score)}
+                  </Text>
+                </View>
+              )}
               <View style={styles.deckCountBadge}>
                 <Iconify icon="ri:stack-fill" size={18} color="#fff" style={{ marginRight: 3 }} />
                 <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: 16 }]}>{deck.card_count || 0}</Text>
@@ -271,7 +282,16 @@ export default function DeckList({
               maxChars={16}
             />
           </View>
-          <View style={{ position: 'absolute', bottom: 10, right: 12 }}>
+          <View style={{ position: 'absolute', bottom: 10, right: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            {/* Popularity Badge */}
+            {showPopularityBadge && row.item.popularity_score && row.item.popularity_score > 0 && (
+              <View style={[styles.popularityBadge, { backgroundColor: 'rgba(255, 255, 255, 0.3)' }]}>
+                <Iconify icon="mdi:fire" size={14} color="#fff" style={{ marginRight: 3 }} />
+                <Text style={[styles.popularityBadgeText, { color: '#fff', fontSize: 13 }]}>
+                  {Math.round(row.item.popularity_score)}
+                </Text>
+              </View>
+            )}
             <View style={styles.deckCountBadge}>
               <Iconify icon="ri:stack-fill" size={18} color="#fff" style={{ marginRight: 4 }} />
               <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: 16 }]}>{row.item.card_count || 0}</Text>
@@ -326,7 +346,15 @@ export default function DeckList({
       contentContainerStyle={{ paddingBottom: '10%', }}
       ListHeaderComponent={ListHeaderComponent}
       renderItem={({ item: row }) => (row.type === 'double' ? renderDoubleRow(row) : renderSingleRow(row))}
-      ListEmptyComponent={<Text style={[styles.emptyText, typography.styles.caption]}>{t('library.noDecks', 'Henüz deste bulunmuyor')}</Text>}
+      ListEmptyComponent={
+        loading ? (
+          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={colors.buttonColor} />
+          </View>
+        ) : (
+          <Text style={[styles.emptyText, typography.styles.caption]}>{t('library.noDecks', 'Henüz deste bulunmuyor')}</Text>
+        )
+      }
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl
@@ -422,5 +450,18 @@ const styles = StyleSheet.create({
     color: '#BDBDBD',
     fontWeight: '700',
     width: '95%',
+  },
+  popularityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  popularityBadgeText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 13,
   },
 });

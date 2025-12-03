@@ -51,6 +51,7 @@ export default function DeckCard({
   onPress,
   onToggleFavorite,
   isFavorite = false,
+  showPopularityBadge = false,
 }) {
   // Kategoriye göre renkleri al (Supabase sort_order kullanarak)
   const getCategoryColors = (sortOrder) => {
@@ -146,6 +147,15 @@ export default function DeckCard({
             </View>
           </View>
           <View style={styles.deckStatsModern}>
+            {/* Popularity Badge */}
+            {showPopularityBadge && deck.popularity_score && deck.popularity_score > 0 && (
+              <View style={[styles.popularityBadge, { backgroundColor: 'rgba(255, 255, 255, 0.25)' }]}>
+                <Iconify icon="mdi:fire" size={12} color="#fff" style={{ marginRight: 3 }} />
+                <Text style={[styles.popularityBadgeText, { color: '#fff' }]}>
+                  {Math.round(deck.popularity_score)}
+                </Text>
+              </View>
+            )}
             <View style={styles.deckCountBadge}>
               <Iconify icon="ri:stack-fill" size={15} color="#fff" style={{ marginRight: 3 }} />
               <Text style={[typography.styles.body, styles.deckCountBadgeText]}>{deck.card_count || 0}</Text>
@@ -221,6 +231,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 15,
+  },
+  popularityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  popularityBadgeText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 12,
   },
   deckProfileRow: {
     position: 'absolute',

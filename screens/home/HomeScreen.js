@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Dimensions, ActivityIndicator, Image, Modal, Platform, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
-import { getDecksByCategory } from '../../services/DeckService';
+import { getDecksByCategory, getPopularDecks } from '../../services/DeckService';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -166,6 +166,11 @@ const DECK_CATEGORIES = {
             <TouchableOpacity 
               style={styles.exploreButton}
               activeOpacity={0.8}
+              onPress={() => {
+                navigation.navigate('CategoryDeckList', {
+                  title: t('home.popularDecks', 'Popüler Desteler'),
+                });
+              }}
             >
               <LinearGradient
                 colors={['#F98A21', '#FF6B35']}

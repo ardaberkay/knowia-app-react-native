@@ -116,7 +116,16 @@ module.exports = function (api) {
             'streamline-freehand:view-eye-off',
             'lucide:edit',
             'basil:eye-closed-outline',
-            'fluent:arrow-shuffle-24-filled'
+            'fluent:arrow-shuffle-24-filled',
+            'solar:compass-bold-duotone',
+            'solar:compass-outline',
+            'solar:star-bold-duotone',
+            'solar:infinity-bold',
+            'solar:sun-bold',
+            'solar:calendar-bold',
+            'solar:calendar-mark-bold',
+            'solar:calendar-minimalistic-bold',
+            'solar:trending-up-bold'
           ],
         },
       ],

@@ -1338,7 +1338,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             overflow: 'hidden',
           }]}
           activeOpacity={0.8}
-          onPress={() => {
+          onPress={async () => {
             if (!selectedChapter) {
               Alert.alert(
                 t('deckDetail.selectChapter', 'Bölüm Seç'),
@@ -1346,6 +1346,24 @@ export default function DeckDetailScreen({ route, navigation }) {
               );
               return;
             }
+            
+            // Deck başlatma kaydı oluştur (decks_stats tablosuna)
+            try {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (user?.id) {
+                await supabase
+                  .from('decks_stats')
+                  .insert({
+                    deck_id: deck.id,
+                    user_id: user.id,
+                    started_at: new Date().toISOString()
+                  });
+              }
+            } catch (error) {
+              // Hata olsa bile devam et (kritik değil)
+              console.log('Deck stats log error:', error);
+            }
+            
             // Aksiyon seçiliyse chapter parametresi gönderme (tüm kartlar gösterilecek)
             const chapterParam = selectedChapter.id === 'action' ? undefined : selectedChapter;
             navigation.navigate('SwipeDeck', { deck, chapter: chapterParam });
