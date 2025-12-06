@@ -57,6 +57,7 @@ export default function DeckList({
   onRefresh,
   showPopularityBadge = false,
   loading = false,
+  contentPaddingTop = 0,
 }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -189,16 +190,15 @@ export default function DeckList({
                 maxChars={15}
               />
             </View>
-            <View style={{ position: 'absolute', bottom: 12, left: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              {/* Popularity Badge */}
-              {showPopularityBadge && deck.popularity_score && deck.popularity_score > 0 && (
-                <View style={[styles.popularityBadge, { backgroundColor: 'rgba(255, 255, 255, 0.3)' }]}>
+            <View style={{ position: 'absolute', bottom: 12, left: 12, flexDirection: 'row', alignItems: 'center' }}>
+              {showPopularityBadge && deck.popularity_score && deck.popularity_score > 0 ? (
+                <View style={[styles.popularityBadge, { backgroundColor: 'rgba(255, 255, 255, 0.3)', marginRight: 6 }]}>
                   <Iconify icon="mdi:fire" size={14} color="#fff" style={{ marginRight: 3 }} />
                   <Text style={[styles.popularityBadgeText, { color: '#fff', fontSize: 13 }]}>
                     {Math.round(deck.popularity_score)}
                   </Text>
                 </View>
-              )}
+              ) : null}
               <View style={styles.deckCountBadge}>
                 <Iconify icon="ri:stack-fill" size={18} color="#fff" style={{ marginRight: 3 }} />
                 <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: 16 }]}>{deck.card_count || 0}</Text>
@@ -282,16 +282,15 @@ export default function DeckList({
               maxChars={16}
             />
           </View>
-          <View style={{ position: 'absolute', bottom: 10, right: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            {/* Popularity Badge */}
-            {showPopularityBadge && row.item.popularity_score && row.item.popularity_score > 0 && (
-              <View style={[styles.popularityBadge, { backgroundColor: 'rgba(255, 255, 255, 0.3)' }]}>
+          <View style={{ position: 'absolute', bottom: 10, right: 12, flexDirection: 'row', alignItems: 'center' }}>
+            {showPopularityBadge && row.item.popularity_score && row.item.popularity_score > 0 ? (
+              <View style={[styles.popularityBadge, { backgroundColor: 'rgba(255, 255, 255, 0.3)', marginRight: 6 }]}>
                 <Iconify icon="mdi:fire" size={14} color="#fff" style={{ marginRight: 3 }} />
                 <Text style={[styles.popularityBadgeText, { color: '#fff', fontSize: 13 }]}>
                   {Math.round(row.item.popularity_score)}
                 </Text>
               </View>
-            )}
+            ) : null}
             <View style={styles.deckCountBadge}>
               <Iconify icon="ri:stack-fill" size={18} color="#fff" style={{ marginRight: 4 }} />
               <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: 16 }]}>{row.item.card_count || 0}</Text>
@@ -343,7 +342,7 @@ export default function DeckList({
     <FlatList
       data={rows}
       keyExtractor={(_, idx) => `row_${idx}`}
-      contentContainerStyle={{ paddingBottom: '10%', }}
+      contentContainerStyle={{ paddingBottom: '10%', paddingTop: contentPaddingTop }}
       ListHeaderComponent={ListHeaderComponent}
       renderItem={({ item: row }) => (row.type === 'double' ? renderDoubleRow(row) : renderSingleRow(row))}
       ListEmptyComponent={
@@ -352,7 +351,9 @@ export default function DeckList({
             <ActivityIndicator size="large" color={colors.buttonColor} />
           </View>
         ) : (
-          <Text style={[styles.emptyText, typography.styles.caption]}>{t('library.noDecks', 'Henüz deste bulunmuyor')}</Text>
+          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+            <Text style={[styles.emptyText, typography.styles.caption]}>{t('library.noDecks', 'Henüz deste bulunmuyor')}</Text>
+          </View>
         )
       }
       showsVerticalScrollIndicator={false}

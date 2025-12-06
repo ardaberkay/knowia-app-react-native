@@ -7,6 +7,7 @@ import CreateScreen from '../screens/create/CreateDeckScreen';
 import LibraryScreen from '../screens/library/LibraryScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import DeckDetailScreen from '../screens/decks/DeckDetailScreen';
+import DiscoverScreen from '../screens/home/DiscoverScreen';
 import CategoryDeckListScreen from '../screens/home/CategoryDeckListScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
@@ -134,6 +135,15 @@ export default function AppNavigator() {
         <>
           <Stack.Screen name="MainTabs" component={MainTabs} />
           <Stack.Screen name="DeckDetail" component={DeckDetailScreen} options={{ headerShown: true, title: t('tabs.deckInfo', 'Deste Bilgisi'), headerTitleAlign: 'center' }} />
+          <Stack.Screen
+            name="Discover"
+            component={DiscoverScreen}
+            options={{
+              headerShown: true,
+              title: t('discover.title', 'Keşfet'),
+              headerTitleAlign: 'center',
+            }}
+          />
           <Stack.Screen
             name="CategoryDeckList"
             component={CategoryDeckListScreen}

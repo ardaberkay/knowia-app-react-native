@@ -125,7 +125,6 @@ module.exports = function (api) {
             'solar:calendar-bold',
             'solar:calendar-mark-bold',
             'solar:calendar-minimalistic-bold',
-            'solar:trending-up-bold'
           ],
         },
       ],

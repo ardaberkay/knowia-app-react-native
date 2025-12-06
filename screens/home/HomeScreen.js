@@ -167,9 +167,7 @@ const DECK_CATEGORIES = {
               style={styles.exploreButton}
               activeOpacity={0.8}
               onPress={() => {
-                navigation.navigate('CategoryDeckList', {
-                  title: t('home.popularDecks', 'Popüler Desteler'),
-                });
+                navigation.navigate('Discover');
               }}
             >
               <LinearGradient
