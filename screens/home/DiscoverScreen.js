@@ -147,6 +147,20 @@ export default function DiscoverScreen() {
     }
   }, [timeFilter, activeTab]);
 
+  // Update scroll position when activeTab changes (only if not user scrolling)
+  useEffect(() => {
+    if (!isUserScrolling.current && heroScrollRef.current) {
+      const tabKeys = ['trend', 'favorites', 'starts', 'unique', 'new'];
+      const newIndex = tabKeys.indexOf(activeTab);
+      if (newIndex >= 0) {
+        heroScrollRef.current.scrollTo({
+          x: newIndex * HERO_CARD_WIDTH,
+          animated: true,
+        });
+      }
+    }
+  }, [activeTab]);
+
   const loadFavoriteDecks = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -327,6 +341,7 @@ export default function DiscoverScreen() {
     if (currentIndex === pageIndex) return;
     
     // Update state immediately (no animation)
+    // useEffect will handle the scroll
     setActiveTab(tabs[pageIndex] || 'trend');
   }, [activeTab]);
 
@@ -339,12 +354,15 @@ export default function DiscoverScreen() {
     const pageIndex = Math.round(offsetX / HERO_CARD_WIDTH);
     const tabKeys = ['trend', 'favorites', 'starts', 'unique', 'new'];
     
-    if (pageIndex >= 0 && pageIndex < tabKeys.length && tabKeys[pageIndex] !== activeTab) {
-      isUserScrolling.current = true;
-      setActiveTab(tabKeys[pageIndex]);
-      setTimeout(() => {
-        isUserScrolling.current = false;
-      }, 300);
+    if (pageIndex >= 0 && pageIndex < tabKeys.length) {
+      const newTab = tabKeys[pageIndex];
+      if (newTab !== activeTab) {
+        isUserScrolling.current = true;
+        setActiveTab(newTab);
+        setTimeout(() => {
+          isUserScrolling.current = false;
+        }, 300);
+      }
     }
   }, [activeTab]);
 
@@ -373,24 +391,24 @@ export default function DiscoverScreen() {
       accentColor: '#ff6b9d',
     },
     starts: {
-      title: t('discover.mostStarted', 'En Çok Başlatılan'),
+      title: t('discover.mostStarted', 'Popüler'),
       subtitle: t('discover.mostStartedSubtitle', 'En çok başlatılan desteler'),
       icon: 'mdi:fire',
-      gradient: ['#fa709a', '#fee140'],
+      gradient: ['#fee140', '#fa709a'],
       accentColor: '#ff6b35',
     },
     unique: {
-      title: t('discover.mostUnique', 'Geniş Kitle'),
+      title: t('discover.mostUnique', 'Yaygın'),
       subtitle: t('discover.mostUniqueSubtitle', 'En geniş kullanıcı kitlesine sahip desteler'),
       icon: 'fluent:people-community-20-filled',
-      gradient: ['#4facfe', '#00f2fe'],
+      gradient: ['#00f2fe', '#4facfe'],
       accentColor: '#6f8ead',
     },
     new: {
       title: t('discover.newDecks', 'Yeni'),
       subtitle: t('discover.newSubtitle', 'Yeni eklenen desteler'),
       icon: 'mdi:cards',
-      gradient: ['#43e97b', '#38f9d7'],
+      gradient: ['#38f9d7', '#43e97b'],
       accentColor: '#6f8ead',
     },
   };
@@ -408,6 +426,8 @@ export default function DiscoverScreen() {
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
+            onScroll={handleHeroScroll}
+            scrollEventThrottle={16}
             onMomentumScrollEnd={handleHeroScroll}
             contentContainerStyle={styles.heroCarouselContent}
             decelerationRate="fast"
@@ -428,17 +448,13 @@ export default function DiscoverScreen() {
                     <View style={styles.modernHeroContent}>
                       <View style={styles.modernHeroIconContainer}>
                         <View style={[styles.modernIconCircle, { backgroundColor: config.accentColor + '20' }]}>
-                          <Iconify icon={config.icon} size={28} color={config.accentColor} />
+                          <Iconify icon={config.icon} size={28} color="#fff" />
                         </View>
                       </View>
                       <View style={styles.modernHeroTextContainer}>
                         <Text style={styles.modernHeroTitle}>{config.title}</Text>
                         <Text style={styles.modernHeroSubtitle}>{config.subtitle}</Text>
                       </View>
-                    </View>
-                    {/* Swipe indicator */}
-                    <View style={styles.swipeIndicator}>
-                      <Iconify icon="solar:calendar-minimalistic-bold" size={20} color="rgba(255,255,255,0.5)" />
                     </View>
                   </LinearGradient>
                 </View>
@@ -613,8 +629,8 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 12,
     zIndex: 10,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 36,
+    borderBottomRightRadius: 36,
   },
   listContainer: {
     flex: 1,
@@ -696,12 +712,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     transition: 'width 0.3s ease',
   },
-  swipeIndicator: {
-    position: 'absolute',
-    bottom: 12,
-    right: 16,
-    opacity: 0.7,
-  },
   modernHeroCard: {
     marginBottom: 8,
     borderRadius: 24,
@@ -715,10 +725,12 @@ const styles = StyleSheet.create({
   modernHeroGradient: {
     padding: 24,
     minHeight: 140,
+    justifyContent: 'center',
   },
   modernHeroContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   modernHeroIconContainer: {
     marginRight: 16,
@@ -734,6 +746,7 @@ const styles = StyleSheet.create({
   },
   modernHeroTextContainer: {
     flex: 1,
+    justifyContent: 'center',
   },
   modernHeroTitle: {
     ...typography.styles.h2,

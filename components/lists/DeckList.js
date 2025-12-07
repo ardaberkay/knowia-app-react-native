@@ -190,11 +190,11 @@ export default function DeckList({
                 maxChars={15}
               />
             </View>
-            <View style={{ position: 'absolute', bottom: 12, left: 12, flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ position: 'absolute', bottom: 12, left: 12, flexDirection: 'column', alignItems: 'flex-start' }}>
               {showPopularityBadge && deck.popularity_score && deck.popularity_score > 0 ? (
-                <View style={[styles.popularityBadge, { backgroundColor: 'rgba(255, 255, 255, 0.3)', marginRight: 6 }]}>
-                  <Iconify icon="mdi:fire" size={14} color="#fff" style={{ marginRight: 3 }} />
-                  <Text style={[styles.popularityBadgeText, { color: '#fff', fontSize: 13 }]}>
+                <View style={[styles.popularityBadge, { marginBottom: 6 }]}>
+                  <Iconify icon="mdi:fire" size={14} color="#fff" style={{ marginRight: 4 }} />
+                  <Text style={styles.popularityBadgeText}>
                     {Math.round(deck.popularity_score)}
                   </Text>
                 </View>
@@ -282,15 +282,19 @@ export default function DeckList({
               maxChars={16}
             />
           </View>
-          <View style={{ position: 'absolute', bottom: 10, right: 12, flexDirection: 'row', alignItems: 'center' }}>
-            {showPopularityBadge && row.item.popularity_score && row.item.popularity_score > 0 ? (
-              <View style={[styles.popularityBadge, { backgroundColor: 'rgba(255, 255, 255, 0.3)', marginRight: 6 }]}>
-                <Iconify icon="mdi:fire" size={14} color="#fff" style={{ marginRight: 3 }} />
-                <Text style={[styles.popularityBadgeText, { color: '#fff', fontSize: 13 }]}>
+          {/* Trend puanı - sol üst */}
+          {showPopularityBadge && row.item.popularity_score && row.item.popularity_score > 0 ? (
+            <View style={{ position: 'absolute', top: 8, left: 12, zIndex: 10 }}>
+              <View style={styles.popularityBadge}>
+                <Iconify icon="mdi:fire" size={14} color="#fff" style={{ marginRight: 4 }} />
+                <Text style={styles.popularityBadgeText}>
                   {Math.round(row.item.popularity_score)}
                 </Text>
               </View>
-            ) : null}
+            </View>
+          ) : null}
+          {/* Kart sayısı - sağ alt */}
+          <View style={{ position: 'absolute', bottom: 10, right: 12 }}>
             <View style={styles.deckCountBadge}>
               <Iconify icon="ri:stack-fill" size={18} color="#fff" style={{ marginRight: 4 }} />
               <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: 16 }]}>{row.item.card_count || 0}</Text>
@@ -455,14 +459,17 @@ const styles = StyleSheet.create({
   popularityBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 99,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+    backdropFilter: 'blur(10px)',
   },
   popularityBadgeText: {
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 13,
+    fontWeight: '700',
+    fontSize: 14,
   },
 });

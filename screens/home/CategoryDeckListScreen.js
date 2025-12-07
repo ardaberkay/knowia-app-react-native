@@ -9,16 +9,7 @@ import { supabase } from '../../lib/supabase';
 import { getDecksByCategory } from '../../services/DeckService';
 import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
-
-// Kategoriye göre ikon seçen yardımcı fonksiyon
-function getCategoryIcon(category) {
-  switch (category) {
-    case 'inProgressDecks': return 'dashicons:welcome-learn-more';
-    case 'defaultDecks': return 'mdi:resource-description-framework';
-    case 'communityDecks': return 'fluent:people-community-20-filled';
-    default: return 'solar:user-bold';
-  }
-}
+import CategoryHeroHeader, { getCategoryConfig } from '../../components/ui/CategoryHeroHeader';
 
 export default function CategoryDeckListScreen({ route }) {
   const { category, title, decks: initialDecks } = route.params || {};
@@ -180,38 +171,22 @@ export default function CategoryDeckListScreen({ route }) {
   };
 
   const ListHeaderComponent = useCallback(() => {
-    const categoryIcon = getCategoryIcon(category);
-    
     return (
       <View style={styles.headerContainer}>
-        {/* Category Header */}
-        <View style={styles.categoryHeader}>
-          <View style={styles.categoryHeaderContent}>
-            <View style={[styles.categoryIconContainer, { backgroundColor: colors.buttonColor + '20' }]}>
-              <Iconify icon={categoryIcon} size={24} color={colors.buttonColor} />
-            </View>
-            <View style={styles.categoryTextContainer}>
-              <Text style={[styles.categoryTitle, { color: colors.text }]}>{title || t('home.allDecks', 'Tüm Desteler')}</Text>
-              <Text style={[styles.categorySubtitle, { color: colors.subtext }]}>
-                {filteredDecks.length} {t('home.deck', 'deste')}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Search and Filter Row */}
-        <View style={styles.searchRow}>
-          <SearchBar
-            value={search}
-            onChangeText={setSearch}
-            placeholder={t('common.searchDeckPlaceholder', 'Deste ara...')}
-            style={styles.searchBar}
-          />
-          <SortMenu value={sort} onChange={handleSortChange} colors={colors} t={t} />
-        </View>
+        {/* Category Hero Header with Search and Filter */}
+        <CategoryHeroHeader
+          category={category}
+          title={title || t('home.allDecks', 'Tüm Desteler')}
+          colors={colors}
+          t={t}
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder={t('common.searchDeckPlaceholder', 'Deste ara...')}
+          sortMenuComponent={<SortMenu value={sort} onChange={handleSortChange} colors={colors} t={t} />}
+        />
       </View>
     );
-  }, [category, title, filteredDecks.length, search, sort, colors, t]);
+  }, [category, title, search, sort, colors, t]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -262,11 +237,11 @@ const SortMenu = ({ value, onChange, colors, t }) => {
     <>
       <TouchableOpacity
         ref={buttonRef}
-        style={[styles.filterIconButton, { borderColor: colors.border }]}
+        style={[styles.filterIconButton, { borderColor: 'rgba(255, 255, 255, 0.3)' }]}
         onPress={openMenu}
         activeOpacity={0.8}
       >
-        <Iconify icon="mage:filter" size={24} color={colors.subtext} />
+        <Iconify icon="mage:filter" size={24} color="#fff" />
       </TouchableOpacity>
 
       <Modal
@@ -331,46 +306,6 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingHorizontal: 0,
     paddingBottom: 20,
-  },
-  categoryHeader: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  categoryHeaderContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  categoryIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  categoryTextContainer: {
-    flex: 1,
-  },
-  categoryTitle: {
-    ...typography.styles.h2,
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  categorySubtitle: {
-    ...typography.styles.caption,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    marginTop: 8,
-  },
-  searchBar: {
-    flex: 1,
   },
   filterIconButton: {
     flexDirection: 'row',

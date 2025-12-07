@@ -4,18 +4,25 @@ import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 
-export default function SearchBar({ value, onChangeText, placeholder, style }) {
+export default function SearchBar({ value, onChangeText, placeholder, style, variant = 'default' }) {
   const { colors } = useTheme();
+  
+  const isLight = variant === 'light';
+  const borderColor = isLight ? 'rgba(255, 255, 255, 0.3)' : '#4A4A4A';
+  const iconColor = isLight ? '#fff' : '#B0B0B0';
+  const textColor = isLight ? '#fff' : colors.text;
+  const placeholderColor = isLight ? 'rgba(255, 255, 255, 0.7)' : '#A0A0A0';
+  const backgroundColor = isLight ? 'rgba(255, 255, 255, 0.15)' : 'transparent';
 
   return (
-    <View style={[styles.wrapper, { borderColor: '#4A4A4A'}, style]}>
-      <Iconify icon="iconamoon:search" size={20} color="#B0B0B0" style={styles.icon} />
+    <View style={[styles.wrapper, { borderColor, backgroundColor }, style]}>
+      <Iconify icon="iconamoon:search" size={20} color={iconColor} style={styles.icon} />
       <TextInput
-        style={[styles.input, typography.styles.body, { color: colors.text }]}
+        style={[styles.input, typography.styles.body, { color: textColor }]}
         placeholder={placeholder}
         value={value}
         onChangeText={onChangeText}
-        placeholderTextColor={'#A0A0A0'}
+        placeholderTextColor={placeholderColor}
       />
     </View>
   );

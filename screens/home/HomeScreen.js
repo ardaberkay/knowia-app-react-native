@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Dimensions, ActivityIndicator, Image, Modal, Platform, RefreshControl } from 'react-native';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Dimensions, ActivityIndicator, Image, Modal, Platform, RefreshControl, Pressable, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDecksByCategory, getPopularDecks } from '../../services/DeckService';
@@ -17,7 +17,6 @@ import { getFavoriteDecks } from '../../services/FavoriteService';
 import DeckSkeleton from '../../components/skeleton/DeckSkeleton';
 import { useTranslation } from 'react-i18next';
 import DeckCard from '../../components/ui/DeckUi';
-import GlassBlurCard from '../../components/ui/GlassBlurCard';
 
 
 
@@ -30,6 +29,41 @@ function getCategoryIcon(category) {
     default: return 'solar:user-bold';
   }
 }
+
+// Scale animasyonlu kart bileşeni
+const AnimatedPressable = ({ onPress, children, style }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = useCallback(() => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.97,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4,
+    }).start();
+  }, [scaleAnim]);
+
+  const handlePressOut = useCallback(() => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 8,
+    }).start();
+  }, [scaleAnim]);
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+    >
+      <Animated.View style={[style, { transform: [{ scale: scaleAnim }] }]}>
+        {children}
+      </Animated.View>
+    </Pressable>
+  );
+};
 
 export default function HomeScreen() {
   const { logout } = useAuth();
@@ -151,7 +185,7 @@ const DECK_CATEGORIES = {
 
   const renderPopularDecksCard = () => {
     return (
-      <GlassBlurCard style={styles.popularDecksCard}>
+      <View style={[styles.popularDecksCard, { backgroundColor: isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)' }]}>
         <View style={styles.popularDecksContent}>
           <View style={styles.popularDecksTextContainer}>
             <View style={styles.popularDecksTitleContainer}>
@@ -192,7 +226,7 @@ const DECK_CATEGORIES = {
             />
           </View>
         </View>
-      </GlassBlurCard>
+      </View>
     );
   };
 
@@ -211,69 +245,69 @@ const DECK_CATEGORIES = {
     const showEndIcon = categoryDecks.length > 10;
 
     return (
-      <GlassBlurCard style={styles.glassCard}>
-        <View style={styles.sectionHeaderGradient}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Iconify icon={getCategoryIcon(category)} size={26} color="#F98A21" style={{ marginRight: 8, marginTop: 1 }} />
-            <Text style={[typography.styles.h2, { color: colors.text }]}>{DECK_CATEGORIES[category]}</Text>
-          </View>
-          <TouchableOpacity style={[styles.seeAllButton, { borderColor: colors.secondary }]} onPress={handleSeeAll} activeOpacity={0.7}>
-            <View style={styles.seeAllContent}>
-              <Text style={[styles.seeAllText, typography.styles.button, { color: colors.secondary }]}>{t('home.all', 'Tümü')}</Text>
-              <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={15} color="#007AFF" style={{ marginLeft: 2, marginTop: 1 }} />
+      <AnimatedPressable 
+        onPress={handleSeeAll}
+        style={[styles.glassCard, { backgroundColor: isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)' }]}
+      >
+          <View style={styles.sectionHeaderGradient}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Iconify icon={getCategoryIcon(category)} size={26} color="#F98A21" style={{ marginRight: 8, marginTop: 1 }} />
+              <Text style={[typography.styles.h2, { color: colors.text }]}>{DECK_CATEGORIES[category]}</Text>
             </View>
-          </TouchableOpacity>
-        </View>
-        {loading ? (
-          <ScrollView 
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.decksContainer}
-            decelerationRate="fast"
-            snapToInterval={130}
-            snapToAlignment="start"
-          >
-            {[...Array(4)].map((_, i) => (
-              <DeckSkeleton key={i} />
-            ))}
-          </ScrollView>
-        ) : limitedDecks.length === 0 ? (
-          <Text style={[styles.emptyText, typography.styles.caption]}>{t('home.noDecks', 'Henüz deste bulunmuyor')}</Text>
-        ) : (
-          <ScrollView 
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.decksContainer}
-            decelerationRate="fast"
-            snapToInterval={130}
-            snapToAlignment="start"
-          >
-            {limitedDecks.map((deck) => (
-              <DeckCard
-                key={`deck-${deck.id}`}
-                deck={deck}
-                colors={colors}
-                typography={typography}
-                onPress={handleDeckPress}
-                onToggleFavorite={async (deckId) => {
-                  const isFavorite = favoriteDecks.some(fav => fav.id === deckId);
-                  if (isFavorite) {
-                    await handleRemoveFavoriteDeck(deckId);
-                  } else {
-                    await handleAddFavoriteDeck(deckId);
-                  }
-                }}
-                isFavorite={favoriteDecks.some(fav => fav.id === deck.id)}
-              />
-            ))}
-            {showEndIcon && (
-              <View style={styles.endIconContainer}>
-                <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={15} color="#F98A21" style={{ marginLeft: 2, marginTop: 1 }} />
-              </View>
-            )}
-          </ScrollView>
-        )}
-      </GlassBlurCard>
+            <View>
+              <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={20} color="#007AFF" />
+            </View>
+          </View>
+          {loading ? (
+            <ScrollView 
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.decksContainer}
+              decelerationRate="fast"
+              snapToInterval={130}
+              snapToAlignment="start"
+            >
+              {[...Array(4)].map((_, i) => (
+                <DeckSkeleton key={i} />
+              ))}
+            </ScrollView>
+          ) : limitedDecks.length === 0 ? (
+            <Text style={[styles.emptyText, typography.styles.caption]}>{t('home.noDecks', 'Henüz deste bulunmuyor')}</Text>
+          ) : (
+            <ScrollView 
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.decksContainer}
+              decelerationRate="fast"
+              snapToInterval={130}
+              snapToAlignment="start"
+            >
+              {limitedDecks.map((deck) => (
+                <DeckCard
+                  key={`deck-${deck.id}`}
+                  deck={deck}
+                  colors={colors}
+                  typography={typography}
+                  onPress={handleDeckPress}
+                  onToggleFavorite={async (deckId) => {
+                    const isFavorite = favoriteDecks.some(fav => fav.id === deckId);
+                    if (isFavorite) {
+                      await handleRemoveFavoriteDeck(deckId);
+                    } else {
+                      await handleAddFavoriteDeck(deckId);
+                    }
+                  }}
+                  isFavorite={favoriteDecks.some(fav => fav.id === deck.id)}
+                />
+              ))}
+              {showEndIcon && (
+                <View style={styles.endIconContainer}>
+                  <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={15} color="#F98A21" style={{ marginLeft: 2, marginTop: 1 }} />
+                </View>
+              )}
+            </ScrollView>
+          )}
+      </AnimatedPressable>
     );
   };
 
@@ -458,10 +492,22 @@ const styles = StyleSheet.create({
     height: 44,
   },
   glassCard: {
-    // GlassBlurCard component handles its own margins
+    borderRadius: 28,
+    marginHorizontal: 10,
+    marginVertical: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    minHeight: 180,
+    overflow: 'hidden',
   },
   popularDecksCard: {
+    borderRadius: 28,
+    marginHorizontal: 10,
+    marginVertical: 8,
     marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    overflow: 'hidden',
   },
   popularDecksContent: {
     flexDirection: 'row',
@@ -494,11 +540,11 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
     alignSelf: 'flex-start',
-    minWidth: 110,
+    minWidth: 150,
   },
   gradientButton: {
     paddingVertical: 12,
-    paddingHorizontal: 18,
+    paddingHorizontal: 24,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
