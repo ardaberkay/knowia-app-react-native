@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Dimensions, Modal, TouchableWithoutFeedback, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
 import SearchBar from '../../components/tools/SearchBar';
@@ -9,7 +10,6 @@ import { supabase } from '../../lib/supabase';
 import { getPopularDecks, getNewDecks, getMostFavoritedDecks, getMostStartedDecks, getMostUniqueStartedDecks } from '../../services/DeckService';
 import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
-import { Modal, TouchableWithoutFeedback, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
@@ -417,8 +417,11 @@ export default function DiscoverScreen() {
   const activeIndex = tabKeys.indexOf(activeTab);
 
   const renderFixedHeader = () => {
+    // Header yüksekliği: status bar + header (yaklaşık 44-56px) + safe area top + ekstra boşluk
+    const headerHeight = Platform.OS === 'ios' ? insets.top + 44 : 56;
+    
     return (
-      <View style={[styles.fixedHeaderContainer, { backgroundColor: colors.cardBackground }]}>
+      <View style={[styles.fixedHeaderContainer, { backgroundColor: colors.cardBackground, paddingTop: headerHeight + 50 }]}>
         {/* Hero Cards Carousel */}
         <View style={styles.heroCarouselContainer}>
           <ScrollView

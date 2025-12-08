@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Alert, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Alert, Dimensions, ActivityIndicator, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { supabase } from '../../lib/supabase';
@@ -33,6 +34,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const [showChapterModal, setShowChapterModal] = useState(false);
   const [moveLoading, setMoveLoading] = useState(false);
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     fetchChapterCards();
@@ -446,34 +448,38 @@ export default function ChapterCardsScreen({ route, navigation }) {
     );
   }
 
+  // Header yüksekliği: status bar + header (yaklaşık 44-56px) + safe area top + ekstra boşluk
+  const headerHeight = Platform.OS === 'ios' ? insets.top + 44 : 56;
+  const chapterIcon = chapter?.id ? 'streamline-freehand:plugin-jigsaw-puzzle' : 'solar:calendar-minimalistic-bold';
+  const chapterName = chapter?.name || t('chapterCards.noChapter', 'Atanmamış Kartlar');
+
   return (
     <View style={[styles.bgGradient, { backgroundColor: colors.background }]}>
-      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
-        {/* Sabit Header Container */}
-        <View style={[styles.fixedHeaderContainer, { backgroundColor: colors.cardBackground }]}>
-          <View style={styles.deckInfoCard}>
-            {/* Bölüm Başlığı */}
-            <View style={styles.chapterHeader}>
-              {chapter?.id ? (
-                <Iconify 
-                  icon="streamline-freehand:plugin-jigsaw-puzzle" 
-                  size={28} 
-                  color={colors.buttonColor} 
-                />
-              ) : (
-                <MaterialCommunityIcons 
-                  name="alert-circle-outline" 
-                  size={28} 
-                  color={colors.buttonColor} 
-                />
-              )}
-              <Text style={[styles.chapterName, typography.styles.h2, { color: colors.headText }]} numberOfLines={1}>
-                {chapter.name}
-              </Text>
+      {/* Fixed Header Section */}
+      <View style={styles.fixedHeaderContainer}>
+        <LinearGradient
+          colors={[colors.cardBackground, colors.cardBackground]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.fixedHeaderGradient, { paddingTop: headerHeight + 32 }]}
+        >
+          <View style={styles.headerContent}>
+            {/* Icon and Title Section */}
+            <View style={styles.heroContent}>
+              <View style={styles.heroIconContainer}>
+                <View style={[styles.iconCircle, { backgroundColor: colors.buttonColor + '20' }]}>
+                  <Iconify icon={chapterIcon} size={28} color={colors.buttonColor} />
+                </View>
+              </View>
+              <View style={styles.heroTextContainer}>
+                <Text style={[styles.heroTitle, { color: colors.text }]} numberOfLines={1}>
+                  {chapterName}
+                </Text>
+              </View>
             </View>
-            
-            {/* İstatistikler */}
-            <View style={[styles.statsRow, { borderTopColor: colors.border || 'rgba(255,255,255,0.1)' }]}>
+
+             {/* İstatistikler */}
+             <View style={[styles.statsRow, { marginBottom: 10 }]}>
               {/* Total */}
               <View style={styles.statItem}>
                 <Iconify icon="ri:stack-fill" size={18} color={colors.buttonColor} style={{ marginRight: 6 }} />
@@ -506,85 +512,89 @@ export default function ChapterCardsScreen({ route, navigation }) {
                 </Text>
               </View>
             </View>
-          </View>
 
-          {/* Arama Çubuğu */}
-          <View style={styles.searchContainer}>
-            <SearchBar
-              value={search}
-              onChangeText={setSearch}
-              placeholder={t('chapterCards.searchPlaceholder', 'Kartlarda ara...')}
-              style={{ flex: 1 }}
-            />
-          </View>
-
-          {/* Edit mode'da seçim butonları */}
-          {editMode && (
-            <View style={[styles.editModeBar, { backgroundColor: 'transparent' }]}>
-              <TouchableOpacity
-                onPress={handleSelectAll}
-                style={styles.editModeButton}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.editModeButtonText, { color: colors.buttonColor }]}>
-                  {selectedCards.size === filteredCards.length 
-                    ? t('chapterCards.deselectAll', 'Tümünü Kaldır')
-                    : t('chapterCards.selectAll', 'Tümünü Seç')}
-                </Text>
-              </TouchableOpacity>
-              <Text style={[styles.editModeText, { color: colors.text }]}>
-                {selectedCards.size} {t('chapterCards.selected', 'seçili')}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setShowChapterModal(true)}
-                style={[
-                  styles.moveButton, 
-                  { 
-                    backgroundColor: colors.buttonColor,
-                    opacity: selectedCards.size > 0 ? 1 : 0,
-                  }
-                ]}
-                activeOpacity={0.7}
-                disabled={selectedCards.size === 0}
-                pointerEvents={selectedCards.size > 0 ? 'auto' : 'none'}
-              >
-                <Iconify icon="ion:chevron-forward" size={20} color="#FFFFFF" style={{ marginRight: 6 }} />
-                <Text style={[styles.moveButtonText, { color: '#FFFFFF' }]}>
-                  {t('chapterCards.move', 'Taşı')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.content}>
-          {cards.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Iconify 
-                icon="ph:cards-three" 
-                size={64} 
-                color={colors.muted} 
+            {/* Search Row */}
+            <View style={styles.searchRow}>
+              <SearchBar
+                value={search}
+                onChangeText={setSearch}
+                placeholder={t('chapterCards.searchPlaceholder', 'Kartlarda ara...')}
+                style={styles.searchBar}
               />
-              <Text style={[styles.emptyStateTitle, typography.styles.h3, { color: colors.text }]}>
-                {t('chapterCards.noCards', 'Henüz Kart Yok')}
-              </Text>
-              <Text style={[styles.emptyStateText, typography.styles.body, { color: colors.subtext }]}>
-                {t('chapterCards.noCardsDesc', 'Bu bölümde henüz kart oluşturulmamış.')}
-              </Text>
             </View>
-          ) : (
+
+            {/* Edit mode'da seçim butonları */}
+            {editMode && (
+              <View style={[styles.editModeBar, { backgroundColor: 'transparent', marginTop: 12 }]}>
+                <TouchableOpacity
+                  onPress={handleSelectAll}
+                  style={styles.editModeButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.editModeButtonText, { color: '#fff' }]}>
+                    {selectedCards.size === filteredCards.length 
+                      ? t('chapterCards.deselectAll', 'Tümünü Kaldır')
+                      : t('chapterCards.selectAll', 'Tümünü Seç')}
+                  </Text>
+                </TouchableOpacity>
+                <Text style={[styles.editModeText, { color: '#fff' }]}>
+                  {selectedCards.size} {t('chapterCards.selected', 'seçili')}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setShowChapterModal(true)}
+                  style={[
+                    styles.moveButton, 
+                    { 
+                      backgroundColor: '#fff',
+                      opacity: selectedCards.size > 0 ? 1 : 0,
+                    }
+                  ]}
+                  activeOpacity={0.7}
+                  disabled={selectedCards.size === 0}
+                  pointerEvents={selectedCards.size > 0 ? 'auto' : 'none'}
+                >
+                  <Iconify icon="ion:chevron-forward" size={20} color={colors.buttonColor} style={{ marginRight: 6 }} />
+                  <Text style={[styles.moveButtonText, { color: colors.buttonColor }]}>
+                    {t('chapterCards.move', 'Taşı')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </LinearGradient>
+      </View>
+
+      {/* List Content */}
+      <View style={[styles.listContainer, { backgroundColor: colors.background }]}>
+        {cards.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Iconify 
+              icon="ph:cards-three" 
+              size={64} 
+              color={colors.muted} 
+            />
+            <Text style={[styles.emptyStateTitle, typography.styles.h3, { color: colors.text }]}>
+              {t('chapterCards.noCards', 'Henüz Kart Yok')}
+            </Text>
+            <Text style={[styles.emptyStateText, typography.styles.body, { color: colors.subtext }]}>
+              {t('chapterCards.noCardsDesc', 'Bu bölümde henüz kart oluşturulmamış.')}
+            </Text>
+          </View>
+        ) : (
+          <View style={{ paddingHorizontal: 18 }}>
             <FlatList
               data={filteredCards}
               renderItem={renderCardItem}
               keyExtractor={(item) => item.id.toString()}
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={[styles.cardsList, { paddingBottom: Dimensions.get('window').height * 0.11 }]}
+              contentContainerStyle={[styles.cardsList, { paddingBottom: Dimensions.get('window').height * 0.11, paddingTop: 20 }]}
             />
-          )}
-        </View>
-        
-        {/* Floating Action Button - Atanmamış kartlar için dağıtım butonu */}
-        {!chapter?.id && !editMode && currentUserId && deck?.user_id === currentUserId && !deck?.is_shared && (
+          </View>
+        )}
+      </View>
+      
+      {/* Floating Action Button - Atanmamış kartlar için dağıtım butonu */}
+      {!chapter?.id && !editMode && currentUserId && deck?.user_id === currentUserId && !deck?.is_shared && (
           <TouchableOpacity
             onPress={handleDistribute}
             disabled={distLoading}
@@ -607,22 +617,21 @@ export default function ChapterCardsScreen({ route, navigation }) {
           </TouchableOpacity>
         )}
 
-        {/* Bölüm Seçim Modal */}
-        <ChapterSelector
-          isVisible={showChapterModal}
-          onClose={() => {
-            setShowChapterModal(false);
-            if (!moveLoading) {
-              setSelectedCards(new Set());
-              setEditMode(false);
-            }
-          }}
-          chapters={chapters}
-          onSelectChapter={(chapterId) => {
-            handleMoveToChapter(chapterId);
-          }}
-        />
-      </SafeAreaView>
+      {/* Bölüm Seçim Modal */}
+      <ChapterSelector
+        isVisible={showChapterModal}
+        onClose={() => {
+          setShowChapterModal(false);
+          if (!moveLoading) {
+            setSelectedCards(new Set());
+            setEditMode(false);
+          }
+        }}
+        chapters={chapters}
+        onSelectChapter={(chapterId) => {
+          handleMoveToChapter(chapterId);
+        }}
+      />
     </View>
   );
 }
@@ -643,34 +652,57 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   fixedHeaderContainer: {
-    borderRadius: 44,
-    marginHorizontal: 18,
-    marginTop: 20,
-    marginBottom: 20,
-    paddingBottom: 20,
+    zIndex: 1,
     overflow: 'hidden',
   },
-  deckInfoCard: {
-    backgroundColor: 'transparent',
-    padding: 20,
-    paddingBottom: 0,
+  fixedHeaderGradient: {
+    paddingBottom: 12,
+    paddingHorizontal: 0,
   },
-  chapterHeader: {
+  headerContent: {
+    paddingHorizontal: 12,
+    paddingTop: 20,
+    paddingBottom: 20,
+  },
+  heroContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
-    gap: 10,
+    marginBottom: 20,
   },
-  chapterName: {
-    fontWeight: '600',
+  heroIconContainer: {
+    marginRight: 12,
+  },
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  heroTextContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroTitle: {
+    ...typography.styles.h2,
+    fontSize: 28,
+    fontWeight: '900',
+    marginBottom: 6,
+    letterSpacing: -0.5,
+  },
+  heroSubtitle: {
+    ...typography.styles.caption,
+    fontSize: 15,
+    fontWeight: '500',
+    lineHeight: 20,
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingTop: 12,
-    borderTopWidth: 1,
   },
   statItem: {
     flexDirection: 'row',
@@ -681,15 +713,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  searchContainer: {
-    paddingHorizontal: 18,
-    paddingTop: 12,
+  searchRow: {
     flexDirection: 'row',
-    width: '100%',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 8,
   },
-  content: {
+  searchBar: {
     flex: 1,
-    paddingHorizontal: 18,
+  },
+  listContainer: {
+    flex: 1,
+    marginTop: -20,
+    zIndex: 2,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
   },
   cardsList: {
     paddingBottom: 20,
@@ -752,6 +791,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
+    width: '100%',
   },
   emptyStateTitle: {
     marginTop: 16,

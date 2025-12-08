@@ -540,7 +540,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
     alignSelf: 'flex-start',
-    minWidth: 150,
+    minWidth: 180,
   },
   gradientButton: {
     paddingVertical: 12,

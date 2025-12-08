@@ -1,21 +1,24 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Modal, TouchableWithoutFeedback, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
+import { LinearGradient } from 'expo-linear-gradient';
 import SearchBar from '../../components/tools/SearchBar';
 import DeckList from '../../components/lists/DeckList';
 import { supabase } from '../../lib/supabase';
 import { getDecksByCategory } from '../../services/DeckService';
 import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
-import CategoryHeroHeader, { getCategoryConfig } from '../../components/ui/CategoryHeroHeader';
+import { getCategoryConfig } from '../../components/ui/CategoryHeroHeader';
 
 export default function CategoryDeckListScreen({ route }) {
   const { category, title, decks: initialDecks } = route.params || {};
   const navigation = useNavigation();
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('popularity'); // 'popularity' | 'az' | 'new'
@@ -170,37 +173,69 @@ export default function CategoryDeckListScreen({ route }) {
     setSort(newSort);
   };
 
-  const ListHeaderComponent = useCallback(() => {
+  const renderFixedHeader = useCallback(() => {
+    const config = getCategoryConfig(category, t);
+    // Header yüksekliği: status bar + header (yaklaşık 44-56px) + safe area top + ekstra boşluk
+    const headerHeight = Platform.OS === 'ios' ? insets.top + 44 : 56;
+    
     return (
-      <View style={styles.headerContainer}>
-        {/* Category Hero Header with Search and Filter */}
-        <CategoryHeroHeader
-          category={category}
-          title={title || t('home.allDecks', 'Tüm Desteler')}
-          colors={colors}
-          t={t}
-          search={search}
-          onSearchChange={setSearch}
-          searchPlaceholder={t('common.searchDeckPlaceholder', 'Deste ara...')}
-          sortMenuComponent={<SortMenu value={sort} onChange={handleSortChange} colors={colors} t={t} />}
-        />
+      <View style={styles.fixedHeaderContainer}>
+        <LinearGradient
+          colors={[...config.gradient, ...config.gradient.slice().reverse()]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.fixedHeaderGradient, { paddingTop: headerHeight + 32 }]}
+        >
+          <View style={styles.headerContent}>
+            {/* Icon and Title Section */}
+            <View style={styles.heroContent}>
+              <View style={styles.heroIconContainer}>
+                <View style={[styles.iconCircle, { backgroundColor: config.accentColor + '20' }]}>
+                  <Iconify icon={config.icon} size={28} color="#fff" />
+                </View>
+              </View>
+              <View style={styles.heroTextContainer}>
+                <Text style={styles.heroTitle}>{title || t('home.allDecks', 'Tüm Desteler')}</Text>
+                <Text style={styles.heroSubtitle}>{config.description}</Text>
+              </View>
+            </View>
+
+            {/* Search and Filter Row */}
+            <View style={styles.searchRow}>
+              <SearchBar
+                value={search}
+                onChangeText={setSearch}
+                placeholder={t('common.searchDeckPlaceholder', 'Deste ara...')}
+                style={styles.searchBar}
+                variant="light"
+              />
+              <SortMenu value={sort} onChange={handleSortChange} colors={colors} t={t} />
+            </View>
+          </View>
+        </LinearGradient>
       </View>
     );
   }, [category, title, search, sort, colors, t]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <DeckList
-        decks={filteredDecks}
-        favoriteDecks={favoriteDecks}
-        onToggleFavorite={handleToggleFavorite}
-        onPressDeck={handleDeckPress}
-        ListHeaderComponent={ListHeaderComponent}
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
-        showPopularityBadge={false}
-        loading={loading}
-      />
+      {/* Fixed Header Section */}
+      {renderFixedHeader()}
+
+      {/* List Content */}
+      <View style={[styles.listContainer, { backgroundColor: colors.background }]}>
+        <DeckList
+          decks={filteredDecks}
+          favoriteDecks={favoriteDecks}
+          onToggleFavorite={handleToggleFavorite}
+          onPressDeck={handleDeckPress}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          showPopularityBadge={false}
+          loading={loading}
+          contentPaddingTop={20}
+        />
+      </View>
     </View>
   );
 }
@@ -302,10 +337,73 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  headerContainer: {
-    paddingTop: 20,
+  fixedHeaderContainer: {
+    zIndex: 1,
+    overflow: 'hidden',
+  },
+  fixedHeaderGradient: {
+    paddingTop: 12,
+    paddingBottom: 12,
     paddingHorizontal: 0,
+  },
+  headerContent: {
+    paddingHorizontal: 12,
+    paddingTop: 20,
     paddingBottom: 20,
+  },
+  heroContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  heroIconContainer: {
+    marginRight: 16,
+  },
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  heroTextContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  heroTitle: {
+    ...typography.styles.h2,
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: '900',
+    marginBottom: 6,
+    letterSpacing: -0.5,
+  },
+  heroSubtitle: {
+    ...typography.styles.caption,
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 15,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 8,
+  },
+  searchBar: {
+    flex: 1,
+  },
+  listContainer: {
+    flex: 1,
+    marginTop: -20,
+    zIndex: 2,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
   },
   filterIconButton: {
     flexDirection: 'row',

@@ -140,8 +140,13 @@ export default function AppNavigator() {
             component={DiscoverScreen}
             options={{
               headerShown: true,
-              title: t('discover.title', 'Keşfet'),
+              title: '',
               headerTitleAlign: 'center',
+              headerTransparent: true,
+              headerStyle: {
+                backgroundColor: 'transparent',
+              },
+              headerTintColor: '#fff', // Geri butonu beyaz olsun
             }}
           />
           <Stack.Screen
@@ -149,8 +154,13 @@ export default function AppNavigator() {
             component={CategoryDeckListScreen}
             options={({ route }) => ({
               headerShown: true,
-              title: route.params?.title || 'Tüm Desteler',
+              title: '',
               headerTitleAlign: 'center',
+              headerTransparent: true,
+              headerStyle: {
+                backgroundColor: 'transparent',
+              },
+              headerTintColor: '#fff', // Geri butonu beyaz olsun
             })}
           />
           <Stack.Screen name="SwipeDeck" component={SwipeDeckScreen} options={{ headerShown: true, title: t('tabs.deckCards', 'Kartları Öğren'), headerTitleAlign: 'center' }} />
@@ -178,7 +188,16 @@ export default function AppNavigator() {
           <Stack.Screen name="EditCard" component={EditCardScreen} options={{ headerShown: true, title: t('tabs.editCard', 'Kartı Düzenle'), headerTitleAlign: 'center' }} />
           <Stack.Screen name="DeckCards" component={DeckCardsScreen} options={{ headerShown: true, title: t('tabs.cards', 'Kartlar'), headerTitleAlign: 'center' }} />
           <Stack.Screen name="Chapters" component={ChaptersScreen} options={{ headerShown: true, title: t('tabs.chapters', 'Bölümler'), headerTitleAlign: 'center' }} />
-          <Stack.Screen name="ChapterCards" component={ChapterCardsScreen} options={{ headerShown: true, title: t('tabs.chapterCards', 'Bölüm Kartları'), headerTitleAlign: 'center' }} />
+          <Stack.Screen name="ChapterCards" component={ChapterCardsScreen} options={{
+            headerShown: true,
+            title: '',
+            headerTitleAlign: 'center',
+            headerTransparent: true,
+            headerStyle: {
+              backgroundColor: 'transparent',
+            },
+            headerTintColor: '#fff', // Geri butonu beyaz olsun
+          }} />
           <Stack.Screen name="CardDetail" component={CardDetailScreen} options={{ headerShown: true, title: t('tabs.cardDetail', 'Kart Detayı'), headerTitleAlign: 'center' }} />
           <Stack.Screen name="FavoriteDecks" component={FavoriteDecks} options={{ headerShown: true, title: t('tabs.favoriteDecks', 'Favori Desteler'), headerTitleAlign: 'center' }} />
           <Stack.Screen name="FavoriteCards" component={FavoriteCards} options={{ headerShown: true, title: t('tabs.favoriteCards', 'Favori Kartlar'), headerTitleAlign: 'center' }} />

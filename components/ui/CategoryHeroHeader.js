@@ -10,7 +10,8 @@ export function getCategoryConfig(category, t) {
   const configs = {
     inProgressDecks: {
       icon: 'dashicons:welcome-learn-more',
-      gradient: ['#fee140', '#fa709a'], // Enerjik turuncu-pembe - ilerleme hissi
+      // Canlı turuncu-kırmızı: enerji ve ilerleme hissi (belirgin gradyant)
+      gradient: ['#ffa726', '#ff6b35'],
       accentColor: '#ff6b35',
       description: t('home.inProgressDecksDescription', 'Çalıştığınız destelerle bilginizi pekiştirin'),
     },
