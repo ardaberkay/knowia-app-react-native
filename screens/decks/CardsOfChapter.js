@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Alert, Dimensions, ActivityIndicator, Platform } from 'react-native';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Alert, Dimensions, ActivityIndicator, Platform, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -8,6 +8,7 @@ import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import SearchBar from '../../components/tools/SearchBar';
 import CardDetailView from '../../components/layout/CardDetailView';
+import AddEditCardInlineForm from '../../components/layout/EditCardForm';
 import { listChapters, distributeUnassignedEvenly } from '../../services/ChapterService';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,6 +26,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const [cardStatusMap, setCardStatusMap] = useState(new Map());
   const [chapterStats, setChapterStats] = useState({ total: 0, learning: 0, learned: 0, new: 0 });
   const [selectedCard, setSelectedCard] = useState(null);
+  const [editCardMode, setEditCardMode] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [distLoading, setDistLoading] = useState(false);
   const [chapters, setChapters] = useState([]);
@@ -33,6 +35,9 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const [selectedCards, setSelectedCards] = useState(new Set());
   const [showChapterModal, setShowChapterModal] = useState(false);
   const [moveLoading, setMoveLoading] = useState(false);
+  const [moreMenuVisible, setMoreMenuVisible] = useState(false);
+  const [moreMenuPos, setMoreMenuPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const moreMenuRef = useRef(null);
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
@@ -59,7 +64,39 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
   // Navigation header'a edit butonu ekle (sadece atanmamış kartlar için)
   useLayoutEffect(() => {
-    if (!chapter?.id && currentUserId && deck?.user_id === currentUserId && !deck?.is_shared) {
+    const isOwnerUser = currentUserId && deck?.user_id === currentUserId && !deck?.is_shared;
+    if (selectedCard) {
+      navigation.setOptions({
+        headerRight: () => (
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
+            <TouchableOpacity
+              onPress={() => handleToggleFavoriteCard(selectedCard.id)}
+              activeOpacity={0.7}
+              style={{ paddingHorizontal: 6 }}
+            >
+              <Iconify
+                icon={favoriteCards.includes(selectedCard.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
+                size={24}
+                color={favoriteCards.includes(selectedCard.id) ? '#F98A21' : colors.text}
+              />
+            </TouchableOpacity>
+            {isOwnerUser && (
+              <TouchableOpacity
+                ref={moreMenuRef}
+                onPress={openCardMenu}
+                activeOpacity={0.7}
+                style={{ paddingHorizontal: 6 }}
+              >
+                <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={26} color={colors.text} />
+              </TouchableOpacity>
+            )}
+          </View>
+        ),
+      });
+      return;
+    }
+
+    if (!chapter?.id && isOwnerUser) {
       navigation.setOptions({
         headerRight: () => (
           <TouchableOpacity
@@ -85,7 +122,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
         headerRight: () => null,
       });
     }
-  }, [navigation, chapter?.id, currentUserId, deck?.user_id, deck?.is_shared, editMode]);
+  }, [navigation, chapter?.id, currentUserId, deck?.user_id, deck?.is_shared, editMode, selectedCard, favoriteCards, colors.text, openCardMenu]);
 
   useEffect(() => {
     if (!search.trim()) {
@@ -255,6 +292,36 @@ export default function ChapterCardsScreen({ route, navigation }) {
       }
     } catch (e) {
       // Alert kaldırıldı
+    }
+  };
+
+  const handleEditSelectedCard = () => {
+    if (!selectedCard) return;
+    setMoreMenuVisible(false);
+    setEditCardMode(true);
+  };
+
+  const handleDeleteSelectedCard = async () => {
+    if (!selectedCard) return;
+    try {
+      await supabase.from('cards').delete().eq('id', selectedCard.id);
+      setSelectedCard(null);
+      setEditCardMode(false);
+      await fetchChapterCards();
+    } catch (e) {
+      Alert.alert(t('common.error', 'Hata'), t('cardDetail.deleteError', 'Kart silinirken bir hata oluştu.'));
+    }
+  };
+
+  const openCardMenu = () => {
+    if (!selectedCard) return;
+    if (moreMenuRef.current && moreMenuRef.current.measureInWindow) {
+      moreMenuRef.current.measureInWindow((x, y, width, height) => {
+        setMoreMenuPos({ x, y, width, height });
+        setMoreMenuVisible(true);
+      });
+    } else {
+      setMoreMenuVisible(true);
     }
   };
 
@@ -439,12 +506,98 @@ export default function ChapterCardsScreen({ route, navigation }) {
   // Kart detay görünümü gösteriliyorsa
   if (selectedCard) {
     return (
-      <CardDetailView 
-        card={selectedCard} 
-        cards={cards} 
-        onSelectCard={setSelectedCard}
-        showCreatedAt={true}
-      />
+      <SafeAreaView style={{ flex: 1, paddingTop: insets.top, backgroundColor: colors.background }}>
+        {editCardMode ? (
+          <AddEditCardInlineForm
+            card={selectedCard}
+            deck={deck}
+            onSave={async (updatedCard) => {
+              setCards(cards.map(c => c.id === updatedCard.id ? updatedCard : c));
+              setSelectedCard(updatedCard);
+              setEditCardMode(false);
+              await fetchChapterCards();
+            }}
+            onCancel={() => {
+              setEditCardMode(false);
+            }}
+          />
+        ) : (
+          <>
+            <CardDetailView 
+              card={selectedCard} 
+              cards={cards} 
+              onSelectCard={card => {
+                setSelectedCard(card);
+                setEditCardMode(false);
+              }}
+              showCreatedAt={true}
+            />
+            <Modal
+              visible={moreMenuVisible}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setMoreMenuVisible(false)}
+            >
+              <TouchableOpacity
+                style={{ flex: 1 }}
+                activeOpacity={1}
+                onPress={() => setMoreMenuVisible(false)}
+              >
+                <View
+                  style={{
+                    position: 'absolute',
+                    right: 20,
+                    top: Platform.OS === 'android' ? moreMenuPos.y + moreMenuPos.height + 4 : moreMenuPos.y + moreMenuPos.height + 8,
+                    minWidth: 160,
+                    backgroundColor: colors.cardBackground,
+                    borderRadius: 14,
+                    paddingVertical: 8,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 8,
+                    elevation: 8,
+                    borderWidth: 1,
+                    borderColor: colors.cardBorder,
+                  }}
+                >
+                  <TouchableOpacity
+                    onPress={handleEditSelectedCard}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingVertical: 12,
+                      paddingHorizontal: 16,
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Iconify icon="lucide:edit" size={20} color={colors.text} style={{ marginRight: 12 }} />
+                    <Text style={[typography.styles.body, { color: colors.text, fontSize: 16 }]}>
+                      {t('cardDetail.edit', 'Kartı Düzenle')}
+                    </Text>
+                  </TouchableOpacity>
+                  <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
+                  <TouchableOpacity
+                    onPress={handleDeleteSelectedCard}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingVertical: 12,
+                      paddingHorizontal: 16,
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Iconify icon="mdi:garbage" size={20} color="#E74C3C" style={{ marginRight: 12 }} />
+                    <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: 16 }]}>
+                      {t('cardDetail.delete', 'Kartı Sil')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            </Modal>
+          </>
+        )}
+      </SafeAreaView>
     );
   }
 

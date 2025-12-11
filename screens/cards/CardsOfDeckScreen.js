@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ScrollView, Platform, BackHandler, Alert, Dimensions, Animated, Easing, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ScrollView, Platform, BackHandler, Alert, Dimensions, Animated, Easing, ActivityIndicator, Modal } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,7 +14,6 @@ import CardListItem from '../../components/lists/CardList';
 import SearchBar from '../../components/tools/SearchBar';
 import FilterIcon from '../../components/tools/FilterIcon';
 import CardDetailView from '../../components/layout/CardDetailView';
-import CardActionMenu from '../../components/modals/CardActionSheet';
  
 
 export default function DeckCardsScreen({ route, navigation }) {
@@ -28,11 +27,13 @@ export default function DeckCardsScreen({ route, navigation }) {
   const [originalCards, setOriginalCards] = useState([]);
   const [selectedCard, setSelectedCard] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
-  const [cardMenuVisible, setCardMenuVisible] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const spinValue = useRef(new Animated.Value(0)).current;
+  const moreMenuRef = useRef(null);
+  const [moreMenuVisible, setMoreMenuVisible] = useState(false);
+  const [moreMenuPos, setMoreMenuPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const { t } = useTranslation();
   const screenHeight = Dimensions.get('window').height;
 
@@ -131,12 +132,33 @@ export default function DeckCardsScreen({ route, navigation }) {
 
   // Header'ı ayarla - selectedCard durumuna göre
   useLayoutEffect(() => {
+    const isOwner = currentUserId && deck.user_id === currentUserId;
     if (selectedCard && !editMode) {
       navigation.setOptions({
         headerRight: () => (
-          <TouchableOpacity onPress={() => setCardMenuVisible(true)} style={{ marginRight: 8 }}>
-            <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={28} color={colors.text} />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
+            <TouchableOpacity
+              onPress={() => handleToggleFavoriteCard(selectedCard.id)}
+              activeOpacity={0.7}
+              style={{ paddingHorizontal: 6 }}
+            >
+              <Iconify
+                icon={favoriteCards.includes(selectedCard.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
+                size={24}
+                color={favoriteCards.includes(selectedCard.id) ? '#F98A21' : colors.text}
+              />
+            </TouchableOpacity>
+            {isOwner && (
+              <TouchableOpacity
+                ref={moreMenuRef}
+                onPress={openMoreMenu}
+                activeOpacity={0.7}
+                style={{ paddingHorizontal: 6 }}
+              >
+                <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={26} color={colors.text} />
+              </TouchableOpacity>
+            )}
+          </View>
         ),
       });
     } else {
@@ -151,7 +173,7 @@ export default function DeckCardsScreen({ route, navigation }) {
         ),
       });
     }
-  }, [selectedCard, editMode, colors.text, navigation, deck]);
+  }, [selectedCard, editMode, colors.text, navigation, deck, favoriteCards, currentUserId, handleToggleFavoriteCard, openMoreMenu]);
 
   useEffect(() => {
     if (loading) {
@@ -198,8 +220,43 @@ export default function DeckCardsScreen({ route, navigation }) {
     } catch (e) {}
   };
 
+  const handleEditSelectedCard = () => {
+    if (!selectedCard) return;
+    setEditMode(true);
+    setMoreMenuVisible(false);
+  };
+
+  const handleDeleteSelectedCard = async () => {
+    if (!selectedCard) return;
+    try {
+      await supabase
+        .from('cards')
+        .delete()
+        .eq('id', selectedCard.id);
+      setCards(cards.filter(c => c.id !== selectedCard.id));
+      setOriginalCards(originalCards.filter(c => c.id !== selectedCard.id));
+      setSelectedCard(null);
+    } catch (e) {
+      Alert.alert(t('common.error', 'Hata'), t('cardDetail.deleteError', 'Kart silinirken bir hata oluştu.'));
+    } finally {
+      setMoreMenuVisible(false);
+    }
+  };
+
+  const openMoreMenu = () => {
+    if (moreMenuRef.current && moreMenuRef.current.measureInWindow) {
+      moreMenuRef.current.measureInWindow((x, y, width, height) => {
+        setMoreMenuPos({ x, y, width, height });
+        setMoreMenuVisible(true);
+      });
+    } else {
+      setMoreMenuVisible(true);
+    }
+  };
+
   const handleBackFromDetail = () => {
     setSelectedCard(null);
+    setMoreMenuVisible(false);
   };
   return (
     selectedCard && editMode ? (
@@ -217,47 +274,69 @@ export default function DeckCardsScreen({ route, navigation }) {
     ) : selectedCard ? (
       <>
         <CardDetailView card={selectedCard} cards={cards} onSelectCard={setSelectedCard} />
-        <CardActionMenu
-          visible={cardMenuVisible}
-          onClose={() => setCardMenuVisible(false)}
-          card={selectedCard}
-          deck={deck}
-          currentUserId={currentUserId}
-          isFavorite={favoriteCards.includes(selectedCard.id)}
-          onToggleFavorite={async () => {
-            setFavLoading(true);
-            try {
-              const { data: { user } } = await supabase.auth.getUser();
-              if (favoriteCards.includes(selectedCard.id)) {
-                await supabase
-                  .from('favorite_cards')
-                  .delete()
-                  .eq('user_id', user.id)
-                  .eq('card_id', selectedCard.id);
-                setFavoriteCards(favoriteCards.filter(id => id !== selectedCard.id));
-              } else {
-                await supabase
-                  .from('favorite_cards')
-                  .insert({ user_id: user.id, card_id: selectedCard.id });
-                setFavoriteCards([...favoriteCards, selectedCard.id]);
-              }
-            } catch (e) {}
-            setFavLoading(false);
-            setCardMenuVisible(false);
-          }}
-          onEdit={() => setEditMode(true)}
-          onDelete={async () => {
-            await supabase
-              .from('cards')
-              .delete()
-              .eq('id', selectedCard.id);
-            setCards(cards.filter(c => c.id !== selectedCard.id));
-            setOriginalCards(originalCards.filter(c => c.id !== selectedCard.id));
-            setSelectedCard(null);
-            setCardMenuVisible(false);
-          }}
-          favLoading={favLoading}
-        />
+        <Modal
+          visible={moreMenuVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setMoreMenuVisible(false)}
+        >
+          <TouchableOpacity
+            style={{ flex: 1 }}
+            activeOpacity={1}
+            onPress={() => setMoreMenuVisible(false)}
+          >
+            <View
+              style={{
+                position: 'absolute',
+                right: 20,
+                top: Platform.OS === 'android' ? moreMenuPos.y + moreMenuPos.height + 4 : moreMenuPos.y + moreMenuPos.height + 8,
+                minWidth: 160,
+                backgroundColor: colors.cardBackground,
+                borderRadius: 14,
+                paddingVertical: 8,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.15,
+                shadowRadius: 8,
+                elevation: 8,
+                borderWidth: 1,
+                borderColor: colors.cardBorder,
+              }}
+            >
+              <TouchableOpacity
+                onPress={handleEditSelectedCard}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                }}
+                activeOpacity={0.7}
+              >
+                <Iconify icon="lucide:edit" size={20} color={colors.text} style={{ marginRight: 12 }} />
+                <Text style={[typography.styles.body, { color: colors.text, fontSize: 16 }]}>
+                  {t('cardDetail.edit', 'Kartı Düzenle')}
+                </Text>
+              </TouchableOpacity>
+              <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
+              <TouchableOpacity
+                onPress={handleDeleteSelectedCard}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                }}
+                activeOpacity={0.7}
+              >
+                <Iconify icon="mdi:garbage" size={20} color="#E74C3C" style={{ marginRight: 12 }} />
+                <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: 16 }]}>
+                  {t('cardDetail.delete', 'Kartı Sil')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
       </>
     ) : (
              <View style={{ flex: 1, backgroundColor: colors.background }}>
