@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { useTheme } from '../../theme/theme';
-import GlassBlurCard from '../ui/GlassBlurCard';
 
 export default function MyDecksSkeleton() {
   const { colors, isDarkMode } = useTheme();
@@ -15,7 +14,7 @@ export default function MyDecksSkeleton() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header Card Skeleton */}
-      <GlassBlurCard style={skeletonStyles.myDecksCard}>
+      <View style={[skeletonStyles.myDecksCard, skeletonStyles.myDecksCardContainer]}>
         <View style={skeletonStyles.myDecksContent}>
           <View style={skeletonStyles.myDecksTextContainer}>
             <View style={skeletonStyles.myDecksTitleContainer}>
@@ -33,7 +32,7 @@ export default function MyDecksSkeleton() {
           <View style={[skeletonStyles.skeletonBox, { flex: 1, height: 44, borderRadius: 12, backgroundColor: lineColor }]} />
           <View style={[skeletonStyles.skeletonBox, { width: 44, height: 44, borderRadius: 12, backgroundColor: lineColor, marginLeft: 10 }]} />
         </View>
-      </GlassBlurCard>
+      </View>
 
       {/* Skeleton Rows - Double + Single pattern */}
       {[1, 2, 3].map((rowIndex) => (
@@ -87,6 +86,16 @@ export default function MyDecksSkeleton() {
 const skeletonStyles = StyleSheet.create({
   myDecksCard: {
     marginTop: '21%',
+  },
+  myDecksCardContainer: {
+    borderRadius: 28,
+    overflow: 'hidden',
+    marginHorizontal: 10,
+    marginVertical: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    minHeight: 180,
+    backgroundColor: isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)',
   },
   myDecksContent: {
     flexDirection: 'row',

@@ -14,6 +14,7 @@ import { getCurrentUserProfile, updateLastActiveAt } from '../../services/Profil
 import { registerForPushNotificationsAsync } from '../../services/NotificationService';
 import { supabase } from '../../lib/supabase';
 import { getFavoriteDecks } from '../../services/FavoriteService';
+import { cacheProfile, getCachedProfile, cacheProfileImage, getCachedProfileImage } from '../../services/CacheService';
 import DeckSkeleton from '../../components/skeleton/DeckSkeleton';
 import { useTranslation } from 'react-i18next';
 import DeckCard from '../../components/ui/DeckUi';
@@ -155,8 +156,45 @@ const DECK_CATEGORIES = {
   const loadProfile = async () => {
     try {
       setProfileLoading(true);
+      
+      // Önce kullanıcı ID'sini al
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) {
+        setProfile(null);
+        return;
+      }
+      
+      // Cache'den profil bilgilerini yükle
+      const cachedProfile = await getCachedProfile(user.id);
+      if (cachedProfile) {
+        setProfile(cachedProfile);
+        setProfileLoading(false);
+        
+        // Arka planda güncel veriyi çek ve cache'le
+        try {
+          const freshData = await getCurrentUserProfile();
+          setProfile(freshData);
+          await cacheProfile(user.id, freshData);
+          // Profil görselini de cache'le
+          if (freshData?.image_url) {
+            await cacheProfileImage(user.id, freshData.image_url);
+          }
+        } catch (err) {
+          // Hata durumunda cache'deki veriyi kullanmaya devam et
+          console.error('Error fetching fresh profile:', err);
+        }
+        return;
+      }
+      
+      // Cache yoksa API'den çek
       const data = await getCurrentUserProfile();
       setProfile(data);
+      
+      // Cache'le
+      await cacheProfile(user.id, data);
+      if (data?.image_url) {
+        await cacheProfileImage(user.id, data.image_url);
+      }
     } catch (err) {
       setProfile(null);
     } finally {
@@ -235,10 +273,13 @@ const DECK_CATEGORIES = {
     const limitedDecks = categoryDecks; // Tüm desteler gösterilecek
 
     const handleSeeAll = () => {
+      // Favori deck ID'lerini çıkar
+      const favoriteDeckIds = (favoriteDecks || []).map(deck => deck.id);
       navigation.navigate('CategoryDeckList', {
         category,
         title: DECK_CATEGORIES[category],
         decks: categoryDecks,
+        favoriteDecks: favoriteDeckIds,
       });
     };
 
@@ -331,6 +372,7 @@ const DECK_CATEGORIES = {
               <Image
                 source={profile?.image_url ? { uri: profile.image_url } : require('../../assets/avatar-default.png')}
                 style={styles.profileAvatar}
+                // Cache'den görsel yüklendiğinde otomatik olarak React Native Image component cache'i kullanır
               />
             )}
           </TouchableOpacity>
@@ -492,7 +534,7 @@ const styles = StyleSheet.create({
     height: 44,
   },
   glassCard: {
-    borderRadius: 28,
+    borderRadius: 36,
     marginHorizontal: 10,
     marginVertical: 8,
     paddingHorizontal: 20,
@@ -501,7 +543,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   popularDecksCard: {
-    borderRadius: 28,
+    borderRadius: 36,
     marginHorizontal: 10,
     marginVertical: 8,
     marginTop: 16,

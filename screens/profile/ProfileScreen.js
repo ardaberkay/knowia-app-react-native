@@ -7,9 +7,10 @@ import { useNavigation } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { ProfileSkeleton } from '../../components/skeleton/DeckSkeleton';
+import { cacheProfile, getCachedProfile, cacheProfileImage, getCachedProfileImage } from '../../services/CacheService';
+import ProfileSkeleton from '../../components/skeleton/ProfileSkeleton';
 import { useTranslation } from 'react-i18next';
-import LanguageSelector from '../../components/tools/LanguageSelector';
+import LanguageSelector from '../../components/modals/LanguageSelector';
 import { Iconify } from 'react-native-iconify';
 
 export default function ProfileScreen() {
@@ -28,9 +29,67 @@ export default function ProfileScreen() {
     const checkNotificationStatus = async () => {
       try {
         setLoading(true);
+        
+        // Önce kullanıcı ID'sini al
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.id) {
+          setError(t('profile.errorMessageProfile', 'Profil yüklenemedi'));
+          return;
+        }
+        
+        // Cache'den profil bilgilerini yükle
+        const cachedProfile = await getCachedProfile(user.id);
+        if (cachedProfile) {
+          setProfile(cachedProfile);
+          setUserId(cachedProfile.id);
+          
+          // Bildirim durumunu kontrol et
+          const { status } = await Notifications.getPermissionsAsync();
+          if (status === 'granted' && cachedProfile.notifications_enabled) {
+            setNotificationsEnabled(true);
+          } else {
+            setNotificationsEnabled(false);
+          }
+          
+          setLoading(false);
+          
+          // Arka planda güncel veriyi çek ve cache'le
+          try {
+            const freshProfile = await getCurrentUserProfile();
+            setProfile(freshProfile);
+            setUserId(freshProfile.id);
+            await cacheProfile(user.id, freshProfile);
+            
+            // Profil görselini de cache'le
+            if (freshProfile?.image_url) {
+              await cacheProfileImage(user.id, freshProfile.image_url);
+            }
+            
+            // Bildirim durumunu güncelle
+            const { status: freshStatus } = await Notifications.getPermissionsAsync();
+            if (freshStatus === 'granted' && freshProfile.notifications_enabled) {
+              setNotificationsEnabled(true);
+            } else {
+              setNotificationsEnabled(false);
+            }
+          } catch (err) {
+            // Hata durumunda cache'deki veriyi kullanmaya devam et
+            console.error('Error fetching fresh profile:', err);
+          }
+          return;
+        }
+        
+        // Cache yoksa API'den çek
         const profile = await getCurrentUserProfile();
         setProfile(profile);
         setUserId(profile.id);
+        
+        // Cache'le
+        await cacheProfile(user.id, profile);
+        if (profile?.image_url) {
+          await cacheProfileImage(user.id, profile.image_url);
+        }
+        
         const { status } = await Notifications.getPermissionsAsync();
         if (status === 'granted' && profile.notifications_enabled) {
           setNotificationsEnabled(true);

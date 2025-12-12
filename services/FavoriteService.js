@@ -22,7 +22,17 @@ export const getFavoriteDecks = async (userId) => {
 export const getFavoriteCards = async (userId) => {
   const { data, error } = await supabase
     .from('favorite_cards')
-    .select('card_id, cards(*)')
+    .select(`
+      card_id, 
+      cards(
+        *,
+        deck:decks(
+          id, 
+          name, 
+          categories:categories(id, name, sort_order)
+        )
+      )
+    `)
     .eq('user_id', userId);
 
   if (error) throw error;

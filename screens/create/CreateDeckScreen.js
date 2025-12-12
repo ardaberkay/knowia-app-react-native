@@ -7,10 +7,9 @@ import { typography } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
-import CategorySelector from '../../components/tools/CategorySelector';
+import CategorySelector from '../../components/modals/CategorySelector';
 import UndoButton from '../../components/tools/UndoButton';
 import CreateButton from '../../components/tools/CreateButton';
-import GlassBlurCard from '../../components/ui/GlassBlurCard';
 
 export default function CreateScreen() {
   const [name, setName] = useState('');
@@ -20,7 +19,7 @@ export default function CreateScreen() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [categories, setCategories] = useState([]);
   const navigation = useNavigation();
-  const { colors } = useTheme();
+  const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
   const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
 
@@ -102,9 +101,9 @@ export default function CreateScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
-          {/* GlassBlurCard Header */}
-          <GlassBlurCard style={[styles.headerCard, { borderRadius: 28 }]}>
-            <View style={styles.headerContent}>
+          {/* Header Card */}
+          <View style={[styles.headerCard, styles.headerCardContainer, { borderRadius: 28, backgroundColor: colors.cardBackground || colors.cardBackgroundTransparent || (isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)') }]}>
+            <View style={[styles.headerCardContent, styles.headerContent]}>
               <View style={styles.headerTitleContainer}>
                 <Iconify icon="fluent:tab-add-24-regular" size={26} color="#F98A21" style={{ marginRight: 6 }} />
                 <Text style={[typography.styles.h2, { color: colors.text}]}>
@@ -139,7 +138,7 @@ export default function CreateScreen() {
                 </View>
               </View>
             </View>
-          </GlassBlurCard>
+          </View>
           <View
             style={[
               styles.inputCard,
@@ -353,6 +352,18 @@ const styles = StyleSheet.create({
   headerCard: {
     width: '100%',
     marginBottom: 12,
+  },
+  headerCardContainer: {
+    borderRadius: 28,
+    overflow: 'hidden',
+    marginHorizontal: 10,
+    marginVertical: 8,
+  },
+  headerCardContent: {
+    borderRadius: 28,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    minHeight: 180,
   },
   headerContent: {
     paddingVertical: 8,

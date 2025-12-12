@@ -20,7 +20,6 @@ import CustomTabBar from '../components/ui/CustomTabBar';
 import AddCardScreen from '../screens/cards/CreateCardScreen';
 import EditCardScreen from '../screens/cards/EditCardScreen';
 import DeckCardsScreen from '../screens/cards/CardsOfDeckScreen';
-import CardDetailScreen from '../screens/cards/CardDetailScreen';
 import ChaptersScreen from '../screens/decks/ChaptersScreen';
 import ChapterCardsScreen from '../screens/decks/CardsOfChapter.js';
 import FavoriteDecks from '../screens/library/FavoriteDecks';
@@ -198,7 +197,6 @@ export default function AppNavigator() {
             },
             headerTintColor: '#fff', // Geri butonu beyaz olsun
           }} />
-          <Stack.Screen name="CardDetail" component={CardDetailScreen} options={{ headerShown: true, title: t('tabs.cardDetail', 'Kart Detayı'), headerTitleAlign: 'center' }} />
           <Stack.Screen name="FavoriteDecks" component={FavoriteDecks} options={{ headerShown: true, title: t('tabs.favoriteDecks', 'Favori Desteler'), headerTitleAlign: 'center' }} />
           <Stack.Screen name="FavoriteCards" component={FavoriteCards} options={{ headerShown: true, title: t('tabs.favoriteCards', 'Favori Kartlar'), headerTitleAlign: 'center' }} />
         </>

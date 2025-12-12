@@ -8,7 +8,7 @@ import { typography } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
-import CategorySelector from '../../components/tools/CategorySelector';
+import CategorySelector from '../../components/modals/CategorySelector';
 import UndoButton from '../../components/tools/UndoButton';
 import CreateButton from '../../components/tools/CreateButton';
 

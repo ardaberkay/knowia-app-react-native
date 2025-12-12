@@ -10,7 +10,6 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
-import GlassBlurCard from '../../components/ui/GlassBlurCard';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Buffer } from 'buffer';
@@ -21,7 +20,7 @@ export default function AddCardScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { deck } = route.params;
-  const { colors } = useTheme();
+  const { colors, isDarkMode } = useTheme();
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [example, setExample] = useState('');
@@ -402,9 +401,9 @@ export default function AddCardScreen() {
           contentContainerStyle={[styles.formContainer, { backgroundColor: colors.background }]}
           style={{ flex: 1 }}
         >
-          {/* GlassBlurCard Header */}
-          <GlassBlurCard style={[styles.headerCard, { borderRadius: 28 }]}>
-            <View style={styles.headerContent}>
+          {/* Header Card */}
+          <View style={[styles.headerCard, styles.headerCardContainer, { borderRadius: 28, backgroundColor: colors.cardBackground || colors.cardBackgroundTransparent || (isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)') }]}>
+            <View style={[styles.headerCardContent, styles.headerContent]}>
               <View style={styles.headerTitleContainer}>
                 <Iconify icon="hugeicons:file-add" size={26} color="#F98A21" style={{ marginRight: 6 }} />
                 <Text style={[typography.styles.h2, { color: colors.text}]}>
@@ -439,7 +438,7 @@ export default function AddCardScreen() {
                 </View>
               </View>
             </View>
-          </GlassBlurCard>
+          </View>
           <View style={[styles.inputCard, { 
             backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
             borderColor: colors.cardBorder,
@@ -601,6 +600,18 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 12,
     marginTop: 8,
+  },
+  headerCardContainer: {
+    borderRadius: 28,
+    overflow: 'hidden',
+    marginHorizontal: 10,
+    marginVertical: 8,
+  },
+  headerCardContent: {
+    borderRadius: 28,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    minHeight: 180,
   },
   headerContent: {
     paddingVertical: 8,

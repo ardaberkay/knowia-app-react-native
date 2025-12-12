@@ -5,6 +5,7 @@ import { typography } from '../../theme/typography';
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Iconify } from 'react-native-iconify';
+import LottieView from 'lottie-react-native';
 
 import { supabase } from '../../lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -46,30 +47,44 @@ export default function DeckCardsScreen({ route, navigation }) {
   }, []);
 
   useEffect(() => {
-    const fetchCards = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase
-          .from('cards')
-          .select(`
-            id, question, answer, image, example, note, created_at,
-            deck:decks(
-              id, name, categories:categories(id, name, sort_order)
-            )
-          `)
-          .eq('deck_id', deck.id)
-          .order('created_at', { ascending: false });
-        if (error) throw error;
-        setCards(data || []);
-        setOriginalCards(data || []);
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        // Fetch cards and favorite cards in parallel
+        const [cardsResult, favoritesResult] = await Promise.all([
+          supabase
+            .from('cards')
+            .select(`
+              id, question, answer, image, example, note, created_at,
+              deck:decks(
+                id, name, categories:categories(id, name, sort_order)
+              )
+            `)
+            .eq('deck_id', deck.id)
+            .order('created_at', { ascending: false }),
+          user ? supabase
+            .from('favorite_cards')
+            .select('card_id')
+            .eq('user_id', user.id) : Promise.resolve({ data: [], error: null })
+        ]);
+        
+        if (cardsResult.error) throw cardsResult.error;
+        setCards(cardsResult.data || []);
+        setOriginalCards(cardsResult.data || []);
+        
+        if (favoritesResult.error) throw favoritesResult.error;
+        setFavoriteCards((favoritesResult.data || []).map(f => f.card_id));
       } catch (e) {
         setCards([]);
         setOriginalCards([]);
+        setFavoriteCards([]);
       } finally {
         setLoading(false);
       }
     };
-    fetchCards();
+    fetchData();
   }, [deck.id]);
 
   useEffect(() => {
@@ -84,23 +99,6 @@ export default function DeckCardsScreen({ route, navigation }) {
       );
     }
   }, [search, cards]);
-
-  useEffect(() => {
-    const fetchFavoriteCards = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        const { data, error } = await supabase
-          .from('favorite_cards')
-          .select('card_id')
-          .eq('user_id', user.id);
-        if (error) throw error;
-        setFavoriteCards((data || []).map(f => f.card_id));
-      } catch (e) {
-        setFavoriteCards([]);
-      }
-    };
-    fetchFavoriteCards();
-  }, [deck.id]);
 
   useEffect(() => {
     setFilteredCards(sortCards(cardSort, cards));
@@ -132,6 +130,14 @@ export default function DeckCardsScreen({ route, navigation }) {
 
   // Header'ı ayarla - selectedCard durumuna göre
   useLayoutEffect(() => {
+    // Loading bitene kadar header ikonlarını gösterme
+    if (loading) {
+      navigation.setOptions({
+        headerRight: () => null,
+      });
+      return;
+    }
+
     const isOwner = currentUserId && deck.user_id === currentUserId;
     if (selectedCard && !editMode) {
       navigation.setOptions({
@@ -162,18 +168,24 @@ export default function DeckCardsScreen({ route, navigation }) {
         ),
       });
     } else {
+      const isOwner = currentUserId && deck.user_id === currentUserId;
       navigation.setOptions({
-        headerRight: () => (
-          <TouchableOpacity 
-            onPress={() => navigation.navigate('AddCard', { deck })} 
-            style={{ marginRight: 8 }}
-          >
-            <Iconify icon="ic:round-plus" size={28} color={colors.text} />
-          </TouchableOpacity>
-        ),
+        headerRight: () => {
+          if (!isOwner) {
+            return null;
+          }
+          return (
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('AddCard', { deck })} 
+              style={{ marginRight: 8 }}
+            >
+              <Iconify icon="ic:round-plus" size={28} color={colors.text} />
+            </TouchableOpacity>
+          );
+        },
       });
     }
-  }, [selectedCard, editMode, colors.text, navigation, deck, favoriteCards, currentUserId, handleToggleFavoriteCard, openMoreMenu]);
+  }, [loading, selectedCard, editMode, colors.text, navigation, deck, favoriteCards, currentUserId, handleToggleFavoriteCard, openMoreMenu]);
 
   useEffect(() => {
     if (loading) {
@@ -342,7 +354,12 @@ export default function DeckCardsScreen({ route, navigation }) {
              <View style={{ flex: 1, backgroundColor: colors.background }}>
         {/* Kartlar Listesi veya Detay */}
         <View style={{ flex: 1, minHeight: 0 }}>
-          {selectedCard ? (
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: 200, height: 200 }} />
+              <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100 }} />
+            </View>
+          ) : selectedCard ? (
             <LinearGradient
               colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
               start={{ x: 0, y: 0 }}
@@ -374,16 +391,9 @@ export default function DeckCardsScreen({ route, navigation }) {
                )
              }
                          ListEmptyComponent={
-               loading ? (
-                 <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', height: 400}}>
-                   <ActivityIndicator size="large" color={colors.text} style={{ marginBottom: 16 }} />
-                   <Text style={[styles.loadingText, { color: colors.text }]}>{t('common.loading', 'Yükleniyor')}</Text>
-                 </View>
-               ) : (
                  <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', height: 400}}>
                    <Text style={[typography.styles.caption, { color: colors.text, textAlign: 'center', fontSize: 16 }]}>{t('deckDetail.addToDeck', 'Desteye bir kart ekle')}</Text>
                  </View>
-               )
              }
                          renderItem={({ item }) => (
               <View style={styles.cardListItem}>
@@ -578,6 +588,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    minHeight: 200,
+    flexDirection: 'column',
+    gap: -65,
   },
   loadingText: {
     fontSize: 18,

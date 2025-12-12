@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, Image } from 'react-native';
+import React, { useEffect, useMemo, useState, useLayoutEffect } from 'react';
+import { View, Text, FlatList, Image, TouchableOpacity, BackHandler } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
@@ -8,9 +8,11 @@ import { getFavoriteCards } from '../../services/FavoriteService';
 import SearchBar from '../../components/tools/SearchBar';
 import FilterIcon from '../../components/tools/FilterIcon';
 import CardListItem from '../../components/lists/CardList';
+import CardDetailView from '../../components/layout/CardDetailView';
 import LottieView from 'lottie-react-native';
 import { typography } from '../../theme/typography';
 import { StyleSheet } from 'react-native';
+import { Iconify } from 'react-native-iconify';
 
 export default function FavoriteCards() {
   const navigation = useNavigation();
@@ -21,6 +23,8 @@ export default function FavoriteCards() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('original');
+  const [selectedCard, setSelectedCard] = useState(null);
+  const [favoriteCards, setFavoriteCards] = useState([]);
 
   const fetchFavorites = async () => {
     setLoading(true);
@@ -28,10 +32,13 @@ export default function FavoriteCards() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setCards([]);
+        setFavoriteCards([]);
         return;
       }
       const res = await getFavoriteCards(user.id);
       setCards(res || []);
+      // Favori kartların ID'lerini tut
+      setFavoriteCards((res || []).map(card => card.id));
     } finally {
       setLoading(false);
     }
@@ -40,6 +47,30 @@ export default function FavoriteCards() {
   useEffect(() => {
     fetchFavorites();
   }, []);
+
+  useEffect(() => {
+    const onBackPress = () => {
+      if (selectedCard) {
+        setSelectedCard(null);
+        return true; // Geri tuşunu burada tüket
+      }
+      return false; // Normal navigation geri çalışsın
+    };
+    BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => {
+      BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    };
+  }, [selectedCard]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      if (selectedCard) {
+        e.preventDefault();
+        setSelectedCard(null);
+      }
+    });
+    return unsubscribe;
+  }, [navigation, selectedCard]);
 
   const filteredCards = useMemo(() => {
     let list = cards.slice();
@@ -57,21 +88,75 @@ export default function FavoriteCards() {
     return list;
   }, [cards, query, sort]);
 
-  const handleRemoveFavoriteCard = async (cardId) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    await supabase.from('favorite_cards').delete().eq('user_id', user.id).eq('card_id', cardId);
-    const res = await getFavoriteCards(user.id);
-    setCards(res || []);
+  const handleToggleFavoriteCard = async (cardId) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      if (favoriteCards.includes(cardId)) {
+        await supabase
+          .from('favorite_cards')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('card_id', cardId);
+        setFavoriteCards(favoriteCards.filter(id => id !== cardId));
+        setCards(cards.filter(c => c.id !== cardId));
+        // Eğer seçili kart favorilerden çıkarıldıysa, seçimi temizle
+        if (selectedCard && selectedCard.id === cardId) {
+          setSelectedCard(null);
+        }
+      } else {
+        await supabase
+          .from('favorite_cards')
+          .insert({ user_id: user.id, card_id: cardId });
+        setFavoriteCards([...favoriteCards, cardId]);
+      }
+    } catch (e) {}
   };
 
+  // Header'ı ayarla - selectedCard durumuna göre
+  useLayoutEffect(() => {
+    if (loading) {
+      navigation.setOptions({
+        headerRight: () => null,
+      });
+      return;
+    }
+
+    if (selectedCard) {
+      navigation.setOptions({
+        headerRight: () => (
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
+            <TouchableOpacity
+              onPress={() => handleToggleFavoriteCard(selectedCard.id)}
+              activeOpacity={0.7}
+              style={{ paddingHorizontal: 6 }}
+            >
+              <Iconify
+                icon={favoriteCards.includes(selectedCard.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
+                size={24}
+                color={favoriteCards.includes(selectedCard.id) ? '#F98A21' : colors.text}
+              />
+            </TouchableOpacity>
+          </View>
+        ),
+      });
+    } else {
+      navigation.setOptions({
+        headerRight: () => null,
+      });
+    }
+  }, [loading, selectedCard, colors.text, navigation, favoriteCards, handleToggleFavoriteCard]);
+
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background, marginVertical: 10 }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       {loading ? (
         <View style={styles.loadingContainer}>
           <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: 200, height: 200 }} />
           <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100 }} />
         </View>
+      ) : selectedCard ? (
+        <CardDetailView card={selectedCard} cards={filteredCards} onSelectCard={setSelectedCard} />
       ) : filteredCards.length === 0 ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Image
@@ -84,35 +169,49 @@ export default function FavoriteCards() {
           </Text>
         </View>
       ) : (
-        <ScrollView style={{ flex: 1, backgroundColor: colors.background, marginHorizontal: 10 }}>
-          <View style={{ margin: 5, backgroundColor: colors.background }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: '98%', alignSelf: 'center' }}>
-              <SearchBar
-                value={query}
-                onChangeText={setQuery}
-                placeholder={t('common.searchPlaceholder', 'Favori kartlarda ara...')}
-                style={{ flex: 1 }}
-              />
-              <FilterIcon
-                value={sort}
-                onChange={setSort}
-              />
+        <FlatList
+          data={filteredCards}
+          keyExtractor={item => item.id?.toString()}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+          ListHeaderComponent={
+            !selectedCard && (
+              <View style={styles.searchContainer}>
+                <SearchBar
+                  value={query}
+                  onChangeText={setQuery}
+                  placeholder={t('common.searchPlaceholder', 'Favori kartlarda ara...')}
+                  style={{ flex: 1 }}
+                />
+                <FilterIcon
+                  value={sort}
+                  onChange={setSort}
+                />
+              </View>
+            )
+          }
+          ListEmptyComponent={
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: 400 }}>
+              <Text style={[typography.styles.caption, { color: colors.text, textAlign: 'center', fontSize: 16 }]}>
+                {t('library.addFavoriteCardCta', 'Favorilere bir kart ekle')}
+              </Text>
             </View>
-          </View>
-          <View style={{ marginTop: 14, paddingHorizontal: 8 }}>
-            {filteredCards.map((card) => (
+          }
+          renderItem={({ item }) => (
+            <View style={styles.cardListItem}>
               <CardListItem
-                key={String(card.id)}
-                question={card.question}
-                answer={card.answer}
-                isFavorite={true}
-                onPress={() => navigation.navigate('CardDetail', { card })}
-                onToggleFavorite={() => handleRemoveFavoriteCard(card.id)}
+                question={item.question}
+                answer={item.answer}
+                isFavorite={favoriteCards.includes(item.id)}
+                onPress={() => {
+                  setSelectedCard(item);
+                }}
+                onToggleFavorite={() => handleToggleFavoriteCard(item.id)}
                 canDelete={false}
               />
-            ))}
-          </View>
-        </ScrollView>
+            </View>
+          )}
+        />
       )}
     </View>
   );
@@ -126,5 +225,19 @@ const styles = StyleSheet.create({
     minHeight: 200,
     flexDirection: 'column',
     gap: -65,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 12,
+    paddingTop: 8,
+    paddingBottom: 8,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+  },
+  cardListItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 0,
   },
 });

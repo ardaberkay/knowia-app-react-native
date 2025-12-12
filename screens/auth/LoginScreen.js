@@ -6,7 +6,7 @@ import { typography } from '../../theme/typography';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
-import LanguageSelector from '../../components/tools/LanguageSelector';
+import LanguageSelector from '../../components/modals/LanguageSelector';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');

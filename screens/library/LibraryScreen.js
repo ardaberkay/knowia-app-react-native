@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, Modal, Alert, ActivityIndicator, Animated, ScrollView, RefreshControl, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, Modal, Alert, ActivityIndicator, Animated, ScrollView, RefreshControl, Image, SafeAreaView, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -17,8 +17,8 @@ import CardListItem from '../../components/lists/CardList';
 import LottieView from 'lottie-react-native';
 import MyDecksList from '../../components/lists/MyDecksList';
 import MaskedView from '@react-native-masked-view/masked-view';
-import GlassBlurCard from '../../components/ui/GlassBlurCard';
 import MyDecksSkeleton from '../../components/skeleton/MyDecksSkeleton';
+import CardDetailView from '../../components/layout/CardDetailView';
 
 // Fade efekti için yardımcı bileşen
 const FadeText = ({ text, style, maxWidth, maxChars }) => {
@@ -79,8 +79,11 @@ export default function LibraryScreen() {
   const [favCardsQuery, setFavCardsQuery] = useState('');
   const [favCardsSort, setFavCardsSort] = useState('original');
   const [favoriteCards, setFavoriteCards] = useState([]);
+  const [favoriteCardIds, setFavoriteCardIds] = useState([]);
   const [myDecksQuery, setMyDecksQuery] = useState('');
   const [myDecksSort, setMyDecksSort] = useState('original');
+  const [cardDetailModalVisible, setCardDetailModalVisible] = useState(false);
+  const [selectedCard, setSelectedCard] = useState(null);
 
   const screenWidth = Dimensions.get('window').width;
   const horizontalPadding = 16 * 2;
@@ -156,10 +159,12 @@ export default function LibraryScreen() {
       setFavoriteDecks(decks || []);
       const cards = await getFavoriteCards(user.id);
       setFavoriteCards(cards || []);
+      setFavoriteCardIds((cards || []).map(card => card.id));
       setFavoritesFetched(true);
     } catch (e) {
       setFavoriteDecks([]);
       setFavoriteCards([]);
+      setFavoriteCardIds([]);
     } finally {
       setFavoritesLoading(false);
     }
@@ -224,7 +229,117 @@ export default function LibraryScreen() {
     const { data: { user } } = await supabase.auth.getUser();
     await supabase.from('favorite_cards').delete().eq('user_id', user.id).eq('card_id', cardId);
     const cards = await getFavoriteCards(user.id);
-    setFavoriteCards(cards || []);
+    const updatedCards = cards || [];
+    setFavoriteCards(updatedCards);
+    setFavoriteCardIds(updatedCards.map(card => card.id));
+    
+    // Eğer seçili kart favorilerden çıkarıldıysa ve modal açıksa, sonraki karta geç
+    if (selectedCard && selectedCard.id === cardId && cardDetailModalVisible) {
+      // Mevcut kartın index'ini bul (filtrelenmiş listede)
+      const currentIndex = filteredFavoriteCards.findIndex(c => c.id === cardId);
+      
+      // Güncellenmiş kart listesini filtrele (çıkarılan kart olmadan)
+      let remainingCards = updatedCards.slice();
+      if (favCardsQuery && favCardsQuery.trim()) {
+        const q = favCardsQuery.toLowerCase();
+        remainingCards = remainingCards.filter(c => (c.question || '').toLowerCase().includes(q) || (c.answer || '').toLowerCase().includes(q));
+      }
+      if (favCardsSort === 'az') {
+        remainingCards.sort((a, b) => (a.question || '').localeCompare(b.question || ''));
+      } else if (favCardsSort !== 'fav') {
+        remainingCards.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      }
+      
+      if (remainingCards.length > 0) {
+        // Sonraki karta geç, eğer son kart ise önceki karta geç
+        let nextCard;
+        if (currentIndex >= 0 && currentIndex < remainingCards.length) {
+          // Aynı index'teki karta geç (eğer varsa)
+          nextCard = remainingCards[currentIndex];
+        } else if (currentIndex >= remainingCards.length) {
+          // Son karta geç
+          nextCard = remainingCards[remainingCards.length - 1];
+        } else {
+          // İlk karta geç
+          nextCard = remainingCards[0];
+        }
+        setSelectedCard(nextCard);
+      } else {
+        // Hiç kart kalmadıysa modal'ı kapat
+        setCardDetailModalVisible(false);
+        setSelectedCard(null);
+      }
+    }
+  };
+
+  const handleToggleFavoriteCard = async (cardId) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      if (favoriteCardIds.includes(cardId)) {
+        // Favorilerden çıkar
+        await supabase
+          .from('favorite_cards')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('card_id', cardId);
+        
+        const updatedFavoriteCards = favoriteCards.filter(c => c.id !== cardId);
+        const updatedFavoriteCardIds = favoriteCardIds.filter(id => id !== cardId);
+        setFavoriteCardIds(updatedFavoriteCardIds);
+        setFavoriteCards(updatedFavoriteCards);
+        
+        // Eğer seçili kart favorilerden çıkarıldıysa, sonraki karta geç
+        if (selectedCard && selectedCard.id === cardId) {
+          // Mevcut kartın index'ini bul (filtrelenmiş listede)
+          const currentIndex = filteredFavoriteCards.findIndex(c => c.id === cardId);
+          
+          // Güncellenmiş kart listesini filtrele (çıkarılan kart olmadan)
+          let remainingCards = updatedFavoriteCards.slice();
+          if (favCardsQuery && favCardsQuery.trim()) {
+            const q = favCardsQuery.toLowerCase();
+            remainingCards = remainingCards.filter(c => (c.question || '').toLowerCase().includes(q) || (c.answer || '').toLowerCase().includes(q));
+          }
+          if (favCardsSort === 'az') {
+            remainingCards.sort((a, b) => (a.question || '').localeCompare(b.question || ''));
+          } else if (favCardsSort !== 'fav') {
+            remainingCards.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          }
+          
+          if (remainingCards.length > 0) {
+            // Sonraki karta geç, eğer son kart ise önceki karta geç
+            let nextCard;
+            if (currentIndex >= 0 && currentIndex < remainingCards.length) {
+              // Aynı index'teki karta geç (eğer varsa)
+              nextCard = remainingCards[currentIndex];
+            } else if (currentIndex >= remainingCards.length) {
+              // Son karta geç
+              nextCard = remainingCards[remainingCards.length - 1];
+            } else {
+              // İlk karta geç
+              nextCard = remainingCards[0];
+            }
+            setSelectedCard(nextCard);
+          } else {
+            // Hiç kart kalmadıysa modal'ı kapat
+            setCardDetailModalVisible(false);
+            setSelectedCard(null);
+          }
+        }
+      } else {
+        // Favorilere ekle
+        await supabase
+          .from('favorite_cards')
+          .insert({ user_id: user.id, card_id: cardId });
+        setFavoriteCardIds([...favoriteCardIds, cardId]);
+        // Kartı favori kartlar listesine de ekle (eğer gerekirse)
+        const card = filteredFavoriteCards.find(c => c.id === cardId);
+        if (card) {
+          setFavoriteCards([...favoriteCards, card]);
+        }
+      }
+    } catch (e) {}
   };
 
   const filteredFavoriteCards = (() => {
@@ -264,7 +379,7 @@ export default function LibraryScreen() {
   // MyDecks Card
   const renderMyDecksCard = () => {
     return (
-      <GlassBlurCard style={styles.myDecksCard}>
+      <View style={[styles.myDecksCard, styles.myDecksCardContainer, { backgroundColor: colors.cardBackground || colors.cardBackgroundTransparent || (isDark ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)') }]}>
         <View style={styles.myDecksContent}>
           <View style={styles.myDecksTextContainer}>
             <View style={styles.myDecksTitleContainer}>
@@ -297,7 +412,7 @@ export default function LibraryScreen() {
             onChange={setMyDecksSort}
           />
         </View>
-      </GlassBlurCard>
+      </View>
     );
   };
 
@@ -424,7 +539,7 @@ export default function LibraryScreen() {
                       {t('library.favoriteDecksTitle', 'Favori Destelerim')}
                     </Text>
                   </View>
-                  <TouchableOpacity activeOpacity={0.8} style={[styles.seeAllButton, { borderColor: colors.secondary }]} onPress={() => navigation.navigate('FavoriteDecks')}>
+                  <TouchableOpacity activeOpacity={0.8} style={[styles.seeAllButton, { borderColor: colors.secondary, backgroundColor: colors.secondary + '30' }]} onPress={() => navigation.navigate('FavoriteDecks')}>
                     <Text style={[styles.seeAllText, { color: colors.secondary }]}>
                       {t('library.all', 'Tümü')}
                     </Text>
@@ -569,7 +684,7 @@ export default function LibraryScreen() {
                       {t('library.favoriteCardsTitle', 'Favori Kartlarım')}
                     </Text>
                   </View>
-                  <TouchableOpacity activeOpacity={0.8} style={[styles.seeAllButton, { borderColor: colors.secondary }]} onPress={() => navigation.navigate('FavoriteCards')}>
+                  <TouchableOpacity activeOpacity={0.8} style={[styles.seeAllButton, { borderColor: colors.secondary, backgroundColor: colors.secondary + '30' }]} onPress={() => navigation.navigate('FavoriteCards')}>
                     <Text style={[styles.seeAllText, { color: colors.secondary }]}> 
                       {t('library.all', 'Tümü')}
                     </Text>
@@ -597,7 +712,10 @@ export default function LibraryScreen() {
                         question={card.question}
                         answer={card.answer}
                         isFavorite={true}
-                        onPress={() => navigation.navigate('CardDetail', { card, isOwner: myDecks.some(d => d.id === card.deck_id) })}
+                        onPress={() => {
+                          setSelectedCard(card);
+                          setCardDetailModalVisible(true);
+                        }}
                         onToggleFavorite={() => handleRemoveFavoriteCard(card.id)}
                         canDelete={false}
                       />
@@ -612,6 +730,53 @@ export default function LibraryScreen() {
           )}
         </View>
       </PagerView>
+
+      {/* Card Detail Modal */}
+      <Modal
+        visible={cardDetailModalVisible}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setCardDetailModalVisible(false)}
+      >
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+          <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+          <View style={[styles.modalHeader, { backgroundColor: colors.background }]}>
+            <TouchableOpacity
+              onPress={() => setCardDetailModalVisible(false)}
+              style={styles.modalCloseButton}
+            >
+              <Ionicons name="close" size={28} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={[styles.modalTitle, { color: colors.text, flex: 1, textAlign: 'center' }]}>
+              {t('cardDetail.cardDetail', 'Kart Detayı')}
+            </Text>
+            {selectedCard && (
+              <TouchableOpacity
+                onPress={() => handleToggleFavoriteCard(selectedCard.id)}
+                activeOpacity={0.7}
+                style={styles.modalFavoriteButton}
+              >
+                <Iconify
+                  icon={favoriteCardIds.includes(selectedCard.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
+                  size={24}
+                  color={favoriteCardIds.includes(selectedCard.id) ? '#F98A21' : colors.text}
+                />
+              </TouchableOpacity>
+            )}
+            {!selectedCard && <View style={{ width: 28 }} />}
+          </View>
+          <View style={{ flex: 1 }}>
+            {selectedCard && (
+              <CardDetailView
+                card={selectedCard}
+                cards={filteredFavoriteCards}
+                onSelectCard={(card) => setSelectedCard(card)}
+                showCreatedAt={true}
+              />
+            )}
+          </View>
+        </SafeAreaView>
+      </Modal>
     </View>
   );
 }
@@ -906,7 +1071,15 @@ const styles = StyleSheet.create({
   // MyDecks Card styles
   myDecksCard: {
     marginTop: '21%',
-
+  },
+  myDecksCardContainer: {
+    borderRadius: 28,
+    overflow: 'hidden',
+    marginHorizontal: 10,
+    marginVertical: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    minHeight: 180,
   },
   myDecksContent: {
     flexDirection: 'row',
@@ -937,5 +1110,30 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 12,
     paddingTop: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  modalCloseButton: {
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 4,
+  },
+  modalFavoriteButton: {
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
   },
 }); 

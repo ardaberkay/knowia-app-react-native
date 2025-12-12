@@ -14,7 +14,7 @@ import { typography } from '../../theme/typography';
 import { getCategoryConfig } from '../../components/ui/CategoryHeroHeader';
 
 export default function CategoryDeckListScreen({ route }) {
-  const { category, title, decks: initialDecks } = route.params || {};
+  const { category, title, decks: initialDecks, favoriteDecks: initialFavoriteDecks } = route.params || {};
   const navigation = useNavigation();
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -22,14 +22,16 @@ export default function CategoryDeckListScreen({ route }) {
 
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('popularity'); // 'popularity' | 'az' | 'new'
-  const [favoriteDecks, setFavoriteDecks] = useState([]);
+  const [favoriteDecks, setFavoriteDecks] = useState(initialFavoriteDecks || []);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [decks, setDecks] = useState(initialDecks || []);
 
-  // Load favorite decks on component mount
+  // Load favorite decks on component mount (only if not provided via params)
   useEffect(() => {
-    loadFavoriteDecks();
+    if (!initialFavoriteDecks || initialFavoriteDecks.length === 0) {
+      loadFavoriteDecks();
+    }
     // If no initial decks provided, load them
     if (!initialDecks || initialDecks.length === 0) {
       loadDecks();
@@ -42,6 +44,13 @@ export default function CategoryDeckListScreen({ route }) {
       loadDecks();
     }
   }, [category]);
+
+  // Update favorite decks when route params change
+  useEffect(() => {
+    if (initialFavoriteDecks) {
+      setFavoriteDecks(initialFavoriteDecks);
+    }
+  }, [initialFavoriteDecks]);
 
   const loadFavoriteDecks = async () => {
     try {

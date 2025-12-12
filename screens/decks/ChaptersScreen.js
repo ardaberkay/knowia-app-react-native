@@ -24,6 +24,19 @@ export default function ChaptersScreen({ route, navigation }) {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [editMode, setEditMode] = useState(false);
 
+  // currentUserId'yi erken yükle (header için)
+  useEffect(() => {
+    const fetchUserId = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+      // Owner can edit only if deck is not shared (treat undefined as not shared)
+      if (deck?.user_id) {
+        setIsOwner(user?.id === deck.user_id && !deck.is_shared);
+      }
+    };
+    fetchUserId();
+  }, [deck?.user_id, deck?.is_shared]);
+
   useEffect(() => {
     let mounted = true;
     async function load() {
@@ -31,9 +44,6 @@ export default function ChaptersScreen({ route, navigation }) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!mounted) return;
-        // Owner can edit only if deck is not shared (treat undefined as not shared)
-        setIsOwner(user?.id === deck.user_id && !deck.is_shared);
-        setCurrentUserId(user?.id || null);
         const data = await listChapters(deck.id);
         if (mounted) {
           setChapters(data);
@@ -71,6 +81,14 @@ export default function ChaptersScreen({ route, navigation }) {
 
   // Navigation header'a edit butonu ekle
   useLayoutEffect(() => {
+    // Loading bitene kadar header ikonlarını gösterme
+    if (loading) {
+      navigation.setOptions({
+        headerRight: () => null,
+      });
+      return;
+    }
+
     navigation.setOptions({
       headerRight: () => {
         // Kullanıcı deste sahibiyse ve deste paylaşılmamışsa göster
@@ -92,7 +110,7 @@ export default function ChaptersScreen({ route, navigation }) {
         );
       },
     });
-  }, [navigation, currentUserId, deck?.user_id, deck?.is_shared, editMode]);
+  }, [loading, navigation, currentUserId, deck?.user_id, deck?.is_shared, editMode]);
 
   const handleDistribute = async () => {
     if (!deck?.id) return;
@@ -351,7 +369,7 @@ export default function ChaptersScreen({ route, navigation }) {
             
           </View>
         )}
-        {isOwner && (
+        {!loading && isOwner && (
           <TouchableOpacity
             onPress={handleAddChapter}
             activeOpacity={0.85}

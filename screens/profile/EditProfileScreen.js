@@ -4,6 +4,7 @@ import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { getCurrentUserProfile } from '../../services/ProfileService';
 import { supabase } from '../../lib/supabase';
+import { cacheProfile, cacheProfileImage, clearUserCache } from '../../services/CacheService';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
@@ -156,12 +157,23 @@ export default function EditProfileScreen({ navigation }) {
         .update({ username, image_url: newImageUrl })
         .eq('id', profile.id);
       if (updateError) throw updateError;
-      // 4. E-posta değiştiyse güncelle
+      
+      // 4. Cache'i güncelle - eski cache'i temizle ve yeni veriyi cache'le
+      await clearUserCache(profile.id);
+      
+      // Güncellenmiş profil bilgilerini al ve cache'le
+      const updatedProfile = await getCurrentUserProfile();
+      await cacheProfile(profile.id, updatedProfile);
+      if (newImageUrl) {
+        await cacheProfileImage(profile.id, newImageUrl);
+      }
+      
+      // 5. E-posta değiştiyse güncelle
       if (email !== initialState.email && email) {
         const { error: emailError } = await supabase.auth.updateUser({ email });
         if (emailError) throw emailError;
       }
-      // 5. Şifre değiştiyse güncelle
+      // 6. Şifre değiştiyse güncelle
       if (password) {
         const { error: passError } = await supabase.auth.updateUser({ password });
         if (passError) throw passError;

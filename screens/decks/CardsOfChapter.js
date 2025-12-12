@@ -65,8 +65,47 @@ export default function ChapterCardsScreen({ route, navigation }) {
   // Navigation header'a edit butonu ekle (sadece atanmamış kartlar için)
   useLayoutEffect(() => {
     const isOwnerUser = currentUserId && deck?.user_id === currentUserId && !deck?.is_shared;
-    if (selectedCard) {
+    
+    // Loading bitene kadar header ikonlarını gösterme (normal durum için)
+    if (!selectedCard && loading) {
       navigation.setOptions({
+        headerShown: true,
+        headerTransparent: true,
+        headerStyle: {
+          backgroundColor: 'transparent',
+        },
+        headerTintColor: '#fff',
+        headerTitle: '',
+        headerRight: () => null,
+      });
+      return;
+    }
+    
+    if (selectedCard) {
+      // Edit modunda header'da iconlar gözükmesin
+      if (editCardMode) {
+        navigation.setOptions({
+          headerShown: true,
+          headerTransparent: false,
+          headerStyle: {
+            backgroundColor: colors.background,
+          },
+          headerTintColor: colors.text,
+          headerTitle: '',
+          headerRight: () => null,
+        });
+        return;
+      }
+      
+      // Normal kart detay görünümünde favori ve kebab iconları göster
+      navigation.setOptions({
+        headerShown: true,
+        headerTransparent: false,
+        headerStyle: {
+          backgroundColor: colors.background,
+        },
+        headerTintColor: colors.text,
+        headerTitle: '',
         headerRight: () => (
           <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
             <TouchableOpacity
@@ -96,33 +135,35 @@ export default function ChapterCardsScreen({ route, navigation }) {
       return;
     }
 
-    if (!chapter?.id && isOwnerUser) {
-      navigation.setOptions({
-        headerRight: () => (
-          <TouchableOpacity
-            onPress={() => {
-              setEditMode(!editMode);
-              if (editMode) {
-                setSelectedCards(new Set());
-              }
-            }}
-            style={{ marginRight: 16 }}
-            activeOpacity={0.7}
-          >
-            <Iconify 
-              icon={editMode ? "mingcute:close-fill" : "lucide:edit"} 
-              size={22} 
-              color="#FFFFFF" 
-            />
-          </TouchableOpacity>
-        ),
-      });
-    } else {
-      navigation.setOptions({
-        headerRight: () => null,
-      });
-    }
-  }, [navigation, chapter?.id, currentUserId, deck?.user_id, deck?.is_shared, editMode, selectedCard, favoriteCards, colors.text, openCardMenu]);
+    // Normal durumda header'ı şeffaf yap (appbar görünmesin)
+    navigation.setOptions({
+      headerShown: true,
+      headerTransparent: true,
+      headerStyle: {
+        backgroundColor: 'transparent',
+      },
+      headerTintColor: '#fff',
+      headerTitle: '',
+      headerRight: isOwnerUser ? () => (
+        <TouchableOpacity
+          onPress={() => {
+            setEditMode(!editMode);
+            if (editMode) {
+              setSelectedCards(new Set());
+            }
+          }}
+          style={{ marginRight: 16 }}
+          activeOpacity={0.7}
+        >
+          <Iconify 
+            icon={editMode ? "mingcute:close-fill" : "lucide:edit"} 
+            size={22} 
+            color="#FFFFFF" 
+          />
+        </TouchableOpacity>
+      ) : () => null,
+    });
+  }, [loading, navigation, chapter?.id, currentUserId, deck?.user_id, deck?.is_shared, editMode, selectedCard, editCardMode, favoriteCards, colors.text, colors.background, openCardMenu]);
 
   useEffect(() => {
     if (!search.trim()) {
@@ -506,7 +547,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
   // Kart detay görünümü gösteriliyorsa
   if (selectedCard) {
     return (
-      <SafeAreaView style={{ flex: 1, paddingTop: insets.top, backgroundColor: colors.background }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
         {editCardMode ? (
           <AddEditCardInlineForm
             card={selectedCard}

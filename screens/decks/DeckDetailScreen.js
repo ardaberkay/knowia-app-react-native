@@ -1337,7 +1337,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             borderColor: 'transparent',
             overflow: 'hidden',
           }]}
-          activeOpacity={0.8}
+          activeOpacity={1}
           onPress={async () => {
             if (!selectedChapter) {
               Alert.alert(
