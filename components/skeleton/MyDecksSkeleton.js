@@ -6,6 +6,7 @@ export default function MyDecksSkeleton() {
   const { colors, isDarkMode } = useTheme();
   const bgColor = isDarkMode ? '#222' : '#ececec';
   const lineColor = isDarkMode ? '#333' : '#ddd';
+  const cardBgColor = isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)';
 
   return (
     <ScrollView
@@ -14,7 +15,7 @@ export default function MyDecksSkeleton() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header Card Skeleton */}
-      <View style={[skeletonStyles.myDecksCard, skeletonStyles.myDecksCardContainer]}>
+      <View style={[skeletonStyles.myDecksCard, skeletonStyles.myDecksCardContainer, { backgroundColor: cardBgColor }]}>
         <View style={skeletonStyles.myDecksContent}>
           <View style={skeletonStyles.myDecksTextContainer}>
             <View style={skeletonStyles.myDecksTitleContainer}>
@@ -95,7 +96,6 @@ const skeletonStyles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     minHeight: 180,
-    backgroundColor: isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)',
   },
   myDecksContent: {
     flexDirection: 'row',

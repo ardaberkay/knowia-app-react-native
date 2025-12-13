@@ -10,6 +10,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import { Buffer } from 'buffer';
 import { useTranslation } from 'react-i18next';
+import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 
 export default function EditProfileScreen({ navigation }) {
   const { colors } = useTheme();
@@ -26,6 +27,7 @@ export default function EditProfileScreen({ navigation }) {
   const [imageChanged, setImageChanged] = useState(false);
   const [imageFilePath, setImageFilePath] = useState(null); // storage path
   const { t } = useTranslation();
+  const { showSuccess, showError } = useSnackbarHelpers();
 
   useEffect(() => {
     (async () => {
@@ -80,7 +82,7 @@ export default function EditProfileScreen({ navigation }) {
     } catch (err) {
       console.log('Fotoğraf seçme hatası:', err);
       if (err?.message) {
-        Alert.alert(t('common.error', 'Hata'), t('common.imageNotSelected', 'Fotoğraf seçilemedi.'));
+        showError(t('common.imageNotSelected', 'Fotoğraf seçilemedi.'));
       }
     }
   };
@@ -93,14 +95,14 @@ export default function EditProfileScreen({ navigation }) {
         const { data, error } = await supabase.storage.from('avatars').remove([imageFilePath]);
         console.log('Silme sonucu (removePhoto):', data, error);
         if (error) {
-          Alert.alert(t('common.error', 'Hata'), t('common.imageRemoveError', 'Fotoğraf silinemedi: ') + error.message);
+          showError(t('common.imageRemoveError', 'Fotoğraf silinemedi: ') + error.message);
         }
       }
       setImageUrl('');
       setImageChanged(true);
       setImageFilePath(null);
     } catch (err) {
-      Alert.alert(t('common.error', 'Hata'), t('common.imageRemoveError', 'Fotoğraf silinemedi.'));
+      showError(t('common.imageRemoveError', 'Fotoğraf silinemedi.'));
     }
   };
 
@@ -127,7 +129,7 @@ export default function EditProfileScreen({ navigation }) {
         const { data, error } = await supabase.storage.from('avatars').remove([imageFilePath]);
         console.log('Silme sonucu (handleSave):', data, error);
         if (error) {
-          Alert.alert(t('common.error', 'Hata'), t('common.imageRemoveError', 'Fotoğraf silinemedi: ') + error.message);
+          showError(t('common.imageRemoveError', 'Fotoğraf silinemedi: ') + error.message);
         }
       }
       // 2. Fotoğraf değiştiyse yeni fotoğrafı yükle
@@ -178,12 +180,14 @@ export default function EditProfileScreen({ navigation }) {
         const { error: passError } = await supabase.auth.updateUser({ password });
         if (passError) throw passError;
       }
-      Alert.alert(t('common.success', 'Başarılı'), t('common.profileUpdated', 'Profil güncellendi!'), [
-        { text: t('common.ok', 'Tamam'), onPress: () => navigation.goBack() }
-      ]);
+      showSuccess(t('common.profileUpdated', 'Profil güncellendi!'));
+      setTimeout(() => {
+        navigation.goBack();
+      }, 500);
     } catch (err) {
       console.log('Profil güncelleme hatası:', err);
       setError(err.message || t('common.profileUpdatedError', 'Profil güncellenemedi'));
+      showError(err.message || t('common.profileUpdatedError', 'Profil güncellenemedi'));
     } finally {
       setSaving(false);
     }

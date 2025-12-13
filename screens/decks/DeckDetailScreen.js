@@ -1414,7 +1414,12 @@ export default function DeckDetailScreen({ route, navigation }) {
             <TouchableOpacity
               onPress={() => {
                 setMoreMenuVisible(false);
-                navigation.navigate('DeckEdit', { deck });
+                // Kategori bilgisini deck objesine ekle (eğer varsa)
+                const deckWithCategory = {
+                  ...deck,
+                  categories: categoryInfo || deck.categories || null
+                };
+                navigation.navigate('DeckEdit', { deck: deckWithCategory });
               }}
               style={{
                 flexDirection: 'row',

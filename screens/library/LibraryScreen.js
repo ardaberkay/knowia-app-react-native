@@ -61,7 +61,7 @@ const FadeText = ({ text, style, maxWidth, maxChars }) => {
 };
 
 export default function LibraryScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors, isDarkMode } = useTheme();
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState('myDecks');
   const [myDecks, setMyDecks] = useState([]);
@@ -379,7 +379,7 @@ export default function LibraryScreen() {
   // MyDecks Card
   const renderMyDecksCard = () => {
     return (
-      <View style={[styles.myDecksCard, styles.myDecksCardContainer, { backgroundColor: colors.cardBackground || colors.cardBackgroundTransparent || (isDark ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)') }]}>
+      <View style={[styles.myDecksCard, styles.myDecksCardContainer, { backgroundColor: colors.cardBackground || colors.cardBackgroundTransparent || (isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)') }]}>
         <View style={styles.myDecksContent}>
           <View style={styles.myDecksTextContainer}>
             <View style={styles.myDecksTitleContainer}>
@@ -739,7 +739,7 @@ export default function LibraryScreen() {
         onRequestClose={() => setCardDetailModalVisible(false)}
       >
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-          <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+          <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
           <View style={[styles.modalHeader, { backgroundColor: colors.background }]}>
             <TouchableOpacity
               onPress={() => setCardDetailModalVisible(false)}

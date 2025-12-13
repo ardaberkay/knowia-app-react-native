@@ -15,6 +15,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { Buffer } from 'buffer';
 import CreateButton from '../../components/tools/CreateButton';
 import UndoButton from '../../components/tools/UndoButton';
+import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 
 export default function AddCardScreen() {
   const navigation = useNavigation();
@@ -32,6 +33,7 @@ export default function AddCardScreen() {
   const [csvPreview, setCsvPreview] = useState(null);
   const [csvLoading, setCsvLoading] = useState(false);
   const { t } = useTranslation();
+  const { showSuccess, showError } = useSnackbarHelpers();
 
   useEffect(() => {
     if (route.params?.openCsvModal) {
@@ -41,9 +43,10 @@ export default function AddCardScreen() {
   }, [route.params?.openCsvModal]);
 
   const handleCardSaved = (card) => {
-    Alert.alert(t('common.success', 'Başarılı'), t('common.addCardSuccess', 'Kart eklendi!'), [
-      { text: t('common.ok', 'Tamam'), onPress: () => navigation.goBack() }
-    ]);
+    showSuccess(t('common.addCardSuccess', 'Kart eklendi!'));
+    setTimeout(() => {
+      navigation.goBack();
+    }, 500);
   };
 
   const handleCancel = () => {
@@ -67,7 +70,7 @@ export default function AddCardScreen() {
         setImageChanged(true);
       }
     } catch (err) {
-      Alert.alert(t('common.error', 'Hata'), t('common.imageNotSelected', 'Fotoğraf seçilemedi.'));
+      showError(t('common.imageNotSelected', 'Fotoğraf seçilemedi.'));
     }
   };
 
@@ -78,7 +81,7 @@ export default function AddCardScreen() {
 
   const handleCreateCard = async () => {
     if (!question.trim() || !answer.trim()) {
-      Alert.alert(t('common.error', 'Hata'), t('common.questionAndAnswerRequired', 'Soru ve cevap zorunludur.'));
+      showError(t('common.questionAndAnswerRequired', 'Soru ve cevap zorunludur.'));
       return;
     }
     setLoading(true);
@@ -114,7 +117,7 @@ export default function AddCardScreen() {
       if (error) throw error;
       handleCardSaved(data[0]);
     } catch (e) {
-      Alert.alert(t('common.error', 'Hata'), e.message || t('common.addCardError', 'Kart eklenemedi.'));
+      showError(e.message || t('common.addCardError', 'Kart eklenemedi.'));
     } finally {
       setLoading(false);
     }
@@ -137,7 +140,7 @@ export default function AddCardScreen() {
     if (await Sharing.isAvailableAsync()) {
       await Sharing.shareAsync(fileUri);
     } else {
-      Alert.alert(t('addCard.errorUpload', 'Paylaşım desteklenmiyor'), t('addCard.fileUri', 'Dosya yolu: ') + fileUri);
+      showError(t('addCard.errorUpload', 'Paylaşım desteklenmiyor'));
     }
   };
 
@@ -251,7 +254,7 @@ export default function AddCardScreen() {
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const file = result.assets[0];
         if (!file.name.toLowerCase().endsWith('.csv')) {
-          Alert.alert(t('common.error', 'Hata'), t('common.pleaseSelectCSV', 'Lütfen bir CSV dosyası seçin.'));
+          showError(t('common.pleaseSelectCSV', 'Lütfen bir CSV dosyası seçin.'));
           setCsvLoading(false);
           return;
         }
@@ -270,7 +273,7 @@ export default function AddCardScreen() {
         });
       }
     } catch (error) {
-      Alert.alert(t('common.error', 'Hata'), t('common.csvReadError', 'CSV dosyası okunamadı: ') + error.message);
+      showError(t('common.csvReadError', 'CSV dosyası okunamadı: ') + error.message);
     } finally {
       setCsvLoading(false);
     }
@@ -317,7 +320,7 @@ export default function AddCardScreen() {
                 onPress={async () => {
                   // Kartları topluca ekle (Supabase)
                   if (!csvPreview.allValidCards.length) {
-                    Alert.alert(t('addCard.error', 'Hata'), t('addCard.noValidCards', 'Geçerli kart yok.'));
+                    showError(t('addCard.noValidCards', 'Geçerli kart yok.'));
                     return;
                   }
                   let successCount = 0;
@@ -343,15 +346,14 @@ export default function AddCardScreen() {
                         successCount += batch.length;
                       }
                     }
-                    Alert.alert(
-                      t('addCard.importCompleted', 'İçe Aktarma Tamamlandı'),
-                      `${successCount} ${t('addCard.importCompletedMessage', 'kart başarıyla eklendi.')}${errorCount > 0 ? ` ${errorCount} ${t('addCard.importCompletedError', 'kart eklenemedi.')}` : ''}`,
-                      [
-                        { text: t('addCard.ok', 'Tamam'), onPress: () => { setCsvPreview(null); setCsvModalVisible(false); } }
-                      ]
-                    );
+                    const message = `${successCount} ${t('addCard.importCompletedMessage', 'kart başarıyla eklendi.')}${errorCount > 0 ? ` ${errorCount} ${t('addCard.importCompletedError', 'kart eklenemedi.')}` : ''}`;
+                    showSuccess(message);
+                    setTimeout(() => {
+                      setCsvPreview(null);
+                      setCsvModalVisible(false);
+                    }, 1500);
                   } catch (e) {
-                    Alert.alert(t('addCard.error', 'Hata'), t('addCard.errorImport', 'Kartlar eklenirken bir hata oluştu: ') + e.message);
+                    showError(t('addCard.errorImport', 'Kartlar eklenirken bir hata oluştu: ') + e.message);
                   } finally {
                     setCsvLoading(false);
                   }

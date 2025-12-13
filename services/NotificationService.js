@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import { Alert } from 'react-native';
 import { supabase } from '../lib/supabase';
 import i18n from '../lib/i18n';
 
@@ -14,7 +15,10 @@ export async function registerForPushNotificationsAsync(userId) {
 
   // Sadece gerçek cihazda çalışır, emulator/simülatörde çalışmaz!
   if (!Device.isDevice) {
-    alert(i18n.t('notifications.errorMessageNotificationDevice', 'Push bildirimleri için gerçek bir cihaz gereklidir.'));
+    Alert.alert(
+      i18n.t('common.error', 'Hata'),
+      i18n.t('notifications.errorMessageNotificationDevice', 'Push bildirimleri için gerçek bir cihaz gereklidir.')
+    );
     return null;
   }
 
@@ -26,7 +30,10 @@ export async function registerForPushNotificationsAsync(userId) {
     finalStatus = status;
   }
   if (finalStatus !== 'granted') {
-    alert(i18n.t('notifications.errorMessageNotification', 'Push bildirim izni verilmedi!'));
+    Alert.alert(
+      i18n.t('common.error', 'Hata'),
+      i18n.t('notifications.errorMessageNotification', 'Push bildirim izni verilmedi!')
+    );
     return null;
   }
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator, Share, Switch } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator, Share, Switch, Alert } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { getCurrentUserProfile, updateNotificationPreference } from '../../services/ProfileService';
@@ -12,6 +12,7 @@ import ProfileSkeleton from '../../components/skeleton/ProfileSkeleton';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from '../../components/modals/LanguageSelector';
 import { Iconify } from 'react-native-iconify';
+import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 
 export default function ProfileScreen() {
   const { colors, isDarkMode, toggleTheme, themePreference, loading: themeLoading } = useTheme();
@@ -24,6 +25,7 @@ export default function ProfileScreen() {
   const { logout } = useAuth();
   const { t, i18n } = useTranslation();
   const [isLanguageModalVisible, setLanguageModalVisible] = useState(false);
+  const { showSuccess, showError } = useSnackbarHelpers();
 
   useEffect(() => {
     const checkNotificationStatus = async () => {
@@ -201,9 +203,9 @@ export default function ProfileScreen() {
   ], [t, toggleTheme, themePreference, isDarkMode, colors, i18n.language, notificationsEnabled, handleToggleNotifications]);
 
   const infoItems = useMemo(() => [
-    { label: t('profile.about'), onPress: () => alert(t('profile.about')) },
-    { label: t('profile.feedback'), onPress: () => alert(t('profile.feedback')) },
-    { label: t('profile.terms'), onPress: () => alert(t('profile.terms')) },
+    { label: t('profile.about'), onPress: () => Alert.alert(t('profile.about'), '') },
+    { label: t('profile.feedback'), onPress: () => Alert.alert(t('profile.feedback'), '') },
+    { label: t('profile.terms'), onPress: () => Alert.alert(t('profile.terms'), '') },
   ], [t]);
 
   const handleLogout = async () => {
@@ -211,12 +213,12 @@ export default function ProfileScreen() {
       const { error } = await logout();
       if (error) throw error;
     } catch (error) {
-      alert(t('profile.logoutError', 'Çıkış yapılırken bir hata oluştu'));
+      showError(t('profile.logoutError', 'Çıkış yapılırken bir hata oluştu'));
     }
   };
 
   const handleDeleteAccount = () => {
-    alert('Hesap silindi!');
+    showSuccess(t('profile.accountDeleted', 'Hesap silindi!'));
   };
 
   // Kategori render fonksiyonu

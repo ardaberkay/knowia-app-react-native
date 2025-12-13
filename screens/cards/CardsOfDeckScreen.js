@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ScrollVi
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Ionicons } from '@expo/vector-icons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Iconify } from 'react-native-iconify';
 import LottieView from 'lottie-react-native';
 

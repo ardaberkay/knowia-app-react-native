@@ -4,18 +4,19 @@ import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Iconify } from 'react-native-iconify';
 import { listChapters, distributeUnassignedEvenly, getNextOrdinal, createChapter, getChaptersProgress, deleteChapter, reorderChapterOrdinals } from '../../services/ChapterService';
 import CreateButton from '../../components/tools/CreateButton';
 import CircularProgress from '../../components/ui/CircularProgress';
 import { supabase } from '../../lib/supabase';
 import LottieView from 'lottie-react-native';
+import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 
 export default function ChaptersScreen({ route, navigation }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { deck } = route.params || {};
+  const { showSuccess, showError } = useSnackbarHelpers();
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [distLoading, setDistLoading] = useState(false);
@@ -115,13 +116,13 @@ export default function ChaptersScreen({ route, navigation }) {
   const handleDistribute = async () => {
     if (!deck?.id) return;
     if (!chapters?.length) {
-      Alert.alert(t('common.error', 'Hata'), t('chapters.needChapters', 'Dağıtım için en az bir bölüm oluşturmalısın.'));
+      showError(t('chapters.needChapters', 'Dağıtım için en az bir bölüm oluşturmalısın.'));
       return;
     }
     setDistLoading(true);
     try {
       await distributeUnassignedEvenly(deck.id, chapters.map(c => c.id));
-      Alert.alert(t('common.success', 'Başarılı'), t('chapters.distributed', 'Atanmamış kartlar bölümlere dağıtıldı.'));
+      showSuccess(t('chapters.distributed', 'Atanmamış kartlar bölümlere dağıtıldı.'));
       // Refresh progress after distribution
       if (currentUserId) {
         const chaptersWithUnassigned = [{ id: null }, ...chapters];
@@ -129,7 +130,7 @@ export default function ChaptersScreen({ route, navigation }) {
         setProgressMap(progress);
       }
     } catch (e) {
-      Alert.alert(t('common.error', 'Hata'), e.message || t('chapters.distributeError', 'Dağıtım yapılamadı.'));
+      showError(e.message || t('chapters.distributeError', 'Dağıtım yapılamadı.'));
     } finally {
       setDistLoading(false);
     }
@@ -138,11 +139,11 @@ export default function ChaptersScreen({ route, navigation }) {
   const handleAddChapter = async () => {
     if (!deck?.id) return;
     if (!isOwner) {
-      Alert.alert(t('common.error', 'Hata'), t('chapters.onlyOwner', 'Sadece deste sahibi bölüm ekleyebilir.'));
+      showError(t('chapters.onlyOwner', 'Sadece deste sahibi bölüm ekleyebilir.'));
       return;
     }
     if (chapters.length >= 30) {
-      Alert.alert(t('common.error', 'Hata'), t('chapters.limitReached', 'Maksimum 30 bölüm oluşturabilirsin.'));
+      showError(t('chapters.limitReached', 'Maksimum 30 bölüm oluşturabilirsin.'));
       return;
     }
     try {
@@ -161,7 +162,7 @@ export default function ChaptersScreen({ route, navigation }) {
         setProgressMap(progress);
       }
     } catch (e) {
-      Alert.alert(t('common.error', 'Hata'), e.message || t('chapters.createError', 'Bölüm eklenemedi.'));
+      showError(e.message || t('chapters.createError', 'Bölüm eklenemedi.'));
     }
   };
 
@@ -191,9 +192,9 @@ export default function ChaptersScreen({ route, navigation }) {
                 const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, currentUserId);
                 setProgressMap(progress);
               }
-              Alert.alert(t('common.success', 'Başarılı'), t('chapters.deleted', 'Bölüm silindi.'));
+              showSuccess(t('chapters.deleted', 'Bölüm silindi.'));
             } catch (e) {
-              Alert.alert(t('common.error', 'Hata'), e.message || t('chapters.deleteError', 'Bölüm silinemedi.'));
+              showError(e.message || t('chapters.deleteError', 'Bölüm silinemedi.'));
             }
           },
         },
@@ -244,7 +245,7 @@ export default function ChaptersScreen({ route, navigation }) {
                     >
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <MaterialCommunityIcons name="alert-circle-outline" size={20} color={colors.buttonColor} style={{ marginRight: 8 }} />
+                          <Iconify icon="ic:round-assignment-late" size={20} color={colors.buttonColor} style={{ marginRight: 8 }} />
                           <Text style={[typography.styles.body, { color: colors.text }]}>{t('chapters.unassigned', 'Atanmamış')}</Text>
                         </View>
                         {unassignedCount > 0 && (
@@ -259,15 +260,12 @@ export default function ChaptersScreen({ route, navigation }) {
               }}
               ListEmptyComponent={
                 <View style={styles.emptyState}>
-                  <MaterialCommunityIcons
-                    name="book-open-page-variant"
+                  <Iconify
+                    icon="streamline-freehand:plugin-jigsaw-puzzle"
                     size={64}
                     color={colors.muted}
-                    style={{ marginBottom: 8 }}
+                    style={{ marginBottom: 12 }}
                   />
-                  <Text style={[styles.emptyStateTitle, typography.styles.h3, { color: colors.text }]}>
-                    {t('chapters.noChapters', 'Henüz Bölüm Yok')}
-                  </Text>
                   <Text style={[styles.emptyStateText, typography.styles.body, { color: colors.subtext }]}>
                     {t('chapters.noChaptersDesc', 'Bu destede henüz bölüm oluşturulmamış.')}
                   </Text>

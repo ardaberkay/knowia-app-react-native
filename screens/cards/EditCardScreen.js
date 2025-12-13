@@ -12,6 +12,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import { Buffer } from 'buffer';
 import { useTranslation } from 'react-i18next';
+import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 
 export default function EditCardScreen() {
   const { colors } = useTheme();
@@ -19,6 +20,7 @@ export default function EditCardScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { card } = route.params;
+  const { showSuccess, showError } = useSnackbarHelpers();
   const [question, setQuestion] = useState(card.question || '');
   const [answer, setAnswer] = useState(card.answer || '');
   const [example, setExample] = useState(card.example || '');
@@ -44,7 +46,7 @@ export default function EditCardScreen() {
         setImageChanged(true);
       }
     } catch (err) {
-      Alert.alert(t('common.error', 'Hata'), t('common.imageNotSelected', 'Fotoğraf seçilemedi.'));
+      showError(t('common.imageNotSelected', 'Fotoğraf seçilemedi.'));
     }
   };
 
@@ -55,7 +57,7 @@ export default function EditCardScreen() {
 
   const handleUpdateCard = async () => {
     if (!question.trim() || !answer.trim()) {
-      Alert.alert(t('common.error', 'Hata'), t('common.requiredFields', 'Soru ve cevap zorunludur.'));
+      showError(t('common.requiredFields', 'Soru ve cevap zorunludur.'));
       return;
     }
     setLoading(true);
@@ -93,11 +95,12 @@ export default function EditCardScreen() {
         })
         .eq('id', card.id);
       if (error) throw error;
-      Alert.alert(t('common.success', 'Başarılı'), t('common.cardUpdated', 'Kart güncellendi!'), [
-        { text: t('common.ok', 'Tamam'), onPress: () => navigation.goBack() }
-      ]);
+      showSuccess(t('common.cardUpdated', 'Kart güncellendi!'));
+      setTimeout(() => {
+        navigation.goBack();
+      }, 500);
     } catch (e) {
-      Alert.alert(t('common.error', 'Hata'), e.message || t('common.cardUpdatedError', 'Kart güncellenemedi.'));
+      showError(e.message || t('common.cardUpdatedError', 'Kart güncellenemedi.'));
     } finally {
       setLoading(false);
     }

@@ -10,6 +10,7 @@ import { Iconify } from 'react-native-iconify';
 import CategorySelector from '../../components/modals/CategorySelector';
 import UndoButton from '../../components/tools/UndoButton';
 import CreateButton from '../../components/tools/CreateButton';
+import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 
 export default function CreateScreen() {
   const [name, setName] = useState('');
@@ -22,6 +23,7 @@ export default function CreateScreen() {
   const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
   const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
+  const { showError } = useSnackbarHelpers();
 
   // Kategori ikonunu sort_order değerine göre al
   const getCategoryIcon = (sortOrder) => {
@@ -64,7 +66,11 @@ export default function CreateScreen() {
 
   const handleCreate = async () => {
     if (!name.trim()) {
-      Alert.alert(t('create.error', 'Hata'), t('create.requiredName', 'Deste adı zorunludur.'));
+      showError(t('create.requiredName', 'Deste adı zorunludur.'));
+      return;
+    }
+    if (!selectedCategory) {
+      showError(t('create.requiredCategory', 'Lütfen bir kategori seçin.'));
       return;
     }
     setLoading(true);
@@ -89,7 +95,7 @@ export default function CreateScreen() {
       resetForm();
       navigation.navigate('DeckDetail', { deck: data });
     } catch (e) {
-      Alert.alert(t('create.errorMessage', 'Hata'), e.message || t('create.error', 'Deste oluşturulamadı.'));
+      showError(e.message || t('create.error', 'Deste oluşturulamadı.'));
     } finally {
       setLoading(false);
     }

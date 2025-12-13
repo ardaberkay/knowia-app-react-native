@@ -11,6 +11,7 @@ import { Iconify } from 'react-native-iconify';
 import CategorySelector from '../../components/modals/CategorySelector';
 import UndoButton from '../../components/tools/UndoButton';
 import CreateButton from '../../components/tools/CreateButton';
+import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 
 export default function DeckEditScreen() {
   const route = useRoute();
@@ -20,11 +21,14 @@ export default function DeckEditScreen() {
   const [description, setDescription] = useState(deck.description || '');
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(deck.category_id || null);
+  // Deck'ten gelen kategori bilgisini kullan (eğer varsa)
+  const deckCategory = deck.categories || null;
   const [categories, setCategories] = useState([]);
   const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
   const navigation = useNavigation();
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const { showSuccess, showError } = useSnackbarHelpers();
 
   // Kategori ikonunu sort_order değerine göre al
   const getCategoryIcon = (sortOrder) => {
@@ -67,7 +71,7 @@ export default function DeckEditScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert(t("common.error", "Hata"), t("common.requiredNameDeck", "Deste adı zorunludur."));
+      showError(t("common.requiredNameDeck", "Deste adı zorunludur."));
       return;
     }
     setLoading(true);
@@ -82,10 +86,12 @@ export default function DeckEditScreen() {
         })
         .eq('id', deck.id);
       if (error) throw error;
-      Alert.alert(t("common.success", "Başarılı"), t("common.successDeckMessage", "Deste güncellendi."));
-      navigation.navigate('DeckDetail', { deck: { ...deck, name: name.trim(), to_name: toName.trim() || null, description: description.trim() || null, category_id: selectedCategory } });
+      showSuccess(t("common.successDeckMessage", "Deste güncellendi."));
+      setTimeout(() => {
+        navigation.navigate('DeckDetail', { deck: { ...deck, name: name.trim(), to_name: toName.trim() || null, description: description.trim() || null, category_id: selectedCategory } });
+      }, 500);
     } catch (e) {
-      Alert.alert(t("common.error", "Hata"), e.message || t("common.errorDeckMessage", "Deste güncellenemedi."));
+      showError(e.message || t("common.errorDeckMessage", "Deste güncellenemedi."));
     } finally {
       setLoading(false);
     }
@@ -254,16 +260,35 @@ export default function DeckEditScreen() {
               onPress={() => setCategoryModalVisible(true)}
             >
               <View style={styles.categoryRow}>
-                {selectedCategory && (
-                  <Iconify
-                    icon={getCategoryIcon(categories.find(c => c.id === selectedCategory)?.sort_order)}
-                    size={20}
-                    color={selectedCategory ? colors.text : colors.muted}
-                    style={styles.categoryIcon}
-                  />
-                )}
+                {selectedCategory && (() => {
+                  // Önce deck'ten gelen kategori bilgisini kullan, yoksa categories listesinden bul
+                  const category = deckCategory && deckCategory.id === selectedCategory 
+                    ? deckCategory 
+                    : categories.find(c => c.id === selectedCategory);
+                  const sortOrder = category?.sort_order;
+                  
+                  return sortOrder ? (
+                    <Iconify
+                      icon={getCategoryIcon(sortOrder)}
+                      size={20}
+                      color={selectedCategory ? colors.text : colors.muted}
+                      style={styles.categoryIcon}
+                    />
+                  ) : null;
+                })()}
                 <Text style={[styles.categoryText, typography.styles.body, { color: selectedCategory ? colors.text : colors.muted }]}>
-                  {selectedCategory ? t(`categories.${categories.find(c => c.id === selectedCategory)?.sort_order}`) || categories.find(c => c.id === selectedCategory)?.name || t('createDeck.selectCategory') : t('createDeck.selectCategory')}
+                  {selectedCategory ? (() => {
+                    // Önce deck'ten gelen kategori bilgisini kullan, yoksa categories listesinden bul
+                    const category = deckCategory && deckCategory.id === selectedCategory 
+                      ? deckCategory 
+                      : categories.find(c => c.id === selectedCategory);
+                    const sortOrder = category?.sort_order;
+                    const categoryName = category?.name;
+                    
+                    return sortOrder 
+                      ? (t(`categories.${sortOrder}`) || categoryName || t('createDeck.selectCategory'))
+                      : t('createDeck.selectCategory');
+                  })() : t('createDeck.selectCategory')}
                 </Text>
               </View>
               <Iconify icon="flowbite:caret-down-solid" size={20} color={colors.muted} />

@@ -10,9 +10,9 @@ import SearchBar from '../../components/tools/SearchBar';
 import CardDetailView from '../../components/layout/CardDetailView';
 import AddEditCardInlineForm from '../../components/layout/EditCardForm';
 import { listChapters, distributeUnassignedEvenly } from '../../services/ChapterService';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import LottieView from 'lottie-react-native';
+import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import ChapterSelector from '../../components/modals/ChapterSelector';
 
 export default function ChapterCardsScreen({ route, navigation }) {
@@ -36,6 +36,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const [showChapterModal, setShowChapterModal] = useState(false);
   const [moveLoading, setMoveLoading] = useState(false);
   const [moreMenuVisible, setMoreMenuVisible] = useState(false);
+  const { showSuccess, showError } = useSnackbarHelpers();
   const [moreMenuPos, setMoreMenuPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const moreMenuRef = useRef(null);
   const { t } = useTranslation();
@@ -350,7 +351,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
       setEditCardMode(false);
       await fetchChapterCards();
     } catch (e) {
-      Alert.alert(t('common.error', 'Hata'), t('cardDetail.deleteError', 'Kart silinirken bir hata oluştu.'));
+      showError(t('cardDetail.deleteError', 'Kart silinirken bir hata oluştu.'));
     }
   };
 
@@ -373,17 +374,17 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const handleDistribute = async () => {
     if (!deck?.id) return;
     if (!chapters?.length) {
-      Alert.alert(t('common.error', 'Hata'), t('chapters.needChapters', 'Dağıtım için en az bir bölüm oluşturmalısın.'));
+      showError(t('chapters.needChapters', 'Dağıtım için en az bir bölüm oluşturmalısın.'));
       return;
     }
     setDistLoading(true);
     try {
       await distributeUnassignedEvenly(deck.id, chapters.map(c => c.id));
-      Alert.alert(t('common.success', 'Başarılı'), t('chapters.distributed', 'Atanmamış kartlar bölümlere dağıtıldı.'));
+      showSuccess(t('chapters.distributed', 'Atanmamış kartlar bölümlere dağıtıldı.'));
       // Kartları yeniden yükle
       await fetchChapterCards();
     } catch (e) {
-      Alert.alert(t('common.error', 'Hata'), e.message || t('chapters.distributeError', 'Dağıtım yapılamadı.'));
+      showError(e.message || t('chapters.distributeError', 'Dağıtım yapılamadı.'));
     } finally {
       setDistLoading(false);
     }
@@ -409,7 +410,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
   const handleMoveToChapter = async (targetChapterId) => {
     if (selectedCards.size === 0) {
-      Alert.alert(t('common.error', 'Hata'), t('chapterCards.noCardsSelected', 'Lütfen en az bir kart seçin.'));
+      showError(t('chapterCards.noCardsSelected', 'Lütfen en az bir kart seçin.'));
       return;
     }
     setMoveLoading(true);
@@ -422,10 +423,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
       
       if (error) throw error;
       
-      Alert.alert(
-        t('common.success', 'Başarılı'),
-        t('chapterCards.cardsMoved', '{{count}} kart bölüme taşındı.', { count: selectedCards.size })
-      );
+      showSuccess(t('chapterCards.cardsMoved', '{{count}} kart bölüme taşındı.', { count: selectedCards.size }));
       
       // Seçimleri temizle ve kartları yeniden yükle
       setSelectedCards(new Set());
@@ -433,7 +431,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
       setShowChapterModal(false);
       await fetchChapterCards();
     } catch (e) {
-      Alert.alert(t('common.error', 'Hata'), e.message || t('chapterCards.moveError', 'Kartlar taşınamadı.'));
+      showError(e.message || t('chapterCards.moveError', 'Kartlar taşınamadı.'));
     } finally {
       setMoveLoading(false);
     }
