@@ -3,8 +3,7 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Image, Keyb
 import { supabase } from '../../lib/supabase';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
-import { Ionicons } from '@expo/vector-icons';
+import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
 import * as ImagePicker from 'expo-image-picker';
@@ -117,7 +116,7 @@ export default function EditCardScreen() {
         <ScrollView contentContainerStyle={styles.formContainer}>
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}> 
             <View style={styles.labelRow}>
-              <Ionicons name="image" size={20} color="#F98A21" style={styles.labelIcon} />
+              <Iconify icon="mage:image-fill" size={20} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.image", "Kart Görseli")}</Text>
             </View>
             {image ? (
@@ -129,14 +128,14 @@ export default function EditCardScreen() {
               </View>
             ) : (
               <TouchableOpacity onPress={handlePickImage} style={styles.addImageButton}>
-                <Ionicons name="add" size={24} color="#F98A21" />
+                <Iconify icon="ic:round-plus" size={24} color="#F98A21" />
                 <Text style={styles.addImageButtonText}>{t("cardDetail.addImage", "Fotoğraf Ekle")}</Text>
               </TouchableOpacity>
             )}
           </View>
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}> 
             <View style={styles.labelRow}>
-              <Ionicons name="help-circle-outline" size={20} color="#F98A21" style={styles.labelIcon} />
+              <Iconify icon="uil:comment-alt-question" size={20} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.question", "Soru")} *</Text>
             </View>
             <TextInput
@@ -150,7 +149,7 @@ export default function EditCardScreen() {
           </View>
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}> 
             <View style={styles.labelRow}>
-              <Ionicons name="checkmark-circle-outline" size={20} color="#F98A21" style={styles.labelIcon} />
+              <Iconify icon="uil:comment-alt-check" size={20} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.answer", "Cevap")} *</Text>
             </View>
             <TextInput
@@ -164,7 +163,7 @@ export default function EditCardScreen() {
           </View>
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}> 
             <View style={styles.labelRow}>
-              <Ionicons name="bulb-outline" size={20} color="#F98A21" style={styles.labelIcon} />
+              <Iconify icon="lucide:lightbulb" size={20} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.example", "Örnek")}</Text>
             </View>
             <TextInput
@@ -178,7 +177,7 @@ export default function EditCardScreen() {
           </View>
           <View style={[styles.inputCard, {backgroundColor: colors.blurView, shadowColor: colors.blurViewShadow}]}> 
             <View style={styles.labelRow}>
-              <Ionicons name="document-text-outline" size={20} color="#F98A21" style={styles.labelIcon} />
+              <Iconify icon="material-symbols-light:stylus-note" size={20} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.note", "Not")}</Text>
             </View>
             <TextInput

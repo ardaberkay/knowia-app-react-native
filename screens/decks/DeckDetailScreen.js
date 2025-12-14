@@ -5,12 +5,10 @@ import { typography } from '../../theme/typography';
 import { Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
  
 import { Iconify } from 'react-native-iconify';
-import { Alert as RNAlert } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import CircularProgress from '../../components/ui/CircularProgress';
 import { useAuth } from '../../contexts/AuthContext';

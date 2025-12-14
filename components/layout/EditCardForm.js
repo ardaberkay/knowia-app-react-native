@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Image, ScrollView, ActivityIndicator } from 'react-native';
 import { supabase } from '../../lib/supabase';
-import { Ionicons } from '@expo/vector-icons';
 import { typography } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
 import * as ImagePicker from 'expo-image-picker';

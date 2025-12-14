@@ -24,7 +24,6 @@ import ChaptersScreen from '../screens/decks/ChaptersScreen';
 import ChapterCardsScreen from '../screens/decks/CardsOfChapter.js';
 import FavoriteDecks from '../screens/library/FavoriteDecks';
 import FavoriteCards from '../screens/library/FavoriteCards';
-import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
@@ -180,7 +179,7 @@ export default function AppNavigator() {
                 }}
               >
                 <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15, marginRight: 6}}>CSV</Text>
-                <Ionicons name="cloud-upload-outline" size={22} color={colors.text} />
+                <Iconify icon="solar:cloud-upload-broken" size={22} color={colors.text} />
               </TouchableOpacity>
             ),
           })} />

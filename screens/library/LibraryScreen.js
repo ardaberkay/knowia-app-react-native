@@ -4,7 +4,6 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { getDecksByCategory } from '../../services/DeckService';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Iconify } from 'react-native-iconify';
 import { getFavoriteDecks, getFavoriteCards } from '../../services/FavoriteService';
 import { supabase } from '../../lib/supabase';
@@ -745,7 +744,7 @@ export default function LibraryScreen() {
               onPress={() => setCardDetailModalVisible(false)}
               style={styles.modalCloseButton}
             >
-              <Ionicons name="close" size={28} color={colors.text} />
+              <Iconify icon="ic:round-plus" size={28} color={colors.text} />
             </TouchableOpacity>
             <Text style={[styles.modalTitle, { color: colors.text, flex: 1, textAlign: 'center' }]}>
               {t('cardDetail.cardDetail', 'Kart Detayı')}

@@ -1,6 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, FlatList, Dimensions, TouchableOpacity, Animated } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -188,7 +187,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
                 }
               }}
             >
-              <Ionicons name="chevron-back" size={24} color={colors.cardQuestionText} />
+              <Iconify icon="material-symbols:arrow-back-ios-new-rounded" size={22} color={colors.cardQuestionText} />
             </TouchableOpacity>
           )}
 
@@ -355,7 +354,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
                 }
               }}
             >
-              <Ionicons name="chevron-forward" size={24} color={colors.cardQuestionText} />
+              <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={22} color={colors.cardQuestionText} />
             </TouchableOpacity>
           )}
 

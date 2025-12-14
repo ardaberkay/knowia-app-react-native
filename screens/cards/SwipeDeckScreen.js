@@ -5,7 +5,6 @@ import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { getCardsForLearning, ensureUserCardProgress } from '../../services/CardService';
 import { supabase } from '../../lib/supabase';
-import { Ionicons, MaterialIcons, MaterialCommunityIcons, Entypo } from '@expo/vector-icons';
 import { Iconify } from 'react-native-iconify';
 import { LinearGradient } from 'expo-linear-gradient';
 import logoasil from '../../assets/logoasil.png';
@@ -375,362 +374,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
   }, []);
 
   const FlipCard = ({ card, cardIndex, currentIndex }) => {
-    // Modern Content Divider bileşeni
-    const ModernDivider = ({ type = 'default' }) => {
-      const dividerStyles = {
-        gradient: {
-          width: 120,
-          height: 3,
-          alignSelf: 'center',
-          marginVertical: 12,
-          borderRadius: 2,
-          overflow: 'hidden',
-        },
-        dots: {
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginVertical: 8,
-          gap: 8,
-        },
-        sparkle: {
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginVertical: 8,
-          gap: 6,
-        },
-        chevron: {
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginVertical: 8,
-          gap: 10,
-        },
-        wave: {
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginVertical: 8,
-          gap: 4,
-        },
-        pulse: {
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginVertical: 8,
-          gap: 6,
-        },
-        arrow: {
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginVertical: 8,
-          gap: 8,
-        },
-        diamond: {
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginVertical: 8,
-          gap: 12,
-        },
-        lightning: {
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginVertical: 8,
-          gap: 8,
-        },
-        dots3: {
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginVertical: 8,
-          gap: 6,
-        }
-      };
-
-      const renderDivider = () => {
-        switch (type) {
-          case 'gradient':
-            return (
-              <View style={dividerStyles.gradient}>
-                <LinearGradient
-                  colors={[colors.buttonColor, colors.orWhite, colors.buttonColor]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={{ width: '100%', height: '100%' }}
-                />
-              </View>
-            );
-          case 'dots':
-            return (
-              <View style={dividerStyles.dots}>
-                <View style={{ 
-                  width: 8, 
-                  height: 8, 
-                  borderRadius: 4, 
-                  backgroundColor: colors.buttonColor,
-                  shadowColor: colors.buttonColor,
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.4,
-                  shadowRadius: 3,
-                  elevation: 3
-                }} />
-                <View style={{ 
-                  width: 6, 
-                  height: 6, 
-                  borderRadius: 3, 
-                  backgroundColor: colors.buttonColor,
-                  opacity: 0.7
-                }} />
-                <View style={{ 
-                  width: 8, 
-                  height: 8, 
-                  borderRadius: 4, 
-                  backgroundColor: colors.buttonColor,
-                  shadowColor: colors.buttonColor,
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.4,
-                  shadowRadius: 3,
-                  elevation: 3
-                }} />
-              </View>
-            );
-          case 'sparkle':
-            return (
-              <View style={dividerStyles.sparkle}>
-                <Ionicons name="star" size={12} color={colors.buttonColor} />
-                <View style={{ 
-                  width: 4, 
-                  height: 4, 
-                  borderRadius: 2, 
-                  backgroundColor: colors.buttonColor,
-                  opacity: 0.6
-                }} />
-                <Ionicons name="star" size={12} color={colors.buttonColor} />
-              </View>
-            );
-          case 'chevron':
-            return (
-              <View style={dividerStyles.chevron}>
-                <Ionicons name="chevron-down" size={16} color={colors.buttonColor} />
-                <View style={{ 
-                  width: 6, 
-                  height: 6, 
-                  borderRadius: 3, 
-                  backgroundColor: colors.buttonColor,
-                  shadowColor: colors.buttonColor,
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 2,
-                  elevation: 2
-                }} />
-                <Ionicons name="chevron-down" size={16} color={colors.buttonColor} />
-              </View>
-            );
-          case 'wave':
-            return (
-              <View style={dividerStyles.wave}>
-                <View style={{ 
-                  width: 3, 
-                  height: 12, 
-                  backgroundColor: colors.buttonColor,
-                  borderRadius: 2,
-                  opacity: 0.6
-                }} />
-                <View style={{ 
-                  width: 3, 
-                  height: 8, 
-                  backgroundColor: colors.buttonColor,
-                  borderRadius: 2,
-                  opacity: 0.8
-                }} />
-                <View style={{ 
-                  width: 3, 
-                  height: 12, 
-                  backgroundColor: colors.buttonColor,
-                  borderRadius: 2,
-                  opacity: 0.6
-                }} />
-              </View>
-            );
-          case 'pulse':
-            return (
-              <View style={dividerStyles.pulse}>
-                <View style={{ 
-                  width: 10, 
-                  height: 10, 
-                  borderRadius: 5, 
-                  backgroundColor: colors.buttonColor,
-                  shadowColor: colors.buttonColor,
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.5,
-                  shadowRadius: 4,
-                  elevation: 4
-                }} />
-                <View style={{ 
-                  width: 6, 
-                  height: 6, 
-                  borderRadius: 3, 
-                  backgroundColor: colors.buttonColor,
-                  opacity: 0.8
-                }} />
-                <View style={{ 
-                  width: 10, 
-                  height: 10, 
-                  borderRadius: 5, 
-                  backgroundColor: colors.buttonColor,
-                  shadowColor: colors.buttonColor,
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.5,
-                  shadowRadius: 4,
-                  elevation: 4
-                }} />
-              </View>
-            );
-          case 'arrow':
-            return (
-              <View style={dividerStyles.arrow}>
-                <Ionicons name="arrow-forward" size={14} color={colors.buttonColor} />
-                <View style={{ 
-                  width: 8, 
-                  height: 8, 
-                  borderRadius: 4, 
-                  backgroundColor: colors.buttonColor,
-                  shadowColor: colors.buttonColor,
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.4,
-                  shadowRadius: 2,
-                  elevation: 2
-                }} />
-                <Ionicons name="arrow-forward" size={14} color={colors.buttonColor} />
-              </View>
-            );
-          case 'diamond':
-            return (
-              <View style={dividerStyles.diamond}>
-                <View style={{ 
-                  width: 8, 
-                  height: 8, 
-                  backgroundColor: colors.buttonColor,
-                  transform: [{ rotate: '45deg' }],
-                  shadowColor: colors.buttonColor,
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.4,
-                  shadowRadius: 2,
-                  elevation: 2
-                }} />
-                <View style={{ 
-                  width: 4, 
-                  height: 4, 
-                  backgroundColor: colors.buttonColor,
-                  transform: [{ rotate: '45deg' }],
-                  opacity: 0.7
-                }} />
-                <View style={{ 
-                  width: 8, 
-                  height: 8, 
-                  backgroundColor: colors.buttonColor,
-                  transform: [{ rotate: '45deg' }],
-                  shadowColor: colors.buttonColor,
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.4,
-                  shadowRadius: 2,
-                  elevation: 2
-                }} />
-              </View>
-            );
-          case 'lightning':
-            return (
-              <View style={dividerStyles.lightning}>
-                <Ionicons name="flash" size={12} color={colors.buttonColor} />
-                <View style={{ 
-                  width: 5, 
-                  height: 5, 
-                  borderRadius: 2.5, 
-                  backgroundColor: colors.buttonColor,
-                  opacity: 0.8
-                }} />
-                <Ionicons name="flash" size={12} color={colors.buttonColor} />
-              </View>
-            );
-          case 'dots3':
-            return (
-              <View style={dividerStyles.dots3}>
-                <View style={{ 
-                  width: 6, 
-                  height: 6, 
-                  borderRadius: 3, 
-                  backgroundColor: colors.buttonColor,
-                  opacity: 0.7
-                }} />
-                <View style={{ 
-                  width: 10, 
-                  height: 10, 
-                  borderRadius: 5, 
-                  backgroundColor: colors.buttonColor,
-                  shadowColor: colors.buttonColor,
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.5,
-                  shadowRadius: 4,
-                  elevation: 4
-                }} />
-                <View style={{ 
-                  width: 6, 
-                  height: 6, 
-                  borderRadius: 3, 
-                  backgroundColor: colors.buttonColor,
-                  opacity: 0.7
-                }} />
-              </View>
-            );
-          default:
-            return (
-              <View style={{ 
-                width: 80, 
-                height: 2, 
-                backgroundColor: colors.buttonColor, 
-                borderRadius: 1, 
-                alignSelf: 'center', 
-                marginVertical: 12,
-                shadowColor: colors.buttonColor,
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.3,
-                shadowRadius: 2,
-                elevation: 2
-              }} />
-            );
-        }
-      };
-
-      return renderDivider();
-    };
-
-    // Koşullu Content Divider bileşeni
-    const ConditionalDivider = ({ hasExample, hasNote }) => {
-      if (hasExample && hasNote) {
-        // Hem example hem note varsa: cevap-example arasında basit divider
-        return <ModernDivider type="default" />;
-      } else if (hasExample) {
-        // Sadece example varsa: basit divider
-        return <ModernDivider type="default" />;
-      } else if (hasNote) {
-        // Sadece note varsa: basit divider
-        return <ModernDivider type="default" />;
-      }
-      return null;
-    };
-
-    // Example ile Note arasındaki modern ayırıcı
-    const ExampleNoteDivider = ({ hasExample, hasNote }) => {
-      if (hasExample && hasNote) {
-        return <ModernDivider type="dots3" />;
-      }
-      return null;
-    };
-
     // Pill başlık bileşeni (etiket + ikon)
     const Pill = ({ label, icon, color = colors.buttonColor }) => (
       <View
@@ -836,7 +479,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
                {/* Answer */}
                <Pill
                  label={t('swipeDeck.answer', 'Answer')}
-                 icon={<Ionicons name="checkmark-circle" size={14} color={colors.buttonColor} />}
+                 icon={<Iconify icon="uil:comment-alt-check" size={18} color={colors.buttonColor} />}
                />
                <Text style={[typography.styles.h2, { color: colors.text, marginBottom: 30, textAlign: 'center' }]}>{card.cards.answer}</Text>
 
@@ -845,7 +488,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
                  <>
                    <Pill
                      label={t('swipeDeck.example', 'Example')}
-                     icon={<Ionicons name="book-outline" size={14} color={colors.buttonColor} />}
+                     icon={<Iconify icon="lucide:lightbulb" size={18} color={colors.buttonColor} />}
                    />
                    <Text style={[{ color: colors.subtext, marginBottom: 30, textAlign: 'center' }, typography.styles.subtitle]}>{card.cards.example}</Text>
                  </>
@@ -856,7 +499,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
                  <>
                    <Pill
                      label={t('swipeDeck.note', 'Note')}
-                     icon={<Ionicons name="document-text-outline" size={14} color={colors.buttonColor} />}
+                     icon={<Iconify icon="material-symbols-light:stylus-note" size={18} color={colors.buttonColor} />}
                    />
                    <Text style={[typography.styles.subtitle, { color: colors.subtext, textAlign: 'center' }]}>{card.cards.note}</Text>
                  </>
@@ -907,7 +550,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       <View style={styles.counterRow}>
         <View style={[styles.counterBox, { backgroundColor: leftHighlight ? leftActiveColor : leftInactiveColor }]}>
           {leftHighlight ? (
-            <Ionicons name="time" size={18} color="#fff" />
+            <Iconify icon="mingcute:time-fill" size={18} color="#fff" />
           ) : (
             <Text style={styles.counterText}>{leftCount}</Text>
           )}
@@ -917,7 +560,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
         </View>
         <View style={[styles.counterBox, { backgroundColor: rightHighlight ? rightActiveColor : rightInactiveColor }]}>
           {rightHighlight ? (
-            <MaterialCommunityIcons name="check-bold" size={18} color="#fff" />
+            <Iconify icon="hugeicons:tick-01" size={18} color="#fff" />
           ) : (
             <Text style={styles.counterText}>{rightCount}</Text>
           )}
@@ -1013,25 +656,25 @@ export default function SwipeDeckScreen({ route, navigation }) {
       {/* Yatay birleşik butonlar */}
       <View style={[styles.horizontalButtonRow, { backgroundColor: colors.buttonColor }]}>
         <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: 1, borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(15)}>
-          <MaterialCommunityIcons name="repeat" size={20} color={colors.buttonText} style={{ marginRight: 6 }} />
+          <Iconify icon="material-symbols:repeat-rounded" size={20} color={colors.buttonText} style={{ marginRight: 6 }} />
           <Text style={[styles.horizontalButtonText, { color: colors.buttonText }]}>{t('swipeDeck.minutes', "15 dk")}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: 1, borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(60)}>
-          <Ionicons name="time-outline" size={20} color={colors.buttonText} style={{ marginRight: 6 }} />
+          <Iconify icon="mingcute:time-line" size={20} color={colors.buttonText} style={{ marginRight: 6 }} />
           <Text style={[styles.horizontalButtonText, { color: colors.buttonText }]}>{t('swipeDeck.hours', "1 sa")}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: 1, borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(24 * 60)}>
-          <Ionicons name="calendar-outline" size={20} color={colors.buttonText} style={{ marginRight: 6 }} />
+          <Iconify icon="solar:calendar-broken" size={20} color={colors.buttonText} style={{ marginRight: 6 }} />
           <Text style={[styles.horizontalButtonText, { color: colors.buttonText }]}>{t('swipeDeck.days', "1 gün")}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.horizontalButton} onPress={() => handleSkip(7 * 24 * 60)}>
-          <Ionicons name="star-outline" size={20} color={colors.buttonText} style={{ marginRight: 6 }} />
+          <Iconify icon="solar:star-broken" size={20} color={colors.buttonText} style={{ marginRight: 6 }} />
           <Text style={[styles.horizontalButtonText, { color: colors.buttonText }]}>{t('swipeDeck.sevenDays', "7 gün")}</Text>
         </TouchableOpacity>
       </View>
       {/* Geri alma butonu */}
       <TouchableOpacity style={[styles.undoButton, undoDisabled && { opacity: 0.5 }]} onPress={handleUndo} disabled={undoDisabled}>
-        <MaterialCommunityIcons name="arrow-u-left-top" size={28} color={colors.orWhite} />
+        <Iconify icon="lets-icons:refund-back" size={28} color={colors.orWhite} />
       </TouchableOpacity>
       {/* Auto play butonu */}
       <TouchableOpacity
@@ -1039,9 +682,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
         onPress={() => setAutoPlay((prev) => !prev)}
       >
         {autoPlay ? (
-          <Ionicons name="pause" size={32} color={colors.orWhite} />
+          <Iconify icon="material-symbols:pause-rounded" size={32} color={colors.orWhite} />
         ) : (
-          <Entypo name="controller-play" size={32} color={colors.orWhite} />
+          <Iconify icon="streamline:button-play-solid" size={20} color={colors.orWhite} />
         )}
       </TouchableOpacity>
       {/* Progress Bar (undoButton'un hemen üstünde) */}

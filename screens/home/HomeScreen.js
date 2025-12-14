@@ -1,15 +1,12 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Dimensions, ActivityIndicator, Image, Modal, Platform, RefreshControl, Pressable, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDecksByCategory, getPopularDecks } from '../../services/DeckService';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
-import { Ionicons } from '@expo/vector-icons';
 import { Iconify } from 'react-native-iconify';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { typography } from '../../theme/typography';
-import React from 'react';
 import { getCurrentUserProfile, updateLastActiveAt } from '../../services/ProfileService';
 import { registerForPushNotificationsAsync } from '../../services/NotificationService';
 import { supabase } from '../../lib/supabase';

@@ -91,7 +91,16 @@ module.exports = function (api) {
             'hugeicons:tick-01',
             'bitcoin-icons:cross-filled',
             'mdi:information-variant',
-            'ic:round-assignment-late'
+            'ic:round-assignment-late',
+            'solar:cloud-upload-broken',
+            'mingcute:time-fill',
+            'material-symbols:repeat-rounded',
+            'mingcute:time-line',
+            'solar:calendar-broken',
+            'solar:star-broken',
+            'lets-icons:refund-back',
+            'material-symbols:pause-rounded',
+            'material-symbols:arrow-back-ios-new-rounded'
           ],
         },
       ],

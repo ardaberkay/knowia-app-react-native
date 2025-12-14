@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ScrollView, Platform, BackHandler, Alert, Dimensions, Animated, Easing, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, BackHandler, Alert, Dimensions, Animated, Easing, ActivityIndicator, Modal } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
-import { Ionicons } from '@expo/vector-icons';
 import { Iconify } from 'react-native-iconify';
 import LottieView from 'lottie-react-native';
 

@@ -3,7 +3,6 @@ import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ImageBackgr
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
-import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import LanguageSelector from '../../components/modals/LanguageSelector';

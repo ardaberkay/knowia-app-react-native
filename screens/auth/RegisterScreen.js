@@ -4,7 +4,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
-import { Ionicons } from '@expo/vector-icons';
 import { Iconify } from 'react-native-iconify';
 
 export default function RegisterScreen({ navigation }) {

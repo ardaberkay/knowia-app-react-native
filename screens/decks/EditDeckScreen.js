@@ -3,7 +3,6 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, KeyboardAvo
 import { supabase } from '../../lib/supabase';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { typography } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
