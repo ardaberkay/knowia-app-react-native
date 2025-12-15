@@ -1,68 +1,46 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useColorScheme } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { lightColors, darkColors } from './colors';
 import { typography } from './typography';
-import { getThemePreference, updateThemePreference } from '../services/ProfileService';
-import { supabase } from '../lib/supabase';
 
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-  const deviceTheme = useColorScheme();
-  const [themePreference, setThemePreference] = useState('system');
-  const [isDarkMode, setIsDarkMode] = useState(deviceTheme === 'dark');
+  // Varsayılan her zaman dark
+  const [themePreference, setThemePreference] = useState('dark'); // 'dark' | 'light'
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // İlk yüklemede ve auth değişiminde theme_preference'ı oku
+    // İlk açılışta sadece localden oku
     const fetchTheme = async () => {
       try {
-        const pref = await getThemePreference();
-        setThemePreference(pref || 'system');
-        if ((pref || 'system') === 'system') {
-          setIsDarkMode(deviceTheme === 'dark');
-        } else {
-          setIsDarkMode(pref === 'dark');
-        }
+        const localPref = await AsyncStorage.getItem('theme_preference');
+        const pref = localPref === 'light' ? 'light' : 'dark'; // default dark
+        setThemePreference(pref);
+        setIsDarkMode(pref === 'dark');
       } catch (e) {
-        setThemePreference('system');
-        setIsDarkMode(deviceTheme === 'dark');
+        // Hata olursa da dark kalsın
+        setThemePreference('dark');
+        setIsDarkMode(true);
       } finally {
         setLoading(false);
       }
     };
     fetchTheme();
-
-    // Auth değişimini dinle
-    const { data: listener } = supabase.auth.onAuthStateChange(() => {
-      setLoading(true);
-      fetchTheme();
-    });
-
-    return () => {
-      listener?.subscription.unsubscribe();
-    };
-  }, [deviceTheme]);
-
-  useEffect(() => {
-    // themePreference veya cihaz teması değişirse güncelle
-    if (themePreference === 'system') {
-      setIsDarkMode(deviceTheme === 'dark');
-    }
-  }, [deviceTheme, themePreference]);
+  }, []);
 
   const toggleTheme = async () => {
-    let newPref;
-    if (themePreference === 'system') {
-      newPref = 'dark';
-    } else if (themePreference === 'dark') {
-      newPref = 'light';
-    } else {
-      newPref = 'dark';
-    }
+    const newPref = themePreference === 'dark' ? 'light' : 'dark';
     setThemePreference(newPref);
     setIsDarkMode(newPref === 'dark');
-    await updateThemePreference(newPref);
+
+    // Sadece lokal storage'a yaz
+    try {
+      await AsyncStorage.setItem('theme_preference', newPref);
+    } catch {
+      // Yazılamazsa da uygulama çalışmaya devam etsin
+    }
   };
 
   const theme = {
@@ -74,7 +52,8 @@ export const ThemeProvider = ({ children }) => {
     loading,
   };
 
-  if (loading) return null; // Tema yüklenene kadar render etme
+  // Tema yüklenene kadar (sadece ilk açılışta) UI'ı beklet
+  if (loading) return null;
 
   return (
     <ThemeContext.Provider value={theme}>

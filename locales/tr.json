@@ -121,7 +121,14 @@
     "imageSelectError": "Fotoğraf seçme hatası:",
     "imageRemoveError": "Fotoğraf silinemedi.",
     "usernameLengthError": "Kullanıcı adı 3 ile 9 karakter arasında olmalıdır",
-    "passwordMatchError": "Şifreler eşleşmiyor"
+    "passwordMatchError": "Şifreler eşleşmiyor",
+    "filters": "Filtreler",
+    "sortBy": "Sırala",
+    "defaultSort": "Varsayılan (En Yeniler)",
+    "favorites": "Favoriler",
+    "categories": "Kategoriler",
+    "reset": "Sıfırla",
+    "apply": "Uygula"
   },
   "tabs": {
     "home": "Anasayfa",

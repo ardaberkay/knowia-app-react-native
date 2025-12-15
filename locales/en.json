@@ -120,7 +120,14 @@
     "imageSelectError": "Image selection error:",
     "imageRemoveError": "Image could not be removed.",
     "usernameLengthError": "Username must be between 3 and 9 characters",
-    "passwordMatchError": "The passwords do not match"
+    "passwordMatchError": "The passwords do not match",
+    "filters": "Filters",
+    "sortBy": "Sort By",
+    "defaultSort": "Default (Newest First)",
+    "favorites": "Favorites",
+    "categories": "Categories",
+    "reset": "Reset",
+    "apply": "Apply"
   },
   "tabs": {
     "home": "Home",

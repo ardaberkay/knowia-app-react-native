@@ -100,7 +100,8 @@ module.exports = function (api) {
             'solar:star-broken',
             'lets-icons:refund-back',
             'material-symbols:pause-rounded',
-            'material-symbols:arrow-back-ios-new-rounded'
+            'material-symbols:arrow-back-ios-new-rounded',
+            'si:filter-list-alt-fill'
           ],
         },
       ],

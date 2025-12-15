@@ -118,7 +118,14 @@
       "imageSelectError": "خطأ في تحديد الصورة:",
       "imageRemoveError": "تعذر إزالة الصورة.",
       "usernameLengthError": "يجب أن يكون اسم المستخدم بين 3 و9 أحرف",
-      "passwordMatchError": "كلمات المرور غير متطابقة"
+      "passwordMatchError": "كلمات المرور غير متطابقة",
+      "filters": "المرشحات",
+      "sortBy": "ترتيب حسب",
+      "defaultSort": "افتراضي (الأحدث أولاً)",
+      "favorites": "المفضلة",
+      "categories": "الفئات",
+      "reset": "إعادة تعيين",
+      "apply": "تطبيق"
     },
     "tabs": {
       "home": "الرئيسية",

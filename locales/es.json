@@ -118,7 +118,14 @@
       "imageSelectError": "Error de selección de imagen:",
       "imageRemoveError": "No se pudo eliminar la imagen.",
       "usernameLengthError": "El nombre de usuario debe tener entre 3 y 9 caracteres",
-      "passwordMatchError": "Las contraseñas no coinciden"
+      "passwordMatchError": "Las contraseñas no coinciden",
+      "filters": "Filtros",
+      "sortBy": "Ordenar por",
+      "defaultSort": "Por defecto (Más recientes)",
+      "favorites": "Favoritos",
+      "categories": "Categorías",
+      "reset": "Restablecer",
+      "apply": "Aplicar"
     },
     "tabs": {
       "home": "Inicio",

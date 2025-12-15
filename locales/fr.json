@@ -118,7 +118,14 @@
       "imageSelectError": "Erreur de sélection d'image :",
       "imageRemoveError": "L'image n'a pas pu être supprimée.",
       "usernameLengthError": "Le nom d'utilisateur doit comporter entre 3 et 9 caractères",
-      "passwordMatchError": "Les mots de passe ne correspondent pas"
+      "passwordMatchError": "Les mots de passe ne correspondent pas",
+      "filters": "Filtres",
+      "sortBy": "Trier par",
+      "defaultSort": "Par défaut (Plus récents)",
+      "favorites": "Favoris",
+      "categories": "Catégories",
+      "reset": "Réinitialiser",
+      "apply": "Appliquer"
     },
     "tabs": {
       "home": "Accueil",
