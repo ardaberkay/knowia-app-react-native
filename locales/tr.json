@@ -169,6 +169,7 @@
     "delete": "Sil",
     "default": "Varsayılan",
     "fav": "Favoriler",
+    "inProgress": "Devam Eden",
     "errorMessage": "Deste bilgisi bulunamadı.",
     "error": "Hata",
     "errorMessageDeck": "Deste başlatılamadı.",

@@ -73,6 +73,9 @@ const FilterIcon = ({ style, size = 24, color = "#B0B0B0", value = 'original', o
               <TouchableOpacity onPress={() => handleSelect('fav')} style={{ paddingVertical: 8, paddingHorizontal: 14, backgroundColor: value === 'fav' ? colors.iconBackground : 'transparent', borderRadius: 8 }}>
                 <Text style={{ color: value === 'fav' ? '#fff' : colors.text, fontWeight: value === 'fav' ? 'bold' : 'normal', fontSize: 15 }}>{t('deckDetail.fav', 'Favoriler')}</Text>
               </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleSelect('unlearned')} style={{ paddingVertical: 8, paddingHorizontal: 14, backgroundColor: value === 'unlearned' ? colors.iconBackground : 'transparent', borderRadius: 8 }}>
+                <Text style={{ color: value === 'unlearned' ? '#fff' : colors.text, fontWeight: value === 'unlearned' ? 'bold' : 'normal', fontSize: 15 }}>{t('deckDetail.inProgress', 'Devam Eden')}</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </TouchableWithoutFeedback>

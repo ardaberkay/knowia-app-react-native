@@ -35,10 +35,33 @@ export default function FavoriteCards() {
         setFavoriteCards([]);
         return;
       }
-      const res = await getFavoriteCards(user.id);
-      setCards(res || []);
+      
+      // Fetch favorite cards and user progress in parallel
+      const [res, progressResult] = await Promise.all([
+        getFavoriteCards(user.id),
+        supabase
+          .from('user_card_progress')
+          .select('card_id, status')
+          .eq('user_id', user.id)
+      ]);
+      
+      // Create a map of card statuses
+      const statusMap = {};
+      if (progressResult.data) {
+        progressResult.data.forEach(p => {
+          statusMap[p.card_id] = p.status;
+        });
+      }
+      
+      // Merge status into cards (default: 'new' if no progress record)
+      const cardsWithProgress = (res || []).map(card => ({
+        ...card,
+        status: statusMap[card.id] || 'new'
+      }));
+      
+      setCards(cardsWithProgress);
       // Favori kartların ID'lerini tut
-      setFavoriteCards((res || []).map(card => card.id));
+      setFavoriteCards(cardsWithProgress.map(card => card.id));
     } finally {
       setLoading(false);
     }
@@ -74,17 +97,24 @@ export default function FavoriteCards() {
 
   const filteredCards = useMemo(() => {
     let list = cards.slice();
+    
+    // Search filter
     if (query && query.trim()) {
       const q = query.toLowerCase();
       list = list.filter(c => (c.question || '').toLowerCase().includes(q) || (c.answer || '').toLowerCase().includes(q));
     }
+    
+    // Sort/Filter options
     if (sort === 'az') {
       list.sort((a, b) => (a.question || '').localeCompare(b.question || ''));
     } else if (sort === 'fav') {
       // already favorites; keep original order
+    } else if (sort === 'unlearned') {
+      list = list.filter(c => c.status !== 'learned');
     } else {
       list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     }
+    
     return list;
   }, [cards, query, sort]);
 

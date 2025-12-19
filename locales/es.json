@@ -164,6 +164,7 @@
       "delete": "Eliminar",
       "default": "Predeterminado",
       "fav": "Favoritos",
+      "inProgress": "En Progreso",
       "errorMessage": "No se encontró la información de la baraja.",
       "error": "Error",
       "errorMessageDeck": "No se pudo iniciar la baraja.",

@@ -56,11 +56,19 @@ export default function DeckDetailScreen({ route, navigation }) {
   const { t } = useTranslation();
 
   // Header scroll affordance states
+  // Uzun metinlerde baştan gradient göster (karakter sayısına göre tahmin)
   const nameScrollRef = useRef(null);
-  const [nameHasOverflow, setNameHasOverflow] = useState(false);
+  const toNameScrollRef = useRef(null);
+  const [nameHasOverflow, setNameHasOverflow] = useState(deck?.name?.length > 21);
+  const [toNameHasOverflow, setToNameHasOverflow] = useState(deck?.to_name?.length > 21);
   const [nameContainerWidth, setNameContainerWidth] = useState(0);
   const [nameContentWidth, setNameContentWidth] = useState(0);
-  const [showNameScrollbar, setShowNameScrollbar] = useState(false);
+  const [toNameContainerWidth, setToNameContainerWidth] = useState(0);
+  const [toNameContentWidth, setToNameContentWidth] = useState(0);
+  const nameScrollHintDone = useRef(false);
+  const toNameScrollHintDone = useRef(false);
+  const nameLayoutDone = useRef(false);
+  const toNameLayoutDone = useRef(false);
   const [fabMenuOpen, setFabMenuOpen] = useState(false);
   const fabMenuAnimation = useRef(new Animated.Value(0)).current;
   const [chapters, setChapters] = useState([]);
@@ -69,6 +77,10 @@ export default function DeckDetailScreen({ route, navigation }) {
   const ACTION_CHAPTER = { id: 'action', name: 'Aksiyon', ordinal: null };
   const [selectedChapter, setSelectedChapter] = useState(ACTION_CHAPTER);
   const [inlineChapterListVisible, setInlineChapterListVisible] = useState(false);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  // 120+ karakter genelde 3 satırı aşar (tahmin)
+  const [descriptionNeedsExpand, setDescriptionNeedsExpand] = useState(deck?.description?.length > 120);
+  const descriptionLayoutDone = useRef(false);
   const screenWidth = Dimensions.get('window').width;
   const screenHeight = Dimensions.get('window').height;
   const fabRightPosition = 20; // FAB butonunun sağdan mesafesi
@@ -136,6 +148,23 @@ export default function DeckDetailScreen({ route, navigation }) {
       </SafeAreaView>
     );
   }
+
+  // Scroll hint animation - kaydırılabilir olduğunu kullanıcıya göstermek için
+  const triggerScrollHint = (scrollRef, contentWidth, containerWidth, hintDoneRef) => {
+    if (hintDoneRef.current || !scrollRef.current) return;
+    if (contentWidth <= containerWidth) return;
+    
+    hintDoneRef.current = true;
+    const scrollDistance = Math.min(80, contentWidth - containerWidth);
+    
+    // Kısa bir gecikme sonra hint animasyonu
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({ x: scrollDistance, animated: true });
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ x: 0, animated: true });
+      }, 400);
+    }, 800);
+  };
 
   // Cache'den progress'i yükle (hızlı gösterim için)
   const loadCachedProgress = async () => {
@@ -809,17 +838,138 @@ export default function DeckDetailScreen({ route, navigation }) {
               </Text>
             </View>
             
-            {/* Title */}
-            <Text style={styles.gfHeroTitle} numberOfLines={2}>{deck.name}</Text>
+            {/* Title - Scrollable if overflows */}
+            <View style={styles.gfTitleContainer}>
+              <ScrollView
+                ref={nameScrollRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                scrollEnabled={nameHasOverflow}
+                onContentSizeChange={(w) => {
+                  setNameContentWidth(w);
+                  if (nameContainerWidth > 0 && !nameLayoutDone.current) {
+                    nameLayoutDone.current = true;
+                    const hasOverflow = w > nameContainerWidth;
+                    setNameHasOverflow(hasOverflow);
+                    if (hasOverflow) {
+                      triggerScrollHint(nameScrollRef, w, nameContainerWidth, nameScrollHintDone);
+                    }
+                  }
+                }}
+                onLayout={(e) => {
+                  const containerW = e.nativeEvent.layout.width;
+                  setNameContainerWidth(containerW);
+                  if (nameContentWidth > 0 && !nameLayoutDone.current) {
+                    nameLayoutDone.current = true;
+                    const hasOverflow = nameContentWidth > containerW;
+                    setNameHasOverflow(hasOverflow);
+                    if (hasOverflow) {
+                      triggerScrollHint(nameScrollRef, nameContentWidth, containerW, nameScrollHintDone);
+                    }
+                  }
+                }}
+              >
+                <Text style={styles.gfHeroTitle}>{deck.name}</Text>
+              </ScrollView>
+              {nameHasOverflow && (
+                <LinearGradient
+                  colors={['transparent', getCategoryGradient(categoryInfo?.sort_order)[0]]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.gfTitleFade}
+                  pointerEvents="none"
+                />
+              )}
+            </View>
+            
+            {/* Subtitle - Scrollable if overflows */}
             {deck.to_name && (
-              <Text style={styles.gfHeroSubtitle} numberOfLines={1}>{deck.to_name}</Text>
+              <View style={styles.gfTitleContainer}>
+                <ScrollView
+                  ref={toNameScrollRef}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  scrollEnabled={toNameHasOverflow}
+                  onContentSizeChange={(w) => {
+                    setToNameContentWidth(w);
+                    if (toNameContainerWidth > 0 && !toNameLayoutDone.current) {
+                      toNameLayoutDone.current = true;
+                      const hasOverflow = w > toNameContainerWidth;
+                      setToNameHasOverflow(hasOverflow);
+                      if (hasOverflow) {
+                        triggerScrollHint(toNameScrollRef, w, toNameContainerWidth, toNameScrollHintDone);
+                      }
+                    }
+                  }}
+                  onLayout={(e) => {
+                    const containerW = e.nativeEvent.layout.width;
+                    setToNameContainerWidth(containerW);
+                    if (toNameContentWidth > 0 && !toNameLayoutDone.current) {
+                      toNameLayoutDone.current = true;
+                      const hasOverflow = toNameContentWidth > containerW;
+                      setToNameHasOverflow(hasOverflow);
+                      if (hasOverflow) {
+                        triggerScrollHint(toNameScrollRef, toNameContentWidth, containerW, toNameScrollHintDone);
+                      }
+                    }
+                  }}
+                >
+                  <Text style={styles.gfHeroSubtitle}>{deck.to_name}</Text>
+                </ScrollView>
+                {toNameHasOverflow && (
+                  <LinearGradient
+                    colors={['transparent', getCategoryGradient(categoryInfo?.sort_order)[0]]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.gfTitleFade}
+                    pointerEvents="none"
+                  />
+                )}
+              </View>
             )}
             
-            {/* Description - Brief */}
+            {/* Description - Expandable */}
             {deck.description && deck.description.trim().length > 0 && (
-              <Text style={styles.gfHeroDesc} numberOfLines={2}>
-                {deck.description}
-              </Text>
+              <View>
+                {/* Hidden text for measuring actual lines */}
+                <Text 
+                  style={[styles.gfHeroDesc, { position: 'absolute', opacity: 0 }]}
+                  onTextLayout={(e) => {
+                    if (!descriptionLayoutDone.current) {
+                      descriptionLayoutDone.current = true;
+                      setDescriptionNeedsExpand(e.nativeEvent.lines.length > 3);
+                    }
+                  }}
+                >
+                  {deck.description}
+                </Text>
+                {/* Visible text */}
+                <Text 
+                  style={styles.gfHeroDesc} 
+                  numberOfLines={descriptionExpanded ? undefined : 2}
+                >
+                  {deck.description}
+                </Text>
+                {descriptionNeedsExpand && (
+                  <TouchableOpacity 
+                    onPress={() => setDescriptionExpanded(!descriptionExpanded)}
+                    activeOpacity={0.7}
+                    style={styles.gfExpandButton}
+                  >
+                    <Text style={styles.gfExpandButtonText}>
+                      {descriptionExpanded ? t('common.showLess', 'Daha az göster') : t('common.showMore', 'Daha fazla göster')}
+                    </Text>
+                    <View style={{ marginTop: 1 }}>
+                      <Iconify 
+                        icon="flowbite:caret-down-solid"
+                        size={14} 
+                        color="rgba(255,255,255,0.9)"
+                        style={{ transform: [{ rotate: descriptionExpanded ? '180deg' : '0deg' }] }}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                )}
+              </View>
             )}
             
             {/* Creator Chip */}
@@ -1627,7 +1777,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.5,
     lineHeight: 38,
-    marginBottom: 6,
     textShadowColor: 'rgba(0,0,0,0.2)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
@@ -1638,10 +1787,20 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.5,
     lineHeight: 38,
-    marginBottom: 12,
     textShadowColor: 'rgba(0,0,0,0.2)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
+  },
+  gfTitleContainer: {
+    position: 'relative',
+    marginBottom: 6,
+  },
+  gfTitleFade: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 40,
   },
   gfHeroDesc: {
     color: 'rgba(255,255,255,0.75)',
@@ -1649,7 +1808,21 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontStyle: 'italic',
     lineHeight: 20,
-    marginBottom: 16,
+    marginBottom: 8,
+  },
+  gfExpandButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    marginBottom: 12,
+    paddingVertical: 4,
+  },
+  gfExpandButtonText: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 13,
+    fontWeight: '600',
   },
   gfCreatorChip: {
     flexDirection: 'row',

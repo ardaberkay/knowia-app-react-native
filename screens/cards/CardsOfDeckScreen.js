@@ -50,8 +50,8 @@ export default function DeckCardsScreen({ route, navigation }) {
         setLoading(true);
         const { data: { user } } = await supabase.auth.getUser();
         
-        // Fetch cards and favorite cards in parallel
-        const [cardsResult, favoritesResult] = await Promise.all([
+        // Fetch cards, favorite cards, and user progress in parallel
+        const [cardsResult, favoritesResult, progressResult] = await Promise.all([
           supabase
             .from('cards')
             .select(`
@@ -65,12 +65,31 @@ export default function DeckCardsScreen({ route, navigation }) {
           user ? supabase
             .from('favorite_cards')
             .select('card_id')
+            .eq('user_id', user.id) : Promise.resolve({ data: [], error: null }),
+          user ? supabase
+            .from('user_card_progress')
+            .select('card_id, status')
             .eq('user_id', user.id) : Promise.resolve({ data: [], error: null })
         ]);
         
         if (cardsResult.error) throw cardsResult.error;
-        setCards(cardsResult.data || []);
-        setOriginalCards(cardsResult.data || []);
+        
+        // Create a map of card statuses
+        const statusMap = {};
+        if (progressResult.data) {
+          progressResult.data.forEach(p => {
+            statusMap[p.card_id] = p.status;
+          });
+        }
+        
+        // Merge status into cards (default: 'new' if no progress record)
+        const cardsWithProgress = (cardsResult.data || []).map(card => ({
+          ...card,
+          status: statusMap[card.id] || 'new'
+        }));
+        
+        setCards(cardsWithProgress);
+        setOriginalCards(cardsWithProgress);
         
         if (favoritesResult.error) throw favoritesResult.error;
         setFavoriteCards((favoritesResult.data || []).map(f => f.card_id));
@@ -206,6 +225,8 @@ export default function DeckCardsScreen({ route, navigation }) {
       return [...cardsList].sort((a, b) => (a.question || '').localeCompare(b.question || '', 'tr'));
     } else if (type === 'fav') {
       return [...cardsList].filter(card => favoriteCards.includes(card.id));
+    } else if (type === 'unlearned') {
+      return [...cardsList].filter(card => card.status !== 'learned');
     } else {
       return [...originalCards];
     }

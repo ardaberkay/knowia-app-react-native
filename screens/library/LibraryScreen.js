@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, Modal, Alert, ActivityIndicator, Animated, ScrollView, RefreshControl, Image, SafeAreaView, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
@@ -18,6 +18,7 @@ import MyDecksList from '../../components/lists/MyDecksList';
 import MaskedView from '@react-native-masked-view/masked-view';
 import MyDecksSkeleton from '../../components/skeleton/MyDecksSkeleton';
 import CardDetailView from '../../components/layout/CardDetailView';
+import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
 
 // Fade efekti için yardımcı bileşen
 const FadeText = ({ text, style, maxWidth, maxChars }) => {
@@ -80,7 +81,9 @@ export default function LibraryScreen() {
   const [favoriteCards, setFavoriteCards] = useState([]);
   const [favoriteCardIds, setFavoriteCardIds] = useState([]);
   const [myDecksQuery, setMyDecksQuery] = useState('');
-  const [myDecksSort, setMyDecksSort] = useState('original');
+  const [myDecksSort, setMyDecksSort] = useState('default');
+  const [myDecksSelectedCategories, setMyDecksSelectedCategories] = useState([]);
+  const [myDecksFilterModalVisible, setMyDecksFilterModalVisible] = useState(false);
   const [cardDetailModalVisible, setCardDetailModalVisible] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
 
@@ -156,9 +159,32 @@ export default function LibraryScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       const decks = await getFavoriteDecks(user.id);
       setFavoriteDecks(decks || []);
-      const cards = await getFavoriteCards(user.id);
-      setFavoriteCards(cards || []);
-      setFavoriteCardIds((cards || []).map(card => card.id));
+      
+      // Fetch favorite cards and user progress in parallel
+      const [cards, progressResult] = await Promise.all([
+        getFavoriteCards(user.id),
+        supabase
+          .from('user_card_progress')
+          .select('card_id, status')
+          .eq('user_id', user.id)
+      ]);
+      
+      // Create a map of card statuses
+      const statusMap = {};
+      if (progressResult.data) {
+        progressResult.data.forEach(p => {
+          statusMap[p.card_id] = p.status;
+        });
+      }
+      
+      // Merge status into cards (default: 'new' if no progress record)
+      const cardsWithProgress = (cards || []).map(card => ({
+        ...card,
+        status: statusMap[card.id] || 'new'
+      }));
+      
+      setFavoriteCards(cardsWithProgress);
+      setFavoriteCardIds(cardsWithProgress.map(card => card.id));
       setFavoritesFetched(true);
     } catch (e) {
       setFavoriteDecks([]);
@@ -227,8 +253,30 @@ export default function LibraryScreen() {
   const handleRemoveFavoriteCard = async (cardId) => {
     const { data: { user } } = await supabase.auth.getUser();
     await supabase.from('favorite_cards').delete().eq('user_id', user.id).eq('card_id', cardId);
-    const cards = await getFavoriteCards(user.id);
-    const updatedCards = cards || [];
+    
+    // Fetch cards and progress in parallel
+    const [cards, progressResult] = await Promise.all([
+      getFavoriteCards(user.id),
+      supabase
+        .from('user_card_progress')
+        .select('card_id, status')
+        .eq('user_id', user.id)
+    ]);
+    
+    // Create a map of card statuses
+    const statusMap = {};
+    if (progressResult.data) {
+      progressResult.data.forEach(p => {
+        statusMap[p.card_id] = p.status;
+      });
+    }
+    
+    // Merge status into cards
+    const updatedCards = (cards || []).map(card => ({
+      ...card,
+      status: statusMap[card.id] || 'new'
+    }));
+    
     setFavoriteCards(updatedCards);
     setFavoriteCardIds(updatedCards.map(card => card.id));
     
@@ -245,6 +293,8 @@ export default function LibraryScreen() {
       }
       if (favCardsSort === 'az') {
         remainingCards.sort((a, b) => (a.question || '').localeCompare(b.question || ''));
+      } else if (favCardsSort === 'unlearned') {
+        remainingCards = remainingCards.filter(c => c.status !== 'learned');
       } else if (favCardsSort !== 'fav') {
         remainingCards.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       }
@@ -302,6 +352,8 @@ export default function LibraryScreen() {
           }
           if (favCardsSort === 'az') {
             remainingCards.sort((a, b) => (a.question || '').localeCompare(b.question || ''));
+          } else if (favCardsSort === 'unlearned') {
+            remainingCards = remainingCards.filter(c => c.status !== 'learned');
           } else if (favCardsSort !== 'fav') {
             remainingCards.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
           }
@@ -341,37 +393,83 @@ export default function LibraryScreen() {
     } catch (e) {}
   };
 
-  const filteredFavoriteCards = (() => {
+  const filteredFavoriteCards = useMemo(() => {
     let list = favoriteCards.slice();
+    
+    // Search filter
     if (favCardsQuery && favCardsQuery.trim()) {
       const q = favCardsQuery.toLowerCase();
       list = list.filter(c => (c.question || '').toLowerCase().includes(q) || (c.answer || '').toLowerCase().includes(q));
     }
+    
+    // Sort/Filter options
     if (favCardsSort === 'az') {
       list.sort((a, b) => (a.question || '').localeCompare(b.question || ''));
     } else if (favCardsSort === 'fav') {
       // Favori kartlar zaten favori olduğu için burada bir değişiklik yapmıyoruz
       // Sadece orijinal sıralamayı koruyoruz
+    } else if (favCardsSort === 'unlearned') {
+      list = list.filter(c => c.status !== 'learned');
     } else {
       list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     }
+    
     return list;
-  })();
+  }, [favoriteCards, favCardsQuery, favCardsSort]);
 
   const filteredMyDecks = (() => {
     let list = myDecks.slice();
+    
+    // Search filter
     if (myDecksQuery && myDecksQuery.trim()) {
       const q = myDecksQuery.toLowerCase();
       list = list.filter(d => (d.name || '').toLowerCase().includes(q) || (d.to_name || '').toLowerCase().includes(q));
     }
-    if (myDecksSort === 'az') {
-      list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-    } else if (myDecksSort === 'fav') {
-      // Sadece favori desteleri göster
-      list = list.filter(d => favoriteDecks.some(favDeck => favDeck.id === d.id));
-    } else {
-      list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    
+    // Category filter
+    if (myDecksSelectedCategories.length > 0) {
+      list = list.filter(d => {
+        const deckSortOrder = d.categories?.sort_order;
+        return deckSortOrder != null && myDecksSelectedCategories.includes(deckSortOrder);
+      });
     }
+    
+    // Favorites filter (if sort is 'favorites')
+    if (myDecksSort === 'favorites') {
+      list = list.filter(d => favoriteDecks.some(favDeck => favDeck.id === d.id));
+    }
+    
+    // Apply sorting
+    switch (myDecksSort) {
+      case 'az':
+        list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        break;
+      case 'favorites':
+        // Favoriler önce, sonra A-Z
+        list.sort((a, b) => {
+          const aIsFavorite = favoriteDecks.some(favDeck => favDeck.id === a.id);
+          const bIsFavorite = favoriteDecks.some(favDeck => favDeck.id === b.id);
+          if (aIsFavorite && !bIsFavorite) return -1;
+          if (!aIsFavorite && bIsFavorite) return 1;
+          return (a.name || '').localeCompare(b.name || '');
+        });
+        break;
+      case 'popularity':
+        list.sort((a, b) => {
+          const scoreA = a.popularity_score || 0;
+          const scoreB = b.popularity_score || 0;
+          if (scoreA !== scoreB) {
+            return scoreB - scoreA;
+          }
+          return new Date(b.created_at) - new Date(a.created_at);
+        });
+        break;
+      case 'default':
+      default:
+        list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        break;
+    }
+    
     return list;
   })();
 
@@ -406,10 +504,7 @@ export default function LibraryScreen() {
             placeholder={t('common.searchPlaceholder', 'Destelerde ara...')}
             style={{ flex: 1 }}
           />
-          <FilterIcon
-            value={myDecksSort}
-            onChange={setMyDecksSort}
-          />
+          <FilterModalButton onPress={() => setMyDecksFilterModalVisible(true)} />
         </View>
       </View>
     );
@@ -776,6 +871,20 @@ export default function LibraryScreen() {
           </View>
         </SafeAreaView>
       </Modal>
+
+      {/* MyDecks Filter Modal */}
+      <FilterModal
+        visible={myDecksFilterModalVisible}
+        onClose={() => setMyDecksFilterModalVisible(false)}
+        currentSort={myDecksSort}
+        currentCategories={myDecksSelectedCategories}
+        onApply={(newSort, newCategories) => {
+          setMyDecksSort(newSort);
+          setMyDecksSelectedCategories(newCategories);
+          setMyDecksFilterModalVisible(false);
+        }}
+        showSortOptions={true}
+      />
     </View>
   );
 }

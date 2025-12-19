@@ -164,6 +164,7 @@
       "delete": "حذف",
       "default": "افتراضي",
       "fav": "المفضلة",
+      "inProgress": "قيد التقدم",
       "errorMessage": "لم يتم العثور على معلومات المجموعة.",
       "error": "خطأ",
       "errorMessageDeck": "تعذر بدء المجموعة.",

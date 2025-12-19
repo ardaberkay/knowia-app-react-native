@@ -164,6 +164,7 @@
       "delete": "Excluir",
       "default": "Padrão",
       "fav": "Favoritos",
+      "inProgress": "Em Progresso",
       "errorMessage": "Informações do baralho não encontradas.",
       "error": "Erro",
       "errorMessageDeck": "Não foi possível iniciar o baralho.",

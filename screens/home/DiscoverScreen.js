@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Dimensions, Modal, TouchableWithoutFeedback, Platform } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Dimensions, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
@@ -11,118 +11,22 @@ import { getPopularDecks, getNewDecks, getMostFavoritedDecks, getMostStartedDeck
 import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
 import { LinearGradient } from 'expo-linear-gradient';
+import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
 
 const { width } = Dimensions.get('window');
-const HERO_CARD_WIDTH = width - 32; // Full width minus horizontal padding
-
-// Sort Menu Component
-const SortMenu = ({ value, onChange, activeTab, colors, t }) => {
-  const [visible, setVisible] = useState(false);
-  const buttonRef = useRef(null);
-  const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
-
-  const openMenu = () => {
-    if (buttonRef.current && buttonRef.current.measureInWindow) {
-      buttonRef.current.measureInWindow((x, y, width, height) => {
-        setDropdownPos({ x, y, width, height });
-        setVisible(true);
-      });
-    } else {
-      setVisible(true);
-    }
-  };
-
-  const handleSelect = (newValue) => {
-    setVisible(false);
-    if (onChange) onChange(newValue);
-  };
-
-  const sortOptions = activeTab === 'new'
-    ? [
-        { key: 'new', label: t('discover.sortNew', 'Yeni') },
-        { key: 'popularity', label: t('discover.sortPopularity', 'Popülerlik') },
-        { key: 'az', label: 'A-Z' },
-      ]
-    : [
-        { key: 'popularity', label: t('discover.sortPopularity', 'Popülerlik') },
-        { key: 'az', label: 'A-Z' },
-        { key: 'new', label: t('discover.sortNew', 'Yeni') },
-      ];
-
-  return (
-    <>
-      <TouchableOpacity
-        ref={buttonRef}
-        style={[styles.filterIconButton, { borderColor: colors.border }]}
-        onPress={openMenu}
-        activeOpacity={0.8}
-      >
-        <Iconify icon="mage:filter" size={24} color={colors.subtext} />
-      </TouchableOpacity>
-
-      <Modal
-        visible={visible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setVisible(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setVisible(false)}>
-          <View style={{ flex: 1 }}>
-            <View style={{
-              position: 'absolute',
-              left: Math.max(8, dropdownPos.x + dropdownPos.width - 140),
-              top: Platform.OS === 'android' ? dropdownPos.y + dropdownPos.height : dropdownPos.y + dropdownPos.height + 4,
-              minWidth: 140,
-              maxWidth: 160,
-              backgroundColor: colors.background,
-              borderRadius: 14,
-              paddingVertical: 6,
-              paddingHorizontal: 0,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.10,
-              shadowRadius: 8,
-              elevation: 8,
-              borderWidth: 1,
-              borderColor: colors.border,
-            }}>
-              {sortOptions.map((option) => (
-                <TouchableOpacity
-                  key={option.key}
-                  onPress={() => handleSelect(option.key)}
-                  style={{
-                    paddingVertical: 8,
-                    paddingHorizontal: 14,
-                    backgroundColor: value === option.key ? colors.buttonColor : 'transparent',
-                    borderRadius: 8,
-                  }}
-                >
-                  <Text style={{
-                    color: value === option.key ? '#fff' : colors.text,
-                    fontWeight: value === option.key ? 'bold' : 'normal',
-                    fontSize: 15
-                  }}>
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-    </>
-  );
-};
+const HERO_CARD_WIDTH = width - 32;
 
 export default function DiscoverScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
-  const [activeTab, setActiveTab] = useState('trend'); // 'trend' | 'favorites' | 'starts' | 'unique' | 'new'
-  const [timeFilter, setTimeFilter] = useState('all'); // 'today' | 'week' | 'month' | 'year' | 'all'
+  const [activeTab, setActiveTab] = useState('trend');
+  const [timeFilter, setTimeFilter] = useState('all');
   const [search, setSearch] = useState('');
-  const [sort, setSort] = useState('popularity'); // 'popularity' | 'az' | 'new'
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [favoriteDecks, setFavoriteDecks] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -132,22 +36,20 @@ export default function DiscoverScreen() {
   const [uniqueDecksList, setUniqueDecksList] = useState([]);
   const [newDecks, setNewDecks] = useState([]);
 
-  // Load favorite decks on component mount
+  const heroScrollRef = useRef(null);
+  const isUserScrolling = useRef(false);
+
   useEffect(() => {
     loadFavoriteDecks();
-    // Load decks asynchronously - don't block UI
     loadDecks();
   }, []);
 
-  // Reload decks when time filter or tab changes
   useEffect(() => {
-    // Only set loading if we're switching tabs (not initial load)
     if (trendDecksList.length > 0 || favoriteDecksList.length > 0 || startedDecksList.length > 0 || uniqueDecksList.length > 0 || newDecks.length > 0) {
       loadDecks();
     }
   }, [timeFilter, activeTab]);
 
-  // Update scroll position when activeTab changes (only if not user scrolling)
   useEffect(() => {
     if (!isUserScrolling.current && heroScrollRef.current) {
       const tabKeys = ['trend', 'favorites', 'starts', 'unique', 'new'];
@@ -172,9 +74,7 @@ export default function DiscoverScreen() {
         .eq('user_id', user.id);
 
       if (error) throw error;
-      
-      const favoriteDeckIds = data.map(item => item.deck_id);
-      setFavoriteDecks(favoriteDeckIds);
+      setFavoriteDecks(data.map(item => item.deck_id));
     } catch (error) {
       console.error('Error loading favorite decks:', error);
     }
@@ -203,17 +103,11 @@ export default function DiscoverScreen() {
       }
     } catch (error) {
       console.error('Error loading decks:', error);
-      if (activeTab === 'trend') {
-        setTrendDecksList([]);
-      } else if (activeTab === 'favorites') {
-        setFavoriteDecksList([]);
-      } else if (activeTab === 'starts') {
-        setStartedDecksList([]);
-      } else if (activeTab === 'unique') {
-        setUniqueDecksList([]);
-      } else {
-        setNewDecks([]);
-      }
+      if (activeTab === 'trend') setTrendDecksList([]);
+      else if (activeTab === 'favorites') setFavoriteDecksList([]);
+      else if (activeTab === 'starts') setStartedDecksList([]);
+      else if (activeTab === 'unique') setUniqueDecksList([]);
+      else setNewDecks([]);
     } finally {
       setLoading(false);
     }
@@ -221,67 +115,30 @@ export default function DiscoverScreen() {
 
   const currentDecks = useMemo(() => {
     switch (activeTab) {
-      case 'trend':
-        return trendDecksList;
-      case 'favorites':
-        return favoriteDecksList;
-      case 'starts':
-        return startedDecksList;
-      case 'unique':
-        return uniqueDecksList;
-      case 'new':
-        return newDecks;
-      default:
-        return [];
+      case 'trend': return trendDecksList;
+      case 'favorites': return favoriteDecksList;
+      case 'starts': return startedDecksList;
+      case 'unique': return uniqueDecksList;
+      case 'new': return newDecks;
+      default: return [];
     }
   }, [activeTab, trendDecksList, favoriteDecksList, startedDecksList, uniqueDecksList, newDecks]);
 
-  // Filter and sort decks based on search and sort criteria
   const filteredDecks = useMemo(() => {
-    let filtered = currentDecks.filter(deck => {
-      // Search filter
+    return currentDecks.filter(deck => {
       const matchesSearch = 
         (deck.name && deck.name.toLowerCase().includes(search.toLowerCase())) ||
         (deck.to_name && deck.to_name.toLowerCase().includes(search.toLowerCase()));
+
+      const deckSortOrder = deck.categories?.sort_order;
+      const hasActiveCategoryFilter = selectedCategories.length > 0;
+      const matchesCategory = !hasActiveCategoryFilter
+        ? true
+        : (deckSortOrder != null && selectedCategories.includes(deckSortOrder));
       
-      return matchesSearch;
+      return matchesSearch && matchesCategory;
     });
-
-    // Apply sorting
-    switch (sort) {
-      case 'az':
-        filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-        break;
-      case 'new':
-        filtered.sort((a, b) => {
-          const dateA = new Date(a.created_at || 0);
-          const dateB = new Date(b.created_at || 0);
-          return dateB - dateA;
-        });
-        break;
-      case 'popularity':
-      default:
-        if (activeTab === 'trend') {
-          filtered.sort((a, b) => (b.popularity_score || 0) - (a.popularity_score || 0));
-        } else if (activeTab === 'favorites') {
-          filtered.sort((a, b) => (b.favorite_count || 0) - (a.favorite_count || 0));
-        } else if (activeTab === 'starts') {
-          filtered.sort((a, b) => (b.total_starts_count || 0) - (a.total_starts_count || 0));
-        } else if (activeTab === 'unique') {
-          filtered.sort((a, b) => (b.unique_started_count || 0) - (a.unique_started_count || 0));
-        } else {
-          // For new decks, keep created_at order
-          filtered.sort((a, b) => {
-            const dateA = new Date(a.created_at || 0);
-            const dateB = new Date(b.created_at || 0);
-            return dateB - dateA;
-          });
-        }
-        break;
-    }
-
-    return filtered;
-  }, [currentDecks, search, sort, activeTab]);
+  }, [currentDecks, search, selectedCategories]);
 
   const handleDeckPress = (deck) => {
     navigation.navigate('DeckDetail', { deck });
@@ -306,10 +163,7 @@ export default function DiscoverScreen() {
       } else {
         const { error } = await supabase
           .from('favorite_decks')
-          .insert({
-            user_id: user.id,
-            deck_id: deckId
-          });
+          .insert({ user_id: user.id, deck_id: deckId });
         
         if (error) throw error;
         setFavoriteDecks(prev => [...prev, deckId]);
@@ -322,10 +176,7 @@ export default function DiscoverScreen() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([
-        loadFavoriteDecks(),
-        loadDecks()
-      ]);
+      await Promise.all([loadFavoriteDecks(), loadDecks()]);
     } catch (error) {
       console.error('Error refreshing:', error);
     } finally {
@@ -333,21 +184,17 @@ export default function DiscoverScreen() {
     }
   };
 
+  const handleApplyFilters = (newCategories) => {
+    setSelectedCategories(newCategories);
+    setFilterModalVisible(false);
+  };
+
   const handleSetPage = useCallback((pageIndex) => {
     const tabs = ['trend', 'favorites', 'starts', 'unique', 'new'];
     const currentIndex = tabs.findIndex(tab => tab === activeTab);
-    
-    // If clicking the same tab, do nothing
     if (currentIndex === pageIndex) return;
-    
-    // Update state immediately (no animation)
-    // useEffect will handle the scroll
     setActiveTab(tabs[pageIndex] || 'trend');
   }, [activeTab]);
-
-  // Hero carousel refs and scroll handler
-  const heroScrollRef = useRef(null);
-  const isUserScrolling = useRef(false);
 
   const handleHeroScroll = useCallback((event) => {
     const offsetX = event.nativeEvent.contentOffset.x;
@@ -359,9 +206,7 @@ export default function DiscoverScreen() {
       if (newTab !== activeTab) {
         isUserScrolling.current = true;
         setActiveTab(newTab);
-        setTimeout(() => {
-          isUserScrolling.current = false;
-        }, 300);
+        setTimeout(() => { isUserScrolling.current = false; }, 300);
       }
     }
   }, [activeTab]);
@@ -374,7 +219,6 @@ export default function DiscoverScreen() {
     { key: 'year', label: t('discover.yearly', 'Yıl'), icon: 'solar:calendar-bold' },
   ];
 
-  // Tab configurations - Modern, creative design
   const tabConfigs = {
     trend: {
       title: t('discover.trending', 'Trend'),
@@ -417,12 +261,10 @@ export default function DiscoverScreen() {
   const activeIndex = tabKeys.indexOf(activeTab);
 
   const renderFixedHeader = () => {
-    // Header yüksekliği: status bar + header (yaklaşık 44-56px) + safe area top + ekstra boşluk
     const headerHeight = Platform.OS === 'ios' ? insets.top + 44 : 56;
     
     return (
       <View style={[styles.fixedHeaderContainer, { backgroundColor: colors.cardBackground, paddingTop: headerHeight + 50 }]}>
-        {/* Hero Cards Carousel */}
         <View style={styles.heroCarouselContainer}>
           <ScrollView
             ref={heroScrollRef}
@@ -465,7 +307,6 @@ export default function DiscoverScreen() {
             })}
           </ScrollView>
           
-          {/* Pagination Dots */}
           <View style={styles.paginationContainer}>
             {tabKeys.map((tabKey, idx) => {
               const config = tabConfigs[tabKey];
@@ -487,7 +328,6 @@ export default function DiscoverScreen() {
           </View>
         </View>
 
-        {/* Time Filter - Modern Segmented Control */}
         {activeTab !== 'new' && (
           <View style={styles.timeFilterWrapper}>
             <View style={[styles.timeFilterSegmentedContainer, { backgroundColor: colors.background }]}>
@@ -505,20 +345,11 @@ export default function DiscoverScreen() {
                     ]}
                     activeOpacity={0.7}
                   >
-                    <Iconify 
-                      icon={filter.icon} 
-                      size={16} 
-                      color={isActive ? '#fff' : colors.subtext} 
-                    />
-                    <Text
-                      style={[
-                        styles.timeFilterSegmentText,
-                        {
-                          color: isActive ? '#fff' : colors.text,
-                          fontWeight: isActive ? '700' : '500',
-                        }
-                      ]}
-                    >
+                    <Iconify icon={filter.icon} size={16} color={isActive ? '#fff' : colors.subtext} />
+                    <Text style={[
+                      styles.timeFilterSegmentText,
+                      { color: isActive ? '#fff' : colors.text, fontWeight: isActive ? '700' : '500' }
+                    ]}>
                       {filter.label}
                     </Text>
                   </TouchableOpacity>
@@ -528,7 +359,6 @@ export default function DiscoverScreen() {
           </View>
         )}
 
-        {/* Search and Filter Row */}
         <View style={styles.searchRow}>
           <SearchBar
             value={search}
@@ -536,90 +366,37 @@ export default function DiscoverScreen() {
             placeholder={t('common.searchDeckPlaceholder', 'Deste ara...')}
             style={styles.searchBar}
           />
-          <SortMenu value={sort} onChange={setSort} activeTab={activeTab} colors={colors} t={t} />
+          <FilterModalButton onPress={() => setFilterModalVisible(true)} />
         </View>
       </View>
     );
   };
 
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Fixed Header Section */}
       {renderFixedHeader()}
 
-      {/* List Content */}
       <View style={[styles.listContainer, { backgroundColor: colors.background }]}>
-        {activeTab === 'trend' && (
-          <DeckList
-            decks={filteredDecks}
-            favoriteDecks={favoriteDecks}
-            onToggleFavorite={handleToggleFavorite}
-            onPressDeck={handleDeckPress}
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            showPopularityBadge={true}
-            loading={loading && activeTab === 'trend'}
-            contentPaddingTop={20}
-          />
-        )}
-
-        {activeTab === 'favorites' && (
-          <DeckList
-            decks={filteredDecks}
-            favoriteDecks={favoriteDecks}
-            onToggleFavorite={handleToggleFavorite}
-            onPressDeck={handleDeckPress}
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            showPopularityBadge={false}
-            loading={loading && activeTab === 'favorites'}
-            contentPaddingTop={20}
-          />
-        )}
-
-        {activeTab === 'starts' && (
-          <DeckList
-            decks={filteredDecks}
-            favoriteDecks={favoriteDecks}
-            onToggleFavorite={handleToggleFavorite}
-            onPressDeck={handleDeckPress}
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            showPopularityBadge={false}
-            loading={loading && activeTab === 'starts'}
-            contentPaddingTop={20}
-          />
-        )}
-
-        {activeTab === 'unique' && (
-          <DeckList
-            decks={filteredDecks}
-            favoriteDecks={favoriteDecks}
-            onToggleFavorite={handleToggleFavorite}
-            onPressDeck={handleDeckPress}
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            showPopularityBadge={false}
-            loading={loading && activeTab === 'unique'}
-            contentPaddingTop={20}
-          />
-        )}
-
-        {activeTab === 'new' && (
-          <DeckList
-            decks={filteredDecks}
-            favoriteDecks={favoriteDecks}
-            onToggleFavorite={handleToggleFavorite}
-            onPressDeck={handleDeckPress}
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            showPopularityBadge={false}
-            loading={loading && activeTab === 'new'}
-            contentPaddingTop={20}
-          />
-        )}
+        <DeckList
+          decks={filteredDecks}
+          favoriteDecks={favoriteDecks}
+          onToggleFavorite={handleToggleFavorite}
+          onPressDeck={handleDeckPress}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          showPopularityBadge={activeTab === 'trend'}
+          loading={loading}
+          contentPaddingTop={20}
+        />
       </View>
+
+      <FilterModal
+        visible={filterModalVisible}
+        onClose={() => setFilterModalVisible(false)}
+        currentCategories={selectedCategories}
+        onApply={handleApplyFilters}
+        showSortOptions={false}
+      />
     </View>
   );
 }
@@ -685,18 +462,6 @@ const styles = StyleSheet.create({
   searchBar: {
     flex: 1,
   },
-  filterIconButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-    borderRadius: 30,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    height: 48,
-    width: 48,
-  },
   heroCarouselContainer: {
     marginBottom: 12,
   },
@@ -713,7 +478,6 @@ const styles = StyleSheet.create({
   paginationDot: {
     height: 8,
     borderRadius: 4,
-    transition: 'width 0.3s ease',
   },
   modernHeroCard: {
     marginBottom: 8,
@@ -767,4 +531,3 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
-

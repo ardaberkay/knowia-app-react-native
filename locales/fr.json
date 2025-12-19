@@ -164,6 +164,7 @@
       "delete": "Supprimer",
       "default": "Par Défaut",
       "fav": "Favoris",
+      "inProgress": "En Cours",
       "errorMessage": "Informations du paquet introuvables.",
       "error": "Erreur",
       "errorMessageDeck": "Le paquet n'a pas pu être démarré.",

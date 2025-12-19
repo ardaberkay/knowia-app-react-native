@@ -168,6 +168,7 @@
     "delete": "Delete",
     "default": "Default",
     "fav": "Favorites",
+    "inProgress": "In Progress",
     "errorMessage": "Deck information not found.",
     "error": "Error",
     "errorMessageDeck": "Deck could not be started.",
