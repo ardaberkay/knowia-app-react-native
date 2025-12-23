@@ -28,7 +28,8 @@ export const getFavoriteCards = async (userId) => {
         *,
         deck:decks(
           id, 
-          name, 
+          name,
+          user_id,
           categories:categories(id, name, sort_order)
         )
       )

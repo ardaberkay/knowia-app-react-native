@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Pressable } from 'react-native';
 import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
+import { useTranslation } from 'react-i18next';
 
 export default function CardListItem({
   question,
@@ -12,8 +13,10 @@ export default function CardListItem({
   isFavorite,
   onDelete,
   canDelete,
+  isOwner = true,
 }) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   return (
     <TouchableOpacity
       style={[
@@ -54,12 +57,37 @@ export default function CardListItem({
             />
           </TouchableOpacity>
           {canDelete ? (
-            <TouchableOpacity
-              style={[styles.deleteBtn, { backgroundColor: colors.iconBackground }]}
-              onPress={onDelete}
-            >
-              <Iconify icon="mdi:garbage" size={22} color="#E74C3C" />
-            </TouchableOpacity>
+            isOwner ? (
+              <TouchableOpacity
+                style={[
+                  styles.deleteBtn, 
+                  { 
+                    backgroundColor: colors.iconBackground,
+                  }
+                ]}
+                onPress={onDelete}
+                activeOpacity={0.7}
+              >
+                <Iconify icon="mdi:garbage-can-empty" size={22} color="#E74C3C" />
+              </TouchableOpacity>
+            ) : (
+              <Pressable
+                style={[
+                  styles.deleteBtn, 
+                  { 
+                    backgroundColor: colors.iconBackground,
+                    opacity: 0.5,
+                  }
+                ]}
+                onPress={() => {
+                  // Boş fonksiyon - hiçbir şey yapma
+                }}
+                android_ripple={null}
+                pressRetentionOffset={0}
+              >
+                <Iconify icon="mdi:garbage" size={22} color="#999" />
+              </Pressable>
+            )
           ) : null}
         </View>
       </View>

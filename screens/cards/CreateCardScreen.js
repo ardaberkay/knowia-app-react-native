@@ -15,6 +15,7 @@ import { Buffer } from 'buffer';
 import CreateButton from '../../components/tools/CreateButton';
 import UndoButton from '../../components/tools/UndoButton';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
+import HowToCreateCardModal from '../../components/modals/HowToCreateCardModal';
 
 export default function AddCardScreen() {
   const navigation = useNavigation();
@@ -31,6 +32,7 @@ export default function AddCardScreen() {
   const [csvModalVisible, setCsvModalVisible] = useState(false);
   const [csvPreview, setCsvPreview] = useState(null);
   const [csvLoading, setCsvLoading] = useState(false);
+  const [isHowToCreateCardModalVisible, setHowToCreateCardModalVisible] = useState(false);
   const { t } = useTranslation();
   const { showSuccess, showError } = useSnackbarHelpers();
 
@@ -417,12 +419,9 @@ export default function AddCardScreen() {
                     {t('addCard.motivationText', 'Bilgini pekiştirmek için soru-cevap kartları oluştur ve öğrenme sürecini hızlandır.')}
                   </Text>
                   <TouchableOpacity 
-                    style={styles.howToCreateButton}
+                    style={[styles.howToCreateButton, { backgroundColor: colors.secondary + '15', borderColor: colors.secondary + '30' }]}
                     activeOpacity={0.7}
-                    onPress={() => {
-                      // TODO: Navigate to how-to-create-card screen
-                      console.log('How to create card pressed');
-                    }}
+                    onPress={() => setHowToCreateCardModalVisible(true)}
                   >
                     <Iconify icon="material-symbols:info-outline" size={16} color={colors.secondary} style={{ marginRight: 4 }} />
                     <Text style={[typography.styles.caption, { color: colors.secondary, fontWeight: '600', textDecorationLine: 'underline' }]}>
@@ -485,14 +484,26 @@ export default function AddCardScreen() {
                 <Iconify icon="uil:comment-alt-question" size={24} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.question", "Soru")} *</Text>
               </View>
-              <TextInput
-                style={[styles.input, typography.styles.body, {color: colors.text}]}
-                placeholder={t("addCard.questionPlaceholder", "Kartın sorusu")}
-                placeholderTextColor={colors.muted}
-                value={question}
-                onChangeText={setQuestion}
-                multiline
-              />
+              <View style={{ position: 'relative' }}>
+                <TextInput
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: question?.length > 0 ? 48 : 12}]}
+                  placeholder={t("addCard.questionPlaceholder", "Kartın sorusu")}
+                  placeholderTextColor={colors.muted}
+                  value={question}
+                  onChangeText={setQuestion}
+                  multiline
+                />
+                {question?.length > 0 ? (
+                  <TouchableOpacity
+                    onPress={() => setQuestion('')}
+                    accessibilityLabel={t('common.clear', 'Temizle')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
+                  >
+                    <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
             </View>
           </View>
           <View style={[styles.inputCard, { 
@@ -510,14 +521,26 @@ export default function AddCardScreen() {
                 <Iconify icon="uil:comment-alt-check" size={24} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.answer", "Cevap")} *</Text>
               </View>
-              <TextInput
-                style={[styles.input, typography.styles.body, {color: colors.text}]}
-                placeholder={t("addCard.answerPlaceholder", "Kartın cevabı")}
-                placeholderTextColor={colors.muted}
-                value={answer}
-                onChangeText={setAnswer}
-                multiline
-              />
+              <View style={{ position: 'relative' }}>
+                <TextInput
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: answer?.length > 0 ? 48 : 12}]}
+                  placeholder={t("addCard.answerPlaceholder", "Kartın cevabı")}
+                  placeholderTextColor={colors.muted}
+                  value={answer}
+                  onChangeText={setAnswer}
+                  multiline
+                />
+                {answer?.length > 0 ? (
+                  <TouchableOpacity
+                    onPress={() => setAnswer('')}
+                    accessibilityLabel={t('common.clear', 'Temizle')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
+                  >
+                    <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
             </View>
           </View>
           <View style={[styles.inputCard, { 
@@ -535,14 +558,26 @@ export default function AddCardScreen() {
                 <Iconify icon="lucide:lightbulb" size={24} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.example", "Örnek")}</Text>
               </View>
-              <TextInput
-                style={[styles.input, typography.styles.body, {color: colors.text}]}
-                placeholder={t("addCard.examplePlaceholder", "Örnek cümle (opsiyonel)")}
-                placeholderTextColor={colors.muted}
-                value={example}
-                onChangeText={setExample}
-                multiline
-              />
+              <View style={{ position: 'relative' }}>
+                <TextInput
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: example?.length > 0 ? 48 : 12}]}
+                  placeholder={t("addCard.examplePlaceholder", "Örnek cümle (opsiyonel)")}
+                  placeholderTextColor={colors.muted}
+                  value={example}
+                  onChangeText={setExample}
+                  multiline
+                />
+                {example?.length > 0 ? (
+                  <TouchableOpacity
+                    onPress={() => setExample('')}
+                    accessibilityLabel={t('common.clear', 'Temizle')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
+                  >
+                    <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
             </View>
           </View>
           <View style={[styles.inputCard, { 
@@ -560,14 +595,26 @@ export default function AddCardScreen() {
                 <Iconify icon="material-symbols-light:stylus-note" size={24} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.note", "Not")}</Text>
               </View>
-              <TextInput
-                style={[styles.input, typography.styles.body, {color: colors.text}]}
-                placeholder={t("addCard.notePlaceholder", "Not (opsiyonel)")}
-                placeholderTextColor={colors.muted}
-                value={note}
-                onChangeText={setNote}
-                multiline
-              />
+              <View style={{ position: 'relative' }}>
+                <TextInput
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: note?.length > 0 ? 48 : 12}]}
+                  placeholder={t("addCard.notePlaceholder", "Not (opsiyonel)")}
+                  placeholderTextColor={colors.muted}
+                  value={note}
+                  onChangeText={setNote}
+                  multiline
+                />
+                {note?.length > 0 ? (
+                  <TouchableOpacity
+                    onPress={() => setNote('')}
+                    accessibilityLabel={t('common.clear', 'Temizle')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
+                  >
+                    <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
             </View>
           </View>
           <View style={styles.buttonRowModern}>
@@ -585,6 +632,11 @@ export default function AddCardScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <HowToCreateCardModal
+        isVisible={isHowToCreateCardModalVisible}
+        onClose={() => setHowToCreateCardModalVisible(false)}
+      />
     </View>
   );
 }
@@ -634,6 +686,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    borderWidth: 1,
   },
   headerImageContainer: {
     width: 120,
@@ -720,6 +776,7 @@ const styles = StyleSheet.create({
   buttonRowModern: {
     flexDirection: 'row',
     gap: 20,
-    marginTop: 4,
+    marginTop: 24,
+    marginBottom: 32,
   },
 });

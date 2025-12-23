@@ -57,7 +57,7 @@ export default function DeckCardsScreen({ route, navigation }) {
             .select(`
               id, question, answer, image, example, note, created_at,
               deck:decks(
-                id, name, categories:categories(id, name, sort_order)
+                id, name, user_id, categories:categories(id, name, sort_order)
               )
             `)
             .eq('deck_id', deck.id)
@@ -414,40 +414,44 @@ export default function DeckCardsScreen({ route, navigation }) {
                    <Text style={[typography.styles.caption, { color: colors.text, textAlign: 'center', fontSize: 16 }]}>{t('deckDetail.addToDeck', 'Desteye bir kart ekle')}</Text>
                  </View>
              }
-                         renderItem={({ item }) => (
-              <View style={styles.cardListItem}>
-                <CardListItem
-                  question={item.question}
-                  answer={item.answer}
-                  onPress={() => {
-                    setEditMode(false);
-                    setSelectedCard(item);
-                  }}
-                  onToggleFavorite={() => handleToggleFavoriteCard(item.id)}
-                  isFavorite={favoriteCards.includes(item.id)}
-                  onDelete={async () => {
-                    Alert.alert(
-                      t('cardDetail.deleteConfirmation', 'Kart Silinsin mi?'),
-                      t('cardDetail.deleteConfirm', 'Kartı silmek istediğinize emin misiniz?'),
-                      [
-                        { text: t('cardDetail.cancel', 'İptal'), style: 'cancel' },
-                        {
-                          text: t('cardDetail.delete', 'Sil'), style: 'destructive', onPress: async () => {
-                            await supabase
-                              .from('cards')
-                              .delete()
-                              .eq('id', item.id);
-                            setCards(cards.filter(c => c.id !== item.id));
-                            setOriginalCards(originalCards.filter(c => c.id !== item.id));
+                         renderItem={({ item }) => {
+              const isOwner = currentUserId && (item.deck?.user_id || deck.user_id) === currentUserId;
+              return (
+                <View style={styles.cardListItem}>
+                  <CardListItem
+                    question={item.question}
+                    answer={item.answer}
+                    onPress={() => {
+                      setEditMode(false);
+                      setSelectedCard(item);
+                    }}
+                    onToggleFavorite={() => handleToggleFavoriteCard(item.id)}
+                    isFavorite={favoriteCards.includes(item.id)}
+                    onDelete={async () => {
+                      Alert.alert(
+                        t('cardDetail.deleteConfirmation', 'Kart Silinsin mi?'),
+                        t('cardDetail.deleteConfirm', 'Kartı silmek istediğinize emin misiniz?'),
+                        [
+                          { text: t('cardDetail.cancel', 'İptal'), style: 'cancel' },
+                          {
+                            text: t('cardDetail.delete', 'Sil'), style: 'destructive', onPress: async () => {
+                              await supabase
+                                .from('cards')
+                                .delete()
+                                .eq('id', item.id);
+                              setCards(cards.filter(c => c.id !== item.id));
+                              setOriginalCards(originalCards.filter(c => c.id !== item.id));
+                            }
                           }
-                        }
-                      ]
-                    );
-                  }}
-                  canDelete={currentUserId && deck.user_id === currentUserId}
-                />
-              </View>
-            )}
+                        ]
+                      );
+                    }}
+                    canDelete={currentUserId && deck.user_id === currentUserId}
+                    isOwner={isOwner}
+                  />
+                </View>
+              );
+            }}
           />
         )}
       </View>

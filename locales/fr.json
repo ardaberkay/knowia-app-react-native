@@ -125,7 +125,9 @@
       "favorites": "Favoris",
       "categories": "Catégories",
       "reset": "Réinitialiser",
-      "apply": "Appliquer"
+      "apply": "Appliquer",
+      "showMore": "Afficher Plus",
+      "showLess": "Afficher Moins"
     },
     "tabs": {
       "home": "Accueil",
@@ -380,6 +382,40 @@
     "title": "Créez votre Paquet",
     "motivationText": "   Concevez votre parcours d'apprentissage avec des paquets personnalisés et maîtrisez vos connaissances.",
     "howToCreate": "Comment Créer?"
+  },
+  "howToCreate": {
+    "title": "Comment Créer un Paquet?",
+    "intro": "Suivez les étapes ci-dessous pour créer facilement un paquet. Apprenez ce que fait chaque étape:",
+    "step1Title": "Ajouter le Nom du Paquet",
+    "step1Desc": "Donnez un nom à votre paquet. Ce nom identifie votre paquet et apparaît dans les résultats de recherche. Ex.: \"Mots Anglais\", \"Notes d'Histoire\"",
+    "step2Title": "Ajouter la Traduction (Optionnel)",
+    "step2Desc": "Si votre paquet contient des traductions ou des correspondances, vous pouvez remplir le champ de traduction. Ce champ peut être laissé vide. Ex.: Pour \"Mots Anglais\", la traduction pourrait être \"Mots Français\".",
+    "step3Title": "Ajouter une Description (Optionnel)",
+    "step3Desc": "Vous pouvez décrire le but, le contenu ou l'utilisation de votre paquet. Ces informations peuvent être utiles pour d'autres utilisateurs.",
+    "step4Title": "Sélectionner une Catégorie",
+    "step4Desc": "Sélectionnez une catégorie pour déterminer à quel sujet appartient votre paquet. Cela facilite la découverte et l'organisation de votre paquet.",
+    "step5Title": "Appuyer sur le Bouton Créer",
+    "step5Desc": "Après avoir rempli toutes les informations, appuyez sur le bouton \"Créer\". Après la création du paquet, vous pouvez commencer à ajouter des cartes.",
+    "required": "Obligatoire",
+    "tip": "Astuce: Après avoir créé le paquet, vous pouvez le modifier ou ajouter des cartes à tout moment."
+  },
+  "howToCreateCard": {
+    "title": "Comment Créer une Carte?",
+    "intro": "Suivez les étapes ci-dessous pour créer facilement une carte. Apprenez ce que fait chaque étape:",
+    "step1Title": "Ajouter la Question",
+    "step1Desc": "Écrivez la question de votre carte. Cette question apparaîtra sur le devant de la carte. Ex.: Quelle est la traduction turque du mot \"Book\"?",
+    "step2Title": "Ajouter la Réponse",
+    "step2Desc": "Écrivez la réponse de votre carte. Cette réponse apparaîtra au dos de la carte. Ex.: \"Kitap\"",
+    "step3Title": "Ajouter un Exemple (Optionnel)",
+    "step3Desc": "Vous pouvez ajouter une phrase d'exemple ou un usage pour votre carte. Ce champ peut être laissé vide. Ex.: \"I am reading a book\"",
+    "step4Title": "Ajouter une Note (Optionnel)",
+    "step4Desc": "Vous pouvez ajouter des notes supplémentaires ou des explications pour votre carte. Ce champ peut être laissé vide. Ex.: \"Ce mot se prononce ainsi\"",
+    "step5Title": "Ajouter une Image (Optionnel)",
+    "step5Desc": "Vous pouvez ajouter une image à votre carte. Cette image peut aider à apprendre la carte. Ce champ peut être laissé vide.",
+    "step6Title": "Créer la Carte",
+    "step6Desc": "Après avoir rempli les champs de question et de réponse, appuyez sur le bouton \"Créer la Carte\". Après la création de la carte, elle sera ajoutée à votre paquet.",
+    "required": "Obligatoire",
+    "tip": "Astuce: Après avoir créé la carte, vous pouvez la modifier ou la supprimer à tout moment."
   },
   "discover": {
     "trend": "Tendance",

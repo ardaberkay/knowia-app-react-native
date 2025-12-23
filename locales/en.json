@@ -127,7 +127,9 @@
     "favorites": "Favorites",
     "categories": "Categories",
     "reset": "Reset",
-    "apply": "Apply"
+    "apply": "Apply",
+    "showMore": "Show More",
+    "showLess": "Show Less"
   },
   "tabs": {
     "home": "Home",
@@ -387,6 +389,40 @@
     "title": "Create Your Deck",
     "motivationText": "   Design your learning journey with personalized decks and master your knowledge.",
     "howToCreate": "How to Create?"
+  },
+  "howToCreate": {
+    "title": "How to Create a Deck?",
+    "intro": "Follow the steps below to easily create a deck. Learn what each step does:",
+    "step1Title": "Add Deck Name",
+    "step1Desc": "Give your deck a name. This name identifies your deck and appears in search results. E.g.: \"English Words\", \"History Notes\"",
+    "step2Title": "Add Translation (Optional)",
+    "step2Desc": "If your deck contains translations or matching, you can fill in the translation field. This field can be left empty. E.g.: For \"English Words\", the translation could be \"Turkish Words\".",
+    "step3Title": "Add Description (Optional)",
+    "step3Desc": "You can describe the purpose, content, or usage of your deck. This information can be helpful for other users.",
+    "step4Title": "Select Category",
+    "step4Desc": "Select a category to determine what topic your deck belongs to. This makes it easier to discover and organize your deck.",
+    "step5Title": "Press Create Button",
+    "step5Desc": "After filling in all the information, press the \"Create\" button. After the deck is created, you can start adding cards.",
+    "required": "Required",
+    "tip": "Tip: After creating the deck, you can edit it or add cards anytime you want."
+  },
+  "howToCreateCard": {
+    "title": "How to Create a Card?",
+    "intro": "Follow the steps below to easily create a card. Learn what each step does:",
+    "step1Title": "Add Question",
+    "step1Desc": "Write your card's question. This question will appear on the front of the card. E.g.: What is the Turkish translation of the word \"Book\"?",
+    "step2Title": "Add Answer",
+    "step2Desc": "Write your card's answer. This answer will appear on the back of the card. E.g.: \"Kitap\"",
+    "step3Title": "Add Example (Optional)",
+    "step3Desc": "You can add an example sentence or usage for your card. This field can be left empty. E.g.: \"I am reading a book\"",
+    "step4Title": "Add Note (Optional)",
+    "step4Desc": "You can add additional notes or explanations for your card. This field can be left empty. E.g.: \"This word is pronounced this way\"",
+    "step5Title": "Add Image (Optional)",
+    "step5Desc": "You can add an image to your card. This image can help with learning the card. This field can be left empty.",
+    "step6Title": "Create Card",
+    "step6Desc": "After filling in the question and answer fields, press the \"Create Card\" button. After the card is created, it will be added to your deck.",
+    "required": "Required",
+    "tip": "Tip: After creating the card, you can edit or delete it anytime you want."
   },
   "discover": {
     "trend": "Trend",

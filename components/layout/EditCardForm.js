@@ -147,14 +147,26 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
                 <Iconify icon="uil:comment-alt-question" size={24} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.question", "Soru")} *</Text>
               </View>
-              <TextInput
-                style={[styles.input, typography.styles.body, {color: colors.text}]}
-                placeholder={t("cardDetail.questionPlaceholder", "Kartın sorusu")}
-                placeholderTextColor={colors.muted}
-                value={question}
-                onChangeText={setQuestion}
-                multiline
-              />
+              <View style={{ position: 'relative' }}>
+                <TextInput
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: question?.length > 0 ? 48 : 12}]}
+                  placeholder={t("cardDetail.questionPlaceholder", "Kartın sorusu")}
+                  placeholderTextColor={colors.muted}
+                  value={question}
+                  onChangeText={setQuestion}
+                  multiline
+                />
+                {question?.length > 0 ? (
+                  <TouchableOpacity
+                    onPress={() => setQuestion('')}
+                    accessibilityLabel={t('common.clear', 'Temizle')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
+                  >
+                    <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
             </View>
           </View>
           <View style={[styles.inputCard, { 
@@ -172,14 +184,26 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
                 <Iconify icon="uil:comment-alt-check" size={24} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.answer", "Cevap")} *</Text>
               </View>
-              <TextInput
-                style={[styles.input, typography.styles.body, {color: colors.text}]}
-                placeholder={t("cardDetail.answerPlaceholder", "Kartın cevabı")}
-                placeholderTextColor={colors.muted}
-                value={answer}
-                onChangeText={setAnswer}
-                multiline
-              />
+              <View style={{ position: 'relative' }}>
+                <TextInput
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: answer?.length > 0 ? 48 : 12}]}
+                  placeholder={t("cardDetail.answerPlaceholder", "Kartın cevabı")}
+                  placeholderTextColor={colors.muted}
+                  value={answer}
+                  onChangeText={setAnswer}
+                  multiline
+                />
+                {answer?.length > 0 ? (
+                  <TouchableOpacity
+                    onPress={() => setAnswer('')}
+                    accessibilityLabel={t('common.clear', 'Temizle')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
+                  >
+                    <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
             </View>
           </View>
           <View style={[styles.inputCard, { 
@@ -197,14 +221,26 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
                 <Iconify icon="lucide:lightbulb" size={24} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.example", "Örnek")}</Text>
               </View>
-              <TextInput
-                style={[styles.input, typography.styles.body, {color: colors.text}]}
-                placeholder={t("cardDetail.examplePlaceholder", "Örnek cümle (opsiyonel)")}
-                placeholderTextColor={colors.muted}
-                value={example}
-                onChangeText={setExample}
-                multiline
-              />
+              <View style={{ position: 'relative' }}>
+                <TextInput
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: example?.length > 0 ? 48 : 12}]}
+                  placeholder={t("cardDetail.examplePlaceholder", "Örnek cümle (opsiyonel)")}
+                  placeholderTextColor={colors.muted}
+                  value={example}
+                  onChangeText={setExample}
+                  multiline
+                />
+                {example?.length > 0 ? (
+                  <TouchableOpacity
+                    onPress={() => setExample('')}
+                    accessibilityLabel={t('common.clear', 'Temizle')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
+                  >
+                    <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
             </View>
           </View>
           <View style={[styles.inputCard, { 
@@ -222,14 +258,26 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
                 <Iconify icon="material-symbols-light:stylus-note" size={24} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.note", "Not")}</Text>
               </View>
-              <TextInput
-                style={[styles.input, typography.styles.body, {color: colors.text}]}
-                placeholder={t("cardDetail.notePlaceholder", "Not (opsiyonel)")}
-                placeholderTextColor={colors.muted}
-                value={note}
-                onChangeText={setNote}
-                multiline
-              />
+              <View style={{ position: 'relative' }}>
+                <TextInput
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: note?.length > 0 ? 48 : 12}]}
+                  placeholder={t("cardDetail.notePlaceholder", "Not (opsiyonel)")}
+                  placeholderTextColor={colors.muted}
+                  value={note}
+                  onChangeText={setNote}
+                  multiline
+                />
+                {note?.length > 0 ? (
+                  <TouchableOpacity
+                    onPress={() => setNote('')}
+                    accessibilityLabel={t('common.clear', 'Temizle')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
+                  >
+                    <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
             </View>
           </View>
           <View style={styles.buttonRowModern}>
@@ -333,6 +381,7 @@ const styles = StyleSheet.create({
   buttonRowModern: {
     flexDirection: 'row',
     gap: 20,
-    marginTop: 4,
+    marginTop: 24,
+    marginBottom: 32,
   },
 }); 

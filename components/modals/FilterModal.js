@@ -53,6 +53,7 @@ const FilterModal = ({
   showSortOptions = true,
   sortOptions: customSortOptions,
   defaultSort = 'default',
+  hideFavorites = false,
 }) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -101,7 +102,11 @@ const FilterModal = ({
     { key: 'popularity', label: t('discover.sortPopularity', 'Popülerlik') },
   ];
 
-  const sortOptions = customSortOptions || defaultSortOptions;
+  let sortOptions = customSortOptions || defaultSortOptions;
+  // Filter out 'favorites' option if hideFavorites is true
+  if (hideFavorites) {
+    sortOptions = sortOptions.filter(opt => opt.key !== 'favorites');
+  }
   const selectedSortLabel = sortOptions.find(opt => opt.key === tempSort)?.label || sortOptions[0].label;
   const categoryOptions = getCategoryOptions(t);
 

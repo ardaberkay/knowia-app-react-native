@@ -125,7 +125,9 @@
       "favorites": "Favoritos",
       "categories": "Categorias",
       "reset": "Redefinir",
-      "apply": "Aplicar"
+      "apply": "Aplicar",
+      "showMore": "Mostrar Mais",
+      "showLess": "Mostrar Menos"
     },
     "tabs": {
       "home": "Início",
@@ -380,6 +382,40 @@
     "title": "Crie seu Baralho",
     "motivationText": "   Projete sua jornada de aprendizado com baralhos personalizados e domine seu conhecimento.",
     "howToCreate": "Como Criar?"
+  },
+  "howToCreate": {
+    "title": "Como Criar um Baralho?",
+    "intro": "Siga os passos abaixo para criar facilmente um baralho. Aprenda o que cada passo faz:",
+    "step1Title": "Adicionar Nome do Baralho",
+    "step1Desc": "Dê um nome ao seu baralho. Este nome identifica seu baralho e aparece nos resultados de pesquisa. Ex.: \"Palavras em Inglês\", \"Notas de História\"",
+    "step2Title": "Adicionar Tradução (Opcional)",
+    "step2Desc": "Se seu baralho contém traduções ou correspondências, você pode preencher o campo de tradução. Este campo pode ser deixado vazio. Ex.: Para \"Palavras em Inglês\", a tradução poderia ser \"Palavras em Português\".",
+    "step3Title": "Adicionar Descrição (Opcional)",
+    "step3Desc": "Você pode descrever o propósito, conteúdo ou uso do seu baralho. Esta informação pode ser útil para outros usuários.",
+    "step4Title": "Selecionar Categoria",
+    "step4Desc": "Selecione uma categoria para determinar a qual tópico seu baralho pertence. Isso facilita descobrir e organizar seu baralho.",
+    "step5Title": "Pressionar Botão Criar",
+    "step5Desc": "Depois de preencher todas as informações, pressione o botão \"Criar\". Após criar o baralho, você pode começar a adicionar cartões.",
+    "required": "Obrigatório",
+    "tip": "Dica: Depois de criar o baralho, você pode editá-lo ou adicionar cartões a qualquer momento."
+  },
+  "howToCreateCard": {
+    "title": "Como Criar um Cartão?",
+    "intro": "Siga os passos abaixo para criar facilmente um cartão. Aprenda o que cada passo faz:",
+    "step1Title": "Adicionar Pergunta",
+    "step1Desc": "Escreva a pergunta do seu cartão. Esta pergunta aparecerá na frente do cartão. Ex.: Qual é a tradução em turco da palavra \"Book\"?",
+    "step2Title": "Adicionar Resposta",
+    "step2Desc": "Escreva a resposta do seu cartão. Esta resposta aparecerá no verso do cartão. Ex.: \"Kitap\"",
+    "step3Title": "Adicionar Exemplo (Opcional)",
+    "step3Desc": "Você pode adicionar uma frase de exemplo ou uso para seu cartão. Este campo pode ser deixado vazio. Ex.: \"I am reading a book\"",
+    "step4Title": "Adicionar Nota (Opcional)",
+    "step4Desc": "Você pode adicionar notas adicionais ou explicações para seu cartão. Este campo pode ser deixado vazio. Ex.: \"Esta palavra é pronunciada assim\"",
+    "step5Title": "Adicionar Imagem (Opcional)",
+    "step5Desc": "Você pode adicionar uma imagem ao seu cartão. Esta imagem pode ajudar no aprendizado do cartão. Este campo pode ser deixado vazio.",
+    "step6Title": "Criar Cartão",
+    "step6Desc": "Depois de preencher os campos de pergunta e resposta, pressione o botão \"Criar Cartão\". Após criar o cartão, ele será adicionado ao seu baralho.",
+    "required": "Obrigatório",
+    "tip": "Dica: Depois de criar o cartão, você pode editá-lo ou excluí-lo a qualquer momento."
   },
   "discover": {
     "trend": "Tendência",

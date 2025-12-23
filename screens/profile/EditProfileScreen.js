@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, SafeAreaView, StatusBar } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { getCurrentUserProfile } from '../../services/ProfileService';
@@ -11,9 +11,12 @@ import * as FileSystem from 'expo-file-system';
 import { Buffer } from 'buffer';
 import { useTranslation } from 'react-i18next';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
+import { Iconify } from 'react-native-iconify';
+import UndoButton from '../../components/tools/UndoButton';
+import CreateButton from '../../components/tools/CreateButton';
 
 export default function EditProfileScreen({ navigation }) {
-  const { colors } = useTheme();
+  const { colors, isDarkMode } = useTheme();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -26,6 +29,8 @@ export default function EditProfileScreen({ navigation }) {
   const [initialState, setInitialState] = useState({});
   const [imageChanged, setImageChanged] = useState(false);
   const [imageFilePath, setImageFilePath] = useState(null); // storage path
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const { t } = useTranslation();
   const { showSuccess, showError } = useSnackbarHelpers();
 
@@ -205,238 +210,365 @@ export default function EditProfileScreen({ navigation }) {
 
   if (loading) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}> 
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
+        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
         <ActivityIndicator size="large" color={colors.buttonColor} />
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}> 
-        <Text style={[typography.styles.body, { color: colors.error }]}>{error}</Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
-    >
-      <ScrollView
-        style={[styles.container, { backgroundColor: colors.background }]}
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-        keyboardShouldPersistTaps="handled"
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
       >
-        <View style={styles.formContent}>
-          <View style={styles.profileRow}>
-            <Image source={imageUrl ? { uri: imageUrl } : require('../../assets/avatar-default.png')} style={styles.avatarLarge} />
-            <View style={styles.avatarButtonRow}>
-              <TouchableOpacity style={[styles.removeButton, {backgroundColor: colors.actionButton}]} onPress={handleRemovePhoto}>
-                <Text style={[typography.styles.button, styles.removeButtonText]}>{t('editProfile.removePhoto', "Kaldır")}</Text>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Profile Photo Card */}
+          <View style={[styles.inputCard, {
+            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+            shadowColor: colors.shadowColor,
+            shadowOffset: colors.shadowOffset,
+            shadowOpacity: colors.shadowOpacity,
+            shadowRadius: colors.shadowRadius,
+            elevation: colors.elevation,
+          }]}>
+            <View style={styles.labelRow}>
+              <Iconify icon="mage:image-fill" size={20} color={colors.buttonColor} style={styles.labelIcon} />
+              <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
+                {t('editProfile.profilePhoto', 'Profil Fotoğrafı')}
+              </Text>
+            </View>
+            <View style={styles.profilePhotoContainer}>
+              <View style={styles.avatarContainer}>
+                <Image 
+                  source={imageUrl ? { uri: imageUrl } : require('../../assets/avatar-default.png')} 
+                  style={[styles.avatarLarge, { borderColor: colors.border }]} 
+                />
+                <TouchableOpacity 
+                  style={[styles.cameraButton, { backgroundColor: colors.buttonColor }]}
+                  onPress={handlePickImage}
+                  activeOpacity={0.8}
+                >
+                  <Iconify icon="mage:image-fill" size={18} color="#fff" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.photoButtonRow}>
+                <TouchableOpacity 
+                  style={[styles.photoActionButton, { 
+                    backgroundColor: colors.cardButtonBackground || colors.blurView,
+                    borderColor: colors.buttonColor,
+                  }]} 
+                  onPress={handlePickImage}
+                  activeOpacity={0.7}
+                >
+                  <Iconify icon="lucide:edit" size={18} color={colors.buttonColor} style={{ marginRight: 6 }} />
+                  <Text style={[typography.styles.button, { color: colors.buttonColor, fontSize: 14 }]}>
+                    {t('editProfile.changePhoto', 'Değiştir')}
+                  </Text>
+                </TouchableOpacity>
+                {imageUrl && (
+                  <TouchableOpacity 
+                    style={[styles.photoActionButton, { 
+                      backgroundColor: colors.cardButtonBackground || colors.blurView,
+                      borderColor: colors.error,
+                    }]} 
+                    onPress={handleRemovePhoto}
+                    activeOpacity={0.7}
+                  >
+                    <Iconify icon="mdi:garbage-can-empty" size={18} color={colors.error} style={{ marginRight: 6 }} />
+                    <Text style={[typography.styles.button, { color: colors.error, fontSize: 14 }]}>
+                      {t('editProfile.removePhoto', 'Kaldır')}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          </View>
+
+          {/* Username Card */}
+          <View style={[styles.inputCard, {
+            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+            shadowColor: colors.shadowColor,
+            shadowOffset: colors.shadowOffset,
+            shadowOpacity: colors.shadowOpacity,
+            shadowRadius: colors.shadowRadius,
+            elevation: colors.elevation,
+          }]}>
+            <View style={styles.labelRow}>
+              <Iconify icon="solar:user-bold" size={20} color={colors.buttonColor} style={styles.labelIcon} />
+              <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
+                {t('editProfile.userName', 'Kullanıcı Adı')}
+              </Text>
+            </View>
+            <TextInput
+              style={[styles.input, typography.styles.body, { 
+                color: colors.text, 
+                borderColor: colors.border, 
+                backgroundColor: colors.blurView || colors.cardButtonBackground,
+              }]}
+              placeholder={t('editProfile.userNamePlaceholder', "Kullanıcı Adı")}
+              placeholderTextColor={colors.muted}
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+              maxLength={9}
+            />
+            <Text style={[typography.styles.caption, { color: colors.muted, marginTop: 4 }]}>
+              {t('editProfile.usernameHint', '3-9 karakter arasında olmalıdır')}
+            </Text>
+          </View>
+
+          {/* Email Card */}
+          <View style={[styles.inputCard, {
+            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+            shadowColor: colors.shadowColor,
+            shadowOffset: colors.shadowOffset,
+            shadowOpacity: colors.shadowOpacity,
+            shadowRadius: colors.shadowRadius,
+            elevation: colors.elevation,
+          }]}>
+            <View style={styles.labelRow}>
+              <Iconify icon="tabler:mail-filled" size={20} color={colors.buttonColor} style={styles.labelIcon} />
+              <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
+                {t('editProfile.email', 'E-posta')}
+              </Text>
+            </View>
+            <TextInput
+              style={[styles.input, typography.styles.body, { 
+                color: colors.text, 
+                borderColor: colors.border, 
+                backgroundColor: colors.blurView || colors.cardButtonBackground,
+              }]}
+              placeholder={t('editProfile.emailPlaceholder', "E-posta")}
+              placeholderTextColor={colors.muted}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              autoComplete="email"
+            />
+          </View>
+
+          {/* Password Card */}
+          <View style={[styles.inputCard, {
+            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+            shadowColor: colors.shadowColor,
+            shadowOffset: colors.shadowOffset,
+            shadowOpacity: colors.shadowOpacity,
+            shadowRadius: colors.shadowRadius,
+            elevation: colors.elevation,
+          }]}>
+            <View style={styles.labelRow}>
+              <Iconify icon="carbon:password" size={20} color={colors.buttonColor} style={styles.labelIcon} />
+              <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
+                {t('editProfile.newPassword', 'Yeni Şifre')}
+              </Text>
+              <Text style={[typography.styles.caption, { color: colors.muted, marginLeft: 6 }]}>
+                ({t('editProfile.optional', 'İsteğe bağlı')})
+              </Text>
+            </View>
+            <View style={styles.passwordInputContainer}>
+              <TextInput
+                style={[styles.input, styles.passwordInput, typography.styles.body, { 
+                  color: colors.text, 
+                  borderColor: colors.border, 
+                  backgroundColor: colors.blurView || colors.cardButtonBackground,
+                }]}
+                placeholder={t('editProfile.newPasswordPlaceholder', "Yeni Şifre (değiştirmek için doldurun)")}
+                placeholderTextColor={colors.muted}
+                value={password}
+                onChangeText={setPassword}
+                autoCapitalize="none"
+                secureTextEntry={!showPassword}
+                autoComplete="password-new"
+              />
+              <TouchableOpacity
+                style={styles.eyeButton}
+                onPress={() => setShowPassword(!showPassword)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Iconify 
+                  icon={showPassword ? "oi:eye" : "system-uicons:eye-no"} 
+                  size={20} 
+                  color={colors.muted} 
+                />
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.changeButton]} onPress={handlePickImage}>
-                <Text style={[typography.styles.button, styles.changeButtonText]}>{t('editProfile.changePhoto', "Değiştir")}</Text>
+            </View>
+            <View style={styles.passwordInputContainer}>
+              <TextInput
+                style={[styles.input, styles.passwordInput, typography.styles.body, { 
+                  color: colors.text, 
+                  borderColor: colors.border, 
+                  backgroundColor: colors.blurView || colors.cardButtonBackground,
+                }]}
+                placeholder={t('editProfile.confirmPasswordPlaceholder', "Yeni Şifreyi Tekrar Girin")}
+                placeholderTextColor={colors.muted}
+                value={passwordConfirm}
+                onChangeText={setPasswordConfirm}
+                autoCapitalize="none"
+                secureTextEntry={!showPasswordConfirm}
+                autoComplete="password-new"
+              />
+              <TouchableOpacity
+                style={styles.eyeButton}
+                onPress={() => setShowPasswordConfirm(!showPasswordConfirm)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Iconify 
+                  icon={showPasswordConfirm ? "oi:eye" : "system-uicons:eye-no"} 
+                  size={20} 
+                  color={colors.muted} 
+                />
               </TouchableOpacity>
             </View>
           </View>
-          <Text style={[typography.styles.body, { color: colors.text, marginBottom: 8, marginTop: 8 }]}>{t('editProfile.userName', "Kullanıcı Adı")}</Text>
-          <TextInput
-            style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border, backgroundColor: colors.blurView }]}
-            placeholder={t('editProfile.userNamePlaceholder', "Kullanıcı Adı")}
-            placeholderTextColor={colors.muted}
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-          />
-          <Text style={[typography.styles.body, { color: colors.text, marginBottom: 8 }]}>{t('editProfile.email', "E-posta")}</Text>
-          <TextInput
-            style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border, backgroundColor: colors.blurView }]}
-            placeholder={t('editProfile.emailPlaceholder', "E-posta")}
-            placeholderTextColor={colors.muted}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-          <Text style={[typography.styles.body, { color: colors.text, marginBottom: 8 }]}>{t('editProfile.newPassword', "Yeni Şifre")}</Text>
-          <TextInput
-            style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border, backgroundColor: colors.blurView }]}
-            placeholder={t('editProfile.newPasswordPlaceholder', "Yeni Şifre (değiştirmek için doldurun)")}
-            placeholderTextColor={colors.muted}
-            value={password}
-            onChangeText={setPassword}
-            autoCapitalize="none"
-            secureTextEntry
-          />
-          <TextInput
-            style={[styles.input, typography.styles.body, { color: colors.text, borderColor: colors.border, backgroundColor: colors.blurView }]}
-            placeholder={t('editProfile.confirmPasswordPlaceholder', "Yeni Şifreyi Tekrar Girin")}
-            placeholderTextColor={colors.muted}
-            value={passwordConfirm}
-            onChangeText={setPasswordConfirm}
-            autoCapitalize="none"
-            secureTextEntry
-          />
+
+          {/* Error Message */}
+          {error && (
+            <View style={[styles.errorCard, { backgroundColor: colors.error + '15', borderColor: colors.error }]}>
+              <Iconify icon="mdi:information-variant" size={20} color={colors.error} style={{ marginRight: 8 }} />
+              <Text style={[typography.styles.caption, { color: colors.error, flex: 1 }]}>{error}</Text>
+            </View>
+          )}
+
+          {/* Action Buttons */}
           <View style={styles.buttonRowModern}>
-            <TouchableOpacity
-              style={[
-                styles.favButtonModern,
-                { flex: 1, minWidth: 0, marginRight: 10 },
-                saving && { opacity: 0.7 }
-              ]}
+            <UndoButton
               onPress={handleCancel}
               disabled={saving}
-            >
-              <Text style={[styles.favButtonTextModern, typography.styles.button, { color: '#F98A21' }]}>{t('editProfile.undo', "İptal Et")}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.startButtonModern,
-                { flex: 1, minWidth: 0, borderWidth: 1, borderColor: colors.buttonBorder || 'transparent' },
-                saving && { opacity: 0.7 }
-              ]}
+              text={t('editProfile.undo', "İptal Et")}
+            />
+            <CreateButton
               onPress={handleSave}
               disabled={saving}
-            >
-              <Text style={[styles.startButtonTextModern, typography.styles.button, { color: '#fff' }]}>{saving ? t('editProfile.saving', "Kaydediliyor...") : t('editProfile.save', "Kaydet")}</Text>
-            </TouchableOpacity>
+              loading={saving}
+              text={saving ? t('editProfile.saving', "Kaydediliyor...") : t('editProfile.save', "Kaydet")}
+            />
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 0,
   },
-  formContent: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
+    padding: 16,
     paddingTop: 8,
+    paddingBottom: 32,
   },
-  profileRow: {
+  inputCard: {
+    width: '100%',
+    maxWidth: 440,
+    borderRadius: 28,
+    padding: 20,
+    marginBottom: 12,
+    alignSelf: 'center',
+    overflow: 'hidden',
+  },
+  labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
-    gap: 18,
+    gap: 8,
+  },
+  labelIcon: {
+    marginRight: 0,
+  },
+  profilePhotoContainer: {
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: 16,
   },
   avatarLarge: {
-    width: 110,
-    height: 110,
+    width: 120,
+    height: 120,
     borderRadius: 60,
     backgroundColor: '#eee',
+    borderWidth: 3,
   },
-  avatarButtonRow: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: 14,
-    marginLeft: 18,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-  },
-  changeButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F98A21',
-    borderRadius: 10,
-    paddingVertical: 8,
+  cameraButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
-    shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-    minWidth: 80,
-    maxWidth: 120,
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
   },
-  changeButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 15,
+  photoButtonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+    justifyContent: 'center',
   },
-  removeButton: {
-    flex: 1,
+  photoActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#F98A21',
-    borderRadius: 10,
-    paddingVertical: 8,
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     justifyContent: 'center',
-    shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-    marginLeft: 0,
-    minWidth: 80,
-    maxWidth: 120,
-  },
-  removeButtonText: {
-    color: '#F98A21',
-    fontWeight: 'bold',
-    fontSize: 15,
+    flex: 1,
+    maxWidth: 150,
   },
   input: {
     borderWidth: 1,
     borderRadius: 12,
+    padding: 14,
+    width: '100%',
+    fontSize: 16,
+  },
+  passwordInputContainer: {
+    position: 'relative',
+    marginBottom: 12,
+  },
+  passwordInput: {
+    paddingRight: 45,
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: 12,
+    top: 14,
+    padding: 4,
+  },
+  errorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
     padding: 12,
     marginBottom: 12,
+    borderWidth: 1,
     width: '100%',
-    backgroundColor: '#fff',
+    maxWidth: 440,
+    alignSelf: 'center',
   },
   buttonRowModern: {
     flexDirection: 'row',
-    gap: 14,
-    marginHorizontal: 18,
-    marginTop: 'auto'
-  },
-  favButtonModern: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#F98A21',
-    borderRadius: 10,
-    paddingVertical: 13,
-    justifyContent: 'center',
-    shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-    paddingHorizontal: 5,
-  },
-  favButtonTextModern: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  startButtonModern: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F98A21',
-    borderRadius: 10,
-    paddingVertical: 13,
-    justifyContent: 'center',
-    shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  startButtonTextModern: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    gap: 20,
+    marginTop: 16,
+
+    width: '100%',
+    maxWidth: 440,
+    alignSelf: 'center',
   },
 }); 

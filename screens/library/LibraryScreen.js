@@ -157,6 +157,7 @@ export default function LibraryScreen() {
     setFavoritesLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id); // currentUserId'yi burada da set et
       const decks = await getFavoriteDecks(user.id);
       setFavoriteDecks(decks || []);
       
@@ -628,7 +629,9 @@ export default function LibraryScreen() {
               <View style={styles.favoriteSliderWrapper}>
                 <View style={styles.favoriteHeaderRow}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Iconify icon="ph:cards-fill" size={26} color="#F98A21" />
+                    <View style={[styles.iconBackground, { backgroundColor: colors.iconBackground }]}>
+                      <Iconify icon="ph:cards-fill" size={26} color="#F98A21" />
+                    </View>
                     <Text style={[styles.favoriteHeaderTitle, { color: colors.text }]}>
                       {t('library.favoriteDecksTitle', 'Favori Destelerim')}
                     </Text>
@@ -773,7 +776,9 @@ export default function LibraryScreen() {
                 {/* Favorite Cards Section Header + Controls */}
                 <View style={[styles.favoriteHeaderRow, { marginTop: 40 }]}> 
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Iconify icon="mdi:cards" size={26} color="#F98A21" marginTop={3} />
+                    <View style={[styles.iconBackground, { backgroundColor: colors.iconBackground }]}>
+                      <Iconify icon="mdi:cards" size={26} color="#F98A21" />
+                    </View>
                     <Text style={[styles.favoriteHeaderTitle, { color: colors.text }]}> 
                       {t('library.favoriteCardsTitle', 'Favori Kartlarım')}
                     </Text>
@@ -796,24 +801,30 @@ export default function LibraryScreen() {
                     <FilterIcon
                       value={favCardsSort}
                       onChange={setFavCardsSort}
+                      hideFavorites={true}
                     />
                   </View>
                   {/* Favorite Cards List */}
                   <View style={{ marginTop: 14, paddingHorizontal: 4 }}>
-                    {filteredFavoriteCards.map((card) => (
-                      <CardListItem
-                        key={String(card.id)}
-                        question={card.question}
-                        answer={card.answer}
-                        isFavorite={true}
-                        onPress={() => {
-                          setSelectedCard(card);
-                          setCardDetailModalVisible(true);
-                        }}
-                        onToggleFavorite={() => handleRemoveFavoriteCard(card.id)}
-                        canDelete={false}
-                      />
-                    ))}
+                    {filteredFavoriteCards.map((card) => {
+                      const isOwner = currentUserId && card.deck?.user_id && card.deck.user_id === currentUserId;
+                      return (
+                        <CardListItem
+                          key={String(card.id)}
+                          question={card.question}
+                          answer={card.answer}
+                          isFavorite={true}
+                          onPress={() => {
+                            setSelectedCard(card);
+                            setCardDetailModalVisible(true);
+                          }}
+                          onToggleFavorite={() => handleRemoveFavoriteCard(card.id)}
+                          canDelete={true}
+                          onDelete={() => handleRemoveFavoriteCard(card.id)}
+                          isOwner={isOwner}
+                        />
+                      );
+                    })}
                     {filteredFavoriteCards.length === 0 ? (
                       <Text style={[styles.emptyText, typography.styles.caption]}>{t('library.noFavorites', 'Henüz favori bulunmuyor')}</Text>
                     ) : null}
@@ -839,7 +850,7 @@ export default function LibraryScreen() {
               onPress={() => setCardDetailModalVisible(false)}
               style={styles.modalCloseButton}
             >
-              <Iconify icon="ic:round-plus" size={28} color={colors.text} />
+              <Iconify icon="mdi:arrow-back" size={24} color={colors.text} />
             </TouchableOpacity>
             <Text style={[styles.modalTitle, { color: colors.text, flex: 1, textAlign: 'center' }]}>
               {t('cardDetail.cardDetail', 'Kart Detayı')}
@@ -1243,5 +1254,12 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
+  },
+  iconBackground: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 }); 

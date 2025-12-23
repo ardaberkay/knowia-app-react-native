@@ -7,6 +7,7 @@ import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import CategorySelector from '../../components/modals/CategorySelector';
+import HowToCreateModal from '../../components/modals/HowToCreateModal';
 import UndoButton from '../../components/tools/UndoButton';
 import CreateButton from '../../components/tools/CreateButton';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
@@ -22,6 +23,7 @@ export default function CreateScreen() {
   const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
   const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [isHowToCreateModalVisible, setHowToCreateModalVisible] = useState(false);
   const { showError } = useSnackbarHelpers();
 
   // Kategori ikonunu sort_order değerine göre al
@@ -121,12 +123,9 @@ export default function CreateScreen() {
                     {t('createDeck.motivationText', 'Kişiselleştirilmiş destelerle öğrenme yolculuğunu tasarla ve bilgini pekiştir.')}
                   </Text>
                   <TouchableOpacity 
-                    style={styles.howToCreateButton}
+                    style={[styles.howToCreateButton, { backgroundColor: colors.secondary + '15', borderColor: colors.secondary + '30' }]}
                     activeOpacity={0.7}
-                    onPress={() => {
-                      // TODO: Navigate to how-to-create screen
-                      console.log('How to create pressed');
-                    }}
+                    onPress={() => setHowToCreateModalVisible(true)}
                   >
                     <Iconify icon="material-symbols:info-outline" size={16} color={colors.secondary} style={{ marginRight: 4 }} />
                     <Text style={[typography.styles.caption, { color: colors.secondary, fontWeight: '600', textDecorationLine: 'underline' }]}>
@@ -341,6 +340,11 @@ export default function CreateScreen() {
           setCategoryModalVisible(false);
         }}
       />
+
+      <HowToCreateModal
+        isVisible={isHowToCreateModalVisible}
+        onClose={() => setHowToCreateModalVisible(false)}
+      />
     </View>
   );
 }
@@ -390,6 +394,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    borderWidth: 1,
   },
   headerImageContainer: {
     width: 120,

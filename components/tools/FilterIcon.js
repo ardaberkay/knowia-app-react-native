@@ -4,7 +4,7 @@ import Icon from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
 
-const FilterIcon = ({ style, size = 24, color = "#B0B0B0", value = 'original', onChange }) => {
+const FilterIcon = ({ style, size = 24, color = "#B0B0B0", value = 'original', onChange, hideFavorites = false }) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const buttonRef = useRef(null);
@@ -70,9 +70,11 @@ const FilterIcon = ({ style, size = 24, color = "#B0B0B0", value = 'original', o
               <TouchableOpacity onPress={() => handleSelect('az')} style={{ paddingVertical: 8, paddingHorizontal: 14, backgroundColor: value === 'az' ? colors.iconBackground  : 'transparent', borderRadius: 8 }}>
                 <Text style={{ color: value === 'az' ? '#fff' : colors.text, fontWeight: value === 'az' ? 'bold' : 'normal', fontSize: 15 }}>A-Z</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleSelect('fav')} style={{ paddingVertical: 8, paddingHorizontal: 14, backgroundColor: value === 'fav' ? colors.iconBackground : 'transparent', borderRadius: 8 }}>
-                <Text style={{ color: value === 'fav' ? '#fff' : colors.text, fontWeight: value === 'fav' ? 'bold' : 'normal', fontSize: 15 }}>{t('deckDetail.fav', 'Favoriler')}</Text>
-              </TouchableOpacity>
+              {!hideFavorites && (
+                <TouchableOpacity onPress={() => handleSelect('fav')} style={{ paddingVertical: 8, paddingHorizontal: 14, backgroundColor: value === 'fav' ? colors.iconBackground : 'transparent', borderRadius: 8 }}>
+                  <Text style={{ color: value === 'fav' ? '#fff' : colors.text, fontWeight: value === 'fav' ? 'bold' : 'normal', fontSize: 15 }}>{t('deckDetail.fav', 'Favoriler')}</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity onPress={() => handleSelect('unlearned')} style={{ paddingVertical: 8, paddingHorizontal: 14, backgroundColor: value === 'unlearned' ? colors.iconBackground : 'transparent', borderRadius: 8 }}>
                 <Text style={{ color: value === 'unlearned' ? '#fff' : colors.text, fontWeight: value === 'unlearned' ? 'bold' : 'normal', fontSize: 15 }}>{t('deckDetail.inProgress', 'Devam Eden')}</Text>
               </TouchableOpacity>

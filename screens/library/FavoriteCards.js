@@ -25,6 +25,7 @@ export default function FavoriteCards() {
   const [sort, setSort] = useState('original');
   const [selectedCard, setSelectedCard] = useState(null);
   const [favoriteCards, setFavoriteCards] = useState([]);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   const fetchFavorites = async () => {
     setLoading(true);
@@ -33,8 +34,10 @@ export default function FavoriteCards() {
       if (!user) {
         setCards([]);
         setFavoriteCards([]);
+        setCurrentUserId(null);
         return;
       }
+      setCurrentUserId(user.id);
       
       // Fetch favorite cards and user progress in parallel
       const [res, progressResult] = await Promise.all([
@@ -216,6 +219,7 @@ export default function FavoriteCards() {
                 <FilterIcon
                   value={sort}
                   onChange={setSort}
+                  hideFavorites={true}
                 />
               </View>
             )
@@ -227,20 +231,25 @@ export default function FavoriteCards() {
               </Text>
             </View>
           }
-          renderItem={({ item }) => (
-            <View style={styles.cardListItem}>
-              <CardListItem
-                question={item.question}
-                answer={item.answer}
-                isFavorite={favoriteCards.includes(item.id)}
-                onPress={() => {
-                  setSelectedCard(item);
-                }}
-                onToggleFavorite={() => handleToggleFavoriteCard(item.id)}
-                canDelete={false}
-              />
-            </View>
-          )}
+          renderItem={({ item }) => {
+            const isOwner = currentUserId && item.deck?.user_id && item.deck.user_id === currentUserId;
+            return (
+              <View style={styles.cardListItem}>
+                <CardListItem
+                  question={item.question}
+                  answer={item.answer}
+                  isFavorite={favoriteCards.includes(item.id)}
+                  onPress={() => {
+                    setSelectedCard(item);
+                  }}
+                  onToggleFavorite={() => handleToggleFavoriteCard(item.id)}
+                  canDelete={true}
+                  onDelete={() => handleDeleteCard(item.id)}
+                  isOwner={isOwner}
+                />
+              </View>
+            );
+          }}
         />
       )}
     </View>

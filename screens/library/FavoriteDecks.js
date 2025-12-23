@@ -165,6 +165,7 @@ export default function FavoriteDecks() {
         currentCategories={selectedCategories}
         onApply={handleApplyFilters}
         showSortOptions={true}
+        hideFavorites={true}
       />
     </View>
   );

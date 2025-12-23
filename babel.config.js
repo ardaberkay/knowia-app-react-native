@@ -101,7 +101,9 @@ module.exports = function (api) {
             'lets-icons:refund-back',
             'material-symbols:pause-rounded',
             'material-symbols:arrow-back-ios-new-rounded',
-            'si:filter-list-alt-fill'
+            'si:filter-list-alt-fill',
+            'mdi:garbage-can-empty',
+            'mdi:arrow-back'
           ],
         },
       ],

@@ -128,7 +128,9 @@
     "favorites": "Favoriler",
     "categories": "Kategoriler",
     "reset": "Sıfırla",
-    "apply": "Uygula"
+    "apply": "Uygula",
+    "showMore": "Daha Fazla Göster",
+    "showLess": "Daha Az Göster"
   },
   "tabs": {
     "home": "Anasayfa",
@@ -392,6 +394,40 @@
     "title": "Desteni Oluştur",
     "motivationText": "   Kişiselleştirilmiş destelerle öğrenme yolculuğunu tasarla ve bilgini pekiştir.",
     "howToCreate": "Nasıl Oluşturulur?"
+  },
+  "howToCreate": {
+    "title": "Deste Nasıl Oluşturulur?",
+    "intro": "Aşağıdaki adımları takip ederek kolayca bir deste oluşturabilirsiniz. Her adımın ne işe yaradığını öğrenin:",
+    "step1Title": "Deste Adı Ekle",
+    "step1Desc": "Destenize bir isim verin. Bu isim destenizi tanımlar ve arama sonuçlarında görünür. Örn: \"İngilizce Kelimeler\", \"Tarih Notları\"",
+    "step2Title": "Karşılığı Ekle (Opsiyonel)",
+    "step2Desc": "Eğer desteniz çeviri veya eşleştirme içeriyorsa, karşılık alanını doldurabilirsiniz. Bu alan boş bırakılabilir. Örn: \"English Words\" için karşılık \"Türkçe Kelimeler\" olabilir.",
+    "step3Title": "Açıklama Ekle (Opsiyonel)",
+    "step3Desc": "Destenizin amacını, içeriğini veya kullanım şeklini açıklayabilirsiniz. Bu bilgi diğer kullanıcılar için faydalı olabilir.",
+    "step4Title": "Kategori Seç",
+    "step4Desc": "Destenizin hangi konuya ait olduğunu belirlemek için bir kategori seçin. Bu, destenizin keşfedilmesini ve organize edilmesini kolaylaştırır.",
+    "step5Title": "Oluştur Butonuna Bas",
+    "step5Desc": "Tüm bilgileri doldurduktan sonra \"Oluştur\" butonuna basın. Deste oluşturulduktan sonra kart eklemeye başlayabilirsiniz.",
+    "required": "Zorunlu",
+    "tip": "İpucu: Deste oluşturduktan sonra istediğiniz zaman düzenleyebilir veya kart ekleyebilirsiniz."
+  },
+  "howToCreateCard": {
+    "title": "Kart Nasıl Oluşturulur?",
+    "intro": "Aşağıdaki adımları takip ederek kolayca bir kart oluşturabilirsiniz. Her adımın ne işe yaradığını öğrenin:",
+    "step1Title": "Soru Ekle",
+    "step1Desc": "Kartınızın sorusunu yazın. Bu soru kartın ön yüzünde görünecektir. Örn: \"Book\" kelimesinin Türkçe karşılığı nedir?",
+    "step2Title": "Cevap Ekle",
+    "step2Desc": "Kartınızın cevabını yazın. Bu cevap kartın arka yüzünde görünecektir. Örn: \"Kitap\"",
+    "step3Title": "Örnek Ekle (Opsiyonel)",
+    "step3Desc": "Kartınız için örnek bir cümle veya kullanım ekleyebilirsiniz. Bu alan boş bırakılabilir. Örn: \"I am reading a book\"",
+    "step4Title": "Not Ekle (Opsiyonel)",
+    "step4Desc": "Kartınız için ek notlar veya açıklamalar ekleyebilirsiniz. Bu alan boş bırakılabilir. Örn: \"Bu kelime bu şekilde okunur\"",
+    "step5Title": "Görsel Ekle (Opsiyonel)",
+    "step5Desc": "Kartınıza görsel ekleyebilirsiniz. Bu görsel kartın öğrenilmesini kolaylaştırabilir. Bu alan boş bırakılabilir.",
+    "step6Title": "Kartı Oluştur",
+    "step6Desc": "Soru ve cevap alanlarını doldurduktan sonra \"Kartı Oluştur\" butonuna basın. Kart oluşturulduktan sonra destenize eklenir.",
+    "required": "Zorunlu",
+    "tip": "İpucu: Kart oluşturduktan sonra istediğiniz zaman düzenleyebilir veya silebilirsiniz."
   },
   "discover": {
     "trend": "Trend",
