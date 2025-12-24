@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useLayoutEffect } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, BackHandler } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, BackHandler, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
@@ -13,11 +13,13 @@ import LottieView from 'lottie-react-native';
 import { typography } from '../../theme/typography';
 import { StyleSheet } from 'react-native';
 import { Iconify } from 'react-native-iconify';
+import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 
 export default function FavoriteCards() {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const { showSuccess, showError } = useSnackbarHelpers();
 
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -145,6 +147,44 @@ export default function FavoriteCards() {
         setFavoriteCards([...favoriteCards, cardId]);
       }
     } catch (e) {}
+  };
+
+  const handleDeleteCard = async (cardId) => {
+    Alert.alert(
+      t('cardDetail.deleteConfirmation', 'Kart Silinsin mi?'),
+      t('cardDetail.deleteConfirm', 'Kartı silmek istediğinize emin misiniz?'),
+      [
+        { text: t('cardDetail.cancel', 'İptal'), style: 'cancel' },
+        {
+          text: t('cardDetail.delete', 'Sil'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from('cards')
+                .delete()
+                .eq('id', cardId);
+              
+              if (error) {
+                throw error;
+              }
+              
+              // Kartı listeden çıkar
+              setCards(cards.filter(c => c.id !== cardId));
+              setFavoriteCards(favoriteCards.filter(id => id !== cardId));
+              // Eğer seçili kart silindiyse, seçimi temizle
+              if (selectedCard && selectedCard.id === cardId) {
+                setSelectedCard(null);
+              }
+              
+              showSuccess(t('cardDetail.deleteSuccess', 'Kart başarıyla silindi'));
+            } catch (e) {
+              showError(t('cardDetail.deleteError', 'Kart silinemedi'));
+            }
+          }
+        }
+      ]
+    );
   };
 
   // Header'ı ayarla - selectedCard durumuna göre

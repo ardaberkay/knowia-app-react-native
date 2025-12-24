@@ -17,7 +17,8 @@
       "errorMessage": "Erreur",
       "errorMessageProfile": "Le profil n'a pas pu être chargé",
       "inviteMessage": "Trouvez votre chemin vers l'apprentissage dans l'univers de la connaissance avec Knowia. Inscrivez-vous gratuitement !",
-      "logoutError": "Une erreur s'est produite lors de la déconnexion"
+      "logoutError": "Une erreur s'est produite lors de la déconnexion",
+      "accountDeleted": "Compte supprimé !"
     },
     "library": {
       "all": "Tout",
@@ -40,6 +41,8 @@
       "deleteConfirm": "Cette action ne peut pas être annulée. Êtes-vous sûr ?",
       "cancel": "Annuler",
       "delete": "Supprimer",
+      "deleteDeckSuccess": "Paquet supprimé avec succès",
+      "deleteDeckError": "Le paquet n'a pas pu être supprimé",
       "deleteCardConfirmation": "Supprimer la carte ?",
       "deleteCardConfirm": "Cette action ne peut pas être annulée. Êtes-vous sûr ?",
       "addFavoriteDeckCta": "Ajoutez un paquet à vos favoris",
@@ -87,6 +90,7 @@
       "creating": "Création...",
       "error": "Le paquet n'a pas pu être créé.",
       "requiredName": "Le nom du paquet est requis.",
+      "requiredCategory": "Veuillez sélectionner une catégorie.",
       "saving": "Enregistrement...",
       "save": "Enregistrer"
     },
@@ -107,6 +111,7 @@
       "notStarted": "Pas encore commencé",
       "addCardSuccess": "Carte ajoutée !",
       "addCardError": "La carte n'a pas pu être ajoutée.",
+      "questionAndAnswerRequired": "Question et réponse sont requises.",
       "unDefinedField": "Champ non défini",
       "missingRequiredHeaders": "Les colonnes de question et de réponse sont requises",
       "pleaseSelectCSV": "Veuillez sélectionner un fichier CSV.",
@@ -201,6 +206,8 @@
       "deleteConfirm": "Êtes-vous sûr de vouloir supprimer la carte ?",
       "cancel": "Annuler",
       "delete": "Supprimer",
+      "deleteSuccess": "Carte supprimée avec succès",
+      "deleteError": "La carte n'a pas pu être supprimée",
       "createdAt": "Créé le",
       "addImage": "Ajouter une Image",
       "removeImage": "Supprimer l'Image",
@@ -357,9 +364,14 @@
     "unassigned": "Cartes Non Assignées",
     "distributed": "Les cartes non assignées ont été distribuées aux chapitres.",
     "needChapters": "Vous devez créer au moins un chapitre pour la distribution.",
-    "distributeError": "La distribution n'a pas pu être complétée.",
-    "chapter": "Chapitre"
-  },
+      "distributeError": "La distribution n'a pas pu être complétée.",
+      "chapter": "Chapitre",
+      "deleted": "Chapitre supprimé.",
+      "deleteError": "Le chapitre n'a pas pu être supprimé.",
+      "onlyOwner": "Seul le propriétaire du paquet peut ajouter des chapitres.",
+      "limitReached": "Vous pouvez créer un maximum de 30 chapitres.",
+      "createError": "Le chapitre n'a pas pu être ajouté."
+    },
   "chapterCards": {
     "title": "Cartes du Chapitre",
     "searchPlaceholder": "Rechercher dans les cartes...",

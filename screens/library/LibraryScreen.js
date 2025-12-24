@@ -19,6 +19,7 @@ import MaskedView from '@react-native-masked-view/masked-view';
 import MyDecksSkeleton from '../../components/skeleton/MyDecksSkeleton';
 import CardDetailView from '../../components/layout/CardDetailView';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
+import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 
 // Fade efekti için yardımcı bileşen
 const FadeText = ({ text, style, maxWidth, maxChars }) => {
@@ -63,6 +64,7 @@ const FadeText = ({ text, style, maxWidth, maxChars }) => {
 export default function LibraryScreen() {
   const { colors, isDarkMode } = useTheme();
   const navigation = useNavigation();
+  const { showSuccess, showError } = useSnackbarHelpers();
   const [activeTab, setActiveTab] = useState('myDecks');
   const [myDecks, setMyDecks] = useState([]);
   const [favoriteDecks, setFavoriteDecks] = useState([]);
@@ -240,10 +242,82 @@ export default function LibraryScreen() {
           text: t('library.delete', 'Sil'),
           style: 'destructive',
           onPress: async () => {
-            await supabase.from('decks').delete().eq('id', deckId);
-            setMyDecks(prev => prev.filter(deck => deck.id !== deckId));
-            setFavoriteDecks(prev => prev.filter(deck => deck.id !== deckId));
-            setActiveDeckMenuId(null);
+            try {
+              const { error } = await supabase.from('decks').delete().eq('id', deckId);
+              
+              if (error) {
+                throw error;
+              }
+              
+              setMyDecks(prev => prev.filter(deck => deck.id !== deckId));
+              setFavoriteDecks(prev => prev.filter(deck => deck.id !== deckId));
+              setActiveDeckMenuId(null);
+              
+              showSuccess(t('library.deleteDeckSuccess', 'Deste başarıyla silindi'));
+            } catch (e) {
+              showError(t('library.deleteDeckError', 'Deste silinemedi'));
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // Kart silme fonksiyonu (favorite cards için)
+  const handleDeleteCard = async (cardId) => {
+    Alert.alert(
+      t('cardDetail.deleteConfirmation', 'Kart Silinsin mi?'),
+      t('cardDetail.deleteConfirm', 'Kartı silmek istediğinize emin misiniz?'),
+      [
+        { text: t('cardDetail.cancel', 'İptal'), style: 'cancel' },
+        {
+          text: t('cardDetail.delete', 'Sil'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from('cards')
+                .delete()
+                .eq('id', cardId);
+              
+              if (error) {
+                throw error;
+              }
+              
+              // Kartı favori kartlar listesinden çıkar
+              const updatedCards = favoriteCards.filter(c => c.id !== cardId);
+              const updatedCardIds = favoriteCardIds.filter(id => id !== cardId);
+              setFavoriteCards(updatedCards);
+              setFavoriteCardIds(updatedCardIds);
+              
+              // Eğer seçili kart silindiyse, modal'ı kapat veya sonraki karta geç
+              if (selectedCard && selectedCard.id === cardId) {
+                // Güncellenmiş kart listesini filtrele (silinen kart olmadan)
+                let remainingCards = updatedCards.slice();
+                if (favCardsQuery && favCardsQuery.trim()) {
+                  const q = favCardsQuery.toLowerCase();
+                  remainingCards = remainingCards.filter(c => (c.question || '').toLowerCase().includes(q) || (c.answer || '').toLowerCase().includes(q));
+                }
+                if (favCardsSort === 'az') {
+                  remainingCards.sort((a, b) => (a.question || '').localeCompare(b.question || ''));
+                } else if (favCardsSort === 'unlearned') {
+                  remainingCards = remainingCards.filter(c => c.status !== 'learned');
+                } else if (favCardsSort !== 'fav') {
+                  remainingCards.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                }
+                
+                if (remainingCards.length > 0) {
+                  setSelectedCard(remainingCards[0]);
+                } else {
+                  setCardDetailModalVisible(false);
+                  setSelectedCard(null);
+                }
+              }
+              
+              showSuccess(t('cardDetail.deleteSuccess', 'Kart başarıyla silindi'));
+            } catch (e) {
+              showError(t('cardDetail.deleteError', 'Kart silinemedi'));
+            }
           }
         }
       ]
@@ -820,7 +894,7 @@ export default function LibraryScreen() {
                           }}
                           onToggleFavorite={() => handleRemoveFavoriteCard(card.id)}
                           canDelete={true}
-                          onDelete={() => handleRemoveFavoriteCard(card.id)}
+                          onDelete={() => handleDeleteCard(card.id)}
                           isOwner={isOwner}
                         />
                       );

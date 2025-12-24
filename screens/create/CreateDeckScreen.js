@@ -367,6 +367,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginHorizontal: 10,
     marginVertical: 8,
+    paddingVertical: 10,
   },
   headerCardContent: {
     borderRadius: 28,
@@ -398,6 +399,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 20,
     borderWidth: 1,
+    marginTop: 12,
   },
   headerImageContainer: {
     width: 120,

@@ -17,7 +17,8 @@
       "errorMessage": "Error",
       "errorMessageProfile": "No se pudo cargar el perfil",
       "inviteMessage": "Encuentra tu camino hacia el aprendizaje en el universo del conocimiento con Knowia. ¡Regístrate gratis!",
-      "logoutError": "Ocurrió un error al cerrar sesión"
+      "logoutError": "Ocurrió un error al cerrar sesión",
+      "accountDeleted": "¡Cuenta eliminada!"
     },
     "library": {
       "all": "Todo",
@@ -40,6 +41,8 @@
       "deleteConfirm": "Esta acción no se puede deshacer. ¿Estás seguro?",
       "cancel": "Cancelar",
       "delete": "Eliminar",
+      "deleteDeckSuccess": "Baraja eliminada con éxito",
+      "deleteDeckError": "No se pudo eliminar la baraja",
       "deleteCardConfirmation": "¿Eliminar la tarjeta?",
       "deleteCardConfirm": "Esta acción no se puede deshacer. ¿Estás seguro?",
       "addFavoriteDeckCta": "Agrega una baraja a tus favoritos",
@@ -87,6 +90,7 @@
       "creating": "Creando...",
       "error": "No se pudo crear la baraja.",
       "requiredName": "Se requiere el nombre de la baraja.",
+      "requiredCategory": "Por favor selecciona una categoría.",
       "saving": "Guardando...",
       "save": "Guardar"
     },
@@ -107,6 +111,7 @@
       "notStarted": "Aún no comenzado",
       "addCardSuccess": "¡Tarjeta agregada!",
       "addCardError": "No se pudo agregar la tarjeta.",
+      "questionAndAnswerRequired": "Se requieren pregunta y respuesta.",
       "unDefinedField": "Campo no definido",
       "missingRequiredHeaders": "Se requieren las columnas de pregunta y respuesta",
       "pleaseSelectCSV": "Por favor selecciona un archivo CSV.",
@@ -201,6 +206,8 @@
       "deleteConfirm": "¿Estás seguro de que deseas eliminar la tarjeta?",
       "cancel": "Cancelar",
       "delete": "Eliminar",
+      "deleteSuccess": "Tarjeta eliminada con éxito",
+      "deleteError": "No se pudo eliminar la tarjeta",
       "createdAt": "Creado el",
       "addImage": "Agregar Imagen",
       "removeImage": "Eliminar Imagen",
@@ -357,9 +364,14 @@
     "unassigned": "Cartas Sin Asignar",
     "distributed": "Las cartas sin asignar han sido distribuidas a los capítulos.",
     "needChapters": "Necesitas crear al menos un capítulo para la distribución.",
-    "distributeError": "No se pudo completar la distribución.",
-    "chapter": "Capítulo"
-  },
+      "distributeError": "No se pudo completar la distribución.",
+      "chapter": "Capítulo",
+      "deleted": "Capítulo eliminado.",
+      "deleteError": "No se pudo eliminar el capítulo.",
+      "onlyOwner": "Solo el propietario de la baraja puede agregar capítulos.",
+      "limitReached": "Puedes crear un máximo de 30 capítulos.",
+      "createError": "No se pudo agregar el capítulo."
+    },
   "chapterCards": {
     "title": "Cartas del Capítulo",
     "searchPlaceholder": "Buscar en cartas...",

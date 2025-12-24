@@ -340,7 +340,7 @@ const DECK_CATEGORIES = {
               ))}
               {showEndIcon && (
                 <View style={styles.endIconContainer}>
-                  <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={15} color="#F98A21" style={{ marginLeft: 2, marginTop: 1 }} />
+                  <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={35} color="#F98A21" style={{ marginLeft: 2, marginTop: 1 }} />
                 </View>
               )}
             </ScrollView>

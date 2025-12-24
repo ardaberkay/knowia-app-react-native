@@ -17,7 +17,8 @@
       "errorMessage": "خطأ",
       "errorMessageProfile": "تعذر تحميل الملف الشخصي",
       "inviteMessage": "اكتشف طريقك للتعلم في عالم المعرفة مع Knowia. اشترك مجانًا!",
-      "logoutError": "حدث خطأ أثناء تسجيل الخروج"
+      "logoutError": "حدث خطأ أثناء تسجيل الخروج",
+      "accountDeleted": "تم حذف الحساب!"
     },
     "library": {
       "all": "الكل",
@@ -40,6 +41,8 @@
       "deleteConfirm": "لا يمكن التراجع عن هذا الإجراء. هل أنت متأكد؟",
       "cancel": "إلغاء",
       "delete": "حذف",
+      "deleteDeckSuccess": "تم حذف المجموعة بنجاح",
+      "deleteDeckError": "تعذر حذف المجموعة",
       "deleteCardConfirmation": "هل تريد حذف البطاقة؟",
       "deleteCardConfirm": "لا يمكن التراجع عن هذا الإجراء. هل أنت متأكد؟",
       "addFavoriteDeckCta": "أضف مجموعة إلى المفضلة",
@@ -87,6 +90,7 @@
       "creating": "جاري الإنشاء...",
       "error": "تعذر إنشاء المجموعة.",
       "requiredName": "اسم المجموعة مطلوب.",
+      "requiredCategory": "يرجى اختيار فئة.",
       "saving": "جاري الحفظ...",
       "save": "حفظ"
     },
@@ -107,6 +111,7 @@
       "notStarted": "لم يبدأ بعد",
       "addCardSuccess": "تمت إضافة البطاقة!",
       "addCardError": "تعذر إضافة البطاقة.",
+      "questionAndAnswerRequired": "السؤال والإجابة مطلوبان.",
       "unDefinedField": "حقل غير معرف",
       "missingRequiredHeaders": "الأعمدة المطلوبة للسؤال والإجابة",
       "pleaseSelectCSV": "يرجى اختيار ملف CSV.",
@@ -201,6 +206,8 @@
       "deleteConfirm": "هل أنت متأكد أنك تريد حذف البطاقة؟",
       "cancel": "إلغاء",
       "delete": "حذف",
+      "deleteSuccess": "تم حذف البطاقة بنجاح",
+      "deleteError": "تعذر حذف البطاقة",
       "createdAt": "تاريخ الإنشاء",
       "addImage": "إضافة صورة",
       "removeImage": "إزالة الصورة",
@@ -357,9 +364,14 @@
     "unassigned": "البطاقات غير المخصصة",
     "distributed": "تم توزيع البطاقات غير المخصصة على الفصول.",
     "needChapters": "تحتاج إلى إنشاء فصل واحد على الأقل للتوزيع.",
-    "distributeError": "تعذر إكمال التوزيع.",
-    "chapter": "الفصل"
-  },
+      "distributeError": "تعذر إكمال التوزيع.",
+      "chapter": "الفصل",
+      "deleted": "تم حذف الفصل.",
+      "deleteError": "تعذر حذف الفصل.",
+      "onlyOwner": "يمكن فقط لمالك المجموعة إضافة فصول.",
+      "limitReached": "يمكنك إنشاء ما يصل إلى 30 فصلاً.",
+      "createError": "تعذر إضافة الفصل."
+    },
   "chapterCards": {
     "title": "بطاقات الفصل",
     "searchPlaceholder": "بحث في البطاقات...",

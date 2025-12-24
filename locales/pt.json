@@ -17,7 +17,8 @@
       "errorMessage": "Erro",
       "errorMessageProfile": "Não foi possível carregar o perfil",
       "inviteMessage": "Encontre seu caminho para o aprendizado no universo do conhecimento com Knowia. Inscreva-se gratuitamente!",
-      "logoutError": "Ocorreu um erro ao sair"
+      "logoutError": "Ocorreu um erro ao sair",
+      "accountDeleted": "Conta excluída!"
     },
     "library": {
       "all": "Todos",
@@ -40,6 +41,8 @@
       "deleteConfirm": "Esta ação não pode ser desfeita. Tem certeza?",
       "cancel": "Cancelar",
       "delete": "Excluir",
+      "deleteDeckSuccess": "Baralho excluído com sucesso",
+      "deleteDeckError": "Não foi possível excluir o baralho",
       "deleteCardConfirmation": "Excluir o cartão?",
       "deleteCardConfirm": "Esta ação não pode ser desfeita. Tem certeza?",
       "addFavoriteDeckCta": "Adicione um baralho aos seus favoritos",
@@ -87,6 +90,7 @@
       "creating": "Criando...",
       "error": "Não foi possível criar o baralho.",
       "requiredName": "O nome do baralho é obrigatório.",
+      "requiredCategory": "Por favor, selecione uma categoria.",
       "saving": "Salvando...",
       "save": "Salvar"
     },
@@ -107,6 +111,7 @@
       "notStarted": "Ainda não iniciado",
       "addCardSuccess": "Cartão adicionado!",
       "addCardError": "Não foi possível adicionar o cartão.",
+      "questionAndAnswerRequired": "Pergunta e resposta são obrigatórias.",
       "unDefinedField": "Campo não definido",
       "missingRequiredHeaders": "As colunas de pergunta e resposta são obrigatórias",
       "pleaseSelectCSV": "Por favor, selecione um arquivo CSV.",
@@ -201,6 +206,8 @@
       "deleteConfirm": "Tem certeza de que deseja excluir o cartão?",
       "cancel": "Cancelar",
       "delete": "Excluir",
+      "deleteSuccess": "Cartão excluído com sucesso",
+      "deleteError": "Não foi possível excluir o cartão",
       "createdAt": "Criado em",
       "addImage": "Adicionar Imagem",
       "removeImage": "Remover Imagem",
@@ -357,9 +364,14 @@
     "unassigned": "Cartões Não Atribuídos",
     "distributed": "Os cartões não atribuídos foram distribuídos aos capítulos.",
     "needChapters": "Você precisa criar pelo menos um capítulo para a distribuição.",
-    "distributeError": "A distribuição não pôde ser concluída.",
-    "chapter": "Capítulo"
-  },
+      "distributeError": "A distribuição não pôde ser concluída.",
+      "chapter": "Capítulo",
+      "deleted": "Capítulo excluído.",
+      "deleteError": "Não foi possível excluir o capítulo.",
+      "onlyOwner": "Apenas o proprietário do baralho pode adicionar capítulos.",
+      "limitReached": "Você pode criar no máximo 30 capítulos.",
+      "createError": "Não foi possível adicionar o capítulo."
+    },
   "chapterCards": {
     "title": "Cartões do Capítulo",
     "searchPlaceholder": "Pesquisar em cartões...",
