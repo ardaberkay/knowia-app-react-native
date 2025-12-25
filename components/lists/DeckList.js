@@ -6,7 +6,6 @@ import MaskedView from '@react-native-masked-view/masked-view';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
-import DiscoverDecksSkeleton from '../skeleton/DiscoverDecksSkeleton';
 
 // Fade efekti için yardımcı bileşen
 const FadeText = ({ text, style, maxWidth, maxChars }) => {
@@ -342,16 +341,6 @@ export default function DeckList({
       </TouchableOpacity>
     </View>
   );
-
-  // Loading durumunda skeleton göster (sadece loading true ise, decks boş olsa bile)
-  if (loading) {
-    return (
-      <View style={{ flex: 1, backgroundColor: colors.background }}>
-        {ListHeaderComponent}
-        <DiscoverDecksSkeleton />
-      </View>
-    );
-  }
 
   return (
     <FlatList

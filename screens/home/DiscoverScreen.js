@@ -6,6 +6,7 @@ import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
 import SearchBar from '../../components/tools/SearchBar';
 import DeckList from '../../components/lists/DeckList';
+import DiscoverDecksSkeleton from '../../components/skeleton/DiscoverDecksSkeleton';
 import { supabase } from '../../lib/supabase';
 import { getPopularDecks, getNewDecks, getMostFavoritedDecks, getMostStartedDecks, getMostUniqueStartedDecks } from '../../services/DeckService';
 import { Iconify } from 'react-native-iconify';
@@ -41,13 +42,51 @@ export default function DiscoverScreen() {
 
   useEffect(() => {
     loadFavoriteDecks();
-    loadDecks();
+    // loadDecks() ikinci useEffect'te yapılıyor (ilk mount'ta)
   }, []);
 
+  const previousTimeFilterRef = useRef(timeFilter);
+  const previousActiveTabRef = useRef(activeTab);
+  const isInitialMount = useRef(true);
+  
   useEffect(() => {
-    if (trendDecksList.length > 0 || favoriteDecksList.length > 0 || startedDecksList.length > 0 || uniqueDecksList.length > 0 || newDecks.length > 0) {
-      loadDecks();
+    // Tab veya timeFilter değişti mi kontrol et
+    const tabChanged = previousActiveTabRef.current !== activeTab;
+    const timeFilterChanged = previousTimeFilterRef.current !== timeFilter;
+    
+    previousActiveTabRef.current = activeTab;
+    previousTimeFilterRef.current = timeFilter;
+    
+    // Mevcut tab'ın verilerini kontrol et
+    let hasData = false;
+    switch (activeTab) {
+      case 'trend':
+        hasData = trendDecksList.length > 0;
+        break;
+      case 'favorites':
+        hasData = favoriteDecksList.length > 0;
+        break;
+      case 'starts':
+        hasData = startedDecksList.length > 0;
+        break;
+      case 'unique':
+        hasData = uniqueDecksList.length > 0;
+        break;
+      case 'new':
+        hasData = newDecks.length > 0;
+        break;
     }
+    
+    // İlk mount'ta veya tab değişti ve veriler yoksa, veya timeFilter değiştiyse yükle
+    if (isInitialMount.current || (tabChanged && !hasData) || timeFilterChanged) {
+      setLoading(true);
+      loadDecks();
+      isInitialMount.current = false;
+    } else if (tabChanged && hasData) {
+      // Tab değişti ama veriler zaten var, loading false yap
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeFilter, activeTab]);
 
   useEffect(() => {
@@ -377,17 +416,20 @@ export default function DiscoverScreen() {
       {renderFixedHeader()}
 
       <View style={[styles.listContainer, { backgroundColor: colors.background }]}>
-        <DeckList
-          decks={filteredDecks}
-          favoriteDecks={favoriteDecks}
-          onToggleFavorite={handleToggleFavorite}
-          onPressDeck={handleDeckPress}
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          showPopularityBadge={activeTab === 'trend'}
-          loading={loading}
-          contentPaddingTop={20}
-        />
+        {loading || (filteredDecks.length === 0 && currentDecks.length === 0) ? (
+          <DiscoverDecksSkeleton />
+        ) : (
+          <DeckList
+            decks={filteredDecks}
+            favoriteDecks={favoriteDecks}
+            onToggleFavorite={handleToggleFavorite}
+            onPressDeck={handleDeckPress}
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            showPopularityBadge={activeTab === 'trend'}
+            contentPaddingTop={20}
+          />
+        )}
       </View>
 
       <FilterModal
