@@ -24,15 +24,16 @@ import ChaptersScreen from '../screens/decks/ChaptersScreen';
 import ChapterCardsScreen from '../screens/decks/CardsOfChapter.js';
 import FavoriteDecks from '../screens/library/FavoriteDecks';
 import FavoriteCards from '../screens/library/FavoriteCards';
-import { TouchableOpacity, Text } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
+import { BlurView } from 'expo-blur';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function MainTabs() {
-  const { colors } = useTheme();
+  const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
   return (
     <Tab.Navigator
@@ -95,7 +96,15 @@ function MainTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: t('tabs.home', 'Anasayfa'), tabBarLabel: t('tabs.home', 'Anasayfa') }} />
       <Tab.Screen name="Create" component={CreateScreen} options={{ title: t('tabs.createDeck', 'Deste Oluştur'), tabBarLabel: t('tabs.create', 'Oluştur'), headerShown: true, headerTitleAlign: 'center', headerRight: () => <ProfileAvatarButton />}} />
-      <Tab.Screen name="Library" component={LibraryScreen} options={{ title: t('tabs.myLibrary', 'Kitaplığım'), tabBarLabel: t('tabs.library', 'Kitaplığım'), headerShown: true, headerTitleAlign: 'center', headerRight: () => <ProfileAvatarButton />}} />
+      <Tab.Screen 
+        name="Library" 
+        component={LibraryScreen} 
+        options={{ 
+          title: t('tabs.myLibrary', 'Kitaplığım'), 
+          tabBarLabel: t('tabs.library', 'Kitaplığım'), 
+          headerShown: false,
+        }} 
+      />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: t('tabs.profile', 'Profilim'), tabBarLabel: t('tabs.profile', 'Profilim') }} />
     </Tab.Navigator>
   );

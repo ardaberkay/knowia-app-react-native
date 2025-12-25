@@ -266,6 +266,7 @@
     "editProfile": {
       "userName": "Nombre de Usuario",
       "userNamePlaceholder": "Tu nombre de usuario",
+      "usernameHint": "Debe tener entre 3-9 caracteres",
       "email": "Correo Electrónico",
       "emailPlaceholder": "Tu dirección de correo electrónico",
       "save": "Guardar",
@@ -275,11 +276,13 @@
       "requiredEmail": "Se requiere una dirección de correo electrónico.",
       "invalidEmail": "Dirección de correo electrónico no válida.",
       "newPassword": "Nueva Contraseña",
-      "newPasswordPlaceholder": "Nueva Contraseña",
+      "newPasswordPlaceholder": "Nueva Contraseña (llena para cambiar)",
       "confirmPasswordPlaceholder": "Confirmar Nueva Contraseña",
-      "undo": "Deshacer",
+      "optional": "Opcional",
+      "undo": "Cancelar",
       "removePhoto": "Eliminar",
-      "changePhoto": "Cambiar"
+      "changePhoto": "Cambiar",
+      "profilePhoto": "Foto de Perfil"
     },
     "swipeDeck": {
       "minutes": "15 min",
@@ -288,10 +291,13 @@
       "sevenDays": "7 días",
       "bravo": "¡Bravo! Has completado todas las tarjetas",
       "learnTime": "Tiempo para aprender las tarjetas restantes",
-      "loading": "Cargando tarjetas",
+      "loading": "Cargando tarjetas...",
       "answer": "Respuesta",
       "example": "Ejemplo",
-      "note": "Nota"
+      "note": "Nota",
+      "learned": "Aprendido",
+      "learning": "Aprendiendo",
+      "total": "Total"
     },
     "login": {
       "error": "Error",

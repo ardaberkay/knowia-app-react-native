@@ -52,13 +52,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
   },
   profileAvatar: {
     width: 47,
     height: 47,
     borderRadius: 22,
     resizeMode: 'cover',
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
   },
 }); 

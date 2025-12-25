@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator, Share, Switch, Alert } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -26,20 +26,24 @@ export default function ProfileScreen() {
   const { t, i18n } = useTranslation();
   const [isLanguageModalVisible, setLanguageModalVisible] = useState(false);
   const { showSuccess, showError } = useSnackbarHelpers();
+  const isInitialMount = useRef(true);
+  const shouldRefreshOnFocus = useRef(false);
 
-  useEffect(() => {
-    const checkNotificationStatus = async () => {
-      try {
-        setLoading(true);
-        
-        // Önce kullanıcı ID'sini al
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user?.id) {
-          setError(t('profile.errorMessageProfile', 'Profil yüklenemedi'));
-          return;
-        }
-        
-        // Cache'den profil bilgilerini yükle
+  // Profil yükleme fonksiyonu
+  const loadProfile = useCallback(async (useCache = true) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Önce kullanıcı ID'sini al
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) {
+        setError(t('profile.errorMessageProfile'));
+        return;
+      }
+      
+      // Cache kullanılacaksa önce cache'den yükle
+      if (useCache) {
         const cachedProfile = await getCachedProfile(user.id);
         if (cachedProfile) {
           setProfile(cachedProfile);
@@ -80,33 +84,58 @@ export default function ProfileScreen() {
           }
           return;
         }
-        
-        // Cache yoksa API'den çek
-        const profile = await getCurrentUserProfile();
-        setProfile(profile);
-        setUserId(profile.id);
-        
-        // Cache'le
-        await cacheProfile(user.id, profile);
-        if (profile?.image_url) {
-          await cacheProfileImage(user.id, profile.image_url);
-        }
-        
-        const { status } = await Notifications.getPermissionsAsync();
-        if (status === 'granted' && profile.notifications_enabled) {
-          setNotificationsEnabled(true);
-        } else {
-          setNotificationsEnabled(false);
-        }
-      } catch (e) {
-        setNotificationsEnabled(false);
-        setError(t('profile.errorMessageProfile', 'Profil yüklenemedi'));
-      } finally {
-        setLoading(false);
       }
-    };
-    checkNotificationStatus();
-  }, []);
+      
+      // Cache yoksa veya cache kullanılmayacaksa API'den çek
+      const profile = await getCurrentUserProfile();
+      setProfile(profile);
+      setUserId(profile.id);
+      
+      // Cache'le
+      await cacheProfile(user.id, profile);
+      if (profile?.image_url) {
+        await cacheProfileImage(user.id, profile.image_url);
+      }
+      
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status === 'granted' && profile.notifications_enabled) {
+        setNotificationsEnabled(true);
+      } else {
+        setNotificationsEnabled(false);
+      }
+    } catch (e) {
+      setNotificationsEnabled(false);
+      setError(t('profile.errorMessageProfile'));
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
+
+  // İlk yükleme - cache kullan
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      loadProfile(true);
+    }
+  }, [loadProfile]);
+
+  // EditProfileScreen'den geri gelindiğinde yenile
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // İlk mount'ta çalışmasın
+      if (isInitialMount.current) {
+        return;
+      }
+      
+      // Sadece EditProfileScreen'den gelindiğinde yenile
+      if (shouldRefreshOnFocus.current) {
+        shouldRefreshOnFocus.current = false;
+        loadProfile(false);
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, loadProfile]);
 
   const handleInviteFriends = useCallback(async () => {
     try {
@@ -151,7 +180,13 @@ export default function ProfileScreen() {
 
   // Menü kategorileri
   const accountItems = useMemo(() => [
-    { label: t('profile.edit'), onPress: () => navigation.navigate('EditProfile') },
+    { 
+      label: t('profile.edit'), 
+      onPress: () => {
+        shouldRefreshOnFocus.current = true;
+        navigation.navigate('EditProfile');
+      }
+    },
     { label: t('profile.invite'), onPress: handleInviteFriends },
   ], [t, navigation, handleInviteFriends]);
 

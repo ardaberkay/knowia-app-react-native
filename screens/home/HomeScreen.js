@@ -320,24 +320,39 @@ const DECK_CATEGORIES = {
               snapToInterval={130}
               snapToAlignment="start"
             >
-              {limitedDecks.map((deck) => (
-                <DeckCard
-                  key={`deck-${deck.id}`}
-                  deck={deck}
-                  colors={colors}
-                  typography={typography}
-                  onPress={handleDeckPress}
-                  onToggleFavorite={async (deckId) => {
-                    const isFavorite = favoriteDecks.some(fav => fav.id === deckId);
-                    if (isFavorite) {
-                      await handleRemoveFavoriteDeck(deckId);
-                    } else {
-                      await handleAddFavoriteDeck(deckId);
+              {limitedDecks.map((deck) => {
+                // defaultDecks kategorisi için profil bilgilerini override et
+                const modifiedDeck = category === 'defaultDecks' 
+                  ? {
+                      ...deck,
+                      profiles: {
+                        ...deck.profiles,
+                        username: 'Knowia',
+                        image_url: null, // app-icon.png kullanılacak
+                      },
+                      is_admin_created: true, // app-icon.png kullanımı için flag
                     }
-                  }}
-                  isFavorite={favoriteDecks.some(fav => fav.id === deck.id)}
-                />
-              ))}
+                  : deck;
+                
+                return (
+                  <DeckCard
+                    key={`deck-${deck.id}`}
+                    deck={modifiedDeck}
+                    colors={colors}
+                    typography={typography}
+                    onPress={handleDeckPress}
+                    onToggleFavorite={async (deckId) => {
+                      const isFavorite = favoriteDecks.some(fav => fav.id === deckId);
+                      if (isFavorite) {
+                        await handleRemoveFavoriteDeck(deckId);
+                      } else {
+                        await handleAddFavoriteDeck(deckId);
+                      }
+                    }}
+                    isFavorite={favoriteDecks.some(fav => fav.id === deck.id)}
+                  />
+                );
+              })}
               {showEndIcon && (
                 <View style={styles.endIconContainer}>
                   <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={35} color="#F98A21" style={{ marginLeft: 2, marginTop: 1 }} />

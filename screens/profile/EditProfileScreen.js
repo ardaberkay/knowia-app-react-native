@@ -50,7 +50,7 @@ export default function EditProfileScreen({ navigation }) {
         });
         setImageFilePath(data.image_url ? getStoragePathFromUrl(data.image_url) : null);
       } catch (err) {
-        setError(err.message || t('common.profileUpdatedError', 'Profil yüklenemedi'));
+        setError(err.message || t('common.profileUpdatedError'));
       } finally {
         setLoading(false);
       }
@@ -87,7 +87,7 @@ export default function EditProfileScreen({ navigation }) {
     } catch (err) {
       console.log('Fotoğraf seçme hatası:', err);
       if (err?.message) {
-        showError(t('common.imageNotSelected', 'Fotoğraf seçilemedi.'));
+        showError(t('common.imageNotSelected'));
       }
     }
   };
@@ -100,14 +100,14 @@ export default function EditProfileScreen({ navigation }) {
         const { data, error } = await supabase.storage.from('avatars').remove([imageFilePath]);
         console.log('Silme sonucu (removePhoto):', data, error);
         if (error) {
-          showError(t('common.imageRemoveError', 'Fotoğraf silinemedi: ') + error.message);
+          showError(t('common.imageRemoveError') + ': ' + error.message);
         }
       }
       setImageUrl('');
       setImageChanged(true);
       setImageFilePath(null);
     } catch (err) {
-      showError(t('common.imageRemoveError', 'Fotoğraf silinemedi.'));
+      showError(t('common.imageRemoveError'));
     }
   };
 
@@ -116,12 +116,12 @@ export default function EditProfileScreen({ navigation }) {
     setSaving(true);
     setError(null);
     if (username.length < 3 || username.length > 9) {
-        setError(t('common.usernameLengthError', 'Kullanıcı adı 3 ile 9 karakter arasında olmalıdır'));
+        setError(t('common.usernameLengthError'));
       setSaving(false);
       return;
     }
     if (password && password !== passwordConfirm) {
-      setError(t('common.passwordMatchError', 'Şifreler eşleşmiyor'));
+      setError(t('common.passwordMatchError'));
       setSaving(false);
       return;
     }
@@ -134,7 +134,7 @@ export default function EditProfileScreen({ navigation }) {
         const { data, error } = await supabase.storage.from('avatars').remove([imageFilePath]);
         console.log('Silme sonucu (handleSave):', data, error);
         if (error) {
-          showError(t('common.imageRemoveError', 'Fotoğraf silinemedi: ') + error.message);
+          showError(t('common.imageRemoveError') + ': ' + error.message);
         }
       }
       // 2. Fotoğraf değiştiyse yeni fotoğrafı yükle
@@ -185,14 +185,14 @@ export default function EditProfileScreen({ navigation }) {
         const { error: passError } = await supabase.auth.updateUser({ password });
         if (passError) throw passError;
       }
-      showSuccess(t('common.profileUpdated', 'Profil güncellendi!'));
+      showSuccess(t('common.profileUpdated'));
       setTimeout(() => {
         navigation.goBack();
       }, 500);
     } catch (err) {
       console.log('Profil güncelleme hatası:', err);
-      setError(err.message || t('common.profileUpdatedError', 'Profil güncellenemedi'));
-      showError(err.message || t('common.profileUpdatedError', 'Profil güncellenemedi'));
+      setError(err.message || t('common.profileUpdatedError'));
+      showError(err.message || t('common.profileUpdatedError'));
     } finally {
       setSaving(false);
     }
@@ -243,7 +243,7 @@ export default function EditProfileScreen({ navigation }) {
             <View style={styles.labelRow}>
               <Iconify icon="mage:image-fill" size={20} color={colors.buttonColor} style={styles.labelIcon} />
               <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
-                {t('editProfile.profilePhoto', 'Profil Fotoğrafı')}
+                {t('editProfile.profilePhoto')}
               </Text>
             </View>
             <View style={styles.profilePhotoContainer}>
@@ -271,7 +271,7 @@ export default function EditProfileScreen({ navigation }) {
                 >
                   <Iconify icon="lucide:edit" size={18} color={colors.buttonColor} style={{ marginRight: 6 }} />
                   <Text style={[typography.styles.button, { color: colors.buttonColor, fontSize: 14 }]}>
-                    {t('editProfile.changePhoto', 'Değiştir')}
+                    {t('editProfile.changePhoto')}
                   </Text>
                 </TouchableOpacity>
                 {imageUrl && (
@@ -285,7 +285,7 @@ export default function EditProfileScreen({ navigation }) {
                   >
                     <Iconify icon="mdi:garbage-can-empty" size={18} color={colors.error} style={{ marginRight: 6 }} />
                     <Text style={[typography.styles.button, { color: colors.error, fontSize: 14 }]}>
-                      {t('editProfile.removePhoto', 'Kaldır')}
+                      {t('editProfile.removePhoto')}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -305,7 +305,7 @@ export default function EditProfileScreen({ navigation }) {
             <View style={styles.labelRow}>
               <Iconify icon="solar:user-bold" size={20} color={colors.buttonColor} style={styles.labelIcon} />
               <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
-                {t('editProfile.userName', 'Kullanıcı Adı')}
+                {t('editProfile.userName')}
               </Text>
             </View>
             <TextInput
@@ -314,7 +314,7 @@ export default function EditProfileScreen({ navigation }) {
                 borderColor: colors.border, 
                 backgroundColor: colors.blurView || colors.cardButtonBackground,
               }]}
-              placeholder={t('editProfile.userNamePlaceholder', "Kullanıcı Adı")}
+              placeholder={t('editProfile.userNamePlaceholder')}
               placeholderTextColor={colors.muted}
               value={username}
               onChangeText={setUsername}
@@ -322,7 +322,7 @@ export default function EditProfileScreen({ navigation }) {
               maxLength={9}
             />
             <Text style={[typography.styles.caption, { color: colors.muted, marginTop: 4 }]}>
-              {t('editProfile.usernameHint', '3-9 karakter arasında olmalıdır')}
+              {t('editProfile.usernameHint')}
             </Text>
           </View>
 
@@ -338,7 +338,7 @@ export default function EditProfileScreen({ navigation }) {
             <View style={styles.labelRow}>
               <Iconify icon="tabler:mail-filled" size={20} color={colors.buttonColor} style={styles.labelIcon} />
               <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
-                {t('editProfile.email', 'E-posta')}
+                {t('editProfile.email')}
               </Text>
             </View>
             <TextInput
@@ -347,7 +347,7 @@ export default function EditProfileScreen({ navigation }) {
                 borderColor: colors.border, 
                 backgroundColor: colors.blurView || colors.cardButtonBackground,
               }]}
-              placeholder={t('editProfile.emailPlaceholder', "E-posta")}
+              placeholder={t('editProfile.emailPlaceholder')}
               placeholderTextColor={colors.muted}
               value={email}
               onChangeText={setEmail}
@@ -369,10 +369,10 @@ export default function EditProfileScreen({ navigation }) {
             <View style={styles.labelRow}>
               <Iconify icon="carbon:password" size={20} color={colors.buttonColor} style={styles.labelIcon} />
               <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
-                {t('editProfile.newPassword', 'Yeni Şifre')}
+                {t('editProfile.newPassword')}
               </Text>
               <Text style={[typography.styles.caption, { color: colors.muted, marginLeft: 6 }]}>
-                ({t('editProfile.optional', 'İsteğe bağlı')})
+                ({t('editProfile.optional')})
               </Text>
             </View>
             <View style={styles.passwordInputContainer}>
@@ -382,7 +382,7 @@ export default function EditProfileScreen({ navigation }) {
                   borderColor: colors.border, 
                   backgroundColor: colors.blurView || colors.cardButtonBackground,
                 }]}
-                placeholder={t('editProfile.newPasswordPlaceholder', "Yeni Şifre (değiştirmek için doldurun)")}
+                placeholder={t('editProfile.newPasswordPlaceholder')}
                 placeholderTextColor={colors.muted}
                 value={password}
                 onChangeText={setPassword}
@@ -409,7 +409,7 @@ export default function EditProfileScreen({ navigation }) {
                   borderColor: colors.border, 
                   backgroundColor: colors.blurView || colors.cardButtonBackground,
                 }]}
-                placeholder={t('editProfile.confirmPasswordPlaceholder', "Yeni Şifreyi Tekrar Girin")}
+                placeholder={t('editProfile.confirmPasswordPlaceholder')}
                 placeholderTextColor={colors.muted}
                 value={passwordConfirm}
                 onChangeText={setPasswordConfirm}
@@ -444,13 +444,13 @@ export default function EditProfileScreen({ navigation }) {
             <UndoButton
               onPress={handleCancel}
               disabled={saving}
-              text={t('editProfile.undo', "İptal Et")}
+              text={t('editProfile.undo')}
             />
             <CreateButton
               onPress={handleSave}
               disabled={saving}
               loading={saving}
-              text={saving ? t('editProfile.saving', "Kaydediliyor...") : t('editProfile.save', "Kaydet")}
+              text={saving ? t('editProfile.saving') : t('editProfile.save')}
             />
           </View>
         </ScrollView>

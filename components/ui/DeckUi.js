@@ -108,7 +108,13 @@ export default function DeckCard({
         <View style={styles.deckCardContentModern}>
           <View style={styles.deckProfileRow}>
             <Image
-              source={deck.profiles?.image_url ? { uri: deck.profiles.image_url } : require('../../assets/avatar-default.png')}
+              source={
+                deck.is_admin_created 
+                  ? require('../../assets/app-icon.png')
+                  : deck.profiles?.image_url 
+                    ? { uri: deck.profiles.image_url } 
+                    : require('../../assets/avatar-default.png')
+              }
               style={styles.deckProfileAvatar}
             />
             <FadeText 

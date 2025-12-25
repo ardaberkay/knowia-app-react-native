@@ -11,7 +11,7 @@ export default function MyDecksSkeleton() {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ paddingBottom: '10%' }}
+      contentContainerStyle={{ paddingBottom: '25%', paddingTop: '25%' }}
       showsVerticalScrollIndicator={false}
     >
       {/* Header Card Skeleton */}
@@ -30,8 +30,8 @@ export default function MyDecksSkeleton() {
           </View>
         </View>
         <View style={skeletonStyles.myDecksSearchContainer}>
-          <View style={[skeletonStyles.skeletonBox, { flex: 1, height: 44, borderRadius: 12, backgroundColor: lineColor }]} />
-          <View style={[skeletonStyles.skeletonBox, { width: 44, height: 44, borderRadius: 12, backgroundColor: lineColor, marginLeft: 10 }]} />
+          <View style={[skeletonStyles.skeletonBox, { flex: 1, height: 48, borderRadius: 24, backgroundColor: lineColor }]} />
+          <View style={[skeletonStyles.skeletonBox, { width: 48, height: 48, borderRadius: 30, backgroundColor: lineColor, marginLeft: 10 }]} />
         </View>
       </View>
 
@@ -49,13 +49,13 @@ export default function MyDecksSkeleton() {
                   cardIndex === 0 ? { marginRight: 5 } : { marginLeft: 5 }
                 ]}
               >
-                <View style={[skeletonStyles.skeletonBox, { position: 'absolute', top: 10, right: 10, width: 36, height: 36, borderRadius: 18, backgroundColor: lineColor }]} />
+                <View style={[skeletonStyles.skeletonBox, { position: 'absolute', top: 10, right: 10, width: 37, height: 37, borderRadius: 999, backgroundColor: lineColor }]} />
                 <View style={[skeletonStyles.skeletonBox, { position: 'absolute', bottom: 12, left: 12, width: 60, height: 28, borderRadius: 14, backgroundColor: lineColor }]} />
-                <View style={[skeletonStyles.skeletonBox, { position: 'absolute', bottom: 7, right: 10, width: 36, height: 36, borderRadius: 18, backgroundColor: lineColor }]} />
+                <View style={[skeletonStyles.skeletonBox, { position: 'absolute', bottom: 7, right: 10, width: 37, height: 37, borderRadius: 999, backgroundColor: lineColor }]} />
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                  <View style={[skeletonStyles.skeletonBox, { width: 80, height: 18, borderRadius: 9, backgroundColor: lineColor, marginBottom: 8 }]} />
+                  <View style={[skeletonStyles.skeletonBox, { width: 80, height: 16, borderRadius: 8, backgroundColor: lineColor, marginBottom: 8 }]} />
                   <View style={[skeletonStyles.skeletonBox, { width: 60, height: 2, borderRadius: 1, backgroundColor: lineColor, marginVertical: 8 }]} />
-                  <View style={[skeletonStyles.skeletonBox, { width: 70, height: 18, borderRadius: 9, backgroundColor: lineColor }]} />
+                  <View style={[skeletonStyles.skeletonBox, { width: 70, height: 16, borderRadius: 8, backgroundColor: lineColor }]} />
                 </View>
               </View>
             ))}
@@ -68,13 +68,13 @@ export default function MyDecksSkeleton() {
                 { backgroundColor: bgColor }
               ]}
             >
-              <View style={[skeletonStyles.skeletonBox, { position: 'absolute', top: 8, right: 10, width: 38, height: 38, borderRadius: 19, backgroundColor: lineColor }]} />
+              <View style={[skeletonStyles.skeletonBox, { position: 'absolute', top: 8, right: 10, width: 38, height: 38, borderRadius: 999, backgroundColor: lineColor }]} />
               <View style={[skeletonStyles.skeletonBox, { position: 'absolute', bottom: 12, left: 12, width: 65, height: 28, borderRadius: 14, backgroundColor: lineColor }]} />
-              <View style={[skeletonStyles.skeletonBox, { position: 'absolute', bottom: 8, right: 10, width: 38, height: 38, borderRadius: 19, backgroundColor: lineColor }]} />
+              <View style={[skeletonStyles.skeletonBox, { position: 'absolute', bottom: 8, right: 10, width: 38, height: 38, borderRadius: 999, backgroundColor: lineColor }]} />
               <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <View style={[skeletonStyles.skeletonBox, { width: 140, height: 20, borderRadius: 10, backgroundColor: lineColor, marginBottom: 10 }]} />
+                <View style={[skeletonStyles.skeletonBox, { width: 140, height: 18, borderRadius: 9, backgroundColor: lineColor, marginBottom: 10 }]} />
                 <View style={[skeletonStyles.skeletonBox, { width: 70, height: 2, borderRadius: 1, backgroundColor: lineColor, marginVertical: 10 }]} />
-                <View style={[skeletonStyles.skeletonBox, { width: 120, height: 20, borderRadius: 10, backgroundColor: lineColor }]} />
+                <View style={[skeletonStyles.skeletonBox, { width: 120, height: 18, borderRadius: 9, backgroundColor: lineColor }]} />
               </View>
             </View>
           </View>

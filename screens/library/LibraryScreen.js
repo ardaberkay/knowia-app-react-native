@@ -20,6 +20,9 @@ import MyDecksSkeleton from '../../components/skeleton/MyDecksSkeleton';
 import CardDetailView from '../../components/layout/CardDetailView';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
+import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ProfileAvatarButton from '../../components/layout/ProfileAvatarButton';
 
 // Fade efekti için yardımcı bileşen
 const FadeText = ({ text, style, maxWidth, maxChars }) => {
@@ -65,6 +68,7 @@ export default function LibraryScreen() {
   const { colors, isDarkMode } = useTheme();
   const navigation = useNavigation();
   const { showSuccess, showError } = useSnackbarHelpers();
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('myDecks');
   const [myDecks, setMyDecks] = useState([]);
   const [favoriteDecks, setFavoriteDecks] = useState([]);
@@ -596,44 +600,62 @@ export default function LibraryScreen() {
 
   return (
     <View style={[styles.container]}>
-      {/* Pill Tabs + Animated Indicator */}
-      <View style={styles.segmentedControlContainer} pointerEvents="box-none">
-        <View style={[styles.segmentedControlInner, { backgroundColor: colors.background }]}>
+      {/* Header + Pill Tabs - Tek birleşik BlurView */}
+      <View style={[styles.segmentedControlContainer, { top: 0 }]} pointerEvents="box-none">
+        <BlurView
+          intensity={20}
+          tint={'systemMaterialDark'}
+          experimentalBlurMethod="dimezisBlurView"
+          style={[styles.segmentedControlInner, { paddingTop: insets.top }]}
+          pointerEvents="box-none"
+        >
+          {/* Header Content */}
+          <View style={styles.headerContent}>
+            <View style={styles.headerLeft} />
+            <Text style={[styles.headerTitle, { color: colors.text }]}>
+              {t('tabs.myLibrary', 'Kitaplığım')}
+            </Text>
+            <View style={styles.headerRight}>
+              <ProfileAvatarButton />
+            </View>
+          </View>
           <View
-            style={[styles.pillContainer, { borderColor: colors.cardBordaer || '#444444', backgroundColor: colors.background }]}
+            style={[styles.pillContainer, { borderColor: colors.cardBordaer || '#444444', backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.3)' }]}
             onLayout={(e) => setPillWidth(e.nativeEvent.layout.width)}
           >
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.pillIndicator,
-              {
-                width: (pillWidth > 0 ? pillWidth / 2 : 0),
-                transform: [
-                  {
-                    translateX: tabScroll.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, (pillWidth > 0 ? pillWidth / 2 : 0)],
-                      extrapolate: 'clamp',
-                    })
-                  }
-                ],
-                backgroundColor: colors.buttonColor || '#F98A21',
-              }
-            ]}
-          />
-          <TouchableOpacity style={styles.pillTab} activeOpacity={0.8} onPress={() => handleSetPage(0)}>
+          <View style={styles.pillIndicatorWrapper}>
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.pillIndicator,
+                {
+                  width: (pillWidth > 0 ? (pillWidth - 4) / 2 : 0),
+                  transform: [
+                    {
+                      translateX: tabScroll.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, (pillWidth > 0 ? (pillWidth - 4) / 2 : 0)],
+                        extrapolate: 'clamp',
+                      })
+                    }
+                  ],
+                  backgroundColor: colors.buttonColor || '#F98A21',
+                }
+              ]}
+            />
+          </View>
+          <TouchableOpacity style={[styles.pillTab, { width: '50%' }]} activeOpacity={0.8} onPress={() => handleSetPage(0)}>
             <Text style={[styles.pillLabel, { color: activeTab === 'myDecks' ? colors.text : (colors.border || '#666') }]}>
               {t('library.myDecks', 'Destelerim')}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.pillTab} activeOpacity={0.8} onPress={() => handleSetPage(1)}>
+          <TouchableOpacity style={[styles.pillTab, { width: '50%' }]} activeOpacity={0.8} onPress={() => handleSetPage(1)}>
             <Text style={[styles.pillLabel, { color: activeTab === 'favorites' ? colors.text : (colors.border || '#666') }]}>
               {t('library.favorites', 'Favorilerim')}
             </Text>
           </TouchableOpacity>
           </View>
-        </View>
+        </BlurView>
       </View>
       {/* PagerView: 0 - MyDecks, 1 - Favorites */}
       <PagerView
@@ -689,7 +711,7 @@ export default function LibraryScreen() {
           ) : (
             <ScrollView
               style={{ flex: 1, backgroundColor: colors.background }}
-              contentContainerStyle={{ paddingBottom: '18%', marginTop: '22%', flexGrow: 1 }}
+              contentContainerStyle={{ paddingBottom: '18%', paddingTop: '45%', flexGrow: 1 }}
               showsVerticalScrollIndicator={false}
               refreshControl={
                 <RefreshControl
@@ -984,33 +1006,39 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 100,
+    zIndex: 10,
   },
   segmentedControlInner: {
     paddingHorizontal: 24,
-    paddingVertical: 16,
-    backgroundColor: 'transparent',
+    paddingBottom: 16,
     borderBottomEndRadius: 70,
     borderBottomStartRadius: 70,
     overflow: 'hidden',
-    shadowColor: '#333333',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 1,
-    borderColor: '#333333',
-    borderBottomWidth: 1,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    height: 44,
+    marginBottom: 12,
+  },
+  headerLeft: {
+    width: 47,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    flex: 1,
+    textAlign: 'center',
+  },
+  headerRight: {
+    width: 50,
+    alignItems: 'flex-end',
+    right: -25,
   },
   pillContainer: {
     borderWidth: 1,
     borderColor: '#444444',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
     height: 44,
     marginHorizontal: '17%',
     borderRadius: 25,
@@ -1019,15 +1047,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     position: 'relative',
   },
+  pillIndicatorWrapper: {
+    position: 'absolute',
+    left: 2,
+    top: 2,
+    bottom: 2,
+    right: 2,
+    overflow: 'hidden',
+    borderRadius: 23,
+  },
   pillIndicator: {
     position: 'absolute',
     left: 0,
     top: 0,
     bottom: 0,
-    borderRadius: 25,
+    borderRadius: 23,
   },
   pillTab: {
-    flex: 1,
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',

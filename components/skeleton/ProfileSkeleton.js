@@ -20,7 +20,6 @@ const profileSkeletonStyles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 32,
   },
   avatarSkeleton: {
     width: 100,
@@ -33,9 +32,9 @@ const profileSkeletonStyles = StyleSheet.create({
   },
   nameSkeleton: {
     width: '60%',
-    height: 24,
+    height: 22,
     borderRadius: 6,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   emailSkeleton: {
     width: '80%',

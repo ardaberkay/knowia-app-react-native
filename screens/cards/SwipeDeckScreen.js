@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity, Dimensions, Pressable, Animated, Easing, Image } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity, Dimensions, Pressable, Animated, Easing, Image, ScrollView } from 'react-native';
 import Swiper from 'react-native-deck-swiper';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import logoasil from '../../assets/logoasil.png';
 import { useTranslation } from 'react-i18next';
 import { addFavoriteCard, removeFavoriteCard, getFavoriteCards } from '../../services/FavoriteService';
+import LottieView from 'lottie-react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -39,6 +40,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const [totalCardCount, setTotalCardCount] = useState(0);
   const [remainingCardCount, setRemainingCardCount] = useState(0);
   const [hasLearningCard, setHasLearningCard] = useState(false);
+  const [totalLearningCount, setTotalLearningCount] = useState(0);
+  const [currentLearnedCount, setCurrentLearnedCount] = useState(null);
+  const [currentLearningCount, setCurrentLearningCount] = useState(null);
   const [autoPlay, setAutoPlay] = useState(false);
   const autoPlayTimeout = useRef(null);
   const { t } = useTranslation();
@@ -52,7 +56,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     
     navigation.setOptions({
       headerRight: () => (
-        currentCard ? (
+        !loading && currentCard ? (
           <TouchableOpacity
             onPress={() => toggleFavorite(currentCard.card_id)}
             style={{ marginRight: 16 }}
@@ -67,7 +71,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
         ) : null
       ),
     });
-  }, [navigation, cards, currentIndex, favoriteIds, colors.buttonColor, colors.text, toggleFavorite]);
+  }, [navigation, cards, currentIndex, favoriteIds, colors.buttonColor, colors.text, toggleFavorite, loading]);
 
   // Kategoriye göre renkleri al (Supabase sort_order kullanarak)
   const getCategoryColors = (sortOrder) => {
@@ -174,8 +178,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
       const { data: notLearned, error: notLearnedError } = await notLearnedQuery;
       setRemainingCardCount(notLearned ? notLearned.length : 0);
       
-      // Gelecekte gösterilecek learning kart var mı? (seçilen bölüm için)
-      let learningCardsExistQuery = supabase
+      // Learning kart sayısını al (seçilen bölüm için)
+      let learningCardsCountQuery = supabase
         .from('user_card_progress')
         .select('card_id, status, cards(deck_id, chapter_id)')
         .eq('user_id', user.id)
@@ -183,13 +187,14 @@ export default function SwipeDeckScreen({ route, navigation }) {
         .eq('cards.deck_id', deck.id);
       
       if (chapter?.id) {
-        learningCardsExistQuery = learningCardsExistQuery.eq('cards.chapter_id', chapter.id);
+        learningCardsCountQuery = learningCardsCountQuery.eq('cards.chapter_id', chapter.id);
       } else if (chapter === null) {
-        learningCardsExistQuery = learningCardsExistQuery.is('cards.chapter_id', null);
+        learningCardsCountQuery = learningCardsCountQuery.is('cards.chapter_id', null);
       }
       
-      const { data: learningCardsExist, error: learningCardsExistError } = await learningCardsExistQuery;
+      const { data: learningCardsExist, error: learningCardsExistError } = await learningCardsCountQuery;
       setHasLearningCard(learningCardsExist && learningCardsExist.length > 0);
+      setTotalLearningCount(learningCardsExist ? learningCardsExist.length : 0);
       
       // Başlangıçta learned olan kartların sayısını al (seçilen bölüm için)
       let learnedCardsQuery = supabase
@@ -373,26 +378,93 @@ export default function SwipeDeckScreen({ route, navigation }) {
     };
   }, []);
 
+  // Kullanıcıya ait learned ve learning sayılarını çek (kartlar bittiğinde veya kart yoksa)
+  useEffect(() => {
+    const fetchCurrentStats = async () => {
+      // Kartlar bittiğinde veya hiç kart yoksa (zamanı gelmemiş kartlar) sayıları çek
+      if ((cards.length === 0 || currentIndex >= cards.length) && userId && deck?.id) {
+        try {
+          // Güncel learned kart sayısı (kullanıcıya ait, deck'teki)
+          let learnedQuery = supabase
+            .from('user_card_progress')
+            .select('card_id, cards(deck_id, chapter_id)')
+            .eq('user_id', userId)
+            .eq('status', 'learned')
+            .eq('cards.deck_id', deck.id);
+          
+          if (chapter?.id) {
+            learnedQuery = learnedQuery.eq('cards.chapter_id', chapter.id);
+          } else if (chapter === null) {
+            learnedQuery = learnedQuery.is('cards.chapter_id', null);
+          }
+          
+          const { data: learnedCards } = await learnedQuery;
+          const filteredLearned = (learnedCards || []).filter(c => c.cards && c.cards.deck_id === deck.id);
+          setCurrentLearnedCount(filteredLearned.length);
+
+          // Güncel learning kart sayısı (kullanıcıya ait, deck'teki, sadece status: 'learning')
+          let learningQuery = supabase
+            .from('user_card_progress')
+            .select('card_id, status, cards(deck_id, chapter_id)')
+            .eq('user_id', userId)
+            .eq('status', 'learning')
+            .eq('cards.deck_id', deck.id);
+          
+          if (chapter?.id) {
+            learningQuery = learningQuery.eq('cards.chapter_id', chapter.id);
+          } else if (chapter === null) {
+            learningQuery = learningQuery.is('cards.chapter_id', null);
+          }
+          
+          const { data: learningCards } = await learningQuery;
+          const filteredLearning = (learningCards || []).filter(
+            c => c.cards && c.cards.deck_id === deck.id && c.status === 'learning'
+          );
+          setCurrentLearningCount(filteredLearning.length);
+        } catch (error) {
+          console.error('Error fetching current stats:', error);
+        }
+      }
+    };
+
+    fetchCurrentStats();
+  }, [cards.length, currentIndex, userId, deck?.id, chapter?.id]);
+
   const FlipCard = ({ card, cardIndex, currentIndex }) => {
-    // Pill başlık bileşeni (etiket + ikon)
+    // Modern Pill başlık bileşeni (etiket + ikon)
     const Pill = ({ label, icon, color = colors.buttonColor }) => (
       <View
         style={{
-          alignSelf: 'center',
           flexDirection: 'row',
           alignItems: 'center',
-          paddingVertical: 5,
-          paddingHorizontal: 10,
-          borderRadius: 999,
-          borderWidth: 1,
-          borderColor: color,
-          backgroundColor: 'rgba(0,0,0,0.02)',
-          marginBottom: 10,
+          paddingVertical: 8,
+          paddingHorizontal: 14,
+          borderRadius: 20,
+          backgroundColor: 'rgba(255, 255, 255, 0.15)',
+          borderWidth: 1.5,
+          borderColor: 'rgba(255, 255, 255, 0.3)',
+          marginBottom: 12,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 2,
         }}
       >
-        {icon ? <View style={{ marginRight: 6 }}>{icon}</View> : null}
-        <Text style={{ color, fontWeight: '700', fontSize: 15, letterSpacing: 0.3 }}>{label}</Text>
+        {icon ? <View style={{ marginRight: 8 }}>{icon}</View> : null}
+        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14, letterSpacing: 0.5 }}>{label}</Text>
       </View>
+    );
+
+    // Bölüm ayırıcı bileşeni
+    const SectionDivider = () => (
+      <View style={{
+        width: '60%',
+        height: 1,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        marginVertical: 20,
+        alignSelf: 'center',
+      }} />
     );
 
 
@@ -449,23 +521,23 @@ export default function SwipeDeckScreen({ route, navigation }) {
           style={{ flex: 1 }}
         >
           {/* Ön yüz */}
-          <Animated.View style={[styles.card, { backgroundColor: colors.cardBackground, justifyContent: 'flex-start' }, frontAnimatedStyle]}>
+          <Animated.View style={[styles.card, { backgroundColor: colors.cardBackground, justifyContent: card.cards.image ? 'flex-start' : 'center' }, frontAnimatedStyle]}>
             <LinearGradient
               colors={gradientColors}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
             />
-            <View style={[styles.imageContainer, { backgroundColor: 'transparent', marginTop: 32 }]}> 
-              {card.cards.image && (
+            {card.cards.image && (
+              <View style={[styles.imageContainer, { backgroundColor: 'transparent', marginTop: 32 }]}> 
                 <Image
                   source={{ uri: card.cards.image }}
                   style={styles.cardImage}
                 />
-              )}
-            </View>
+              </View>
+            )}
             
-            <Text style={[typography.styles.h2, { color: colors.text, marginBottom: 16 }]}>{card.cards.question}</Text>
+            <Text style={[typography.styles.h2, { color: colors.text, marginBottom: card.cards.image ? 16 : 0, textAlign: 'center' }]}>{card.cards.question}</Text>
           </Animated.View>
           {/* Arka yüz */}
           <Animated.View style={[styles.card, { backgroundColor: colors.cardBackground }, backAnimatedStyle]}>
@@ -475,36 +547,87 @@ export default function SwipeDeckScreen({ route, navigation }) {
               end={{ x: 1, y: 1 }}
               style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
             />
-             <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center', paddingVertical: 18, marginTop: 32 }}>
-               {/* Answer */}
-               <Pill
-                 label={t('swipeDeck.answer', 'Answer')}
-                 icon={<Iconify icon="uil:comment-alt-check" size={18} color={colors.buttonColor} />}
-               />
-               <Text style={[typography.styles.h2, { color: colors.text, marginBottom: 30, textAlign: 'center' }]}>{card.cards.answer}</Text>
+            <ScrollView
+              contentContainerStyle={{
+                flexGrow: 1,
+                justifyContent: 'center',
+                paddingHorizontal: 24,
+                paddingTop: 32,
+                paddingBottom: 24,
+              }}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Answer Section */}
+              <View style={{ alignItems: 'center', marginBottom: 24 }}>
+                <Pill
+                  label={t('swipeDeck.answer', 'Answer')}
+                  icon={<Iconify icon="uil:comment-alt-check" size={18} color="#fff" />}
+                />
+                <Text style={[
+                  typography.styles.h2,
+                  {
+                    color: '#fff',
+                    textAlign: 'center',
+                    marginTop: 8,
+                    lineHeight: 28,
+                    fontWeight: '600',
+                  }
+                ]}>
+                  {card.cards.answer}
+                </Text>
+              </View>
 
-               {/* Example */}
-               {card.cards.example && (
-                 <>
-                   <Pill
-                     label={t('swipeDeck.example', 'Example')}
-                     icon={<Iconify icon="lucide:lightbulb" size={18} color={colors.buttonColor} />}
-                   />
-                   <Text style={[{ color: colors.subtext, marginBottom: 30, textAlign: 'center' }, typography.styles.subtitle]}>{card.cards.example}</Text>
-                 </>
-               )}
+              {/* Example Section */}
+              {card.cards.example && (
+                <>
+                  <SectionDivider />
+                  <View style={{ alignItems: 'center', marginBottom: 24 }}>
+                    <Pill
+                      label={t('swipeDeck.example', 'Example')}
+                      icon={<Iconify icon="lucide:lightbulb" size={18} color="#fff" />}
+                    />
+                    <Text style={[
+                      typography.styles.subtitle,
+                      {
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        textAlign: 'center',
+                        marginTop: 8,
+                        lineHeight: 22,
+                        fontSize: 16,
+                      }
+                    ]}>
+                      {card.cards.example}
+                    </Text>
+                  </View>
+                </>
+              )}
 
-               {/* Note */}
-               {card.cards.note && (
-                 <>
-                   <Pill
-                     label={t('swipeDeck.note', 'Note')}
-                     icon={<Iconify icon="material-symbols-light:stylus-note" size={18} color={colors.buttonColor} />}
-                   />
-                   <Text style={[typography.styles.subtitle, { color: colors.subtext, textAlign: 'center' }]}>{card.cards.note}</Text>
-                 </>
-               )}
-             </View>
+              {/* Note Section */}
+              {card.cards.note && (
+                <>
+                  <SectionDivider />
+                  <View style={{ alignItems: 'center', marginBottom: 24 }}>
+                    <Pill
+                      label={t('swipeDeck.note', 'Note')}
+                      icon={<Iconify icon="material-symbols-light:stylus-note" size={18} color="#fff" />}
+                    />
+                    <Text style={[
+                      typography.styles.subtitle,
+                      {
+                        color: 'rgba(255, 255, 255, 0.85)',
+                        textAlign: 'center',
+                        marginTop: 8,
+                        lineHeight: 22,
+                        fontSize: 15,
+                        fontStyle: 'italic',
+                      }
+                    ]}>
+                      {card.cards.note}
+                    </Text>
+                  </View>
+                </>
+              )}
+            </ScrollView>
           </Animated.View>
         </Pressable>
       </View>
@@ -513,17 +636,33 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}> 
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.buttonColor} />
+      <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}> 
+        <View style={styles.loadingContent}>
+          <LottieView 
+            source={require('../../assets/cards.json')} 
+            autoPlay 
+            loop 
+            speed={1.5}
+            style={styles.loadingAnimation}
+          />
           <Text style={[styles.loadingText, { color: colors.text }]}>{t('swipeDeck.loading', "Kartlar Yükleniyor")}</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (cards.length === 0 || currentIndex >= cards.length) {
-    const progress = initialLearnedCount + rightCount;
+    // Kullanıcıya ait güncel sayılar (veritabanından çekilen)
+    // Learned: useEffect'ten gelen güncel sayı, yoksa başlangıç + bu oturumda öğrenilenler
+    const learnedCount = currentLearnedCount !== null 
+      ? currentLearnedCount 
+      : (initialLearnedCount + rightCount);
+    // Learning: useEffect'ten gelen güncel sayı, yoksa totalLearningCount (fetchCards'tan gelen)
+    const learningCount = currentLearningCount !== null 
+      ? currentLearningCount 
+      : totalLearningCount;
+    const progress = learnedCount;
+    
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={{ width: '100%', alignItems: 'center', marginTop: 110}}>
@@ -531,13 +670,27 @@ export default function SwipeDeckScreen({ route, navigation }) {
           <Text style={[typography.styles.h2, { color: colors.text, textAlign: 'center', marginTop: 16 }]}> 
             {progress === totalCardCount ? t('swipeDeck.bravo', "Bravo! Tüm Kartları Tamamladın") : t('swipeDeck.learnTime', "Kalan Kartları Öğrenmeye Vakit Var")}
           </Text>
-          <View style={{ width: 72, height: 1, backgroundColor: colors.orWhite, borderRadius: 2, alignSelf: 'center', marginTop: 16,marginBottom: 16 }} />
-          <View style={styles.deckProgressBox}>
-          <Text style={[styles.deckProgressText, typography.styles.subtitle, {color: colors.text}]}>{initialLearnedCount + rightCount}/{totalCardCount}</Text>
-        </View>
-          {/* Progress Bar (tamamlandı ekranında) */}
-          <View style={[styles.progressBarContainer, { backgroundColor: colors.inProgressBar, position: 'relative', marginTop: 90}]}> 
-            <View style={[styles.progressBarFill, { width: totalCardCount > 0 ? `${((initialLearnedCount + rightCount) / totalCardCount) * 100}%` : '0%', backgroundColor: colors.buttonColor }]} />
+          <View style={{ width: 72, height: 1, backgroundColor: colors.orWhite, borderRadius: 2, alignSelf: 'center', marginTop: 16, marginBottom: 32 }} />
+          
+          {/* İstatistik Kartları */}
+          <View style={styles.statsContainer}>
+            {/* Learning Kartlar */}
+            <View style={[styles.statCard, { backgroundColor: colors.cardBackground, borderColor: '#f3a14c' }]}>
+              <View style={[styles.statIconContainer, { backgroundColor: 'rgba(243, 161, 76, 0.1)' }]}>
+                <Iconify icon="mingcute:time-fill" size={24} color="#f3a14c" />
+              </View>
+              <Text style={[styles.statNumber, { color: colors.text }]}>{learningCount}</Text>
+              <Text style={[styles.statLabel, { color: colors.subtext }]}>{t('swipeDeck.learning', 'Öğreniliyor')}</Text>
+            </View>
+
+            {/* Learned Kartlar */}
+            <View style={[styles.statCard, { backgroundColor: colors.cardBackground, borderColor: '#3e8e41' }]}>
+              <View style={[styles.statIconContainer, { backgroundColor: 'rgba(62, 142, 65, 0.1)' }]}>
+                <Iconify icon="hugeicons:tick-01" size={24} color="#3e8e41" />
+              </View>
+              <Text style={[styles.statNumber, { color: colors.text }]}>{learnedCount}</Text>
+              <Text style={[styles.statLabel, { color: colors.subtext }]}>{t('swipeDeck.learned', 'Öğrenildi')}</Text>
+            </View>
           </View>
         </View>
       </SafeAreaView>
@@ -548,7 +701,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Sayaçlar */}
       <View style={styles.counterRow}>
-        <View style={[styles.counterBox, { backgroundColor: leftHighlight ? leftActiveColor : leftInactiveColor }]}>
+        <View style={[styles.counterBoxLeft, { backgroundColor: leftHighlight ? leftActiveColor : leftInactiveColor }]}>
           {leftHighlight ? (
             <Iconify icon="mingcute:time-fill" size={18} color="#fff" />
           ) : (
@@ -558,7 +711,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
         <View style={styles.deckProgressBox}>
           <Text style={[styles.deckProgressText, {color: colors.text}]}>{leftCount + initialLearnedCount + rightCount}/{totalCardCount}</Text>
         </View>
-        <View style={[styles.counterBox, { backgroundColor: rightHighlight ? rightActiveColor : rightInactiveColor }]}>
+        <View style={[styles.counterBoxRight, { backgroundColor: rightHighlight ? rightActiveColor : rightInactiveColor }]}>
           {rightHighlight ? (
             <Iconify icon="hugeicons:tick-01" size={18} color="#fff" />
           ) : (
@@ -760,15 +913,17 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     padding: 16,
     paddingBottom: 100,
+    height: 36,
   },
-  counterBox: {
-    backgroundColor: '#fff',
+  counterBoxLeft: {
+    position: 'absolute',
+    left: -30,
+    top: 16,
     minWidth: 80,
-    paddingHorizontal: 12,
+    paddingLeft: 30,
+    paddingRight: 12,
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
@@ -776,10 +931,25 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
-    borderTopLeftRadius: 999,
-    borderBottomLeftRadius: 999,
-    borderTopRightRadius: 999,
-    borderBottomRightRadius: 999,
+    borderTopRightRadius: 18,
+    borderBottomRightRadius: 18,
+  },
+  counterBoxRight: {
+    position: 'absolute',
+    right: -30,
+    top: 16,
+    minWidth: 80,
+    paddingLeft: 12,
+    paddingRight: 30,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    borderTopLeftRadius: 18,
+    borderBottomLeftRadius: 18,
   },
   counterText: {
     ...typography.styles.button,
@@ -828,10 +998,14 @@ const styles = StyleSheet.create({
     zIndex: 30,
   },
   deckProgressBox: {
-    minWidth: 80,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 16,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 8,
+    height: 36,
   },
   deckProgressText: {
     ...typography.styles.subtitle,
@@ -866,12 +1040,82 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
+    paddingTop: '35%',
+    justifyContent: 'flex-start',
     alignItems: 'center',
+    width: '100%',
+    height: '100%',
+  },
+  loadingContent: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingAnimation: {
+    width: 300,
+    height: 300,
   },
   loadingText: {
     ...typography.styles.subtitle,
-    marginTop: 18,
     textAlign: 'center',
+  },
+  statsContainer: {
+    width: '90%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 16,
+    marginTop: 8,
+  },
+  statCard: {
+    width: '45%',
+    alignItems: 'center',
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    marginBottom: 12,
+  },
+  statIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  statNumber: {
+    ...typography.styles.h2,
+    fontSize: 32,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  statLabel: {
+    ...typography.styles.subtitle,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  totalStatCard: {
+    width: '100%',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    marginTop: 8,
+  },
+  totalStatLabel: {
+    ...typography.styles.subtitle,
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  totalStatNumber: {
+    ...typography.styles.h2,
+    fontSize: 28,
+    fontWeight: '700',
   },
 }); 

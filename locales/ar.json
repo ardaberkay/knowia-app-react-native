@@ -266,6 +266,7 @@
     "editProfile": {
       "userName": "اسم المستخدم",
       "userNamePlaceholder": "اسم المستخدم الخاص بك",
+      "usernameHint": "يجب أن يكون بين 3-9 أحرف",
       "email": "البريد الإلكتروني",
       "emailPlaceholder": "عنوان بريدك الإلكتروني",
       "save": "حفظ",
@@ -275,11 +276,13 @@
       "requiredEmail": "عنوان البريد الإلكتروني مطلوب.",
       "invalidEmail": "عنوان البريد الإلكتروني غير صالح.",
       "newPassword": "كلمة المرور الجديدة",
-      "newPasswordPlaceholder": "كلمة المرور الجديدة",
+      "newPasswordPlaceholder": "كلمة المرور الجديدة (املأ للتغيير)",
       "confirmPasswordPlaceholder": "تأكيد كلمة المرور الجديدة",
-      "undo": "تراجع",
+      "optional": "اختياري",
+      "undo": "إلغاء",
       "removePhoto": "إزالة",
-      "changePhoto": "تغيير"
+      "changePhoto": "تغيير",
+      "profilePhoto": "صورة الملف الشخصي"
     },
     "swipeDeck": {
       "minutes": "15 دقيقة",
@@ -291,7 +294,10 @@
       "loading": "جاري تحميل البطاقات",
       "answer": "الإجابة",
       "example": "مثال",
-      "note": "ملاحظة"
+      "note": "ملاحظة",
+      "learned": "تم التعلم",
+      "learning": "قيد التعلم",
+      "total": "المجموع"
     },
     "login": {
       "error": "خطأ",

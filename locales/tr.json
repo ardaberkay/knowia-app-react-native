@@ -278,6 +278,7 @@
   "editProfile": {
     "userName": "Kullanıcı Adı",
     "userNamePlaceholder": "Kullanıcı adınız",
+    "usernameHint": "3-9 karakter arasında olmalıdır",
     "email": "Email",
     "emailPlaceholder": "Email adresiniz",
     "save": "Kaydet",
@@ -287,11 +288,13 @@
     "requiredEmail": "Email adresi zorunludur.",
     "invalidEmail": "Geçersiz email adresi.",
     "newPassword": "Yeni Şifre",
-    "newPasswordPlaceholder": "Yeni Şifre",
-    "confirmPasswordPlaceholder": "Yeni Şifre Tekrar",
-    "undo": "Geri Al",
+    "newPasswordPlaceholder": "Yeni Şifre (değiştirmek için doldurun)",
+    "confirmPasswordPlaceholder": "Yeni Şifreyi Tekrar Girin",
+    "optional": "İsteğe bağlı",
+    "undo": "İptal Et",
     "removePhoto": "Kaldır",
-    "changePhoto": "Değiştir"
+    "changePhoto": "Değiştir",
+    "profilePhoto": "Profil Fotoğrafı"
   },
   "swipeDeck": {
     "minutes": "15 dk",
@@ -300,10 +303,13 @@
     "sevenDays": "7 gün",
     "bravo": "Bravo! Tüm Kartları Tamamladın",
     "learnTime": "Kalan Kartları Öğrenmeye Vakit Var",
-    "loading": "Kartlar Yükleniyor",
+    "loading": "Kartlar Yükleniyor...",
     "answer": "Cevap",
     "example": "Örnek",
-    "note": "Not"
+    "note": "Not",
+    "learned": "Öğrenildi",
+    "learning": "Öğreniliyor",
+    "total": "Toplam"
   },
   "login": {
     "error": "Hata",

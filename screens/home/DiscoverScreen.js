@@ -29,7 +29,7 @@ export default function DiscoverScreen() {
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [favoriteDecks, setFavoriteDecks] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [trendDecksList, setTrendDecksList] = useState([]);
   const [favoriteDecksList, setFavoriteDecksList] = useState([]);
   const [startedDecksList, setStartedDecksList] = useState([]);
