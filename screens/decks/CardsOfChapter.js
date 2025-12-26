@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Alert, Dimensions, ActivityIndicator, Platform, Modal } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Alert, Dimensions, ActivityIndicator, Platform, Modal, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -760,15 +760,12 @@ export default function ChapterCardsScreen({ route, navigation }) {
       <View style={[styles.listContainer, { backgroundColor: colors.background }]}>
         {cards.length === 0 ? (
           <View style={styles.emptyState}>
-            <Iconify 
-              icon="ph:cards-three" 
-              size={64} 
-              color={colors.muted} 
+            <Image
+              source={require('../../assets/cardbg.png')}
+              style={{ width: 500, height: 500, opacity: 0.2 }}
+              resizeMode="contain"
             />
-            <Text style={[styles.emptyStateTitle, typography.styles.h3, { color: colors.text }]}>
-              {t('chapterCards.noCards', 'Henüz Kart Yok')}
-            </Text>
-            <Text style={[styles.emptyStateText, typography.styles.body, { color: colors.subtext }]}>
+            <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, textAlign: 'center', fontSize: 16, marginTop: -150 }]}>
               {t('chapterCards.noCardsDesc', 'Bu bölümde henüz kart oluşturulmamış.')}
             </Text>
           </View>
@@ -982,17 +979,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
-    width: '100%',
-  },
-  emptyStateTitle: {
-    marginTop: 16,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  emptyStateText: {
-    textAlign: 'center',
-    lineHeight: 22,
+    marginTop: -250,
   },
   loadingContainer: {
     flex: 1,

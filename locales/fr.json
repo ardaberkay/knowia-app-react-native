@@ -46,9 +46,12 @@
       "deleteCardConfirmation": "Supprimer la carte ?",
       "deleteCardConfirm": "Cette action ne peut pas être annulée. Êtes-vous sûr ?",
       "addFavoriteDeckCta": "Ajoutez un paquet à vos favoris",
+      "addFavoriteDeckEmpty": "Ajoutez un paquet aux favoris",
+      "addFavoriteCardEmpty": "Ajoutez une carte aux favoris",
       "favoriteDecksTitle": "Paquets Favoris",
       "favoriteCardsTitle": "Cartes Favorites",
-      "myDecksSubtitle": "  Concevez votre propre parcours d'apprentissage avec vos paquets créés; découvrez, renforcez et avancez vers vos objectifs"
+      "myDecksSubtitle": "  Concevez votre propre parcours d'apprentissage avec vos paquets créés; découvrez, renforcez et avancez vers vos objectifs",
+      "createDeck": "Créer un paquet"
     },
     "home": {
       "inProgressDecks": "Paquets d'Étude",

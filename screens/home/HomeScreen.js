@@ -266,8 +266,9 @@ const DECK_CATEGORIES = {
   };
 
   const renderDeckSection = (category) => {
-    const categoryDecks = decks[category] || [];
-    const limitedDecks = categoryDecks; // Tüm desteler gösterilecek
+    const categoryDecks = decks[category];
+    const limitedDecks = categoryDecks || []; // Tüm desteler gösterilecek
+    const isCategoryLoading = loading || categoryDecks === undefined;
 
     const handleSeeAll = () => {
       // Favori deck ID'lerini çıkar
@@ -275,12 +276,24 @@ const DECK_CATEGORIES = {
       navigation.navigate('CategoryDeckList', {
         category,
         title: DECK_CATEGORIES[category],
-        decks: categoryDecks,
+        decks: categoryDecks || [],
         favoriteDecks: favoriteDeckIds,
       });
     };
 
-    const showEndIcon = categoryDecks.length > 10;
+    const handleEmptyDeckPress = () => {
+      // Placeholder kart tıklandığında her zaman Ready Decks (defaultDecks) kategorisine git
+      const favoriteDeckIds = (favoriteDecks || []).map(deck => deck.id);
+      const defaultDecksList = decks['defaultDecks'] || [];
+      navigation.navigate('CategoryDeckList', {
+        category: 'defaultDecks',
+        title: DECK_CATEGORIES['defaultDecks'],
+        decks: defaultDecksList,
+        favoriteDecks: favoriteDeckIds,
+      });
+    };
+
+    const showEndIcon = (categoryDecks?.length || 0) > 10;
 
     return (
       <AnimatedPressable 
@@ -296,7 +309,7 @@ const DECK_CATEGORIES = {
               <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={20} color="#007AFF" />
             </View>
           </View>
-          {loading ? (
+          {isCategoryLoading ? (
             <ScrollView 
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -309,8 +322,45 @@ const DECK_CATEGORIES = {
                 <DeckSkeleton key={i} />
               ))}
             </ScrollView>
-          ) : limitedDecks.length === 0 ? (
-            <Text style={[styles.emptyText, typography.styles.caption]}>{t('home.noDecks', 'Henüz deste bulunmuyor')}</Text>
+          ) : !loading && categoryDecks !== undefined && limitedDecks.length === 0 ? (
+            <ScrollView 
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.decksContainer}
+              decelerationRate="fast"
+              snapToInterval={130}
+              snapToAlignment="start"
+            >
+              <TouchableOpacity
+                onPress={handleEmptyDeckPress}
+                activeOpacity={0.7}
+              >
+                <View style={[
+                  styles.emptyDeckCard, 
+                  { 
+                    backgroundColor: isDarkMode ? 'rgba(100, 100, 100, 0.15)' : 'rgba(240, 240, 240, 0.5)',
+                    borderColor: isDarkMode ? 'rgba(150, 150, 150, 0.25)' : 'rgba(200, 200, 200, 0.4)',
+                    shadowColor: isDarkMode ? '#000' : '#000',
+                  }
+                ]}>
+                  <View style={styles.emptyDeckCardContent}>
+                    <View style={[
+                      styles.emptyDeckPlusContainer,
+                      {
+                        backgroundColor: isDarkMode ? 'rgba(150, 150, 150, 0.08)' : 'rgba(200, 200, 200, 0.3)',
+                        borderColor: isDarkMode ? 'rgba(150, 150, 150, 0.2)' : 'rgba(180, 180, 180, 0.4)',
+                      }
+                    ]}>
+                      <Iconify 
+                        icon="ic:round-plus" 
+                        size={42} 
+                        color={isDarkMode ? 'rgba(150, 150, 150, 0.5)' : 'rgba(140, 140, 140, 0.5)'} 
+                      />
+                    </View>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </ScrollView>
           ) : (
             <ScrollView 
               horizontal
@@ -321,16 +371,15 @@ const DECK_CATEGORIES = {
               snapToAlignment="start"
             >
               {limitedDecks.map((deck) => {
-                // defaultDecks kategorisi için profil bilgilerini override et
-                const modifiedDeck = category === 'defaultDecks' 
+                // is_admin_created kontrolü - tüm kategoriler için geçerli
+                const modifiedDeck = deck.is_admin_created
                   ? {
                       ...deck,
                       profiles: {
                         ...deck.profiles,
                         username: 'Knowia',
-                        image_url: null, // app-icon.png kullanılacak
+                        image_url: null, // logoasil.png kullanılacak
                       },
-                      is_admin_created: true, // app-icon.png kullanımı için flag
                     }
                   : deck;
                 
@@ -608,5 +657,33 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '500',
     color: '#FFFFFF',
+  },
+  emptyDeckCard: {
+    borderRadius: 18,
+    marginRight: 10,
+    marginBottom: 8,
+    width: 140,
+    height: 196,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  emptyDeckCardContent: {
+    flex: 1,
+    padding: 8,
+
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyDeckPlusContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 1.5,
   },
 }); 

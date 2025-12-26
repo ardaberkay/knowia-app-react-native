@@ -231,14 +231,14 @@ export default function FavoriteCards() {
       ) : selectedCard ? (
         <CardDetailView card={selectedCard} cards={filteredCards} onSelectCard={setSelectedCard} />
       ) : filteredCards.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: -250}}>
           <Image
-            source={require('../../assets/logoasil.png')}
-            style={{ position: 'absolute', alignSelf: 'center', width: 300, height: 300, opacity: 0.2 }}
+            source={require('../../assets/cardbg.png')}
+            style={{ width: 500, height: 500, opacity: 0.2 }}
             resizeMode="contain"
           />
-          <Text style={[typography.styles.body, { color: colors.text, textAlign: 'center', fontSize: 16 }]}>
-            {t('library.addFavoriteCardCta', 'Favorilere bir kart ekle')}
+          <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, fontSize: 16, marginTop: -150 }]}>
+            {t('library.addFavoriteCardEmpty', 'Bir kart favorilere ekle')}
           </Text>
         </View>
       ) : (
@@ -266,8 +266,13 @@ export default function FavoriteCards() {
           }
           ListEmptyComponent={
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: 400 }}>
-              <Text style={[typography.styles.caption, { color: colors.text, textAlign: 'center', fontSize: 16 }]}>
-                {t('library.addFavoriteCardCta', 'Favorilere bir kart ekle')}
+              <Image
+                source={require('../../assets/cardbg.png')}
+                style={{ width: 300, height: 300, opacity: 0.2 }}
+                resizeMode="contain"
+              />
+              <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, textAlign: 'center', fontSize: 16, marginTop: 20 }]}>
+                {t('library.addFavoriteCardEmpty', 'Bir kart favorilere ekle')}
               </Text>
             </View>
           }

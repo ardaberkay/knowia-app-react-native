@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
 import MaskedView from '@react-native-masked-view/masked-view';
@@ -307,6 +307,19 @@ export default function MyDecksList({
     </View>
   );
 
+  const renderEmptyComponent = () => (
+    <View style={styles.emptyContainer}>
+      <Image
+        source={require('../../assets/deckbg.png')}
+        style={styles.emptyImage}
+        resizeMode="contain"
+      />
+      <Text style={[styles.emptyText, { color: colors.text, opacity: 0.6 }]}>
+        {t('library.createDeck', 'Bir deste oluştur')}
+      </Text>
+    </View>
+  );
+
   return (
     <FlatList
       data={rows}
@@ -314,7 +327,7 @@ export default function MyDecksList({
       contentContainerStyle={{ paddingBottom: '25%', paddingTop: '25%' }}
       ListHeaderComponent={ListHeaderComponent}
       renderItem={({ item: row }) => (row.type === 'double' ? renderDoubleRow(row) : renderSingleRow(row))}
-      ListEmptyComponent={<Text style={[styles.emptyText, typography.styles.caption]}>{t('library.noDecks', 'Henüz deste bulunmuyor')}</Text>}
+      ListEmptyComponent={renderEmptyComponent}
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl
@@ -364,10 +377,27 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     marginRight: 8,
   },
+  emptyContainer: {
+    height: 300,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    backgroundColor: 'transparent',
+  },
+  emptyImage: {
+    position: 'absolute',
+    alignSelf: 'center',
+    width: 300,
+    height: 300,
+    opacity: 0.2,
+    top: 0,
+  },
   emptyText: {
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: '600',
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: 280,
   },
   backgroundCategoryIcon: {
     position: 'absolute',

@@ -180,7 +180,13 @@ export default function DeckList({
             {/* Profile Section */}
             <View style={styles.deckProfileRow}>
               <Image
-                source={deck.profiles?.image_url ? { uri: deck.profiles.image_url } : require('../../assets/avatar-default.png')}
+                source={
+                  deck.is_admin_created 
+                    ? require('../../assets/app-icon.png')
+                    : deck.profiles?.image_url 
+                      ? { uri: deck.profiles.image_url } 
+                      : require('../../assets/avatar-default.png')
+                }
                 style={styles.deckProfileAvatar}
               />
               <FadeText 
@@ -272,7 +278,13 @@ export default function DeckList({
           {/* Profile Section */}
           <View style={[styles.deckProfileRow, { top: 'auto', bottom: 8 }]}>
             <Image
-              source={row.item.profiles?.image_url ? { uri: row.item.profiles.image_url } : require('../../assets/avatar-default.png')}
+              source={
+                row.item.is_admin_created 
+                  ? require('../../assets/app-icon.png')
+                  : row.item.profiles?.image_url 
+                    ? { uri: row.item.profiles.image_url } 
+                    : require('../../assets/avatar-default.png')
+              }
               style={styles.deckProfileAvatar}
             />
             <FadeText 

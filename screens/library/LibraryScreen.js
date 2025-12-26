@@ -165,7 +165,21 @@ export default function LibraryScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUserId(user?.id); // currentUserId'yi burada da set et
       const decks = await getFavoriteDecks(user.id);
-      setFavoriteDecks(decks || []);
+      // is_admin_created kontrolü - tüm kategoriler için geçerli
+      const modifiedDecks = (decks || []).map((deck) => {
+        if (deck.is_admin_created) {
+          return {
+            ...deck,
+            profiles: {
+              ...deck.profiles,
+              username: 'Knowia',
+              image_url: null, // app-icon.png kullanılacak
+            },
+          };
+        }
+        return deck;
+      });
+      setFavoriteDecks(modifiedDecks);
       
       // Fetch favorite cards and user progress in parallel
       const [cards, progressResult] = await Promise.all([
@@ -226,13 +240,41 @@ export default function LibraryScreen() {
     const { data: { user } } = await supabase.auth.getUser();
     await supabase.from('favorite_decks').insert({ user_id: user.id, deck_id: deckId });
     const decks = await getFavoriteDecks(user.id);
-    setFavoriteDecks(decks || []);
+    // is_admin_created kontrolü - tüm kategoriler için geçerli
+    const modifiedDecks = (decks || []).map((deck) => {
+      if (deck.is_admin_created) {
+        return {
+          ...deck,
+          profiles: {
+            ...deck.profiles,
+            username: 'Knowia',
+            image_url: null, // app-icon.png kullanılacak
+          },
+        };
+      }
+      return deck;
+    });
+    setFavoriteDecks(modifiedDecks);
   };
   const handleRemoveFavoriteDeck = async (deckId) => {
     const { data: { user } } = await supabase.auth.getUser();
     await supabase.from('favorite_decks').delete().eq('user_id', user.id).eq('deck_id', deckId);
     const decks = await getFavoriteDecks(user.id);
-    setFavoriteDecks(decks || []);
+    // is_admin_created kontrolü - tüm kategoriler için geçerli
+    const modifiedDecks = (decks || []).map((deck) => {
+      if (deck.is_admin_created) {
+        return {
+          ...deck,
+          profiles: {
+            ...deck.profiles,
+            username: 'Knowia',
+            image_url: null, // app-icon.png kullanılacak
+          },
+        };
+      }
+      return deck;
+    });
+    setFavoriteDecks(modifiedDecks);
   };
 
   // Deste silme fonksiyonu
@@ -777,7 +819,13 @@ export default function LibraryScreen() {
                                 {/* Profile Section */}
                                 <View style={[styles.deckProfileRow, { position: 'absolute', top: 'auto', bottom: 10, left: 10, zIndex: 10 }]}>
                                   <Image
-                                    source={deck.profiles?.image_url ? { uri: deck.profiles.image_url } : require('../../assets/avatar-default.png')}
+                                    source={
+                                      deck.is_admin_created 
+                                        ? require('../../assets/app-icon.png')
+                                        : deck.profiles?.image_url 
+                                          ? { uri: deck.profiles.image_url } 
+                                          : require('../../assets/avatar-default.png')
+                                    }
                                     style={styles.deckProfileAvatar}
                                   />
                                   <FadeText 
@@ -859,13 +907,10 @@ export default function LibraryScreen() {
                 ) : (
                   <View style={styles.favoriteSliderEmpty}>
                     <Image
-                      source={require('../../assets/greyBg.png')}
+                      source={require('../../assets/deckbg.png')}
                       style={{ position: 'absolute', alignSelf: 'center', width: 300, height: 300, opacity: 0.2 }}
                       resizeMode="contain"
                     />
-                    <Text style={[typography.styles.body, { color: colors.text, textAlign: 'center', fontSize: 16 }]}>
-                      {t('library.addFavoriteDeckCta', 'Favorilerine bir deste ekle')}
-                    </Text>
                   </View>
                 )}
 
@@ -922,7 +967,13 @@ export default function LibraryScreen() {
                       );
                     })}
                     {filteredFavoriteCards.length === 0 ? (
-                      <Text style={[styles.emptyText, typography.styles.caption]}>{t('library.noFavorites', 'Henüz favori bulunmuyor')}</Text>
+                      <View style={styles.favoriteCardsEmpty}>
+                        <Image
+                          source={require('../../assets/cardbg.png')}
+                          style={{ width: 400, height: 400, opacity: 0.2 }}
+                          resizeMode="contain"
+                        />
+                      </View>
                     ) : null}
                   </View>
                 </View>
@@ -1134,6 +1185,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 16,
+    backgroundColor: 'transparent',
+  },
+  favoriteCardsEmpty: {
+    height: 200,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+
     backgroundColor: 'transparent',
   },
   favoriteSlideItem: {

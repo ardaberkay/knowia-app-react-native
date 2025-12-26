@@ -33,7 +33,21 @@ export default function FavoriteDecks() {
         return;
       }
       const decks = await getFavoriteDecks(user.id);
-      setFavoriteDecks(decks || []);
+      // is_admin_created kontrolü - tüm kategoriler için geçerli
+      const modifiedDecks = (decks || []).map((deck) => {
+        if (deck.is_admin_created) {
+          return {
+            ...deck,
+            profiles: {
+              ...deck.profiles,
+              username: 'Knowia',
+              image_url: null, // app-icon.png kullanılacak
+            },
+          };
+        }
+        return deck;
+      });
+      setFavoriteDecks(modifiedDecks);
     } finally {
       setLoading(false);
     }
@@ -93,7 +107,21 @@ export default function FavoriteDecks() {
     if (!user) return;
     await supabase.from('favorite_decks').insert({ user_id: user.id, deck_id: deckId });
     const decks = await getFavoriteDecks(user.id);
-    setFavoriteDecks(decks || []);
+    // is_admin_created kontrolü - tüm kategoriler için geçerli
+    const modifiedDecks = (decks || []).map((deck) => {
+      if (deck.is_admin_created) {
+        return {
+          ...deck,
+          profiles: {
+            ...deck.profiles,
+            username: 'Knowia',
+            image_url: null, // app-icon.png kullanılacak
+          },
+        };
+      }
+      return deck;
+    });
+    setFavoriteDecks(modifiedDecks);
   };
 
   const handleRemoveFavoriteDeck = async (deckId) => {
@@ -101,7 +129,21 @@ export default function FavoriteDecks() {
     if (!user) return;
     await supabase.from('favorite_decks').delete().eq('user_id', user.id).eq('deck_id', deckId);
     const decks = await getFavoriteDecks(user.id);
-    setFavoriteDecks(decks || []);
+    // is_admin_created kontrolü - tüm kategoriler için geçerli
+    const modifiedDecks = (decks || []).map((deck) => {
+      if (deck.is_admin_created) {
+        return {
+          ...deck,
+          profiles: {
+            ...deck.profiles,
+            username: 'Knowia',
+            image_url: null, // app-icon.png kullanılacak
+          },
+        };
+      }
+      return deck;
+    });
+    setFavoriteDecks(modifiedDecks);
   };
 
   const handleApplyFilters = (newSort, newCategories) => {
@@ -118,14 +160,14 @@ export default function FavoriteDecks() {
           <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100 }} />
         </View>
       ) : filteredDecks.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: -150}}>
           <Image
-            source={require('../../assets/logoasil.png')}
-            style={{ position: 'absolute', alignSelf: 'center', width: 300, height: 300, opacity: 0.2 }}
+            source={require('../../assets/deckbg.png')}
+            style={{ width: 300, height: 300, opacity: 0.2 }}
             resizeMode="contain"
           />
-          <Text style={[typography.styles.body, { color: colors.text, textAlign: 'center', fontSize: 16 }]}>
-            {t('library.addFavoriteDeckCta', 'Favorilerine bir deste ekle')}
+          <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, textAlign: 'center', fontSize: 16, marginTop: -20 }]}>
+            {t('library.addFavoriteDeckEmpty', 'Bir deste favorilere ekle')}
           </Text>
         </View>
       ) : (

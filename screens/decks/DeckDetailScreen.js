@@ -141,6 +141,18 @@ export default function DeckDetailScreen({ route, navigation }) {
     }
   }, [fabMenuOpen, inlineChapterListVisible]);
 
+  // Initial deck verisi için is_admin_created kontrolü
+  useEffect(() => {
+    if (deck?.is_admin_created && deck?.profiles) {
+      deck.profiles = {
+        ...deck.profiles,
+        username: 'Knowia',
+        image_url: null, // app-icon.png kullanılacak
+      };
+      route.params.deck = deck;
+    }
+  }, []); // Sadece mount'ta çalış
+
   if (!deck) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -345,6 +357,14 @@ export default function DeckDetailScreen({ route, navigation }) {
         
         // Deck verisini güncelle
         if (deckResult.data) {
+          // is_admin_created kontrolü - tüm kategoriler için geçerli
+          if (deckResult.data.is_admin_created) {
+            deckResult.data.profiles = {
+              ...deckResult.data.profiles,
+              username: 'Knowia',
+              image_url: null, // app-icon.png kullanılacak
+            };
+          }
           // Favori durumunu deck objesine ekle
           deckResult.data.is_favorite = !!favoriteResult.data;
           // Route params'ı güncelle
@@ -976,7 +996,13 @@ export default function DeckDetailScreen({ route, navigation }) {
             {deck.profiles && (
               <View style={styles.gfCreatorChip}>
                 <Image
-                  source={deck.profiles?.image_url ? { uri: deck.profiles.image_url } : require('../../assets/avatar-default.png')}
+                  source={
+                    deck.is_admin_created 
+                      ? require('../../assets/app-icon.png')
+                      : deck.profiles?.image_url 
+                        ? { uri: deck.profiles.image_url } 
+                        : require('../../assets/avatar-default.png')
+                  }
                   style={styles.gfCreatorAvatar}
                 />
                 <Text style={styles.gfCreatorName}>

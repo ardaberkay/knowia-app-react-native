@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, BackHandler, Alert, Dimensions, Animated, Easing, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, BackHandler, Alert, Dimensions, Animated, Easing, ActivityIndicator, Modal, Image } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
@@ -394,7 +394,7 @@ export default function DeckCardsScreen({ route, navigation }) {
              showsVerticalScrollIndicator={false}
              contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
              ListHeaderComponent={
-               !selectedCard && (
+               !selectedCard && filteredCards.length > 0 && (
                 <View style={styles.cardsBlurSearchContainer}>
                   <SearchBar
                     value={search}
@@ -410,8 +410,15 @@ export default function DeckCardsScreen({ route, navigation }) {
                )
              }
                          ListEmptyComponent={
-                 <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', height: 400}}>
-                   <Text style={[typography.styles.caption, { color: colors.text, textAlign: 'center', fontSize: 16 }]}>{t('deckDetail.addToDeck', 'Desteye bir kart ekle')}</Text>
+                 <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', height: 400, marginTop: -250}}>
+                   <Image
+                     source={require('../../assets/cardbg.png')}
+                     style={{ width: 500, height: 500, opacity: 0.2 }}
+                     resizeMode="contain"
+                   />
+                   <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, fontSize: 16, marginTop: -150 }]}>
+                     {t('cardDetail.addToDeck', 'Desteye bir kart ekle')}
+                   </Text>
                  </View>
              }
                          renderItem={({ item }) => {

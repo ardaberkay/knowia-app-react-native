@@ -220,7 +220,7 @@ export default function ChaptersScreen({ route, navigation }) {
             <FlatList
               data={chapters}
               keyExtractor={(item) => item.id}
-              contentContainerStyle={{ padding: 16, paddingBottom: '22%' }}
+              contentContainerStyle={chapters.length === 0 ? { padding: 16, flexGrow: 1 } : { padding: 16, paddingBottom: '22%' }}
               showsVerticalScrollIndicator={false}
               ListHeaderComponent={() => {
                 const unassignedProgress = progressMap.get('unassigned') || { total: 0 };
@@ -259,16 +259,18 @@ export default function ChaptersScreen({ route, navigation }) {
                 );
               }}
               ListEmptyComponent={
-                <View style={styles.emptyState}>
-                  <Iconify
-                    icon="streamline-freehand:plugin-jigsaw-puzzle"
-                    size={64}
-                    color={colors.muted}
-                    style={{ marginBottom: 12 }}
-                  />
-                  <Text style={[styles.emptyStateText, typography.styles.body, { color: colors.subtext }]}>
-                    {t('chapters.noChaptersDesc', 'Bu destede henüz bölüm oluşturulmamış.')}
-                  </Text>
+                <View style={styles.emptyStateContainer}>
+                  <View style={styles.emptyState}>
+                    <Iconify
+                      icon="streamline-freehand:plugin-jigsaw-puzzle"
+                      size={120}
+                      color={colors.muted}
+                      style={{ marginBottom: 12, opacity: 0.5 }}
+                    />
+                    <Text style={[styles.emptyStateText, typography.styles.body, { color: colors.subtext, opacity: 0.6 }]}>
+                      {t('chapters.noChaptersDesc', 'Bu destede henüz bölüm oluşturulmamış.')}
+                    </Text>
+                  </View>
                 </View>
               }
               renderItem={({ item, index }) => {
@@ -396,11 +398,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  emptyState: {
+  emptyStateContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: 25,
+    minHeight: 400,
+  },
+  emptyState: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: -150,
   },
   emptyStateTitle: {
     marginTop: 16,

@@ -133,7 +133,20 @@ export default function CategoryDeckListScreen({ route }) {
         break;
     }
 
-    return filtered;
+    // is_admin_created kontrolü - tüm kategoriler için geçerli
+    return filtered.map((deck) => {
+      if (deck.is_admin_created) {
+        return {
+          ...deck,
+          profiles: {
+            ...deck.profiles,
+            username: 'Knowia',
+            image_url: null, // app-icon.png kullanılacak
+          },
+        };
+      }
+      return deck;
+    });
   }, [decks, search, sort, favoriteDecks, selectedCategories]);
 
   const handleDeckPress = (deck) => {

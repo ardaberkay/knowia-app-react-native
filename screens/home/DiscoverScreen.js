@@ -164,7 +164,7 @@ export default function DiscoverScreen() {
   }, [activeTab, trendDecksList, favoriteDecksList, startedDecksList, uniqueDecksList, newDecks]);
 
   const filteredDecks = useMemo(() => {
-    return currentDecks.filter(deck => {
+    const filtered = currentDecks.filter(deck => {
       const matchesSearch = 
         (deck.name && deck.name.toLowerCase().includes(search.toLowerCase())) ||
         (deck.to_name && deck.to_name.toLowerCase().includes(search.toLowerCase()));
@@ -176,6 +176,21 @@ export default function DiscoverScreen() {
         : (deckSortOrder != null && selectedCategories.includes(deckSortOrder));
       
       return matchesSearch && matchesCategory;
+    });
+
+    // is_admin_created kontrolü - tüm kategoriler için geçerli
+    return filtered.map((deck) => {
+      if (deck.is_admin_created) {
+        return {
+          ...deck,
+          profiles: {
+            ...deck.profiles,
+            username: 'Knowia',
+            image_url: null, // app-icon.png kullanılacak
+          },
+        };
+      }
+      return deck;
     });
   }, [currentDecks, search, selectedCategories]);
 

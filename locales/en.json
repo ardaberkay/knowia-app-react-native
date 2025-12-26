@@ -46,9 +46,12 @@
       "deleteCardConfirmation": "Delete the card?",
       "deleteCardConfirm": "This action cannot be undone. Are you sure?",
       "addFavoriteDeckCta": "Add a deck to your favorites",
+      "addFavoriteDeckEmpty": "Add a deck to favorites",
+      "addFavoriteCardEmpty": "Add a card to favorites",
       "favoriteDecksTitle": "Favorite Decks",
       "favoriteCardsTitle": "Favorite Cards",
-      "myDecksSubtitle": "  Design your own learning journey with your created decks; discover, reinforce and advance towards your goals"
+      "myDecksSubtitle": "  Design your own learning journey with your created decks; discover, reinforce and advance towards your goals",
+      "createDeck": "Create a deck"
     },
   "home": {
     "inProgressDecks": "Study Decks",
