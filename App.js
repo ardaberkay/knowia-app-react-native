@@ -12,6 +12,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useTheme } from './theme/theme';
+import * as Linking from 'expo-linking';
+import { supabase } from './lib/supabase';
 import './lib/i18n';
 
 // Splash screen'i otomatik gizlemeyi engelle
@@ -31,6 +33,52 @@ function AppContent() {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
+
+  useEffect(() => {
+    const handleUrl = async ({ url }) => {
+      console.log('DEEPLINK:', url)
+  
+      const { fragment } = Linking.parse(url)
+      if (!fragment) return
+  
+      const params = Object.fromEntries(
+        fragment.split('&').map(p => {
+          const [key, value] = p.split('=')
+          return [key, decodeURIComponent(value)]
+        })
+      )
+  
+      if (params.access_token && params.refresh_token) {
+        const { error } = await supabase.auth.setSession({
+          access_token: params.access_token,
+          refresh_token: params.refresh_token,
+        })
+  
+        if (error) {
+          console.log('SESSION ERROR:', error)
+          return
+        }
+  
+        switch (params.type) {
+          case 'recovery':
+            // ResetPassword ekranına yönlendir
+            break
+          case 'signup':
+          case 'magiclink':
+            // Ana ekrana yönlendir
+            break
+        }
+      }
+    }
+  
+    const sub = Linking.addEventListener('url', handleUrl)
+  
+    Linking.getInitialURL().then(url => {
+      if (url) handleUrl({ url })
+    })
+  
+    return () => sub.remove()
+  }, [])
 
   if (!fontsLoaded) {
     return null;

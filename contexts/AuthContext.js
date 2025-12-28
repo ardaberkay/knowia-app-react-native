@@ -45,32 +45,35 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Register fonksiyonu
-  const register = async (email, password) => {
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-  
-      if (error) {
-        console.log("SUPABASE SIGNUP ERROR FULL:", error);
-        throw error;
+// Register fonksiyonu
+const register = async (email, password) => {
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: 'knowia://auth'
       }
-  
-      console.log("SIGNUP DATA:", data);
-      return { error: null };
-    } catch (error) {
-      console.log("CATCH ERROR:", {
-        message: error.message,
-        status: error.status,
-        code: error.code,
-        details: error.details,
-      });
-  
-      return { error };
+    });
+
+    if (error) {
+      console.log("SUPABASE SIGNUP ERROR FULL:", error);
+      throw error;
     }
-  };
+
+    console.log("SIGNUP DATA:", data);
+    return { error: null };
+  } catch (error) {
+    console.log("CATCH ERROR:", {
+      message: error.message,
+      status: error.status,
+      code: error.code,
+      details: error.details,
+    });
+
+    return { error };
+  }
+};
   
 
   // Logout fonksiyonu
