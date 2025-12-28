@@ -90,7 +90,7 @@ export default function CreateScreen() {
           card_count: 0,
           is_started: false,
         })
-        .select()
+        .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)')
         .single();
       if (error) throw error;
       resetForm();

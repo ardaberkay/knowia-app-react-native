@@ -13,11 +13,13 @@ import CardListItem from '../../components/lists/CardList';
 import SearchBar from '../../components/tools/SearchBar';
 import FilterIcon from '../../components/tools/FilterIcon';
 import CardDetailView from '../../components/layout/CardDetailView';
+import { useSnackbarHelpers } from '../../components/ui/Snackbar';
  
 
 export default function DeckCardsScreen({ route, navigation }) {
   const { deck } = route.params;
   const { colors } = useTheme();
+  const { showSuccess, showError } = useSnackbarHelpers();
   const [cards, setCards] = useState([]);
   const [search, setSearch] = useState('');
   const [filteredCards, setFilteredCards] = useState([]);
@@ -260,15 +262,21 @@ export default function DeckCardsScreen({ route, navigation }) {
   const handleDeleteSelectedCard = async () => {
     if (!selectedCard) return;
     try {
-      await supabase
+      const { error } = await supabase
         .from('cards')
         .delete()
         .eq('id', selectedCard.id);
+      
+      if (error) {
+        throw error;
+      }
+      
       setCards(cards.filter(c => c.id !== selectedCard.id));
       setOriginalCards(originalCards.filter(c => c.id !== selectedCard.id));
       setSelectedCard(null);
+      showSuccess(t('cardDetail.deleteSuccess', 'Kart başarıyla silindi'));
     } catch (e) {
-      Alert.alert(t('common.error', 'Hata'), t('cardDetail.deleteError', 'Kart silinirken bir hata oluştu.'));
+      showError(t('cardDetail.deleteError', 'Kart silinemedi'));
     } finally {
       setMoreMenuVisible(false);
     }
@@ -442,18 +450,28 @@ export default function DeckCardsScreen({ route, navigation }) {
                           { text: t('cardDetail.cancel', 'İptal'), style: 'cancel' },
                           {
                             text: t('cardDetail.delete', 'Sil'), style: 'destructive', onPress: async () => {
-                              await supabase
-                                .from('cards')
-                                .delete()
-                                .eq('id', item.id);
-                              setCards(cards.filter(c => c.id !== item.id));
-                              setOriginalCards(originalCards.filter(c => c.id !== item.id));
+                              try {
+                                const { error } = await supabase
+                                  .from('cards')
+                                  .delete()
+                                  .eq('id', item.id);
+                                
+                                if (error) {
+                                  throw error;
+                                }
+                                
+                                setCards(cards.filter(c => c.id !== item.id));
+                                setOriginalCards(originalCards.filter(c => c.id !== item.id));
+                                showSuccess(t('cardDetail.deleteSuccess', 'Kart başarıyla silindi'));
+                              } catch (e) {
+                                showError(t('cardDetail.deleteError', 'Kart silinemedi'));
+                              }
                             }
                           }
                         ]
                       );
                     }}
-                    canDelete={currentUserId && deck.user_id === currentUserId}
+                    canDelete={true}
                     isOwner={isOwner}
                   />
                 </View>

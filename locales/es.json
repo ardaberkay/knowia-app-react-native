@@ -74,7 +74,10 @@
       "noDecks": "Aún no hay barajas",
       "popularDecks": "Barajas Populares",
       "popularDecksSubtitle": "   Domina tu conocimiento con las barajas más populares y de tendencia",
-      "exploreButton": "Explorar"
+      "exploreButton": "Explorar",
+      "inProgressDecksDescription": "Refuerza tu conocimiento con las barajas que estás estudiando",
+      "defaultDecksDescription": "Comienza a aprender rápidamente con barajas listas",
+      "communityDecksDescription": "Descubre y comparte barajas de la comunidad"
     },
     "create": {
       "name": "Nombre de la Baraja",
@@ -269,7 +272,7 @@
     "editProfile": {
       "userName": "Nombre de Usuario",
       "userNamePlaceholder": "Tu nombre de usuario",
-      "usernameHint": "Debe tener entre 3-9 caracteres",
+      "usernameHint": "Debe tener entre 3-16 caracteres",
       "email": "Correo Electrónico",
       "emailPlaceholder": "Tu dirección de correo electrónico",
       "save": "Guardar",
@@ -308,6 +311,7 @@
       "errorMessageLogin": "Ocurrió un error al iniciar sesión",
       "login": "Iniciar Sesión",
       "loginWithGoogle": "Iniciar Sesión con Google",
+      "loginWithApple": "Iniciar Sesión con Apple",
       "loginWithEmail": "Iniciar Sesión con Correo Electrónico",
       "loginWithEmailPlaceholder": "Tu dirección de correo electrónico",
       "email": "Correo Electrónico",

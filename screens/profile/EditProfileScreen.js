@@ -115,7 +115,7 @@ export default function EditProfileScreen({ navigation }) {
   const handleSave = async () => {
     setSaving(true);
     setError(null);
-    if (username.length < 3 || username.length > 9) {
+    if (username.length < 3 || username.length > 16) {
         setError(t('common.usernameLengthError'));
       setSaving(false);
       return;
@@ -319,7 +319,7 @@ export default function EditProfileScreen({ navigation }) {
               value={username}
               onChangeText={setUsername}
               autoCapitalize="none"
-              maxLength={9}
+              maxLength={16}
             />
             <Text style={[typography.styles.caption, { color: colors.muted, marginTop: 4 }]}>
               {t('editProfile.usernameHint')}

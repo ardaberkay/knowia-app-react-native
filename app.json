@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "knowia",
+    "name": "Knowia",
     "slug": "knowia",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/app-icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "scheme": "com.arda.knowia",
+    "scheme": "knowia",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "cover",

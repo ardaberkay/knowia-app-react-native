@@ -49,12 +49,12 @@ export default function RegisterScreen({ navigation }) {
     >
       <View style={styles.container}>
         <View style={styles.form}>
-          <View style={[styles.inputContainer, { borderColor: colors.border }]}>
+          <View style={styles.inputContainer}>
             <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
               <Iconify icon="tabler:mail-filled" size={22} color={colors.muted} />
             </View>
             <TextInput
-              style={[styles.input, typography.styles.body, { color: colors.text }]}
+              style={[styles.input, typography.styles.body]}
               placeholder={t('register.emailPlaceholder', 'Email')}
               placeholderTextColor={colors.muted}
               value={email}
@@ -63,12 +63,12 @@ export default function RegisterScreen({ navigation }) {
               keyboardType="email-address"
             />
           </View>
-          <View style={[styles.inputContainer, { borderColor: colors.border }]}>
+          <View style={styles.inputContainer}>
             <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
               <Iconify icon="carbon:password" size={22} color={colors.muted} />
             </View>
             <TextInput
-              style={[styles.input, typography.styles.body, { color: colors.text }]}
+              style={[styles.input, typography.styles.body]}
               placeholder={t('register.passwordPlaceholder', 'Şifre')}
               placeholderTextColor={colors.muted}
               value={password}
@@ -83,12 +83,12 @@ export default function RegisterScreen({ navigation }) {
               <Iconify icon={showPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={22} color={colors.muted} />
             </TouchableOpacity>
           </View>
-          <View style={[styles.inputContainer, { borderColor: colors.border }]}>
+          <View style={styles.inputContainer}>
             <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
               <Iconify icon="carbon:password" size={22} color={colors.muted} />
             </View>
             <TextInput
-              style={[styles.input, typography.styles.body, { color: colors.text }]}
+              style={[styles.input, typography.styles.body]}
               placeholder={t('register.confirmPasswordPlaceholder', 'Şifre Tekrar')}
               placeholderTextColor={colors.muted}
               value={confirmPassword}
@@ -104,7 +104,7 @@ export default function RegisterScreen({ navigation }) {
             </TouchableOpacity>
           </View>
           <TouchableOpacity 
-            style={[styles.button, { backgroundColor: '#FF992B', borderWidth: 1, borderColor: colors.border}, loading && styles.buttonDisabled]}
+            style={[styles.button, { backgroundColor: colors.buttonColor, borderWidth: 1, borderColor: 'rgba(0, 0, 0, 0.1)' }, loading && styles.buttonDisabled]}
             onPress={handleRegister}
             disabled={loading}
           >
@@ -113,7 +113,7 @@ export default function RegisterScreen({ navigation }) {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={styles.linkButton}
+            style={[styles.linkButton, { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 }]}
             onPress={() => navigation.navigate('Login')}
           >
             <Text style={[styles.linkText, typography.styles.link, { color: colors.secondary }]}>
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     gap: 8,
   },
   button: {
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     // fontSize ve fontFamily artık typography'den geliyor
   },
   linkButton: {
-    marginTop: 15,
+
     alignItems: 'center',
   },
   linkText: {

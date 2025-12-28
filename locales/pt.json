@@ -74,7 +74,10 @@
       "noDecks": "Ainda não há baralhos",
       "popularDecks": "Baralhos Populares",
       "popularDecksSubtitle": "   Domine seu conhecimento com os baralhos mais populares e em tendência",
-      "exploreButton": "Explorar"
+      "exploreButton": "Explorar",
+      "inProgressDecksDescription": "Reforce seu conhecimento com os baralhos que você está estudando",
+      "defaultDecksDescription": "Comece a aprender rapidamente com baralhos prontos",
+      "communityDecksDescription": "Descubra e compartilhe baralhos da comunidade"
     },
     "create": {
       "name": "Nome do Baralho",
@@ -269,7 +272,7 @@
     "editProfile": {
       "userName": "Nome de Usuário",
       "userNamePlaceholder": "Seu nome de usuário",
-      "usernameHint": "Deve ter entre 3-9 caracteres",
+      "usernameHint": "Deve ter entre 3-16 caracteres",
       "email": "Email",
       "emailPlaceholder": "Seu endereço de email",
       "save": "Salvar",
@@ -308,6 +311,7 @@
       "errorMessageLogin": "Ocorreu um erro ao fazer login",
       "login": "Entrar",
       "loginWithGoogle": "Entrar com Google",
+      "loginWithApple": "Entrar com Apple",
       "loginWithEmail": "Entrar com Email",
       "loginWithEmailPlaceholder": "Seu endereço de email",
       "email": "Email",

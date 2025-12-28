@@ -801,7 +801,7 @@ export default function DeckDetailScreen({ route, navigation }) {
       7: "ic:outline-self-improvement", // Kişisel Gelişim
       8: "streamline-ultimate:module-puzzle-2-bold" // Genel Kültür
     };
-    return icons[sortOrder] || "material-symbols:category";
+    return icons[sortOrder] || "hugeicons:language-skill";
   };
 
   // Kategori rengine göre renk belirle (colors.js'deki categoryColors'dan ilk rengi al)

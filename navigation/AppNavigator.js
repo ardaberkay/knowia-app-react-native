@@ -205,8 +205,8 @@ export default function AppNavigator() {
             },
             headerTintColor: '#fff', // Geri butonu beyaz olsun
           }} />
-          <Stack.Screen name="FavoriteDecks" component={FavoriteDecks} options={{ headerShown: true, title: t('tabs.favoriteDecks', 'Favori Desteler'), headerTitleAlign: 'center' }} />
-          <Stack.Screen name="FavoriteCards" component={FavoriteCards} options={{ headerShown: true, title: t('tabs.favoriteCards', 'Favori Kartlar'), headerTitleAlign: 'center' }} />
+          <Stack.Screen name="FavoriteDecks" component={FavoriteDecks} options={{ headerShown: true, title: t('library.favoriteDecksTitle', 'Favori Desteler'), headerTitleAlign: 'center' }} />
+          <Stack.Screen name="FavoriteCards" component={FavoriteCards} options={{ headerShown: true, title: t('library.favoriteCardsTitle', 'Favori Kartlar'), headerTitleAlign: 'center' }} />
         </>
       )}
     </Stack.Navigator>

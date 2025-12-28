@@ -74,7 +74,10 @@
     "noDecks": "No decks yet",
     "popularDecks": "Popular Decks",
     "popularDecksSubtitle": "   Master your knowledge with the most popular and trending decks",
-    "exploreButton": "Explore"
+    "exploreButton": "Explore",
+    "inProgressDecksDescription": "Reinforce your knowledge with the decks you're studying",
+    "defaultDecksDescription": "Start learning quickly with ready-made decks",
+    "communityDecksDescription": "Discover and share community decks"
   },
     "create": {
       "name": "Deck Name",
@@ -276,7 +279,7 @@
   "editProfile": {
     "userName": "User Name",
     "userNamePlaceholder": "Your username",
-    "usernameHint": "Must be between 3-9 characters",
+    "usernameHint": "Must be between 3-16 characters",
     "email": "Email",
     "emailPlaceholder": "Your email address",
     "save": "Save",
@@ -315,6 +318,7 @@
     "errorMessageLogin": "An error occurred while logging in",
     "login": "Login",
     "loginWithGoogle": "Login with Google",
+    "loginWithApple": "Login with Apple",
     "loginWithEmail": "Login with Email",
     "loginWithEmailPlaceholder": "Your email address",
     "email": "Email",

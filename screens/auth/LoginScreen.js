@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ImageBackground } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ImageBackground, Platform } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -13,7 +13,7 @@ export default function LoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [isLanguageModalVisible, setLanguageModalVisible] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login, signInWithGoogle } = useAuth();
+  const { login, signInWithGoogle, signInWithApple } = useAuth();
   const { colors } = useTheme();
   const { t, i18n } = useTranslation();
 
@@ -46,6 +46,26 @@ export default function LoginScreen({ navigation }) {
       }
     } catch (error) {
       console.log('Google giriş catch bloğu:', error);
+      Alert.alert(t('login.error', 'Hata'), error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    if (loading) return;
+
+    try {
+      console.log('Apple girişi başlatılıyor...');
+      setLoading(true);
+      const { error } = await signInWithApple();
+      console.log('Apple girişi yanıtı:', error ? 'Hata var' : 'Başarılı');
+      if (error) {
+        console.log('Apple giriş hatası:', error.message);
+        throw error;
+      }
+    } catch (error) {
+      console.log('Apple giriş catch bloğu:', error);
       Alert.alert(t('login.error', 'Hata'), error.message);
     } finally {
       setLoading(false);
@@ -127,23 +147,37 @@ export default function LoginScreen({ navigation }) {
 
           <View style={styles.divider}>
             <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-            <Text style={[styles.dividerText, typography.styles.caption, { color: colors.muted }]}>{t('login.or', 'YA DA')}</Text>
+            <Text style={[styles.dividerText, typography.styles.caption, { color: colors.text }]}>{t('login.or', 'YA DA')}</Text>
             <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
           </View>
 
           <TouchableOpacity
-            style={[styles.googleButton, { backgroundColor: colors.cardBackground }]}
+            style={[styles.googleButton, { backgroundColor: 'rgba(255, 255, 255, 0.95)' }]}
             onPress={handleGoogleLogin}
             disabled={loading}
           >
             <Iconify icon="logos:google-icon" size={24} color="#DB4437" />
-            <Text style={[styles.googleButtonText, typography.styles.button, { color: colors.text }]}>
+            <Text style={[styles.googleButtonText, typography.styles.button, { color: '#000' }]}>
               {t('login.loginWithGoogle', 'Google ile devam et')}
             </Text>
           </TouchableOpacity>
 
+          {/* Apple ile giriş butonu - sadece iOS'ta görünür */}
+          
+            <TouchableOpacity
+              style={[styles.appleButton, { backgroundColor: 'rgba(255, 255, 255, 0.95)' }]}
+              onPress={handleAppleLogin}
+              disabled={loading}
+            >
+              <Iconify icon="grommet-icons:apple" size={24} color="#000" />
+              <Text style={[styles.appleButtonText, typography.styles.button, { color: '#000' }]}>
+                {t('login.loginWithApple', 'Apple ile Giriş Yap')}
+              </Text>
+            </TouchableOpacity>
+          
+
           <TouchableOpacity
-            style={styles.linkButton}
+            style={[styles.linkButton, { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 }]}
             onPress={() => navigation.navigate('Register')}
           >
             <Text style={[styles.linkText, typography.styles.link, { color: colors.secondary }]}>
@@ -213,7 +247,7 @@ const styles = StyleSheet.create({
     // fontSize ve fontFamily artık typography'den geliyor
   },
   linkButton: {
-    marginTop: 15,
+
     alignItems: 'center',
   },
   linkText: {
@@ -222,7 +256,7 @@ const styles = StyleSheet.create({
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 10,
+
   },
   dividerLine: {
     flex: 1,
@@ -240,6 +274,17 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   googleButtonText: {
+    marginLeft: 10,
+  },
+  appleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 15,
+    borderRadius: 10,
+    gap: 10,
+  },
+  appleButtonText: {
     marginLeft: 10,
   },
   buttonRow: {

@@ -74,7 +74,10 @@
       "noDecks": "Pas encore de paquets",
       "popularDecks": "Paquets Populaires",
       "popularDecksSubtitle": "   Maîtrisez vos connaissances avec les paquets les plus populaires et tendance",
-      "exploreButton": "Explorer"
+      "exploreButton": "Explorer",
+      "inProgressDecksDescription": "Renforcez vos connaissances avec les paquets que vous étudiez",
+      "defaultDecksDescription": "Commencez à apprendre rapidement avec des paquets prêts à l'emploi",
+      "communityDecksDescription": "Découvrez et partagez les paquets communautaires"
     },
     "create": {
       "name": "Nom du Paquet",
@@ -269,7 +272,7 @@
     "editProfile": {
       "userName": "Nom d'Utilisateur",
       "userNamePlaceholder": "Votre nom d'utilisateur",
-      "usernameHint": "Doit contenir entre 3-9 caractères",
+      "usernameHint": "Doit contenir entre 3-16 caractères",
       "email": "Email",
       "emailPlaceholder": "Votre adresse email",
       "save": "Enregistrer",
@@ -308,6 +311,7 @@
       "errorMessageLogin": "Une erreur s'est produite lors de la connexion",
       "login": "Se Connecter",
       "loginWithGoogle": "Se Connecter avec Google",
+      "loginWithApple": "Se Connecter avec Apple",
       "loginWithEmail": "Se Connecter avec Email",
       "loginWithEmailPlaceholder": "Votre adresse email",
       "email": "Email",

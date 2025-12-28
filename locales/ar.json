@@ -74,7 +74,10 @@
       "noDecks": "لا توجد مجموعات بعد",
       "popularDecks": "المجموعات الشائعة",
       "popularDecksSubtitle": "   أتقن معرفتك مع أكثر المجموعات شعبية وترند",
-      "exploreButton": "استكشاف"
+      "exploreButton": "استكشاف",
+      "inProgressDecksDescription": "عزز معرفتك مع المجموعات التي تدرسها",
+      "defaultDecksDescription": "ابدأ التعلم بسرعة مع المجموعات الجاهزة",
+      "communityDecksDescription": "اكتشف وشارك مجموعات المجتمع"
     },
     "create": {
       "name": "اسم المجموعة",
@@ -269,7 +272,7 @@
     "editProfile": {
       "userName": "اسم المستخدم",
       "userNamePlaceholder": "اسم المستخدم الخاص بك",
-      "usernameHint": "يجب أن يكون بين 3-9 أحرف",
+      "usernameHint": "يجب أن يكون بين 3-16 أحرف",
       "email": "البريد الإلكتروني",
       "emailPlaceholder": "عنوان بريدك الإلكتروني",
       "save": "حفظ",
@@ -308,6 +311,7 @@
       "errorMessageLogin": "حدث خطأ أثناء تسجيل الدخول",
       "login": "تسجيل الدخول",
       "loginWithGoogle": "تسجيل الدخول باستخدام Google",
+      "loginWithApple": "تسجيل الدخول باستخدام Apple",
       "loginWithEmail": "تسجيل الدخول باستخدام البريد الإلكتروني",
       "loginWithEmailPlaceholder": "عنوان بريدك الإلكتروني",
       "email": "البريد الإلكتروني",

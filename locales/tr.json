@@ -74,7 +74,10 @@
     "noDecks": "Henüz deste bulunmuyor",
     "popularDecks": "Popüler Desteler",
     "popularDecksSubtitle": "   En popüler ve trend destelerle bilginizi pekiştirin",
-    "exploreButton": "Keşfet"
+    "exploreButton": "Keşfet",
+    "inProgressDecksDescription": "Çalıştığınız destelerle bilginizi pekiştirin",
+    "defaultDecksDescription": "Hazır destelerle hızlıca öğrenmeye başlayın",
+    "communityDecksDescription": "Topluluk destelerini keşfedin ve paylaşın"
   },
     "create": {
       "name": "Deste Adı",
@@ -281,7 +284,7 @@
   "editProfile": {
     "userName": "Kullanıcı Adı",
     "userNamePlaceholder": "Kullanıcı adınız",
-    "usernameHint": "3-9 karakter arasında olmalıdır",
+    "usernameHint": "3-16 karakter arasında olmalıdır",
     "email": "Email",
     "emailPlaceholder": "Email adresiniz",
     "save": "Kaydet",
@@ -320,6 +323,7 @@
     "errorMessageLogin": "Giriş yapılırken bir hata oluştu",
     "login": "Giriş Yap",
     "loginWithGoogle": "Google ile Giriş Yap",
+    "loginWithApple": "Apple ile Giriş Yap",
     "loginWithEmail": "Email ile Giriş Yap",
     "loginWithEmailPlaceholder": "E-Posta",
     "email": "E-posta",

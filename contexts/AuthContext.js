@@ -48,16 +48,30 @@ export function AuthProvider({ children }) {
   // Register fonksiyonu
   const register = async (email, password) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
-      if (error) throw error;
+  
+      if (error) {
+        console.log("SUPABASE SIGNUP ERROR FULL:", error);
+        throw error;
+      }
+  
+      console.log("SIGNUP DATA:", data);
       return { error: null };
     } catch (error) {
+      console.log("CATCH ERROR:", {
+        message: error.message,
+        status: error.status,
+        code: error.code,
+        details: error.details,
+      });
+  
       return { error };
     }
   };
+  
 
   // Logout fonksiyonu
   const logout = async () => {
@@ -77,7 +91,7 @@ export function AuthProvider({ children }) {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'com.arda.knowia://auth/callback'
+          redirectTo: 'knowia://auth/callback'
         }
       });
       console.log('Supabase OAuth yanıtı:', data ? 'Data var' : 'Data yok', error ? 'Hata var' : 'Hata yok');
@@ -92,6 +106,28 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Apple ile giriş fonksiyonu
+  const signInWithApple = async () => {
+    try {
+      console.log('Supabase Apple OAuth başlatılıyor...');
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo: 'knowia://auth/callback'
+        }
+      });
+      console.log('Supabase Apple OAuth yanıtı:', data ? 'Data var' : 'Data yok', error ? 'Hata var' : 'Hata yok');
+      if (error) {
+        console.log('Supabase Apple OAuth hatası:', error.message);
+        throw error;
+      }
+      return { error: null };
+    } catch (error) {
+      console.log('Supabase Apple OAuth catch bloğu:', error);
+      return { error };
+    }
+  };
+
   const value = {
     session,
     loading,
@@ -99,6 +135,7 @@ export function AuthProvider({ children }) {
     register,
     logout,
     signInWithGoogle,
+    signInWithApple,
   };
 
   return (

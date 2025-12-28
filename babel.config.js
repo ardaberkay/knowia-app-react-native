@@ -103,7 +103,8 @@ module.exports = function (api) {
             'material-symbols:arrow-back-ios-new-rounded',
             'si:filter-list-alt-fill',
             'mdi:garbage-can-empty',
-            'mdi:arrow-back'
+            'mdi:arrow-back',
+            'grommet-icons:apple'
           ],
         },
       ],
