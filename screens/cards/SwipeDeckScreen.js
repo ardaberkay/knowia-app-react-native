@@ -39,12 +39,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const [historyDirections, setHistoryDirections] = useState([]);
   const [totalCardCount, setTotalCardCount] = useState(0);
   const [remainingCardCount, setRemainingCardCount] = useState(0);
-  const [hasLearningCard, setHasLearningCard] = useState(false);
   const [totalLearningCount, setTotalLearningCount] = useState(0);
   const [currentLearnedCount, setCurrentLearnedCount] = useState(null);
   const [currentLearningCount, setCurrentLearningCount] = useState(null);
   const [autoPlay, setAutoPlay] = useState(false);
   const autoPlayTimeout = useRef(null);
+  const autoPlayFlipTimeout = useRef(null);
   const { t } = useTranslation();
   const [favoriteIds, setFavoriteIds] = useState(new Set());
   const [categorySortOrder, setCategorySortOrder] = useState(null);
@@ -193,7 +193,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
       }
       
       const { data: learningCardsExist, error: learningCardsExistError } = await learningCardsCountQuery;
-      setHasLearningCard(learningCardsExist && learningCardsExist.length > 0);
       setTotalLearningCount(learningCardsExist ? learningCardsExist.length : 0);
       
       // Başlangıçta learned olan kartların sayısını al (seçilen bölüm için)
@@ -250,18 +249,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
     }
     setCurrentIndex(cardIndex + 1);
   }, [cards, userId]);
-
-  const handleOneDaySkip = async () => {
-    if (!cards[currentIndex]) return;
-    const card = cards[currentIndex];
-    if (!userId) return;
-    await supabase
-      .from('user_card_progress')
-      .update({ status: 'learning', next_review: new Date(Date.now() + 24 * 60 * 60 * 1000) })
-      .eq('user_id', userId)
-      .eq('card_id', card.card_id);
-    setCurrentIndex(currentIndex + 1);
-  };
 
   const handleFlip = (cardIndex) => {
     setFlipped((prev) => {
@@ -359,15 +346,22 @@ export default function SwipeDeckScreen({ route, navigation }) {
       setAutoPlay(false);
       return;
     }
-    // Flip -> bekle -> swipe left (flip sadece bir defa)
-    handleFlip(currentIndex);
-    autoPlayTimeout.current = setTimeout(() => {
-      if (swiperRef.current) {
-        swiperRef.current.swipeLeft();
-      }
-    }, 1200); // kartı gösterme süresi
+    
+    // Önce kartın ön yüzünü göster (2000ms)
+    // Sonra flip yap
+    autoPlayFlipTimeout.current = setTimeout(() => {
+      handleFlip(currentIndex);
+      // Flip sonrası arka yüzü göster (2000ms), sonra swipe yap
+      autoPlayTimeout.current = setTimeout(() => {
+        if (swiperRef.current) {
+          swiperRef.current.swipeLeft();
+        }
+      }, 1600); // arka yüzü gösterme süresi
+    }, 1600); // ön yüzü gösterme süresi
+    
     return () => {
       if (autoPlayTimeout.current) clearTimeout(autoPlayTimeout.current);
+      if (autoPlayFlipTimeout.current) clearTimeout(autoPlayFlipTimeout.current);
     };
   }, [autoPlay, currentIndex, cards.length]);
 
@@ -375,6 +369,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
   useEffect(() => {
     return () => {
       if (autoPlayTimeout.current) clearTimeout(autoPlayTimeout.current);
+      if (autoPlayFlipTimeout.current) clearTimeout(autoPlayFlipTimeout.current);
     };
   }, []);
 
@@ -877,36 +872,6 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
     borderRadius: 12,
   },
-  skipRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    position: 'absolute',
-    bottom: 80,
-    left: 20,
-    right: 20,
-    gap: 12,
-  },
-  skipButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 20,
-    alignItems: 'center',
-    marginHorizontal: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.10,
-    shadowRadius: 2,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  backButton: {
-    marginTop: 32,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
   counterRow: {
     position: 'absolute',
     top: 0,
@@ -1098,24 +1063,5 @@ const styles = StyleSheet.create({
     ...typography.styles.subtitle,
     fontSize: 14,
     fontWeight: '500',
-  },
-  totalStatCard: {
-    width: '100%',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.03)',
-    marginTop: 8,
-  },
-  totalStatLabel: {
-    ...typography.styles.subtitle,
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  totalStatNumber: {
-    ...typography.styles.h2,
-    fontSize: 28,
-    fontWeight: '700',
   },
 }); 

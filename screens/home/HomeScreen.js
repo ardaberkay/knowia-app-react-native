@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Dimensions, ActivityIndicator, Image, Modal, Platform, RefreshControl, Pressable, Animated } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Dimensions, ActivityIndicator, Image, RefreshControl, Pressable, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDecksByCategory, getPopularDecks } from '../../services/DeckService';
@@ -64,12 +64,11 @@ const AnimatedPressable = ({ onPress, children, style }) => {
 };
 
 export default function HomeScreen() {
-  const { logout } = useAuth();
+  useAuth();
   const navigation = useNavigation();
   const { colors, isDarkMode } = useTheme();
   const [decks, setDecks] = useState({});
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [profile, setProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState(null);
@@ -124,8 +123,7 @@ const DECK_CATEGORIES = {
       
       setDecks(decksData);
     } catch (err) {
-      setError(err.message);
-        Alert.alert(t('home.errorMessage', 'Hata'), t('home.errorMessageDeck', 'Desteler yüklenirken bir hata oluştu'));
+      Alert.alert(t('home.errorMessage', 'Hata'), t('home.errorMessageDeck', 'Desteler yüklenirken bir hata oluştu'));
     } finally {
       setLoading(false);
     }
@@ -488,28 +486,11 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: '100%',
   },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  logoutButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#ff3b30',
-  },
-  logoutText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
   content: {
     flex: 1,
   },
   scrollContentContainer: {
     paddingBottom: '25%',
-  },
-  section: {
-    marginVertical: 16,
   },
   sectionHeaderGradient: {
     flexDirection: 'row',
@@ -530,31 +511,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     marginTop: 20,
-  },
-  seeAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 2,
-    paddingVertical: 2,
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderWidth: 1.5,
-    borderRadius: 30,
-    backgroundColor: 'rgba(29, 71, 117, 0.6)',
-  },
-  seeAllContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  seeAllText: {
-    color: '#007AFF',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  categoryDivider: {
-    height: 1,
-    marginHorizontal: 16,
-    borderRadius: 1,
   },
   endIconContainer: {
     justifyContent: 'center',
@@ -580,15 +536,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     resizeMode: 'cover',
     backgroundColor: '#fff',
-  },
-  centeredTitle: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    textAlign: 'center',
-    color: '#222',
-    zIndex: 1,
-
   },
   logoImage: {
     width: 120,

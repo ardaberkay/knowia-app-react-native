@@ -27,6 +27,7 @@ export default function ChapterSelector({
       useNativeDriverForBackdrop
       hideModalContentWhileAnimating
       backdropTransitionOutTiming={0}
+      statusBarTranslucent={true}
     >
       <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
         <View style={styles.headerRow}>

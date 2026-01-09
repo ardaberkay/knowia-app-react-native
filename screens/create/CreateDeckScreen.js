@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useNavigation } from '@react-navigation/native';
 import { typography } from '../../theme/typography';
@@ -471,54 +471,5 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     flex: 1,
-  },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  popupContainer: {
-    borderRadius: 20,
-    padding: 20,
-    marginHorizontal: 20,
-    maxHeight: '70%',
-    minWidth: 280,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  popupTitle: {
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  categoryList: {
-    maxHeight: 300,
-  },
-  categoryItem: {
-    paddingVertical: 16,
-    borderBottomWidth: 0.5,
-  },
-  categoryItemContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  categoryItemText: {
-    flex: 1,
-  },
-  cancelButton: {
-    borderWidth: 1,
-    borderRadius: 20,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
 }); 

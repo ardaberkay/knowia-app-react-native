@@ -3,9 +3,10 @@
     "name": "Knowia",
     "slug": "knowia",
     "version": "1.0.0",
+    "owner": "imati",
     "orientation": "portrait",
     "icon": "./assets/app-icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "scheme": "knowia",
     "splash": {
@@ -23,14 +24,23 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.arda.knowia"
+      "package": "com.arda.knowia",
+      "permissions": [
+        "android.permission.DETECT_SCREEN_CAPTURE"
+      ]
     },
     "web": {
       "favicon": "./assets/logoasil.png"
     },
     "plugins": [
       "expo-font",
-      "expo-localization"
-    ]
+      "expo-localization",
+      "expo-dev-client"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "35370cb0-28f6-4273-86d2-f920b86c8acb"
+      }
+    }
   }
 }

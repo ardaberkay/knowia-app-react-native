@@ -2,48 +2,45 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl, Image, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
-import MaskedView from '@react-native-masked-view/masked-view';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 
-// Fade efekti için yardımcı bileşen
-const FadeText = ({ text, style, maxWidth, maxChars }) => {
-  // Karakter sayısına göre fade gösterimi
-  const shouldShowFade = text && text.length > maxChars;
+// Fade efekti - karakter bazlı opacity (MaskedView sorunlarından kaçınır)
+const FadeText = ({ text, style, maxChars = 15 }) => {
+  if (!text) return null;
   
-  if (!shouldShowFade) {
-    return (
-      <Text 
-        style={[style, { maxWidth }]} 
-        numberOfLines={1}
-        ellipsizeMode="clip"
-      >
-        {text}
-      </Text>
-    );
+  const shouldFade = text.length > maxChars;
+  
+  if (!shouldFade) {
+    return <Text style={style} numberOfLines={1}>{text}</Text>;
   }
   
+  // Görünür kısım + fade kısmı
+  const fadeLength = 4; // Son 4 karakter fade olacak
+  const visibleLength = maxChars - fadeLength;
+  const visibleText = text.substring(0, visibleLength);
+  const fadeText = text.substring(visibleLength, maxChars);
+  
+  // Fade karakterleri için opacity değerleri
+  const opacities = [0.7, 0.5, 0.3, 0.1];
+  
+  // Style'dan textAlign kontrolü
+  const flatStyle = Array.isArray(style) ? Object.assign({}, ...style.filter(Boolean)) : (style || {});
+  const isCentered = flatStyle.textAlign === 'center';
+  
   return (
-    <MaskedView
-      style={[styles.maskedView, { maxWidth }]}
-      maskElement={
-        <LinearGradient
-          colors={['black', 'black', 'transparent']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1.15, y: 0 }}
-          style={styles.maskGradient}
-        />
-      }
-    >
-      <Text 
-        style={style} 
-        numberOfLines={1}
-        ellipsizeMode="clip"
-      >
-        {text}
-      </Text>
-    </MaskedView>
+    <View style={{ flexDirection: 'row', overflow: 'hidden', justifyContent: isCentered ? 'center' : 'flex-start', alignSelf: isCentered ? 'center' : 'flex-start' }}>
+      <Text style={style} numberOfLines={1}>{visibleText}</Text>
+      {fadeText.split('').map((char, index) => (
+        <Text 
+          key={index} 
+          style={[style, { opacity: opacities[index] || 0.1 }]}
+        >
+          {char}
+        </Text>
+      ))}
+    </View>
   );
 };
 
@@ -191,8 +188,7 @@ export default function DeckList({
               />
               <FadeText 
                 text={deck.profiles?.username || 'Kullanıcı'} 
-                style={[typography.styles.body, styles.deckProfileUsername]} 
-                maxWidth={'100%'}
+                style={[typography.styles.body, styles.deckProfileUsername]}
                 maxChars={15}
               />
             </View>
@@ -226,23 +222,20 @@ export default function DeckList({
                 <>
                   <FadeText 
                     text={deck.name} 
-                    style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]} 
-                    maxWidth={'100%'}
+                    style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]}
                     maxChars={16}
                   />
                   <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 8 }} />
                   <FadeText 
                     text={deck.to_name} 
-                    style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]} 
-                    maxWidth={'100%'}
+                    style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]}
                     maxChars={16}
                   />
                 </>
               ) : (
                 <FadeText 
                   text={deck.name} 
-                  style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]} 
-                  maxWidth={'100%'}
+                  style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]}
                   maxChars={16}
                 />
               )}
@@ -289,8 +282,7 @@ export default function DeckList({
             />
             <FadeText 
               text={row.item.profiles?.username || 'Kullanıcı'} 
-              style={[typography.styles.body, styles.deckProfileUsername]} 
-              maxWidth={'100%'}
+              style={[typography.styles.body, styles.deckProfileUsername]}
               maxChars={16}
             />
           </View>
@@ -328,24 +320,21 @@ export default function DeckList({
               <>
                 <FadeText 
                   text={row.item.name} 
-                  style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} 
-                  maxWidth={'100%'}
-                  maxChars={35}
+                  style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]}
+                  maxChars={20}
                 />
                 <View style={{ width: 70, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10 }} />
                 <FadeText 
                   text={row.item.to_name} 
-                  style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} 
-                  maxWidth={'100%'}
-                  maxChars={35}
+                  style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]}
+                  maxChars={20}
                 />
               </>
             ) : (
               <FadeText 
                 text={row.item.name} 
-                style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} 
-                maxWidth={'100%'}
-                maxChars={35}
+                style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]}
+                maxChars={20}
               />
             )}
           </View>
@@ -439,14 +428,6 @@ const styles = StyleSheet.create({
   categoryIconStyle: {
     // Subtle background effect için
     opacity: 0.8,
-  },
-  // Fade efekti için stiller
-  maskedView: {
-    // flex: 1 kaldırıldı
-  },
-  maskGradient: {
-    flexDirection: 'row',
-    height: '100%',
   },
   deckProfileRow: {
     position: 'absolute',

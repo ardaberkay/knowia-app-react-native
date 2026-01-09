@@ -15,7 +15,6 @@ import FilterIcon from '../../components/tools/FilterIcon';
 import CardListItem from '../../components/lists/CardList';
 import LottieView from 'lottie-react-native';
 import MyDecksList from '../../components/lists/MyDecksList';
-import MaskedView from '@react-native-masked-view/masked-view';
 import MyDecksSkeleton from '../../components/skeleton/MyDecksSkeleton';
 import CardDetailView from '../../components/layout/CardDetailView';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
@@ -24,43 +23,41 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ProfileAvatarButton from '../../components/layout/ProfileAvatarButton';
 
-// Fade efekti için yardımcı bileşen
-const FadeText = ({ text, style, maxWidth, maxChars }) => {
-  // Karakter sayısına göre fade gösterimi
-  const shouldShowFade = text && text.length > maxChars;
+// Fade efekti - karakter bazlı opacity (MaskedView sorunlarından kaçınır)
+const FadeText = ({ text, style, maxChars = 15 }) => {
+  if (!text) return null;
   
-  if (!shouldShowFade) {
-    return (
-      <Text 
-        style={[style, { maxWidth }]} 
-        numberOfLines={1}
-        ellipsizeMode="clip"
-      >
-        {text}
-      </Text>
-    );
+  const shouldFade = text.length > maxChars;
+  
+  if (!shouldFade) {
+    return <Text style={style} numberOfLines={1}>{text}</Text>;
   }
   
+  // Son 4 karaktere fade uygula
+  const fadeLength = 4;
+  const visibleLength = maxChars - fadeLength;
+  const visibleText = text.substring(0, visibleLength);
+  const fadeText = text.substring(visibleLength, maxChars);
+  
+  // Her fade karakteri için azalan opacity
+  const opacities = [0.7, 0.5, 0.3, 0.1];
+  
+  // Style'dan textAlign kontrolü
+  const flatStyle = Array.isArray(style) ? Object.assign({}, ...style.filter(Boolean)) : (style || {});
+  const isCentered = flatStyle.textAlign === 'center';
+  
   return (
-    <MaskedView
-      style={[styles.maskedView, { maxWidth }]}
-      maskElement={
-        <LinearGradient
-          colors={['black', 'black', 'transparent']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1.15, y: 0 }}
-          style={styles.maskGradient}
-        />
-      }
-    >
-      <Text 
-        style={style} 
-        numberOfLines={1}
-        ellipsizeMode="clip"
-      >
-        {text}
-      </Text>
-    </MaskedView>
+    <View style={{ flexDirection: 'row', overflow: 'hidden', justifyContent: isCentered ? 'center' : 'flex-start', alignSelf: isCentered ? 'center' : 'flex-start' }}>
+      <Text style={style} numberOfLines={1}>{visibleText}</Text>
+      {fadeText.split('').map((char, index) => (
+        <Text
+          key={index}
+          style={[style, { opacity: opacities[index] || 0.1 }]}
+        >
+          {char}
+        </Text>
+      ))}
+    </View>
   );
 };
 
@@ -223,17 +220,6 @@ export default function LibraryScreen() {
   // Favoriler sekmesindeki birleşik liste kaldırıldı
 
   // Favorilerim sekmesindeki birleşik render kaldırıldı
-
-  const openDropdown = () => {
-    if (filterIconRef.current) {
-      filterIconRef.current.measureInWindow((x, y, width, height) => {
-        setDropdownPos({ x, y, width, height });
-        setFilterDropdownVisible(true);
-      });
-    } else {
-      setFilterDropdownVisible(true);
-    }
-  };
 
   // Favori deste ekleme/çıkarma fonksiyonları
   const handleAddFavoriteDeck = async (deckId) => {
@@ -831,7 +817,6 @@ export default function LibraryScreen() {
                                   <FadeText 
                                     text={deck.profiles?.username || 'Kullanıcı'} 
                                     style={[typography.styles.body, styles.deckProfileUsername]} 
-                                    maxWidth={'100%'}
                                     maxChars={16}
                                   />
                                 </View>
@@ -859,23 +844,20 @@ export default function LibraryScreen() {
                                         <FadeText 
                                           text={deck.name} 
                                           style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} 
-                                          maxWidth={'100%'}
-                                          maxChars={35}
+                                          maxChars={20}
                                         />
                                         <View style={{ width: 70, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10, alignSelf: 'center' }} />
                                         <FadeText 
                                           text={deck.to_name} 
                                           style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} 
-                                          maxWidth={'100%'}
-                                          maxChars={35}
+                                          maxChars={20}
                                         />
                                       </>
                                     ) : (
                                       <FadeText 
                                         text={deck.name} 
                                         style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} 
-                                        maxWidth={'100%'}
-                                        maxChars={35}
+                                        maxChars={20}
                                       />
                                     )}
                                   </View>
@@ -1123,31 +1105,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-  // My Decks list styles
-  myDecksList: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-  },
-  myDeckRow: {
-    flexDirection: 'row',
-  },
-  myDeckCardVertical: {
-    flex: 1,
-    height: 235,
-    borderRadius: 18,
-    overflow: 'hidden',
-  },
-  myDeckCardHorizontal: {
-    height: 180,
-    borderRadius: 18,
-    overflow: 'hidden',
-  },
-  myDeckGradient: {
-    flex: 1,
-    borderRadius: 18,
-    padding: 16,
-    justifyContent: 'center',
-  },
   favoriteSliderWrapper: {
     marginBottom: 12,
     paddingBottom: '25%',
@@ -1233,43 +1190,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-  emptyText: {
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  // Search and filter styles removed
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  deckCardGradient: {
-    flex: 1,
-    borderRadius: 18,
-    padding: 16,
-    justifyContent: 'space-between',
-  },
-  typeChip: {
-    position: 'absolute',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-    backgroundColor: '#F98A21',
-    zIndex: 10,
-  },
-  typeChipBottomLeft: {
-    left: 16,
-    bottom: 16,
-  },
-  typeChipText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
-    marginLeft: 4,
-  },
-
   deckProfileRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1285,40 +1205,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#BDBDBD',
     fontWeight: '700',
-  },
-  modalLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  modalValue: {
-    // typography.styles.body ve renk dışarıdan
-  },
-  modalFieldBox: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#ececec',
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  cardFieldBox: {
-    backgroundColor: '#fffefa',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#ffe0c3',
-    shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.10,
-    shadowRadius: 6,
-    elevation: 3,
   },
   loadingContainer: {
     flex: 1,
@@ -1347,14 +1233,6 @@ const styles = StyleSheet.create({
   categoryIconStyle: {
     // Subtle background effect için
     opacity: 0.8,
-  },
-  // Fade efekti için stiller
-  maskedView: {
-    // flex: 1 kaldırıldı
-  },
-  maskGradient: {
-    flexDirection: 'row',
-    height: '100%',
   },
   // MyDecks Card styles
   myDecksCard: {

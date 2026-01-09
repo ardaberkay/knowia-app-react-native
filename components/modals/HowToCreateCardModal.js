@@ -60,6 +60,7 @@ export default function HowToCreateCardModal({ isVisible, onClose }) {
       backdropTransitionOutTiming={0}
       animationIn="slideInUp"
       animationOut="slideOutDown"
+      statusBarTranslucent={true}
     >
       <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
         <View style={styles.headerRow}>

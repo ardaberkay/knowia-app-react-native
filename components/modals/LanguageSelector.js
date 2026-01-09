@@ -38,6 +38,7 @@ export default function LanguageSelector({ isVisible, onClose, onLanguageChange 
       useNativeDriver={true}
       useNativeDriverForBackdrop={true}
       avoidKeyboard={true}
+      statusBarTranslucent={true}
     >
       <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
         <Text style={[typography.styles.h2, { color: colors.text, marginBottom: 16 }]}>

@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, Modal, FlatList, TextInput, Pressable, Image, Switch, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, Modal, Pressable, Image, Switch, Animated, Dimensions } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Alert } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -31,16 +30,11 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [search, setSearch] = useState('');
   const [filteredCards, setFilteredCards] = useState([]);
   const [favoriteCards, setFavoriteCards] = useState([]);
-  const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [cardSort, setCardSort] = useState('original'); // 'original', 'az', 'fav'
   const [originalCards, setOriginalCards] = useState([]);
-  const filterIconRef = useRef(null);
-  const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [moreMenuVisible, setMoreMenuVisible] = useState(false);
   const [moreMenuPos, setMoreMenuPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const moreMenuRef = useRef(null);
-  const [cardDetailModalVisible, setCardDetailModalVisible] = useState(false);
-  const [selectedCard, setSelectedCard] = useState(null);
   // Session'dan user ID'yi al (eğer varsa)
   const initialUserId = session?.user?.id || null;
   const [currentUserId, setCurrentUserId] = useState(initialUserId);
@@ -48,8 +42,6 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [shareComponentVisible, setShareComponentVisible] = useState(
     initialUserId ? deck.user_id === initialUserId : false
   );
-  const [cardsModalVisible, setCardsModalVisible] = useState(false);
-  const [searchBarShouldFocus, setSearchBarShouldFocus] = useState(false);
   const [isShared, setIsShared] = useState(deck.is_shared || false);
   const [shareLoading, setShareLoading] = useState(false);
   const [categoryInfo, setCategoryInfo] = useState(deck.categories || null);
@@ -167,15 +159,16 @@ export default function DeckDetailScreen({ route, navigation }) {
     if (contentWidth <= containerWidth) return;
     
     hintDoneRef.current = true;
-    const scrollDistance = Math.min(80, contentWidth - containerWidth);
+    // Sadece taşan kadar scroll yap
+    const scrollDistance = contentWidth - containerWidth;
     
-    // Kısa bir gecikme sonra hint animasyonu
+    // Daha hızlı başlasın
     setTimeout(() => {
       scrollRef.current?.scrollTo({ x: scrollDistance, animated: true });
       setTimeout(() => {
         scrollRef.current?.scrollTo({ x: 0, animated: true });
-      }, 400);
-    }, 800);
+      }, 600);
+    }, 300);
   };
 
   // Cache'den progress'i yükle (hızlı gösterim için)
@@ -453,13 +446,6 @@ export default function DeckDetailScreen({ route, navigation }) {
     }
   }, [session, deck.user_id]);
 
-  useEffect(() => {
-    if (cardsModalVisible) {
-      setSearchBarShouldFocus(true);
-    } else {
-      setSearchBarShouldFocus(false);
-    }
-  }, [cardsModalVisible]);
 
   // Son seçilen chapter'ı AsyncStorage'dan yükle
   const loadLastSelectedChapter = async (availableChapters) => {
@@ -550,26 +536,6 @@ export default function DeckDetailScreen({ route, navigation }) {
       friction: 8,
     }).start();
   }, [fabMenuOpen]);
-
-  // Favori kontrolü ve ekleme - Deck bilgileriyle birlikte çekiliyor
-  const checkFavorite = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setIsFavorite(false);
-        return;
-      }
-      const { data, error } = await supabase
-        .from('favorite_decks')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('deck_id', deck.id)
-        .single();
-      setIsFavorite(!!data);
-    } catch (e) {
-      setIsFavorite(false);
-    }
-  };
 
   const handleAddFavorite = async () => {
     setFavLoading(true);
@@ -784,11 +750,6 @@ export default function DeckDetailScreen({ route, navigation }) {
     }
   };
 
-  const handleBackFromDetail = () => {
-    setSelectedCard(null);
-    setSearchBarShouldFocus(false);
-  };
-
   // Kategori ikonunu sort_order değerine göre al
   const getCategoryIcon = (sortOrder) => {
     const icons = {
@@ -860,91 +821,81 @@ export default function DeckDetailScreen({ route, navigation }) {
             
             {/* Title - Scrollable if overflows */}
             <View style={styles.gfTitleContainer}>
-              <ScrollView
-                ref={nameScrollRef}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                scrollEnabled={nameHasOverflow}
-                onContentSizeChange={(w) => {
-                  setNameContentWidth(w);
-                  if (nameContainerWidth > 0 && !nameLayoutDone.current) {
-                    nameLayoutDone.current = true;
-                    const hasOverflow = w > nameContainerWidth;
-                    setNameHasOverflow(hasOverflow);
-                    if (hasOverflow) {
-                      triggerScrollHint(nameScrollRef, w, nameContainerWidth, nameScrollHintDone);
-                    }
-                  }
-                }}
-                onLayout={(e) => {
-                  const containerW = e.nativeEvent.layout.width;
-                  setNameContainerWidth(containerW);
-                  if (nameContentWidth > 0 && !nameLayoutDone.current) {
-                    nameLayoutDone.current = true;
-                    const hasOverflow = nameContentWidth > containerW;
-                    setNameHasOverflow(hasOverflow);
-                    if (hasOverflow) {
-                      triggerScrollHint(nameScrollRef, nameContentWidth, containerW, nameScrollHintDone);
-                    }
-                  }
-                }}
-              >
-                <Text style={styles.gfHeroTitle}>{deck.name}</Text>
-              </ScrollView>
-              {nameHasOverflow && (
-                <LinearGradient
-                  colors={['transparent', getCategoryGradient(categoryInfo?.sort_order)[0]]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.gfTitleFade}
-                  pointerEvents="none"
-                />
-              )}
-            </View>
-            
-            {/* Subtitle - Scrollable if overflows */}
-            {deck.to_name && (
-              <View style={styles.gfTitleContainer}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Iconify icon="ion:book" size={28} color="#fff" />
                 <ScrollView
-                  ref={toNameScrollRef}
+                  ref={nameScrollRef}
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  scrollEnabled={toNameHasOverflow}
+                  scrollEnabled={nameHasOverflow}
+                  style={{ flex: 1 }}
                   onContentSizeChange={(w) => {
-                    setToNameContentWidth(w);
-                    if (toNameContainerWidth > 0 && !toNameLayoutDone.current) {
-                      toNameLayoutDone.current = true;
-                      const hasOverflow = w > toNameContainerWidth;
-                      setToNameHasOverflow(hasOverflow);
+                    setNameContentWidth(w);
+                    if (nameContainerWidth > 0 && !nameLayoutDone.current) {
+                      nameLayoutDone.current = true;
+                      const hasOverflow = w > nameContainerWidth;
+                      setNameHasOverflow(hasOverflow);
                       if (hasOverflow) {
-                        triggerScrollHint(toNameScrollRef, w, toNameContainerWidth, toNameScrollHintDone);
+                        triggerScrollHint(nameScrollRef, w, nameContainerWidth, nameScrollHintDone);
                       }
                     }
                   }}
                   onLayout={(e) => {
                     const containerW = e.nativeEvent.layout.width;
-                    setToNameContainerWidth(containerW);
-                    if (toNameContentWidth > 0 && !toNameLayoutDone.current) {
-                      toNameLayoutDone.current = true;
-                      const hasOverflow = toNameContentWidth > containerW;
-                      setToNameHasOverflow(hasOverflow);
+                    setNameContainerWidth(containerW);
+                    if (nameContentWidth > 0 && !nameLayoutDone.current) {
+                      nameLayoutDone.current = true;
+                      const hasOverflow = nameContentWidth > containerW;
+                      setNameHasOverflow(hasOverflow);
                       if (hasOverflow) {
-                        triggerScrollHint(toNameScrollRef, toNameContentWidth, containerW, toNameScrollHintDone);
+                        triggerScrollHint(nameScrollRef, nameContentWidth, containerW, nameScrollHintDone);
                       }
                     }
                   }}
                 >
-                  <Text style={styles.gfHeroSubtitle}>{deck.to_name}</Text>
+                  <Text style={styles.gfHeroTitle}>{deck.name}</Text>
                 </ScrollView>
-                {toNameHasOverflow && (
-                  <LinearGradient
-                    colors={['transparent', getCategoryGradient(categoryInfo?.sort_order)[0]]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.gfTitleFade}
-                    pointerEvents="none"
-                  />
-                )}
+              </View>
+            </View>
+            
+            {/* Subtitle - Scrollable if overflows */}
+            {deck.to_name && (
+              <View style={styles.gfTitleContainer}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <Iconify icon="icon-park-outline:translation" size={28} color="#fff" />
+                  <ScrollView
+                    ref={toNameScrollRef}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    scrollEnabled={toNameHasOverflow}
+                    style={{ flex: 1 }}
+                    onContentSizeChange={(w) => {
+                      setToNameContentWidth(w);
+                      if (toNameContainerWidth > 0 && !toNameLayoutDone.current) {
+                        toNameLayoutDone.current = true;
+                        const hasOverflow = w > toNameContainerWidth;
+                        setToNameHasOverflow(hasOverflow);
+                        if (hasOverflow) {
+                          triggerScrollHint(toNameScrollRef, w, toNameContainerWidth, toNameScrollHintDone);
+                        }
+                      }
+                    }}
+                    onLayout={(e) => {
+                      const containerW = e.nativeEvent.layout.width;
+                      setToNameContainerWidth(containerW);
+                      if (toNameContentWidth > 0 && !toNameLayoutDone.current) {
+                        toNameLayoutDone.current = true;
+                        const hasOverflow = toNameContentWidth > containerW;
+                        setToNameHasOverflow(hasOverflow);
+                        if (hasOverflow) {
+                          triggerScrollHint(toNameScrollRef, toNameContentWidth, containerW, toNameScrollHintDone);
+                        }
+                      }
+                    }}
+                  >
+                    <Text style={styles.gfHeroSubtitle}>{deck.to_name}</Text>
+                  </ScrollView>
+                </View>
               </View>
             )}
             
@@ -1821,13 +1772,6 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginBottom: 6,
   },
-  gfTitleFade: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: 40,
-  },
   gfHeroDesc: {
     color: 'rgba(255,255,255,0.75)',
     fontSize: 14,
@@ -2041,113 +1985,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  descriptionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  descriptionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginLeft: 10,
-  },
-  descriptionText: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
-
-  // Actions
-  actionsContainer: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    gap: 12,
-  },
-  actionCard: {
-    borderRadius: 20,
-    borderWidth: 1,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  actionCardGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-  },
-  actionIconContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-  },
-  actionContent: {
-    flex: 1,
-  },
-  actionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  actionSubtitle: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-
-  // Share Section
-  shareSection: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    padding: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  shareContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  shareIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-  },
-  shareTextContainer: {
-    flex: 1,
-  },
-  shareTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  shareSubtitle: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  shareInfoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
-  },
-  shareInfoText: {
-    fontSize: 13,
-    marginLeft: 6,
-  },
-
   // FAB Styles
   fabContainer: {
     position: 'absolute',
@@ -2212,41 +2049,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  fabChapterInfo: {
-    flex: 1,
-    minWidth: 150,
-  },
   fabChapterInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     marginBottom: 2,
   },
-  fabChapterInfoContent: {
-    flex: 1,
-    flexDirection: 'column',
-  },
   fabChapterInfoTitle: {
     fontSize: 14,
     fontWeight: '700',
     marginBottom: 4,
-  },
-  fabChapterInfoStats: {
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'center',
-  },
-  fabChapterInfoStatRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  fabChapterInfoStatText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  fabChapterInfoSubtitle: {
-    fontSize: 11,
-    marginTop: 2,
   },
   fabLeftColumn: {
     flexDirection: 'column',
@@ -2294,11 +2106,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
-  fabChapterItemBadgeText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#fff',
-  },
   fabChapterItemContent: {
     flex: 1,
     flexDirection: 'column',
@@ -2323,12 +2130,6 @@ const styles = StyleSheet.create({
   fabChapterStatText: {
     fontSize: 12,
     fontWeight: '500',
-  },
-  fabChapterEmptyText: {
-    color: '#fff',
-    opacity: 0.8,
-    fontSize: 13,
-    paddingHorizontal: 4,
   },
   fabMenuOverlay: {
     position: 'absolute',
