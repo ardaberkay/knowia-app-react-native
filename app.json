@@ -27,6 +27,21 @@
       "package": "com.arda.knowia",
       "permissions": [
         "android.permission.DETECT_SCREEN_CAPTURE"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "knowia"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
       ]
     },
     "web": {

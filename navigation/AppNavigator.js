@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../contexts/AuthContext';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
+import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
 import HomeScreen from '../screens/home/HomeScreen';
 import CreateScreen from '../screens/create/CreateDeckScreen';
 import LibraryScreen from '../screens/library/LibraryScreen';
@@ -112,17 +113,20 @@ function MainTabs() {
 
 export default function AppNavigator() {
   const { colors } = useTheme();
-  const { session, loading } = useAuth();
+  const { session, loading, isRecoveryMode } = useAuth();
   const { t } = useTranslation();
 
-  console.log('AppNavigator render:', { session, loading });
+  console.log('AppNavigator render:', { session, loading, isRecoveryMode });
 
   if (loading) {
     console.log('Loading state, null döndürülüyor');
     return null; // veya bir loading ekranı
   }
 
-  console.log('Session durumu:', session ? 'Var' : 'Yok');
+  console.log('Session durumu:', session ? 'Var' : 'Yok', 'Recovery mode:', isRecoveryMode);
+
+  // Recovery modundayken session olsa bile auth stack'i göster
+  const showAuthStack = !session || isRecoveryMode;
 
   return (
     <Stack.Navigator screenOptions={{ 
@@ -133,10 +137,11 @@ export default function AppNavigator() {
         fontSize: 18
       }
     }}>
-      {!session ? (
+      {showAuthStack ? (
         <>
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
         </>
       ) : (
         <>

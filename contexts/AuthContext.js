@@ -8,6 +8,7 @@ const AuthContext = createContext({});
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
 
   useEffect(() => {
     console.log('AuthContext useEffect çalıştı');
@@ -131,6 +132,32 @@ const register = async (email, password) => {
     }
   };
 
+  // Şifre sıfırlama email'i gönderme fonksiyonu
+  const resetPasswordForEmail = async (email) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'knowia://auth',
+      });
+      if (error) throw error;
+      return { error: null };
+    } catch (error) {
+      return { error };
+    }
+  };
+
+  // Yeni şifre belirleme fonksiyonu
+  const updatePassword = async (newPassword) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+      if (error) throw error;
+      return { error: null };
+    } catch (error) {
+      return { error };
+    }
+  };
+
   const value = {
     session,
     loading,
@@ -139,6 +166,10 @@ const register = async (email, password) => {
     logout,
     signInWithGoogle,
     signInWithApple,
+    resetPasswordForEmail,
+    updatePassword,
+    isRecoveryMode,
+    setIsRecoveryMode,
   };
 
   return (

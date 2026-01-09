@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ImageBackground, Platform } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../theme/theme';
@@ -13,7 +13,9 @@ export default function LoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [isLanguageModalVisible, setLanguageModalVisible] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login, signInWithGoogle, signInWithApple } = useAuth();
+  const [emailError, setEmailError] = useState(false);
+  const emailInputRef = useRef(null);
+  const { login, signInWithGoogle, signInWithApple, resetPasswordForEmail } = useAuth();
   const { colors } = useTheme();
   const { t, i18n } = useTranslation();
 
@@ -95,15 +97,19 @@ export default function LoginScreen({ navigation }) {
               {i18n.language === 'tr' ? 'Türkçe' : i18n.language === 'en' ? 'English' : i18n.language === 'es' ? 'Spanish' : i18n.language === 'fr' ? 'French' : i18n.language === 'pt' ? 'Portuguese' : i18n.language === 'ar' ? 'Arabic' : ''}
             </Text>
           </TouchableOpacity>
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, emailError && { borderColor: colors.error || '#FF3B30', borderWidth: 2 }]}>
             <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
-              <Iconify icon="tabler:mail-filled" size={22} color={colors.muted} /></View>
+              <Iconify icon="tabler:mail-filled" size={22} color={emailError ? (colors.error || '#FF3B30') : colors.muted} /></View>
             <TextInput
+              ref={emailInputRef}
               style={[styles.input, typography.styles.body]}
               placeholder={t('login.emailPlaceholder', 'E-posta')}
               placeholderTextColor={colors.muted}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (emailError) setEmailError(false);
+              }}
               autoCapitalize="none"
               keyboardType="email-address"
             />
@@ -130,7 +136,33 @@ export default function LoginScreen({ navigation }) {
 
           <TouchableOpacity
             style={styles.forgotTextButton}
-            onPress={() => Alert.alert(t('login.forgotPassword', 'Şifremi Unuttum'), t('login.forgotPasswordMessage', 'Şifre sıfırlama işlemi başlatılacak.'))}
+            onPress={async () => {
+              if (!email.trim()) {
+                setEmailError(true);
+                emailInputRef.current?.focus();
+                Alert.alert(
+                  t('login.error', 'Hata'),
+                  t('login.emailRequired', 'Lütfen e-posta adresinizi girin.')
+                );
+                return;
+              }
+              
+              try {
+                setLoading(true);
+                const { error } = await resetPasswordForEmail(email.trim());
+                if (error) throw error;
+                
+                Alert.alert(
+                  t('login.success', 'Başarılı'),
+                  t('login.resetPasswordSent', 'Şifre sıfırlama linki e-posta adresinize gönderildi. Lütfen e-postanızı kontrol edin.'),
+                  [{ text: t('login.ok', 'Tamam') }]
+                );
+              } catch (error) {
+                Alert.alert(t('login.error', 'Hata'), error.message);
+              } finally {
+                setLoading(false);
+              }
+            }}
             disabled={loading}
           >
             <Text style={[typography.styles.link, { color: colors.secondary, fontWeight: 'semibold', right: 6, marginBottom: -10}]}>{t('login.forgotPassword', 'Şifremi Unuttum')}</Text>
