@@ -22,6 +22,7 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ProfileAvatarButton from '../../components/layout/ProfileAvatarButton';
+import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
 
 // Fade efekti - karakter bazlı opacity (MaskedView sorunlarından kaçınır)
 const FadeText = ({ text, style, maxChars = 15 }) => {
@@ -91,8 +92,8 @@ export default function LibraryScreen() {
   const [selectedCard, setSelectedCard] = useState(null);
 
   const screenWidth = Dimensions.get('window').width;
-  const horizontalPadding = 16 * 2;
-  const cardSpacing = 12;
+  const horizontalPadding = scale(16) * 2;
+  const cardSpacing = scale(12);
   const numColumns = 2;
   const cardWidth = (screenWidth - horizontalPadding - cardSpacing) / numColumns;
   const cardAspectRatio = 120 / 168;
@@ -587,12 +588,12 @@ export default function LibraryScreen() {
         <View style={styles.myDecksContent}>
           <View style={styles.myDecksTextContainer}>
             <View style={styles.myDecksTitleContainer}>
-              <Iconify icon="ph:cards-fill" size={26} color="#F98A21" style={{ marginRight: 6 }} />
+              <Iconify icon="ph:cards-fill" size={moderateScale(26)} color="#F98A21" style={{ marginRight: scale(6) }} />
               <Text style={[typography.styles.h2, { color: colors.text}]}>
                 {t('library.myDecks', 'Destelerim')}
               </Text>
             </View>
-            <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: 22, marginRight: 3 }]}>
+            <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: moderateScale(22), marginRight: scale(3) }]}>
               {t('library.myDecksSubtitle', ' Oluşturduğun destelerle kendi öğrenme yolculuğunu tasarla; keşfet, pekiştir ve hedeflerine doğru ilerle')}
             </Text>
           </View>
@@ -620,8 +621,8 @@ export default function LibraryScreen() {
   // Yükleniyor ekranı (sadece Favorites için)
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
-      <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: 200, height: 200 }} />
-      <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100 }} />
+      <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: moderateScale(200, 0.3), height: moderateScale(200, 0.3) }} />
+      <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: moderateScale(100, 0.3), height: moderateScale(100, 0.3) }} />
     </View>
   );
 
@@ -706,7 +707,7 @@ export default function LibraryScreen() {
         {/* Page 0: My Decks */}
         <View key="myDecks" style={{ flex: 1 }}>
           {loading ? (
-            <MyDecksSkeleton />
+            <MyDecksSkeleton ListHeaderComponent={renderMyDecksCard} />
           ) : (
             <MyDecksList
               decks={filteredMyDecks}
@@ -733,13 +734,13 @@ export default function LibraryScreen() {
           )}
         </View>
         {/* Page 1: Favorites */}
-        <View key="favorites" style={{ flex: 1, marginHorizontal: 10 }}>
+        <View key="favorites" style={{ flex: 1, marginHorizontal: scale(10) }}>
           {favoritesLoading ? (
             renderLoading()
           ) : (
             <ScrollView
               style={{ flex: 1, backgroundColor: colors.background }}
-              contentContainerStyle={{ paddingBottom: '18%', paddingTop: '45%', flexGrow: 1 }}
+              contentContainerStyle={{ paddingBottom: '12%', paddingTop: '48%', flexGrow: 1, paddingHorizontal: scale(4) }}
               showsVerticalScrollIndicator={false}
               refreshControl={
                 <RefreshControl
@@ -752,9 +753,9 @@ export default function LibraryScreen() {
             >
               <View style={styles.favoriteSliderWrapper}>
                 <View style={styles.favoriteHeaderRow}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(8) }}>
                     <View style={[styles.iconBackground, { backgroundColor: colors.iconBackground }]}>
-                      <Iconify icon="ph:cards-fill" size={26} color="#F98A21" />
+                      <Iconify icon="ph:cards-fill" size={moderateScale(26)} color="#F98A21" />
                     </View>
                     <Text style={[styles.favoriteHeaderTitle, { color: colors.text }]}>
                       {t('library.favoriteDecksTitle', 'Favori Destelerim')}
@@ -764,7 +765,7 @@ export default function LibraryScreen() {
                     <Text style={[styles.seeAllText, { color: colors.secondary }]}>
                       {t('library.all', 'Tümü')}
                     </Text>
-                    <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={15} color={colors.secondary}/>
+                    <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(15)} color={colors.secondary}/>
                   </TouchableOpacity>
                 </View>
 
@@ -797,7 +798,7 @@ export default function LibraryScreen() {
                                 <View style={styles.backgroundCategoryIcon}>
                                   <Iconify
                                     icon={getCategoryIcon(deck.categories?.sort_order)}
-                                    size={150}
+                                    size={moderateScale(150, 0.3)}
                                     color="rgba(0, 0, 0, 0.1)"
                                     style={styles.categoryIconStyle}
                                   />
@@ -821,7 +822,7 @@ export default function LibraryScreen() {
                                   />
                                 </View>
                                 <TouchableOpacity
-                                  style={{ position: 'absolute', top: 10, right: 12, zIndex: 10, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
+                                  style={{ position: 'absolute', top: verticalScale(10), right: scale(12), zIndex: 10, backgroundColor: colors.iconBackground, padding: moderateScale(8), borderRadius: moderateScale(999) }}
                                   onPress={async () => {
                                     if (favoriteDecks.some(d => d.id === deck.id)) {
                                       await handleRemoveFavoriteDeck(deck.id);
@@ -833,7 +834,7 @@ export default function LibraryScreen() {
                                 >
                                   <Iconify
                                     icon={favoriteDecks.some(d => d.id === deck.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-                                    size={24}
+                                    size={moderateScale(24)}
                                     color={favoriteDecks.some(d => d.id === deck.id) ? '#F98A21' : colors.text}
                                   />
                                 </TouchableOpacity>
@@ -843,29 +844,29 @@ export default function LibraryScreen() {
                                       <>
                                         <FadeText 
                                           text={deck.name} 
-                                          style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} 
+                                          style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(18), fontWeight: '800', textAlign: 'center' }]} 
                                           maxChars={20}
                                         />
-                                        <View style={{ width: 70, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10, alignSelf: 'center' }} />
+                                        <View style={{ width: scale(70), height: moderateScale(2), backgroundColor: colors.divider, borderRadius: moderateScale(1), marginVertical: verticalScale(10), alignSelf: 'center' }} />
                                         <FadeText 
                                           text={deck.to_name} 
-                                          style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} 
+                                          style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(18), fontWeight: '800', textAlign: 'center' }]} 
                                           maxChars={20}
                                         />
                                       </>
                                     ) : (
                                       <FadeText 
                                         text={deck.name} 
-                                        style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]} 
+                                        style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(18), fontWeight: '800', textAlign: 'center' }]} 
                                         maxChars={20}
                                       />
                                     )}
                                   </View>
                                 </View>
-                                <View style={{ position: 'absolute', bottom: 12, right: 8 }}>
+                                <View style={{ position: 'absolute', bottom: verticalScale(12), right: scale(8) }}>
                                   <View style={styles.deckCountBadge}>
-                                    <Iconify icon="ri:stack-fill" size={18} color="#fff" style={{ marginRight: 4 }} />
-                                    <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: 16 }]}>{deck.card_count || 0}</Text>
+                                    <Iconify icon="ri:stack-fill" size={moderateScale(18)} color="#fff" style={{ marginRight: scale(4) }} />
+                                    <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(16) }]}>{deck.card_count || 0}</Text>
                                   </View>
                                 </View>
                               </LinearGradient>
@@ -890,17 +891,17 @@ export default function LibraryScreen() {
                   <View style={styles.favoriteSliderEmpty}>
                     <Image
                       source={require('../../assets/deckbg.png')}
-                      style={{ position: 'absolute', alignSelf: 'center', width: 300, height: 300, opacity: 0.2 }}
+                      style={{ position: 'absolute', alignSelf: 'center', width: moderateScale(300, 0.3), height: moderateScale(300, 0.3), opacity: 0.2 }}
                       resizeMode="contain"
                     />
                   </View>
                 )}
 
                 {/* Favorite Cards Section Header + Controls */}
-                <View style={[styles.favoriteHeaderRow, { marginTop: 40 }]}> 
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={[styles.favoriteHeaderRow, { marginTop: verticalScale(40) }]}> 
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(8) }}>
                     <View style={[styles.iconBackground, { backgroundColor: colors.iconBackground }]}>
-                      <Iconify icon="mdi:cards" size={26} color="#F98A21" />
+                      <Iconify icon="mdi:cards" size={moderateScale(26)} color="#F98A21" />
                     </View>
                     <Text style={[styles.favoriteHeaderTitle, { color: colors.text }]}> 
                       {t('library.favoriteCardsTitle', 'Favori Kartlarım')}
@@ -910,11 +911,11 @@ export default function LibraryScreen() {
                     <Text style={[styles.seeAllText, { color: colors.secondary }]}> 
                       {t('library.all', 'Tümü')}
                     </Text>
-                    <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={15} color={colors.secondary}  />
+                    <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(15)} color={colors.secondary}  />
                   </TouchableOpacity>
                 </View>
-                <View style={{ marginVertical: 5 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: '98%', alignSelf: 'center' }}>
+                <View style={{ marginVertical: verticalScale(5) }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(10), width: '98%', alignSelf: 'center' }}>
                     <SearchBar
                       value={favCardsQuery}
                       onChangeText={setFavCardsQuery}
@@ -928,7 +929,7 @@ export default function LibraryScreen() {
                     />
                   </View>
                   {/* Favorite Cards List */}
-                  <View style={{ marginTop: 14, paddingHorizontal: 4 }}>
+                  <View style={{ marginTop: verticalScale(14), paddingHorizontal: scale(4) }}>
                     {filteredFavoriteCards.map((card) => {
                       const isOwner = currentUserId && card.deck?.user_id && card.deck.user_id === currentUserId;
                       return (
@@ -952,7 +953,7 @@ export default function LibraryScreen() {
                       <View style={styles.favoriteCardsEmpty}>
                         <Image
                           source={require('../../assets/cardbg.png')}
-                          style={{ width: 400, height: 400, opacity: 0.2 }}
+                          style={{ width: moderateScale(400, 0.3), height: moderateScale(400, 0.3), opacity: 0.2 }}
                           resizeMode="contain"
                         />
                       </View>
@@ -979,7 +980,7 @@ export default function LibraryScreen() {
               onPress={() => setCardDetailModalVisible(false)}
               style={styles.modalCloseButton}
             >
-              <Iconify icon="mdi:arrow-back" size={24} color={colors.text} />
+              <Iconify icon="mdi:arrow-back" size={moderateScale(24)} color={colors.text} />
             </TouchableOpacity>
             <Text style={[styles.modalTitle, { color: colors.text, flex: 1, textAlign: 'center' }]}>
               {t('cardDetail.cardDetail', 'Kart Detayı')}
@@ -992,12 +993,12 @@ export default function LibraryScreen() {
               >
                 <Iconify
                   icon={favoriteCardIds.includes(selectedCard.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-                  size={24}
+                  size={moderateScale(24)}
                   color={favoriteCardIds.includes(selectedCard.id) ? '#F98A21' : colors.text}
                 />
               </TouchableOpacity>
             )}
-            {!selectedCard && <View style={{ width: 28 }} />}
+            {!selectedCard && <View style={{ width: scale(28) }} />}
           </View>
           <View style={{ flex: 1 }}>
             {selectedCard && (
@@ -1042,39 +1043,39 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   segmentedControlInner: {
-    paddingHorizontal: 24,
-    paddingBottom: 16,
-    borderBottomEndRadius: 70,
-    borderBottomStartRadius: 70,
+    paddingHorizontal: scale(24),
+    paddingBottom: verticalScale(16),
+    borderBottomEndRadius: moderateScale(70),
+    borderBottomStartRadius: moderateScale(70),
     overflow: 'hidden',
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: 44,
-    marginBottom: 12,
+    height: scale(44),
+    marginBottom: verticalScale(12),
   },
   headerLeft: {
-    width: 47,
+    width: scale(47),
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontWeight: '700',
     flex: 1,
     textAlign: 'center',
   },
   headerRight: {
-    width: 50,
+    width: scale(50),
     alignItems: 'flex-end',
-    right: -25,
+    right: scale(-25),
   },
   pillContainer: {
     borderWidth: 1,
     borderColor: '#444444',
-    height: 44,
+    height: scale(44),
     marginHorizontal: '17%',
-    borderRadius: 25,
+    borderRadius: moderateScale(25),
     overflow: 'hidden',
     flexDirection: 'row',
     alignItems: 'center',
@@ -1082,19 +1083,19 @@ const styles = StyleSheet.create({
   },
   pillIndicatorWrapper: {
     position: 'absolute',
-    left: 2,
-    top: 2,
-    bottom: 2,
-    right: 2,
+    left: moderateScale(2),
+    top: moderateScale(2),
+    bottom: moderateScale(2),
+    right: moderateScale(2),
     overflow: 'hidden',
-    borderRadius: 23,
+    borderRadius: moderateScale(23),
   },
   pillIndicator: {
     position: 'absolute',
     left: 0,
     top: 0,
     bottom: 0,
-    borderRadius: 23,
+    borderRadius: moderateScale(23),
   },
   pillTab: {
     height: '100%',
@@ -1102,78 +1103,78 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pillLabel: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '700',
   },
   favoriteSliderWrapper: {
-    marginBottom: 12,
+    marginBottom: verticalScale(12),
     paddingBottom: '25%',
   },
   favoriteHeaderRow: {
-    paddingHorizontal: 4,
-    marginBottom: 14,
-    marginTop: 8,
+    paddingHorizontal: scale(4),
+    marginBottom: verticalScale(14),
+    marginTop: verticalScale(8),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   favoriteHeaderTitle: {
-    fontSize: 21,
+    fontSize: moderateScale(21),
     fontWeight: '800',
   },
   seeAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 12,
+    gap: scale(4),
+    paddingVertical: verticalScale(4),
+    paddingHorizontal: scale(12),
     borderWidth: 1,
-    borderRadius: 30,
+    borderRadius: moderateScale(30),
   },
   favoriteSlider: {
-    height: 215,
-    borderRadius: 18,
+    height: verticalScale(170),
+    borderRadius: moderateScale(18),
     overflow: 'hidden',
   },
   favoriteSliderEmpty: {
-    height: 200,
-    borderRadius: 18,
+    height: verticalScale(200),
+    borderRadius: moderateScale(18),
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 16,
+    marginHorizontal: scale(16),
     backgroundColor: 'transparent',
   },
   favoriteCardsEmpty: {
-    height: 200,
-    borderRadius: 18,
+    height: verticalScale(200),
+    borderRadius: moderateScale(18),
     justifyContent: 'center',
     alignItems: 'center',
 
     backgroundColor: 'transparent',
   },
   favoriteSlideItem: {
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 8,
+    paddingHorizontal: scale(16),
+    paddingTop: verticalScale(4),
+    paddingBottom: verticalScale(8),
   },
   favoriteSlideGradient: {
     flex: 1,
-    borderRadius: 18,
-    padding: 16,
+    borderRadius: moderateScale(18),
+    padding: scale(16),
     justifyContent: 'center',
   },
   favoriteSliderDots: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
-    gap: 6,
+    marginTop: verticalScale(8),
+    gap: scale(6),
   },
   favoriteDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: moderateScale(8),
+    height: moderateScale(8),
+    borderRadius: moderateScale(4),
     backgroundColor: '#F98A21',
   },
   // Count badge used in Favorites slider
@@ -1181,28 +1182,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F98A21',
-    borderRadius: 14,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginRight: 8,
+    borderRadius: moderateScale(14),
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(2),
+    marginRight: scale(8),
   },
   seeAllText: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '700',
   },
   deckProfileRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    maxWidth: 120,
+    maxWidth: scale(120),
   },
   deckProfileAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 99,
-    marginRight: 6,
+    width: scale(32),
+    height: scale(32),
+    borderRadius: moderateScale(99),
+    marginRight: scale(6),
   },
   deckProfileUsername: {
-    fontSize: 15,
+    fontSize: moderateScale(15),
     color: '#BDBDBD',
     fontWeight: '700',
   },
@@ -1210,22 +1211,22 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: 200,
+    minHeight: verticalScale(200),
     flexDirection: 'column',
-    gap: -65,
+    gap: verticalScale(-65),
   },
   loadingText: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontWeight: '600',
     textAlign: 'center',
   },
   backgroundCategoryIcon: {
     position: 'absolute',
-    left: -160, // İkonun yarısının taşması için
+    left: moderateScale(-75, 0.3), // İkonun yarısının taşması için (icon boyutunun yarısı)
     width: '100%',
     height: '100%',
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'flex-start', // Sola hizala
     zIndex: 0, // En altta kalması için
     overflow: 'hidden', // Taşan kısmı gizle
     top: 0
@@ -1236,16 +1237,16 @@ const styles = StyleSheet.create({
   },
   // MyDecks Card styles
   myDecksCard: {
-    marginTop: '21%',
+    marginTop: '25%',
   },
   myDecksCardContainer: {
-    borderRadius: 28,
+    borderRadius: moderateScale(28),
     overflow: 'hidden',
-    marginHorizontal: 10,
-    marginVertical: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    minHeight: 180,
+    marginHorizontal: scale(10),
+    marginVertical: verticalScale(8),
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(8),
+    minHeight: verticalScale(180),
   },
   myDecksContent: {
     flexDirection: 'row',
@@ -1253,8 +1254,8 @@ const styles = StyleSheet.create({
   },
   myDecksTextContainer: {
     flex: 1,
-    marginRight: 15,
-    gap: 5,
+    marginRight: scale(15),
+    gap: verticalScale(5),
   },
   myDecksTitleContainer: {
     flexDirection: 'row',
@@ -1262,50 +1263,50 @@ const styles = StyleSheet.create({
     marginTop: '5%',
   },
   myDecksImageContainer: {
-    width: 150,
-    height: 150,
-    marginTop: 12,
+    width: moderateScale(150, 0.3),
+    height: moderateScale(150, 0.3),
+    marginTop: verticalScale(20),
   },
   myDecksImage: {
-    width: 160,
-    height: 160,
+    width: moderateScale(160, 0.3),
+    height: moderateScale(160, 0.3),
   },
   myDecksSearchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginTop: 12,
-    paddingTop: 8,
+    gap: scale(10),
+    marginTop: verticalScale(2),
+    paddingTop: verticalScale(8),
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(12),
   },
   modalCloseButton: {
-    width: 28,
-    height: 28,
+    width: scale(28),
+    height: scale(28),
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 4,
+    padding: moderateScale(4),
   },
   modalFavoriteButton: {
-    width: 28,
-    height: 28,
+    width: scale(28),
+    height: scale(28),
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 6,
+    paddingHorizontal: scale(6),
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontWeight: '700',
   },
   iconBackground: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
+    width: scale(40),
+    height: scale(40),
+    borderRadius: moderateScale(14),
     justifyContent: 'center',
     alignItems: 'center',
   },

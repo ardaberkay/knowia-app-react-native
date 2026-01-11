@@ -3,6 +3,7 @@ import { TouchableOpacity, StyleSheet, Modal, TouchableWithoutFeedback, View, Pl
 import Icon from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 const FilterIcon = ({ style, size = 24, color = "#B0B0B0", value = 'original', onChange, hideFavorites = false }) => {
   const { colors } = useTheme();
@@ -48,35 +49,35 @@ const FilterIcon = ({ style, size = 24, color = "#B0B0B0", value = 'original', o
           <View style={{ flex: 1 }}>
             <View style={{
               position: 'absolute',
-              left: Math.max(8, dropdownPos.x + dropdownPos.width - 140),
-              top: Platform.OS === 'android' ? dropdownPos.y + dropdownPos.height : dropdownPos.y + dropdownPos.height + 4,
-              minWidth: 120,
-              maxWidth: 140,
+              left: Math.max(scale(8), dropdownPos.x + dropdownPos.width - scale(140)),
+              top: Platform.OS === 'android' ? dropdownPos.y + dropdownPos.height : dropdownPos.y + dropdownPos.height + verticalScale(4),
+              minWidth: scale(120),
+              maxWidth: scale(140),
               backgroundColor: colors.background,
-              borderRadius: 14,
-              paddingVertical: 6,
+              borderRadius: moderateScale(14),
+              paddingVertical: verticalScale(6),
               paddingHorizontal: 0,
               shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
+              shadowOffset: { width: 0, height: verticalScale(2) },
               shadowOpacity: 0.10,
-              shadowRadius: 8,
+              shadowRadius: moderateScale(8),
               elevation: 8,
-              borderWidth: 1,
+              borderWidth: moderateScale(1),
               borderColor: colors.iconBackground,
             }}>
-              <TouchableOpacity onPress={() => handleSelect('original')} style={{ paddingVertical: 8, paddingHorizontal: 14, backgroundColor: value === 'original' ? colors.iconBackground : 'transparent', borderRadius: 8 }}>
-                <Text style={{ color: value === 'original' ? '#fff' : colors.text, fontWeight: value === 'original' ? 'bold' : 'normal', fontSize: 15 }}>{t('deckDetail.default', 'Varsayılan')}</Text>
+              <TouchableOpacity onPress={() => handleSelect('original')} style={{ paddingVertical: verticalScale(8), paddingHorizontal: scale(14), backgroundColor: value === 'original' ? colors.iconBackground : 'transparent', borderRadius: moderateScale(8) }}>
+                <Text style={{ color: value === 'original' ? '#fff' : colors.text, fontWeight: value === 'original' ? 'bold' : 'normal', fontSize: moderateScale(15) }}>{t('deckDetail.default', 'Varsayılan')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleSelect('az')} style={{ paddingVertical: 8, paddingHorizontal: 14, backgroundColor: value === 'az' ? colors.iconBackground  : 'transparent', borderRadius: 8 }}>
-                <Text style={{ color: value === 'az' ? '#fff' : colors.text, fontWeight: value === 'az' ? 'bold' : 'normal', fontSize: 15 }}>A-Z</Text>
+              <TouchableOpacity onPress={() => handleSelect('az')} style={{ paddingVertical: verticalScale(8), paddingHorizontal: scale(14), backgroundColor: value === 'az' ? colors.iconBackground  : 'transparent', borderRadius: moderateScale(8) }}>
+                <Text style={{ color: value === 'az' ? '#fff' : colors.text, fontWeight: value === 'az' ? 'bold' : 'normal', fontSize: moderateScale(15) }}>A-Z</Text>
               </TouchableOpacity>
               {!hideFavorites && (
-                <TouchableOpacity onPress={() => handleSelect('fav')} style={{ paddingVertical: 8, paddingHorizontal: 14, backgroundColor: value === 'fav' ? colors.iconBackground : 'transparent', borderRadius: 8 }}>
-                  <Text style={{ color: value === 'fav' ? '#fff' : colors.text, fontWeight: value === 'fav' ? 'bold' : 'normal', fontSize: 15 }}>{t('deckDetail.fav', 'Favoriler')}</Text>
+                <TouchableOpacity onPress={() => handleSelect('fav')} style={{ paddingVertical: verticalScale(8), paddingHorizontal: scale(14), backgroundColor: value === 'fav' ? colors.iconBackground : 'transparent', borderRadius: moderateScale(8) }}>
+                  <Text style={{ color: value === 'fav' ? '#fff' : colors.text, fontWeight: value === 'fav' ? 'bold' : 'normal', fontSize: moderateScale(15) }}>{t('deckDetail.fav', 'Favoriler')}</Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity onPress={() => handleSelect('unlearned')} style={{ paddingVertical: 8, paddingHorizontal: 14, backgroundColor: value === 'unlearned' ? colors.iconBackground : 'transparent', borderRadius: 8 }}>
-                <Text style={{ color: value === 'unlearned' ? '#fff' : colors.text, fontWeight: value === 'unlearned' ? 'bold' : 'normal', fontSize: 15 }}>{t('deckDetail.inProgress', 'Devam Eden')}</Text>
+              <TouchableOpacity onPress={() => handleSelect('unlearned')} style={{ paddingVertical: verticalScale(8), paddingHorizontal: scale(14), backgroundColor: value === 'unlearned' ? colors.iconBackground : 'transparent', borderRadius: moderateScale(8) }}>
+                <Text style={{ color: value === 'unlearned' ? '#fff' : colors.text, fontWeight: value === 'unlearned' ? 'bold' : 'normal', fontSize: moderateScale(15) }}>{t('deckDetail.inProgress', 'Devam Eden')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -94,11 +95,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#fffff',
-    borderRadius: 30,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    height: 48,
+    borderRadius: moderateScale(30),
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(8),
+    borderWidth: moderateScale(1),
+    height: verticalScale(48),
     aspectRatio: 1,
   },
 });

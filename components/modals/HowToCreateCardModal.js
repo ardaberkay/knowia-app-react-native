@@ -5,6 +5,7 @@ import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 export default function HowToCreateCardModal({ isVisible, onClose }) {
   const { colors } = useTheme();
@@ -65,13 +66,13 @@ export default function HowToCreateCardModal({ isVisible, onClose }) {
       <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
         <View style={styles.headerRow}>
           <View style={styles.headerTitleContainer}>
-            <Iconify icon="material-symbols:info-outline" size={24} color={colors.secondary} style={{ marginRight: 8 }} />
+            <Iconify icon="material-symbols:info-outline" size={moderateScale(24)} color={colors.secondary} style={{ marginRight: scale(8) }} />
             <Text style={[typography.styles.h2, { color: colors.text }]}>
               {t('howToCreateCard.title', 'Kart Nasıl Oluşturulur?')}
             </Text>
           </View>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
+          <TouchableOpacity onPress={onClose} hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}>
+            <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -80,7 +81,7 @@ export default function HowToCreateCardModal({ isVisible, onClose }) {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          <Text style={[styles.introText, typography.styles.body, { color: colors.muted, marginBottom: 24 }]}>
+          <Text style={[styles.introText, typography.styles.body, { color: colors.muted, marginBottom: verticalScale(24) }]}>
             {t('howToCreateCard.intro', 'Aşağıdaki adımları takip ederek kolayca bir kart oluşturabilirsiniz. Her adımın ne işe yaradığını öğrenin:')}
           </Text>
 
@@ -88,7 +89,7 @@ export default function HowToCreateCardModal({ isVisible, onClose }) {
             <View key={index} style={[styles.stepContainer, { backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground, borderColor: colors.cardBorder }]}>
               <View style={styles.stepHeader}>
                 <View style={[styles.stepIconContainer, { backgroundColor: colors.iconBackground }]}>
-                  <Iconify icon={step.icon} size={24} color={colors.secondary} />
+                  <Iconify icon={step.icon} size={moderateScale(24)} color={colors.secondary} />
                 </View>
                 <View style={styles.stepTitleContainer}>
                   <View style={styles.stepTitleRow}>
@@ -105,14 +106,14 @@ export default function HowToCreateCardModal({ isVisible, onClose }) {
                   </View>
                 </View>
               </View>
-              <Text style={[styles.stepDescription, typography.styles.body, { color: colors.muted, marginTop: 8 }]}>
+              <Text style={[styles.stepDescription, typography.styles.body, { color: colors.muted, marginTop: verticalScale(8) }]}>
                 {step.description.replace(/Örn:/g, '\nÖrn:')}
               </Text>
             </View>
           ))}
 
           <View style={[styles.tipContainer, { backgroundColor: colors.secondary + '15', borderColor: colors.secondary + '30' }]}>
-            <Iconify icon="lucide:lightbulb" size={20} color={colors.secondary} style={{ marginRight: 8 }} />
+            <Iconify icon="lucide:lightbulb" size={moderateScale(20)} color={colors.secondary} style={{ marginRight: scale(8) }} />
             <Text style={[styles.tipText, typography.styles.caption, { color: colors.text, flex: 1 }]}>
               {t('howToCreateCard.tip', 'İpucu: Kart oluşturduktan sonra istediğiniz zaman düzenleyebilir veya silebilirsiniz.')}
             </Text>
@@ -135,10 +136,10 @@ export default function HowToCreateCardModal({ isVisible, onClose }) {
 
 const styles = StyleSheet.create({
   modalContainer: {
-    borderRadius: 24,
-    padding: 24,
+    borderRadius: moderateScale(24),
+    padding: scale(24),
     maxHeight: '85%',
-    minHeight: 300,
+    minHeight: verticalScale(300),
     width: '95%',
     alignSelf: 'center',
     overflow: 'hidden',
@@ -147,7 +148,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
   },
   headerTitleContainer: {
     flexDirection: 'row',
@@ -155,31 +156,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollView: {
-    maxHeight: 450,
+    maxHeight: verticalScale(450),
   },
   scrollContent: {
-    paddingBottom: 16,
+    paddingBottom: verticalScale(16),
   },
   introText: {
-    lineHeight: 22,
+    lineHeight: moderateScale(22),
   },
   stepContainer: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
+    borderRadius: moderateScale(16),
+    padding: scale(16),
+    marginBottom: verticalScale(16),
+    borderWidth: moderateScale(1),
   },
   stepHeader: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   stepIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: scale(48),
+    height: verticalScale(48),
+    borderRadius: moderateScale(12),
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: scale(12),
   },
   stepTitleContainer: {
     flex: 1,
@@ -189,45 +190,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: scale(8),
   },
   stepTitle: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '600',
     flex: 1,
   },
   requiredBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(4),
+    borderRadius: moderateScale(6),
   },
   requiredText: {
-    fontSize: 11,
+    fontSize: moderateScale(11),
     fontWeight: '600',
   },
   stepDescription: {
-    lineHeight: 20,
-    marginTop: 8,
-    paddingLeft: 16,
+    lineHeight: moderateScale(20),
+    marginTop: verticalScale(8),
+    paddingLeft: scale(16),
     textAlign: 'left',
   },
   tipContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginTop: 8,
+    padding: scale(16),
+    borderRadius: moderateScale(12),
+    borderWidth: moderateScale(1),
+    marginTop: verticalScale(8),
   },
   tipText: {
-    lineHeight: 20,
+    lineHeight: moderateScale(20),
   },
   closeButton: {
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: moderateScale(12),
+    paddingVertical: verticalScale(14),
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 20,
+    marginTop: verticalScale(20),
   },
   closeButtonText: {
     fontWeight: '600',

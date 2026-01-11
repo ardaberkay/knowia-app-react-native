@@ -14,6 +14,7 @@ import SearchBar from '../../components/tools/SearchBar';
 import FilterIcon from '../../components/tools/FilterIcon';
 import CardDetailView from '../../components/layout/CardDetailView';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
  
 
 export default function DeckCardsScreen({ route, navigation }) {
@@ -160,15 +161,15 @@ export default function DeckCardsScreen({ route, navigation }) {
     if (selectedCard && !editMode) {
       navigation.setOptions({
         headerRight: () => (
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: scale(8) }}>
             <TouchableOpacity
               onPress={() => handleToggleFavoriteCard(selectedCard.id)}
               activeOpacity={0.7}
-              style={{ paddingHorizontal: 6 }}
+              style={{ paddingHorizontal: scale(6) }}
             >
               <Iconify
                 icon={favoriteCards.includes(selectedCard.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-                size={24}
+                size={moderateScale(24)}
                 color={favoriteCards.includes(selectedCard.id) ? '#F98A21' : colors.text}
               />
             </TouchableOpacity>
@@ -177,9 +178,9 @@ export default function DeckCardsScreen({ route, navigation }) {
                 ref={moreMenuRef}
                 onPress={openMoreMenu}
                 activeOpacity={0.7}
-                style={{ paddingHorizontal: 6 }}
+                style={{ paddingHorizontal: scale(6) }}
               >
-                <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={26} color={colors.text} />
+                <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={moderateScale(26)} color={colors.text} />
               </TouchableOpacity>
             )}
           </View>
@@ -195,9 +196,9 @@ export default function DeckCardsScreen({ route, navigation }) {
           return (
             <TouchableOpacity 
               onPress={() => navigation.navigate('AddCard', { deck })} 
-              style={{ marginRight: 8 }}
+              style={{ marginRight: scale(8) }}
             >
-              <Iconify icon="ic:round-plus" size={28} color={colors.text} />
+              <Iconify icon="ic:round-plus" size={moderateScale(28)} color={colors.text} />
             </TouchableOpacity>
           );
         },
@@ -326,18 +327,18 @@ export default function DeckCardsScreen({ route, navigation }) {
             <View
               style={{
                 position: 'absolute',
-                right: 20,
-                top: Platform.OS === 'android' ? moreMenuPos.y + moreMenuPos.height + 4 : moreMenuPos.y + moreMenuPos.height + 8,
-                minWidth: 160,
+                right: scale(20),
+                top: Platform.OS === 'android' ? moreMenuPos.y + moreMenuPos.height + verticalScale(4) : moreMenuPos.y + moreMenuPos.height + verticalScale(8),
+                minWidth: scale(160),
                 backgroundColor: colors.cardBackground,
-                borderRadius: 14,
-                paddingVertical: 8,
+                borderRadius: moderateScale(14),
+                paddingVertical: verticalScale(8),
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
+                shadowOffset: { width: 0, height: verticalScale(2) },
                 shadowOpacity: 0.15,
-                shadowRadius: 8,
+                shadowRadius: moderateScale(8),
                 elevation: 8,
-                borderWidth: 1,
+                borderWidth: moderateScale(1),
                 borderColor: colors.cardBorder,
               }}
             >
@@ -346,29 +347,29 @@ export default function DeckCardsScreen({ route, navigation }) {
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  paddingVertical: 12,
-                  paddingHorizontal: 16,
+                  paddingVertical: verticalScale(12),
+                  paddingHorizontal: scale(16),
                 }}
                 activeOpacity={0.7}
               >
-                <Iconify icon="lucide:edit" size={20} color={colors.text} style={{ marginRight: 12 }} />
-                <Text style={[typography.styles.body, { color: colors.text, fontSize: 16 }]}>
+                <Iconify icon="lucide:edit" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
+                <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
                   {t('cardDetail.edit', 'Kartı Düzenle')}
                 </Text>
               </TouchableOpacity>
-              <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
+              <View style={{ height: verticalScale(1), backgroundColor: colors.border, marginVertical: verticalScale(4) }} />
               <TouchableOpacity
                 onPress={handleDeleteSelectedCard}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  paddingVertical: 12,
-                  paddingHorizontal: 16,
+                  paddingVertical: verticalScale(12),
+                  paddingHorizontal: scale(16),
                 }}
                 activeOpacity={0.7}
               >
-                <Iconify icon="mdi:garbage" size={20} color="#E74C3C" style={{ marginRight: 12 }} />
-                <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: 16 }]}>
+                <Iconify icon="mdi:garbage" size={moderateScale(20)} color="#E74C3C" style={{ marginRight: scale(12) }} />
+                <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: moderateScale(16) }]}>
                   {t('cardDetail.delete', 'Kartı Sil')}
                 </Text>
               </TouchableOpacity>
@@ -382,8 +383,8 @@ export default function DeckCardsScreen({ route, navigation }) {
         <View style={{ flex: 1, minHeight: 0 }}>
           {loading ? (
             <View style={styles.loadingContainer}>
-              <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: 200, height: 200 }} />
-              <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100 }} />
+              <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: scale(200), height: scale(200) }} />
+              <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100), height: scale(100) }} />
             </View>
           ) : selectedCard ? (
             <LinearGradient
@@ -399,7 +400,7 @@ export default function DeckCardsScreen({ route, navigation }) {
              data={filteredCards}
              keyExtractor={item => item.id?.toString()}
              showsVerticalScrollIndicator={false}
-             contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+             contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(24) }}
              ListHeaderComponent={
                !selectedCard && filteredCards.length > 0 && (
                 <View style={styles.cardsBlurSearchContainer}>
@@ -489,12 +490,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: 200,
+    minHeight: verticalScale(200),
     flexDirection: 'column',
-    gap: -65,
+    gap: verticalScale(-65),
   },
   loadingText: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -502,15 +503,15 @@ const styles = StyleSheet.create({
   cardsBlurSearchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginTop: 12,
-    paddingTop: 8,
-    paddingBottom: 8,
-    paddingHorizontal: 12,
-    marginBottom: 8,
+    gap: scale(10),
+    marginTop: verticalScale(12),
+    paddingTop: verticalScale(8),
+    paddingBottom: verticalScale(8),
+    paddingHorizontal: scale(12),
+    marginBottom: verticalScale(8),
   },
   cardListItem: {
-    paddingHorizontal: 12,
+    paddingHorizontal: scale(12),
     paddingVertical: 0,
   },
 }); 

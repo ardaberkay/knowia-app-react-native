@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import LottieView from 'lottie-react-native';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import ChapterSelector from '../../components/modals/ChapterSelector';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 export default function ChapterCardsScreen({ route, navigation }) {
   const { chapter, deck } = route.params;
@@ -108,15 +109,15 @@ export default function ChapterCardsScreen({ route, navigation }) {
         headerTintColor: colors.text,
         headerTitle: '',
         headerRight: () => (
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: scale(8) }}>
             <TouchableOpacity
               onPress={() => handleToggleFavoriteCard(selectedCard.id)}
               activeOpacity={0.7}
-              style={{ paddingHorizontal: 6 }}
+              style={{ paddingHorizontal: scale(6) }}
             >
               <Iconify
                 icon={favoriteCards.includes(selectedCard.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-                size={24}
+                size={moderateScale(24)}
                 color={favoriteCards.includes(selectedCard.id) ? '#F98A21' : colors.text}
               />
             </TouchableOpacity>
@@ -125,9 +126,9 @@ export default function ChapterCardsScreen({ route, navigation }) {
                 ref={moreMenuRef}
                 onPress={openCardMenu}
                 activeOpacity={0.7}
-                style={{ paddingHorizontal: 6 }}
+                style={{ paddingHorizontal: scale(6) }}
               >
-                <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={26} color={colors.text} />
+                <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={moderateScale(26)} color={colors.text} />
               </TouchableOpacity>
             )}
           </View>
@@ -153,12 +154,12 @@ export default function ChapterCardsScreen({ route, navigation }) {
               setSelectedCards(new Set());
             }
           }}
-          style={{ marginRight: 16 }}
+          style={{ marginRight: scale(16) }}
           activeOpacity={0.7}
         >
           <Iconify 
             icon={editMode ? "mingcute:close-fill" : "lucide:edit"} 
-            size={22} 
+            size={moderateScale(22)} 
             color="#FFFFFF" 
           />
         </TouchableOpacity>
@@ -520,7 +521,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
           ]}>
             <Iconify 
               icon={statusIcon} 
-              size={50} 
+              size={scale(50)} 
               color={'#444444'} 
             />
           </View>
@@ -534,8 +535,8 @@ export default function ChapterCardsScreen({ route, navigation }) {
       <View style={[styles.bgGradient, { backgroundColor: colors.background }]}>
         <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
           <View style={styles.loadingContainer}>
-            <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: 200, height: 200 }} />
-            <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100 }} />
+            <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: scale(200), height: scale(200) }} />
+            <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100), height: scale(100) }} />
           </View>
         </SafeAreaView>
       </View>
@@ -653,14 +654,14 @@ export default function ChapterCardsScreen({ route, navigation }) {
           colors={[colors.cardBackground, colors.cardBackground]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[styles.fixedHeaderGradient, { paddingTop: headerHeight + 32 }]}
+          style={[styles.fixedHeaderGradient, { paddingTop: headerHeight + verticalScale(32) }]}
         >
           <View style={styles.headerContent}>
             {/* Icon and Title Section */}
             <View style={styles.heroContent}>
               <View style={styles.heroIconContainer}>
                 <View style={[styles.iconCircle, { backgroundColor: colors.buttonColor + '20' }]}>
-                  <Iconify icon={chapterIcon} size={28} color={colors.buttonColor} />
+                  <Iconify icon={chapterIcon} size={moderateScale(28)} color={colors.buttonColor} />
                 </View>
               </View>
               <View style={styles.heroTextContainer}>
@@ -671,10 +672,10 @@ export default function ChapterCardsScreen({ route, navigation }) {
             </View>
 
              {/* İstatistikler */}
-             <View style={[styles.statsRow, { marginBottom: 10 }]}>
+             <View style={[styles.statsRow, { marginBottom: verticalScale(10) }]}>
               {/* Total */}
               <View style={styles.statItem}>
-                <Iconify icon="ri:stack-fill" size={18} color={colors.buttonColor} style={{ marginRight: 6 }} />
+                <Iconify icon="ri:stack-fill" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(6) }} />
                 <Text style={[styles.statText, { color: colors.text }]}>
                   {chapterStats.total}
                 </Text>
@@ -682,7 +683,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
               
               {/* New */}
               <View style={styles.statItem}>
-                <Iconify icon="basil:eye-closed-outline" size={22} color={colors.buttonColor} style={{ marginRight: 6 }} />
+                <Iconify icon="basil:eye-closed-outline" size={moderateScale(22)} color={colors.buttonColor} style={{ marginRight: scale(6) }} />
                 <Text style={[styles.statText, { color: colors.text }]}>
                   {chapterStats.new}
                 </Text>
@@ -690,7 +691,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
               
               {/* Learning */}
               <View style={styles.statItem}>
-                <Iconify icon="mdi:fire" size={20} color={colors.buttonColor} style={{ marginRight: 6 }} />
+                <Iconify icon="mdi:fire" size={moderateScale(20)} color={colors.buttonColor} style={{ marginRight: scale(6) }} />
                 <Text style={[styles.statText, { color: colors.text }]}>
                   {chapterStats.learning}
                 </Text>
@@ -698,7 +699,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
               
               {/* Learned */}
               <View style={styles.statItem}>
-                <Iconify icon="dashicons:welcome-learn-more" size={20} color={colors.buttonColor} style={{ marginRight: 6 }} />
+                <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(20)} color={colors.buttonColor} style={{ marginRight: scale(6) }} />
                 <Text style={[styles.statText, { color: colors.text }]}>
                   {chapterStats.learned}
                 </Text>
@@ -717,7 +718,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
             {/* Edit mode'da seçim butonları */}
             {editMode && (
-              <View style={[styles.editModeBar, { backgroundColor: 'transparent', marginTop: 12 }]}>
+              <View style={[styles.editModeBar, { backgroundColor: 'transparent', marginTop: verticalScale(12) }]}>
                 <TouchableOpacity
                   onPress={handleSelectAll}
                   style={styles.editModeButton}
@@ -745,7 +746,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
                   disabled={selectedCards.size === 0}
                   pointerEvents={selectedCards.size > 0 ? 'auto' : 'none'}
                 >
-                  <Iconify icon="ion:chevron-forward" size={20} color={colors.buttonColor} style={{ marginRight: 6 }} />
+                  <Iconify icon="ion:chevron-forward" size={moderateScale(20)} color={colors.buttonColor} style={{ marginRight: scale(6) }} />
                   <Text style={[styles.moveButtonText, { color: colors.buttonColor }]}>
                     {t('chapterCards.move', 'Taşı')}
                   </Text>
@@ -800,7 +801,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
               {distLoading ? (
                 <ActivityIndicator size="large" color="#FFFFFF" />
               ) : (
-                <Iconify icon="fluent:arrow-shuffle-24-filled" size={28} color="#FFFFFF" />
+                <Iconify icon="fluent:arrow-shuffle-24-filled" size={moderateScale(28)} color="#FFFFFF" />
               )}
             </LinearGradient>
           </TouchableOpacity>
@@ -834,8 +835,8 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingVertical: 16,
+    paddingHorizontal: scale(18),
+    paddingVertical: verticalScale(16),
   },
   headerTitle: {
     textAlign: 'center',
@@ -845,30 +846,30 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   fixedHeaderGradient: {
-    paddingBottom: 12,
+    paddingBottom: verticalScale(12),
     paddingHorizontal: 0,
   },
   headerContent: {
-    paddingHorizontal: 12,
-    paddingTop: 20,
-    paddingBottom: 20,
+    paddingHorizontal: scale(12),
+    paddingTop: verticalScale(20),
+    paddingBottom: verticalScale(20),
   },
   heroContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
   },
   heroIconContainer: {
-    marginRight: 12,
+    marginRight: scale(12),
   },
   iconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: scale(64),
+    height: scale(64),
+    borderRadius: moderateScale(32),
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: moderateScale(2),
     borderColor: 'rgba(0, 0, 0, 0.1)',
   },
   heroTextContainer: {
@@ -877,16 +878,16 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     ...typography.styles.h2,
-    fontSize: 28,
+    fontSize: moderateScale(28),
     fontWeight: '900',
-    marginBottom: 6,
+    marginBottom: verticalScale(6),
     letterSpacing: -0.5,
   },
   heroSubtitle: {
     ...typography.styles.caption,
-    fontSize: 15,
+    fontSize: moderateScale(15),
     fontWeight: '500',
-    lineHeight: 20,
+    lineHeight: verticalScale(20),
   },
   statsRow: {
     flexDirection: 'row',
@@ -899,106 +900,106 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   statText: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '600',
   },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginTop: 8,
+    gap: scale(12),
+    marginTop: verticalScale(8),
   },
   searchBar: {
     flex: 1,
   },
   listContainer: {
     flex: 1,
-    marginTop: -20,
+    marginTop: verticalScale(-20),
     zIndex: 2,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: moderateScale(28),
+    borderTopRightRadius: moderateScale(28),
     overflow: 'hidden',
   },
   cardsList: {
-    paddingBottom: 20,
+    paddingBottom: verticalScale(20),
   },
   cardItem: {
     width: '100%',
-    minHeight: 110,
-    borderRadius: 30,
-    marginBottom: 12,
+    minHeight: verticalScale(110),
+    borderRadius: moderateScale(30),
+    marginBottom: verticalScale(12),
     padding: 0,
-    borderWidth: 1,
+    borderWidth: moderateScale(1),
     overflow: 'hidden',
   },
   cardContent: {
     flexDirection: 'row',
     width: '100%',
-    minHeight: 110,
+    minHeight: verticalScale(110),
     alignSelf: 'stretch',
   },
   leftSection: {
     flex: 3,
-    padding: 20,
+    padding: moderateScale(20),
     justifyContent: 'center',
-    borderRightWidth: 5,
-    minHeight: 110,
+    borderRightWidth: moderateScale(5),
+    minHeight: verticalScale(110),
   },
   rightSection: {
     width: '25%',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 20,
-    minHeight: 110,
+    paddingVertical: verticalScale(20),
+    minHeight: verticalScale(110),
   },
   question: {
     fontWeight: '600',
-    fontSize: 17,
-    marginBottom: 8,
+    fontSize: moderateScale(17),
+    marginBottom: verticalScale(8),
     letterSpacing: 0.3,
-    marginTop: 4,
+    marginTop: verticalScale(4),
   },
   divider: {
-    height: 2,
+    height: verticalScale(2),
     alignSelf: 'stretch',
-    marginVertical: 8,
-    borderRadius: 2,
+    marginVertical: verticalScale(8),
+    borderRadius: moderateScale(2),
   },
   answer: {
-    fontSize: 15,
-    marginTop: 4,
+    fontSize: moderateScale(15),
+    marginTop: verticalScale(4),
     fontWeight: '400',
     letterSpacing: 0.2,
   },
   iconBtn: {
-    padding: 8,
-    borderRadius: 12,
-    marginBottom: 4,
+    padding: moderateScale(8),
+    borderRadius: moderateScale(12),
+    marginBottom: verticalScale(4),
   },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: -250,
+    marginTop: verticalScale(-250),
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: 200,
+    minHeight: verticalScale(200),
     flexDirection: 'column',
-    gap: -65,
+    gap: verticalScale(-65),
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
   },
   fab: {
     position: 'absolute',
-    right: 20,
-    bottom: 24,
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    right: scale(20),
+    bottom: verticalScale(24),
+    width: scale(70),
+    height: scale(70),
+    borderRadius: moderateScale(35),
     overflow: 'hidden',
   },
   fabGradient: {
@@ -1006,18 +1007,18 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 35,
+    borderRadius: moderateScale(35),
   },
   checkboxContainer: {
-    padding: 15,
+    padding: moderateScale(15),
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
+    width: scale(24),
+    height: scale(24),
+    borderRadius: moderateScale(6),
+    borderWidth: moderateScale(2),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1025,37 +1026,37 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    marginHorizontal: 18,
-    marginTop: 12,
-    marginBottom: 10,
-    minHeight: 48,
-    borderRadius: 12,
-    borderWidth: 1,
+    paddingHorizontal: scale(18),
+    paddingVertical: verticalScale(12),
+    marginHorizontal: scale(18),
+    marginTop: verticalScale(12),
+    marginBottom: verticalScale(10),
+    minHeight: verticalScale(48),
+    borderRadius: moderateScale(12),
+    borderWidth: moderateScale(1),
     borderColor: 'rgba(255,255,255,0.1)',
   },
   editModeButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: verticalScale(6),
+    paddingHorizontal: scale(12),
   },
   editModeButtonText: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontWeight: '600',
   },
   editModeText: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontWeight: '500',
   },
   moveButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: scale(16),
+    borderRadius: moderateScale(20),
   },
   moveButtonText: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontWeight: '600',
   },
 });

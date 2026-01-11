@@ -13,6 +13,7 @@ import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
 import { getCategoryConfig } from '../../components/ui/CategoryHeroHeader';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 export default function CategoryDeckListScreen({ route }) {
   const { category, title, decks: initialDecks, favoriteDecks: initialFavoriteDecks } = route.params || {};
@@ -215,7 +216,7 @@ export default function CategoryDeckListScreen({ route }) {
             <View style={styles.heroContent}>
               <View style={styles.heroIconContainer}>
                 <View style={[styles.iconCircle, { backgroundColor: config.accentColor + '20' }]}>
-                  <Iconify icon={config.icon} size={28} color="#fff" />
+                  <Iconify icon={config.icon} size={moderateScale(28)} color="#fff" />
                 </View>
               </View>
               <View style={styles.heroTextContainer}>
@@ -257,7 +258,7 @@ export default function CategoryDeckListScreen({ route }) {
           onRefresh={handleRefresh}
           showPopularityBadge={false}
           loading={loading}
-          contentPaddingTop={20}
+          contentPaddingTop={verticalScale(20)}
         />
       </View>
 
@@ -282,31 +283,31 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   fixedHeaderGradient: {
-    paddingTop: 12,
-    paddingBottom: 12,
+    paddingTop: verticalScale(12),
+    paddingBottom: verticalScale(12),
     paddingHorizontal: 0,
   },
   headerContent: {
-    paddingHorizontal: 12,
-    paddingTop: 20,
-    paddingBottom: 20,
+    paddingHorizontal: scale(12),
+    paddingTop: verticalScale(20),
+    paddingBottom: verticalScale(20),
   },
   heroContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
   },
   heroIconContainer: {
-    marginRight: 16,
+    marginRight: scale(16),
   },
   iconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: scale(64),
+    height: scale(64),
+    borderRadius: moderateScale(32),
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: moderateScale(2),
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   heroTextContainer: {
@@ -316,33 +317,33 @@ const styles = StyleSheet.create({
   heroTitle: {
     ...typography.styles.h2,
     color: '#fff',
-    fontSize: 28,
+    fontSize: moderateScale(28),
     fontWeight: '900',
-    marginBottom: 6,
-    letterSpacing: -0.5,
+    marginBottom: verticalScale(6),
+    letterSpacing: moderateScale(-0.5),
   },
   heroSubtitle: {
     ...typography.styles.caption,
     color: 'rgba(255, 255, 255, 0.85)',
-    fontSize: 15,
+    fontSize: moderateScale(15),
     fontWeight: '500',
-    lineHeight: 20,
+    lineHeight: moderateScale(20),
   },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginTop: 8,
+    gap: scale(12),
+    marginTop: verticalScale(8),
   },
   searchBar: {
     flex: 1,
   },
   listContainer: {
     flex: 1,
-    marginTop: -20,
+    marginTop: verticalScale(-20),
     zIndex: 2,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: moderateScale(28),
+    borderTopRightRadius: moderateScale(28),
     overflow: 'hidden',
   },
 });

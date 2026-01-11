@@ -5,6 +5,7 @@ import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 export default function RegisterScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -50,8 +51,8 @@ export default function RegisterScreen({ navigation }) {
       <View style={styles.container}>
         <View style={styles.form}>
           <View style={styles.inputContainer}>
-            <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
-              <Iconify icon="tabler:mail-filled" size={22} color={colors.muted} />
+            <View style={{justifyContent: 'center', alignItems: 'center', width: scale(25), height: verticalScale(22)}}>
+              <Iconify icon="tabler:mail-filled" size={moderateScale(22)} color={colors.muted} />
             </View>
             <TextInput
               style={[styles.input, typography.styles.body]}
@@ -64,8 +65,8 @@ export default function RegisterScreen({ navigation }) {
             />
           </View>
           <View style={styles.inputContainer}>
-            <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
-              <Iconify icon="carbon:password" size={22} color={colors.muted} />
+            <View style={{justifyContent: 'center', alignItems: 'center', width: scale(25), height: verticalScale(22)}}>
+              <Iconify icon="carbon:password" size={moderateScale(22)} color={colors.muted} />
             </View>
             <TextInput
               style={[styles.input, typography.styles.body]}
@@ -77,15 +78,15 @@ export default function RegisterScreen({ navigation }) {
             />
             <TouchableOpacity
               onPress={() => setShowPassword(prev => !prev)}
-              style={{justifyContent: 'center', alignItems: 'center', width: 28, height: 22}}
+              style={{justifyContent: 'center', alignItems: 'center', width: scale(28), height: verticalScale(22)}}
               disabled={loading}
             >
-              <Iconify icon={showPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={22} color={colors.muted} />
+              <Iconify icon={showPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={moderateScale(22)} color={colors.muted} />
             </TouchableOpacity>
           </View>
           <View style={styles.inputContainer}>
-            <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
-              <Iconify icon="carbon:password" size={22} color={colors.muted} />
+            <View style={{justifyContent: 'center', alignItems: 'center', width: scale(25), height: verticalScale(22)}}>
+              <Iconify icon="carbon:password" size={moderateScale(22)} color={colors.muted} />
             </View>
             <TextInput
               style={[styles.input, typography.styles.body]}
@@ -97,14 +98,14 @@ export default function RegisterScreen({ navigation }) {
             />
             <TouchableOpacity
               onPress={() => setShowConfirmPassword(prev => !prev)}
-              style={{justifyContent: 'center', alignItems: 'center', width: 28, height: 22}}
+              style={{justifyContent: 'center', alignItems: 'center', width: scale(28), height: verticalScale(22)}}
               disabled={loading}
             >
-              <Iconify icon={showConfirmPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={22} color={colors.muted} />
+              <Iconify icon={showConfirmPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={moderateScale(22)} color={colors.muted} />
             </TouchableOpacity>
           </View>
           <TouchableOpacity 
-            style={[styles.button, { backgroundColor: colors.buttonColor, borderWidth: 1, borderColor: 'rgba(0, 0, 0, 0.1)' }, loading && styles.buttonDisabled]}
+            style={[styles.button, { backgroundColor: colors.buttonColor, borderWidth: moderateScale(1), borderColor: 'rgba(0, 0, 0, 0.1)' }, loading && styles.buttonDisabled]}
             onPress={handleRegister}
             disabled={loading}
           >
@@ -113,7 +114,7 @@ export default function RegisterScreen({ navigation }) {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[styles.linkButton, { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 }]}
+            style={[styles.linkButton, { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: moderateScale(8), paddingHorizontal: scale(12), paddingVertical: verticalScale(8) }]}
             onPress={() => navigation.navigate('Login')}
           >
             <Text style={[styles.linkText, typography.styles.link, { color: colors.secondary }]}>
@@ -130,39 +131,39 @@ export default function RegisterScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    padding: scale(20),
     justifyContent: 'center',
     paddingTop: '65%',
   },
   title: {
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: verticalScale(10),
   },
   subtitle: {
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: verticalScale(30),
   },
   form: {
-    gap: 15,
+    gap: verticalScale(15),
   },
   input: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: verticalScale(12),
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: moderateScale(1),
     borderColor: 'rgba(255, 255, 255, 0.5)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(6),
+    borderRadius: moderateScale(10),
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    gap: 8,
+    gap: scale(8),
   },
   button: {
-    padding: 15,
-    borderRadius: 10,
+    padding: moderateScale(15),
+    borderRadius: moderateScale(10),
     alignItems: 'center',
   },
   buttonDisabled: {

@@ -11,11 +11,12 @@ import logoasil from '../../assets/logoasil.png';
 import { useTranslation } from 'react-i18next';
 import { addFavoriteCard, removeFavoriteCard, getFavoriteCards } from '../../services/FavoriteService';
 import LottieView from 'lottie-react-native';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 const { width, height } = Dimensions.get('window');
 
 // Kart boyutlandırma sabitleri
-const CARD_WIDTH = width * 0.88; // %92 genişlik
+const CARD_WIDTH = scale(width * 0.88); // %88 genişlik (responsive)
 const CARD_ASPECT_RATIO = 1.45; // Daha da uzun oran
 const CARD_HEIGHT = CARD_WIDTH * CARD_ASPECT_RATIO;
 
@@ -59,12 +60,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
         !loading && currentCard ? (
           <TouchableOpacity
             onPress={() => toggleFavorite(currentCard.card_id)}
-            style={{ marginRight: 16 }}
-            hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+            style={{ marginRight: scale(16) }}
+            hitSlop={{ top: scale(8), right: scale(8), bottom: scale(8), left: scale(8) }}
           >
             <Iconify
               icon={isCurrentCardFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
-              size={26}
+              size={moderateScale(26)}
               color={isCurrentCardFavorite ? colors.buttonColor : colors.text}
             />
           </TouchableOpacity>
@@ -432,22 +433,22 @@ export default function SwipeDeckScreen({ route, navigation }) {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          paddingVertical: 8,
-          paddingHorizontal: 14,
-          borderRadius: 20,
+          paddingVertical: verticalScale(8),
+          paddingHorizontal: scale(14),
+          borderRadius: moderateScale(20),
           backgroundColor: 'rgba(255, 255, 255, 0.15)',
-          borderWidth: 1.5,
+          borderWidth: moderateScale(1.5),
           borderColor: 'rgba(255, 255, 255, 0.3)',
-          marginBottom: 12,
+          marginBottom: verticalScale(12),
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
+          shadowOffset: { width: 0, height: verticalScale(2) },
           shadowOpacity: 0.1,
-          shadowRadius: 4,
+          shadowRadius: moderateScale(4),
           elevation: 2,
         }}
       >
-        {icon ? <View style={{ marginRight: 8 }}>{icon}</View> : null}
-        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14, letterSpacing: 0.5 }}>{label}</Text>
+        {icon ? <View style={{ marginRight: scale(8) }}>{icon}</View> : null}
+        <Text style={{ color: '#fff', fontWeight: '700', fontSize: moderateScale(14), letterSpacing: 0.5 }}>{label}</Text>
       </View>
     );
 
@@ -455,9 +456,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
     const SectionDivider = () => (
       <View style={{
         width: '60%',
-        height: 1,
+        height: verticalScale(1),
         backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        marginVertical: 20,
+        marginVertical: verticalScale(20),
         alignSelf: 'center',
       }} />
     );
@@ -474,7 +475,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
             colors={gradientColors}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
+            style={[StyleSheet.absoluteFill, { borderRadius: moderateScale(24) }]}
           />
         </View>
       );
@@ -521,10 +522,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
               colors={gradientColors}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
+              style={[StyleSheet.absoluteFill, { borderRadius: moderateScale(24) }]}
             />
             {card.cards.image && (
-              <View style={[styles.imageContainer, { backgroundColor: 'transparent', marginTop: 32 }]}> 
+              <View style={[styles.imageContainer, { backgroundColor: 'transparent', marginTop: verticalScale(32) }]}> 
                 <Image
                   source={{ uri: card.cards.image }}
                   style={styles.cardImage}
@@ -532,7 +533,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
               </View>
             )}
             
-            <Text style={[typography.styles.h2, { color: colors.text, marginBottom: card.cards.image ? 16 : 0, textAlign: 'center' }]}>{card.cards.question}</Text>
+            <Text style={[typography.styles.h2, { color: colors.text, marginBottom: card.cards.image ? verticalScale(16) : 0, textAlign: 'center' }]}>{card.cards.question}</Text>
           </Animated.View>
           {/* Arka yüz */}
           <Animated.View style={[styles.card, { backgroundColor: colors.cardBackground }, backAnimatedStyle]}>
@@ -540,31 +541,31 @@ export default function SwipeDeckScreen({ route, navigation }) {
               colors={gradientColors}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
+              style={[StyleSheet.absoluteFill, { borderRadius: moderateScale(24) }]}
             />
             <ScrollView
               contentContainerStyle={{
                 flexGrow: 1,
                 justifyContent: 'center',
-                paddingHorizontal: 24,
-                paddingTop: 32,
-                paddingBottom: 24,
+                paddingHorizontal: scale(24),
+                paddingTop: verticalScale(32),
+                paddingBottom: verticalScale(24),
               }}
               showsVerticalScrollIndicator={false}
             >
               {/* Answer Section */}
-              <View style={{ alignItems: 'center', marginBottom: 24 }}>
+              <View style={{ alignItems: 'center', marginBottom: verticalScale(24) }}>
                 <Pill
                   label={t('swipeDeck.answer', 'Answer')}
-                  icon={<Iconify icon="uil:comment-alt-check" size={18} color="#fff" />}
+                  icon={<Iconify icon="uil:comment-alt-check" size={moderateScale(18)} color="#fff" />}
                 />
                 <Text style={[
                   typography.styles.h2,
                   {
                     color: '#fff',
                     textAlign: 'center',
-                    marginTop: 8,
-                    lineHeight: 28,
+                    marginTop: verticalScale(8),
+                    lineHeight: moderateScale(28),
                     fontWeight: '600',
                   }
                 ]}>
@@ -576,19 +577,19 @@ export default function SwipeDeckScreen({ route, navigation }) {
               {card.cards.example && (
                 <>
                   <SectionDivider />
-                  <View style={{ alignItems: 'center', marginBottom: 24 }}>
+                  <View style={{ alignItems: 'center', marginBottom: verticalScale(24) }}>
                     <Pill
                       label={t('swipeDeck.example', 'Example')}
-                      icon={<Iconify icon="lucide:lightbulb" size={18} color="#fff" />}
+                      icon={<Iconify icon="lucide:lightbulb" size={moderateScale(18)} color="#fff" />}
                     />
                     <Text style={[
                       typography.styles.subtitle,
                       {
                         color: 'rgba(255, 255, 255, 0.9)',
                         textAlign: 'center',
-                        marginTop: 8,
-                        lineHeight: 22,
-                        fontSize: 16,
+                        marginTop: verticalScale(8),
+                        lineHeight: moderateScale(22),
+                        fontSize: moderateScale(16),
                       }
                     ]}>
                       {card.cards.example}
@@ -601,19 +602,19 @@ export default function SwipeDeckScreen({ route, navigation }) {
               {card.cards.note && (
                 <>
                   <SectionDivider />
-                  <View style={{ alignItems: 'center', marginBottom: 24 }}>
+                  <View style={{ alignItems: 'center', marginBottom: verticalScale(24) }}>
                     <Pill
                       label={t('swipeDeck.note', 'Note')}
-                      icon={<Iconify icon="material-symbols-light:stylus-note" size={18} color="#fff" />}
+                      icon={<Iconify icon="material-symbols-light:stylus-note" size={moderateScale(18)} color="#fff" />}
                     />
                     <Text style={[
                       typography.styles.subtitle,
                       {
                         color: 'rgba(255, 255, 255, 0.85)',
                         textAlign: 'center',
-                        marginTop: 8,
-                        lineHeight: 22,
-                        fontSize: 15,
+                        marginTop: verticalScale(8),
+                        lineHeight: moderateScale(22),
+                        fontSize: moderateScale(15),
                         fontStyle: 'italic',
                       }
                     ]}>
@@ -660,19 +661,19 @@ export default function SwipeDeckScreen({ route, navigation }) {
     
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={{ width: '100%', alignItems: 'center', marginTop: 110}}>
-          <Image source={logoasil} style={{ width: 260, height: 260, resizeMode: 'cover' }} />
-          <Text style={[typography.styles.h2, { color: colors.text, textAlign: 'center', marginTop: 16 }]}> 
+        <View style={{ width: '100%', alignItems: 'center', marginTop: verticalScale(110)}}>
+          <Image source={logoasil} style={{ width: scale(260), height: scale(260), resizeMode: 'cover' }} />
+          <Text style={[typography.styles.h2, { color: colors.text, textAlign: 'center', marginTop: verticalScale(16) }]}> 
             {progress === totalCardCount ? t('swipeDeck.bravo', "Bravo! Tüm Kartları Tamamladın") : t('swipeDeck.learnTime', "Kalan Kartları Öğrenmeye Vakit Var")}
           </Text>
-          <View style={{ width: 72, height: 1, backgroundColor: colors.orWhite, borderRadius: 2, alignSelf: 'center', marginTop: 16, marginBottom: 32 }} />
+          <View style={{ width: scale(72), height: verticalScale(1), backgroundColor: colors.orWhite, borderRadius: moderateScale(2), alignSelf: 'center', marginTop: verticalScale(16), marginBottom: verticalScale(32) }} />
           
           {/* İstatistik Kartları */}
           <View style={styles.statsContainer}>
             {/* Learning Kartlar */}
             <View style={[styles.statCard, { backgroundColor: colors.cardBackground, borderColor: '#f3a14c' }]}>
               <View style={[styles.statIconContainer, { backgroundColor: 'rgba(243, 161, 76, 0.1)' }]}>
-                <Iconify icon="mingcute:time-fill" size={24} color="#f3a14c" />
+                <Iconify icon="mingcute:time-fill" size={moderateScale(24)} color="#f3a14c" />
               </View>
               <Text style={[styles.statNumber, { color: colors.text }]}>{learningCount}</Text>
               <Text style={[styles.statLabel, { color: colors.subtext }]}>{t('swipeDeck.learning', 'Öğreniliyor')}</Text>
@@ -681,7 +682,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
             {/* Learned Kartlar */}
             <View style={[styles.statCard, { backgroundColor: colors.cardBackground, borderColor: '#3e8e41' }]}>
               <View style={[styles.statIconContainer, { backgroundColor: 'rgba(62, 142, 65, 0.1)' }]}>
-                <Iconify icon="hugeicons:tick-01" size={24} color="#3e8e41" />
+                <Iconify icon="hugeicons:tick-01" size={moderateScale(24)} color="#3e8e41" />
               </View>
               <Text style={[styles.statNumber, { color: colors.text }]}>{learnedCount}</Text>
               <Text style={[styles.statLabel, { color: colors.subtext }]}>{t('swipeDeck.learned', 'Öğrenildi')}</Text>
@@ -698,7 +699,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       <View style={styles.counterRow}>
         <View style={[styles.counterBoxLeft, { backgroundColor: leftHighlight ? leftActiveColor : leftInactiveColor }]}>
           {leftHighlight ? (
-            <Iconify icon="mingcute:time-fill" size={18} color="#fff" />
+            <Iconify icon="mingcute:time-fill" size={moderateScale(18)} color="#fff" />
           ) : (
             <Text style={styles.counterText}>{leftCount}</Text>
           )}
@@ -708,13 +709,13 @@ export default function SwipeDeckScreen({ route, navigation }) {
         </View>
         <View style={[styles.counterBoxRight, { backgroundColor: rightHighlight ? rightActiveColor : rightInactiveColor }]}>
           {rightHighlight ? (
-            <Iconify icon="hugeicons:tick-01" size={18} color="#fff" />
+            <Iconify icon="hugeicons:tick-01" size={moderateScale(18)} color="#fff" />
           ) : (
             <Text style={styles.counterText}>{rightCount}</Text>
           )}
         </View>
       </View>
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', marginTop: 15 }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', marginTop: verticalScale(15) }}>
         <Swiper
           ref={swiperRef}
           cards={cards}
@@ -738,9 +739,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  borderWidth: 2,
+                  borderWidth: moderateScale(2),
                   borderColor: '#F98A21',
-                  borderRadius: 26,
+                  borderRadius: moderateScale(26),
                 }} />
               ),
               style: {
@@ -761,9 +762,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  borderWidth: 2,
+                  borderWidth: moderateScale(2),
                   borderColor: '#3e8e41',
-                  borderRadius: 26,
+                  borderRadius: moderateScale(26),
                 }} />
               ),
               style: {
@@ -791,9 +792,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
           showSecondCard={false}
           swipeBackCard={true}
           backgroundColor={colors.background}
-          stackSeparation={18}
+          stackSeparation={verticalScale(18)}
           stackScale={0.07}
-          cardHorizontalMargin={24}
+          cardHorizontalMargin={scale(24)}
           containerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
           cardStyle={{ width: CARD_WIDTH, height: CARD_HEIGHT, alignSelf: 'center', justifyContent: 'center' }}
           stackAnimationFriction={100}
@@ -803,26 +804,26 @@ export default function SwipeDeckScreen({ route, navigation }) {
       </View>
       {/* Yatay birleşik butonlar */}
       <View style={[styles.horizontalButtonRow, { backgroundColor: colors.buttonColor }]}>
-        <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: 1, borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(15)}>
-          <Iconify icon="material-symbols:repeat-rounded" size={20} color={colors.buttonText} style={{ marginRight: 6 }} />
+        <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(15)}>
+          <Iconify icon="material-symbols:repeat-rounded" size={moderateScale(20)} color={colors.buttonText} style={{ marginRight: scale(6) }} />
           <Text style={[styles.horizontalButtonText, { color: colors.buttonText }]}>{t('swipeDeck.minutes', "15 dk")}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: 1, borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(60)}>
-          <Iconify icon="mingcute:time-line" size={20} color={colors.buttonText} style={{ marginRight: 6 }} />
+        <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(60)}>
+          <Iconify icon="mingcute:time-line" size={moderateScale(20)} color={colors.buttonText} style={{ marginRight: scale(6) }} />
           <Text style={[styles.horizontalButtonText, { color: colors.buttonText }]}>{t('swipeDeck.hours', "1 sa")}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: 1, borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(24 * 60)}>
-          <Iconify icon="solar:calendar-broken" size={20} color={colors.buttonText} style={{ marginRight: 6 }} />
+        <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(24 * 60)}>
+          <Iconify icon="solar:calendar-broken" size={moderateScale(20)} color={colors.buttonText} style={{ marginRight: scale(6) }} />
           <Text style={[styles.horizontalButtonText, { color: colors.buttonText }]}>{t('swipeDeck.days', "1 gün")}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.horizontalButton} onPress={() => handleSkip(7 * 24 * 60)}>
-          <Iconify icon="solar:star-broken" size={20} color={colors.buttonText} style={{ marginRight: 6 }} />
+          <Iconify icon="solar:star-broken" size={moderateScale(20)} color={colors.buttonText} style={{ marginRight: scale(6) }} />
           <Text style={[styles.horizontalButtonText, { color: colors.buttonText }]}>{t('swipeDeck.sevenDays', "7 gün")}</Text>
         </TouchableOpacity>
       </View>
       {/* Geri alma butonu */}
       <TouchableOpacity style={[styles.undoButton, undoDisabled && { opacity: 0.5 }]} onPress={handleUndo} disabled={undoDisabled}>
-        <Iconify icon="lets-icons:refund-back" size={28} color={colors.orWhite} />
+        <Iconify icon="lets-icons:refund-back" size={moderateScale(28)} color={colors.orWhite} />
       </TouchableOpacity>
       {/* Auto play butonu */}
       <TouchableOpacity
@@ -830,9 +831,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
         onPress={() => setAutoPlay((prev) => !prev)}
       >
         {autoPlay ? (
-          <Iconify icon="material-symbols:pause-rounded" size={32} color={colors.orWhite} />
+          <Iconify icon="material-symbols:pause-rounded" size={moderateScale(32)} color={colors.orWhite} />
         ) : (
-          <Iconify icon="streamline:button-play-solid" size={20} color={colors.orWhite} />
+          <Iconify icon="streamline:button-play-solid" size={moderateScale(20)} color={colors.orWhite} />
         )}
       </TouchableOpacity>
       {/* Progress Bar (undoButton'un hemen üstünde) */}
@@ -850,27 +851,27 @@ const styles = StyleSheet.create({
   card: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
-    borderRadius: 26,
-    padding: 24,
+    borderRadius: moderateScale(26),
+    padding: scale(24),
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#fff',
-    shadowOffset: { width: 0, height: -10 },
+    shadowOffset: { width: 0, height: verticalScale(-10) },
     shadowOpacity: 5,
-    shadowRadius: 4,
+    shadowRadius: moderateScale(4),
   },
   imageContainer: {
     width: '100%',
     height: (CARD_HEIGHT * 1.85) / 5,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 22,
+    marginBottom: verticalScale(22),
   },
   cardImage: {
     width: '100%',
     height: '100%',
     resizeMode: 'contain',
-    borderRadius: 12,
+    borderRadius: moderateScale(12),
   },
   counterRow: {
     position: 'absolute',
@@ -878,43 +879,43 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 10,
-    padding: 16,
-    paddingBottom: 100,
-    height: 36,
+    padding: scale(16),
+    paddingBottom: verticalScale(100),
+    height: verticalScale(36),
   },
   counterBoxLeft: {
     position: 'absolute',
-    left: -30,
-    top: 16,
-    minWidth: 80,
-    paddingLeft: 30,
-    paddingRight: 12,
-    height: 36,
+    left: scale(-30),
+    top: verticalScale(16),
+    minWidth: scale(80),
+    paddingLeft: scale(30),
+    paddingRight: scale(12),
+    height: verticalScale(36),
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowRadius: moderateScale(4),
     elevation: 2,
-    borderTopRightRadius: 18,
-    borderBottomRightRadius: 18,
+    borderTopRightRadius: moderateScale(18),
+    borderBottomRightRadius: moderateScale(18),
   },
   counterBoxRight: {
     position: 'absolute',
-    right: -30,
-    top: 16,
-    minWidth: 80,
-    paddingLeft: 12,
-    paddingRight: 30,
-    height: 36,
+    right: scale(-30),
+    top: verticalScale(16),
+    minWidth: scale(80),
+    paddingLeft: scale(12),
+    paddingRight: scale(30),
+    height: verticalScale(36),
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowRadius: moderateScale(4),
     elevation: 2,
-    borderTopLeftRadius: 18,
-    borderBottomLeftRadius: 18,
+    borderTopLeftRadius: moderateScale(18),
+    borderBottomLeftRadius: moderateScale(18),
   },
   counterText: {
     ...typography.styles.button,
@@ -924,22 +925,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     width: '93%',
     alignSelf: 'center',
-    borderRadius: 12,
+    borderRadius: moderateScale(12),
     overflow: 'hidden',
     backgroundColor: '#fff8f0',
     boxSizing: 'border-box',
     shadowColor: '#000',
     shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowRadius: moderateScale(8),
     elevation: 4,
-    marginBottom: 105,
+    marginBottom: verticalScale(105),
   },
   horizontalButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: verticalScale(16),
     backgroundColor: 'transparent',
     borderRightWidth: 0,
     borderColor: '#e0e0e0',
@@ -949,16 +950,16 @@ const styles = StyleSheet.create({
   },
   undoButton: {
     position: 'absolute',
-    left: 24,
-    bottom: 24,
-    width: 48,
-    height: 48,
+    left: scale(24),
+    bottom: verticalScale(24),
+    width: scale(48),
+    height: scale(48),
 
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.10,
-    shadowRadius: 6,
+    shadowRadius: moderateScale(6),
     elevation: 4,
     zIndex: 30,
   },
@@ -966,11 +967,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    top: 16,
+    top: verticalScale(16),
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 8,
-    height: 36,
+    paddingHorizontal: scale(8),
+    height: verticalScale(36),
   },
   deckProgressText: {
     ...typography.styles.subtitle,
@@ -979,28 +980,28 @@ const styles = StyleSheet.create({
   progressBarContainer: {
     width: '91%',
     alignSelf: 'center',
-    height: 3,
-    borderRadius: 8,
-    marginBottom: 8,
+    height: verticalScale(3),
+    borderRadius: moderateScale(8),
+    marginBottom: verticalScale(8),
     position: 'absolute',
-    bottom: 72,
+    bottom: verticalScale(72),
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    borderRadius: 8,
+    borderRadius: moderateScale(8),
     transition: 'width 0.3s',
   },
   autoPlayButton: {
     position: 'absolute',
-    right: 24,
-    bottom: 24,
-    width: 48,
-    height: 48,
+    right: scale(24),
+    bottom: verticalScale(24),
+    width: scale(48),
+    height: scale(48),
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 30,
-    borderRadius: 24,
+    borderRadius: moderateScale(24),
     backgroundColor: 'transparent',
   },
   loadingContainer: {
@@ -1017,8 +1018,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   loadingAnimation: {
-    width: 300,
-    height: 300,
+    width: scale(300),
+    height: scale(300),
   },
   loadingText: {
     ...typography.styles.subtitle,
@@ -1029,39 +1030,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 16,
-    marginTop: 8,
+    gap: scale(16),
+    marginTop: verticalScale(8),
   },
   statCard: {
     width: '45%',
     alignItems: 'center',
-    padding: 20,
-    borderRadius: 16,
-    borderWidth: 2,
+    padding: scale(20),
+    borderRadius: moderateScale(16),
+    borderWidth: moderateScale(2),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: verticalScale(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: moderateScale(8),
     elevation: 3,
-    marginBottom: 12,
+    marginBottom: verticalScale(12),
   },
   statIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: scale(48),
+    height: scale(48),
+    borderRadius: moderateScale(24),
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: verticalScale(12),
   },
   statNumber: {
     ...typography.styles.h2,
-    fontSize: 32,
+    fontSize: moderateScale(32),
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: verticalScale(4),
   },
   statLabel: {
     ...typography.styles.subtitle,
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontWeight: '500',
   },
 }); 

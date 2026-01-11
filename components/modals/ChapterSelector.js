@@ -6,6 +6,7 @@ import { typography } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import CircularProgress from '../ui/CircularProgress';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 export default function ChapterSelector({ 
   isVisible, 
@@ -36,13 +37,13 @@ export default function ChapterSelector({
           </Text>
           <TouchableOpacity 
             onPress={onClose} 
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
           >
-            <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
+            <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={{ maxHeight: 500 }} showsVerticalScrollIndicator={false}>
+        <ScrollView style={{ maxHeight: verticalScale(500) }} showsVerticalScrollIndicator={false}>
           {chapters.length === 0 ? (
             <View style={styles.emptyChapters}>
               <Text style={[styles.emptyChaptersText, { color: colors.subtext || colors.muted }]}>
@@ -63,7 +64,7 @@ export default function ChapterSelector({
                     {
                       backgroundColor: colors.cardBackground,
                       borderColor: isSelected ? colors.buttonColor : colors.cardBorder,
-                      borderWidth: isSelected ? 2 : 1,
+                      borderWidth: isSelected ? moderateScale(2) : moderateScale(1),
                       shadowColor: colors.shadowColor,
                       shadowOffset: colors.shadowOffset,
                       shadowOpacity: colors.shadowOpacity,
@@ -79,9 +80,9 @@ export default function ChapterSelector({
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <Iconify 
                         icon="streamline-freehand:plugin-jigsaw-puzzle" 
-                        size={22} 
+                        size={moderateScale(22)} 
                         color={colors.buttonColor} 
-                        style={{ marginRight: 8 }} 
+                        style={{ marginRight: scale(8) }} 
                       />
                       <Text style={[typography.styles.body, styles.chapterTitle, { color: colors.text }]}>
                         {t('chapters.chapter', 'Bölüm')} {index + 1}
@@ -97,19 +98,19 @@ export default function ChapterSelector({
                     <View style={styles.progressContainer}>
                       <CircularProgress
                         progress={chapterProgress?.progress || 0}
-                        size={78}
-                        strokeWidth={9}
+                        size={scale(78)}
+                        strokeWidth={moderateScale(9)}
                         showText={true}
                         shouldAnimate={false}
                         fullCircle={true}
-                        textStyle={{ fontSize: 16, fontWeight: '900', color: colors.text }}
+                        textStyle={{ fontSize: moderateScale(16), fontWeight: '900', color: colors.text }}
                       />
                     </View>
                     
                     <View style={styles.statsContainer}>
                       {/* Learning */}
                       <View style={styles.statRow}>
-                        <Iconify icon="mdi:fire" size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
+                        <Iconify icon="mdi:fire" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
                         <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
                           {t('chapters.learning', 'Learning')}: {learningCount}
                         </Text>
@@ -117,7 +118,7 @@ export default function ChapterSelector({
                       
                       {/* Learned */}
                       <View style={styles.statRow}>
-                        <Iconify icon="dashicons:welcome-learn-more" size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
+                        <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
                         <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
                           {t('chapters.learned', 'Learned')}: {chapterProgress.learned}
                         </Text>
@@ -125,7 +126,7 @@ export default function ChapterSelector({
                       
                       {/* Total */}
                       <View style={styles.statRow}>
-                        <Iconify icon="ri:stack-fill" size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
+                        <Iconify icon="ri:stack-fill" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
                         <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
                           {t('chapters.total', 'Total')}: {chapterProgress.total}
                         </Text>
@@ -144,66 +145,66 @@ export default function ChapterSelector({
 
 const styles = StyleSheet.create({
   modalContainer: {
-    borderRadius: 32,
-    padding: 24,
+    borderRadius: moderateScale(32),
+    padding: scale(24),
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: verticalScale(16),
   },
   chapterItem: {
     flexDirection: 'column',
-    padding: 20,
-    borderRadius: 40,
-    marginBottom: 14,
-    shadowOffset: { width: 4, height: 6 },
+    padding: scale(20),
+    borderRadius: moderateScale(40),
+    marginBottom: verticalScale(14),
+    shadowOffset: { width: scale(4), height: verticalScale(6) },
     shadowOpacity: 0.10,
-    shadowRadius: 10,
+    shadowRadius: moderateScale(10),
     elevation: 5,
   },
   chapterHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: verticalScale(12),
   },
   chapterTitle: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontWeight: '600',
   },
   chapterDivider: {
-    height: 1,
+    height: moderateScale(1),
     width: '100%',
-    marginBottom: 16,
+    marginBottom: verticalScale(16),
     opacity: 0.3,
   },
   chapterContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: scale(16),
   },
   progressContainer: {
-    marginRight: 8,
+    marginRight: scale(8),
   },
   statsContainer: {
     flex: 1,
-    gap: 8,
+    gap: verticalScale(8),
   },
   statRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   statText: {
-    fontSize: 15,
+    fontSize: moderateScale(15),
   },
   emptyChapters: {
-    padding: 40,
+    padding: scale(40),
     alignItems: 'center',
   },
   emptyChaptersText: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
   },
 });
 

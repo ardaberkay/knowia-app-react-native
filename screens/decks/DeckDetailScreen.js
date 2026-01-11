@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import CircularProgress from '../../components/ui/CircularProgress';
 import { useAuth } from '../../contexts/AuthContext';
 import { listChapters, getChaptersProgress } from '../../services/ChapterService';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 const AnimatedFabContainer = Animated.createAnimatedComponent(View);
 
@@ -75,22 +76,22 @@ export default function DeckDetailScreen({ route, navigation }) {
   const descriptionLayoutDone = useRef(false);
   const screenWidth = Dimensions.get('window').width;
   const screenHeight = Dimensions.get('window').height;
-  const fabRightPosition = 20; // FAB butonunun sağdan mesafesi
-  const fabButtonWidth = 56;
-  const fabGap = 12;
+  const fabRightPosition = scale(20); // FAB butonunun sağdan mesafesi
+  const fabButtonWidth = scale(56);
+  const fabGap = scale(12);
   const fabTotalWidth = fabButtonWidth + fabGap + fabButtonWidth; // İki buton + gap
-  const panelMaxWidth = screenWidth - fabRightPosition - fabTotalWidth - 20; // Sol padding için 20
+  const panelMaxWidth = screenWidth - fabRightPosition - fabTotalWidth - scale(20); // Sol padding için 20
   const fabExpandedWidth = fabMenuAnimation.interpolate({
     inputRange: [0, 1],
     outputRange: [fabButtonWidth, fabButtonWidth + panelMaxWidth],
   });
   const fabContentPadding = fabMenuAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 16],
+    outputRange: [0, scale(16)],
   });
   const fabContentTranslate = fabMenuAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: [20, 0],
+    outputRange: [scale(20), 0],
   });
   const fabContentOpacity = fabMenuAnimation.interpolate({
     inputRange: [0, 0.2, 1],
@@ -105,7 +106,7 @@ export default function DeckDetailScreen({ route, navigation }) {
 
   useEffect(() => {
     // Staggered entrance animation
-    Animated.stagger(120, [
+    Animated.stagger(verticalScale(120), [
       Animated.spring(heroAnim, {
         toValue: 1,
         tension: 50,
@@ -711,7 +712,7 @@ export default function DeckDetailScreen({ route, navigation }) {
   React.useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginRight: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(12), marginRight: scale(8) }}>
           {/* Favori ikonu - Her zaman görünür */}
           <TouchableOpacity
             onPress={handleAddFavorite}
@@ -720,7 +721,7 @@ export default function DeckDetailScreen({ route, navigation }) {
           >
             <Iconify
               icon={isFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
-              size={24}
+              size={moderateScale(24)}
               color={isFavorite ? '#F98A21' : colors.text}
             />
           </TouchableOpacity>
@@ -732,7 +733,7 @@ export default function DeckDetailScreen({ route, navigation }) {
               onPress={openMoreMenu}
               activeOpacity={0.7}
             >
-              <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={24} color={colors.text} />
+              <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={moderateScale(24)} color={colors.text} />
             </TouchableOpacity>
           )}
         </View>
@@ -786,7 +787,7 @@ export default function DeckDetailScreen({ route, navigation }) {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
     
       <ScrollView 
-        contentContainerStyle={{ paddingBottom: screenHeight * 0.12 }} 
+        contentContainerStyle={{ paddingBottom: verticalScale(screenHeight * 0.12) }} 
         showsVerticalScrollIndicator={false}
       >
         {/* GRADIENT FLOW DESIGN - Modern & Eye-catching */}
@@ -813,7 +814,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             
             {/* Category Badge */}
             <View style={styles.gfCategoryBadge}>
-              <Iconify icon={getCategoryIcon(categoryInfo?.sort_order)} size={18} color="#fff" />
+              <Iconify icon={getCategoryIcon(categoryInfo?.sort_order)} size={moderateScale(18)} color="#fff" />
               <Text style={styles.gfCategoryText}>
                 {t(`categories.${categoryInfo?.sort_order}`) || categoryInfo?.name || t('common.category', 'Kategori')}
               </Text>
@@ -821,8 +822,8 @@ export default function DeckDetailScreen({ route, navigation }) {
             
             {/* Title - Scrollable if overflows */}
             <View style={styles.gfTitleContainer}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Iconify icon="ion:book" size={28} color="#fff" />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(10) }}>
+                <Iconify icon="ion:book" size={moderateScale(28)} color="#fff" />
                 <ScrollView
                   ref={nameScrollRef}
                   horizontal
@@ -861,8 +862,8 @@ export default function DeckDetailScreen({ route, navigation }) {
             {/* Subtitle - Scrollable if overflows */}
             {deck.to_name && (
               <View style={styles.gfTitleContainer}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <Iconify icon="icon-park-outline:translation" size={28} color="#fff" />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(10) }}>
+                  <Iconify icon="icon-park-outline:translation" size={moderateScale(28)} color="#fff" />
                   <ScrollView
                     ref={toNameScrollRef}
                     horizontal
@@ -930,10 +931,10 @@ export default function DeckDetailScreen({ route, navigation }) {
                     <Text style={styles.gfExpandButtonText}>
                       {descriptionExpanded ? t('common.showLess', 'Daha az göster') : t('common.showMore', 'Daha fazla göster')}
                     </Text>
-                    <View style={{ marginTop: 1 }}>
+                    <View style={{ marginTop: verticalScale(1) }}>
                       <Iconify 
                         icon="flowbite:caret-down-solid"
-                        size={14} 
+                        size={moderateScale(14)} 
                         color="rgba(255,255,255,0.9)"
                         style={{ transform: [{ rotate: descriptionExpanded ? '180deg' : '0deg' }] }}
                       />
@@ -981,8 +982,8 @@ export default function DeckDetailScreen({ route, navigation }) {
               <View style={[styles.gfProgressGlow, { backgroundColor: getCategoryColor(categoryInfo?.sort_order) + '15' }]} />
               <CircularProgress 
                 progress={progress} 
-                size={170} 
-                strokeWidth={17}
+                size={scale(170)} 
+                strokeWidth={moderateScale(17)}
                 showText={!progressLoading || progress > 0}
                 shouldAnimate={!progressLoading}
                 fullCircle={true}
@@ -998,7 +999,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                 end={{ x: 1, y: 1 }}
                 style={styles.gfTotalBadgeGradient}
               >
-                <Iconify icon="ri:stack-fill" size={18} color="#fff" />
+                <Iconify icon="ri:stack-fill" size={moderateScale(18)} color="#fff" />
                 <View style={styles.gfTotalBadgeTextWrap}>
                   <Text style={styles.gfTotalBadgeNumber}>{deckStats.total}</Text>
                   <Text style={styles.gfTotalBadgeLabel}>{t('deckDetail.cards', 'Kart')}</Text>
@@ -1025,7 +1026,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                     colors={['#F98A21', '#FF6B35']}
                     style={styles.gfStatRowIcon}
                   >
-                    <Iconify icon="mdi:fire" size={18} color="#fff" />
+                    <Iconify icon="mdi:fire" size={moderateScale(18)} color="#fff" />
                   </LinearGradient>
                   <View style={styles.gfStatRowText}>
                     <Text style={[styles.gfStatRowValue, { color: colors.cardQuestionText }]}>{deckStats.learning}</Text>
@@ -1038,7 +1039,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                     colors={[colors.secondary, colors.secondary + 'CC']}
                     style={styles.gfStatRowIcon}
                   >
-                    <Iconify icon="basil:eye-closed-outline" size={18} color="#fff" />
+                    <Iconify icon="basil:eye-closed-outline" size={moderateScale(18)} color="#fff" />
                   </LinearGradient>
                   <View style={styles.gfStatRowText}>
                     <Text style={[styles.gfStatRowValue, { color: colors.cardQuestionText }]}>{deckStats.new}</Text>
@@ -1078,7 +1079,7 @@ export default function DeckDetailScreen({ route, navigation }) {
               <Text style={[styles.gfActionTitle, { color: colors.cardQuestionText }]}>{t('deckDetail.cards', 'Kartlar')}</Text>
               <Text style={[styles.gfActionDesc, { color: colors.muted }]}>{t('deckDetail.browseCards', 'Tüm kartları görüntüle')}</Text>
             </View>
-            <Iconify icon="ion:chevron-forward" size={22} color={colors.muted} />
+            <Iconify icon="ion:chevron-forward" size={moderateScale(22)} color={colors.muted} />
           </TouchableOpacity>
 
           {/* Divider */}
@@ -1094,13 +1095,13 @@ export default function DeckDetailScreen({ route, navigation }) {
               colors={[colors.secondary, colors.secondary + 'DD']}
               style={styles.gfActionIconBox}
             >
-              <Iconify icon="streamline-flex:module-puzzle-2" size={24} color="#fff" />
+              <Iconify icon="streamline-flex:module-puzzle-2" size={moderateScale(24)} color="#fff" />
             </LinearGradient>
             <View style={styles.gfActionTextWrap}>
               <Text style={[styles.gfActionTitle, { color: colors.cardQuestionText }]}>{t('deckDetail.chapters', 'Bölümler')}</Text>
               <Text style={[styles.gfActionDesc, { color: colors.muted }]}>{chapters.length} {t('deckDetail.chaptersCount', 'bölüm')}</Text>
             </View>
-            <Iconify icon="ion:chevron-forward" size={22} color={colors.muted} />
+            <Iconify icon="ion:chevron-forward" size={moderateScale(22)} color={colors.muted} />
           </TouchableOpacity>
         </Animated.View>
 
@@ -1118,7 +1119,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                 colors={isShared ? ['#27AE60', '#2ECC71'] : [colors.muted + '30', colors.muted + '20']}
                 style={styles.gfShareIconBg}
               >
-                <Iconify icon="fluent:people-community-20-filled" size={22} color={isShared ? '#fff' : colors.muted} />
+                <Iconify icon="fluent:people-community-20-filled" size={moderateScale(22)} color={isShared ? '#fff' : colors.muted} />
               </LinearGradient>
               <View style={styles.gfShareContent}>
                 <Text style={[styles.gfShareTitle, { color: colors.cardQuestionText }]}>
@@ -1141,7 +1142,7 @@ export default function DeckDetailScreen({ route, navigation }) {
               onPress={handleShowShareDetails}
               activeOpacity={0.7}
             >
-              <Iconify icon="material-symbols:info-outline" size={18} color={colors.secondary} />
+              <Iconify icon="material-symbols:info-outline" size={moderateScale(18)} color={colors.secondary} />
               <Text style={[styles.gfShareInfoText, { color: colors.secondary }]}>
                 {t('deckDetail.moreInfo', 'Daha fazla bilgi')}
               </Text>
@@ -1189,11 +1190,11 @@ export default function DeckDetailScreen({ route, navigation }) {
                   }}
                 >
                   <View style={styles.fabChapterItemBadge}>
-                    <Iconify 
-                      icon="streamline:startup-solid" 
-                      size={18} 
-                      color={selectedChapter?.id === 'action' ? colors.buttonColor : '#fff'} 
-                    />
+                      <Iconify 
+                        icon="streamline:startup-solid" 
+                        size={moderateScale(18)} 
+                        color={selectedChapter?.id === 'action' ? colors.buttonColor : '#fff'} 
+                      />
                   </View>
                   <View style={styles.fabChapterItemContent}>
                     <View style={styles.fabChapterItemTitleRow}>
@@ -1212,25 +1213,25 @@ export default function DeckDetailScreen({ route, navigation }) {
                     </View>
                     <View style={styles.fabChapterItemStats}>
                       <View style={styles.fabChapterStatRow}>
-                        <Iconify icon="ri:stack-fill" size={14} color="rgba(255,255,255,0.7)" style={{ marginRight: 4 }} />
+                        <Iconify icon="ri:stack-fill" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
                         <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
                           {deckStats.total}
                         </Text>
                       </View>
                       <View style={styles.fabChapterStatRow}>
-                        <Iconify icon="basil:eye-closed-outline" size={14} color="rgba(255,255,255,0.7)" style={{ marginRight: 4 }} />
+                        <Iconify icon="basil:eye-closed-outline" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
                         <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
                           {deckStats.new || 0}
                         </Text>
                       </View>
                       <View style={styles.fabChapterStatRow}>
-                        <Iconify icon="mdi:fire" size={14} color="rgba(255,255,255,0.7)" style={{ marginRight: 4 }} />
+                        <Iconify icon="mdi:fire" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
                         <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
                           {deckStats.learning || 0}
                         </Text>
                       </View>
                       <View style={styles.fabChapterStatRow}>
-                        <Iconify icon="dashicons:welcome-learn-more" size={14} color="rgba(255,255,255,0.7)" style={{ marginRight: 4 }} />
+                        <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
                         <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
                           {deckStats.learned}
                         </Text>
@@ -1280,7 +1281,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                       </View>
                       <View style={styles.fabChapterItemContent}>
                         <View style={styles.fabChapterItemTitleRow}>
-                          <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={16} color="#fff" style={{ marginRight: 6 }} />
+                          <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={moderateScale(16)} color="#fff" style={{ marginRight: scale(6) }} />
                           <Text
                             style={[
                               styles.fabChapterItemVerticalText,
@@ -1308,13 +1309,13 @@ export default function DeckDetailScreen({ route, navigation }) {
                             </Text>
                           </View>
                           <View style={styles.fabChapterStatRow}>
-                            <Iconify icon="mdi:fire" size={14} color="rgba(255,255,255,0.7)" style={{ marginRight: 4 }} />
+                            <Iconify icon="mdi:fire" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
                             <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
                               {chapterProgress.learning || 0}
                             </Text>
                           </View>
                           <View style={styles.fabChapterStatRow}>
-                            <Iconify icon="dashicons:welcome-learn-more" size={14} color="rgba(255,255,255,0.7)" style={{ marginRight: 4 }} />
+                            <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
                             <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
                               {chapterProgress.learned}
                             </Text>
@@ -1369,7 +1370,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                       <View style={styles.fabChapterItemBadge}>
                         <Iconify 
                           icon="streamline:startup-solid" 
-                          size={22} 
+                          size={moderateScale(22)} 
                           color="#fff" 
                         />
                       </View>
@@ -1388,27 +1389,27 @@ export default function DeckDetailScreen({ route, navigation }) {
                             {t('deckDetail.action', 'Aksiyon')}
                           </Text>
                         </View>
-                        <View style={styles.fabChapterItemStats}>
-                          <View style={styles.fabChapterStatRow}>
-                            <Iconify icon="ri:stack-fill" size={14} color="rgba(255,255,255,0.7)" style={{ marginRight: 4 }} />
-                            <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
-                              {deckStats.total}
-                            </Text>
-                          </View>
-                          <View style={styles.fabChapterStatRow}>
-                            <Iconify icon="basil:eye-closed-outline" size={14} color="rgba(255,255,255,0.7)" style={{ marginRight: 4 }} />
-                            <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
-                              {deckStats.new || 0}
-                            </Text>
-                          </View>
-                          <View style={styles.fabChapterStatRow}>
-                            <Iconify icon="mdi:fire" size={14} color="rgba(255,255,255,0.7)" style={{ marginRight: 4 }} />
-                            <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
-                              {deckStats.learning || 0}
-                            </Text>
-                          </View>
-                          <View style={styles.fabChapterStatRow}>
-                            <Iconify icon="dashicons:welcome-learn-more" size={14} color="rgba(255,255,255,0.7)" style={{ marginRight: 4 }} />
+                          <View style={styles.fabChapterItemStats}>
+                            <View style={styles.fabChapterStatRow}>
+                              <Iconify icon="ri:stack-fill" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
+                              <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
+                                {deckStats.total}
+                              </Text>
+                            </View>
+                            <View style={styles.fabChapterStatRow}>
+                              <Iconify icon="basil:eye-closed-outline" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
+                              <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
+                                {deckStats.new || 0}
+                              </Text>
+                            </View>
+                            <View style={styles.fabChapterStatRow}>
+                              <Iconify icon="mdi:fire" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
+                              <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
+                                {deckStats.learning || 0}
+                              </Text>
+                            </View>
+                            <View style={styles.fabChapterStatRow}>
+                              <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
                             <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
                               {deckStats.learned}
                             </Text>
@@ -1453,25 +1454,25 @@ export default function DeckDetailScreen({ route, navigation }) {
                           </View>
                           <View style={styles.fabChapterItemStats}>
                             <View style={styles.fabChapterStatRow}>
-                              <Iconify icon="ri:stack-fill" size={14} color="rgba(255,255,255,0.7)" style={{ marginRight: 4 }} />
+                              <Iconify icon="ri:stack-fill" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
                               <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
                                 {chapterProgress.total}
                               </Text>
                             </View>
                             <View style={styles.fabChapterStatRow}>
-                              <Iconify icon="basil:eye-closed-outline" size={14} color="rgba(255,255,255,0.7)" style={{ marginRight: 4 }} />
+                              <Iconify icon="basil:eye-closed-outline" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
                               <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
                                 {chapterProgress.new || 0}
                               </Text>
                             </View>
                             <View style={styles.fabChapterStatRow}>
-                              <Iconify icon="mdi:fire" size={14} color="rgba(255,255,255,0.7)" style={{ marginRight: 4 }} />
+                              <Iconify icon="mdi:fire" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
                               <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
                                 {chapterProgress.learning || 0}
                               </Text>
                             </View>
                             <View style={styles.fabChapterStatRow}>
-                              <Iconify icon="dashicons:welcome-learn-more" size={14} color="rgba(255,255,255,0.7)" style={{ marginRight: 4 }} />
+                              <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
                               <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
                                 {chapterProgress.learned}
                               </Text>
@@ -1507,28 +1508,28 @@ export default function DeckDetailScreen({ route, navigation }) {
                 {selectedChapter?.id === 'action' ? (
                   <Iconify 
                     icon="streamline:startup-solid" 
-                    size={22} 
+                    size={moderateScale(22)} 
                     color="#fff" 
                   />
                 ) : (
                   <View style={{
                     backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                    borderRadius: 99,
-                    borderWidth: 1.5,
+                    borderRadius: moderateScale(99),
+                    borderWidth: moderateScale(1.5),
                     borderColor: 'rgba(255, 255, 255, 0.3)',
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                    minWidth: 32,
+                    paddingHorizontal: scale(10),
+                    paddingVertical: verticalScale(6),
+                    minWidth: scale(32),
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}>
                     <Text style={{ 
                       color: '#fff', 
-                      fontSize: 20, 
+                      fontSize: moderateScale(20), 
                       fontWeight: '700',
                       textShadowColor: 'rgba(0, 0, 0, 0.25)',
-                      textShadowOffset: { width: 0, height: 1 },
-                      textShadowRadius: 2,
+                      textShadowOffset: { width: 0, height: verticalScale(1) },
+                      textShadowRadius: moderateScale(2),
                     }}>
                       {selectedChapter?.ordinal ?? '-'}
                     </Text>
@@ -1583,7 +1584,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
           >
-            <Iconify icon="streamline:button-play-solid" size={22} color="#fff" />
+            <Iconify icon="streamline:button-play-solid" size={moderateScale(22)} color="#fff" />
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -1603,18 +1604,18 @@ export default function DeckDetailScreen({ route, navigation }) {
           <View
             style={{
               position: 'absolute',
-              right: 20,
-              top: Platform.OS === 'android' ? moreMenuPos.y + moreMenuPos.height + 4 : moreMenuPos.y + moreMenuPos.height + 8,
-              minWidth: 160,
+              right: scale(20),
+              top: Platform.OS === 'android' ? moreMenuPos.y + moreMenuPos.height + verticalScale(4) : moreMenuPos.y + moreMenuPos.height + verticalScale(8),
+              minWidth: scale(160),
               backgroundColor: colors.cardBackground,
-              borderRadius: 14,
-              paddingVertical: 8,
+              borderRadius: moderateScale(14),
+              paddingVertical: verticalScale(8),
               shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
+              shadowOffset: { width: 0, height: verticalScale(2) },
               shadowOpacity: 0.15,
-              shadowRadius: 8,
+              shadowRadius: moderateScale(8),
               elevation: 8,
-              borderWidth: 1,
+              borderWidth: moderateScale(1),
               borderColor: colors.cardBorder,
             }}
           >
@@ -1631,17 +1632,17 @@ export default function DeckDetailScreen({ route, navigation }) {
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                paddingVertical: 12,
-                paddingHorizontal: 16,
+                paddingVertical: verticalScale(12),
+                paddingHorizontal: scale(16),
               }}
               activeOpacity={0.7}
             >
-              <Iconify icon="lucide:edit" size={20} color={colors.text} style={{ marginRight: 12 }} />
-              <Text style={[typography.styles.body, { color: colors.text, fontSize: 16 }]}>
+              <Iconify icon="lucide:edit" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
+              <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
                 {t('deckDetail.edit', 'Desteyi Düzenle')}
               </Text>
             </TouchableOpacity>
-            <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
+            <View style={{ height: verticalScale(1), backgroundColor: colors.border, marginVertical: verticalScale(4) }} />
             <TouchableOpacity
               onPress={() => {
                 setMoreMenuVisible(false);
@@ -1650,13 +1651,13 @@ export default function DeckDetailScreen({ route, navigation }) {
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                paddingVertical: 12,
-                paddingHorizontal: 16,
+                paddingVertical: verticalScale(12),
+                paddingHorizontal: scale(16),
               }}
               activeOpacity={0.7}
             >
-              <Iconify icon="mdi:garbage" size={20} color="#E74C3C" style={{ marginRight: 12 }} />
-              <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: 16 }]}>
+              <Iconify icon="mdi:garbage" size={moderateScale(20)} color="#E74C3C" style={{ marginRight: scale(12) }} />
+              <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: moderateScale(16) }]}>
                 {t('deckDetail.deleteDeck', 'Desteyi Sil')}
               </Text>
             </TouchableOpacity>
@@ -1682,21 +1683,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   errorText: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: verticalScale(20),
   },
   
   // GRADIENT FLOW STYLES - Modern & Eye-catching
   gfHeroBanner: {
-    marginBottom: -50,
+    marginBottom: verticalScale(-50),
   },
   gfHeroGradient: {
-    paddingTop: 20,
-    paddingBottom: 80,
-    paddingHorizontal: 24,
-    borderBottomLeftRadius: 48,
-    borderBottomRightRadius: 48,
+    paddingTop: verticalScale(20),
+    paddingBottom: verticalScale(80),
+    paddingHorizontal: scale(24),
+    borderBottomLeftRadius: moderateScale(48),
+    borderBottomRightRadius: moderateScale(48),
     overflow: 'hidden',
   },
   gfHeroDecor: {
@@ -1712,22 +1713,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
   },
   gfDecorCircle1: {
-    width: 200,
-    height: 200,
-    top: -60,
-    right: -40,
+    width: scale(200),
+    height: scale(200),
+    top: verticalScale(-60),
+    right: scale(-40),
   },
   gfDecorCircle2: {
-    width: 120,
-    height: 120,
-    bottom: 20,
-    left: -30,
+    width: scale(120),
+    height: scale(120),
+    bottom: verticalScale(20),
+    left: scale(-30),
   },
   gfDecorCircle3: {
-    width: 80,
-    height: 80,
-    top: 60,
-    right: 80,
+    width: scale(80),
+    height: scale(80),
+    top: verticalScale(60),
+    right: scale(80),
     backgroundColor: 'rgba(255,255,255,0.08)',
   },
   gfCategoryBadge: {
@@ -1735,63 +1736,63 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignSelf: 'flex-start',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 24,
-    gap: 10,
-    marginBottom: 16,
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(16),
+    borderRadius: moderateScale(24),
+    gap: scale(10),
+    marginBottom: verticalScale(16),
   },
   gfCategoryText: {
     color: '#fff',
-    fontSize: 13,
+    fontSize: moderateScale(13),
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   gfHeroTitle: {
     color: '#fff',
-    fontSize: 32,
+    fontSize: moderateScale(32),
     fontWeight: '800',
     letterSpacing: -0.5,
-    lineHeight: 38,
+    lineHeight: verticalScale(38),
     textShadowColor: 'rgba(0,0,0,0.2)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    textShadowOffset: { width: 0, height: verticalScale(2) },
+    textShadowRadius: moderateScale(4),
   },
   gfHeroSubtitle: {
     color: '#fff',
-    fontSize: 32,
+    fontSize: moderateScale(32),
     fontWeight: '800',
     letterSpacing: -0.5,
-    lineHeight: 38,
+    lineHeight: verticalScale(38),
     textShadowColor: 'rgba(0,0,0,0.2)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    textShadowOffset: { width: 0, height: verticalScale(2) },
+    textShadowRadius: moderateScale(4),
   },
   gfTitleContainer: {
     position: 'relative',
-    marginBottom: 6,
+    marginBottom: verticalScale(6),
   },
   gfHeroDesc: {
     color: 'rgba(255,255,255,0.75)',
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontWeight: '500',
     fontStyle: 'italic',
-    lineHeight: 20,
-    marginBottom: 8,
+    lineHeight: verticalScale(20),
+    marginBottom: verticalScale(8),
   },
   gfExpandButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'flex-start',
-    gap: 4,
-    marginBottom: 12,
-    paddingVertical: 4,
+    gap: scale(4),
+    marginBottom: verticalScale(12),
+    paddingVertical: verticalScale(4),
   },
   gfExpandButtonText: {
     color: 'rgba(255,255,255,0.9)',
-    fontSize: 13,
+    fontSize: moderateScale(13),
     fontWeight: '600',
   },
   gfCreatorChip: {
@@ -1799,35 +1800,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignSelf: 'flex-start',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    paddingRight: 18,
-    borderRadius: 32,
-    gap: 12,
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: scale(14),
+    paddingRight: scale(18),
+    borderRadius: moderateScale(32),
+    gap: scale(12),
   },
   gfCreatorAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2,
+    width: scale(28),
+    height: scale(28),
+    borderRadius: moderateScale(14),
+    borderWidth: moderateScale(2),
     borderColor: 'rgba(255,255,255,0.5)',
   },
   gfCreatorName: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontWeight: '600',
   },
   gfProgressCard: {
-    marginHorizontal: 16,
-    borderRadius: 44,
-    paddingVertical: 28,
-    paddingHorizontal: 22,
+    marginHorizontal: scale(16),
+    borderRadius: moderateScale(44),
+    paddingVertical: verticalScale(28),
+    paddingHorizontal: scale(22),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: verticalScale(4) },
     shadowOpacity: 0.08,
-    shadowRadius: 12,
+    shadowRadius: moderateScale(12),
     elevation: 4,
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
   },
   gfCardContent: {
     flexDirection: 'row',
@@ -1840,126 +1841,126 @@ const styles = StyleSheet.create({
   },
   gfProgressGlow: {
     position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    width: scale(200),
+    height: scale(200),
+    borderRadius: moderateScale(100),
   },
   gfStatsSide: {
-    width: 130,
-    paddingLeft: 12,
+    width: scale(130),
+    paddingLeft: scale(12),
   },
   gfTotalBadgeGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 18,
-    gap: 10,
-    marginBottom: 14,
+    paddingVertical: verticalScale(12),
+    paddingHorizontal: scale(14),
+    borderRadius: moderateScale(18),
+    gap: scale(10),
+    marginBottom: verticalScale(14),
   },
   gfTotalBadgeTextWrap: {
     alignItems: 'flex-start',
   },
   gfTotalBadgeNumber: {
-    fontSize: 22,
+    fontSize: moderateScale(22),
     fontWeight: '900',
     color: '#fff',
     letterSpacing: -0.5,
-    lineHeight: 24,
+    lineHeight: verticalScale(24),
   },
   gfTotalBadgeLabel: {
-    fontSize: 10,
+    fontSize: moderateScale(10),
     fontWeight: '700',
     color: 'rgba(255,255,255,0.85)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   gfStatsListVertical: {
-    gap: 8,
+    gap: verticalScale(8),
   },
   gfStatRowItem: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   gfStatRowIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
+    width: scale(32),
+    height: scale(32),
+    borderRadius: moderateScale(10),
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+    marginRight: scale(10),
   },
   gfStatRowText: {
     flex: 1,
   },
   gfStatRowValue: {
-    fontSize: 17,
+    fontSize: moderateScale(17),
     fontWeight: '800',
     letterSpacing: -0.5,
   },
   gfStatRowLabel: {
-    fontSize: 9,
+    fontSize: moderateScale(9),
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.2,
-    marginTop: 1,
+    marginTop: verticalScale(1),
   },
   gfActionsCard: {
-    marginHorizontal: 16,
-    borderRadius: 38,
-    borderWidth: 1,
+    marginHorizontal: scale(16),
+    borderRadius: moderateScale(38),
+    borderWidth: moderateScale(1),
     overflow: 'hidden',
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
   },
   gfActionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 18,
+    paddingVertical: verticalScale(16),
+    paddingHorizontal: scale(18),
   },
   gfActionIconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: scale(48),
+    height: scale(48),
+    borderRadius: moderateScale(16),
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
+    marginRight: scale(14),
   },
   gfActionTextWrap: {
     flex: 1,
   },
   gfActionTitle: {
-    fontSize: 17,
+    fontSize: moderateScale(17),
     fontWeight: '700',
-    marginBottom: 2,
+    marginBottom: verticalScale(2),
   },
   gfActionDesc: {
-    fontSize: 13,
+    fontSize: moderateScale(13),
     fontWeight: '500',
   },
   gfActionDivider: {
-    height: 1,
+    height: verticalScale(1),
   },
   gfShareCard: {
-    marginHorizontal: 16,
-    padding: 20,
+    marginHorizontal: scale(16),
+    padding: moderateScale(20),
     paddingBottom: 0,
-    borderRadius: 32,
-    borderWidth: 1,
-    marginBottom: 20,
+    borderRadius: moderateScale(32),
+    borderWidth: moderateScale(1),
+    marginBottom: verticalScale(20),
   },
   gfShareMainRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingBottom: 16,
+    paddingBottom: verticalScale(16),
   },
   gfShareIconBg: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
+    width: scale(54),
+    height: scale(54),
+    borderRadius: moderateScale(18),
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: scale(16),
   },
   gfShareContent: {
     flex: 1,
@@ -1988,22 +1989,22 @@ const styles = StyleSheet.create({
   // FAB Styles
   fabContainer: {
     position: 'absolute',
-    right: 20,
-    bottom: 20,
+    right: scale(20),
+    bottom: verticalScale(20),
     flexDirection: 'row',
-    gap: 12,
+    gap: scale(12),
     alignItems: 'flex-end',
     zIndex: 1000,
   },
   fabButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 99,
+    width: scale(60),
+    height: scale(60),
+    borderRadius: moderateScale(99),
     justifyContent: 'center',
     alignItems: 'center',
   },
   fabButtonLeft: {
-    borderWidth: 2,
+    borderWidth: moderateScale(2),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
@@ -2016,7 +2017,7 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     height: '100%',
-    borderRadius: 99,
+    borderRadius: moderateScale(99),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -2026,14 +2027,14 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'flex-start',
     justifyContent: 'center',
-    gap: 12,
-    marginRight: 12,
-    paddingVertical: 12,
+    gap: scale(12),
+    marginRight: scale(12),
+    paddingVertical: verticalScale(12),
   },
   fabMorphTouchableArea: {
     flex: 1,
     height: '100%',
-    borderRadius: 28,
+    borderRadius: moderateScale(28),
     overflow: 'hidden',
   },
   fabSelectedChapterPreview: {
@@ -2041,10 +2042,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    paddingRight: 12,
+    paddingRight: scale(12),
   },
   fabIconWrapper: {
-    width: 56,
+    width: scale(56),
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2052,13 +2053,13 @@ const styles = StyleSheet.create({
   fabChapterInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 2,
+    gap: scale(6),
+    marginBottom: verticalScale(2),
   },
   fabChapterInfoTitle: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: verticalScale(4),
   },
   fabLeftColumn: {
     flexDirection: 'column',
@@ -2066,31 +2067,31 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   fabInlineDropdown: {
-    marginBottom: 8,
-    borderRadius: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    maxHeight: 200,
+    marginBottom: verticalScale(8),
+    borderRadius: moderateScale(20),
+    paddingVertical: verticalScale(12),
+    paddingHorizontal: scale(12),
+    maxHeight: verticalScale(200),
   },
   fabChapterListVertical: {
-    gap: 8,
-    paddingRight: 8,
+    gap: verticalScale(8),
+    paddingRight: scale(8),
   },
   fabChapterItemVertical: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginBottom: 6,
+    borderRadius: moderateScale(16),
+    borderWidth: moderateScale(1),
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: scale(12),
+    marginBottom: verticalScale(6),
   },
   fabChapterItemBadge: {
-    width: 36,
-    height: 36,
+    width: scale(36),
+    height: scale(36),
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+    marginRight: scale(10),
     position: 'relative',
   },
   fabChapterProgressTextContainer: {
@@ -2103,7 +2104,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   fabChapterProgressText: {
-    fontSize: 11,
+    fontSize: moderateScale(11),
     fontWeight: '700',
   },
   fabChapterItemContent: {
@@ -2113,14 +2114,14 @@ const styles = StyleSheet.create({
   fabChapterItemTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: verticalScale(4),
   },
   fabChapterItemVerticalText: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
   },
   fabChapterItemStats: {
     flexDirection: 'row',
-    gap: 12,
+    gap: scale(12),
     alignItems: 'center',
   },
   fabChapterStatRow: {
@@ -2128,7 +2129,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   fabChapterStatText: {
-    fontSize: 12,
+    fontSize: moderateScale(12),
     fontWeight: '500',
   },
   fabMenuOverlay: {

@@ -5,6 +5,7 @@ import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 // Fade efekti - karakter bazlı opacity (MaskedView sorunlarından kaçınır)
 const FadeText = ({ text, style, maxChars = 15 }) => {
@@ -154,7 +155,7 @@ export default function MyDecksList({
           key={`${deck.id}_${idx}`}
           activeOpacity={0.93}
           onPress={() => onPressDeck(deck)}
-          style={[styles.myDeckCardVertical, idx === 0 ? { marginRight: 5 } : { marginLeft: 5 }]}
+          style={[styles.myDeckCardVertical, idx === 0 ? { marginRight: scale(5) } : { marginLeft: scale(5) }]}
         >
           <LinearGradient
             colors={deck.gradientColors}
@@ -166,25 +167,25 @@ export default function MyDecksList({
             <View style={styles.backgroundCategoryIcon}>
               <Iconify
                 icon={deck.categoryIcon}
-                size={150}
+                size={scale(150)}
                 color="rgba(0, 0, 0, 0.1)"
                 style={styles.categoryIconStyle}
               />
             </View>
-            <View style={{ position: 'absolute', bottom: 12, left: 12 }}>
+            <View style={{ position: 'absolute', bottom: verticalScale(12), left: scale(12) }}>
               <View style={styles.deckCountBadge}>
-                <Iconify icon="ri:stack-fill" size={18} color="#fff" style={{ marginRight: 3 }} />
-                <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: 16 }]}>{deck.card_count || 0}</Text>
+                <Iconify icon="ri:stack-fill" size={moderateScale(18)} color="#fff" style={{ marginRight: scale(3) }} />
+                <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(16) }]}>{deck.card_count || 0}</Text>
               </View>
             </View>
             <TouchableOpacity
-              style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
+              style={{ position: 'absolute', top: verticalScale(10), right: scale(10), zIndex: 10, backgroundColor: colors.iconBackground, padding: moderateScale(8), borderRadius: 999 }}
               onPress={() => onToggleFavorite(deck.id)}
               activeOpacity={0.7}
             >
               <Iconify
                 icon={favoriteDecks.some(d => d.id === deck.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-                size={21}
+                size={moderateScale(21)}
                 color={favoriteDecks.some(d => d.id === deck.id) ? '#F98A21' : colors.text}
               />
             </TouchableOpacity>
@@ -193,30 +194,30 @@ export default function MyDecksList({
                 <>
                   <FadeText 
                     text={deck.name} 
-                    style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]}
+                    style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(16), fontWeight: '800', textAlign: 'center' }]}
                     maxChars={16}
                   />
-                  <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 8 }} />
+                  <View style={{ width: scale(60), height: moderateScale(2), backgroundColor: colors.divider, borderRadius: moderateScale(1), marginVertical: verticalScale(8) }} />
                   <FadeText 
                     text={deck.to_name} 
-                    style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]}
+                    style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(16), fontWeight: '800', textAlign: 'center' }]}
                     maxChars={16}
                   />
                 </>
               ) : (
                 <FadeText 
                   text={deck.name} 
-                  style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]}
+                  style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(16), fontWeight: '800', textAlign: 'center' }]}
                   maxChars={16}
                 />
               )}
             </View>
             <TouchableOpacity
-              style={{ position: 'absolute', bottom: 7, right: 10, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
+              style={{ position: 'absolute', bottom: verticalScale(7), right: scale(10), backgroundColor: colors.iconBackground, padding: moderateScale(8), borderRadius: 999 }}
               onPress={() => onDeleteDeck(deck.id)}
               activeOpacity={0.7}
             >
-              <Iconify icon="mdi:garbage" size={21} color="#E74C3C" />
+              <Iconify icon="mdi:garbage" size={moderateScale(21)} color="#E74C3C" />
             </TouchableOpacity>
           </LinearGradient>
         </TouchableOpacity>
@@ -238,28 +239,28 @@ export default function MyDecksList({
           style={styles.myDeckGradient}
         >
           {/* Background Category Icon */}
-          <View style={[styles.backgroundCategoryIcon, { left: -175, top: 1 }]}>
+          <View style={[styles.backgroundCategoryIcon, { left: scale(-175), top: verticalScale(1) }]}>
             <Iconify
               icon={row.item.categoryIcon}
-              size={140}
+              size={scale(140)}
               color="rgba(0, 0, 0, 0.1)"
               style={styles.categoryIconStyle}
             />
           </View>
-          <View style={{ position: 'absolute', bottom: 12, left: 12 }}>
+          <View style={{ position: 'absolute', bottom: verticalScale(12), left: scale(12) }}>
             <View style={styles.deckCountBadge}>
-              <Iconify icon="ri:stack-fill" size={18} color="#fff" style={{ marginRight: 4 }} />
-              <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: 16 }]}>{row.item.card_count || 0}</Text>
+              <Iconify icon="ri:stack-fill" size={moderateScale(18)} color="#fff" style={{ marginRight: scale(4) }} />
+              <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(16) }]}>{row.item.card_count || 0}</Text>
             </View>
           </View>
           <TouchableOpacity
-            style={{ position: 'absolute', top: 8, right: 10, zIndex: 10, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
+            style={{ position: 'absolute', top: verticalScale(8), right: scale(10), zIndex: 10, backgroundColor: colors.iconBackground, padding: moderateScale(8), borderRadius: 999 }}
             onPress={() => onToggleFavorite(row.item.id)}
             activeOpacity={0.7}
           >
             <Iconify
               icon={favoriteDecks.some(d => d.id === row.item.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-              size={22}
+              size={moderateScale(22)}
               color={favoriteDecks.some(d => d.id === row.item.id) ? '#F98A21' : colors.text}
             />
           </TouchableOpacity>
@@ -268,30 +269,30 @@ export default function MyDecksList({
               <>
                 <FadeText 
                   text={row.item.name} 
-                  style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]}
+                  style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(18), fontWeight: '800', textAlign: 'center' }]}
                   maxChars={20}
                 />
-                <View style={{ width: 70, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10 }} />
+                <View style={{ width: scale(70), height: moderateScale(2), backgroundColor: colors.divider, borderRadius: moderateScale(1), marginVertical: verticalScale(10) }} />
                 <FadeText 
                   text={row.item.to_name} 
-                  style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]}
+                  style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(18), fontWeight: '800', textAlign: 'center' }]}
                   maxChars={20}
                 />
               </>
             ) : (
               <FadeText 
                 text={row.item.name} 
-                style={[typography.styles.body, { color: colors.headText, fontSize: 18, fontWeight: '800', textAlign: 'center' }]}
+                style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(18), fontWeight: '800', textAlign: 'center' }]}
                 maxChars={20}
               />
             )}
           </View>
           <TouchableOpacity
-            style={{ position: 'absolute', bottom: 8, right: 10, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
+            style={{ position: 'absolute', bottom: verticalScale(8), right: scale(10), backgroundColor: colors.iconBackground, padding: moderateScale(8), borderRadius: 999 }}
             onPress={() => onDeleteDeck(row.item.id)}
             activeOpacity={0.7}
           >
-            <Iconify icon="mdi:garbage" size={22} color="#E74C3C" />
+            <Iconify icon="mdi:garbage" size={moderateScale(22)} color="#E74C3C" />
           </TouchableOpacity>
         </LinearGradient>
       </TouchableOpacity>
@@ -336,63 +337,63 @@ export default function MyDecksList({
 
 const styles = StyleSheet.create({
   myDecksList: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(5),
   },
   myDeckRow: {
     flexDirection: 'row',
   },
   myDeckCardVertical: {
     flex: 1,
-    height: 240,
-    borderRadius: 18,
+    height: verticalScale(240),
+    borderRadius: moderateScale(18),
     overflow: 'hidden',
   },
   myDeckCardHorizontal: {
-    height: 180,
-    borderRadius: 18,
+    height: verticalScale(180),
+    borderRadius: moderateScale(18),
     overflow: 'hidden',
   },
   myDeckGradient: {
     flex: 1,
-    borderRadius: 18,
-    padding: 16,
+    borderRadius: moderateScale(18),
+    padding: scale(16),
     justifyContent: 'center',
   },
   deckCountBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F98A21',
-    borderRadius: 14,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginRight: 8,
+    borderRadius: moderateScale(14),
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(2),
+    marginRight: scale(8),
   },
   emptyContainer: {
-    height: 300,
-    borderRadius: 18,
+    height: verticalScale(300),
+    borderRadius: moderateScale(18),
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 16,
+    marginHorizontal: scale(16),
     backgroundColor: 'transparent',
   },
   emptyImage: {
     position: 'absolute',
     alignSelf: 'center',
-    width: 300,
-    height: 300,
+    width: scale(300),
+    height: verticalScale(300),
     opacity: 0.2,
     top: 0,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '600',
     textAlign: 'center',
-    marginTop: 280,
+    marginTop: verticalScale(280),
   },
   backgroundCategoryIcon: {
     position: 'absolute',
-    left: -75, // İkonun yarısının taşması için
+    left: scale(-75), // İkonun yarısının taşması için
     width: '100%',
     height: '100%',
     justifyContent: 'center',

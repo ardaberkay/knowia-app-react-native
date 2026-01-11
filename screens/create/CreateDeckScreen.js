@@ -11,6 +11,7 @@ import HowToCreateModal from '../../components/modals/HowToCreateModal';
 import UndoButton from '../../components/tools/UndoButton';
 import CreateButton from '../../components/tools/CreateButton';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
+import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
 
 export default function CreateScreen() {
   const [name, setName] = useState('');
@@ -112,14 +113,14 @@ export default function CreateScreen() {
           <View style={[styles.headerCard, styles.headerCardContainer, { borderRadius: 28, backgroundColor: colors.cardBackground || colors.cardBackgroundTransparent || (isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)') }]}>
             <View style={[styles.headerCardContent, styles.headerContent]}>
               <View style={styles.headerTitleContainer}>
-                <Iconify icon="fluent:tab-add-24-regular" size={26} color="#F98A21" style={{ marginRight: 6 }} />
+                <Iconify icon="fluent:tab-add-24-regular" size={moderateScale(26)} color="#F98A21" style={{ marginRight: scale(6) }} />
                 <Text style={[typography.styles.h2, { color: colors.text}]}>
                   {t('createDeck.title', 'Desteni Oluştur')}
                 </Text>
               </View>
               <View style={styles.headerBottomRow}>
                 <View style={styles.headerTextColumn}>
-                  <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: 22, flex: 1, alignSelf: 'flex-start' }]}>
+                  <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: moderateScale(22), flex: 1, alignSelf: 'flex-start' }]}>
                     {t('createDeck.motivationText', 'Kişiselleştirilmiş destelerle öğrenme yolculuğunu tasarla ve bilgini pekiştir.')}
                   </Text>
                   <TouchableOpacity 
@@ -127,7 +128,7 @@ export default function CreateScreen() {
                     activeOpacity={0.7}
                     onPress={() => setHowToCreateModalVisible(true)}
                   >
-                    <Iconify icon="material-symbols:info-outline" size={16} color={colors.secondary} style={{ marginRight: 4 }} />
+                    <Iconify icon="material-symbols:info-outline" size={moderateScale(16)} color={colors.secondary} style={{ marginRight: scale(4) }} />
                     <Text style={[typography.styles.caption, { color: colors.secondary, fontWeight: '600', textDecorationLine: 'underline' }]}>
                       {t('createDeck.howToCreate', 'Nasıl Oluşturulur?')}
                     </Text>
@@ -159,7 +160,7 @@ export default function CreateScreen() {
             ]}
           >
             <View style={styles.labelRow}>
-              <Iconify icon="ion:book" size={20} color="#F98A21" style={styles.labelIcon} />
+              <Iconify icon="ion:book" size={moderateScale(20)} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.name', 'Deste Adı')}*</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -176,10 +177,10 @@ export default function CreateScreen() {
                 <TouchableOpacity
                   onPress={() => setName('')}
                   accessibilityLabel={t('common.clear', 'Temizle')}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  style={{ marginLeft: 8, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
+                  hitSlop={{ top: moderateScale(8), bottom: moderateScale(8), left: moderateScale(8), right: moderateScale(8) }}
+                  style={{ marginLeft: scale(8), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
                 >
-                  <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                  <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -200,7 +201,7 @@ export default function CreateScreen() {
             ]}
           >
             <View style={styles.labelRow}>
-              <Iconify icon="icon-park-outline:translation" size={20} color="#F98A21" style={styles.labelIcon} />
+              <Iconify icon="icon-park-outline:translation" size={moderateScale(20)} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.toName', 'Karşılığı')}</Text>
               <Text style={[typography.styles.caption, { color: colors.muted }]}> ({t('create.optional', 'opsiyonel')})</Text>
             </View>
@@ -218,10 +219,10 @@ export default function CreateScreen() {
                 <TouchableOpacity
                   onPress={() => setToName('')}
                   accessibilityLabel={t('common.clear', 'Temizle')}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  style={{ marginLeft: 8, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
+                  hitSlop={{ top: moderateScale(8), bottom: moderateScale(8), left: moderateScale(8), right: moderateScale(8) }}
+                  style={{ marginLeft: scale(8), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
                 >
-                  <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                  <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -242,7 +243,7 @@ export default function CreateScreen() {
             ]}
           >
             <View style={styles.labelRow}>
-              <Iconify icon="tabler:file-description-filled" size={20} color="#F98A21" style={styles.labelIcon} />
+              <Iconify icon="tabler:file-description-filled" size={moderateScale(20)} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.description', 'Açıklama')}</Text>
               <Text style={[styles.optional, typography.styles.caption, { color: colors.muted }]}> ({t('create.optional', 'opsiyonel')})</Text>
             </View>
@@ -251,7 +252,7 @@ export default function CreateScreen() {
                 style={[
                   styles.input,
                   typography.styles.body,
-                  { height: 120, textAlignVertical: 'top', color: colors.text, paddingRight: 40 },
+                  { height: verticalScale(120), textAlignVertical: 'top', color: colors.text, paddingRight: scale(40) },
                 ]}
                 placeholder={t('create.descriptionExam', 'Deste hakkında açıklama...')}
                 placeholderTextColor={colors.muted}
@@ -265,10 +266,10 @@ export default function CreateScreen() {
                 <TouchableOpacity
                   onPress={() => setDescription('')}
                   accessibilityLabel={t('common.clear', 'Temizle')}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8}}
-                  style={{ position: 'absolute', right: 8, top: 8, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
+                  hitSlop={{ top: moderateScale(8), bottom: moderateScale(8), left: moderateScale(8), right: moderateScale(8)}}
+                  style={{ position: 'absolute', right: scale(8), top: verticalScale(8), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
                 >
-                  <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                  <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -291,7 +292,7 @@ export default function CreateScreen() {
             ]}
           >
             <View style={styles.labelRow}>
-              <Iconify icon="mdi:category-plus-outline" size={21} color="#F98A21" style={styles.labelIcon} />
+              <Iconify icon="mdi:category-plus-outline" size={moderateScale(21)} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('createDeck.categoryLabel', 'Kategori')}</Text>
             </View>
             <TouchableOpacity
@@ -303,7 +304,7 @@ export default function CreateScreen() {
                 {selectedCategory && (
                   <Iconify
                     icon={getCategoryIcon(categories.find(c => c.id === selectedCategory)?.sort_order)}
-                    size={20}
+                    size={moderateScale(20)}
                     color={selectedCategory ? colors.text : colors.muted}
                     style={styles.categoryIcon}
                   />
@@ -312,7 +313,7 @@ export default function CreateScreen() {
                   {selectedCategory ? t(`categories.${categories.find(c => c.id === selectedCategory)?.sort_order}`) || categories.find(c => c.id === selectedCategory)?.name || t('createDeck.selectCategory') : t('createDeck.selectCategory')}
                 </Text>
               </View>
-              <Iconify icon="flowbite:caret-down-solid" size={20} color={colors.muted} />
+              <Iconify icon="flowbite:caret-down-solid" size={moderateScale(20)} color={colors.muted} />
             </TouchableOpacity>
           </View>
 
@@ -354,34 +355,34 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'flex-start',
     alignItems: 'center',
-    padding: 16,
-    paddingTop: 8,
+    padding: scale(16),
+    paddingTop: verticalScale(8),
     paddingBottom: '10%',
   },
   headerCard: {
     width: '100%',
-    marginBottom: 12,
+    marginBottom: verticalScale(12),
   },
   headerCardContainer: {
-    borderRadius: 28,
+    borderRadius: moderateScale(28),
     overflow: 'hidden',
-    marginHorizontal: 10,
-    marginVertical: 8,
-    paddingVertical: 10,
+    marginHorizontal: scale(10),
+    marginVertical: verticalScale(8),
+    paddingVertical: verticalScale(10),
   },
   headerCardContent: {
-    borderRadius: 28,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    minHeight: 180,
+    borderRadius: moderateScale(28),
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(6),
+    minHeight: verticalScale(160),
   },
   headerContent: {
-    paddingVertical: 8,
+    paddingVertical: verticalScale(4),
   },
   headerTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: verticalScale(8),
   },
   headerBottomRow: {
     flexDirection: 'row',
@@ -389,38 +390,38 @@ const styles = StyleSheet.create({
   },
   headerTextColumn: {
     flex: 1,
-    marginRight: 12,
+    marginRight: scale(12),
   },
   howToCreateButton: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: scale(12),
+    borderRadius: moderateScale(20),
     borderWidth: 1,
-    marginTop: 12,
+    marginTop: verticalScale(12),
   },
   headerImageContainer: {
-    width: 120,
-    height: 120,
-    marginLeft: 12,
+    width: moderateScale(120, 0.3),
+    height: moderateScale(120, 0.3),
+    marginLeft: scale(12),
   },
   headerImage: {
-    width: 140,
-    height: 140,
+    width: moderateScale(140, 0.3),
+    height: moderateScale(140, 0.3),
     alignSelf: 'flex-end',
     top: '-10%',
   },
   inputCard: {
     width: '100%',
-    maxWidth: 440,
-    borderRadius: 28,
-    padding: 20,
-    marginBottom: 11,
-    shadowOffset: { width: 4, height: 6},
+    maxWidth: scale(440),
+    borderRadius: moderateScale(28),
+    padding: scale(20),
+    marginBottom: verticalScale(11),
+    shadowOffset: { width: moderateScale(4), height: moderateScale(6)},
     shadowOpacity: 0.10,
-    shadowRadius: 10,
+    shadowRadius: moderateScale(10),
     elevation: 5,
     overflow: 'hidden',
 
@@ -428,28 +429,28 @@ const styles = StyleSheet.create({
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 11,
-    gap: 8,
+    marginBottom: verticalScale(11),
+    gap: scale(8),
   },
 
   input: {
-    borderWidth: 0.15,
+    borderWidth: moderateScale(0.15),
     borderColor: '#eee',
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: moderateScale(8),
+    padding: scale(12),
     marginBottom: 0,
-    fontSize: 16,
+    fontSize: moderateScale(16),
   },
 
   buttonRowModern: {
     flexDirection: 'row',
-    gap: 20,
-    marginTop: 16,
-    marginBottom: 80,
+    gap: scale(20),
+    marginTop: verticalScale(12),
+    marginBottom: verticalScale(60),
   },
 
   optional: {
-    marginLeft: 4,
+    marginLeft: scale(4),
     alignSelf: 'flex-end',
   },
 
@@ -457,9 +458,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 0.15,
-    borderRadius: 8,
-    padding: 12,
+    borderWidth: moderateScale(0.15),
+    borderRadius: moderateScale(8),
+    padding: scale(12),
   },
   categoryRow: {
     flexDirection: 'row',
@@ -467,7 +468,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   categoryIcon: {
-    marginRight: 8,
+    marginRight: scale(8),
   },
   categoryText: {
     flex: 1,

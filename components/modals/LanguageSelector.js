@@ -5,6 +5,7 @@ import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 export default function LanguageSelector({ isVisible, onClose, onLanguageChange }) {
   const { colors } = useTheme();
@@ -74,18 +75,18 @@ export default function LanguageSelector({ isVisible, onClose, onLanguageChange 
 
 const styles = StyleSheet.create({
   modalContainer: {
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: moderateScale(16),
+    padding: scale(24),
   },
   languageOption: {
-    paddingVertical: 12,
+    paddingVertical: verticalScale(12),
   },
   languageText: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
   },
   languageRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: scale(12),
   },
 });

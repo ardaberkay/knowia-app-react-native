@@ -13,9 +13,10 @@ import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
 import { LinearGradient } from 'expo-linear-gradient';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 const { width } = Dimensions.get('window');
-const HERO_CARD_WIDTH = width - 32;
+const HERO_CARD_WIDTH = width - scale(32);
 
 export default function DiscoverScreen() {
   const navigation = useNavigation();
@@ -54,40 +55,15 @@ export default function DiscoverScreen() {
     const tabChanged = previousActiveTabRef.current !== activeTab;
     const timeFilterChanged = previousTimeFilterRef.current !== timeFilter;
     
-    previousActiveTabRef.current = activeTab;
-    previousTimeFilterRef.current = timeFilter;
-    
-    // Mevcut tab'ın verilerini kontrol et
-    let hasData = false;
-    switch (activeTab) {
-      case 'trend':
-        hasData = trendDecksList.length > 0;
-        break;
-      case 'favorites':
-        hasData = favoriteDecksList.length > 0;
-        break;
-      case 'starts':
-        hasData = startedDecksList.length > 0;
-        break;
-      case 'unique':
-        hasData = uniqueDecksList.length > 0;
-        break;
-      case 'new':
-        hasData = newDecks.length > 0;
-        break;
-    }
-    
-    // İlk mount'ta veya tab değişti ve veriler yoksa, veya timeFilter değiştiyse yükle
-    if (isInitialMount.current || (tabChanged && !hasData) || timeFilterChanged) {
-      setLoading(true);
+    // İlk mount'ta veya tab değiştiyse veya timeFilter değiştiyse yükle
+    if (isInitialMount.current || tabChanged || timeFilterChanged) {
       loadDecks();
       isInitialMount.current = false;
-    } else if (tabChanged && hasData) {
-      // Tab değişti ama veriler zaten var, loading false yap
-      setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeFilter, activeTab]);
+    
+    previousActiveTabRef.current = activeTab;
+    previousTimeFilterRef.current = timeFilter;
+  }, [timeFilter, activeTab, loadDecks]);
 
   useEffect(() => {
     if (!isUserScrolling.current && heroScrollRef.current) {
@@ -119,7 +95,7 @@ export default function DiscoverScreen() {
     }
   };
 
-  const loadDecks = async () => {
+  const loadDecks = useCallback(async () => {
     try {
       setLoading(true);
       let decks = [];
@@ -150,7 +126,7 @@ export default function DiscoverScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, timeFilter]);
 
   const currentDecks = useMemo(() => {
     switch (activeTab) {
@@ -318,7 +294,7 @@ export default function DiscoverScreen() {
     const headerHeight = Platform.OS === 'ios' ? insets.top + 44 : 56;
     
     return (
-      <View style={[styles.fixedHeaderContainer, { backgroundColor: colors.cardBackground, paddingTop: headerHeight + 50 }]}>
+      <View style={[styles.fixedHeaderContainer, { backgroundColor: colors.cardBackground, paddingTop: headerHeight + verticalScale(50) }]}>
         <View style={styles.heroCarouselContainer}>
           <ScrollView
             ref={heroScrollRef}
@@ -347,7 +323,7 @@ export default function DiscoverScreen() {
                     <View style={styles.modernHeroContent}>
                       <View style={styles.modernHeroIconContainer}>
                         <View style={[styles.modernIconCircle, { backgroundColor: config.accentColor + '20' }]}>
-                          <Iconify icon={config.icon} size={28} color="#fff" />
+                          <Iconify icon={config.icon} size={moderateScale(28)} color="#fff" />
                         </View>
                       </View>
                       <View style={styles.modernHeroTextContainer}>
@@ -369,11 +345,11 @@ export default function DiscoverScreen() {
                 <TouchableOpacity
                   key={tabKey}
                   onPress={() => handleSetPage(idx)}
-                  style={[
+                    style={[
                     styles.paginationDot,
                     {
                       backgroundColor: isActive ? config.accentColor : colors.border,
-                      width: isActive ? 24 : 8,
+                      width: isActive ? scale(24) : scale(8),
                     }
                   ]}
                 />
@@ -399,7 +375,7 @@ export default function DiscoverScreen() {
                     ]}
                     activeOpacity={0.7}
                   >
-                    <Iconify icon={filter.icon} size={16} color={isActive ? '#fff' : colors.subtext} />
+                    <Iconify icon={filter.icon} size={moderateScale(16)} color={isActive ? '#fff' : colors.subtext} />
                     <Text style={[
                       styles.timeFilterSegmentText,
                       { color: isActive ? '#fff' : colors.text, fontWeight: isActive ? '700' : '500' }
@@ -431,7 +407,7 @@ export default function DiscoverScreen() {
       {renderFixedHeader()}
 
       <View style={[styles.listContainer, { backgroundColor: colors.background }]}>
-        {loading || (filteredDecks.length === 0 && currentDecks.length === 0) ? (
+        {loading ? (
           <DiscoverDecksSkeleton />
         ) : (
           <DeckList
@@ -442,7 +418,7 @@ export default function DiscoverScreen() {
             refreshing={refreshing}
             onRefresh={handleRefresh}
             showPopularityBadge={activeTab === 'trend'}
-            contentPaddingTop={20}
+            contentPaddingTop={verticalScale(20)}
           />
         )}
       </View>
@@ -463,28 +439,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   fixedHeaderContainer: {
-    paddingTop: 12,
-    paddingBottom: 12,
+    paddingTop: verticalScale(12),
+    paddingBottom: verticalScale(12),
     zIndex: 10,
-    borderBottomLeftRadius: 36,
-    borderBottomRightRadius: 36,
+    borderBottomLeftRadius: moderateScale(36),
+    borderBottomRightRadius: moderateScale(36),
   },
   listContainer: {
     flex: 1,
-    marginTop: -16,
+    marginTop: verticalScale(-16),
   },
   timeFilterWrapper: {
-    paddingHorizontal: 16,
-    marginBottom: 8,
+    paddingHorizontal: scale(16),
+    marginBottom: verticalScale(8),
   },
   timeFilterSegmentedContainer: {
     flexDirection: 'row',
-    borderRadius: 16,
-    padding: 4,
+    borderRadius: moderateScale(16),
+    padding: moderateScale(4),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: verticalScale(2) },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowRadius: moderateScale(8),
     elevation: 3,
   },
   timeFilterSegment: {
@@ -492,63 +468,63 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-    gap: 4,
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(8),
+    borderRadius: moderateScale(12),
+    gap: scale(4),
   },
   timeFilterSegmentActive: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: verticalScale(4) },
     shadowOpacity: 0.2,
-    shadowRadius: 8,
+    shadowRadius: moderateScale(8),
     elevation: 4,
   },
   timeFilterSegmentText: {
-    fontSize: 12,
+    fontSize: moderateScale(12),
     fontWeight: '500',
     letterSpacing: -0.2,
   },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    marginTop: 8,
+    gap: scale(12),
+    paddingHorizontal: scale(16),
+    marginTop: verticalScale(8),
   },
   searchBar: {
     flex: 1,
   },
   heroCarouselContainer: {
-    marginBottom: 12,
+    marginBottom: verticalScale(12),
   },
   heroCarouselContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: scale(16),
   },
   paginationContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 12,
-    gap: 6,
+    marginTop: verticalScale(12),
+    gap: scale(6),
   },
   paginationDot: {
-    height: 8,
-    borderRadius: 4,
+    height: verticalScale(8),
+    borderRadius: moderateScale(4),
   },
   modernHeroCard: {
-    marginBottom: 8,
-    borderRadius: 24,
+    marginBottom: verticalScale(8),
+    borderRadius: moderateScale(24),
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: verticalScale(8) },
     shadowOpacity: 0.15,
-    shadowRadius: 16,
+    shadowRadius: moderateScale(16),
     elevation: 8,
   },
   modernHeroGradient: {
-    padding: 24,
-    minHeight: 140,
+    padding: moderateScale(24),
+    minHeight: verticalScale(140),
     justifyContent: 'center',
   },
   modernHeroContent: {
@@ -557,15 +533,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modernHeroIconContainer: {
-    marginRight: 16,
+    marginRight: scale(16),
   },
   modernIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: scale(64),
+    height: scale(64),
+    borderRadius: moderateScale(32),
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: moderateScale(2),
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   modernHeroTextContainer: {
@@ -575,16 +551,16 @@ const styles = StyleSheet.create({
   modernHeroTitle: {
     ...typography.styles.h2,
     color: '#fff',
-    fontSize: 28,
+    fontSize: moderateScale(28),
     fontWeight: '900',
-    marginBottom: 6,
+    marginBottom: verticalScale(6),
     letterSpacing: -0.5,
   },
   modernHeroSubtitle: {
     ...typography.styles.caption,
     color: 'rgba(255, 255, 255, 0.85)',
-    fontSize: 15,
+    fontSize: moderateScale(15),
     fontWeight: '500',
-    lineHeight: 20,
+    lineHeight: verticalScale(20),
   },
 });

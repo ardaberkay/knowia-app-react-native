@@ -16,6 +16,7 @@ import CreateButton from '../../components/tools/CreateButton';
 import UndoButton from '../../components/tools/UndoButton';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import HowToCreateCardModal from '../../components/modals/HowToCreateCardModal';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 export default function AddCardScreen() {
   const navigation = useNavigation();
@@ -293,10 +294,10 @@ export default function AddCardScreen() {
           activeOpacity={1}
           onPress={() => setCsvModalVisible(false)}
         />
-        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.background, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingTop: 24, paddingBottom: 32, paddingHorizontal: 24, elevation: 16 }}>
-          <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 }} />
-          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: colors.text, textAlign: 'center' }}>{t('addCard.csvUpload', 'CSV ile Toplu Kart Yükleme')}</Text>
-          <Text style={{ color: colors.muted, fontSize: 15, marginBottom: 18, textAlign: 'center' }}>
+        <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.background, borderTopLeftRadius: moderateScale(30), borderTopRightRadius: moderateScale(30), paddingTop: verticalScale(24), paddingBottom: verticalScale(32), paddingHorizontal: scale(24), elevation: 16 }}>
+          <View style={{ width: scale(40), height: verticalScale(5), borderRadius: moderateScale(3), backgroundColor: colors.border, alignSelf: 'center', marginBottom: verticalScale(16) }} />
+          <Text style={{ fontSize: moderateScale(18), fontWeight: 'bold', marginBottom: verticalScale(12), color: colors.text, textAlign: 'center' }}>{t('addCard.csvUpload', 'CSV ile Toplu Kart Yükleme')}</Text>
+          <Text style={{ color: colors.muted, fontSize: moderateScale(15), marginBottom: verticalScale(18), textAlign: 'center' }}>
             {t('addCard.csvUploadDescriptionFirst', 'Kartlarınızı Excel veya Google Sheets\'te aşağıdaki gibi hazırlayın ve CSV olarak kaydedin. Sadece ilk iki sütun zorunludur:')}
             {'\n'}
             <Text style={{ fontWeight: 'bold', color: colors.text }}>{t('addCard.csvUploadDescriptionSecond', 'Soru, Cevap, Örnek (opsiyonel), Not (opsiyonel)')}</Text>
@@ -304,16 +305,16 @@ export default function AddCardScreen() {
             {t('addCard.csvUploadDescriptionThird', 'Her satır bir kartı temsil eder. Boş satırlar veya eksik zorunlu alanlar atlanır.')}
           </Text>
           {csvPreview ? (
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>{t('addCard.file', 'Dosya: ')} {csvPreview.fileName}</Text>
-              <Text style={{ color: colors.text, fontSize: 15 }}>{t('addCard.totalRows', 'Toplam satır: ')} {csvPreview.totalRows}</Text>
-              <Text style={{ color: colors.text, fontSize: 15 }}>{t('addCard.validCards', 'Geçerli kart: ')} {csvPreview.allValidCards.length}</Text>
-              <Text style={{ color: colors.text, fontSize: 15, marginBottom: 6 }}>{t('addCard.invalidCards', 'Geçersiz kart: ')} {csvPreview.allErrors.length}</Text>
+            <View style={{ marginBottom: verticalScale(16) }}>
+              <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: moderateScale(16), marginBottom: verticalScale(4) }}>{t('addCard.file', 'Dosya: ')} {csvPreview.fileName}</Text>
+              <Text style={{ color: colors.text, fontSize: moderateScale(15) }}>{t('addCard.totalRows', 'Toplam satır: ')} {csvPreview.totalRows}</Text>
+              <Text style={{ color: colors.text, fontSize: moderateScale(15) }}>{t('addCard.validCards', 'Geçerli kart: ')} {csvPreview.allValidCards.length}</Text>
+              <Text style={{ color: colors.text, fontSize: moderateScale(15), marginBottom: verticalScale(6) }}>{t('addCard.invalidCards', 'Geçersiz kart: ')} {csvPreview.allErrors.length}</Text>
               {csvPreview.errors.length > 0 && (
-                <View style={{ marginTop: 8, marginBottom: 8 }}>
-                  <Text style={{ color: '#D32F2F', fontWeight: 'bold', fontSize: 15, marginBottom: 4 }}>{t('addCard.errors', 'Hatalar (ilk 5):')}</Text>
+                <View style={{ marginTop: verticalScale(8), marginBottom: verticalScale(8) }}>
+                  <Text style={{ color: '#D32F2F', fontWeight: 'bold', fontSize: moderateScale(15), marginBottom: verticalScale(4) }}>{t('addCard.errors', 'Hatalar (ilk 5):')}</Text>
                   {csvPreview.errors.map((err, idx) => (
-                    <Text key={idx} style={{ color: '#D32F2F', fontSize: 14 }}>• {t('addCard.errorRow', 'Satır ')} {err.row}: {err.message}</Text>
+                    <Text key={idx} style={{ color: '#D32F2F', fontSize: moderateScale(14) }}>• {t('addCard.errorRow', 'Satır ')} {err.row}: {err.message}</Text>
                   ))}
                 </View>
               )}
@@ -359,41 +360,41 @@ export default function AddCardScreen() {
                     setCsvLoading(false);
                   }
                 }}
-                style={{ backgroundColor: colors.buttonColor || '#007AFF', borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 10 }}
+                style={{ backgroundColor: colors.buttonColor || '#007AFF', borderRadius: moderateScale(10), paddingVertical: verticalScale(12), alignItems: 'center', marginTop: verticalScale(10) }}
                 disabled={csvLoading}
               >
-                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{csvLoading ? t('addCard.loading', 'Yükleniyor...') : t('addCard.importCards', 'Kartları İçe Aktar')}</Text>
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: moderateScale(16) }}>{csvLoading ? t('addCard.loading', 'Yükleniyor...') : t('addCard.importCards', 'Kartları İçe Aktar')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setCsvPreview(null)}
                 style={{
                   alignItems: 'center',
-                  marginTop: 10,
+                  marginTop: verticalScale(10),
                   borderColor: colors.border,
-                  borderWidth: 1,
-                  borderRadius: 8,
+                  borderWidth: moderateScale(1),
+                  borderRadius: moderateScale(8),
                   backgroundColor: 'transparent',
-                  paddingVertical: 10,
-                  paddingHorizontal: 18,
+                  paddingVertical: verticalScale(10),
+                  paddingHorizontal: scale(18),
                 }}
               >
-                <Text style={{ color: colors.text, fontSize: 15, fontWeight: 'bold' }}>İptal Et</Text>
+                <Text style={{ color: colors.text, fontSize: moderateScale(15), fontWeight: 'bold' }}>İptal Et</Text>
               </TouchableOpacity>
             </View>
           ) : (
-            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 8 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: scale(16), marginTop: verticalScale(8) }}>
               <TouchableOpacity
                 onPress={handleDownloadTemplate}
-                style={{ backgroundColor: '#F98A21', borderRadius: 8, paddingVertical: 12, paddingHorizontal: 18, marginRight: 8 }}
+                style={{ backgroundColor: '#F98A21', borderRadius: moderateScale(8), paddingVertical: verticalScale(12), paddingHorizontal: scale(18), marginRight: scale(8) }}
               >
-                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>{t('addCard.downloadTemplate', 'Örnek CSV İndir')}</Text>
+                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: moderateScale(15) }}>{t('addCard.downloadTemplate', 'Örnek CSV İndir')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handlePickCSV}
-                style={{ backgroundColor: colors.blurView, borderRadius: 8, paddingVertical: 12, paddingHorizontal: 18, borderWidth: 1, borderColor: colors.border }}
+                style={{ backgroundColor: colors.blurView, borderRadius: moderateScale(8), paddingVertical: verticalScale(12), paddingHorizontal: scale(18), borderWidth: moderateScale(1), borderColor: colors.border }}
                 disabled={csvLoading}
               >
-                <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15 }}>{csvLoading ? t('addCard.loading', 'Yükleniyor...') : t('addCard.selectCSV', 'CSV Dosyası Seç')}</Text>
+                <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: moderateScale(15) }}>{csvLoading ? t('addCard.loading', 'Yükleniyor...') : t('addCard.selectCSV', 'CSV Dosyası Seç')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -405,17 +406,17 @@ export default function AddCardScreen() {
           style={{ flex: 1 }}
         >
           {/* Header Card */}
-          <View style={[styles.headerCard, styles.headerCardContainer, { borderRadius: 28, backgroundColor: colors.cardBackground || colors.cardBackgroundTransparent || (isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)') }]}>
+          <View style={[styles.headerCard, styles.headerCardContainer, { borderRadius: moderateScale(28), backgroundColor: colors.cardBackground || colors.cardBackgroundTransparent || (isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)') }]}>
             <View style={[styles.headerCardContent, styles.headerContent]}>
               <View style={styles.headerTitleContainer}>
-                <Iconify icon="hugeicons:file-add" size={26} color="#F98A21" style={{ marginRight: 6 }} />
+                <Iconify icon="hugeicons:file-add" size={moderateScale(26)} color="#F98A21" style={{ marginRight: scale(6) }} />
                 <Text style={[typography.styles.h2, { color: colors.text}]}>
                   {t('addCard.title', 'Kart Oluştur')}
                 </Text>
               </View>
               <View style={styles.headerBottomRow}>
                 <View style={styles.headerTextColumn}>
-                  <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: 22, flex: 1, alignSelf: 'flex-start' }]}>
+                  <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: verticalScale(22), flex: 1, alignSelf: 'flex-start' }]}>
                     {t('addCard.motivationText', 'Bilgini pekiştirmek için soru-cevap kartları oluştur ve öğrenme sürecini hızlandır.')}
                   </Text>
                   <TouchableOpacity 
@@ -423,7 +424,7 @@ export default function AddCardScreen() {
                     activeOpacity={0.7}
                     onPress={() => setHowToCreateCardModalVisible(true)}
                   >
-                    <Iconify icon="material-symbols:info-outline" size={16} color={colors.secondary} style={{ marginRight: 4 }} />
+                    <Iconify icon="material-symbols:info-outline" size={moderateScale(16)} color={colors.secondary} style={{ marginRight: scale(4) }} />
                     <Text style={[typography.styles.caption, { color: colors.secondary, fontWeight: '600', textDecorationLine: 'underline' }]}>
                       {t('addCard.howToCreate', 'Nasıl Oluşturulur?')}
                     </Text>
@@ -451,11 +452,11 @@ export default function AddCardScreen() {
           }]}>
             <View style={{ flex: 1 }}>
               <View style={styles.labelRow}>
-                <Iconify icon="mage:image-fill" size={24} color="#F98A21" style={styles.labelIcon} />
+                <Iconify icon="mage:image-fill" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.image", "Kart Görseli")}</Text>
               </View>
             {image ? (
-              <View style={{ alignItems: 'center', marginBottom: 8 }}>
+              <View style={{ alignItems: 'center', marginBottom: verticalScale(8) }}>
                 <Image source={{ uri: image }} style={styles.cardImage} />
                 <TouchableOpacity onPress={handleRemoveImage} style={styles.removeImageButton}>
                   <Text style={styles.removeImageButtonText}>{t("addCard.removeImage", "Görseli Kaldır")}</Text>
@@ -463,7 +464,7 @@ export default function AddCardScreen() {
               </View>
             ) : (
               <TouchableOpacity onPress={handlePickImage} style={styles.addImageButton}>
-                <Iconify icon="ic:round-plus" size={24} color="#F98A21" />
+                <Iconify icon="ic:round-plus" size={moderateScale(24)} color="#F98A21" />
                 <Text style={styles.addImageButtonText}>{t("addCard.addImage", "Fotoğraf Ekle")}</Text>
               </TouchableOpacity>
             )}
@@ -481,12 +482,12 @@ export default function AddCardScreen() {
           }]}>
             <View style={{ flex: 1 }}>
               <View style={styles.labelRow}>
-                <Iconify icon="uil:comment-alt-question" size={24} color="#F98A21" style={styles.labelIcon} />
+                <Iconify icon="uil:comment-alt-question" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.question", "Soru")} *</Text>
               </View>
               <View style={{ position: 'relative' }}>
                 <TextInput
-                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: question?.length > 0 ? 48 : 12}]}
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: question?.length > 0 ? scale(48) : scale(12)}]}
                   placeholder={t("addCard.questionPlaceholder", "Kartın sorusu")}
                   placeholderTextColor={colors.muted}
                   value={question}
@@ -497,10 +498,10 @@ export default function AddCardScreen() {
                   <TouchableOpacity
                     onPress={() => setQuestion('')}
                     accessibilityLabel={t('common.clear', 'Temizle')}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
+                    hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
+                    style={{ position: 'absolute', right: scale(12), top: verticalScale(12), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
                   >
-                    <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                    <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -518,12 +519,12 @@ export default function AddCardScreen() {
           }]}>
             <View style={{ flex: 1 }}>
               <View style={styles.labelRow}>
-                <Iconify icon="uil:comment-alt-check" size={24} color="#F98A21" style={styles.labelIcon} />
+                <Iconify icon="uil:comment-alt-check" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.answer", "Cevap")} *</Text>
               </View>
               <View style={{ position: 'relative' }}>
                 <TextInput
-                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: answer?.length > 0 ? 48 : 12}]}
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: answer?.length > 0 ? scale(48) : scale(12)}]}
                   placeholder={t("addCard.answerPlaceholder", "Kartın cevabı")}
                   placeholderTextColor={colors.muted}
                   value={answer}
@@ -534,10 +535,10 @@ export default function AddCardScreen() {
                   <TouchableOpacity
                     onPress={() => setAnswer('')}
                     accessibilityLabel={t('common.clear', 'Temizle')}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
+                    hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
+                    style={{ position: 'absolute', right: scale(12), top: verticalScale(12), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
                   >
-                    <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                    <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -555,12 +556,12 @@ export default function AddCardScreen() {
           }]}>
             <View style={{ flex: 1 }}>
               <View style={styles.labelRow}>
-                <Iconify icon="lucide:lightbulb" size={24} color="#F98A21" style={styles.labelIcon} />
+                <Iconify icon="lucide:lightbulb" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.example", "Örnek")}</Text>
               </View>
               <View style={{ position: 'relative' }}>
                 <TextInput
-                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: example?.length > 0 ? 48 : 12}]}
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: example?.length > 0 ? scale(48) : scale(12)}]}
                   placeholder={t("addCard.examplePlaceholder", "Örnek cümle (opsiyonel)")}
                   placeholderTextColor={colors.muted}
                   value={example}
@@ -571,10 +572,10 @@ export default function AddCardScreen() {
                   <TouchableOpacity
                     onPress={() => setExample('')}
                     accessibilityLabel={t('common.clear', 'Temizle')}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
+                    hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
+                    style={{ position: 'absolute', right: scale(12), top: verticalScale(12), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
                   >
-                    <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                    <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -592,12 +593,12 @@ export default function AddCardScreen() {
           }]}>
             <View style={{ flex: 1 }}>
               <View style={styles.labelRow}>
-                <Iconify icon="material-symbols-light:stylus-note" size={24} color="#F98A21" style={styles.labelIcon} />
+                <Iconify icon="material-symbols-light:stylus-note" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.note", "Not")}</Text>
               </View>
               <View style={{ position: 'relative' }}>
                 <TextInput
-                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: note?.length > 0 ? 48 : 12}]}
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: note?.length > 0 ? scale(48) : scale(12)}]}
                   placeholder={t("addCard.notePlaceholder", "Not (opsiyonel)")}
                   placeholderTextColor={colors.muted}
                   value={note}
@@ -608,10 +609,10 @@ export default function AddCardScreen() {
                   <TouchableOpacity
                     onPress={() => setNote('')}
                     accessibilityLabel={t('common.clear', 'Temizle')}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
+                    hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
+                    style={{ position: 'absolute', right: scale(12), top: verticalScale(12), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
                   >
-                    <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                    <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -646,34 +647,34 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'flex-start',
     alignItems: 'center',
-    padding: 16,
-    paddingTop: 8,
+    padding: scale(16),
+    paddingTop: verticalScale(8),
   },
   headerCard: {
     width: '100%',
-    marginBottom: 12,
-    marginTop: 8,
+    marginBottom: verticalScale(12),
+    marginTop: verticalScale(8),
   },
   headerCardContainer: {
-    borderRadius: 28,
+    borderRadius: moderateScale(28),
     overflow: 'hidden',
-    marginHorizontal: 10,
-    marginVertical: 8,
-    paddingVertical: 10,
+    marginHorizontal: scale(10),
+    marginVertical: verticalScale(8),
+    paddingVertical: verticalScale(10),
   },
   headerCardContent: {
-    borderRadius: 28,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    minHeight: 180,
+    borderRadius: moderateScale(28),
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(10),
+    minHeight: verticalScale(180),
   },
   headerContent: {
-    paddingVertical: 8,
+    paddingVertical: verticalScale(8),
   },
   headerTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: verticalScale(8),
   },
   headerBottomRow: {
     flexDirection: 'row',
@@ -681,104 +682,104 @@ const styles = StyleSheet.create({
   },
   headerTextColumn: {
     flex: 1,
-    marginRight: 12,
+    marginRight: scale(12),
   },
   howToCreateButton: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginTop: 12,
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: scale(12),
+    borderRadius: moderateScale(20),
+    borderWidth: moderateScale(1),
+    marginTop: verticalScale(12),
   },
   headerImageContainer: {
-    width: 120,
-    height: 120,
-    marginLeft: 12,
+    width: scale(120),
+    height: scale(120),
+    marginLeft: scale(12),
   },
   headerImage: {
-    width: 140,
-    height: 140,
+    width: scale(140),
+    height: scale(140),
     alignSelf: 'flex-end',
     top: '-10%',
   },
   inputCard: {
     width: '100%',
-    maxWidth: 440,
-    borderRadius: 28,
-    padding: 20,
-    marginBottom: 11,
-    shadowOffset: { width: 4, height: 6},
+    maxWidth: scale(440),
+    borderRadius: moderateScale(28),
+    padding: moderateScale(20),
+    marginBottom: verticalScale(11),
+    shadowOffset: { width: scale(4), height: verticalScale(6)},
     shadowOpacity: 0.10,
-    shadowRadius: 10,
+    shadowRadius: moderateScale(10),
     elevation: 5,
     overflow: 'hidden',
   },
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: verticalScale(10),
   },
   labelIcon: {
-    marginRight: 8,
+    marginRight: scale(8),
   },
   label: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '500',
   },
   input: {
-    borderWidth: 0.15,
+    borderWidth: moderateScale(0.15),
     borderColor: '#eee',
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: moderateScale(8),
+    padding: scale(12),
     marginBottom: 0,
-    fontSize: 16,
+    fontSize: moderateScale(16),
   },
   cardImage: {
-    width: 120,
-    height: 160,
-    borderRadius: 18,
-    marginBottom: 8,
+    width: scale(120),
+    height: verticalScale(160),
+    borderRadius: moderateScale(18),
+    marginBottom: verticalScale(8),
     resizeMode: 'cover',
     backgroundColor: '#f2f2f2',
   },
   addImageButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 28,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderWidth: 1,
+    borderRadius: moderateScale(28),
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(18),
+    borderWidth: moderateScale(1),
     borderColor: '#F98A21',
-    marginTop: 6,
+    marginTop: verticalScale(6),
   },
   addImageButtonText: {
     color: '#F98A21',
     fontWeight: 'bold',
-    fontSize: 15,
-    marginLeft: 6,
+    fontSize: moderateScale(15),
+    marginLeft: scale(6),
   },
   removeImageButton: {
     backgroundColor: '#F98A21',
-    borderWidth: 1,
+    borderWidth: moderateScale(1),
     borderColor: '#F98A21',
-    borderRadius: 28,
-    paddingVertical: 6,
-    paddingHorizontal: 18,
+    borderRadius: moderateScale(28),
+    paddingVertical: verticalScale(6),
+    paddingHorizontal: scale(18),
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: verticalScale(4),
   },
   removeImageButtonText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 15,
+    fontSize: moderateScale(15),
   },
   buttonRowModern: {
     flexDirection: 'row',
-    gap: 20,
-    marginTop: 24,
-    marginBottom: 32,
+    gap: scale(20),
+    marginTop: verticalScale(24),
+    marginBottom: verticalScale(32),
   },
 });

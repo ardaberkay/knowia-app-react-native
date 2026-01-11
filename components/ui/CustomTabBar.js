@@ -4,6 +4,7 @@ import { BottomTabBar } from '@react-navigation/bottom-tabs';
 import { useTheme } from '../../theme/theme';
 import { Iconify } from 'react-native-iconify';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 export default function CustomTabBar(props) {
   const [visible, setVisible] = useState(true);
@@ -59,17 +60,17 @@ export default function CustomTabBar(props) {
   return (
     <View style={{
       position: 'absolute',
-      bottom: insets.bottom + 20,
-      left: 20,
-      right: 20,
+      bottom: insets.bottom + verticalScale(20),
+      left: scale(20),
+      right: scale(20),
       backgroundColor: colors.floatingTabBarBackground,
-      borderRadius: 25,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
+      borderRadius: moderateScale(25),
+      paddingVertical: verticalScale(8),
+      paddingHorizontal: scale(12),
       flexDirection: 'row',
       justifyContent: 'space-around',
       alignItems: 'center',
-      borderWidth: 0.5,
+      borderWidth: moderateScale(0.5),
       borderColor: colors.border + '30', // %18 opacity ile çok hafif kenarlık
     }}>
       {state.routes.map((route, index) => {
@@ -91,25 +92,25 @@ export default function CustomTabBar(props) {
               style={{
                 alignItems: 'center',
                 justifyContent: 'center',
-                paddingVertical: 6,
-                paddingHorizontal: 10,
-                borderRadius: 20,
+                paddingVertical: verticalScale(6),
+                paddingHorizontal: scale(10),
+                borderRadius: moderateScale(20),
                 backgroundColor: isFocused ? colors.buttonColor : 'transparent',
-                minWidth: 60,
+                minWidth: scale(60),
               }}
               activeOpacity={0.7}
             >
               <Iconify
                 icon={iconName}
-                size={24}
+                size={moderateScale(24)}
                 color={isFocused ? colors.buttonText : colors.subtext}
                 style={{
-                  marginBottom: 2,
+                  marginBottom: verticalScale(2),
                 }}
               />
               <Text
                 style={{
-                  fontSize: 11,
+                  fontSize: moderateScale(11),
                   fontWeight: '500',
                   color: isFocused ? colors.buttonText : colors.subtext,
                   textAlign: 'center',

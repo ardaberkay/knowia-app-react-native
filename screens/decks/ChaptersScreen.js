@@ -11,6 +11,7 @@ import CircularProgress from '../../components/ui/CircularProgress';
 import { supabase } from '../../lib/supabase';
 import LottieView from 'lottie-react-native';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 export default function ChaptersScreen({ route, navigation }) {
   const { colors } = useTheme();
@@ -99,12 +100,12 @@ export default function ChaptersScreen({ route, navigation }) {
         return (
           <TouchableOpacity
             onPress={() => setEditMode(!editMode)}
-            style={{ marginRight: 16 }}
+            style={{ marginRight: scale(16) }}
             activeOpacity={0.7}
           >
             <Iconify 
               icon={editMode ? "mingcute:close-fill" : "lucide:edit"} 
-              size={22} 
+              size={moderateScale(22)} 
               color="#FFFFFF" 
             />
           </TouchableOpacity>
@@ -220,7 +221,7 @@ export default function ChaptersScreen({ route, navigation }) {
             <FlatList
               data={chapters}
               keyExtractor={(item) => item.id}
-              contentContainerStyle={chapters.length === 0 ? { padding: 16, flexGrow: 1 } : { padding: 16, paddingBottom: '22%' }}
+              contentContainerStyle={chapters.length === 0 ? { padding: scale(16), flexGrow: 1 } : { padding: scale(16), paddingBottom: '22%' }}
               showsVerticalScrollIndicator={false}
               ListHeaderComponent={() => {
                 const unassignedProgress = progressMap.get('unassigned') || { total: 0 };
@@ -245,7 +246,7 @@ export default function ChaptersScreen({ route, navigation }) {
                     >
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Iconify icon="ic:round-assignment-late" size={20} color={colors.buttonColor} style={{ marginRight: 8 }} />
+                          <Iconify icon="ic:round-assignment-late" size={moderateScale(20)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
                           <Text style={[typography.styles.body, { color: colors.text }]}>{t('chapters.unassigned', 'Atanmamış')}</Text>
                         </View>
                         {unassignedCount > 0 && (
@@ -259,19 +260,19 @@ export default function ChaptersScreen({ route, navigation }) {
                 );
               }}
               ListEmptyComponent={
-                <View style={styles.emptyStateContainer}>
-                  <View style={styles.emptyState}>
-                    <Iconify
-                      icon="streamline-freehand:plugin-jigsaw-puzzle"
-                      size={120}
-                      color={colors.muted}
-                      style={{ marginBottom: 12, opacity: 0.5 }}
-                    />
-                    <Text style={[styles.emptyStateText, typography.styles.body, { color: colors.subtext, opacity: 0.6 }]}>
-                      {t('chapters.noChaptersDesc', 'Bu destede henüz bölüm oluşturulmamış.')}
-                    </Text>
+                  <View style={styles.emptyStateContainer}>
+                    <View style={styles.emptyState}>
+                      <Iconify
+                        icon="streamline-freehand:plugin-jigsaw-puzzle"
+                        size={scale(120)}
+                        color={colors.muted}
+                        style={{ marginBottom: verticalScale(12), opacity: 0.5 }}
+                      />
+                      <Text style={[styles.emptyStateText, typography.styles.body, { color: colors.subtext, opacity: 0.6 }]}>
+                        {t('chapters.noChaptersDesc', 'Bu destede henüz bölüm oluşturulmamış.')}
+                      </Text>
+                    </View>
                   </View>
-                </View>
               }
               renderItem={({ item, index }) => {
                 const chapterProgress = progressMap.get(item.id) || { total: 0, learned: 0, learning: 0, progress: 0 };
@@ -302,7 +303,7 @@ export default function ChaptersScreen({ route, navigation }) {
                     <View style={styles.chapterHeader}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={22} color={colors.buttonColor} style={{ marginRight: 8 }} />
+                          <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={moderateScale(22)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
                           <Text style={[typography.styles.body, styles.chapterTitle, { color: colors.text }]}>{t('chapters.chapter', 'Bölüm')} {item.ordinal}</Text>
                         </View>
                         {editMode ? (
@@ -311,10 +312,10 @@ export default function ChaptersScreen({ route, navigation }) {
                             style={styles.deleteButton}
                             activeOpacity={0.7}
                           >
-                            <Iconify icon="mdi:garbage" size={24} color="#FF4444" />
+                            <Iconify icon="mdi:garbage" size={moderateScale(24)} color="#FF4444" />
                           </TouchableOpacity>
                         ) : (
-                          <Iconify icon="ion:chevron-forward" size={26} color={colors.buttonColor} />
+                          <Iconify icon="ion:chevron-forward" size={moderateScale(26)} color={colors.buttonColor} />
                         )}
                       </View>
                     </View>
@@ -327,19 +328,19 @@ export default function ChaptersScreen({ route, navigation }) {
                       <View style={styles.progressContainer}>
                         <CircularProgress
                           progress={chapterProgress?.progress || 0}
-                          size={78}
-                          strokeWidth={9}
+                          size={scale(78)}
+                          strokeWidth={moderateScale(9)}
                           showText={true}
                           shouldAnimate={false}
                           fullCircle={true}
-                          textStyle={{ fontSize: 16, fontWeight: '900', color: colors.text }}
+                          textStyle={{ fontSize: moderateScale(16), fontWeight: '900', color: colors.text }}
                         />
                       </View>
                       
                       <View style={styles.statsContainer}>
                         {/* Learning */}
                         <View style={styles.statRow}>
-                          <Iconify icon="mdi:fire" size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
+                          <Iconify icon="mdi:fire" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
                           <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
                             {t('chapters.learning', 'Learning')}: {learningCount}
                           </Text>
@@ -347,7 +348,7 @@ export default function ChaptersScreen({ route, navigation }) {
                         
                         {/* Learned */}
                         <View style={styles.statRow}>
-                          <Iconify icon="dashicons:welcome-learn-more" size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
+                          <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
                           <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
                             {t('chapters.learned', 'Learned')}: {chapterProgress.learned}
                           </Text>
@@ -355,7 +356,7 @@ export default function ChaptersScreen({ route, navigation }) {
                         
                         {/* Total */}
                         <View style={styles.statRow}>
-                          <Iconify icon="ri:stack-fill" size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
+                          <Iconify icon="ri:stack-fill" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
                           <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
                             {t('chapters.total', 'Total')}: {chapterProgress.total}
                           </Text>
@@ -382,7 +383,7 @@ export default function ChaptersScreen({ route, navigation }) {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Iconify icon="ic:round-plus" size={30} color="#FFFFFF" />
+              <Iconify icon="ic:round-plus" size={moderateScale(30)} color="#FFFFFF" />
             </LinearGradient>
           </TouchableOpacity>
         )}
@@ -402,82 +403,82 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 25,
-    minHeight: 400,
+    paddingHorizontal: scale(25),
+    minHeight: verticalScale(400),
   },
   emptyState: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: -150,
+    marginTop: verticalScale(-150),
   },
   emptyStateTitle: {
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: verticalScale(16),
+    marginBottom: verticalScale(8),
     textAlign: 'center',
   },
   emptyStateText: {
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: verticalScale(22),
   },
   chapterItem: {
     flexDirection: 'column',
-    padding: 20,
-    borderRadius: 40,
-    borderWidth: 1,
-    marginBottom: 14,
-    shadowOffset: { width: 4, height: 6 },
+    padding: moderateScale(20),
+    borderRadius: moderateScale(40),
+    borderWidth: moderateScale(1),
+    marginBottom: verticalScale(14),
+    shadowOffset: { width: scale(4), height: verticalScale(6) },
     shadowOpacity: 0.10,
-    shadowRadius: 10,
+    shadowRadius: moderateScale(10),
     elevation: 5,
   },
   chapterHeader: {
-    marginBottom: 12,
+    marginBottom: verticalScale(12),
   },
   chapterTitle: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontWeight: '600',
   },
   chapterDivider: {
-    height: 1,
+    height: verticalScale(1),
     width: '100%',
-    marginBottom: 16,
+    marginBottom: verticalScale(16),
     opacity: 0.3,
   },
   chapterContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: scale(16),
   },
   progressContainer: {
-    marginRight: 8,
+    marginRight: scale(8),
   },
   statsContainer: {
     flex: 1,
-    gap: 8,
+    gap: verticalScale(8),
   },
   statRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   statText: {
-    fontSize: 15,
+    fontSize: moderateScale(15),
   },
   deleteButton: {
-    padding: 8,
-    borderRadius: 8,
+    padding: moderateScale(8),
+    borderRadius: moderateScale(8),
   },
   fab: {
     position: 'absolute',
-    right: 20,
-    bottom: 24,
-    width: 70,
-    height: 70,
-    borderRadius: 99,
+    right: scale(20),
+    bottom: verticalScale(24),
+    width: scale(70),
+    height: scale(70),
+    borderRadius: moderateScale(99),
     overflow: 'hidden',
     shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: verticalScale(1) },
     shadowOpacity: 0.08,
-    shadowRadius: 2,
+    shadowRadius: moderateScale(2),
     elevation: 2,
   },
   fabGradient: {
@@ -485,26 +486,26 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 99,
+    borderRadius: moderateScale(99),
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: 200,
+    minHeight: verticalScale(200),
     flexDirection: 'column',
-    gap: -65,
+    gap: verticalScale(-65),
   },
   countBadge: {
-    minWidth: 28,
-    height: 28,
-    borderRadius: 14,
-    paddingHorizontal: 10,
+    minWidth: scale(28),
+    height: scale(28),
+    borderRadius: moderateScale(14),
+    paddingHorizontal: scale(10),
     justifyContent: 'center',
     alignItems: 'center',
   },
   countBadgeText: {
-    fontSize: 13,
+    fontSize: moderateScale(13),
     fontWeight: '700',
   },
 });

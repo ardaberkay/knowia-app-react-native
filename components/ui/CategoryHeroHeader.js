@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
 import SearchBar from '../tools/SearchBar';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 // Kategoriye göre icon, renk ve gradient belirleme
 export function getCategoryConfig(category, t) {
@@ -60,7 +61,7 @@ export default function CategoryHeroHeader({
         <View style={styles.heroContent}>
           <View style={styles.heroIconContainer}>
             <View style={[styles.iconCircle, { backgroundColor: config.accentColor + '20' }]}>
-              <Iconify icon={config.icon} size={28} color="#fff" />
+              <Iconify icon={config.icon} size={moderateScale(28)} color="#fff" />
             </View>
           </View>
           <View style={styles.heroTextContainer}>
@@ -87,36 +88,36 @@ export default function CategoryHeroHeader({
 
 const styles = StyleSheet.create({
   heroCard: {
-    borderRadius: 24,
+    borderRadius: moderateScale(24),
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: verticalScale(8) },
     shadowOpacity: 0.15,
-    shadowRadius: 16,
+    shadowRadius: moderateScale(16),
     elevation: 8,
-    marginHorizontal: 12,
+    marginHorizontal: scale(12),
   },
   heroGradient: {
-    padding: 24,
-    minHeight: 140,
+    padding: scale(24),
+    minHeight: verticalScale(140),
     justifyContent: 'center',
   },
   heroContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
   },
   heroIconContainer: {
-    marginRight: 16,
+    marginRight: scale(16),
   },
   iconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: scale(64),
+    height: verticalScale(64),
+    borderRadius: moderateScale(32),
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: moderateScale(2),
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   heroTextContainer: {
@@ -126,23 +127,23 @@ const styles = StyleSheet.create({
   heroTitle: {
     ...typography.styles.h2,
     color: '#fff',
-    fontSize: 28,
+    fontSize: moderateScale(28),
     fontWeight: '900',
-    marginBottom: 6,
-    letterSpacing: -0.5,
+    marginBottom: verticalScale(6),
+    letterSpacing: moderateScale(-0.5),
   },
   heroSubtitle: {
     ...typography.styles.caption,
     color: 'rgba(255, 255, 255, 0.85)',
-    fontSize: 15,
+    fontSize: moderateScale(15),
     fontWeight: '500',
-    lineHeight: 20,
+    lineHeight: moderateScale(20),
   },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginTop: 8,
+    gap: scale(12),
+    marginTop: verticalScale(8),
   },
   searchBar: {
     flex: 1,

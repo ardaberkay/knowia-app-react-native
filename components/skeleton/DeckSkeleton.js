@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated, Dimensions } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { LinearGradient } from 'expo-linear-gradient';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -89,34 +90,44 @@ export default function DeckSkeleton() {
   const lineColor = isDarkMode ? '#333' : '#ddd';
 
   return (
-    <View style={[styles.skeletonCard, { backgroundColor: bgColor }]}>
-      {/* Profil kısmı - üstte */}
-      <View style={styles.profileRow}>
-        <ShimmerBox delay={0} isDarkMode={isDarkMode} borderRadius={11}>
-          <View style={[styles.avatar, { backgroundColor: lineColor }]} />
-        </ShimmerBox>
-        <ShimmerBox delay={20} isDarkMode={isDarkMode} borderRadius={7}>
-          <View style={[styles.usernameLine, { backgroundColor: lineColor }]} />
-        </ShimmerBox>
-      </View>
-      
-      {/* Başlık kısmı - ortada */}
-      <View style={styles.titleSection}>
-        <ShimmerBox delay={40} isDarkMode={isDarkMode} borderRadius={8}>
-          <View style={[styles.titleLine, { backgroundColor: lineColor }]} />
-        </ShimmerBox>
-        <ShimmerBox delay={60} isDarkMode={isDarkMode} borderRadius={1}>
-          <View style={[styles.divider, { backgroundColor: lineColor }]} />
-        </ShimmerBox>
-        <ShimmerBox delay={80} isDarkMode={isDarkMode} borderRadius={8}>
-          <View style={[styles.subtitleLine, { backgroundColor: lineColor }]} />
-        </ShimmerBox>
-      </View>
-      
-      {/* İstatistik kısmı - altta */}
-      <View style={styles.statsSection}>
-        <ShimmerBox delay={100} isDarkMode={isDarkMode} borderRadius={12}>
-          <View style={[styles.badge, { backgroundColor: lineColor }]} />
+    <View style={styles.skeletonCard}>
+      <View style={[styles.skeletonCardGradient, { backgroundColor: bgColor }]}>
+        <View style={styles.deckCardContentModern}>
+          {/* Profil kısmı - üstte */}
+          <View style={styles.profileRow}>
+            <ShimmerBox delay={0} isDarkMode={isDarkMode} borderRadius={moderateScale(11)}>
+              <View style={[styles.avatar, { backgroundColor: lineColor }]} />
+            </ShimmerBox>
+            <ShimmerBox delay={20} isDarkMode={isDarkMode} borderRadius={moderateScale(7)}>
+              <View style={[styles.usernameLine, { backgroundColor: lineColor }]} />
+            </ShimmerBox>
+          </View>
+          
+          {/* Başlık kısmı - ortada */}
+          <View style={styles.titleSectionWrapper}>
+            <View style={styles.deckHeaderModern}>
+              <ShimmerBox delay={40} isDarkMode={isDarkMode} borderRadius={moderateScale(8)}>
+                <View style={[styles.titleLine, { backgroundColor: lineColor }]} />
+              </ShimmerBox>
+              <ShimmerBox delay={60} isDarkMode={isDarkMode} borderRadius={moderateScale(1)}>
+                <View style={[styles.divider, { backgroundColor: lineColor }]} />
+              </ShimmerBox>
+              <ShimmerBox delay={80} isDarkMode={isDarkMode} borderRadius={moderateScale(8)}>
+                <View style={[styles.subtitleLine, { backgroundColor: lineColor }]} />
+              </ShimmerBox>
+            </View>
+          </View>
+          
+          {/* İstatistik kısmı - altta */}
+          <View style={styles.statsSection}>
+            <ShimmerBox delay={100} isDarkMode={isDarkMode} borderRadius={moderateScale(12)}>
+              <View style={[styles.badge, { backgroundColor: lineColor }]} />
+            </ShimmerBox>
+          </View>
+        </View>
+        {/* Favori butonu skeleton - sağ altta */}
+        <ShimmerBox delay={120} isDarkMode={isDarkMode} borderRadius={999} style={styles.favoriteButtonContainer}>
+          <View style={[styles.favoriteButton, { backgroundColor: lineColor }]} />
         </ShimmerBox>
       </View>
     </View>
@@ -125,61 +136,88 @@ export default function DeckSkeleton() {
 
 const styles = StyleSheet.create({
   skeletonCard: {
-    width: 140,
-    height: 196,
-    borderRadius: 18,
-    marginRight: 10,
-    marginBottom: 8,
-    padding: 8,
+    backgroundColor: 'transparent',
+    borderRadius: moderateScale(18),
+    marginRight: scale(10),
+    marginBottom: verticalScale(8),
+    width: scale(140),
+    height: verticalScale(196),
+    overflow: 'hidden',
+  },
+  skeletonCardGradient: {
+    flex: 1,
+    borderRadius: moderateScale(18),
+    padding: scale(8),
+  },
+  deckCardContentModern: {
+    flex: 1,
     justifyContent: 'space-between',
   },
   profileRow: {
+    position: 'absolute',
     flexDirection: 'row',
     alignItems: 'center',
-    maxWidth: 120,
+    zIndex: 10,
+    maxWidth: scale(120),
   },
   avatar: {
-    width: 27,
-    height: 27,
-    borderRadius: 11,
-    marginRight: 6,
+    width: scale(27),
+    height: verticalScale(27),
+    borderRadius: moderateScale(11),
+    marginRight: scale(6),
   },
   usernameLine: {
-    width: 60,
-    height: 14,
-    borderRadius: 7,
+    width: scale(75),
+    height: moderateScale(14),
+    borderRadius: moderateScale(7),
   },
-  titleSection: {
+  titleSectionWrapper: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  deckHeaderModern: {
+    alignItems: 'center',
+  },
   titleLine: {
-    width: 80,
-    height: 16,
-    borderRadius: 8,
-    marginBottom: 8,
+    width: scale(80),
+    height: moderateScale(16),
+    borderRadius: moderateScale(8),
   },
   divider: {
-    width: 60,
-    height: 2,
-    borderRadius: 1,
-    marginBottom: 8,
+    width: scale(60),
+    height: moderateScale(2),
+    borderRadius: moderateScale(1),
+    marginVertical: verticalScale(10),
   },
   subtitleLine: {
-    width: 70,
-    height: 16,
-    borderRadius: 8,
+    width: scale(70),
+    height: moderateScale(16),
+    borderRadius: moderateScale(8),
   },
   statsSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: -18,
-    left: 2,
+    marginTop: verticalScale(-18),
+    left: scale(2),
+    bottom: verticalScale(1),
   },
   badge: {
-    width: 40,
-    height: 24,
-    borderRadius: 12,
+    width: scale(40),
+    height: verticalScale(24),
+    borderRadius: moderateScale(12),
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(2),
+  },
+  favoriteButtonContainer: {
+    position: 'absolute',
+    bottom: verticalScale(8),
+    right: scale(8),
+    zIndex: 10,
+  },
+  favoriteButton: {
+    width: moderateScale(30),
+    height: moderateScale(30),
+    borderRadius: 999,
   },
 }); 

@@ -14,6 +14,7 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { Iconify } from 'react-native-iconify';
 import UndoButton from '../../components/tools/UndoButton';
 import CreateButton from '../../components/tools/CreateButton';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 export default function EditProfileScreen({ navigation }) {
   const { colors, isDarkMode } = useTheme();
@@ -223,7 +224,7 @@ export default function EditProfileScreen({ navigation }) {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? verticalScale(64) : 0}
       >
         <ScrollView
           style={styles.scrollView}
@@ -241,7 +242,7 @@ export default function EditProfileScreen({ navigation }) {
             elevation: colors.elevation,
           }]}>
             <View style={styles.labelRow}>
-              <Iconify icon="mage:image-fill" size={20} color={colors.buttonColor} style={styles.labelIcon} />
+              <Iconify icon="mage:image-fill" size={moderateScale(20)} color={colors.buttonColor} style={styles.labelIcon} />
               <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
                 {t('editProfile.profilePhoto')}
               </Text>
@@ -257,7 +258,7 @@ export default function EditProfileScreen({ navigation }) {
                   onPress={handlePickImage}
                   activeOpacity={0.8}
                 >
-                  <Iconify icon="mage:image-fill" size={18} color="#fff" />
+                  <Iconify icon="mage:image-fill" size={moderateScale(18)} color="#fff" />
                 </TouchableOpacity>
               </View>
               <View style={styles.photoButtonRow}>
@@ -269,8 +270,8 @@ export default function EditProfileScreen({ navigation }) {
                   onPress={handlePickImage}
                   activeOpacity={0.7}
                 >
-                  <Iconify icon="lucide:edit" size={18} color={colors.buttonColor} style={{ marginRight: 6 }} />
-                  <Text style={[typography.styles.button, { color: colors.buttonColor, fontSize: 14 }]}>
+                  <Iconify icon="lucide:edit" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(6) }} />
+                  <Text style={[typography.styles.button, { color: colors.buttonColor, fontSize: moderateScale(14) }]}>
                     {t('editProfile.changePhoto')}
                   </Text>
                 </TouchableOpacity>
@@ -283,8 +284,8 @@ export default function EditProfileScreen({ navigation }) {
                     onPress={handleRemovePhoto}
                     activeOpacity={0.7}
                   >
-                    <Iconify icon="mdi:garbage-can-empty" size={18} color={colors.error} style={{ marginRight: 6 }} />
-                    <Text style={[typography.styles.button, { color: colors.error, fontSize: 14 }]}>
+                    <Iconify icon="mdi:garbage-can-empty" size={moderateScale(18)} color={colors.error} style={{ marginRight: scale(6) }} />
+                    <Text style={[typography.styles.button, { color: colors.error, fontSize: moderateScale(14) }]}>
                       {t('editProfile.removePhoto')}
                     </Text>
                   </TouchableOpacity>
@@ -303,7 +304,7 @@ export default function EditProfileScreen({ navigation }) {
             elevation: colors.elevation,
           }]}>
             <View style={styles.labelRow}>
-              <Iconify icon="solar:user-bold" size={20} color={colors.buttonColor} style={styles.labelIcon} />
+              <Iconify icon="solar:user-bold" size={moderateScale(20)} color={colors.buttonColor} style={styles.labelIcon} />
               <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
                 {t('editProfile.userName')}
               </Text>
@@ -321,7 +322,7 @@ export default function EditProfileScreen({ navigation }) {
               autoCapitalize="none"
               maxLength={16}
             />
-            <Text style={[typography.styles.caption, { color: colors.muted, marginTop: 4 }]}>
+            <Text style={[typography.styles.caption, { color: colors.muted, marginTop: verticalScale(4) }]}>
               {t('editProfile.usernameHint')}
             </Text>
           </View>
@@ -336,7 +337,7 @@ export default function EditProfileScreen({ navigation }) {
             elevation: colors.elevation,
           }]}>
             <View style={styles.labelRow}>
-              <Iconify icon="tabler:mail-filled" size={20} color={colors.buttonColor} style={styles.labelIcon} />
+              <Iconify icon="tabler:mail-filled" size={moderateScale(20)} color={colors.buttonColor} style={styles.labelIcon} />
               <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
                 {t('editProfile.email')}
               </Text>
@@ -367,11 +368,11 @@ export default function EditProfileScreen({ navigation }) {
             elevation: colors.elevation,
           }]}>
             <View style={styles.labelRow}>
-              <Iconify icon="carbon:password" size={20} color={colors.buttonColor} style={styles.labelIcon} />
+              <Iconify icon="carbon:password" size={moderateScale(20)} color={colors.buttonColor} style={styles.labelIcon} />
               <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
                 {t('editProfile.newPassword')}
               </Text>
-              <Text style={[typography.styles.caption, { color: colors.muted, marginLeft: 6 }]}>
+              <Text style={[typography.styles.caption, { color: colors.muted, marginLeft: scale(6) }]}>
                 ({t('editProfile.optional')})
               </Text>
             </View>
@@ -393,11 +394,11 @@ export default function EditProfileScreen({ navigation }) {
               <TouchableOpacity
                 style={styles.eyeButton}
                 onPress={() => setShowPassword(!showPassword)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                hitSlop={{ top: scale(10), bottom: scale(10), left: scale(10), right: scale(10) }}
               >
                 <Iconify 
                   icon={showPassword ? "oi:eye" : "system-uicons:eye-no"} 
-                  size={20} 
+                  size={moderateScale(20)} 
                   color={colors.muted} 
                 />
               </TouchableOpacity>
@@ -420,11 +421,11 @@ export default function EditProfileScreen({ navigation }) {
               <TouchableOpacity
                 style={styles.eyeButton}
                 onPress={() => setShowPasswordConfirm(!showPasswordConfirm)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                hitSlop={{ top: scale(10), bottom: scale(10), left: scale(10), right: scale(10) }}
               >
                 <Iconify 
                   icon={showPasswordConfirm ? "oi:eye" : "system-uicons:eye-no"} 
-                  size={20} 
+                  size={moderateScale(20)} 
                   color={colors.muted} 
                 />
               </TouchableOpacity>
@@ -434,7 +435,7 @@ export default function EditProfileScreen({ navigation }) {
           {/* Error Message */}
           {error && (
             <View style={[styles.errorCard, { backgroundColor: colors.error + '15', borderColor: colors.error }]}>
-              <Iconify icon="mdi:information-variant" size={20} color={colors.error} style={{ marginRight: 8 }} />
+              <Iconify icon="mdi:information-variant" size={moderateScale(20)} color={colors.error} style={{ marginRight: scale(8) }} />
               <Text style={[typography.styles.caption, { color: colors.error, flex: 1 }]}>{error}</Text>
             </View>
           )}
@@ -465,71 +466,71 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 16,
-    paddingTop: 8,
-    paddingBottom: 32,
+    padding: scale(16),
+    paddingTop: verticalScale(8),
+    paddingBottom: verticalScale(32),
   },
   inputCard: {
     width: '100%',
-    maxWidth: 440,
-    borderRadius: 28,
-    padding: 20,
-    marginBottom: 12,
+    maxWidth: scale(440),
+    borderRadius: moderateScale(28),
+    padding: scale(20),
+    marginBottom: verticalScale(12),
     alignSelf: 'center',
     overflow: 'hidden',
   },
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-    gap: 8,
+    marginBottom: verticalScale(12),
+    gap: scale(8),
   },
   labelIcon: {
     marginRight: 0,
   },
   profilePhotoContainer: {
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: verticalScale(8),
   },
   avatarContainer: {
     position: 'relative',
-    marginBottom: 16,
+    marginBottom: verticalScale(16),
   },
   avatarLarge: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: scale(120),
+    height: scale(120),
+    borderRadius: moderateScale(60),
     backgroundColor: '#eee',
-    borderWidth: 3,
+    borderWidth: moderateScale(3),
   },
   cameraButton: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: scale(36),
+    height: scale(36),
+    borderRadius: moderateScale(18),
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
+    borderWidth: moderateScale(3),
     borderColor: '#fff',
   },
   photoButtonRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: scale(12),
     width: '100%',
     justifyContent: 'center',
   },
   photoActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    borderWidth: moderateScale(1.5),
+    borderRadius: moderateScale(12),
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(16),
     justifyContent: 'center',
     flex: 1,
-    maxWidth: 150,
+    maxWidth: scale(150),
   },
   input: {
     borderWidth: 1,
@@ -540,16 +541,16 @@ const styles = StyleSheet.create({
   },
   passwordInputContainer: {
     position: 'relative',
-    marginBottom: 12,
+    marginBottom: verticalScale(12),
   },
   passwordInput: {
-    paddingRight: 45,
+    paddingRight: scale(45),
   },
   eyeButton: {
     position: 'absolute',
-    right: 12,
-    top: 14,
-    padding: 4,
+    right: scale(12),
+    top: verticalScale(14),
+    padding: scale(4),
   },
   errorCard: {
     flexDirection: 'row',
@@ -564,11 +565,11 @@ const styles = StyleSheet.create({
   },
   buttonRowModern: {
     flexDirection: 'row',
-    gap: 20,
-    marginTop: 16,
+    gap: scale(20),
+    marginTop: verticalScale(16),
 
     width: '100%',
-    maxWidth: 440,
+    maxWidth: scale(440),
     alignSelf: 'center',
   },
 }); 

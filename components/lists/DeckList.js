@@ -5,6 +5,7 @@ import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 // Fade efekti - karakter bazlı opacity (MaskedView sorunlarından kaçınır)
 const FadeText = ({ text, style, maxChars = 15 }) => {
@@ -157,7 +158,7 @@ export default function DeckList({
           key={`${deck.id}_${idx}`}
           activeOpacity={0.93}
           onPress={() => onPressDeck(deck)}
-          style={[styles.deckCardVertical, idx === 0 ? { marginRight: 5 } : { marginLeft: 5 }]}
+          style={[styles.deckCardVertical, idx === 0 ? { marginRight: scale(5) } : { marginLeft: scale(5) }]}
         >
           <LinearGradient
             colors={deck.gradientColors}
@@ -169,7 +170,7 @@ export default function DeckList({
             <View style={styles.backgroundCategoryIcon}>
               <Iconify
                 icon={deck.categoryIcon}
-                size={150}
+                size={scale(150)}
                 color="rgba(0, 0, 0, 0.1)"
                 style={styles.categoryIconStyle}
               />
@@ -192,28 +193,28 @@ export default function DeckList({
                 maxChars={15}
               />
             </View>
-            <View style={{ position: 'absolute', bottom: 12, left: 12, flexDirection: 'column', alignItems: 'flex-start' }}>
+            <View style={{ position: 'absolute', bottom: verticalScale(12), left: scale(12), flexDirection: 'column', alignItems: 'flex-start' }}>
               {showPopularityBadge && deck.popularity_score && deck.popularity_score > 0 ? (
-                <View style={[styles.popularityBadge, { marginBottom: 6 }]}>
-                  <Iconify icon="mdi:fire" size={14} color="#fff" style={{ marginRight: 4 }} />
+                <View style={[styles.popularityBadge, { marginBottom: verticalScale(6) }]}>
+                  <Iconify icon="mdi:fire" size={moderateScale(14)} color="#fff" style={{ marginRight: scale(4) }} />
                   <Text style={styles.popularityBadgeText}>
                     {Math.round(deck.popularity_score)}
                   </Text>
                 </View>
               ) : null}
               <View style={styles.deckCountBadge}>
-                <Iconify icon="ri:stack-fill" size={18} color="#fff" style={{ marginRight: 3 }} />
-                <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: 16 }]}>{deck.card_count || 0}</Text>
+                <Iconify icon="ri:stack-fill" size={moderateScale(18)} color="#fff" style={{ marginRight: scale(3) }} />
+                <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(16) }]}>{deck.card_count || 0}</Text>
               </View>
             </View>
             <TouchableOpacity
-              style={{ position: 'absolute', bottom: 8, right: 10, zIndex: 10, backgroundColor: colors.iconBackground, padding: 8, borderRadius: 999 }}
+              style={{ position: 'absolute', bottom: verticalScale(8), right: scale(10), zIndex: 10, backgroundColor: colors.iconBackground, padding: moderateScale(8), borderRadius: 999 }}
               onPress={() => onToggleFavorite(deck.id)}
               activeOpacity={0.7}
             >
               <Iconify
                 icon={favoriteDecks.includes(deck.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-                size={21}
+                size={moderateScale(21)}
                 color={favoriteDecks.includes(deck.id) ? '#F98A21' : colors.text}
               />
             </TouchableOpacity>
@@ -222,20 +223,20 @@ export default function DeckList({
                 <>
                   <FadeText 
                     text={deck.name} 
-                    style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]}
+                    style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(16), fontWeight: '800', textAlign: 'center' }]}
                     maxChars={16}
                   />
-                  <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 8 }} />
+                  <View style={{ width: scale(60), height: moderateScale(2), backgroundColor: colors.divider, borderRadius: moderateScale(1), marginVertical: verticalScale(8) }} />
                   <FadeText 
                     text={deck.to_name} 
-                    style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]}
+                    style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(16), fontWeight: '800', textAlign: 'center' }]}
                     maxChars={16}
                   />
                 </>
               ) : (
                 <FadeText 
                   text={deck.name} 
-                  style={[typography.styles.body, { color: colors.headText, fontSize: 16, fontWeight: '800', textAlign: 'center' }]}
+                  style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(16), fontWeight: '800', textAlign: 'center' }]}
                   maxChars={16}
                 />
               )}
@@ -352,11 +353,11 @@ export default function DeckList({
       renderItem={({ item: row }) => (row.type === 'double' ? renderDoubleRow(row) : renderSingleRow(row))}
       ListEmptyComponent={
         loading ? (
-          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+          <View style={{ paddingVertical: verticalScale(40), alignItems: 'center' }}>
             <ActivityIndicator size="large" color={colors.buttonColor} />
           </View>
         ) : (
-          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+          <View style={{ paddingVertical: verticalScale(40), alignItems: 'center' }}>
             <Text style={[styles.emptyText, typography.styles.caption]}>{t('library.noDecks', 'Henüz deste bulunmuyor')}</Text>
           </View>
         )
@@ -378,46 +379,46 @@ export default function DeckList({
 
 const styles = StyleSheet.create({
   deckList: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(5),
   },
   deckRow: {
     flexDirection: 'row',
   },
   deckCardVertical: {
     flex: 1,
-    height: 240,
-    borderRadius: 18,
+    height: verticalScale(240),
+    borderRadius: moderateScale(18),
     overflow: 'hidden',
   },
   deckCardHorizontal: {
-    height: 180,
-    borderRadius: 18,
+    height: verticalScale(180),
+    borderRadius: moderateScale(18),
     overflow: 'hidden',
   },
   deckGradient: {
     flex: 1,
-    borderRadius: 18,
-    padding: 16,
+    borderRadius: moderateScale(18),
+    padding: scale(16),
     justifyContent: 'center',
   },
   deckCountBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F98A21',
-    borderRadius: 14,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginRight: 2,
+    borderRadius: moderateScale(14),
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(2),
+    marginRight: scale(2),
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: verticalScale(20),
   },
   backgroundCategoryIcon: {
     position: 'absolute',
-    left: -75, // İkonun yarısının taşması için
+    left: scale(-75), // İkonun yarısının taşması için
     width: '100%',
     height: '100%',
     justifyContent: 'center',
@@ -434,17 +435,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     zIndex: 10,
-    top: 8,
-    left: 10,
+    top: verticalScale(8),
+    left: scale(10),
   },
   deckProfileAvatar: {
-    width: 32,
-    height: 32,
+    width: scale(32),
+    height: verticalScale(32),
     borderRadius: 99,
-    marginRight: 6,
+    marginRight: scale(6),
   },
   deckProfileUsername: {
-    fontSize: 15,
+    fontSize: moderateScale(15),
     color: '#BDBDBD',
     fontWeight: '700',
     width: '95%',
@@ -452,17 +453,17 @@ const styles = StyleSheet.create({
   popularityBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+    paddingHorizontal: scale(7),
+    paddingVertical: verticalScale(2),
     borderRadius: 99,
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    borderWidth: 1,
+    borderWidth: moderateScale(1),
     borderColor: 'rgba(255, 255, 255, 0.4)',
     backdropFilter: 'blur(10px)',
   },
   popularityBadgeText: {
     color: '#fff',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: moderateScale(14),
   },
 });

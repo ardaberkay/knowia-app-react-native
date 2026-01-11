@@ -5,6 +5,7 @@ import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 export default function CategorySelector({ isVisible, onClose, categories = [], selectedCategoryId, onSelectCategory }) {
   const { colors } = useTheme();
@@ -46,24 +47,24 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
       <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
         <View style={styles.headerRow}>
           <Text style={[typography.styles.h2, { color: colors.text }]}>{t('categorySelector.title')}</Text>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
+          <TouchableOpacity onPress={onClose} hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}>
+            <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={{ maxHeight: 400, height: 400 }} showsVerticalScrollIndicator={false}>
+        <ScrollView style={{ maxHeight: verticalScale(400), height: verticalScale(400) }} showsVerticalScrollIndicator={false}>
           {categories.map((category) => {
             const isSelected = selectedCategoryId === category.id;
             return (
               <TouchableOpacity
                 key={category.id}
-                style={[styles.categoryOption, isSelected && { backgroundColor: colors.iconBackground, borderRadius: 8 }]}
+                style={[styles.categoryOption, isSelected && { backgroundColor: colors.iconBackground, borderRadius: moderateScale(8) }]}
                 onPress={() => onSelectCategory && onSelectCategory(category.id)}
               >
                 <View style={styles.categoryRow}>
                   <Iconify
                     icon={getCategoryIcon(category.sort_order)}
-                    size={26}
+                    size={moderateScale(26)}
                     color={isSelected ? colors.secondary : colors.text}
                     style={styles.categoryIcon}
                   />
@@ -90,28 +91,28 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
 
 const styles = StyleSheet.create({
   modalContainer: {
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: moderateScale(16),
+    padding: scale(24),
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: verticalScale(16),
   },
   categoryOption: {
-    paddingVertical: 12,
-    paddingHorizontal: 6,
+    paddingVertical: verticalScale(12),
+    paddingHorizontal: scale(6),
   },
   categoryRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   categoryIcon: {
-    marginRight: 12,
+    marginRight: scale(12),
   },
   categoryText: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     flex: 1,
   },
 });

@@ -14,6 +14,7 @@ import { typography } from '../../theme/typography';
 import { StyleSheet } from 'react-native';
 import { Iconify } from 'react-native-iconify';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 export default function FavoriteCards() {
   const navigation = useNavigation();
@@ -199,15 +200,15 @@ export default function FavoriteCards() {
     if (selectedCard) {
       navigation.setOptions({
         headerRight: () => (
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: scale(8) }}>
             <TouchableOpacity
               onPress={() => handleToggleFavoriteCard(selectedCard.id)}
               activeOpacity={0.7}
-              style={{ paddingHorizontal: 6 }}
+              style={{ paddingHorizontal: scale(6) }}
             >
               <Iconify
                 icon={favoriteCards.includes(selectedCard.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-                size={24}
+                size={moderateScale(24)}
                 color={favoriteCards.includes(selectedCard.id) ? '#F98A21' : colors.text}
               />
             </TouchableOpacity>
@@ -225,19 +226,19 @@ export default function FavoriteCards() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {loading ? (
         <View style={styles.loadingContainer}>
-          <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: 200, height: 200 }} />
-          <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100 }} />
+          <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: scale(200), height: verticalScale(200) }} />
+          <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100), height: verticalScale(100) }} />
         </View>
       ) : selectedCard ? (
         <CardDetailView card={selectedCard} cards={filteredCards} onSelectCard={setSelectedCard} />
       ) : filteredCards.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: -250}}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: verticalScale(-250)}}>
           <Image
             source={require('../../assets/cardbg.png')}
-            style={{ width: 500, height: 500, opacity: 0.2 }}
+            style={{ width: scale(500), height: verticalScale(500), opacity: 0.2 }}
             resizeMode="contain"
           />
-          <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, fontSize: 16, marginTop: -150 }]}>
+          <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, fontSize: moderateScale(16), marginTop: verticalScale(-150) }]}>
             {t('library.addFavoriteCardEmpty', 'Bir kart favorilere ekle')}
           </Text>
         </View>
@@ -246,7 +247,7 @@ export default function FavoriteCards() {
           data={filteredCards}
           keyExtractor={item => item.id?.toString()}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(24) }}
           ListHeaderComponent={
             !selectedCard && (
               <View style={styles.searchContainer}>
@@ -265,13 +266,13 @@ export default function FavoriteCards() {
             )
           }
           ListEmptyComponent={
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: 400 }}>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: verticalScale(400) }}>
               <Image
                 source={require('../../assets/cardbg.png')}
-                style={{ width: 300, height: 300, opacity: 0.2 }}
+                style={{ width: scale(300), height: verticalScale(300), opacity: 0.2 }}
                 resizeMode="contain"
               />
-              <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, textAlign: 'center', fontSize: 16, marginTop: 20 }]}>
+              <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, textAlign: 'center', fontSize: moderateScale(16), marginTop: verticalScale(20) }]}>
                 {t('library.addFavoriteCardEmpty', 'Bir kart favorilere ekle')}
               </Text>
             </View>
@@ -306,22 +307,22 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: 200,
+    minHeight: verticalScale(200),
     flexDirection: 'column',
-    gap: -65,
+    gap: verticalScale(-65),
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginTop: 12,
-    paddingTop: 8,
-    paddingBottom: 8,
-    paddingHorizontal: 12,
-    marginBottom: 8,
+    gap: scale(10),
+    marginTop: verticalScale(12),
+    paddingTop: verticalScale(8),
+    paddingBottom: verticalScale(8),
+    paddingHorizontal: scale(12),
+    marginBottom: verticalScale(8),
   },
   cardListItem: {
-    paddingHorizontal: 12,
+    paddingHorizontal: scale(12),
     paddingVertical: 0,
   },
 });

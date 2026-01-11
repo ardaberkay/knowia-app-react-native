@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
 import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { getCurrentUserProfile, updateLastActiveAt } from '../../services/ProfileService';
 import { registerForPushNotificationsAsync } from '../../services/NotificationService';
 import { supabase } from '../../lib/supabase';
@@ -219,15 +220,18 @@ const DECK_CATEGORIES = {
   const renderPopularDecksCard = () => {
     return (
       <View style={[styles.popularDecksCard, { backgroundColor: isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)' }]}>
+        {/* Başlık - Tam genişlik, kendi satırında */}
+        <View style={styles.popularDecksTitleContainer}>
+          <Iconify icon="fluent:arrow-trending-sparkle-24-filled" size={moderateScale(26)} color="#F98A21" style={{ marginRight: scale(6) }} />
+          <Text style={[typography.styles.h2, { color: colors.text, flex: 1 }]}>
+            {t('home.popularDecks', 'Popüler Desteler')}
+          </Text>
+        </View>
+        
+        {/* Açıklama metni + Buton (sol) ve Görsel (sağ) */}
         <View style={styles.popularDecksContent}>
           <View style={styles.popularDecksTextContainer}>
-            <View style={styles.popularDecksTitleContainer}>
-              <Iconify icon="fluent:arrow-trending-sparkle-24-filled" size={26} color="#F98A21" style={{ marginRight: 6 }} />
-              <Text style={[typography.styles.h2, { color: colors.text}]}>
-                {t('home.popularDecks', 'Popüler Desteler')}
-              </Text>
-            </View>
-            <Text style={[typography.styles.caption, { color: colors.muted, marginBottom: 8, lineHeight: 22 }]}>
+            <Text style={[typography.styles.caption, { color: colors.muted, marginBottom: verticalScale(12), marginTop: verticalScale(8), lineHeight: moderateScale(20) }]}>
               {t('home.popularDecksSubtitle', 'En popüler ve trend destelerle bilginizi pekiştirin')}
             </Text>
             <TouchableOpacity 
@@ -247,7 +251,7 @@ const DECK_CATEGORIES = {
                 <Text style={styles.exploreButtonText}>
                   {t('home.exploreButton', 'Keşfet')}
                 </Text>
-                <Iconify icon="streamline:trending-content-remix" size={16} color="#FFFFFF" style={{ marginLeft: 6 }} />
+                <Iconify icon="streamline:trending-content-remix" size={moderateScale(16)} color="#FFFFFF" style={{ marginLeft: scale(6) }} />
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -300,11 +304,11 @@ const DECK_CATEGORIES = {
       >
           <View style={styles.sectionHeaderGradient}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Iconify icon={getCategoryIcon(category)} size={26} color="#F98A21" style={{ marginRight: 8, marginTop: 1 }} />
+            <Iconify icon={getCategoryIcon(category)} size={moderateScale(26)} color="#F98A21" style={{ marginRight: scale(8), marginTop: moderateScale(1) }} />
               <Text style={[typography.styles.h2, { color: colors.text }]}>{DECK_CATEGORIES[category]}</Text>
             </View>
             <View>
-              <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={20} color="#007AFF" />
+              <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(20)} color="#007AFF" />
             </View>
           </View>
           {isCategoryLoading ? (
@@ -313,7 +317,7 @@ const DECK_CATEGORIES = {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.decksContainer}
               decelerationRate="fast"
-              snapToInterval={130}
+              snapToInterval={scale(130)}
               snapToAlignment="start"
             >
               {[...Array(4)].map((_, i) => (
@@ -326,7 +330,7 @@ const DECK_CATEGORIES = {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.decksContainer}
               decelerationRate="fast"
-              snapToInterval={130}
+              snapToInterval={scale(130)}
               snapToAlignment="start"
             >
               <TouchableOpacity
@@ -351,7 +355,7 @@ const DECK_CATEGORIES = {
                     ]}>
                       <Iconify 
                         icon="ic:round-plus" 
-                        size={42} 
+                        size={moderateScale(42)} 
                         color={isDarkMode ? 'rgba(150, 150, 150, 0.5)' : 'rgba(140, 140, 140, 0.5)'} 
                       />
                     </View>
@@ -365,7 +369,7 @@ const DECK_CATEGORIES = {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.decksContainer}
               decelerationRate="fast"
-              snapToInterval={130}
+              snapToInterval={scale(130)}
               snapToAlignment="start"
             >
               {limitedDecks.map((deck) => {
@@ -402,7 +406,7 @@ const DECK_CATEGORIES = {
               })}
               {showEndIcon && (
                 <View style={styles.endIconContainer}>
-                  <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={35} color="#F98A21" style={{ marginLeft: 2, marginTop: 1 }} />
+                  <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(35)} color="#F98A21" style={{ marginLeft: scale(2), marginTop: moderateScale(1) }} />
                 </View>
               )}
             </ScrollView>
@@ -470,11 +474,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 5,
-    paddingTop: 55,
-    paddingBottom: 10,
-    marginRight: 12,
-    marginLeft: 12,
+    padding: moderateScale(5),
+    paddingTop: verticalScale(55),
+    paddingBottom: verticalScale(10),
+    marginRight: scale(12),
+    marginLeft: scale(12),
     backgroundColor: '#f8f8f8',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
@@ -496,141 +500,145 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
-    borderRadius: 12,
-    paddingVertical: 8,
+    marginBottom: verticalScale(12),
+    borderRadius: moderateScale(12),
+    paddingVertical: verticalScale(8),
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: moderateScale(20),
     fontWeight: '700',
   },
   decksContainer: {
-    paddingBottom: 8,
+    paddingBottom: verticalScale(8),
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: verticalScale(20),
   },
   endIconContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    width: 44,
-    height: 180,
-    marginLeft: 4,
-    marginRight: 8,
+    width: scale(44),
+    height: verticalScale(180),
+    marginLeft: scale(4),
+    marginRight: scale(8),
   },
   profileAvatarButton: {
-    marginLeft: 12,
-    width: 47,
-    height: 47,
-    borderRadius: 22,
+    marginLeft: scale(12),
+    width: scale(47),
+    height: scale(47),
+    borderRadius: moderateScale(22),
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#fff',
   },
   profileAvatar: {
-    width: 47,
-    height: 47,
-    borderRadius: 22,
+    width: scale(47),
+    height: scale(47),
+    borderRadius: moderateScale(22),
     resizeMode: 'cover',
     backgroundColor: '#fff',
   },
   logoImage: {
-    width: 120,
-    height: 44,
+    width: scale(120),
+    height: scale(44),
   },
   glassCard: {
-    borderRadius: 36,
-    marginHorizontal: 10,
-    marginVertical: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    minHeight: 180,
+    borderRadius: moderateScale(36),
+    marginHorizontal: scale(10),
+    marginVertical: verticalScale(8),
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(10),
+    minHeight: verticalScale(180),
     overflow: 'hidden',
   },
   popularDecksCard: {
-    borderRadius: 36,
-    marginHorizontal: 10,
-    marginVertical: 8,
-    marginTop: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    borderRadius: moderateScale(36),
+    marginHorizontal: scale(10),
+    marginVertical: verticalScale(8),
+    marginTop: verticalScale(16),
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(10),
     overflow: 'hidden',
-  },
-  popularDecksContent: {
-    flexDirection: 'row',
-    paddingVertical: 8,
-  },
-  popularDecksTextContainer: {
-    flex: 1,
-    marginRight: 10,
-    justifyContent: 'space-between',
+    paddingBottom: verticalScale(6),
+    paddingTop: verticalScale(20),
   },
   popularDecksTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    width: '100%', // Tam genişlik
+  },
+  popularDecksContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start', // Açıklama metni ve görsel üstten hizalı
+  },
+  popularDecksTextContainer: {
+    flex: 1,
+    marginRight: scale(2),
   },
   popularDecksImageContainer: {
-    width: 150,
-    height: 150,
-    marginTop: 12,
+    width: moderateScale(160, 0.3), // Görsel boyutu optimize edildi
+    height: moderateScale(160, 0.3),
+    flexShrink: 0, // Görsel küçülmesin
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   popularDecksImage: {
-    width: 160,
-    height: 160,
+    width: moderateScale(160, 0.3), // Görsel boyutu optimize edildi
+    height: moderateScale(160, 0.3),
   },
   exploreButton: {
-    borderRadius: 99,
+    borderRadius: moderateScale(99),
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: moderateScale(1) },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowRadius: moderateScale(2),
     elevation: 1,
     alignSelf: 'flex-start',
-    minWidth: 180,
+    minWidth: moderateScale(160, 0.3), // Buton genişliği optimize edildi
   },
   gradientButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingVertical: moderateScale(10, 0.3), // Buton padding optimize edildi
+    paddingHorizontal: moderateScale(20, 0.3),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 99,
+    borderRadius: moderateScale(99),
   },
   exploreButtonText: {
-    fontSize: 17,
+    fontSize: moderateScale(17, 0.3), // Buton text boyutu optimize edildi
     fontWeight: '500',
     color: '#FFFFFF',
+    paddingVertical: moderateScale(4, 0.3),
   },
   emptyDeckCard: {
-    borderRadius: 18,
-    marginRight: 10,
-    marginBottom: 8,
-    width: 140,
-    height: 196,
+    borderRadius: moderateScale(18),
+    marginRight: scale(10),
+    marginBottom: verticalScale(8),
+    width: scale(140), // Pixel 7 referans cihaz - scale(140) = 140
+    height: scale(196), // Pixel 7 referans cihaz - scale(196) = 196
     overflow: 'hidden',
-    borderWidth: 1.5,
-    shadowOffset: { width: 0, height: 2 },
+    borderWidth: moderateScale(1.5),
+    shadowOffset: { width: 0, height: moderateScale(2) },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowRadius: moderateScale(8),
     elevation: 2,
   },
   emptyDeckCardContent: {
     flex: 1,
-    padding: 8,
-
+    padding: moderateScale(8),
     justifyContent: 'center',
     alignItems: 'center',
   },
   emptyDeckPlusContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 1.5,
+    width: scale(64),
+    height: scale(64),
+    borderRadius: moderateScale(32),
+    borderWidth: moderateScale(1.5),
   },
 }); 

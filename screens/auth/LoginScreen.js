@@ -6,6 +6,7 @@ import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import LanguageSelector from '../../components/modals/LanguageSelector';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -92,14 +93,14 @@ export default function LoginScreen({ navigation }) {
             style={styles.languageButton}
             onPress={() => setLanguageModalVisible(true)}
           >
-            <Iconify icon="material-symbols:translate-rounded" size={20} color="#fff" />
+            <Iconify icon="material-symbols:translate-rounded" size={moderateScale(20)} color="#fff" />
             <Text style={[styles.languageButtonText, { color: '#fff' }]}>
               {i18n.language === 'tr' ? 'Türkçe' : i18n.language === 'en' ? 'English' : i18n.language === 'es' ? 'Spanish' : i18n.language === 'fr' ? 'French' : i18n.language === 'pt' ? 'Portuguese' : i18n.language === 'ar' ? 'Arabic' : ''}
             </Text>
           </TouchableOpacity>
-          <View style={[styles.inputContainer, emailError && { borderColor: colors.error || '#FF3B30', borderWidth: 2 }]}>
-            <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
-              <Iconify icon="tabler:mail-filled" size={22} color={emailError ? (colors.error || '#FF3B30') : colors.muted} /></View>
+          <View style={[styles.inputContainer, emailError && { borderColor: colors.error || '#FF3B30', borderWidth: moderateScale(2) }]}>
+            <View style={{justifyContent: 'center', alignItems: 'center', width: scale(25), height: verticalScale(22)}}>
+              <Iconify icon="tabler:mail-filled" size={moderateScale(22)} color={emailError ? (colors.error || '#FF3B30') : colors.muted} /></View>
             <TextInput
               ref={emailInputRef}
               style={[styles.input, typography.styles.body]}
@@ -115,8 +116,8 @@ export default function LoginScreen({ navigation }) {
             />
           </View>
           <View style={styles.inputContainer}>
-            <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
-              <Iconify icon="carbon:password" size={22} color={colors.muted} /></View>
+            <View style={{justifyContent: 'center', alignItems: 'center', width: scale(25), height: verticalScale(22)}}>
+              <Iconify icon="carbon:password" size={moderateScale(22)} color={colors.muted} /></View>
             <TextInput
               style={[styles.input, typography.styles.body]}
               placeholder={t('login.passwordPlaceholder', 'Şifre')}
@@ -127,10 +128,10 @@ export default function LoginScreen({ navigation }) {
             />
             <TouchableOpacity
               onPress={() => setShowPassword(prev => !prev)}
-              style={{justifyContent: 'center', alignItems: 'center', width: 28, height: 22}}
+              style={{justifyContent: 'center', alignItems: 'center', width: scale(28), height: verticalScale(22)}}
               disabled={loading}
             >
-              <Iconify icon={showPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={22} color={colors.muted} />
+              <Iconify icon={showPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={moderateScale(22)} color={colors.muted} />
             </TouchableOpacity>
           </View>
 
@@ -165,7 +166,7 @@ export default function LoginScreen({ navigation }) {
             }}
             disabled={loading}
           >
-            <Text style={[typography.styles.link, { color: colors.secondary, fontWeight: 'semibold', right: 6, marginBottom: -10}]}>{t('login.forgotPassword', 'Şifremi Unuttum')}</Text>
+            <Text style={[typography.styles.link, { color: colors.secondary, fontWeight: 'semibold', right: scale(6), marginBottom: verticalScale(-10)}]}>{t('login.forgotPassword', 'Şifremi Unuttum')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.button, { backgroundColor: colors.buttonColor }, loading && styles.buttonDisabled]}
@@ -188,7 +189,7 @@ export default function LoginScreen({ navigation }) {
             onPress={handleGoogleLogin}
             disabled={loading}
           >
-            <Iconify icon="logos:google-icon" size={24} color="#DB4437" />
+            <Iconify icon="logos:google-icon" size={moderateScale(24)} color="#DB4437" />
             <Text style={[styles.googleButtonText, typography.styles.button, { color: '#000' }]}>
               {t('login.loginWithGoogle', 'Google ile devam et')}
             </Text>
@@ -201,7 +202,7 @@ export default function LoginScreen({ navigation }) {
               onPress={handleAppleLogin}
               disabled={loading}
             >
-              <Iconify icon="grommet-icons:apple" size={24} color="#000" />
+              <Iconify icon="grommet-icons:apple" size={moderateScale(24)} color="#000" />
               <Text style={[styles.appleButtonText, typography.styles.button, { color: '#000' }]}>
                 {t('login.loginWithApple', 'Apple ile Giriş Yap')}
               </Text>
@@ -209,7 +210,7 @@ export default function LoginScreen({ navigation }) {
           
 
           <TouchableOpacity
-            style={[styles.linkButton, { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 }]}
+            style={[styles.linkButton, { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: moderateScale(8), paddingHorizontal: scale(12), paddingVertical: verticalScale(8) }]}
             onPress={() => navigation.navigate('Register')}
           >
             <Text style={[styles.linkText, typography.styles.link, { color: colors.secondary }]}>
@@ -237,39 +238,39 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    padding: 20,
+    padding: scale(20),
     paddingTop: '95%',
     justifyContent: 'center',
   },
   title: {
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: verticalScale(10),
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+    textShadowOffset: { width: scale(1), height: verticalScale(1) },
+    textShadowRadius: moderateScale(3),
   },
 
   form: {
-    gap: 15,
+    gap: verticalScale(15),
   },
   input: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: verticalScale(12),
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: moderateScale(1),
     borderColor: 'rgba(255, 255, 255, 0.5)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(6),
+    borderRadius: moderateScale(10),
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    gap: 8,
+    gap: scale(8),
   },
   button: {
-    padding: 15,
-    borderRadius: 10,
+    padding: moderateScale(15),
+    borderRadius: moderateScale(10),
     alignItems: 'center',
   },
   buttonDisabled: {
@@ -292,61 +293,61 @@ const styles = StyleSheet.create({
   },
   dividerLine: {
     flex: 1,
-    height: 1,
+    height: moderateScale(1),
   },
   dividerText: {
-    marginHorizontal: 10,
+    marginHorizontal: scale(10),
   },
   googleButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 15,
-    borderRadius: 10,
-    gap: 10,
+    padding: moderateScale(15),
+    borderRadius: moderateScale(10),
+    gap: scale(10),
   },
   googleButtonText: {
-    marginLeft: 10,
+    marginLeft: scale(10),
   },
   appleButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 15,
-    borderRadius: 10,
-    gap: 10,
+    padding: moderateScale(15),
+    borderRadius: moderateScale(10),
+    gap: scale(10),
   },
   appleButtonText: {
-    marginLeft: 10,
+    marginLeft: scale(10),
   },
   buttonRow: {
     flexDirection: 'row',
-    gap: 4,
-    marginBottom: 10,
+    gap: scale(4),
+    marginBottom: verticalScale(10),
   },
   forgotButton: {
     backgroundColor: 'rgba(255,255,255,0.7)',
-    borderWidth: 1,
+    borderWidth: moderateScale(1),
     borderColor: '#FF992B',
   },
   forgotTextButton: {
     alignSelf: 'flex-end',
-    marginBottom: 6,
+    marginBottom: verticalScale(6),
   },
   languageButton: {
     position: 'absolute',
     right: 0,
-    top: -50,
+    top: verticalScale(-50),
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 6,
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(8),
+    borderRadius: moderateScale(20),
+    gap: scale(6),
   },
   languageButtonText: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontWeight: '500',
   },
 }); 

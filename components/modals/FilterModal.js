@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Modal from 'react-native-modal';
 import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 // Filter Modal Button Component
 export const FilterModalButton = ({ onPress, variant = 'default' }) => {
@@ -24,7 +25,7 @@ export const FilterModalButton = ({ onPress, variant = 'default' }) => {
     >
       <Iconify 
         icon="mage:filter" 
-        size={24} 
+        size={moderateScale(24)} 
         color={isLight ? '#fff' : colors.subtext} 
       />
     </TouchableOpacity>
@@ -149,9 +150,9 @@ const FilterModal = ({
           </Text>
           <TouchableOpacity 
             onPress={onClose} 
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
           >
-            <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
+            <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -174,7 +175,7 @@ const FilterModal = ({
                 <Text style={[styles.sortDropdownText, { color: colors.text }]}>
                   {selectedSortLabel}
                 </Text>
-                <Iconify icon="flowbite:caret-down-solid" size={20} color={colors.text} />
+                <Iconify icon="flowbite:caret-down-solid" size={moderateScale(20)} color={colors.text} />
               </TouchableOpacity>
 
               {/* Dropdown Menu */}
@@ -192,7 +193,7 @@ const FilterModal = ({
                         backgroundColor: colors.background,
                         borderColor: colors.border,
                         left: sortDropdownPos.x,
-                        top: Platform.OS === 'android' ? sortDropdownPos.y + sortDropdownPos.height : sortDropdownPos.y + sortDropdownPos.height + 4,
+                        top: Platform.OS === 'android' ? sortDropdownPos.y + sortDropdownPos.height : sortDropdownPos.y + sortDropdownPos.height + verticalScale(4),
                         minWidth: sortDropdownPos.width,
                       }
                     ]}>
@@ -252,12 +253,12 @@ const FilterModal = ({
                       }
                     ]}>
                       {isSelected && (
-                        <Iconify icon="hugeicons:tick-01" size={18} color="#fff" />
+                        <Iconify icon="hugeicons:tick-01" size={moderateScale(18)} color="#fff" />
                       )}
                     </View>
                     <Iconify 
                       icon={option.icon} 
-                      size={22} 
+                      size={moderateScale(22)} 
                       color={isSelected ? colors.buttonColor : colors.text}
                       style={styles.categoryIcon}
                     />
@@ -318,15 +319,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
-    borderRadius: 30,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    height: 48,
-    width: 48,
+    borderRadius: moderateScale(30),
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(8),
+    borderWidth: moderateScale(1),
+    height: verticalScale(48),
+    width: scale(48),
   },
   modalContainer: {
-    borderRadius: 24,
+    borderRadius: moderateScale(24),
     padding: 0,
     maxHeight: '80%',
     width: '98%',
@@ -337,111 +338,111 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
+    paddingHorizontal: scale(24),
+    paddingTop: verticalScale(24),
+    paddingBottom: verticalScale(16),
+    borderBottomWidth: moderateScale(1),
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   modalContent: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingHorizontal: scale(24),
+    paddingVertical: verticalScale(16),
   },
   section: {
-    marginBottom: 24,
+    marginBottom: verticalScale(24),
   },
   sectionTitle: {
     ...typography.styles.h3,
-    fontSize: 18,
+    fontSize: moderateScale(18),
     fontWeight: '700',
-    marginBottom: 16,
+    marginBottom: verticalScale(16),
   },
   sectionSubtitle: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontWeight: '500',
-    marginBottom: 16,
+    marginBottom: verticalScale(16),
   },
   sortDropdown: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    marginBottom: 8,
+    borderWidth: moderateScale(1),
+    borderRadius: moderateScale(8),
+    paddingVertical: verticalScale(12),
+    paddingHorizontal: scale(14),
+    marginBottom: verticalScale(8),
   },
   sortDropdownText: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     flex: 1,
   },
   sortDropdownMenu: {
     position: 'absolute',
-    borderRadius: 12,
-    paddingVertical: 6,
+    borderRadius: moderateScale(12),
+    paddingVertical: verticalScale(6),
     paddingHorizontal: 0,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: verticalScale(2) },
     shadowOpacity: 0.15,
-    shadowRadius: 8,
+    shadowRadius: moderateScale(8),
     elevation: 8,
-    borderWidth: 1,
-    maxHeight: 200,
+    borderWidth: moderateScale(1),
+    maxHeight: verticalScale(200),
   },
   sortDropdownItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: verticalScale(12),
+    paddingHorizontal: scale(16),
+    borderRadius: moderateScale(8),
   },
   sortDropdownItemText: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
   },
   categoryOption: {
-    paddingVertical: 14,
-    paddingHorizontal: 4,
-    borderRadius: 12,
-    marginBottom: 8,
+    paddingVertical: verticalScale(14),
+    paddingHorizontal: scale(4),
+    borderRadius: moderateScale(12),
+    marginBottom: verticalScale(8),
   },
   categoryOptionContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 2,
-    marginRight: 12,
+    width: scale(22),
+    height: verticalScale(22),
+    borderRadius: moderateScale(6),
+    borderWidth: moderateScale(2),
+    marginRight: scale(12),
     justifyContent: 'center',
     alignItems: 'center',
   },
   categoryIcon: {
-    marginRight: 12,
+    marginRight: scale(12),
   },
   categoryOptionText: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     flex: 1,
   },
   modalFooter: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderTopWidth: 1,
+    paddingHorizontal: scale(24),
+    paddingVertical: verticalScale(16),
+    borderTopWidth: moderateScale(1),
     borderTopColor: 'rgba(0, 0, 0, 0.1)',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 20,
+    gap: scale(20),
   },
   resetButton: {
     flex: 1,
     borderRadius: 99,
-    borderWidth: 1.5,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
+    borderWidth: moderateScale(1.5),
+    paddingVertical: verticalScale(14),
+    paddingHorizontal: scale(14),
     alignItems: 'center',
     justifyContent: 'center',
   },
   resetButtonText: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '500',
   },
   applyButton: {
@@ -449,21 +450,21 @@ const styles = StyleSheet.create({
     borderRadius: 99,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: verticalScale(1) },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowRadius: moderateScale(2),
     elevation: 1,
   },
   gradientButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 18,
+    paddingVertical: verticalScale(16),
+    paddingHorizontal: scale(18),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 99,
   },
   applyButtonText: {
-    fontSize: 17,
+    fontSize: moderateScale(17),
     fontWeight: '500',
     color: '#FFFFFF',
   },

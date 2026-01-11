@@ -3,6 +3,7 @@ import { View, TextInput, StyleSheet } from 'react-native';
 import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 export default function SearchBar({ value, onChangeText, placeholder, style, variant = 'default' }) {
   const { colors } = useTheme();
@@ -16,7 +17,7 @@ export default function SearchBar({ value, onChangeText, placeholder, style, var
 
   return (
     <View style={[styles.wrapper, { borderColor, backgroundColor }, style]}>
-      <Iconify icon="iconamoon:search" size={20} color={iconColor} style={styles.icon} />
+      <Iconify icon="iconamoon:search" size={moderateScale(20)} color={iconColor} style={styles.icon} />
       <TextInput
         style={[styles.input, typography.styles.body, { color: textColor }]}
         placeholder={placeholder}
@@ -34,22 +35,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'transparent',
-    borderRadius: 24,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    height: 48,
+    borderRadius: moderateScale(24),
+    borderWidth: moderateScale(1),
+    paddingHorizontal: scale(10),
+    height: verticalScale(48),
   },
   icon: {
-    marginRight: 6,
-    marginLeft: 4,
+    marginRight: scale(6),
+    marginLeft: scale(4),
   },
   input: {
     flex: 1,
     backgroundColor: 'transparent',
-    borderRadius: 24,
-    paddingHorizontal: 8,
-    paddingVertical: 10,
-    fontSize: 16,
+    borderRadius: moderateScale(24),
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(10),
+    fontSize: moderateScale(16),
   },
 });
 

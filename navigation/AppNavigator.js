@@ -19,7 +19,6 @@ import ProfileAvatarButton from '../components/layout/ProfileAvatarButton';
 import DeckEditScreen from '../screens/decks/EditDeckScreen';
 import CustomTabBar from '../components/ui/CustomTabBar';
 import AddCardScreen from '../screens/cards/CreateCardScreen';
-import EditCardScreen from '../screens/cards/EditCardScreen';
 import DeckCardsScreen from '../screens/cards/CardsOfDeckScreen';
 import ChaptersScreen from '../screens/decks/ChaptersScreen';
 import ChapterCardsScreen from '../screens/decks/CardsOfChapter.js';
@@ -197,7 +196,6 @@ export default function AppNavigator() {
               </TouchableOpacity>
             ),
           })} />
-          <Stack.Screen name="EditCard" component={EditCardScreen} options={{ headerShown: true, title: t('tabs.editCard', 'Kartı Düzenle'), headerTitleAlign: 'center' }} />
           <Stack.Screen name="DeckCards" component={DeckCardsScreen} options={{ headerShown: true, title: t('tabs.cards', 'Kartlar'), headerTitleAlign: 'center' }} />
           <Stack.Screen name="Chapters" component={ChaptersScreen} options={{ headerShown: true, title: t('tabs.chapters', 'Bölümler'), headerTitleAlign: 'center' }} />
           <Stack.Screen name="ChapterCards" component={ChapterCardsScreen} options={{

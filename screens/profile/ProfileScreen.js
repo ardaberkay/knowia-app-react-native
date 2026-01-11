@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import LanguageSelector from '../../components/modals/LanguageSelector';
 import { Iconify } from 'react-native-iconify';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
+import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
 
 export default function ProfileScreen() {
   const { colors, isDarkMode, toggleTheme, themePreference, loading: themeLoading } = useTheme();
@@ -196,7 +197,7 @@ export default function ProfileScreen() {
       right: (
         <TouchableOpacity onPress={toggleTheme} style={{ flexDirection: 'row', alignItems: 'center' }}>
 
-          <View style={{ width: 40 }}>
+          <View style={{ width: scale(40) }}>
             <Switch
               value={themePreference === 'dark'}
               onValueChange={toggleTheme}
@@ -215,8 +216,8 @@ export default function ProfileScreen() {
       onPress: () => setLanguageModalVisible(true),
       right: (
         <View style={styles.languageRow}>
-          <Iconify icon={i18n.language === 'tr' ? 'twemoji:flag-for-flag-turkey' : i18n.language === 'en' ? 'twemoji:flag-england' : i18n.language === 'es' ? 'twemoji:flag-spain' : i18n.language === 'fr' ? 'twemoji:flag-france' : i18n.language === 'pt' ? 'twemoji:flag-portugal' : i18n.language === 'ar' ? 'twemoji:flag-saudi-arabia' : ''} size={20} />
-        <Text style={{ color: colors.text, marginRight: 8, fontSize: 15 }}>
+          <Iconify icon={i18n.language === 'tr' ? 'twemoji:flag-for-flag-turkey' : i18n.language === 'en' ? 'twemoji:flag-england' : i18n.language === 'es' ? 'twemoji:flag-spain' : i18n.language === 'fr' ? 'twemoji:flag-france' : i18n.language === 'pt' ? 'twemoji:flag-portugal' : i18n.language === 'ar' ? 'twemoji:flag-saudi-arabia' : ''} size={moderateScale(20)} />
+        <Text style={{ color: colors.text, marginRight: scale(8), fontSize: moderateScale(15) }}>
           {i18n.language === 'tr' ? 'Türkçe' : i18n.language === 'en' ? 'English' : i18n.language === 'es' ? 'Spanish' : i18n.language === 'fr' ? 'French' : i18n.language === 'pt' ? 'Portuguese' : i18n.language === 'ar' ? 'Arabic' : ''}
         </Text>
         </View>
@@ -324,8 +325,8 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 80,
+    paddingHorizontal: scale(24),
+    paddingTop: verticalScale(80),
     backgroundColor: 'transparent',
   },
   scrollContent: {
@@ -336,19 +337,19 @@ const styles = StyleSheet.create({
   profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: verticalScale(20),
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginRight: 20,
+    width: scale(80),
+    height: scale(80),
+    borderRadius: moderateScale(99),
+    marginRight: scale(20),
   },
   userInfo: {
     flex: 1,
   },
   name: {
-    marginBottom: 4,
+    marginBottom: verticalScale(4),
   },
   email: {},
   menuList: {
@@ -356,29 +357,29 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   menuSection: {
-    marginBottom: 18,
+    marginBottom: verticalScale(18),
   },
   sectionTitle: {
-    marginBottom: 6,
-    marginLeft: 2,
+    marginBottom: verticalScale(6),
+    marginLeft: scale(2),
   },
   menuItem: {
-    paddingVertical: 18,
-    borderBottomWidth: 1,
+    paddingVertical: verticalScale(14),
+    borderBottomWidth: moderateScale(1),
     borderBottomColor: '#eee',
   },
   menuText: {},
   bottomButtonsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 16,
-    marginBottom: 32,
-    gap: 12,
+    marginTop: verticalScale(16),
+    marginBottom: verticalScale(32),
+    gap: scale(12),
   },
   deleteButton: {
-    paddingVertical: 12,
-    borderRadius: 24,
-    borderWidth: 1,
+    paddingVertical: verticalScale(12),
+    borderRadius: moderateScale(999),
+    borderWidth: moderateScale(1),
     borderColor: '#ff5252',
     flex: 1,
   },
@@ -387,10 +388,10 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     backgroundColor: '#ff5252',
-    paddingVertical: 12,
-    borderRadius: 24,
+    paddingVertical: verticalScale(12),
+    borderRadius: moderateScale(999),
     flex: 1,
-    marginLeft: 12,
+    marginLeft: scale(12),
   },
   logoutText: {
     textAlign: 'center',
@@ -398,6 +399,6 @@ const styles = StyleSheet.create({
   languageRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: scale(8),
   },
 }); 

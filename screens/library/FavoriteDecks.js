@@ -11,6 +11,7 @@ import DeckList from '../../components/lists/DeckList';
 import LottieView from 'lottie-react-native';
 import { typography } from '../../theme/typography';
 import { StyleSheet } from 'react-native';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 export default function FavoriteDecks() {
   const navigation = useNavigation();
@@ -153,20 +154,20 @@ export default function FavoriteDecks() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background, marginVertical: 10 }}>
+    <View style={{ flex: 1, backgroundColor: colors.background, marginVertical: verticalScale(10) }}>
       {loading ? (
         <View style={styles.loadingContainer}>
-          <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: 200, height: 200 }} />
-          <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100 }} />
+          <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: scale(200), height: verticalScale(200) }} />
+          <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100), height: verticalScale(100) }} />
         </View>
       ) : filteredDecks.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: -150}}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: verticalScale(-150)}}>
           <Image
             source={require('../../assets/deckbg.png')}
-            style={{ width: 300, height: 300, opacity: 0.2 }}
+            style={{ width: scale(300), height: verticalScale(300), opacity: 0.2 }}
             resizeMode="contain"
           />
-          <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, textAlign: 'center', fontSize: 16, marginTop: -20 }]}>
+          <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, textAlign: 'center', fontSize: moderateScale(16), marginTop: verticalScale(-20) }]}>
             {t('library.addFavoriteDeckEmpty', 'Bir deste favorilere ekle')}
           </Text>
         </View>
@@ -183,8 +184,8 @@ export default function FavoriteDecks() {
           }}
           onPressDeck={(deck) => navigation.navigate('DeckDetail', { deck })}
           ListHeaderComponent={(
-            <View style={{ backgroundColor: colors.background, marginVertical: 8 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: '95%', alignSelf: 'center' }}>
+            <View style={{ backgroundColor: colors.background, marginVertical: verticalScale(8) }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(10), width: '95%', alignSelf: 'center' }}>
                 <SearchBar
                   value={query}
                   onChangeText={setQuery}
@@ -218,8 +219,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: 200,
+    minHeight: verticalScale(200),
     flexDirection: 'column',
-    gap: -65,
+    gap: verticalScale(-65),
   },
 });

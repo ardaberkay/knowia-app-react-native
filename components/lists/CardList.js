@@ -4,6 +4,7 @@ import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 export default function CardListItem({
   question,
@@ -48,11 +49,11 @@ export default function CardListItem({
           <TouchableOpacity
             style={[styles.iconBtn, { backgroundColor: colors.iconBackground }]}
             onPress={onToggleFavorite}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
           >
             <Iconify
               icon={isFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
-              size={22}
+              size={moderateScale(22)}
               color={isFavorite ? '#F98A21' : '#B0B0B0'}
             />
           </TouchableOpacity>
@@ -68,7 +69,7 @@ export default function CardListItem({
                 onPress={onDelete}
                 activeOpacity={0.7}
               >
-                <Iconify icon="mdi:garbage-can-empty" size={22} color="#E74C3C" />
+                <Iconify icon="mdi:garbage-can-empty" size={moderateScale(22)} color="#E74C3C" />
               </TouchableOpacity>
             ) : (
               <Pressable
@@ -85,7 +86,7 @@ export default function CardListItem({
                 android_ripple={null}
                 pressRetentionOffset={0}
               >
-                <Iconify icon="mdi:garbage" size={22} color="#999" />
+                <Iconify icon="mdi:garbage" size={moderateScale(22)} color="#999" />
               </Pressable>
             )
           ) : null}
@@ -98,11 +99,11 @@ export default function CardListItem({
 const styles = StyleSheet.create({
   cardItem: {
     width: '100%',
-    minHeight: 110,
-    borderRadius: 30,
-    marginBottom: 12,
-    padding: 20,
-    borderWidth: 1,
+    minHeight: verticalScale(110),
+    borderRadius: moderateScale(30),
+    marginBottom: verticalScale(12),
+    padding: scale(20),
+    borderWidth: moderateScale(1),
     justifyContent: 'center',
     alignItems: 'flex-start',
   },
@@ -114,36 +115,36 @@ const styles = StyleSheet.create({
   },
   textCol: {
     width: '80%',
-    maxWidth: 320,
+    maxWidth: scale(320),
   },
   question: {
     fontWeight: '600',
-    fontSize: 17,
-    marginBottom: 8,
-    letterSpacing: 0.3,
-    marginTop: 4,
+    fontSize: moderateScale(17),
+    marginBottom: verticalScale(8),
+    letterSpacing: moderateScale(0.3),
+    marginTop: verticalScale(4),
   },
   divider: {
-    height: 2,
+    height: moderateScale(2),
     alignSelf: 'stretch',
-    marginVertical: 8,
-    borderRadius: 2,
+    marginVertical: verticalScale(8),
+    borderRadius: moderateScale(2),
   },
   answer: {
-    fontSize: 15,
-    marginTop: 4,
+    fontSize: moderateScale(15),
+    marginTop: verticalScale(4),
     fontWeight: '400',
-    letterSpacing: 0.2,
+    letterSpacing: moderateScale(0.2),
   },
   iconBtn: {
-    padding: 8,
-    borderRadius: 12,
-    marginBottom: 4,
+    padding: moderateScale(8),
+    borderRadius: moderateScale(12),
+    marginBottom: verticalScale(4),
   },
   deleteBtn: {
-    marginTop: 8,
-    padding: 8,
-    borderRadius: 12,
+    marginTop: verticalScale(8),
+    padding: moderateScale(8),
+    borderRadius: moderateScale(12),
   },
 });
 

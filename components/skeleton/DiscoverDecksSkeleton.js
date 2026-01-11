@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, Animated, Dimensions } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { LinearGradient } from 'expo-linear-gradient';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -91,7 +92,7 @@ export default function DiscoverDecksSkeleton() {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ paddingBottom: '10%', paddingTop: 20 }}
+      contentContainerStyle={{ paddingBottom: '10%', paddingTop: verticalScale(20) }}
       showsVerticalScrollIndicator={false}
     >
       {/* Skeleton Rows - Double + Single pattern (DeckList layout'una uygun) */}
@@ -105,43 +106,48 @@ export default function DiscoverDecksSkeleton() {
                 style={[
                   skeletonStyles.deckCardVertical,
                   { backgroundColor: bgColor },
-                  cardIndex === 0 ? { marginRight: 5 } : { marginLeft: 5 }
+                  cardIndex === 0 ? { marginRight: scale(5) } : { marginLeft: scale(5) }
                 ]}
               >
-                {/* Profile Section Skeleton - Top Left */}
-                <View style={skeletonStyles.deckProfileRow}>
-                  <ShimmerBox delay={rowIndex * 100 + cardIndex * 50} isDarkMode={isDarkMode} borderRadius={16}>
-                    <View style={[skeletonStyles.skeletonBox, { width: 32, height: 32, borderRadius: 16, backgroundColor: lineColor, marginRight: 6 }]} />
-                  </ShimmerBox>
-                  <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 20} isDarkMode={isDarkMode} borderRadius={7}>
-                    <View style={[skeletonStyles.skeletonBox, { width: 60, height: 14, borderRadius: 7, backgroundColor: lineColor }]} />
-                  </ShimmerBox>
-                </View>
-                
-                {/* Title Section Skeleton */}
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                  <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 40} isDarkMode={isDarkMode} borderRadius={8}>
-                    <View style={[skeletonStyles.skeletonBox, { width: 80, height: 16, borderRadius: 8, backgroundColor: lineColor, marginBottom: 8 }]} />
-                  </ShimmerBox>
-                  <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 60} isDarkMode={isDarkMode} borderRadius={1}>
-                    <View style={[skeletonStyles.skeletonBox, { width: 60, height: 2, borderRadius: 1, backgroundColor: lineColor, marginVertical: 8 }]} />
-                  </ShimmerBox>
-                  <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 80} isDarkMode={isDarkMode} borderRadius={8}>
-                    <View style={[skeletonStyles.skeletonBox, { width: 70, height: 16, borderRadius: 8, backgroundColor: lineColor }]} />
-                  </ShimmerBox>
-                </View>
-                
-                {/* Badge Section Skeleton */}
-                <View style={{ position: 'absolute', bottom: 12, left: 12 }}>
-                  <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 100} isDarkMode={isDarkMode} borderRadius={14}>
-                    <View style={[skeletonStyles.skeletonBox, { width: 60, height: 28, borderRadius: 14, backgroundColor: lineColor }]} />
-                  </ShimmerBox>
-                </View>
-                
-                {/* Favorite Button Skeleton - Bottom Right */}
-                <View style={{ position: 'absolute', bottom: 8, right: 10 }}>
-                  <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 120} isDarkMode={isDarkMode} borderRadius={999}>
-                    <View style={[skeletonStyles.skeletonBox, { width: 37, height: 37, borderRadius: 999, backgroundColor: lineColor }]} />
+                <View style={skeletonStyles.deckGradient}>
+                  {/* Profile Section Skeleton - Top Left */}
+                  <View style={skeletonStyles.deckProfileRow}>
+                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50} isDarkMode={isDarkMode} borderRadius={99}>
+                      <View style={[skeletonStyles.skeletonBox, { width: scale(32), height: verticalScale(32), borderRadius: 99, backgroundColor: lineColor, marginRight: scale(6) }]} />
+                    </ShimmerBox>
+                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 20} isDarkMode={isDarkMode} borderRadius={moderateScale(7)}>
+                      <View style={[skeletonStyles.skeletonBox, { width: scale(85), height: moderateScale(15), borderRadius: moderateScale(7), backgroundColor: lineColor }]} />
+                    </ShimmerBox>
+                  </View>
+                  
+                  {/* Title Section Skeleton */}
+                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 40} isDarkMode={isDarkMode} borderRadius={moderateScale(8)}>
+                      <View style={[skeletonStyles.skeletonBox, { width: scale(80), height: moderateScale(16), borderRadius: moderateScale(8), backgroundColor: lineColor }]} />
+                    </ShimmerBox>
+                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 60} isDarkMode={isDarkMode} borderRadius={moderateScale(1)}>
+                      <View style={[skeletonStyles.skeletonBox, { width: scale(60), height: moderateScale(2), borderRadius: moderateScale(1), backgroundColor: lineColor, marginVertical: verticalScale(8) }]} />
+                    </ShimmerBox>
+                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 80} isDarkMode={isDarkMode} borderRadius={moderateScale(8)}>
+                      <View style={[skeletonStyles.skeletonBox, { width: scale(70), height: moderateScale(16), borderRadius: moderateScale(8), backgroundColor: lineColor }]} />
+                    </ShimmerBox>
+                  </View>
+                  
+                  {/* Badge Section Skeleton */}
+                  <View style={{ position: 'absolute', bottom: verticalScale(12), left: scale(12), flexDirection: 'column', alignItems: 'flex-start' }}>
+                    {/* Popularity Badge Skeleton */}
+                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 100} isDarkMode={isDarkMode} borderRadius={99} style={{ marginBottom: verticalScale(6) }}>
+                      <View style={[skeletonStyles.skeletonBox, { width: scale(50), height: verticalScale(24), borderRadius: 99, backgroundColor: lineColor, paddingHorizontal: scale(7), paddingVertical: verticalScale(2) }]} />
+                    </ShimmerBox>
+                    {/* Card Count Badge Skeleton */}
+                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 110} isDarkMode={isDarkMode} borderRadius={moderateScale(14)}>
+                      <View style={[skeletonStyles.skeletonBox, { width: scale(60), height: verticalScale(28), borderRadius: moderateScale(14), backgroundColor: lineColor, paddingHorizontal: scale(8), paddingVertical: verticalScale(2) }]} />
+                    </ShimmerBox>
+                  </View>
+                  
+                  {/* Favorite Button Skeleton - Bottom Right */}
+                  <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 120} isDarkMode={isDarkMode} borderRadius={999} style={{ position: 'absolute', bottom: verticalScale(8), right: scale(10), zIndex: 10 }}>
+                    <View style={[skeletonStyles.skeletonBox, { width: moderateScale(37), height: moderateScale(37), borderRadius: 999, backgroundColor: lineColor, padding: moderateScale(8) }]} />
                   </ShimmerBox>
                 </View>
               </View>
@@ -151,41 +157,48 @@ export default function DiscoverDecksSkeleton() {
           {/* Single Row */}
           <View style={skeletonStyles.deckList}>
             <View style={[skeletonStyles.deckCardHorizontal, { backgroundColor: bgColor }]}>
-              {/* Profile Section Skeleton - Bottom Left */}
-              <View style={[skeletonStyles.deckProfileRow, { top: 'auto', bottom: 8 }]}>
-                <ShimmerBox delay={rowIndex * 100 + 200} isDarkMode={isDarkMode} borderRadius={16}>
-                  <View style={[skeletonStyles.skeletonBox, { width: 32, height: 32, borderRadius: 16, backgroundColor: lineColor, marginRight: 6 }]} />
+              <View style={skeletonStyles.deckGradient}>
+                {/* Profile Section Skeleton - Bottom Left */}
+                <View style={[skeletonStyles.deckProfileRow, { top: 'auto', bottom: 8 }]}>
+                  <ShimmerBox delay={rowIndex * 100 + 200} isDarkMode={isDarkMode} borderRadius={99}>
+                    <View style={[skeletonStyles.skeletonBox, { width: scale(32), height: verticalScale(32), borderRadius: 99, backgroundColor: lineColor, marginRight: scale(6) }]} />
+                  </ShimmerBox>
+                  <ShimmerBox delay={rowIndex * 100 + 220} isDarkMode={isDarkMode} borderRadius={moderateScale(7)}>
+                    <View style={[skeletonStyles.skeletonBox, { width: scale(95), height: moderateScale(15), borderRadius: moderateScale(7), backgroundColor: lineColor }]} />
+                  </ShimmerBox>
+                </View>
+                
+                {/* Popularity Badge Skeleton - Top Left */}
+                <View style={{ position: 'absolute', top: 8, left: 12, zIndex: 10 }}>
+                  <ShimmerBox delay={rowIndex * 100 + 240} isDarkMode={isDarkMode} borderRadius={99}>
+                    <View style={[skeletonStyles.skeletonBox, { width: scale(50), height: verticalScale(24), borderRadius: 99, backgroundColor: lineColor, paddingHorizontal: scale(7), paddingVertical: verticalScale(2) }]} />
+                  </ShimmerBox>
+                </View>
+                
+                {/* Favorite Button Skeleton - Top Right */}
+                <ShimmerBox delay={rowIndex * 100 + 250} isDarkMode={isDarkMode} borderRadius={999} style={{ position: 'absolute', top: 8, right: 10, zIndex: 10 }}>
+                  <View style={[skeletonStyles.skeletonBox, { width: moderateScale(38), height: moderateScale(38), borderRadius: 999, backgroundColor: lineColor, padding: 8 }]} />
                 </ShimmerBox>
-                <ShimmerBox delay={rowIndex * 100 + 220} isDarkMode={isDarkMode} borderRadius={7}>
-                  <View style={[skeletonStyles.skeletonBox, { width: 70, height: 14, borderRadius: 7, backgroundColor: lineColor }]} />
-                </ShimmerBox>
-              </View>
-              
-              {/* Favorite Button Skeleton - Top Right */}
-              <View style={{ position: 'absolute', top: 8, right: 10 }}>
-                <ShimmerBox delay={rowIndex * 100 + 240} isDarkMode={isDarkMode} borderRadius={999}>
-                  <View style={[skeletonStyles.skeletonBox, { width: 38, height: 38, borderRadius: 999, backgroundColor: lineColor }]} />
-                </ShimmerBox>
-              </View>
-              
-              {/* Title Section Skeleton */}
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <ShimmerBox delay={rowIndex * 100 + 260} isDarkMode={isDarkMode} borderRadius={9}>
-                  <View style={[skeletonStyles.skeletonBox, { width: 140, height: 18, borderRadius: 9, backgroundColor: lineColor, marginBottom: 10 }]} />
-                </ShimmerBox>
-                <ShimmerBox delay={rowIndex * 100 + 280} isDarkMode={isDarkMode} borderRadius={1}>
-                  <View style={[skeletonStyles.skeletonBox, { width: 70, height: 2, borderRadius: 1, backgroundColor: lineColor, marginVertical: 10 }]} />
-                </ShimmerBox>
-                <ShimmerBox delay={rowIndex * 100 + 300} isDarkMode={isDarkMode} borderRadius={9}>
-                  <View style={[skeletonStyles.skeletonBox, { width: 120, height: 18, borderRadius: 9, backgroundColor: lineColor }]} />
-                </ShimmerBox>
-              </View>
-              
-              {/* Badge Section Skeleton - Bottom Right */}
-              <View style={{ position: 'absolute', bottom: 10, right: 12 }}>
-                <ShimmerBox delay={rowIndex * 100 + 320} isDarkMode={isDarkMode} borderRadius={14}>
-                  <View style={[skeletonStyles.skeletonBox, { width: 65, height: 28, borderRadius: 14, backgroundColor: lineColor }]} />
-                </ShimmerBox>
+                
+                {/* Title Section Skeleton */}
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                  <ShimmerBox delay={rowIndex * 100 + 260} isDarkMode={isDarkMode} borderRadius={moderateScale(9)}>
+                    <View style={[skeletonStyles.skeletonBox, { width: scale(140), height: moderateScale(18), borderRadius: moderateScale(9), backgroundColor: lineColor }]} />
+                  </ShimmerBox>
+                  <ShimmerBox delay={rowIndex * 100 + 280} isDarkMode={isDarkMode} borderRadius={moderateScale(1)}>
+                    <View style={[skeletonStyles.skeletonBox, { width: scale(70), height: moderateScale(2), borderRadius: moderateScale(1), backgroundColor: lineColor, marginVertical: 10 }]} />
+                  </ShimmerBox>
+                  <ShimmerBox delay={rowIndex * 100 + 300} isDarkMode={isDarkMode} borderRadius={moderateScale(9)}>
+                    <View style={[skeletonStyles.skeletonBox, { width: scale(120), height: moderateScale(18), borderRadius: moderateScale(9), backgroundColor: lineColor }]} />
+                  </ShimmerBox>
+                </View>
+                
+                {/* Badge Section Skeleton - Bottom Right */}
+                <View style={{ position: 'absolute', bottom: 10, right: 12 }}>
+                  <ShimmerBox delay={rowIndex * 100 + 320} isDarkMode={isDarkMode} borderRadius={moderateScale(14)}>
+                    <View style={[skeletonStyles.skeletonBox, { width: scale(65), height: verticalScale(28), borderRadius: moderateScale(14), backgroundColor: lineColor, paddingHorizontal: scale(8), paddingVertical: verticalScale(2) }]} />
+                  </ShimmerBox>
+                </View>
               </View>
             </View>
           </View>
@@ -197,30 +210,36 @@ export default function DiscoverDecksSkeleton() {
 
 const skeletonStyles = StyleSheet.create({
   deckList: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(5),
   },
   deckRow: {
     flexDirection: 'row',
   },
   deckCardVertical: {
     flex: 1,
-    height: 240,
-    borderRadius: 18,
+    height: verticalScale(240),
+    borderRadius: moderateScale(18),
     overflow: 'hidden',
   },
   deckCardHorizontal: {
-    height: 180,
-    borderRadius: 18,
+    height: verticalScale(180),
+    borderRadius: moderateScale(18),
     overflow: 'hidden',
+  },
+  deckGradient: {
+    flex: 1,
+    borderRadius: moderateScale(18),
+    padding: scale(16),
+    justifyContent: 'center',
   },
   deckProfileRow: {
     position: 'absolute',
     flexDirection: 'row',
     alignItems: 'center',
     zIndex: 10,
-    top: 8,
-    left: 10,
+    top: verticalScale(8),
+    left: scale(10),
   },
   skeletonBox: {
     // Skeleton placeholder için stil
