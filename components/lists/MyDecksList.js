@@ -5,7 +5,8 @@ import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
+import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 
 // Fade efekti - karakter bazlı opacity (MaskedView sorunlarından kaçınır)
 const FadeText = ({ text, style, maxChars = 15 }) => {
@@ -57,6 +58,94 @@ export default function MyDecksList({
 }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
+  
+  // useWindowDimensions hook'u - ekran döndürme desteği
+  const { width, height } = useWindowDimensions();
+  const isTablet = getIsTablet();
+  
+  // Responsive deck kart boyutları - useMemo ile optimize edilmiş
+  const deckCardDimensions = useMemo(() => {
+    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
+    const isSmallScreen = height < RESPONSIVE_CONSTANTS.SMALL_SCREEN_MAX_HEIGHT;
+    
+    // Vertical card height - referans: verticalScale(240)
+    // Dikdörtgen yapı korunmalı (genişlik/yükseklik oranı)
+    const baseVerticalHeight = verticalScale(240);
+    let verticalHeight;
+    if (isSmallPhone) {
+      // Küçük telefon: Ekran yüksekliğinin %32'si - direkt yüzde bazlı kullan
+      verticalHeight = height * 0.32;
+    } else if (isSmallScreen) {
+      // Küçük ekran yüksekliği: ekran yüksekliğinin %30'u
+      verticalHeight = height * 0.30;
+    } else if (isTablet) {
+      // Tablet: ekran yüksekliğinin %28'i (artırıldı)
+      verticalHeight = height * 0.28;
+    } else {
+      // Normal telefon: scale() ile referans değer, ama ekran yüksekliğinin %26'sını geçmesin
+      const maxHeight = height * 0.26;
+      verticalHeight = Math.min(baseVerticalHeight, maxHeight);
+    }
+    
+    // Horizontal card height - referans: verticalScale(180)
+    // Dikdörtgen yapı korunmalı
+    const baseHorizontalHeight = verticalScale(180);
+    let horizontalHeight;
+    if (isSmallPhone) {
+      // Küçük telefon: Ekran yüksekliğinin %26'sı - direkt yüzde bazlı kullan
+      horizontalHeight = height * 0.26;
+    } else if (isSmallScreen) {
+      // Küçük ekran yüksekliği: ekran yüksekliğinin %24'ü
+      horizontalHeight = height * 0.24;
+    } else if (isTablet) {
+      // Tablet: ekran yüksekliğinin %22'si (artırıldı)
+      horizontalHeight = height * 0.22;
+    } else {
+      // Normal telefon: scale() ile referans değer, ama ekran yüksekliğinin %20'sini geçmesin
+      const maxHeight = height * 0.20;
+      horizontalHeight = Math.min(baseHorizontalHeight, maxHeight);
+    }
+    
+    return {
+      verticalHeight,
+      horizontalHeight,
+    };
+  }, [width, height, isTablet]);
+  
+  const DECK_CARD_VERTICAL_HEIGHT = deckCardDimensions.verticalHeight;
+  const DECK_CARD_HORIZONTAL_HEIGHT = deckCardDimensions.horizontalHeight;
+  
+  // Tablet için kategori icon boyutları ve left değerleri - useMemo ile optimize edilmiş
+  const categoryIconDimensions = useMemo(() => {
+    // Vertical cards için: icon boyutu ve left değeri
+    const verticalIconSize = isTablet ? scale(200) : scale(150);
+    const verticalIconLeft = isTablet ? -verticalIconSize / 2 : scale(-75);
+    
+    // Horizontal row için: icon boyutu ve left değeri
+    const horizontalIconSize = isTablet ? scale(180) : scale(140);
+    const horizontalIconLeft = isTablet ? -horizontalIconSize / 2 : scale(-175);
+    
+    return {
+      verticalIconSize,
+      verticalIconLeft,
+      horizontalIconSize,
+      horizontalIconLeft,
+    };
+  }, [isTablet]);
+  
+  // Responsive margin ve padding değerleri
+  // Küçük telefonlarda boşlukları artırıyoruz (kareye yakın görünümü önlemek için)
+  const responsiveSpacing = useMemo(() => {
+    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
+    
+    return {
+      // Küçük telefonlarda margin'i artırıyoruz (normal telefonla aynı veya biraz daha fazla)
+      cardMargin: isSmallPhone ? scale(5) : scale(5),
+      // Küçük telefonlarda padding'i artırıyoruz (normal telefonla aynı)
+      listPaddingHorizontal: isSmallPhone ? scale(12) : scale(12),
+      listPaddingVertical: isSmallPhone ? verticalScale(5) : verticalScale(5),
+    };
+  }, [width]);
 
   // Kategoriye göre renkleri al (Supabase sort_order kullanarak)
   const getCategoryColors = (sortOrder) => {
@@ -149,13 +238,13 @@ export default function MyDecksList({
   }, [decks]);
 
   const renderDoubleRow = (row) => (
-    <View style={[styles.myDecksList, styles.myDeckRow]}>
+    <View style={[styles.myDecksList, styles.myDeckRow, { paddingHorizontal: responsiveSpacing.listPaddingHorizontal, paddingVertical: responsiveSpacing.listPaddingVertical }]}>
       {row.items.map((deck, idx) => (
         <TouchableOpacity
           key={`${deck.id}_${idx}`}
           activeOpacity={0.93}
           onPress={() => onPressDeck(deck)}
-          style={[styles.myDeckCardVertical, idx === 0 ? { marginRight: scale(5) } : { marginLeft: scale(5) }]}
+          style={[styles.myDeckCardVertical, { height: DECK_CARD_VERTICAL_HEIGHT }, idx === 0 ? { marginRight: responsiveSpacing.cardMargin } : { marginLeft: responsiveSpacing.cardMargin }]}
         >
           <LinearGradient
             colors={deck.gradientColors}
@@ -164,10 +253,10 @@ export default function MyDecksList({
             style={styles.myDeckGradient}
           >
             {/* Background Category Icon */}
-            <View style={styles.backgroundCategoryIcon}>
+            <View style={[styles.backgroundCategoryIcon, { left: categoryIconDimensions.verticalIconLeft }]}>
               <Iconify
                 icon={deck.categoryIcon}
-                size={scale(150)}
+                size={categoryIconDimensions.verticalIconSize}
                 color="rgba(0, 0, 0, 0.1)"
                 style={styles.categoryIconStyle}
               />
@@ -226,11 +315,11 @@ export default function MyDecksList({
   );
 
   const renderSingleRow = (row) => (
-    <View style={styles.myDecksList}>
+    <View style={[styles.myDecksList, { paddingHorizontal: responsiveSpacing.listPaddingHorizontal, paddingVertical: responsiveSpacing.listPaddingVertical }]}>
       <TouchableOpacity
         activeOpacity={0.93}
         onPress={() => onPressDeck(row.item)}
-        style={styles.myDeckCardHorizontal}
+        style={[styles.myDeckCardHorizontal, { height: DECK_CARD_HORIZONTAL_HEIGHT }]}
       >
         <LinearGradient
           colors={row.item.gradientColors}
@@ -239,10 +328,10 @@ export default function MyDecksList({
           style={styles.myDeckGradient}
         >
           {/* Background Category Icon */}
-          <View style={[styles.backgroundCategoryIcon, { left: scale(-175), top: verticalScale(1) }]}>
+          <View style={[styles.backgroundCategoryIcon, { left: categoryIconDimensions.horizontalIconLeft, top: verticalScale(1) }]}>
             <Iconify
               icon={row.item.categoryIcon}
-              size={scale(140)}
+              size={categoryIconDimensions.horizontalIconSize}
               color="rgba(0, 0, 0, 0.1)"
               style={styles.categoryIconStyle}
             />
@@ -337,20 +426,17 @@ export default function MyDecksList({
 
 const styles = StyleSheet.create({
   myDecksList: {
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(5),
+    // paddingHorizontal ve paddingVertical dinamik olarak uygulanacak
   },
   myDeckRow: {
     flexDirection: 'row',
   },
   myDeckCardVertical: {
     flex: 1,
-    height: verticalScale(240),
     borderRadius: moderateScale(18),
     overflow: 'hidden',
   },
   myDeckCardHorizontal: {
-    height: verticalScale(180),
     borderRadius: moderateScale(18),
     overflow: 'hidden',
   },
@@ -393,11 +479,11 @@ const styles = StyleSheet.create({
   },
   backgroundCategoryIcon: {
     position: 'absolute',
-    left: scale(-75), // İkonun yarısının taşması için
+    // left dinamik olarak uygulanacak (categoryIconDimensions)
     width: '100%',
     height: '100%',
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'flex-start', // Sola hizala (tablet için iconun yarısı gözüksün)
     zIndex: 0, // En altta kalması için
     overflow: 'hidden', // Taşan kısmı gizle
   },

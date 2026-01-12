@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { TouchableOpacity, View, Image, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
 import MaskedView from '@react-native-masked-view/masked-view';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
+import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 
 // Fade efekti için yardımcı bileşen
 const FadeText = ({ text, style, maxWidth = 120, maxChars = 15 }) => {
@@ -54,6 +55,55 @@ export default function DeckCard({
   isFavorite = false,
   showPopularityBadge = false,
 }) {
+  // useWindowDimensions hook'u - ekran döndürme desteği
+  const { width, height } = useWindowDimensions();
+  const isTablet = getIsTablet();
+  
+  // Responsive deck kart boyutları - useMemo ile optimize edilmiş
+  // Hibrit yaklaşım: scale() (dp bazlı) + ekran boyutu sınırları (fiziksel boyut kontrolü)
+  const deckCardDimensions = useMemo(() => {
+    const { DECK_CARD } = RESPONSIVE_CONSTANTS;
+    
+    // Deck kart genişliği hesaplama - Hibrit yaklaşım
+    const getDeckCardWidth = () => {
+      const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
+      
+      // scale() ile referans değer
+      const scaledWidth = scale(DECK_CARD.REFERENCE_WIDTH);
+      
+      // Küçük telefonlarda biraz daha küçük yap
+      if (isSmallPhone) {
+        // Küçük telefon: scale() ile referans değer, ama ekran genişliğinin %36'sını geçmesin
+        const maxWidth = width * 0.36;
+        return Math.min(scaledWidth, maxWidth);
+      } else if (isTablet) {
+        // Tablet: scale() ile referans değer, ama ekran genişliğinin %20'sini geçmesin
+        const maxWidth = width * 0.20;
+        return Math.min(scaledWidth, maxWidth);
+      } else {
+        // Normal telefon: scale() ile referans değer, ama ekran genişliğinin %34'ünü geçmesin
+        const maxWidth = width * 0.34;
+        return Math.min(scaledWidth, maxWidth);
+      }
+    };
+
+    // Deck kart yüksekliği hesaplama
+    const calculateDeckCardHeight = (cardWidth) => {
+      return cardWidth * DECK_CARD.ASPECT_RATIO;
+    };
+
+    const cardWidth = getDeckCardWidth();
+    const cardHeight = calculateDeckCardHeight(cardWidth);
+
+    return {
+      width: cardWidth,
+      height: cardHeight,
+    };
+  }, [width, isTablet]);
+
+  const DECK_CARD_WIDTH = deckCardDimensions.width;
+  const DECK_CARD_HEIGHT = deckCardDimensions.height;
+
   // Kategoriye göre renkleri al (Supabase sort_order kullanarak)
   const getCategoryColors = (sortOrder) => {
     if (colors.categoryColors && colors.categoryColors[sortOrder]) {
@@ -84,7 +134,7 @@ export default function DeckCard({
   
 
   return (
-    <View style={styles.deckCardModern}>
+    <View style={[styles.deckCardModern, { width: DECK_CARD_WIDTH, height: DECK_CARD_HEIGHT }]}>
       <TouchableOpacity
         key={`deck-${deck.id}`}
         style={styles.touchableContainer}
@@ -192,8 +242,6 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(18),
     marginRight: scale(10),
     marginBottom: verticalScale(8),
-    width: scale(140),
-    height: verticalScale(196),
     overflow: 'hidden', // Taşan kısımları gizle
   },
   touchableContainer: {

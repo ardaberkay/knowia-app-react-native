@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity, Dimensions, Pressable, Animated, Easing, Image, ScrollView } from 'react-native';
 import Swiper from 'react-native-deck-swiper';
 import { useTheme } from '../../theme/theme';
@@ -11,18 +11,86 @@ import logoasil from '../../assets/logoasil.png';
 import { useTranslation } from 'react-i18next';
 import { addFavoriteCard, removeFavoriteCard, getFavoriteCards } from '../../services/FavoriteService';
 import LottieView from 'lottie-react-native';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
-
-const { width, height } = Dimensions.get('window');
-
-// Kart boyutlandırma sabitleri
-const CARD_WIDTH = scale(width * 0.88); // %88 genişlik (responsive)
-const CARD_ASPECT_RATIO = 1.45; // Daha da uzun oran
-const CARD_HEIGHT = CARD_WIDTH * CARD_ASPECT_RATIO;
+import { scale, moderateScale, verticalScale, getIsTablet, useWindowDimensions } from '../../lib/scaling';
+import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 
 export default function SwipeDeckScreen({ route, navigation }) {
   const { deck, chapter } = route.params || {};
   const { colors } = useTheme();
+  
+  // useWindowDimensions hook'u - ekran döndürme desteği
+  const { width, height } = useWindowDimensions();
+  const isTablet = getIsTablet();
+  
+  // Responsive kart boyutları - useMemo ile optimize edilmiş
+  // Hibrit yaklaşım: scale() (dp bazlı) + ekran boyutu sınırları (fiziksel boyut kontrolü)
+  const cardDimensions = useMemo(() => {
+    const { CARD } = RESPONSIVE_CONSTANTS;
+    
+    // Kart genişliği hesaplama - Hibrit yaklaşım
+    const getCardWidth = () => {
+      const isSmallPhone = width < CARD.SMALL_PHONE_MAX_WIDTH || width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
+      
+      let scaledWidth;
+      let maxWidth;
+      
+      if (isTablet) {
+        // Tablet: scale() ile referans değer, ama ekran genişliğinin %65'ini geçmesin
+        scaledWidth = scale(CARD.REFERENCE_TABLET_MAX_WIDTH);
+        maxWidth = width * CARD.TABLET_WIDTH_PERCENT;
+      } else if (isSmallPhone) {
+        // Küçük telefon: scale() ile referans değer, ama ekran genişliğinin %85'ini geçmesin
+        scaledWidth = scale(CARD.REFERENCE_SMALL_WIDTH);
+        maxWidth = width * CARD.SMALL_PHONE_WIDTH_PERCENT;
+      } else {
+        // Normal telefon: scale() ile referans değer, ama ekran genişliğinin %88'ini geçmesin
+        scaledWidth = scale(CARD.REFERENCE_WIDTH);
+        maxWidth = width * CARD.NORMAL_PHONE_WIDTH_PERCENT;
+      }
+      
+      // İkisinden küçük olanı al (hem dp hem fiziksel boyut kontrolü)
+      return Math.min(scaledWidth, maxWidth);
+    };
+
+    // Kart yüksekliği hesaplama
+    const calculateCardHeight = (cardWidth) => {
+      const idealHeight = cardWidth * CARD.ASPECT_RATIO;
+      const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
+      
+      let maxHeightPercentage = CARD.NORMAL_PHONE_MAX_HEIGHT_PERCENT;
+      
+      if (isSmallPhone) {
+        maxHeightPercentage = CARD.SMALL_PHONE_MAX_HEIGHT_PERCENT;
+      } else if (height < RESPONSIVE_CONSTANTS.SMALL_SCREEN_MAX_HEIGHT) {
+        maxHeightPercentage = CARD.SMALL_SCREEN_MAX_HEIGHT_PERCENT;
+      }
+      
+      const maxHeight = height * maxHeightPercentage;
+      return Math.min(idealHeight, maxHeight);
+    };
+
+    // Yatay margin hesaplama - sağ ve sol boşlukları eşit yap
+    const getCardHorizontalMargin = (cardWidth) => {
+      const remainingSpace = width - cardWidth;
+      return remainingSpace / 2;
+    };
+
+    const cardWidth = getCardWidth();
+    const cardHeight = calculateCardHeight(cardWidth);
+    const horizontalMargin = getCardHorizontalMargin(cardWidth);
+
+    return {
+      width: cardWidth,
+      height: cardHeight,
+      horizontalMargin,
+    };
+  }, [width, height, isTablet]);
+
+  const CARD_WIDTH = cardDimensions.width;
+  const CARD_HEIGHT = cardDimensions.height;
+  const CARD_HORIZONTAL_MARGIN = cardDimensions.horizontalMargin;
+  const CARD_ASPECT_RATIO = RESPONSIVE_CONSTANTS.CARD.ASPECT_RATIO;
+
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -470,7 +538,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     // Eğer kart yoksa veya stack'teki alttaki kartsa, placeholder göster
     if (!card || !card.cards || cardIndex > currentIndex) {
       return (
-        <View style={[styles.card, { opacity: 0.7 }]}> 
+        <View style={[styles.card, { width: CARD_WIDTH, height: CARD_HEIGHT, opacity: 0.7 }]}> 
           <LinearGradient
             colors={gradientColors}
             start={{ x: 0, y: 0 }}
@@ -517,7 +585,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
           style={{ flex: 1 }}
         >
           {/* Ön yüz */}
-          <Animated.View style={[styles.card, { backgroundColor: colors.cardBackground, justifyContent: card.cards.image ? 'flex-start' : 'center' }, frontAnimatedStyle]}>
+          <Animated.View style={[styles.card, { width: CARD_WIDTH, height: CARD_HEIGHT, backgroundColor: colors.cardBackground, justifyContent: card.cards.image ? 'flex-start' : 'center' }, frontAnimatedStyle]}>
             <LinearGradient
               colors={gradientColors}
               start={{ x: 0, y: 0 }}
@@ -525,7 +593,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
               style={[StyleSheet.absoluteFill, { borderRadius: moderateScale(24) }]}
             />
             {card.cards.image && (
-              <View style={[styles.imageContainer, { backgroundColor: 'transparent', marginTop: verticalScale(32) }]}> 
+              <View style={[styles.imageContainer, { backgroundColor: 'transparent', marginTop: verticalScale(32), height: (CARD_HEIGHT * 1.85) / 5 }]}> 
                 <Image
                   source={{ uri: card.cards.image }}
                   style={styles.cardImage}
@@ -536,7 +604,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
             <Text style={[typography.styles.h2, { color: colors.text, marginBottom: card.cards.image ? verticalScale(16) : 0, textAlign: 'center' }]}>{card.cards.question}</Text>
           </Animated.View>
           {/* Arka yüz */}
-          <Animated.View style={[styles.card, { backgroundColor: colors.cardBackground }, backAnimatedStyle]}>
+          <Animated.View style={[styles.card, { width: CARD_WIDTH, height: CARD_HEIGHT, backgroundColor: colors.cardBackground }, backAnimatedStyle]}>
             <LinearGradient
               colors={gradientColors}
               start={{ x: 0, y: 0 }}
@@ -701,7 +769,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
           {leftHighlight ? (
             <Iconify icon="mingcute:time-fill" size={moderateScale(18)} color="#fff" />
           ) : (
-            <Text style={styles.counterText}>{leftCount}</Text>
+            <Text style={styles.counterText} adjustsFontSizeToFit minimumFontScale={0.7}>{leftCount}</Text>
           )}
         </View>
         <View style={styles.deckProgressBox}>
@@ -711,7 +779,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
           {rightHighlight ? (
             <Iconify icon="hugeicons:tick-01" size={moderateScale(18)} color="#fff" />
           ) : (
-            <Text style={styles.counterText}>{rightCount}</Text>
+            <Text style={styles.counterText} adjustsFontSizeToFit minimumFontScale={0.7}>{rightCount}</Text>
           )}
         </View>
       </View>
@@ -794,7 +862,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
           backgroundColor={colors.background}
           stackSeparation={verticalScale(18)}
           stackScale={0.07}
-          cardHorizontalMargin={scale(24)}
+          cardHorizontalMargin={CARD_HORIZONTAL_MARGIN}
           containerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
           cardStyle={{ width: CARD_WIDTH, height: CARD_HEIGHT, alignSelf: 'center', justifyContent: 'center' }}
           stackAnimationFriction={100}
@@ -849,8 +917,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   card: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
     borderRadius: moderateScale(26),
     padding: scale(24),
     alignItems: 'center',
@@ -862,7 +928,6 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: '100%',
-    height: (CARD_HEIGHT * 1.85) / 5,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: verticalScale(22),
@@ -890,6 +955,7 @@ const styles = StyleSheet.create({
     minWidth: scale(80),
     paddingLeft: scale(30),
     paddingRight: scale(12),
+    paddingVertical: verticalScale(8),
     height: verticalScale(36),
     alignItems: 'center',
     justifyContent: 'center',
@@ -907,6 +973,7 @@ const styles = StyleSheet.create({
     minWidth: scale(80),
     paddingLeft: scale(12),
     paddingRight: scale(30),
+    paddingVertical: verticalScale(8),
     height: verticalScale(36),
     alignItems: 'center',
     justifyContent: 'center',
@@ -920,6 +987,9 @@ const styles = StyleSheet.create({
   counterText: {
     ...typography.styles.button,
     color: '#fff',
+    textAlign: 'center',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   horizontalButtonRow: {
     flexDirection: 'row',

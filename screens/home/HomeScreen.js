@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Dimensions, ActivityIndicator, Image, RefreshControl, Pressable, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
@@ -7,7 +7,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
 import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
+import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 import { getCurrentUserProfile, updateLastActiveAt } from '../../services/ProfileService';
 import { registerForPushNotificationsAsync } from '../../services/NotificationService';
 import { supabase } from '../../lib/supabase';
@@ -68,6 +69,35 @@ export default function HomeScreen() {
   useAuth();
   const navigation = useNavigation();
   const { colors, isDarkMode } = useTheme();
+  
+  // useWindowDimensions hook'u - ekran döndürme desteği
+  const { width, height } = useWindowDimensions();
+  const isTablet = getIsTablet();
+  
+  // Responsive empty deck kart boyutları - useMemo ile optimize edilmiş
+  const emptyDeckCardDimensions = useMemo(() => {
+    const { DECK_CARD } = RESPONSIVE_CONSTANTS;
+    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
+    
+    // scale() ile referans değer
+    const scaledWidth = scale(DECK_CARD.REFERENCE_WIDTH);
+    
+    // Küçük telefonlarda biraz daha küçük yap
+    let maxWidth;
+    if (isSmallPhone) {
+      maxWidth = width * 0.36;
+    } else if (isTablet) {
+      maxWidth = width * 0.20;
+    } else {
+      maxWidth = width * 0.34;
+    }
+    
+    const cardWidth = Math.min(scaledWidth, maxWidth);
+    const cardHeight = cardWidth * DECK_CARD.ASPECT_RATIO;
+    
+    return { width: cardWidth, height: cardHeight };
+  }, [width, isTablet]);
+  
   const [decks, setDecks] = useState({});
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
@@ -317,7 +347,7 @@ const DECK_CATEGORIES = {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.decksContainer}
               decelerationRate="fast"
-              snapToInterval={scale(130)}
+              snapToInterval={emptyDeckCardDimensions.width + scale(10)}
               snapToAlignment="start"
             >
               {[...Array(4)].map((_, i) => (
@@ -330,7 +360,7 @@ const DECK_CATEGORIES = {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.decksContainer}
               decelerationRate="fast"
-              snapToInterval={scale(130)}
+              snapToInterval={emptyDeckCardDimensions.width + scale(10)}
               snapToAlignment="start"
             >
               <TouchableOpacity
@@ -340,6 +370,8 @@ const DECK_CATEGORIES = {
                 <View style={[
                   styles.emptyDeckCard, 
                   { 
+                    width: emptyDeckCardDimensions.width,
+                    height: emptyDeckCardDimensions.height,
                     backgroundColor: isDarkMode ? 'rgba(100, 100, 100, 0.15)' : 'rgba(240, 240, 240, 0.5)',
                     borderColor: isDarkMode ? 'rgba(150, 150, 150, 0.25)' : 'rgba(200, 200, 200, 0.4)',
                     shadowColor: isDarkMode ? '#000' : '#000',
@@ -369,7 +401,7 @@ const DECK_CATEGORIES = {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.decksContainer}
               decelerationRate="fast"
-              snapToInterval={scale(130)}
+              snapToInterval={emptyDeckCardDimensions.width + scale(10)}
               snapToAlignment="start"
             >
               {limitedDecks.map((deck) => {
@@ -405,7 +437,7 @@ const DECK_CATEGORIES = {
                 );
               })}
               {showEndIcon && (
-                <View style={styles.endIconContainer}>
+                <View style={[styles.endIconContainer, { height: emptyDeckCardDimensions.height }]}>
                   <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(35)} color="#F98A21" style={{ marginLeft: scale(2), marginTop: moderateScale(1) }} />
                 </View>
               )}
@@ -520,7 +552,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     width: scale(44),
-    height: verticalScale(180),
     marginLeft: scale(4),
     marginRight: scale(8),
   },
@@ -618,8 +649,6 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(18),
     marginRight: scale(10),
     marginBottom: verticalScale(8),
-    width: scale(140), // Pixel 7 referans cihaz - scale(140) = 140
-    height: scale(196), // Pixel 7 referans cihaz - scale(196) = 196
     overflow: 'hidden',
     borderWidth: moderateScale(1.5),
     shadowOffset: { width: 0, height: moderateScale(2) },

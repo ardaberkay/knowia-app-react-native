@@ -13,7 +13,8 @@ import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
 import { getCategoryConfig } from '../../components/ui/CategoryHeroHeader';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
+import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 
 export default function CategoryDeckListScreen({ route }) {
   const { category, title, decks: initialDecks, favoriteDecks: initialFavoriteDecks } = route.params || {};
@@ -21,6 +22,33 @@ export default function CategoryDeckListScreen({ route }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  
+  // useWindowDimensions hook'u - ekran döndürme desteği
+  const { width, height } = useWindowDimensions();
+  const isTablet = getIsTablet();
+  
+  // Responsive hero boyutları - useMemo ile optimize edilmiş
+  const heroDimensions = useMemo(() => {
+    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
+    
+    return {
+      iconSize: isSmallPhone ? scale(56) : scale(64),
+      iconBorderRadius: isSmallPhone ? moderateScale(28) : moderateScale(32),
+      iconBorderWidth: isSmallPhone ? moderateScale(1.5) : moderateScale(2),
+      iconInnerSize: isSmallPhone ? moderateScale(24) : moderateScale(28),
+      titleFontSize: isSmallPhone ? moderateScale(24) : moderateScale(28),
+      subtitleFontSize: isSmallPhone ? moderateScale(13) : moderateScale(15),
+      subtitleLineHeight: isSmallPhone ? moderateScale(18) : moderateScale(20),
+      heroContentMarginBottom: isSmallPhone ? verticalScale(12) : verticalScale(20),
+      heroIconMarginRight: isSmallPhone ? scale(12) : scale(16),
+      headerContentPaddingTop: isSmallPhone ? verticalScale(12) : verticalScale(20),
+      headerContentPaddingBottom: isSmallPhone ? verticalScale(12) : verticalScale(20),
+      headerContentPaddingHorizontal: isSmallPhone ? scale(10) : scale(12),
+      titleMarginBottom: isSmallPhone ? verticalScale(3) : verticalScale(6),
+      searchRowGap: isSmallPhone ? scale(8) : scale(12),
+      searchRowMarginTop: isSmallPhone ? verticalScale(4) : verticalScale(8),
+    };
+  }, [width, isTablet]);
 
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('default');
@@ -203,6 +231,8 @@ export default function CategoryDeckListScreen({ route }) {
   const renderFixedHeader = useCallback(() => {
     const config = getCategoryConfig(category, t);
     const headerHeight = Platform.OS === 'ios' ? insets.top + 44 : 56;
+    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
+    const gradientPaddingTop = isSmallPhone ? headerHeight + 24 : headerHeight + 32;
     
     return (
       <View style={styles.fixedHeaderContainer}>
@@ -210,22 +240,63 @@ export default function CategoryDeckListScreen({ route }) {
           colors={[...config.gradient, ...config.gradient.slice().reverse()]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[styles.fixedHeaderGradient, { paddingTop: headerHeight + 32 }]}
+          style={[styles.fixedHeaderGradient, { paddingTop: gradientPaddingTop }]}
         >
-          <View style={styles.headerContent}>
-            <View style={styles.heroContent}>
-              <View style={styles.heroIconContainer}>
-                <View style={[styles.iconCircle, { backgroundColor: config.accentColor + '20' }]}>
-                  <Iconify icon={config.icon} size={moderateScale(28)} color="#fff" />
+          <View style={[
+            styles.headerContent,
+            {
+              paddingHorizontal: heroDimensions.headerContentPaddingHorizontal,
+              paddingTop: heroDimensions.headerContentPaddingTop,
+              paddingBottom: heroDimensions.headerContentPaddingBottom,
+            }
+          ]}>
+            <View style={[
+              styles.heroContent,
+              { marginBottom: heroDimensions.heroContentMarginBottom }
+            ]}>
+              <View style={[styles.heroIconContainer, { marginRight: heroDimensions.heroIconMarginRight }]}>
+                <View style={[
+                  styles.iconCircle,
+                  {
+                    width: heroDimensions.iconSize,
+                    height: heroDimensions.iconSize,
+                    borderRadius: heroDimensions.iconBorderRadius,
+                    borderWidth: heroDimensions.iconBorderWidth,
+                    backgroundColor: config.accentColor + '20',
+                  }
+                ]}>
+                  <Iconify icon={config.icon} size={heroDimensions.iconInnerSize} color="#fff" />
                 </View>
               </View>
               <View style={styles.heroTextContainer}>
-                <Text style={styles.heroTitle}>{title || t('home.allDecks', 'Tüm Desteler')}</Text>
-                <Text style={styles.heroSubtitle}>{config.description}</Text>
+                <Text style={[
+                  styles.heroTitle,
+                  {
+                    fontSize: heroDimensions.titleFontSize,
+                    marginBottom: heroDimensions.titleMarginBottom,
+                  }
+                ]}>
+                  {title || t('home.allDecks', 'Tüm Desteler')}
+                </Text>
+                <Text style={[
+                  styles.heroSubtitle,
+                  {
+                    fontSize: heroDimensions.subtitleFontSize,
+                    lineHeight: heroDimensions.subtitleLineHeight,
+                  }
+                ]}>
+                  {config.description}
+                </Text>
               </View>
             </View>
 
-            <View style={styles.searchRow}>
+            <View style={[
+              styles.searchRow,
+              {
+                gap: heroDimensions.searchRowGap,
+                marginTop: heroDimensions.searchRowMarginTop,
+              }
+            ]}>
               <SearchBar
                 value={search}
                 onChangeText={setSearch}
@@ -242,7 +313,7 @@ export default function CategoryDeckListScreen({ route }) {
         </LinearGradient>
       </View>
     );
-  }, [category, title, search, colors, t, insets]);
+  }, [category, title, search, colors, t, insets, heroDimensions, width]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -283,32 +354,27 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   fixedHeaderGradient: {
-    paddingTop: verticalScale(12),
     paddingBottom: verticalScale(12),
     paddingHorizontal: 0,
+    // paddingTop dinamik olarak uygulanacak
   },
   headerContent: {
-    paddingHorizontal: scale(12),
-    paddingTop: verticalScale(20),
-    paddingBottom: verticalScale(20),
+    // paddingHorizontal, paddingTop, paddingBottom dinamik olarak uygulanacak
   },
   heroContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: verticalScale(20),
+    // marginBottom dinamik olarak uygulanacak
   },
   heroIconContainer: {
-    marginRight: scale(16),
+    // marginRight dinamik olarak uygulanacak
   },
   iconCircle: {
-    width: scale(64),
-    height: scale(64),
-    borderRadius: moderateScale(32),
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: moderateScale(2),
     borderColor: 'rgba(255, 255, 255, 0.3)',
+    // width, height, borderRadius, borderWidth dinamik olarak uygulanacak
   },
   heroTextContainer: {
     flex: 1,
@@ -317,23 +383,20 @@ const styles = StyleSheet.create({
   heroTitle: {
     ...typography.styles.h2,
     color: '#fff',
-    fontSize: moderateScale(28),
     fontWeight: '900',
-    marginBottom: verticalScale(6),
     letterSpacing: moderateScale(-0.5),
+    // fontSize, marginBottom dinamik olarak uygulanacak
   },
   heroSubtitle: {
     ...typography.styles.caption,
     color: 'rgba(255, 255, 255, 0.85)',
-    fontSize: moderateScale(15),
     fontWeight: '500',
-    lineHeight: moderateScale(20),
+    // fontSize, lineHeight dinamik olarak uygulanacak
   },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(12),
-    marginTop: verticalScale(8),
+    // gap, marginTop dinamik olarak uygulanacak
   },
   searchBar: {
     flex: 1,

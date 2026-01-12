@@ -22,7 +22,8 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ProfileAvatarButton from '../../components/layout/ProfileAvatarButton';
-import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
+import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
+import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 
 // Fade efekti - karakter bazlı opacity (MaskedView sorunlarından kaçınır)
 const FadeText = ({ text, style, maxChars = 15 }) => {
@@ -91,6 +92,10 @@ export default function LibraryScreen() {
   const [cardDetailModalVisible, setCardDetailModalVisible] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
 
+  // useWindowDimensions hook'u - ekran döndürme desteği
+  const { width, height } = useWindowDimensions();
+  const isTablet = getIsTablet();
+  
   const screenWidth = Dimensions.get('window').width;
   const horizontalPadding = scale(16) * 2;
   const cardSpacing = scale(12);
@@ -98,6 +103,85 @@ export default function LibraryScreen() {
   const cardWidth = (screenWidth - horizontalPadding - cardSpacing) / numColumns;
   const cardAspectRatio = 120 / 168;
   const cardHeight = cardWidth / cardAspectRatio;
+  
+  // Responsive favorites sekmesi ScrollView paddingTop - useMemo ile optimize edilmiş
+  const favoritesScrollViewPaddingTop = useMemo(() => {
+    const isTablet = getIsTablet();
+    return isTablet ? '25%' : '48%'; // Tablet: %5, diğerleri: %48
+  }, [width, height]);
+  
+  // Responsive myDecks card top margin - useMemo ile optimize edilmiş
+  const myDecksCardTopMargin = useMemo(() => {
+    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
+    const isSmallScreen = height < RESPONSIVE_CONSTANTS.SMALL_SCREEN_MAX_HEIGHT;
+    const isTablet = getIsTablet();
+    
+    // Tablet için üst boşluğu azalt
+    if (isTablet) {
+      return height * 0.01; // Tablet: ekran yüksekliğinin %4'ü
+    }
+    
+    if (isSmallPhone) {
+      return height * 0.07; // Küçük telefon: ekran yüksekliğinin %7'si
+    } else if (isSmallScreen) {
+      return height * 0.10; // Küçük ekran: ekran yüksekliğinin %10'u
+    } else {
+      return height * 0.08; // Normal ekranlar: ekran yüksekliğinin %8'i
+    }
+  }, [width, height]);
+  
+  // Responsive myDecks search container top margin - useMemo ile optimize edilmiş
+  const myDecksSearchContainerTopMargin = useMemo(() => {
+    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
+    const isSmallScreen = height < RESPONSIVE_CONSTANTS.SMALL_SCREEN_MAX_HEIGHT;
+    
+    if (isSmallPhone) {
+      return verticalScale(2); // Küçük telefon: minimal boşluk
+    } else if (isSmallScreen) {
+      return verticalScale(4); // Küçük ekran: az boşluk
+    } else if (isTablet) {
+      return verticalScale(12); // Tablet: orta boşluk
+    } else {
+      return verticalScale(8); // Normal ekranlar: üstten boşluk
+    }
+  }, [width, height, isTablet]);
+  
+  // Responsive favorite slider deck boyutları - useMemo ile optimize edilmiş
+  const favoriteSliderDimensions = useMemo(() => {
+    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
+    const isSmallScreen = height < RESPONSIVE_CONSTANTS.SMALL_SCREEN_MAX_HEIGHT;
+    
+    // Slider height - referans: verticalScale(170)
+    let sliderHeight;
+    if (isSmallPhone) {
+      sliderHeight = height * 0.24; // Küçük telefon: ekran yüksekliğinin %24'ü
+    } else if (isSmallScreen) {
+      sliderHeight = height * 0.22; // Küçük ekran: ekran yüksekliğinin %22'si
+    } else if (isTablet) {
+      sliderHeight = height * 0.30; // Tablet: ekran yüksekliğinin %30'u (artırıldı)
+    } else {
+      // Normal ve büyük ekranlar için
+      const baseHeight = verticalScale(200);
+      const maxHeight = height * 0.28;
+      sliderHeight = Math.min(baseHeight, maxHeight);
+    }
+    
+    // Deck içi element boyutları
+    return {
+      sliderHeight,
+      fontSize: isSmallPhone ? moderateScale(16) : (isTablet ? moderateScale(22) : moderateScale(20)),
+      dividerMargin: isSmallPhone ? verticalScale(4) : (isTablet ? verticalScale(8) : verticalScale(5)), // Name ve to_name'in divider'a uzaklığı
+      padding: isSmallPhone ? scale(12) : (isTablet ? scale(20) : scale(16)),
+      profileAvatarSize: isSmallPhone ? scale(28) : (isTablet ? scale(40) : scale(36)),
+      profileUsernameSize: isSmallPhone ? moderateScale(13) : (isTablet ? moderateScale(17) : moderateScale(16)),
+      badgeIconSize: isSmallPhone ? moderateScale(16) : (isTablet ? moderateScale(22) : moderateScale(20)),
+      badgeTextSize: isSmallPhone ? moderateScale(14) : (isTablet ? moderateScale(20) : moderateScale(18)),
+      favoriteButtonSize: isSmallPhone ? moderateScale(20) : (isTablet ? moderateScale(28) : moderateScale(26)),
+      favoriteButtonPadding: isSmallPhone ? moderateScale(6) : moderateScale(8),
+      categoryIconSize: isSmallPhone ? moderateScale(120, 0.3) : (isTablet ? moderateScale(180, 0.3) : moderateScale(170, 0.3)),
+      categoryIconLeft: isTablet ? moderateScale(-90, 0.3) : moderateScale(-75, 0.3), // Tablet için: iconun yarısının gözükmesi için, diğerleri: eski değer
+    };
+  }, [width, height, isTablet]);
 
   // Kategoriye göre renkleri al (Supabase sort_order kullanarak)
   const getCategoryColors = (sortOrder) => {
@@ -584,7 +668,7 @@ export default function LibraryScreen() {
   // MyDecks Card
   const renderMyDecksCard = () => {
     return (
-      <View style={[styles.myDecksCard, styles.myDecksCardContainer, { backgroundColor: colors.cardBackground || colors.cardBackgroundTransparent || (isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)') }]}>
+      <View style={[styles.myDecksCard, styles.myDecksCardContainer, { backgroundColor: colors.cardBackground || colors.cardBackgroundTransparent || (isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)'), marginTop: myDecksCardTopMargin }]}>
         <View style={styles.myDecksContent}>
           <View style={styles.myDecksTextContainer}>
             <View style={styles.myDecksTitleContainer}>
@@ -605,7 +689,7 @@ export default function LibraryScreen() {
             />
           </View>
         </View>
-        <View style={styles.myDecksSearchContainer}>
+        <View style={[styles.myDecksSearchContainer, { marginTop: myDecksSearchContainerTopMargin }]}>
           <SearchBar
             value={myDecksQuery}
             onChangeText={setMyDecksQuery}
@@ -740,7 +824,7 @@ export default function LibraryScreen() {
           ) : (
             <ScrollView
               style={{ flex: 1, backgroundColor: colors.background }}
-              contentContainerStyle={{ paddingBottom: '12%', paddingTop: '48%', flexGrow: 1, paddingHorizontal: scale(4) }}
+              contentContainerStyle={{ paddingBottom: '12%', paddingTop: favoritesScrollViewPaddingTop, flexGrow: 1, paddingHorizontal: scale(4) }}
               showsVerticalScrollIndicator={false}
               refreshControl={
                 <RefreshControl
@@ -772,7 +856,7 @@ export default function LibraryScreen() {
                 {favoriteDecks && favoriteDecks.length > 0 ? (
                   <>
                     <PagerView
-                      style={styles.favoriteSlider}
+                      style={[styles.favoriteSlider, { height: favoriteSliderDimensions.sliderHeight }]}
                       initialPage={0}
                       onPageSelected={(e) => setFavSlideIndex(e.nativeEvent.position)}
                       orientation="horizontal"
@@ -792,19 +876,19 @@ export default function LibraryScreen() {
                                 colors={getCategoryColors(deck.categories?.sort_order)}
                                 start={{ x: 0, y: 1 }}
                                 end={{ x: 1, y: 0 }}
-                                style={styles.favoriteSlideGradient}
+                                style={[styles.favoriteSlideGradient, { padding: favoriteSliderDimensions.padding }]}
                               >
                                 {/* Background Category Icon */}
-                                <View style={styles.backgroundCategoryIcon}>
+                                <View style={[styles.backgroundCategoryIcon, { left: favoriteSliderDimensions.categoryIconLeft }]}>
                                   <Iconify
                                     icon={getCategoryIcon(deck.categories?.sort_order)}
-                                    size={moderateScale(150, 0.3)}
+                                    size={favoriteSliderDimensions.categoryIconSize}
                                     color="rgba(0, 0, 0, 0.1)"
                                     style={styles.categoryIconStyle}
                                   />
                                 </View>
                                 {/* Profile Section */}
-                                <View style={[styles.deckProfileRow, { position: 'absolute', top: 'auto', bottom: 10, left: 10, zIndex: 10 }]}>
+                                <View style={[styles.deckProfileRow, { position: 'absolute', top: 'auto', bottom: favoriteSliderDimensions.padding, left: favoriteSliderDimensions.padding, zIndex: 10 }]}>
                                   <Image
                                     source={
                                       deck.is_admin_created 
@@ -813,16 +897,16 @@ export default function LibraryScreen() {
                                           ? { uri: deck.profiles.image_url } 
                                           : require('../../assets/avatar-default.png')
                                     }
-                                    style={styles.deckProfileAvatar}
+                                    style={[styles.deckProfileAvatar, { width: favoriteSliderDimensions.profileAvatarSize, height: favoriteSliderDimensions.profileAvatarSize }]}
                                   />
                                   <FadeText 
                                     text={deck.profiles?.username || 'Kullanıcı'} 
-                                    style={[typography.styles.body, styles.deckProfileUsername]} 
+                                    style={[typography.styles.body, styles.deckProfileUsername, { fontSize: favoriteSliderDimensions.profileUsernameSize }]} 
                                     maxChars={16}
                                   />
                                 </View>
                                 <TouchableOpacity
-                                  style={{ position: 'absolute', top: verticalScale(10), right: scale(12), zIndex: 10, backgroundColor: colors.iconBackground, padding: moderateScale(8), borderRadius: moderateScale(999) }}
+                                  style={{ position: 'absolute', top: favoriteSliderDimensions.padding, right: favoriteSliderDimensions.padding, zIndex: 10, backgroundColor: colors.iconBackground, padding: favoriteSliderDimensions.favoriteButtonPadding, borderRadius: moderateScale(999) }}
                                   onPress={async () => {
                                     if (favoriteDecks.some(d => d.id === deck.id)) {
                                       await handleRemoveFavoriteDeck(deck.id);
@@ -834,7 +918,7 @@ export default function LibraryScreen() {
                                 >
                                   <Iconify
                                     icon={favoriteDecks.some(d => d.id === deck.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-                                    size={moderateScale(24)}
+                                    size={favoriteSliderDimensions.favoriteButtonSize}
                                     color={favoriteDecks.some(d => d.id === deck.id) ? '#F98A21' : colors.text}
                                   />
                                 </TouchableOpacity>
@@ -844,29 +928,29 @@ export default function LibraryScreen() {
                                       <>
                                         <FadeText 
                                           text={deck.name} 
-                                          style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(18), fontWeight: '800', textAlign: 'center' }]} 
+                                          style={[typography.styles.body, { color: colors.headText, fontSize: favoriteSliderDimensions.fontSize, fontWeight: '800', textAlign: 'center' }]} 
                                           maxChars={20}
                                         />
-                                        <View style={{ width: scale(70), height: moderateScale(2), backgroundColor: colors.divider, borderRadius: moderateScale(1), marginVertical: verticalScale(10), alignSelf: 'center' }} />
+                                        <View style={{ width: scale(70), height: moderateScale(2), backgroundColor: colors.divider, borderRadius: moderateScale(1), marginVertical: favoriteSliderDimensions.dividerMargin, alignSelf: 'center' }} />
                                         <FadeText 
                                           text={deck.to_name} 
-                                          style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(18), fontWeight: '800', textAlign: 'center' }]} 
+                                          style={[typography.styles.body, { color: colors.headText, fontSize: favoriteSliderDimensions.fontSize, fontWeight: '800', textAlign: 'center' }]} 
                                           maxChars={20}
                                         />
                                       </>
                                     ) : (
                                       <FadeText 
                                         text={deck.name} 
-                                        style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(18), fontWeight: '800', textAlign: 'center' }]} 
+                                        style={[typography.styles.body, { color: colors.headText, fontSize: favoriteSliderDimensions.fontSize, fontWeight: '800', textAlign: 'center' }]} 
                                         maxChars={20}
                                       />
                                     )}
                                   </View>
                                 </View>
-                                <View style={{ position: 'absolute', bottom: verticalScale(12), right: scale(8) }}>
+                                <View style={{ position: 'absolute', bottom: favoriteSliderDimensions.padding, right: favoriteSliderDimensions.padding }}>
                                   <View style={styles.deckCountBadge}>
-                                    <Iconify icon="ri:stack-fill" size={moderateScale(18)} color="#fff" style={{ marginRight: scale(4) }} />
-                                    <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(16) }]}>{deck.card_count || 0}</Text>
+                                    <Iconify icon="ri:stack-fill" size={favoriteSliderDimensions.badgeIconSize} color="#fff" style={{ marginRight: scale(4) }} />
+                                    <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: favoriteSliderDimensions.badgeTextSize }]}>{deck.card_count || 0}</Text>
                                   </View>
                                 </View>
                               </LinearGradient>
@@ -1133,7 +1217,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(30),
   },
   favoriteSlider: {
-    height: verticalScale(170),
+    // height dinamik olarak uygulanacak
     borderRadius: moderateScale(18),
     overflow: 'hidden',
   },
@@ -1161,7 +1245,7 @@ const styles = StyleSheet.create({
   favoriteSlideGradient: {
     flex: 1,
     borderRadius: moderateScale(18),
-    padding: scale(16),
+    // padding dinamik olarak uygulanacak
     justifyContent: 'center',
   },
   favoriteSliderDots: {
@@ -1222,7 +1306,7 @@ const styles = StyleSheet.create({
   },
   backgroundCategoryIcon: {
     position: 'absolute',
-    left: moderateScale(-75, 0.3), // İkonun yarısının taşması için (icon boyutunun yarısı)
+    // left dinamik olarak uygulanacak (favoriteSliderDimensions.categoryIconLeft)
     width: '100%',
     height: '100%',
     justifyContent: 'center',
@@ -1237,7 +1321,7 @@ const styles = StyleSheet.create({
   },
   // MyDecks Card styles
   myDecksCard: {
-    marginTop: '25%',
+    // marginTop dinamik olarak uygulanacak
   },
   myDecksCardContainer: {
     borderRadius: moderateScale(28),
@@ -1275,8 +1359,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: scale(10),
-    marginTop: verticalScale(2),
-    paddingTop: verticalScale(8),
+    // marginTop dinamik olarak uygulanacak
+    paddingTop: verticalScale(12),
   },
   modalHeader: {
     flexDirection: 'row',

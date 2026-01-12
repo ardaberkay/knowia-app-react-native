@@ -13,16 +13,57 @@ import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
 import { LinearGradient } from 'expo-linear-gradient';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
-
-const { width } = Dimensions.get('window');
-const HERO_CARD_WIDTH = width - scale(32);
+import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
+import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 
 export default function DiscoverScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  
+  // useWindowDimensions hook'u - ekran döndürme desteği
+  const { width, height } = useWindowDimensions();
+  const isTablet = getIsTablet();
+  
+  // Responsive hero card genişliği - useMemo ile optimize edilmiş
+  const HERO_CARD_WIDTH = useMemo(() => {
+    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
+    const padding = isSmallPhone ? scale(20) : scale(32);
+    return width - padding;
+  }, [width]);
+  
+  // Responsive hero boyutları - useMemo ile optimize edilmiş
+  const heroDimensions = useMemo(() => {
+    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
+    
+    return {
+      iconSize: isSmallPhone ? scale(56) : scale(64),
+      iconBorderRadius: isSmallPhone ? moderateScale(28) : moderateScale(32),
+      iconBorderWidth: isSmallPhone ? moderateScale(1.5) : moderateScale(2),
+      iconInnerSize: isSmallPhone ? moderateScale(24) : moderateScale(28),
+      titleFontSize: isSmallPhone ? moderateScale(24) : moderateScale(28),
+      subtitleFontSize: isSmallPhone ? moderateScale(13) : moderateScale(15),
+      subtitleLineHeight: isSmallPhone ? moderateScale(18) : moderateScale(20),
+      heroContentMarginRight: isSmallPhone ? scale(12) : scale(16),
+      heroGradientPadding: isSmallPhone ? moderateScale(18) : moderateScale(24),
+      heroGradientMinHeight: isSmallPhone ? verticalScale(145) : verticalScale(140),
+      titleMarginBottom: isSmallPhone ? verticalScale(3) : verticalScale(6),
+      heroCarouselPaddingHorizontal: isSmallPhone ? scale(10) : scale(16),
+      paginationDotHeight: isSmallPhone ? verticalScale(6) : verticalScale(8),
+      paginationDotWidth: isSmallPhone ? scale(6) : scale(8),
+      paginationDotActiveWidth: isSmallPhone ? scale(20) : scale(24),
+      paginationGap: isSmallPhone ? scale(4) : scale(6),
+      paginationMarginTop: isSmallPhone ? verticalScale(8) : verticalScale(12),
+      timeFilterWrapperPadding: isSmallPhone ? scale(10) : scale(16),
+      timeFilterWrapperMarginBottom: isSmallPhone ? verticalScale(6) : verticalScale(8),
+      searchRowGap: isSmallPhone ? scale(8) : scale(12),
+      searchRowPadding: isSmallPhone ? scale(10) : scale(16),
+      searchRowMarginTop: isSmallPhone ? verticalScale(6) : verticalScale(8),
+      fixedHeaderPaddingTop: isSmallPhone ? verticalScale(8) : verticalScale(12),
+      fixedHeaderPaddingBottom: isSmallPhone ? verticalScale(8) : verticalScale(12),
+    };
+  }, [width, isTablet]);
 
   const [activeTab, setActiveTab] = useState('trend');
   const [timeFilter, setTimeFilter] = useState('all');
@@ -76,7 +117,7 @@ export default function DiscoverScreen() {
         });
       }
     }
-  }, [activeTab]);
+  }, [activeTab, HERO_CARD_WIDTH]);
 
   const loadFavoriteDecks = async () => {
     try {
@@ -292,9 +333,18 @@ export default function DiscoverScreen() {
 
   const renderFixedHeader = () => {
     const headerHeight = Platform.OS === 'ios' ? insets.top + 44 : 56;
+    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
+    const headerPaddingTop = isSmallPhone ? headerHeight + verticalScale(40) : headerHeight + verticalScale(50);
     
     return (
-      <View style={[styles.fixedHeaderContainer, { backgroundColor: colors.cardBackground, paddingTop: headerHeight + verticalScale(50) }]}>
+      <View style={[
+        styles.fixedHeaderContainer,
+        {
+          backgroundColor: colors.cardBackground,
+          paddingTop: headerPaddingTop,
+          paddingBottom: heroDimensions.fixedHeaderPaddingBottom,
+        }
+      ]}>
         <View style={styles.heroCarouselContainer}>
           <ScrollView
             ref={heroScrollRef}
@@ -304,7 +354,10 @@ export default function DiscoverScreen() {
             onScroll={handleHeroScroll}
             scrollEventThrottle={16}
             onMomentumScrollEnd={handleHeroScroll}
-            contentContainerStyle={styles.heroCarouselContent}
+            contentContainerStyle={[
+              styles.heroCarouselContent,
+              { paddingHorizontal: heroDimensions.heroCarouselPaddingHorizontal }
+            ]}
             decelerationRate="fast"
             snapToInterval={HERO_CARD_WIDTH}
             snapToAlignment="start"
@@ -318,17 +371,48 @@ export default function DiscoverScreen() {
                     colors={[...config.gradient, ...config.gradient.slice().reverse()]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={styles.modernHeroGradient}
+                    style={[
+                      styles.modernHeroGradient,
+                      {
+                        padding: heroDimensions.heroGradientPadding,
+                        minHeight: heroDimensions.heroGradientMinHeight,
+                      }
+                    ]}
                   >
                     <View style={styles.modernHeroContent}>
-                      <View style={styles.modernHeroIconContainer}>
-                        <View style={[styles.modernIconCircle, { backgroundColor: config.accentColor + '20' }]}>
-                          <Iconify icon={config.icon} size={moderateScale(28)} color="#fff" />
+                      <View style={[styles.modernHeroIconContainer, { marginRight: heroDimensions.heroContentMarginRight }]}>
+                        <View style={[
+                          styles.modernIconCircle,
+                          {
+                            width: heroDimensions.iconSize,
+                            height: heroDimensions.iconSize,
+                            borderRadius: heroDimensions.iconBorderRadius,
+                            borderWidth: heroDimensions.iconBorderWidth,
+                            backgroundColor: config.accentColor + '20',
+                          }
+                        ]}>
+                          <Iconify icon={config.icon} size={heroDimensions.iconInnerSize} color="#fff" />
                         </View>
                       </View>
                       <View style={styles.modernHeroTextContainer}>
-                        <Text style={styles.modernHeroTitle}>{config.title}</Text>
-                        <Text style={styles.modernHeroSubtitle}>{config.subtitle}</Text>
+                        <Text style={[
+                          styles.modernHeroTitle,
+                          {
+                            fontSize: heroDimensions.titleFontSize,
+                            marginBottom: heroDimensions.titleMarginBottom,
+                          }
+                        ]}>
+                          {config.title}
+                        </Text>
+                        <Text style={[
+                          styles.modernHeroSubtitle,
+                          {
+                            fontSize: heroDimensions.subtitleFontSize,
+                            lineHeight: heroDimensions.subtitleLineHeight,
+                          }
+                        ]}>
+                          {config.subtitle}
+                        </Text>
                       </View>
                     </View>
                   </LinearGradient>
@@ -337,7 +421,13 @@ export default function DiscoverScreen() {
             })}
           </ScrollView>
           
-          <View style={styles.paginationContainer}>
+          <View style={[
+            styles.paginationContainer,
+            {
+              gap: heroDimensions.paginationGap,
+              marginTop: heroDimensions.paginationMarginTop,
+            }
+          ]}>
             {tabKeys.map((tabKey, idx) => {
               const config = tabConfigs[tabKey];
               const isActive = activeTab === tabKey;
@@ -345,11 +435,12 @@ export default function DiscoverScreen() {
                 <TouchableOpacity
                   key={tabKey}
                   onPress={() => handleSetPage(idx)}
-                    style={[
+                  style={[
                     styles.paginationDot,
                     {
                       backgroundColor: isActive ? config.accentColor : colors.border,
-                      width: isActive ? scale(24) : scale(8),
+                      width: isActive ? heroDimensions.paginationDotActiveWidth : heroDimensions.paginationDotWidth,
+                      height: heroDimensions.paginationDotHeight,
                     }
                   ]}
                 />
@@ -359,7 +450,13 @@ export default function DiscoverScreen() {
         </View>
 
         {activeTab !== 'new' && (
-          <View style={styles.timeFilterWrapper}>
+          <View style={[
+            styles.timeFilterWrapper,
+            {
+              paddingHorizontal: heroDimensions.timeFilterWrapperPadding,
+              marginBottom: heroDimensions.timeFilterWrapperMarginBottom,
+            }
+          ]}>
             <View style={[styles.timeFilterSegmentedContainer, { backgroundColor: colors.background }]}>
               {timeFilters.map((filter) => {
                 const isActive = timeFilter === filter.key;
@@ -389,7 +486,14 @@ export default function DiscoverScreen() {
           </View>
         )}
 
-        <View style={styles.searchRow}>
+        <View style={[
+          styles.searchRow,
+          {
+            gap: heroDimensions.searchRowGap,
+            paddingHorizontal: heroDimensions.searchRowPadding,
+            marginTop: heroDimensions.searchRowMarginTop,
+          }
+        ]}>
           <SearchBar
             value={search}
             onChangeText={setSearch}
@@ -439,11 +543,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   fixedHeaderContainer: {
-    paddingTop: verticalScale(12),
-    paddingBottom: verticalScale(12),
     zIndex: 10,
     borderBottomLeftRadius: moderateScale(36),
     borderBottomRightRadius: moderateScale(36),
+    // paddingTop, paddingBottom dinamik olarak uygulanacak
   },
   listContainer: {
     flex: 1,

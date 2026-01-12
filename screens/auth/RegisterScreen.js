@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ImageBackground } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
+import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 
 export default function RegisterScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -17,6 +18,29 @@ export default function RegisterScreen({ navigation }) {
   const { register } = useAuth();
   const { colors } = useTheme();
   const { t } = useTranslation();
+  
+  // useWindowDimensions hook'u - ekran döndürme desteği
+  const { width, height } = useWindowDimensions();
+  const isTablet = getIsTablet();
+  
+  // Küçük cihazlar ve tablet için responsive paddingTop - useMemo ile optimize edilmiş
+  const containerPaddingTop = useMemo(() => {
+    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
+    const isSmallScreen = height < RESPONSIVE_CONSTANTS.SMALL_SCREEN_MAX_HEIGHT;
+    
+    // Tablet için paddingTop'u azalt
+    if (isTablet) {
+      return height * 0.15; // Tablet: %15
+    }
+    // Küçük telefonlarda paddingTop'u azalt
+    if (isSmallPhone) {
+      return height * 0.30; // Küçük telefon: %30
+    } else if (isSmallScreen) {
+      return height * 0.30; // Küçük ekran: %30
+    } else {
+      return height * 0.25; // Normal ekranlar: %25
+    }
+  }, [width, height, isTablet]);
 
   const handleRegister = async () => {
     if (loading) return;
@@ -48,7 +72,7 @@ export default function RegisterScreen({ navigation }) {
       style={styles.backgroundImage}
       resizeMode="cover"
     >
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingTop: containerPaddingTop }]}>
         <View style={styles.form}>
           <View style={styles.inputContainer}>
             <View style={{justifyContent: 'center', alignItems: 'center', width: scale(25), height: verticalScale(22)}}>
@@ -133,7 +157,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: scale(20),
     justifyContent: 'center',
-    paddingTop: '65%',
+    // paddingTop dinamik olarak uygulanacak
   },
   title: {
     textAlign: 'center',

@@ -1,13 +1,12 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, Animated, Dimensions } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { LinearGradient } from 'expo-linear-gradient';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
+import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 
 // Shimmer overlay component
-const ShimmerOverlay = ({ style, delay = 0, isDarkMode = false, borderRadius = 0 }) => {
+const ShimmerOverlay = ({ style, delay = 0, isDarkMode = false, borderRadius = 0, screenWidth = Dimensions.get('window').width }) => {
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -34,7 +33,7 @@ const ShimmerOverlay = ({ style, delay = 0, isDarkMode = false, borderRadius = 0
 
   const translateX = shimmerAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [-SCREEN_WIDTH, SCREEN_WIDTH],
+    outputRange: [-screenWidth, screenWidth],
   });
 
   const shimmerColors = isDarkMode
@@ -57,14 +56,14 @@ const ShimmerOverlay = ({ style, delay = 0, isDarkMode = false, borderRadius = 0
         colors={shimmerColors}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
-        style={{ flex: 1, width: SCREEN_WIDTH, borderRadius: borderRadius }}
+        style={{ flex: 1, width: screenWidth, borderRadius: borderRadius }}
       />
     </Animated.View>
   );
 };
 
 // Shimmer wrapper for skeleton boxes
-const ShimmerBox = ({ children, style, delay = 0, isDarkMode = false, borderRadius = 0 }) => {
+const ShimmerBox = ({ children, style, delay = 0, isDarkMode = false, borderRadius = 0, screenWidth }) => {
   return (
     <View style={[{ overflow: 'hidden', borderRadius: borderRadius }, style]}>
       {children}
@@ -79,6 +78,7 @@ const ShimmerBox = ({ children, style, delay = 0, isDarkMode = false, borderRadi
         delay={delay}
         isDarkMode={isDarkMode}
         borderRadius={borderRadius}
+        screenWidth={screenWidth}
       />
     </View>
   );
@@ -86,6 +86,69 @@ const ShimmerBox = ({ children, style, delay = 0, isDarkMode = false, borderRadi
 
 export default function MyDecksSkeleton({ ListHeaderComponent }) {
   const { colors, isDarkMode } = useTheme();
+  
+  // useWindowDimensions hook'u - ekran döndürme desteği
+  const { width, height } = useWindowDimensions();
+  const isTablet = getIsTablet();
+  
+  // Responsive deck skeleton kart boyutları - useMemo ile optimize edilmiş
+  const deckSkeletonDimensions = useMemo(() => {
+    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
+    const isSmallScreen = height < RESPONSIVE_CONSTANTS.SMALL_SCREEN_MAX_HEIGHT;
+    
+    // Vertical card height - referans: verticalScale(240)
+    const baseVerticalHeight = verticalScale(240);
+    let verticalHeight;
+    if (isSmallPhone) {
+      verticalHeight = height * 0.32;
+    } else if (isSmallScreen) {
+      verticalHeight = height * 0.30;
+    } else if (isTablet) {
+      // Tablet: ekran yüksekliğinin %28'i (artırıldı - MyDecksList ile eşleştirildi)
+      verticalHeight = height * 0.28;
+    } else {
+      const maxHeight = height * 0.26;
+      verticalHeight = Math.min(baseVerticalHeight, maxHeight);
+    }
+    
+    // Horizontal card height - referans: verticalScale(180)
+    const baseHorizontalHeight = verticalScale(180);
+    let horizontalHeight;
+    if (isSmallPhone) {
+      horizontalHeight = height * 0.26;
+    } else if (isSmallScreen) {
+      horizontalHeight = height * 0.24;
+    } else if (isTablet) {
+      // Tablet: ekran yüksekliğinin %22'si (artırıldı - MyDecksList ile eşleştirildi)
+      horizontalHeight = height * 0.22;
+    } else {
+      const maxHeight = height * 0.20;
+      horizontalHeight = Math.min(baseHorizontalHeight, maxHeight);
+    }
+    
+    return {
+      verticalHeight,
+      horizontalHeight,
+    };
+  }, [width, height, isTablet]);
+  
+  const DECK_SKELETON_VERTICAL_HEIGHT = deckSkeletonDimensions.verticalHeight;
+  const DECK_SKELETON_HORIZONTAL_HEIGHT = deckSkeletonDimensions.horizontalHeight;
+  
+  // Responsive spacing
+  const responsiveSpacing = useMemo(() => {
+    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
+    
+    return {
+      cardMargin: isSmallPhone ? scale(5) : scale(5),
+      listPaddingHorizontal: isSmallPhone ? scale(12) : scale(12),
+      listPaddingVertical: isSmallPhone ? verticalScale(5) : verticalScale(5),
+    };
+  }, [width]);
+  
+  // Shimmer animasyonu için ekran genişliği
+  const SCREEN_WIDTH = width;
+  
   const bgColor = isDarkMode ? '#222' : '#ececec';
   const lineColor = isDarkMode ? '#333' : '#ddd';
 
@@ -102,43 +165,43 @@ export default function MyDecksSkeleton({ ListHeaderComponent }) {
       {[1, 2, 3].map((rowIndex) => (
         <View key={`skeleton_row_${rowIndex}`}>
           {/* Double Row */}
-          <View style={[skeletonStyles.myDecksList, skeletonStyles.myDeckRow]}>
+          <View style={[skeletonStyles.myDecksList, skeletonStyles.myDeckRow, { paddingHorizontal: responsiveSpacing.listPaddingHorizontal, paddingVertical: responsiveSpacing.listPaddingVertical }]}>
             {[0, 1].map((cardIndex) => (
               <View
                 key={`skeleton_double_${rowIndex}_${cardIndex}`}
                 style={[
                   skeletonStyles.myDeckCardVertical,
-                  { backgroundColor: bgColor },
-                  cardIndex === 0 ? { marginRight: scale(5) } : { marginLeft: scale(5) }
+                  { height: DECK_SKELETON_VERTICAL_HEIGHT, backgroundColor: bgColor },
+                  cardIndex === 0 ? { marginRight: responsiveSpacing.cardMargin } : { marginLeft: responsiveSpacing.cardMargin }
                 ]}
               >
                 <View style={skeletonStyles.myDeckGradient}>
                   {/* Favorite Button Skeleton - Top Right */}
-                  <ShimmerBox delay={rowIndex * 100 + cardIndex * 50} isDarkMode={isDarkMode} borderRadius={999} style={{ position: 'absolute', top: verticalScale(10), right: scale(10), zIndex: 10 }}>
+                  <ShimmerBox delay={rowIndex * 100 + cardIndex * 50} isDarkMode={isDarkMode} borderRadius={999} style={{ position: 'absolute', top: verticalScale(10), right: scale(10), zIndex: 10 }} screenWidth={SCREEN_WIDTH}>
                     <View style={[skeletonStyles.skeletonBox, { width: moderateScale(37), height: moderateScale(37), borderRadius: 999, backgroundColor: lineColor, padding: moderateScale(8) }]} />
                   </ShimmerBox>
                   
                   {/* Badge Section Skeleton - Bottom Left */}
                   <View style={{ position: 'absolute', bottom: verticalScale(12), left: scale(12) }}>
-                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 20} isDarkMode={isDarkMode} borderRadius={moderateScale(14)}>
+                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 20} isDarkMode={isDarkMode} borderRadius={moderateScale(14)} screenWidth={SCREEN_WIDTH}>
                       <View style={[skeletonStyles.skeletonBox, { width: scale(60), height: verticalScale(28), borderRadius: moderateScale(14), backgroundColor: lineColor, paddingHorizontal: scale(8), paddingVertical: verticalScale(2) }]} />
                     </ShimmerBox>
                   </View>
                   
                   {/* Delete Button Skeleton - Bottom Right */}
-                  <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 40} isDarkMode={isDarkMode} borderRadius={999} style={{ position: 'absolute', bottom: verticalScale(7), right: scale(10) }}>
+                  <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 40} isDarkMode={isDarkMode} borderRadius={999} style={{ position: 'absolute', bottom: verticalScale(7), right: scale(10) }} screenWidth={SCREEN_WIDTH}>
                     <View style={[skeletonStyles.skeletonBox, { width: moderateScale(37), height: moderateScale(37), borderRadius: 999, backgroundColor: lineColor, padding: moderateScale(8) }]} />
                   </ShimmerBox>
                   
                   {/* Title Section Skeleton */}
                   <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 60} isDarkMode={isDarkMode} borderRadius={moderateScale(8)}>
+                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 60} isDarkMode={isDarkMode} borderRadius={moderateScale(8)} screenWidth={SCREEN_WIDTH}>
                       <View style={[skeletonStyles.skeletonBox, { width: scale(90), height: moderateScale(16), borderRadius: moderateScale(8), backgroundColor: lineColor }]} />
                     </ShimmerBox>
-                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 80} isDarkMode={isDarkMode} borderRadius={moderateScale(1)}>
+                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 80} isDarkMode={isDarkMode} borderRadius={moderateScale(1)} screenWidth={SCREEN_WIDTH}>
                       <View style={[skeletonStyles.skeletonBox, { width: scale(60), height: moderateScale(2), borderRadius: moderateScale(1), backgroundColor: lineColor, marginVertical: verticalScale(8) }]} />
                     </ShimmerBox>
-                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 100} isDarkMode={isDarkMode} borderRadius={moderateScale(8)}>
+                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 100} isDarkMode={isDarkMode} borderRadius={moderateScale(8)} screenWidth={SCREEN_WIDTH}>
                       <View style={[skeletonStyles.skeletonBox, { width: scale(80), height: moderateScale(16), borderRadius: moderateScale(8), backgroundColor: lineColor }]} />
                     </ShimmerBox>
                   </View>
@@ -147,40 +210,40 @@ export default function MyDecksSkeleton({ ListHeaderComponent }) {
             ))}
           </View>
           {/* Single Row */}
-          <View style={skeletonStyles.myDecksList}>
+          <View style={[skeletonStyles.myDecksList, { paddingHorizontal: responsiveSpacing.listPaddingHorizontal, paddingVertical: responsiveSpacing.listPaddingVertical }]}>
             <View
               style={[
                 skeletonStyles.myDeckCardHorizontal,
-                { backgroundColor: bgColor }
+                { height: DECK_SKELETON_HORIZONTAL_HEIGHT, backgroundColor: bgColor }
               ]}
             >
               <View style={skeletonStyles.myDeckGradient}>
                 {/* Favorite Button Skeleton - Top Right */}
-                <ShimmerBox delay={rowIndex * 100 + 200} isDarkMode={isDarkMode} borderRadius={999} style={{ position: 'absolute', top: verticalScale(8), right: scale(10), zIndex: 10 }}>
+                <ShimmerBox delay={rowIndex * 100 + 200} isDarkMode={isDarkMode} borderRadius={999} style={{ position: 'absolute', top: verticalScale(8), right: scale(10), zIndex: 10 }} screenWidth={SCREEN_WIDTH}>
                   <View style={[skeletonStyles.skeletonBox, { width: moderateScale(38), height: moderateScale(38), borderRadius: 999, backgroundColor: lineColor, padding: moderateScale(8) }]} />
                 </ShimmerBox>
                 
                 {/* Badge Section Skeleton - Bottom Left */}
                 <View style={{ position: 'absolute', bottom: verticalScale(12), left: scale(12) }}>
-                  <ShimmerBox delay={rowIndex * 100 + 220} isDarkMode={isDarkMode} borderRadius={moderateScale(14)}>
+                  <ShimmerBox delay={rowIndex * 100 + 220} isDarkMode={isDarkMode} borderRadius={moderateScale(14)} screenWidth={SCREEN_WIDTH}>
                     <View style={[skeletonStyles.skeletonBox, { width: scale(65), height: verticalScale(28), borderRadius: moderateScale(14), backgroundColor: lineColor, paddingHorizontal: scale(8), paddingVertical: verticalScale(2) }]} />
                   </ShimmerBox>
                 </View>
                 
                 {/* Delete Button Skeleton - Bottom Right */}
-                <ShimmerBox delay={rowIndex * 100 + 240} isDarkMode={isDarkMode} borderRadius={999} style={{ position: 'absolute', bottom: verticalScale(8), right: scale(10) }}>
+                <ShimmerBox delay={rowIndex * 100 + 240} isDarkMode={isDarkMode} borderRadius={999} style={{ position: 'absolute', bottom: verticalScale(8), right: scale(10) }} screenWidth={SCREEN_WIDTH}>
                   <View style={[skeletonStyles.skeletonBox, { width: moderateScale(38), height: moderateScale(38), borderRadius: 999, backgroundColor: lineColor, padding: moderateScale(8) }]} />
                 </ShimmerBox>
                 
                 {/* Title Section Skeleton */}
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                  <ShimmerBox delay={rowIndex * 100 + 260} isDarkMode={isDarkMode} borderRadius={moderateScale(9)}>
+                  <ShimmerBox delay={rowIndex * 100 + 260} isDarkMode={isDarkMode} borderRadius={moderateScale(9)} screenWidth={SCREEN_WIDTH}>
                     <View style={[skeletonStyles.skeletonBox, { width: scale(140), height: moderateScale(18), borderRadius: moderateScale(9), backgroundColor: lineColor }]} />
                   </ShimmerBox>
-                  <ShimmerBox delay={rowIndex * 100 + 280} isDarkMode={isDarkMode} borderRadius={moderateScale(1)}>
+                  <ShimmerBox delay={rowIndex * 100 + 280} isDarkMode={isDarkMode} borderRadius={moderateScale(1)} screenWidth={SCREEN_WIDTH}>
                     <View style={[skeletonStyles.skeletonBox, { width: scale(70), height: moderateScale(2), borderRadius: moderateScale(1), backgroundColor: lineColor, marginVertical: verticalScale(10) }]} />
                   </ShimmerBox>
-                  <ShimmerBox delay={rowIndex * 100 + 300} isDarkMode={isDarkMode} borderRadius={moderateScale(9)}>
+                  <ShimmerBox delay={rowIndex * 100 + 300} isDarkMode={isDarkMode} borderRadius={moderateScale(9)} screenWidth={SCREEN_WIDTH}>
                     <View style={[skeletonStyles.skeletonBox, { width: scale(120), height: moderateScale(18), borderRadius: moderateScale(9), backgroundColor: lineColor }]} />
                   </ShimmerBox>
                 </View>
@@ -198,20 +261,17 @@ const skeletonStyles = StyleSheet.create({
     // Skeleton placeholder için stil
   },
   myDecksList: {
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(5),
+    // paddingHorizontal ve paddingVertical dinamik olarak uygulanacak
   },
   myDeckRow: {
     flexDirection: 'row',
   },
   myDeckCardVertical: {
     flex: 1,
-    height: verticalScale(240),
     borderRadius: moderateScale(18),
     overflow: 'hidden',
   },
   myDeckCardHorizontal: {
-    height: verticalScale(180),
     borderRadius: moderateScale(18),
     overflow: 'hidden',
   },
