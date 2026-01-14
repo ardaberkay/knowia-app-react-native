@@ -9,6 +9,7 @@ import DeckList from '../../components/lists/DeckList';
 import DiscoverDecksSkeleton from '../../components/skeleton/DiscoverDecksSkeleton';
 import { supabase } from '../../lib/supabase';
 import { getPopularDecks, getNewDecks, getMostFavoritedDecks, getMostStartedDecks, getMostUniqueStartedDecks } from '../../services/DeckService';
+import { cacheDiscoverDecks, getCachedDiscoverDecks } from '../../services/CacheService';
 import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -73,6 +74,7 @@ export default function DiscoverScreen() {
   const [favoriteDecks, setFavoriteDecks] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadedTabs, setLoadedTabs] = useState(new Set());
   const [trendDecksList, setTrendDecksList] = useState([]);
   const [favoriteDecksList, setFavoriteDecksList] = useState([]);
   const [startedDecksList, setStartedDecksList] = useState([]);
@@ -81,6 +83,8 @@ export default function DiscoverScreen() {
 
   const heroScrollRef = useRef(null);
   const isUserScrolling = useRef(false);
+  const loadDecksTimeoutRef = useRef(null);
+  const isRefreshingRef = useRef(false);
 
   useEffect(() => {
     loadFavoriteDecks();
@@ -98,12 +102,38 @@ export default function DiscoverScreen() {
     
     // İlk mount'ta veya tab değiştiyse veya timeFilter değiştiyse yükle
     if (isInitialMount.current || tabChanged || timeFilterChanged) {
-      loadDecks();
+      // timeFilter değiştiğinde o tab'ı loadedTabs'tan kaldır
+      if (timeFilterChanged && !isInitialMount.current) {
+        setLoadedTabs(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(activeTab);
+          return newSet;
+        });
+      }
+      
+      // Debouncing: Hızlı geçişlerde gereksiz çağrıları önle
+      if (loadDecksTimeoutRef.current) {
+        clearTimeout(loadDecksTimeoutRef.current);
+      }
+      
+      loadDecksTimeoutRef.current = setTimeout(() => {
+        loadDecks();
+        loadDecksTimeoutRef.current = null;
+      }, 150); // 150ms debounce
+      
       isInitialMount.current = false;
     }
     
     previousActiveTabRef.current = activeTab;
     previousTimeFilterRef.current = timeFilter;
+    
+    // Cleanup: Component unmount olduğunda timeout'u temizle
+    return () => {
+      if (loadDecksTimeoutRef.current) {
+        clearTimeout(loadDecksTimeoutRef.current);
+        loadDecksTimeoutRef.current = null;
+      }
+    };
   }, [timeFilter, activeTab, loadDecks]);
 
   useEffect(() => {
@@ -136,9 +166,12 @@ export default function DiscoverScreen() {
     }
   };
 
-  const loadDecks = useCallback(async () => {
+  const loadFreshData = useCallback(async (showLoadingIndicator = true) => {
     try {
-      setLoading(true);
+      if (showLoadingIndicator) {
+        setLoading(true);
+      }
+      
       let decks = [];
       
       if (activeTab === 'trend') {
@@ -157,6 +190,9 @@ export default function DiscoverScreen() {
         decks = await getNewDecks(100);
         setNewDecks(decks || []);
       }
+      
+      // Veriyi cache'le
+      await cacheDiscoverDecks(activeTab, timeFilter, decks || []);
     } catch (error) {
       console.error('Error loading decks:', error);
       if (activeTab === 'trend') setTrendDecksList([]);
@@ -166,8 +202,48 @@ export default function DiscoverScreen() {
       else setNewDecks([]);
     } finally {
       setLoading(false);
+      setLoadedTabs(prev => new Set([...prev, activeTab]));
     }
   }, [activeTab, timeFilter]);
+
+  const loadDecks = useCallback(async (forceRefresh = false) => {
+    // Debouncing: Eğer zaten bir yükleme varsa iptal et
+    if (loadDecksTimeoutRef.current) {
+      clearTimeout(loadDecksTimeoutRef.current);
+      loadDecksTimeoutRef.current = null;
+    }
+
+    // Cache'den hemen veriyi yükle (stale-while-revalidate)
+    const cachedData = await getCachedDiscoverDecks(activeTab, timeFilter);
+    
+    // Eğer cache varsa ve force refresh değilse, hemen göster
+    if (cachedData && !forceRefresh && cachedData.data && cachedData.data.length > 0) {
+      // Cache'den veriyi hemen göster
+      if (activeTab === 'trend') {
+        setTrendDecksList(cachedData.data);
+      } else if (activeTab === 'favorites') {
+        setFavoriteDecksList(cachedData.data);
+      } else if (activeTab === 'starts') {
+        setStartedDecksList(cachedData.data);
+      } else if (activeTab === 'unique') {
+        setUniqueDecksList(cachedData.data);
+      } else {
+        setNewDecks(cachedData.data);
+      }
+      
+      // Cache'den veri geldiğinde loading'i false yap
+      setLoading(false);
+      setLoadedTabs(prev => new Set([...prev, activeTab]));
+      
+      // Eğer cache stale ise, arka planda fresh data yükle (loading gösterme)
+      if (cachedData.isStale) {
+        loadFreshData(false); // showLoadingIndicator = false
+      }
+    } else {
+      // Cache yoksa veya force refresh ise, normal yükleme yap
+      await loadFreshData(true); // showLoadingIndicator = true
+    }
+  }, [activeTab, timeFilter, loadFreshData]);
 
   const currentDecks = useMemo(() => {
     switch (activeTab) {
@@ -246,12 +322,14 @@ export default function DiscoverScreen() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
+    isRefreshingRef.current = true;
     try {
-      await Promise.all([loadFavoriteDecks(), loadDecks()]);
+      await Promise.all([loadFavoriteDecks(), loadDecks(true)]); // forceRefresh = true
     } catch (error) {
       console.error('Error refreshing:', error);
     } finally {
       setRefreshing(false);
+      isRefreshingRef.current = false;
     }
   };
 
@@ -511,7 +589,7 @@ export default function DiscoverScreen() {
       {renderFixedHeader()}
 
       <View style={[styles.listContainer, { backgroundColor: colors.background }]}>
-        {loading ? (
+        {loading || !loadedTabs.has(activeTab) ? (
           <DiscoverDecksSkeleton />
         ) : (
           <DeckList

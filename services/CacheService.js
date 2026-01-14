@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const CACHE_DURATIONS = {
   PROFILE: 30 * 60 * 1000, // 30 dakika
   PROFILE_IMAGE: 7 * 24 * 60 * 60 * 1000, // 7 gün (görseller daha az değişir)
+  DISCOVER_DECKS: 5 * 60 * 1000, // 5 dakika (trend verileri için)
 };
 
 /**
@@ -116,5 +117,77 @@ export const clearUserCache = async (userId) => {
     ]);
   } catch (error) {
     console.error('Error clearing user cache:', error);
+  }
+};
+
+/**
+ * Discover deck verilerini cache'le
+ * @param {string} tab - Tab adı (trend, favorites, starts, unique, new)
+ * @param {string} timeFilter - Zaman filtresi (all, today, week, month, year)
+ * @param {array} decks - Deck verileri
+ */
+export const cacheDiscoverDecks = async (tab, timeFilter, decks) => {
+  try {
+    const cacheKey = `discover_${tab}_${timeFilter}`;
+    const cacheData = {
+      data: decks,
+      timestamp: Date.now(),
+    };
+    await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheData));
+  } catch (error) {
+    console.error('Error caching discover decks:', error);
+  }
+};
+
+/**
+ * Cache'den discover deck verilerini yükle
+ * @param {string} tab - Tab adı (trend, favorites, starts, unique, new)
+ * @param {string} timeFilter - Zaman filtresi (all, today, week, month, year)
+ * @returns {object|null} - Cache'lenmiş deck verileri ve timestamp veya null
+ */
+export const getCachedDiscoverDecks = async (tab, timeFilter) => {
+  try {
+    const cacheKey = `discover_${tab}_${timeFilter}`;
+    const cached = await AsyncStorage.getItem(cacheKey);
+    
+    if (cached) {
+      const cacheData = JSON.parse(cached);
+      const cacheAge = Date.now() - (cacheData.timestamp || 0);
+      
+      // Cache süresi dolmamışsa (stale data bile kabul edilebilir)
+      if (cacheAge < CACHE_DURATIONS.DISCOVER_DECKS) {
+        return {
+          data: cacheData.data,
+          timestamp: cacheData.timestamp,
+          isStale: false,
+        };
+      } else {
+        // Süresi dolmuş ama stale-while-revalidate için kullanılabilir
+        return {
+          data: cacheData.data,
+          timestamp: cacheData.timestamp,
+          isStale: true,
+        };
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error getting cached discover decks:', error);
+    return null;
+  }
+};
+
+/**
+ * Discover deck cache'ini temizle (belirli tab ve timeFilter için)
+ * @param {string} tab - Tab adı (trend, favorites, starts, unique, new)
+ * @param {string} timeFilter - Zaman filtresi (all, today, week, month, year)
+ */
+export const clearDiscoverDecksCache = async (tab, timeFilter) => {
+  try {
+    const cacheKey = `discover_${tab}_${timeFilter}`;
+    await AsyncStorage.removeItem(cacheKey);
+  } catch (error) {
+    console.error('Error clearing discover decks cache:', error);
   }
 };

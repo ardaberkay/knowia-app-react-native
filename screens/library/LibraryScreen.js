@@ -151,35 +151,47 @@ export default function LibraryScreen() {
     const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
     const isSmallScreen = height < RESPONSIVE_CONSTANTS.SMALL_SCREEN_MAX_HEIGHT;
     
-    // Slider height - referans: verticalScale(170)
+    // Slider height - referans: verticalScale(170) - minimal artırıldı
     let sliderHeight;
     if (isSmallPhone) {
-      sliderHeight = height * 0.24; // Küçük telefon: ekran yüksekliğinin %24'ü
+      sliderHeight = height * 0.25; // Küçük telefon: ekran yüksekliğinin %25'i (önceki: %24)
     } else if (isSmallScreen) {
-      sliderHeight = height * 0.22; // Küçük ekran: ekran yüksekliğinin %22'si
+      sliderHeight = height * 0.23; // Küçük ekran: ekran yüksekliğinin %23'ü (önceki: %22)
     } else if (isTablet) {
-      sliderHeight = height * 0.30; // Tablet: ekran yüksekliğinin %30'u (artırıldı)
+      sliderHeight = height * 0.31; // Tablet: ekran yüksekliğinin %31'i (önceki: %30)
     } else {
       // Normal ve büyük ekranlar için
-      const baseHeight = verticalScale(200);
-      const maxHeight = height * 0.28;
+      const baseHeight = verticalScale(220); // Önceki: 200
+      const maxHeight = height * 0.29; // Önceki: 0.28
       sliderHeight = Math.min(baseHeight, maxHeight);
     }
+    
+    // Padding değerleri
+    const basePadding = isSmallPhone ? scale(12) : (isTablet ? scale(20) : scale(16));
     
     // Deck içi element boyutları
     return {
       sliderHeight,
       fontSize: isSmallPhone ? moderateScale(16) : (isTablet ? moderateScale(22) : moderateScale(20)),
       dividerMargin: isSmallPhone ? verticalScale(4) : (isTablet ? verticalScale(8) : verticalScale(5)), // Name ve to_name'in divider'a uzaklığı
-      padding: isSmallPhone ? scale(12) : (isTablet ? scale(20) : scale(16)),
+      padding: basePadding,
+      // Profile section için azaltılmış padding (left bottom)
+      profileBottomPadding: basePadding * 0.7, // %50 azaltıldı
+      profileLeftPadding: basePadding * 0.7, // %50 azaltıldı
+      // Favorite button için azaltılmış padding (top right)
+      favoriteButtonTopPadding: basePadding * 0.7, // %50 azaltıldı
+      favoriteButtonRightPadding: basePadding * 0.7, // %50 azaltıldı
+      // Badge için azaltılmış padding (right bottom)
+      badgeBottomPadding: basePadding * 0.7, // %50 azaltıldı
+      badgeRightPadding: basePadding * 0.5, // %50 azaltıldı
       profileAvatarSize: isSmallPhone ? scale(28) : (isTablet ? scale(40) : scale(36)),
       profileUsernameSize: isSmallPhone ? moderateScale(13) : (isTablet ? moderateScale(17) : moderateScale(16)),
       badgeIconSize: isSmallPhone ? moderateScale(16) : (isTablet ? moderateScale(22) : moderateScale(20)),
       badgeTextSize: isSmallPhone ? moderateScale(14) : (isTablet ? moderateScale(20) : moderateScale(18)),
       favoriteButtonSize: isSmallPhone ? moderateScale(20) : (isTablet ? moderateScale(28) : moderateScale(26)),
       favoriteButtonPadding: isSmallPhone ? moderateScale(6) : moderateScale(8),
-      categoryIconSize: isSmallPhone ? moderateScale(120, 0.3) : (isTablet ? moderateScale(180, 0.3) : moderateScale(170, 0.3)),
-      categoryIconLeft: isTablet ? moderateScale(-90, 0.3) : moderateScale(-75, 0.3), // Tablet için: iconun yarısının gözükmesi için, diğerleri: eski değer
+      categoryIconSize: isSmallPhone ? moderateScale(105, 0.3) : (isTablet ? moderateScale(160, 0.3) : moderateScale(150, 0.3)), // İkon küçültüldü
+      categoryIconLeft: isSmallPhone ? moderateScale(-50, 0.3) : (isTablet ? moderateScale(-75, 0.3) : moderateScale(-70, 0.3)), // İkonun yarısı gözükecek şekilde sola yapışık
     };
   }, [width, height, isTablet]);
 
@@ -716,7 +728,7 @@ export default function LibraryScreen() {
       {/* Header + Pill Tabs - Tek birleşik BlurView */}
       <View style={[styles.segmentedControlContainer, { top: 0 }]} pointerEvents="box-none">
         <BlurView
-          intensity={20}
+          intensity={8}
           tint={'systemMaterialDark'}
           experimentalBlurMethod="dimezisBlurView"
           style={[styles.segmentedControlInner, { paddingTop: insets.top }]}
@@ -888,7 +900,7 @@ export default function LibraryScreen() {
                                   />
                                 </View>
                                 {/* Profile Section */}
-                                <View style={[styles.deckProfileRow, { position: 'absolute', top: 'auto', bottom: favoriteSliderDimensions.padding, left: favoriteSliderDimensions.padding, zIndex: 10 }]}>
+                                <View style={[styles.deckProfileRow, { position: 'absolute', top: 'auto', bottom: favoriteSliderDimensions.profileBottomPadding, left: favoriteSliderDimensions.profileLeftPadding, zIndex: 10 }]}>
                                   <Image
                                     source={
                                       deck.is_admin_created 
@@ -906,7 +918,7 @@ export default function LibraryScreen() {
                                   />
                                 </View>
                                 <TouchableOpacity
-                                  style={{ position: 'absolute', top: favoriteSliderDimensions.padding, right: favoriteSliderDimensions.padding, zIndex: 10, backgroundColor: colors.iconBackground, padding: favoriteSliderDimensions.favoriteButtonPadding, borderRadius: moderateScale(999) }}
+                                  style={{ position: 'absolute', top: favoriteSliderDimensions.favoriteButtonTopPadding, right: favoriteSliderDimensions.favoriteButtonRightPadding, zIndex: 10, backgroundColor: colors.iconBackground, padding: favoriteSliderDimensions.favoriteButtonPadding, borderRadius: moderateScale(999) }}
                                   onPress={async () => {
                                     if (favoriteDecks.some(d => d.id === deck.id)) {
                                       await handleRemoveFavoriteDeck(deck.id);
@@ -947,7 +959,7 @@ export default function LibraryScreen() {
                                     )}
                                   </View>
                                 </View>
-                                <View style={{ position: 'absolute', bottom: favoriteSliderDimensions.padding, right: favoriteSliderDimensions.padding }}>
+                                <View style={{ position: 'absolute', bottom: favoriteSliderDimensions.badgeBottomPadding, right: favoriteSliderDimensions.badgeRightPadding }}>
                                   <View style={styles.deckCountBadge}>
                                     <Iconify icon="ri:stack-fill" size={favoriteSliderDimensions.badgeIconSize} color="#fff" style={{ marginRight: scale(4) }} />
                                     <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: favoriteSliderDimensions.badgeTextSize }]}>{deck.card_count || 0}</Text>
@@ -1247,6 +1259,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(18),
     // padding dinamik olarak uygulanacak
     justifyContent: 'center',
+    overflow: 'hidden', // İkonun taşan kısmını gizlemek için
   },
   favoriteSliderDots: {
     flexDirection: 'row',
