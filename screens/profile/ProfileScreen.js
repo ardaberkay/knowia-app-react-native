@@ -253,9 +253,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleDeleteAccount = () => {
-    showSuccess(t('profile.accountDeleted', 'Hesap silindi!'));
-  };
 
   // Kategori render fonksiyonu
   const renderMenuSection = (title, items) => (
@@ -302,11 +299,8 @@ export default function ProfileScreen() {
           {renderMenuSection(t('profile.settings'), appSettingsItems)}
           {renderMenuSection(t('profile.info'), infoItems)}
         </View>
-        {/* Alt butonlar yan yana */}
+        {/* Alt butonlar */}
         <View style={styles.bottomButtonsRow}>
-          <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount}>
-            <Text style={[typography.styles.button, { color: colors.error }, styles.deleteText]}>{t('profile.delete')}</Text>
-          </TouchableOpacity>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Text style={[typography.styles.button, { color: colors.buttonText }, styles.logoutText]}>{t('profile.logout')}</Text>
           </TouchableOpacity>
@@ -370,28 +364,13 @@ const styles = StyleSheet.create({
   },
   menuText: {},
   bottomButtonsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     marginTop: verticalScale(16),
     marginBottom: verticalScale(32),
-    gap: scale(12),
-  },
-  deleteButton: {
-    paddingVertical: verticalScale(12),
-    borderRadius: moderateScale(999),
-    borderWidth: moderateScale(1),
-    borderColor: '#ff5252',
-    flex: 1,
-  },
-  deleteText: {
-    textAlign: 'center',
   },
   logoutButton: {
     backgroundColor: '#ff5252',
     paddingVertical: verticalScale(12),
     borderRadius: moderateScale(999),
-    flex: 1,
-    marginLeft: scale(12),
   },
   logoutText: {
     textAlign: 'center',

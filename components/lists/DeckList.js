@@ -127,7 +127,8 @@ export default function DeckList({
     
     // Horizontal row için: icon boyutu ve left değeri
     const horizontalIconSize = isTablet ? scale(180) : scale(140);
-    const horizontalIconLeft = isTablet ? -horizontalIconSize / 2 : -175;
+    // Tekli yatay kartlarda iconun yarısı görünecek şekilde sola sabitle
+    const horizontalIconLeft = -horizontalIconSize / 2;
     
     return {
       verticalIconSize,
@@ -352,7 +353,7 @@ export default function DeckList({
           style={styles.deckGradient}
         >
           {/* Background Category Icon */}
-          <View style={[styles.backgroundCategoryIcon, { left: categoryIconDimensions.horizontalIconLeft, top: 1 }]}>
+          <View style={[styles.backgroundCategoryIcon, { left: categoryIconDimensions.horizontalIconLeft, top: verticalScale(1) }]}>
             <Iconify
               icon={row.item.categoryIcon}
               size={categoryIconDimensions.horizontalIconSize}

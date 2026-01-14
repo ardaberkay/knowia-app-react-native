@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, SafeAreaView, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, SafeAreaView, StatusBar, Alert } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { getCurrentUserProfile } from '../../services/ProfileService';
@@ -27,13 +27,21 @@ export default function EditProfileScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [initialState, setInitialState] = useState({});
   const [imageChanged, setImageChanged] = useState(false);
   const [imageFilePath, setImageFilePath] = useState(null); // storage path
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const { t } = useTranslation();
   const { showSuccess, showError } = useSnackbarHelpers();
+
+  // Email validasyonu için regex
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   useEffect(() => {
     (async () => {
@@ -116,15 +124,56 @@ export default function EditProfileScreen({ navigation }) {
   const handleSave = async () => {
     setSaving(true);
     setError(null);
+    
+    // Username validasyonu
     if (username.length < 3 || username.length > 16) {
-        setError(t('common.usernameLengthError'));
+      setError(t('common.usernameLengthError'));
       setSaving(false);
       return;
     }
+    
+    // Email validasyonu
+    if (email && !isValidEmail(email)) {
+      setError(t('editProfile.invalidEmail'));
+      setSaving(false);
+      return;
+    }
+    
+    // Email veya şifre değişikliği varsa mevcut şifre kontrolü
+    const emailChanged = email !== initialState.email && email !== '';
+    const passwordChanged = password !== '';
+    
+    if ((emailChanged || passwordChanged) && !currentPassword) {
+      setError(t('editProfile.currentPasswordRequired'));
+      setSaving(false);
+      return;
+    }
+    
+    // Şifre eşleşme kontrolü
     if (password && password !== passwordConfirm) {
       setError(t('common.passwordMatchError'));
       setSaving(false);
       return;
+    }
+    
+    // Email veya şifre değişikliği varsa mevcut şifreyi doğrula
+    if ((emailChanged || passwordChanged) && currentPassword) {
+      try {
+        const { error: verifyError } = await supabase.auth.signInWithPassword({
+          email: initialState.email, // eski email
+          password: currentPassword // kullanıcının girdiği mevcut şifre
+        });
+        
+        if (verifyError) {
+          setError(t('editProfile.invalidCurrentPassword'));
+          setSaving(false);
+          return;
+        }
+      } catch (err) {
+        setError(t('editProfile.invalidCurrentPassword'));
+        setSaving(false);
+        return;
+      }
     }
     let newImageUrl = imageUrl;
     let newImageFilePath = imageFilePath;
@@ -177,16 +226,45 @@ export default function EditProfileScreen({ navigation }) {
       }
       
       // 5. E-posta değiştiyse güncelle
-      if (email !== initialState.email && email) {
+      if (emailChanged) {
         const { error: emailError } = await supabase.auth.updateUser({ email });
-        if (emailError) throw emailError;
+        if (emailError) {
+          // Email zaten kullanılıyor mu kontrol et
+          if (emailError.message.includes('already registered') || 
+              emailError.message.includes('already exists') ||
+              emailError.message.includes('User already registered')) {
+            setError(t('editProfile.emailAlreadyExists'));
+          } else {
+            setError(emailError.message);
+          }
+          setSaving(false);
+          return;
+        }
+        
+        // Email değişikliği başarılı - Alert göster
+        Alert.alert(
+          t('editProfile.emailChangeTitle'),
+          t('editProfile.emailChangeMessage'),
+          [{ text: t('common.ok') }]
+        );
       }
+      
       // 6. Şifre değiştiyse güncelle
-      if (password) {
+      if (passwordChanged) {
         const { error: passError } = await supabase.auth.updateUser({ password });
-        if (passError) throw passError;
+        if (passError) {
+          setError(passError.message);
+          setSaving(false);
+          return;
+        }
+        // Şifre değişikliği başarılı - Snackbar zaten var
       }
-      showSuccess(t('common.profileUpdated'));
+      
+      // Email değişikliği yoksa normal başarı mesajı göster
+      if (!emailChanged) {
+        showSuccess(t('common.profileUpdated'));
+      }
+      
       setTimeout(() => {
         navigation.goBack();
       }, 500);
@@ -206,6 +284,7 @@ export default function EditProfileScreen({ navigation }) {
     setEmail(initialState.email);
     setPassword('');
     setPasswordConfirm('');
+    setCurrentPassword('');
     setImageChanged(false);
   };
 
@@ -356,6 +435,67 @@ export default function EditProfileScreen({ navigation }) {
               keyboardType="email-address"
               autoComplete="email"
             />
+          </View>
+
+          {/* Current Password Card */}
+          <View style={[styles.inputCard, {
+            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+            shadowColor: colors.shadowColor,
+            shadowOffset: colors.shadowOffset,
+            shadowOpacity: colors.shadowOpacity,
+            shadowRadius: colors.shadowRadius,
+            elevation: colors.elevation,
+          }]}>
+            <View style={styles.labelRow}>
+              <Iconify icon="carbon:password" size={moderateScale(20)} color={colors.buttonColor} style={styles.labelIcon} />
+              <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
+                {t('editProfile.currentPassword')}
+              </Text>
+            </View>
+            <View style={styles.passwordInputContainer}>
+              <TextInput
+                style={[styles.input, styles.passwordInput, typography.styles.body, { 
+                  color: colors.text, 
+                  borderColor: colors.border, 
+                  backgroundColor: colors.blurView || colors.cardButtonBackground,
+                }]}
+                placeholder={t('editProfile.currentPasswordPlaceholder')}
+                placeholderTextColor={colors.muted}
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+                autoCapitalize="none"
+                secureTextEntry={!showCurrentPassword}
+                autoComplete="password"
+              />
+              <TouchableOpacity
+                style={styles.eyeButton}
+                onPress={() => setShowCurrentPassword(!showCurrentPassword)}
+                hitSlop={{ top: scale(10), bottom: scale(10), left: scale(10), right: scale(10) }}
+              >
+                <Iconify 
+                  icon={showCurrentPassword ? "oi:eye" : "system-uicons:eye-no"} 
+                  size={moderateScale(20)} 
+                  color={colors.muted} 
+                />
+              </TouchableOpacity>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: verticalScale(4) }}>
+              <View style={{
+                width: moderateScale(20),
+                height: moderateScale(20),
+                borderRadius: 99,
+                borderWidth: 1,
+                borderColor: colors.muted,
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginRight: scale(6),
+              }}>
+                <Iconify icon="mdi:information-variant" size={moderateScale(14)} color={colors.muted} />
+              </View>
+              <Text style={[typography.styles.caption, { color: colors.muted, flex: 1 }]}>
+                {t('editProfile.currentPasswordNote')}
+              </Text>
+            </View>
           </View>
 
           {/* Password Card */}

@@ -300,7 +300,16 @@
     "undo": "İptal Et",
     "removePhoto": "Kaldır",
     "changePhoto": "Değiştir",
-    "profilePhoto": "Profil Fotoğrafı"
+    "profilePhoto": "Profil Fotoğrafı",
+    "currentPassword": "Mevcut Şifre",
+    "currentPasswordPlaceholder": "Mevcut şifrenizi girin",
+    "currentPasswordNote": "Email/şifre değişikliği için gerekli",
+    "currentPasswordRequired": "Email veya şifre değişikliği için mevcut şifre gereklidir.",
+    "invalidCurrentPassword": "Mevcut şifre yanlış.",
+    "emailChangeVerificationSent": "Yeni e-posta adresinize bir doğrulama linki gönderildi. Lütfen e-postanızı kontrol edin ve değişikliği tamamlamak için linke tıklayın.",
+    "emailAlreadyExists": "Bu e-posta adresi zaten kayıtlı.",
+    "emailChangeTitle": "E-posta Değişikliği Doğrulaması",
+    "emailChangeMessage": "Yeni e-posta adresinize bir doğrulama linki gönderildi. Mevcut e-posta adresiniz, doğrulama linkine tıklayana kadar aktif kalacaktır."
   },
   "swipeDeck": {
     "minutes": "15 dk",

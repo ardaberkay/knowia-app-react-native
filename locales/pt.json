@@ -288,7 +288,16 @@
       "undo": "Cancelar",
       "removePhoto": "Remover",
       "changePhoto": "Alterar",
-      "profilePhoto": "Foto do Perfil"
+      "profilePhoto": "Foto do Perfil",
+      "currentPassword": "Senha Atual",
+      "currentPasswordPlaceholder": "Digite sua senha atual",
+      "currentPasswordNote": "Necessário para alterações de email/senha",
+      "currentPasswordRequired": "A senha atual é necessária para alterações de email ou senha.",
+      "invalidCurrentPassword": "A senha atual está incorreta.",
+      "emailChangeVerificationSent": "Um link de verificação foi enviado para seu novo endereço de email. Por favor, verifique seu email e clique no link para completar a alteração.",
+      "emailAlreadyExists": "Este endereço de email já está registrado.",
+      "emailChangeTitle": "Verificação de Alteração de Email",
+      "emailChangeMessage": "Um link de verificação foi enviado para seu novo endereço de email. Seu email atual permanecerá ativo até que você clique no link de verificação."
     },
     "swipeDeck": {
       "minutes": "15 min",

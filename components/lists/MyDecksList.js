@@ -123,7 +123,8 @@ export default function MyDecksList({
     
     // Horizontal row için: icon boyutu ve left değeri
     const horizontalIconSize = isTablet ? scale(180) : scale(140);
-    const horizontalIconLeft = isTablet ? -horizontalIconSize / 2 : scale(-175);
+    // Tekli yatay kartlarda iconun yarısı görünecek şekilde sola sabitle
+    const horizontalIconLeft = -horizontalIconSize / 2;
     
     return {
       verticalIconSize,

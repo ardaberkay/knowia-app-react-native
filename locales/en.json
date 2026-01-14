@@ -295,7 +295,16 @@
     "undo": "Cancel",
     "removePhoto": "Remove",
     "changePhoto": "Change",
-    "profilePhoto": "Profile Photo"
+    "profilePhoto": "Profile Photo",
+    "currentPassword": "Current Password",
+    "currentPasswordPlaceholder": "Enter your current password",
+    "currentPasswordNote": "Required for email/password changes",
+    "currentPasswordRequired": "Current password is required for email or password changes.",
+    "invalidCurrentPassword": "Current password is incorrect.",
+    "emailChangeVerificationSent": "A verification link has been sent to your new email address. Please check your email and click the link to complete the change.",
+    "emailAlreadyExists": "This email address is already registered.",
+    "emailChangeTitle": "Email Change Verification",
+    "emailChangeMessage": "A verification link has been sent to your new email address. Your current email will remain active until you click the verification link."
   },
   "swipeDeck": {
     "minutes": "15 min",

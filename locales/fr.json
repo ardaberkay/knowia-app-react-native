@@ -288,7 +288,16 @@
       "undo": "Annuler",
       "removePhoto": "Supprimer",
       "changePhoto": "Changer",
-      "profilePhoto": "Photo de Profil"
+      "profilePhoto": "Photo de Profil",
+      "currentPassword": "Mot de Passe Actuel",
+      "currentPasswordPlaceholder": "Entrez votre mot de passe actuel",
+      "currentPasswordNote": "Requis pour changements email/mot de passe",
+      "currentPasswordRequired": "Le mot de passe actuel est requis pour les changements d'email ou de mot de passe.",
+      "invalidCurrentPassword": "Le mot de passe actuel est incorrect.",
+      "emailChangeVerificationSent": "Un lien de vérification a été envoyé à votre nouvelle adresse email. Veuillez vérifier votre email et cliquer sur le lien pour compléter le changement.",
+      "emailAlreadyExists": "Cette adresse email est déjà enregistrée.",
+      "emailChangeTitle": "Vérification du Changement d'Email",
+      "emailChangeMessage": "Un lien de vérification a été envoyé à votre nouvelle adresse email. Votre email actuel restera actif jusqu'à ce que vous cliquiez sur le lien de vérification."
     },
     "swipeDeck": {
       "minutes": "15 min",
