@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, Modal, Image, ScrollView } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Platform, Modal, Image } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { supabase } from '../../lib/supabase';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { typography } from '../../theme/typography';
@@ -400,11 +401,14 @@ export default function AddCardScreen() {
           )}
         </View>
       </Modal>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView 
-          contentContainerStyle={[styles.formContainer, { backgroundColor: colors.background }]}
-          style={{ flex: 1 }}
-        >
+      <KeyboardAwareScrollView
+        contentContainerStyle={[styles.formContainer, { backgroundColor: colors.background }]}
+        style={{ flex: 1 }}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        enableAutomaticScroll={true}
+        extraScrollHeight={verticalScale(120)}
+      >
           {/* Header Card */}
           <View style={[styles.headerCard, styles.headerCardContainer, { borderRadius: moderateScale(28), backgroundColor: colors.cardBackground || colors.cardBackgroundTransparent || (isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)') }]}>
             <View style={[styles.headerCardContent, styles.headerContent]}>
@@ -631,8 +635,7 @@ export default function AddCardScreen() {
               text={t("addCard.createCard", "Kartı Oluştur")}
             />
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAwareScrollView>
 
       <HowToCreateCardModal
         isVisible={isHowToCreateCardModalVisible}

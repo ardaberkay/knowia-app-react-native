@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Image, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { supabase } from '../../lib/supabase';
 import { typography } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
@@ -99,9 +100,13 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
   };
 
   return (
-    <ScrollView 
+    <KeyboardAwareScrollView
       contentContainerStyle={[styles.formContainer, { backgroundColor: colors.background }]}
       style={{ flex: 1 }}
+      keyboardShouldPersistTaps="handled"
+      enableOnAndroid={true}
+      enableAutomaticScroll={true}
+      extraScrollHeight={verticalScale(120)}
     >
           <View style={[styles.inputCard, { 
             backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
@@ -294,7 +299,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               text={t("cardDetail.save", "Kaydet")}
             />
           </View>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 
