@@ -247,7 +247,7 @@
       "answerTooLong": "لا يمكن أن تتجاوز الإجابة 500 حرف",
       "errorUpload": "المشاركة غير مدعومة",
       "fileUri": "مسار الملف: ",
-      "csvUpload": "تحميل البطاقات بالجملة باستخدام CSV",
+      "csvUpload": "تحميل مع CSV",
       "csvUploadDescriptionFirst": "قم بإعداد بطاقاتك في Excel أو Google Sheets كما هو موضح أدناه واحفظها كملف CSV. الأعمدة الأولى فقط مطلوبة:",
       "csvUploadDescriptionSecond": "السؤال، الإجابة، المثال (اختياري)، الملاحظة (اختياري)",
       "csvUploadDescriptionThird": "كل صف يمثل بطاقة. يتم تخطي الصفوف الفارغة أو الحقول المطلوبة المفقودة.",

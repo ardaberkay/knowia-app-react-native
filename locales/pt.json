@@ -247,7 +247,7 @@
       "answerTooLong": "A resposta não pode ter mais de 500 caracteres",
       "errorUpload": "Compartilhamento não suportado",
       "fileUri": "Caminho do arquivo: ",
-      "csvUpload": "Carregamento em Massa de Cartões com CSV",
+      "csvUpload": "Carregar com CSV",
       "csvUploadDescriptionFirst": "Prepare seus cartões no Excel ou Google Sheets como mostrado abaixo e salve-os como CSV. Apenas as duas primeiras colunas são obrigatórias:",
       "csvUploadDescriptionSecond": "Pergunta, Resposta, Exemplo (opcional), Nota (opcional)",
       "csvUploadDescriptionThird": "Cada linha representa um cartão. Linhas vazias ou campos obrigatórios ausentes são ignorados.",

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ImageBackground } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -72,7 +73,15 @@ export default function RegisterScreen({ navigation }) {
       style={styles.backgroundImage}
       resizeMode="cover"
     >
-      <View style={[styles.container, { paddingTop: containerPaddingTop }]}>
+      <KeyboardAwareScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.container, { paddingTop: containerPaddingTop }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid={true}
+        enableAutomaticScroll={true}
+        extraScrollHeight={verticalScale(50)}
+      >
         <View style={styles.form}>
           <View style={styles.inputContainer}>
             <View style={{justifyContent: 'center', alignItems: 'center', width: scale(25), height: verticalScale(22)}}>
@@ -147,14 +156,17 @@ export default function RegisterScreen({ navigation }) {
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </KeyboardAwareScrollView>
     </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
+  },
+  container: {
+    flexGrow: 1,
     padding: scale(20),
     justifyContent: 'center',
     // paddingTop dinamik olarak uygulanacak

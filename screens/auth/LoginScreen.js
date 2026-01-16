@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ImageBackground, Platform } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -110,7 +111,15 @@ export default function LoginScreen({ navigation }) {
       style={styles.backgroundImage}
       resizeMode="cover"
     >
-      <View style={[styles.container, { paddingTop: containerPaddingTop }]}>
+      <KeyboardAwareScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.container, { paddingTop: containerPaddingTop }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid={true}
+        enableAutomaticScroll={true}
+        extraScrollHeight={verticalScale(50)}
+      >
         <View style={styles.form}>
           {/* Dil seçimi butonu */}
           <TouchableOpacity
@@ -243,7 +252,7 @@ export default function LoginScreen({ navigation }) {
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </KeyboardAwareScrollView>
 
       {/* Dil seçici component */}
       <LanguageSelector
@@ -260,8 +269,11 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
   },
-  container: {
+  scrollView: {
     flex: 1,
+  },
+  container: {
+    flexGrow: 1,
     padding: scale(20),
     // paddingTop dinamik olarak uygulanacak
     justifyContent: 'center',

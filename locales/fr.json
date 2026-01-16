@@ -247,7 +247,7 @@
       "answerTooLong": "La réponse ne peut pas dépasser 500 caractères",
       "errorUpload": "Le partage n'est pas pris en charge",
       "fileUri": "Chemin du fichier : ",
-      "csvUpload": "Téléchargement en Masse de Cartes avec CSV",
+      "csvUpload": "Charger avec CSV",
       "csvUploadDescriptionFirst": "Préparez vos cartes dans Excel ou Google Sheets comme indiqué ci-dessous et enregistrez-les en tant que CSV. Seules les deux premières colonnes sont requises :",
       "csvUploadDescriptionSecond": "Question, Réponse, Exemple (optionnel), Note (optionnel)",
       "csvUploadDescriptionThird": "Chaque ligne représente une carte. Les lignes vides ou les champs obligatoires manquants sont ignorés.",

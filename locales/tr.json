@@ -259,7 +259,7 @@
     "answerTooLong": "Cevap 500 karakterden uzun olamaz",
     "errorUpload": "Paylaşım desteklenmiyor",
     "fileUri": "Dosya yolu: ",
-    "csvUpload": "CSV ile Toplu Kart Yükleme",
+    "csvUpload": "CSV ile yükle",
     "csvUploadDescriptionFirst": "Kartlarınızı Excel veya Google Sheets'te aşağıdaki gibi hazırlayın ve CSV olarak kaydedin. Sadece ilk iki sütun zorunludur:",
     "csvUploadDescriptionSecond": "Soru, Cevap, Örnek (opsiyonel), Not (opsiyonel)",
     "csvUploadDescriptionThird": "Her satır bir kartı temsil eder. Boş satırlar veya eksik zorunlu alanlar atlanır.",

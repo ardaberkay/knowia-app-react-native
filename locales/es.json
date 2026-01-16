@@ -247,7 +247,7 @@
       "answerTooLong": "La respuesta no puede tener más de 500 caracteres",
       "errorUpload": "No se admite compartir",
       "fileUri": "Ruta del archivo: ",
-      "csvUpload": "Carga Masiva de Tarjetas con CSV",
+      "csvUpload": "Cargar con CSV",
       "csvUploadDescriptionFirst": "Prepara tus tarjetas en Excel o Google Sheets como se muestra a continuación y guárdalas como CSV. Solo se requieren las dos primeras columnas:",
       "csvUploadDescriptionSecond": "Pregunta, Respuesta, Ejemplo (opcional), Nota (opcional)",
       "csvUploadDescriptionThird": "Cada fila representa una tarjeta. Las filas vacías o los campos obligatorios faltantes se omiten.",

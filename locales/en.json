@@ -254,7 +254,7 @@
     "answerTooLong": "Answer cannot be longer than 500 characters",
     "errorUpload": "Sharing is not supported",
     "fileUri": "File path: ",
-    "csvUpload": "Bulk Card Upload with CSV",
+    "csvUpload": "Upload with CSV",
     "csvUploadDescriptionFirst": "Prepare your cards in Excel or Google Sheets as shown below and save them as CSV. Only the first two columns are required:",
     "csvUploadDescriptionSecond": "Question, Answer, Example (optional), Note (optional)",
     "csvUploadDescriptionThird": "Each row represents a card. Empty rows or missing required fields are skipped.",
