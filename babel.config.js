@@ -111,7 +111,9 @@ module.exports = function (api) {
             'si:filter-list-alt-fill',
             'mdi:garbage-can-empty',
             'mdi:arrow-back',
-            'grommet-icons:apple'
+            'grommet-icons:apple',
+            'hugeicons:document-validation',
+            'icon-park-outline:invalid-files',
           ],
         },
       ],

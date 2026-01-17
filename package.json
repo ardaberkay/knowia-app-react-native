@@ -43,7 +43,6 @@
     "react-native": "0.73.6",
     "react-native-custom-segmented-control": "^3.1.0",
     "react-native-deck-swiper": "^2.0.17",
-    "react-native-dropdown-picker": "^5.4.6",
     "react-native-gesture-handler": "~2.14.0",
     "react-native-iconify": "^2.0.3",
     "react-native-keyboard-aware-scroll-view": "^0.9.5",

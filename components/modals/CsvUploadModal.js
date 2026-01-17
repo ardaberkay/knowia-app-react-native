@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, Platform, Modal as RNModal, TouchableWithoutFeedback } from 'react-native';
 import Modal from 'react-native-modal';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -11,15 +11,14 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import DropDownPicker from 'react-native-dropdown-picker';
 import { Buffer } from 'buffer';
 import { supabase } from '../../lib/supabase';
 import { useSnackbarHelpers } from '../ui/Snackbar';
 
-export default function CsvUploadModal({ 
-  isVisible, 
-  onClose, 
-  deck 
+export default function CsvUploadModal({
+  isVisible,
+  onClose,
+  deck
 }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -30,6 +29,9 @@ export default function CsvUploadModal({
   const [imageIds, setImageIds] = useState([]); // CSV'deki görsel ID'leri
   const [imageIdMap, setImageIdMap] = useState({}); // Görsel ID -> Seçilen görsel eşleştirmesi
   const [dropdownOpen, setDropdownOpen] = useState({}); // Dropdown açık/kapalı durumları
+  const [dropdownPos, setDropdownPos] = useState({}); // Dropdown pozisyonları (her imageId için)
+  const dropdownRefs = useRef({}); // Dropdown referansları (her imageId için)
+  const [tableGuideExpanded, setTableGuideExpanded] = useState(false); // Tablo rehberi genişletilmiş durumu
 
   // Türkçe karakterleri normalize et (encoding sorunlarını çözmek için)
   const normalizeTurkishChars = (str) => {
@@ -48,11 +50,11 @@ export default function CsvUploadModal({
       .replace(/Ö/g, 'O')
       .replace(/ç/g, 'c')
       .replace(/Ç/g, 'C');
-    
+
     // Bozuk encoding karakterlerini de normalize et (ASCII olmayan karakterler)
     // "görsel" -> "grsel" gibi durumlar için
     normalized = normalized.replace(/[^\x00-\x7F]/g, 'o');
-    
+
     return normalized;
   };
 
@@ -64,7 +66,7 @@ export default function CsvUploadModal({
     'note': ['not', 'note', 'n', 'notlar', 'açıklama', 'aciklama', 'Not', 'N', 'NOT', 'Note'],
     'image': ['görsel', 'gorsel', 'grsel', 'image', 'img', 'resim', 'picture', 'pic', 'Görsel', 'Gorsel', 'G', 'GÖRSEL', 'GORSEL', 'Image']
   };
-
+  const [isImageModalVisible, setImageModalVisible] = useState(false);
   // Header işleme
   const processHeaders = (headers) => {
     const columnMap = {};
@@ -73,31 +75,31 @@ export default function CsvUploadModal({
       const cleanHeader = header.trim().toLowerCase();
       const normalizedHeader = normalizeTurkishChars(cleanHeader);
       let matchedField = null;
-      
+
       Object.keys(VALID_FIELDS).forEach(field => {
         // Hem orijinal hem normalize edilmiş versiyonu kontrol et
         const fieldValues = VALID_FIELDS[field].map(v => v.toLowerCase());
         const normalizedFieldValues = VALID_FIELDS[field].map(v => normalizeTurkishChars(v.toLowerCase()));
-        
+
         // Orijinal header ile orijinal field değerlerini karşılaştır
         if (fieldValues.includes(cleanHeader)) {
           matchedField = field;
           return;
         }
-        
+
         // Normalize edilmiş header ile normalize edilmiş field değerlerini karşılaştır
         if (normalizedFieldValues.includes(normalizedHeader)) {
           matchedField = field;
           return;
         }
-        
+
         // Normalize edilmiş header ile orijinal field değerlerinin normalize edilmiş versiyonlarını karşılaştır
         if (fieldValues.some(v => normalizeTurkishChars(v) === normalizedHeader)) {
           matchedField = field;
           return;
         }
       });
-      
+
       // Eğer hala eşleşme yoksa, özel durumlar için kontrol et
       if (!matchedField) {
         // "grsel" gibi bozuk encoding'leri "gorsel" ile eşleştir
@@ -106,7 +108,7 @@ export default function CsvUploadModal({
           matchedField = 'image';
         }
       }
-      
+
       if (matchedField) {
         columnMap[matchedField] = index;
         console.log(`Header matched: "${header}" -> "${cleanHeader}" (normalized: "${normalizedHeader}") -> field: "${matchedField}"`);
@@ -258,7 +260,7 @@ export default function CsvUploadModal({
         url,
         FileSystem.cacheDirectory + `temp_image_${Date.now()}.tmp`
       );
-      
+
       if (!downloadResult.uri) {
         throw new Error('Görsel indirilemedi');
       }
@@ -283,19 +285,19 @@ export default function CsvUploadModal({
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error('Kullanıcı bulunamadı');
 
-      const base64 = await FileSystem.readAsStringAsync(imageUri, { 
-        encoding: FileSystem.EncodingType.Base64 
+      const base64 = await FileSystem.readAsStringAsync(imageUri, {
+        encoding: FileSystem.EncodingType.Base64
       });
       const filePath = `card_${deck.id}_${user.id}_${Date.now()}.webp`;
       const buffer = Buffer.from(base64, 'base64');
-      
+
       const { error: uploadError } = await supabase
         .storage
         .from('images')
         .upload(filePath, buffer, { contentType: 'image/webp', upsert: true });
-      
+
       if (uploadError) throw uploadError;
-      
+
       const { data: urlData } = supabase.storage.from('images').getPublicUrl(filePath);
       return urlData.publicUrl;
     } catch (error) {
@@ -307,7 +309,7 @@ export default function CsvUploadModal({
   // Görseli işle (yerel dosya, URL, vb.)
   const processImage = async (imageValue, imageIndex = null) => {
     const imageType = getImageType(imageValue);
-    
+
     if (!imageType) return null;
 
     try {
@@ -315,7 +317,7 @@ export default function CsvUploadModal({
         case 'supabase_url':
           // Zaten Supabase'de, direkt kullan
           return imageValue.trim();
-        
+
         case 'external_url':
           // Harici URL'den indir, WebP'ye çevir, Supabase'e yükle
           // SVG dosyaları desteklenmiyor
@@ -323,7 +325,7 @@ export default function CsvUploadModal({
             console.log('SVG dosyası desteklenmiyor, atlanıyor:', imageValue.trim());
             return null; // SVG'ler desteklenmiyor, null döndür (görselsiz eklenecek)
           }
-          
+
           const downloadedUri = await downloadAndConvertImage(imageValue.trim());
           if (!downloadedUri) {
             // İndirme/çevirme başarısız oldu, direkt URL'yi kullan
@@ -331,32 +333,32 @@ export default function CsvUploadModal({
             return imageValue.trim();
           }
           return await uploadImageToSupabase(downloadedUri);
-        
+
         case 'local_file':
         case 'file_name':
           // Yerel dosya veya dosya adı - seçilen görsellerden eşleştir
           const fileName = imageValue.trim();
           const fileNameWithoutExt = getFileNameWithoutExtension(fileName);
-          
+
           let matchedImage = null;
-          
+
           // Önce dosya adına göre eşleştirmeyi dene
           matchedImage = selectedImages.find(img => {
             const imgName = img.name || img.fileName || img.uri?.split('/').pop() || img.uri?.split('\\').pop() || '';
             const selectedName = getFileNameWithoutExtension(imgName);
             return selectedName === fileNameWithoutExt;
           });
-          
+
           // Eğer dosya adına göre eşleşme yoksa, sıralı eşleştirme yap
           if (!matchedImage && imageIndex !== null && imageIndex < selectedImages.length) {
-            console.log('Dosya adı eşleşmedi, sıralı eşleştirme kullanılıyor:', { 
-              imageIndex, 
+            console.log('Dosya adı eşleşmedi, sıralı eşleştirme kullanılıyor:', {
+              imageIndex,
               fileNameWithoutExt,
-              selectedImageFileName: selectedImages[imageIndex]?.fileName 
+              selectedImageFileName: selectedImages[imageIndex]?.fileName
             });
             matchedImage = selectedImages[imageIndex];
           }
-          
+
           console.log('Yerel dosya eşleştirme:', {
             fileName,
             fileNameWithoutExt,
@@ -378,15 +380,15 @@ export default function CsvUploadModal({
             console.log('Görsel yüklendi:', uploadedUrl);
             return uploadedUrl;
           }
-          
-          console.log('Eşleşme bulunamadı:', { 
-            fileNameWithoutExt, 
+
+          console.log('Eşleşme bulunamadı:', {
+            fileNameWithoutExt,
             imageIndex,
-            selectedImagesNames: selectedImages.map(img => getFileNameWithoutExtension(img.name || img.fileName || img.uri?.split('/').pop() || '')) 
+            selectedImagesNames: selectedImages.map(img => getFileNameWithoutExtension(img.name || img.fileName || img.uri?.split('/').pop() || ''))
           });
           // Eşleşme bulunamadı, görmezden gel
           return null;
-        
+
         default:
           return null;
       }
@@ -404,7 +406,7 @@ export default function CsvUploadModal({
         allowsMultipleSelection: true,
         quality: 1,
       });
-      
+
       if (!result.canceled && result.assets && result.assets.length > 0) {
         // Her asset için orijinal dosya adını sakla
         const assetsWithOriginalNames = result.assets.map((img) => {
@@ -416,7 +418,7 @@ export default function CsvUploadModal({
             originalFileName: originalFileName,
           };
         });
-        
+
         console.log('Seçilen görseller:', assetsWithOriginalNames.map(img => ({
           name: img.name,
           fileName: img.fileName,
@@ -424,7 +426,7 @@ export default function CsvUploadModal({
           uri: img.uri?.substring(0, 50),
           type: img.type,
         })));
-        
+
         setSelectedImages(assetsWithOriginalNames);
         showSuccess(`${result.assets.length} ${t('addCard.imagesSelected', 'görsel seçildi')}`);
       }
@@ -452,7 +454,7 @@ export default function CsvUploadModal({
           encoding: FileSystem.EncodingType.UTF8,
         });
         const { validCards, errors, ignoredColumns, totalRows } = parseCSV(csvContent);
-        
+
         // CSV'de görsel sütunu var mı kontrol et
         const hasImageColumn = validCards.some(card => card.image && typeof card.image === 'string' && card.image.trim() !== '');
         const hasLocalImageFiles = hasImageColumn && validCards.some(card => {
@@ -460,7 +462,7 @@ export default function CsvUploadModal({
           const imageType = getImageType(card.image);
           return imageType === 'file_name' || imageType === 'local_file';
         });
-        
+
         // CSV'deki görsel ID'lerini çıkar (benzersiz değerler)
         const uniqueImageIds = Array.from(
           new Set(
@@ -474,7 +476,7 @@ export default function CsvUploadModal({
           const imageType = getImageType(imgId);
           return imageType === 'file_name' || imageType === 'local_file';
         });
-        
+
         // SVG URL'leri olan kartları tespit et
         const cardsWithSvg = validCards.filter(card => {
           if (!card.image || typeof card.image !== 'string') return false;
@@ -503,19 +505,21 @@ export default function CsvUploadModal({
           hasLocalImageFiles: hasLocalImageFiles,
           cardsWithSvg: cardsWithSvg
         });
-        
+
         // Görsel ID'lerini set et
         setImageIds(uniqueImageIds);
         // Eşleştirmeleri sıfırla
         setImageIdMap({});
         // Dropdown durumlarını sıfırla
         setDropdownOpen({});
-        
+        setDropdownPos({});
+        dropdownRefs.current = {};
+
         // SVG URL'leri varsa uyarı göster
         if (cardsWithSvg.length > 0) {
           showError(`${cardsWithSvg.length} ${t('addCard.svgNotSupported', 'kartta SVG görseli bulundu. SVG formatı desteklenmiyor, bu kartlar görselsiz eklenecek.')}`);
         }
-        
+
         // Eğer yerel dosya adları varsa görselleri sıfırla (yeniden seçilmeli)
         if (hasLocalImageFiles) {
           setSelectedImages([]);
@@ -560,7 +564,7 @@ export default function CsvUploadModal({
           if (card.image && card.image.trim() !== '') {
             const imageType = getImageType(card.image);
             const imageId = card.image.trim();
-            
+
             // Yerel dosya adları için imageIdMap'ten eşleştirilmiş görseli al
             if (imageType === 'file_name' || imageType === 'local_file') {
               const matchedImage = imageIdMap[imageId];
@@ -616,12 +620,50 @@ export default function CsvUploadModal({
     }
   };
 
+  // Dropdown açma fonksiyonu (her imageId için)
+  const openImageDropdown = (imageId) => {
+    const ref = dropdownRefs.current[imageId];
+    if (ref && ref.measureInWindow) {
+      ref.measureInWindow((x, y, width, height) => {
+        setDropdownPos(prev => ({
+          ...prev,
+          [imageId]: { x, y, width, height }
+        }));
+        setDropdownOpen(prev => ({ ...prev, [imageId]: true }));
+      });
+    } else {
+      setDropdownOpen(prev => ({ ...prev, [imageId]: true }));
+    }
+  };
+
+  // Dropdown kapatma fonksiyonu
+  const closeImageDropdown = (imageId) => {
+    setDropdownOpen(prev => ({ ...prev, [imageId]: false }));
+  };
+
+  // Görsel seçme fonksiyonu
+  const handleImageSelect = (imageId, img, idx) => {
+    setImageIdMap(prev => ({
+      ...prev,
+      [imageId]: {
+        ...img,
+        selectionIndex: idx + 1,
+      },
+    }));
+
+    closeImageDropdown(imageId);
+  };
+
+
   const handleClose = () => {
     setCsvPreview(null);
     setSelectedImages([]);
     setImageIds([]);
     setImageIdMap({});
     setDropdownOpen({});
+    setDropdownPos({});
+    setTableGuideExpanded(false);
+    dropdownRefs.current = {};
     onClose();
   };
 
@@ -643,47 +685,153 @@ export default function CsvUploadModal({
           <Text style={[typography.styles.h2, { color: colors.text }]}>
             {t('addCard.csvUpload', 'CSV ile yükle')}
           </Text>
-          <TouchableOpacity 
-            onPress={handleClose} 
+          <TouchableOpacity
+            onPress={handleClose}
             hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
           >
             <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
           </TouchableOpacity>
         </View>
 
-        <ScrollView 
+        <ScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={[styles.description, { color: colors.muted }]}>
-            {t('addCard.csvUploadDescriptionFirst', 'Kartlarınızı Excel veya Google Sheets\'te aşağıdaki gibi hazırlayın ve CSV olarak kaydedin. Sadece ilk iki sütun zorunludur:')}
-            {'\n'}
-            <Text style={[styles.descriptionBold, { color: colors.text }]}>
-              {t('addCard.csvUploadDescriptionSecond', 'Soru, Cevap, Örnek (opsiyonel), Not (opsiyonel), Görsel (opsiyonel)')}
-            </Text>
-            {'\n'}
-            {t('addCard.csvUploadDescriptionThird', 'Her satır bir kartı temsil eder. Boş satırlar veya eksik zorunlu alanlar atlanır.')}
-            {'\n'}
-            <Text style={[styles.descriptionBold, { color: colors.text }]}>
-              {t('addCard.csvImageDescription', 'Görsel: Dosya adı (örn: book.jpg), Supabase URL veya harici URL (örn: https://example.com/image.png). SVG formatı desteklenmemektedir.')}
-            </Text>
+          <Text style={[styles.description, { color: colors.text, marginBottom: verticalScale(16) }]}>
+            {t('addCard.csvUploadDescriptionMain', 'Kartlarınızı Excel veya Google Sheets\'te hazırlayın ve CSV olarak kaydedin. CSV dosyanızı yükleyin ve kartlarınız hazır!')}
           </Text>
+
+          {/* Tablo Nasıl Oluşturulur - Expandable */}
+          <View style={[styles.expandableSection, { borderBottomColor: colors.border }]}>
+            <TouchableOpacity
+              onPress={() => setTableGuideExpanded(!tableGuideExpanded)}
+              activeOpacity={0.7}
+              style={styles.expandableHeader}
+            >
+              <Iconify icon="material-symbols:info-outline" size={moderateScale(24)} color={colors.secondary} style={{ marginRight: scale(8) }} />
+              <Text style={[styles.expandableHeaderText, { color: colors.text }]}>
+                {t('addCard.howToCreateTable', 'Tablo Nasıl Oluşturulur?')} {tableGuideExpanded ? t('common.clickToCollapse', 'Tıkla!') : t('common.clickToExpand', 'Tıkla!')}
+              </Text>
+              <Iconify
+                icon="flowbite:caret-down-solid"
+                size={moderateScale(18)}
+                color={colors.text}
+                style={{ transform: [{ rotate: tableGuideExpanded ? '180deg' : '0deg' }] }}
+              />
+            </TouchableOpacity>
+
+            {tableGuideExpanded && (
+              <View style={styles.expandableContent}>
+                {/* BAŞLIK 1 */}
+                <Text style={[styles.headerTitle, { color: colors.text, marginBottom: scale(8) }]}>
+                  {t('addCard.tableStructureTitle', 'CSV Formatı: ')}
+                </Text>
+
+                {/* İÇERİK 1 - \t yerine marginLeft daha güvenlidir */}
+                <Text style={[styles.expandableText, { color: colors.text, marginLeft: scale(16) }]}>
+                  {t('addCard.tableStructure', 'Tablo 2 zorunlu 3 opsiyonel olmak üzere 5 sütundan oluşabilir. Sütunlar:')}
+                </Text>
+
+                {/* SÜTUNLAR KUTUCUĞU */}
+                <View style={[styles.tableColumnsContainer, {
+                  borderColor: colors.border,
+                  borderWidth: moderateScale(1),
+                  borderRadius: moderateScale(10),
+                  padding: scale(8),
+                  marginVertical: scale(10),
+                  alignSelf: 'flex-start' // Kutunun tüm satırı kaplamaması için
+                }]}>
+                  <Text style={[styles.expandableTextBold, { color: colors.text }]}>
+                    {t('addCard.tableColumns', 'soru, cevap, ornek, not, gorsel')}
+                  </Text>
+                </View>
+
+                {/* UYARI METNİ */}
+                <Text style={[styles.expandableText, { color: colors.secondary, marginBottom: scale(16) }]}>
+                  {t('addCard.requiredColumns', 'soru ve cevap sütunları zorunludur! ornek, not, gorsel sütunları isteğe bağlıdır.')}
+                </Text>
+
+                {/* BAŞLIK 2 */}
+                <Text style={[styles.headerTitle, { color: colors.text, marginBottom: scale(8) }]}>
+                  {t('addCard.tableImageInstructionsTitle', 'Görsel Ekleme: ')}
+                </Text>
+
+                {/* İÇERİK 2 */}
+                <Text style={[styles.expandableText, { color: colors.text, marginLeft: scale(16), marginBottom: scale(8) }]}>
+                  {t('addCard.imageInstructions', 'Kartlara görsel eklemek için...')}
+                </Text>
+
+                {/* SVG NOTU */}
+                <Text style={[styles.expandableText, { color: colors.border, fontStyle: 'italic' }]}>
+                  {t('addCard.svgNote', 'Not: SVG formatı desteklenmemektedir.')}
+                </Text>
+
+                {/* KIRMIZI UYARI */}
+                <Text style={[styles.expandableText, { color: '#D32F2F', marginTop: scale(8), marginBottom: scale(16) }]}>
+                  {t('addCard.csvUploadDescriptionThird', 'Her satır bir kartı temsil eder. Boş satırlar veya eksik zorunlu alanlar atlanır.')}
+                </Text>
+
+                {/* TIKLANABİLİR ÖRNEK TABLO GÖRSELİ */}
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => { setImageModalVisible(true) }}
+                >
+                  <Image
+                    source={require('../../assets/examtable.png')}
+                    style={[styles.exampleTableImage, {
+                      width: '100%',
+                      height: undefined,
+                      aspectRatio: 3.5 // Yatay uzun görseller için (Genişlik / Yükseklik)
+                    }]}
+                    resizeMode="contain"
+                  />
+                </TouchableOpacity>
+              </View>
+            )}
+            <Modal visible={isImageModalVisible} transparent={true}>
+              <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', height: '100%' }}>
+                <TouchableOpacity
+                  style={{ position: 'absolute', top: 50, right: 20, zIndex: 1 }}
+                  onPress={() => setImageModalVisible(false)} // Kapat butonu
+                >
+                  <Iconify icon="mingcute:close-fill" size={24} color="white" />
+                </TouchableOpacity>
+
+                <Image
+                  source={require('../../assets/examtable.png')}
+                  style={{ width: '100%', height: '50%' }}
+                  resizeMode="contain"
+                />
+              </View>
+            </Modal>
+          </View>
 
           {csvPreview ? (
             <View style={styles.previewContainer}>
-              <Text style={[styles.previewTitle, { color: colors.text }]}>
-                {t('addCard.file', 'Dosya: ')} {csvPreview.fileName}
-              </Text>
-              <Text style={[styles.previewText, { color: colors.text }]}>
-                {t('addCard.totalRows', 'Toplam satır: ')} {csvPreview.totalRows}
-              </Text>
-              <Text style={[styles.previewText, { color: colors.text }]}>
-                {t('addCard.validCards', 'Geçerli kart: ')} {csvPreview.allValidCards.length}
-              </Text>
-              <Text style={[styles.previewText, { color: colors.text, marginBottom: verticalScale(6) }]}>
-                {t('addCard.invalidCards', 'Geçersiz kart: ')} {csvPreview.allErrors.length}
-              </Text>
-              
+              <View style={styles.previewHeader}>
+                <Iconify icon="tabler:file-description-filled" size={moderateScale(20)} color="#FFF3CD" style={{ marginRight: scale(8) }} />
+                <Text style={[styles.previewTitle, { color: colors.text }]}>
+                  {t('addCard.file', 'Dosya: ')} {csvPreview.fileName}
+                </Text></View>
+              <View style={styles.previewHeader}>
+                <Iconify icon="mdi:cards" size={moderateScale(20)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
+                <Text style={[styles.previewText, { color: colors.text }]}>
+                  {t('addCard.totalRows', 'Toplam satır: ')} {csvPreview.totalRows}
+                </Text></View>
+              <View style={styles.previewHeader}>
+                <Iconify icon="hugeicons:document-validation" size={moderateScale(20)} color="#27AE60" style={{ marginRight: scale(8) }} />
+                <Text style={[styles.previewText, { color: colors.text }]}>
+                  {t('addCard.validCards', 'Geçerli kart: ')} {csvPreview.allValidCards.length}
+                </Text>
+              </View>
+              <View style={styles.previewHeader}>
+                <Iconify icon="icon-park-outline:invalid-files" size={moderateScale(20)} color="#D32F2F" style={{ marginRight: scale(8) }} />
+                <Text style={[styles.previewText, { color: colors.text, marginBottom: verticalScale(6) }]}>
+                  {t('addCard.invalidCards', 'Geçersiz kart: ')} {csvPreview.allErrors.length}
+                </Text>
+              </View>
+
+
               {csvPreview.cardsWithSvg && csvPreview.cardsWithSvg.length > 0 && (
                 <View style={[styles.warningContainer, { backgroundColor: '#FFF3CD', borderColor: '#FFC107' }]}>
                   <Iconify icon="mdi:information-variant" size={moderateScale(20)} color="#856404" style={{ marginRight: scale(8) }} />
@@ -697,7 +845,7 @@ export default function CsvUploadModal({
                   </View>
                 </View>
               )}
-              
+
               {csvPreview.errors.length > 0 && (
                 <View style={styles.errorsContainer}>
                   <Text style={[styles.errorsTitle, { color: '#D32F2F' }]}>
@@ -717,18 +865,18 @@ export default function CsvUploadModal({
                     {t('addCard.selectImages', 'Görselleri Seç')}
                   </Text>
                   <Text style={[styles.imagesDescription, { color: colors.muted }]}>
-                    {t('addCard.selectImagesDescription', 'CSV\'de belirtilen görselleri seçin. Dosya adları eşleştirilecektir.')}
+                    {t('addCard.selectImagesDescription', 'CSV\'de belirttiğiniz görsel isimleri ile seçtiğiniz görselleri eşleştirebilirsiniz.')}
                   </Text>
                   <Text style={[styles.imagesCount, { color: colors.text }]}>
-                    {selectedImages.length > 0 
+                    {selectedImages.length > 0
                       ? `${selectedImages.length} ${t('addCard.imagesSelected', 'görsel seçildi')}`
                       : t('addCard.noImagesSelected', 'Henüz görsel seçilmedi')}
                   </Text>
                   <TouchableOpacity
                     onPress={handlePickImages}
-                    style={[styles.selectImagesButton, { 
-                      backgroundColor: colors.blurView, 
-                      borderColor: colors.border 
+                    style={[styles.selectImagesButton, {
+                      backgroundColor: colors.blurView,
+                      borderColor: colors.border
                     }]}
                     disabled={csvLoading}
                   >
@@ -744,23 +892,12 @@ export default function CsvUploadModal({
                       <Text style={[styles.imageMappingTitle, { color: colors.text }]}>
                         {t('addCard.mapImages', 'Görselleri Eşleştir')}
                       </Text>
-                      {console.log('Dropdown Render Debug:', { imageIdsCount: imageIds.length, selectedImagesCount: selectedImages.length, imageIds, selectedImages: selectedImages.map(img => ({ uri: img.uri?.substring(0, 30), originalFileName: img.originalFileName })) })}
                       {imageIds.map((imageId, index) => {
-                        const items = selectedImages.map((img, idx) => {
-                          const displayName = img.originalFileName || img.name || img.fileName || img.uri.split('/').pop() || `Görsel ${idx + 1}`;
-                          const fileNameWithoutExt = getFileNameWithoutExtension(displayName);
-                          return {
-                            label: fileNameWithoutExt || `Görsel ${idx + 1}`,
-                            value: img.uri,
-                            icon: () => (
-                              <Image 
-                                source={{ uri: img.uri }} 
-                                style={styles.dropdownImageThumbnail}
-                                resizeMode="cover"
-                              />
-                            ),
-                          };
-                        });
+                        const selectedImg = imageIdMap[imageId];
+                        const displayName = selectedImg
+                          ? (selectedImg.originalFileName || selectedImg.name || selectedImg.fileName || selectedImg.uri.split('/').pop() || '')
+                          : '';
+                        const fileNameWithoutExt = getFileNameWithoutExtension(displayName);
 
                         return (
                           <View
@@ -768,75 +905,120 @@ export default function CsvUploadModal({
                             style={[styles.dropdownContainer, { zIndex: imageIds.length - index }]}
                           >
                             <Text style={[styles.imageIdLabel, { color: colors.text }]}>
-                              {imageId}
+                              {index + 1}. {t('addCard.imageId', 'Görsel ID: ')} {imageId}
                             </Text>
-                            <DropDownPicker
-                              open={dropdownOpen[imageId] || false}
-                              setOpen={(open) =>
-                                setDropdownOpen(prev => ({ ...prev, [imageId]: open }))
-                              }
-                              value={imageIdMap[imageId]?.uri || null}
-                              items={items}
-                              setValue={(callback) => {
-                                const uri = typeof callback === 'function' ? callback(imageIdMap[imageId]?.uri) : callback;
-                                const img = selectedImages.find(i => i.uri === uri);
-                                if (!img) return;
-
-                                setImageIdMap(prev => ({
-                                  ...prev,
-                                  [imageId]: img,
-                                }));
+                            <TouchableOpacity
+                              ref={(ref) => {
+                                if (ref) dropdownRefs.current[imageId] = ref;
                               }}
-                              placeholder={t('addCard.selectImage', 'Görsel seç')}
-                              listMode="SCROLLVIEW"
+                              collapsable={false}
+                              onPress={() => openImageDropdown(imageId)}
                               style={[styles.dropdown, { backgroundColor: colors.blurView, borderColor: colors.border }]}
-                              textStyle={{ color: colors.text }}
-                              dropDownContainerStyle={{ backgroundColor: colors.blurView, borderColor: colors.border }}
-                              renderListItem={(item) => (
-                                <TouchableOpacity
-                                  style={[styles.dropdownListItem, { backgroundColor: colors.blurView }]}
-                                  onPress={() => {
-                                    const img = selectedImages.find(i => i.uri === item.value);
-                                    if (img) {
-                                      setImageIdMap(prev => ({
-                                        ...prev,
-                                        [imageId]: img,
-                                      }));
-                                      setDropdownOpen(prev => ({ ...prev, [imageId]: false }));
-                                    }
-                                  }}
-                                >
-                                  <Image 
-                                    source={{ uri: item.value }} 
+                              activeOpacity={0.9}
+                            >
+
+                              {selectedImg ? (
+                                <View style={styles.dropdownSelectedItem}>
+                                  <Image
+                                    source={{ uri: selectedImg.uri }}
                                     style={styles.dropdownImageThumbnail}
                                     resizeMode="cover"
                                   />
-                                  <Text style={[styles.dropdownListItemText, { color: colors.text }]}>
-                                    {item.label}
+                                  <Text style={[styles.dropdownSelectedItemText, { color: colors.text }]}>
+                                    {selectedImg?.selectionIndex
+                                      ? `${t('addCard.selection', 'Seçim')} ${selectedImg.selectionIndex}`
+                                      : t('addCard.selectImage', 'Görsel seç')}
                                   </Text>
-                                </TouchableOpacity>
+                                </View>
+                              ) : (
+                                <Text style={[styles.dropdownPlaceholderText, { color: colors.muted }]}>
+                                  {t('addCard.selectImage', 'Görsel seç')}
+                                </Text>
                               )}
-                              renderLabel={(item) => {
-                                const selectedImg = imageIdMap[imageId];
-                                if (!selectedImg) {
-                                  return <Text style={{ color: colors.text }}>{t('addCard.selectImage', 'Görsel seç')}</Text>;
-                                }
-                                const displayName = selectedImg.originalFileName || selectedImg.name || selectedImg.fileName || selectedImg.uri.split('/').pop() || '';
-                                const fileNameWithoutExt = getFileNameWithoutExtension(displayName);
-                                return (
-                                  <View style={styles.dropdownSelectedItem}>
-                                    <Image 
-                                      source={{ uri: selectedImg.uri }} 
-                                      style={styles.dropdownImageThumbnail}
-                                      resizeMode="cover"
-                                    />
-                                    <Text style={[styles.dropdownSelectedItemText, { color: colors.text }]}>
-                                      {fileNameWithoutExt || t('addCard.selectImage', 'Görsel seç')}
-                                    </Text>
+
+                              <Iconify icon="flowbite:caret-down-solid" size={moderateScale(20)} color={colors.text} />
+                            </TouchableOpacity>
+
+                            {/* Dropdown Menu */}
+                            <RNModal
+                              visible={dropdownOpen[imageId] || false}
+                              transparent
+                              animationType="fade"
+                              onRequestClose={() => closeImageDropdown(imageId)}
+                            >
+                              <TouchableWithoutFeedback onPress={() => closeImageDropdown(imageId)}>
+                                <View style={{ flex: 1 }}>
+                                  <View style={[
+                                    styles.dropdownMenu,
+                                    {
+                                      backgroundColor: colors.blurView,
+                                      borderColor: colors.border,
+                                      left: dropdownPos[imageId]?.x || 0,
+                                      top: Platform.OS === 'android'
+                                        ? (dropdownPos[imageId]?.y || 0) + (dropdownPos[imageId]?.height || 0)
+                                        : (dropdownPos[imageId]?.y || 0) + (dropdownPos[imageId]?.height || 0) + verticalScale(4),
+                                      minWidth: dropdownPos[imageId]?.width || scale(200),
+                                      zIndex: imageIds.length - index + 1000,
+                                    }
+                                  ]}>
+                                    <ScrollView
+                                      style={styles.dropdownScrollView}
+                                      showsVerticalScrollIndicator={false}
+                                    >
+                                      {selectedImages.map((img, idx) => {
+                                        const imgDisplayName =
+                                          img.originalFileName ||
+                                          img.name ||
+                                          img.fileName ||
+                                          img.uri.split('/').pop() ||
+                                          `${t('addCard.imageCount', 'Görsel')} ${idx + 1}`;
+
+                                        const imgFileNameWithoutExt = getFileNameWithoutExtension(imgDisplayName);
+                                        const isSelected = imageIdMap[imageId]?.uri === img.uri;
+                                        const isLastItem = idx === selectedImages.length - 1;
+
+                                        return (
+                                          <TouchableOpacity
+                                            key={img.uri}
+                                            onPress={() => handleImageSelect(imageId, img, idx)} // ✅ idx eklendi
+                                            style={[
+                                              styles.dropdownListItem,
+                                              {
+                                                backgroundColor: colors.background,
+                                                borderBottomWidth: isLastItem ? moderateScale(0) : moderateScale(1),
+                                                borderBottomColor: colors.border,
+                                              },
+                                              isSelected && { backgroundColor: colors.buttonColor },
+                                            ]}
+                                            activeOpacity={0.9}
+                                          >
+                                            <Image
+                                              source={{ uri: img.uri }}
+                                              style={styles.dropdownImageThumbnail}
+                                              resizeMode="cover"
+                                            />
+
+                                            <Text
+                                              style={[
+                                                styles.dropdownListItemText,
+                                                {
+                                                  color: colors.text,
+                                                  fontWeight: isSelected ? '800' : 'normal',
+                                                  fontSize: isSelected ? moderateScale(15) : moderateScale(14),
+                                                },
+                                              ]}
+                                            >
+                                              {`${t('addCard.selection', 'Seçim')} ${idx + 1}`}
+                                            </Text>
+                                          </TouchableOpacity>
+                                        );
+                                      })}
+
+                                    </ScrollView>
                                   </View>
-                                );
-                              }}
-                            />
+                                </View>
+                              </TouchableWithoutFeedback>
+                            </RNModal>
                           </View>
                         );
                       })}
@@ -876,9 +1058,9 @@ export default function CsvUploadModal({
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handlePickCSV}
-                style={[styles.selectButton, { 
-                  backgroundColor: colors.blurView, 
-                  borderColor: colors.border 
+                style={[styles.selectButton, {
+                  backgroundColor: colors.blurView,
+                  borderColor: colors.border
                 }]}
                 disabled={csvLoading}
               >
@@ -891,6 +1073,7 @@ export default function CsvUploadModal({
         </ScrollView>
       </View>
     </Modal>
+
   );
 }
 
@@ -918,8 +1101,54 @@ const styles = StyleSheet.create({
   descriptionBold: {
     fontWeight: 'bold',
   },
+  expandableSection: {
+    marginBottom: verticalScale(20),
+    borderRadius: moderateScale(12),
+    overflow: 'hidden',
+    borderBottomWidth: moderateScale(1),
+
+  },
+  expandableHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: verticalScale(12),
+    paddingHorizontal: scale(16),
+    borderRadius: moderateScale(8),
+    backgroundColor: 'transparent',
+  },
+  expandableHeaderText: {
+    fontSize: moderateScale(15),
+    fontWeight: '600',
+    flex: 1,
+  },
+  expandableContent: {
+    paddingTop: verticalScale(12),
+    paddingHorizontal: scale(16),
+
+  },
+  expandableText: {
+    fontSize: moderateScale(14),
+    lineHeight: verticalScale(20),
+    marginBottom: verticalScale(12),
+  },
+  expandableTextBold: {
+    fontWeight: '600',
+  },
+  headerTitle: {
+    fontWeight: '800',
+    fontSize: moderateScale(18),
+  },
+  exampleTableImage: {
+    width: '100%',
+    borderRadius: moderateScale(25),
+  },
   previewContainer: {
     marginTop: verticalScale(8),
+  },
+  previewHeader: {
+    flexDirection: 'row',
+    marginBottom: verticalScale(8),
   },
   previewTitle: {
     fontWeight: 'bold',
@@ -1064,8 +1293,34 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(6),
   },
   dropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     borderWidth: moderateScale(1),
     borderRadius: moderateScale(8),
+    paddingVertical: verticalScale(12),
+    paddingHorizontal: scale(14),
+    marginBottom: verticalScale(8),
+  },
+  dropdownPlaceholderText: {
+    fontSize: moderateScale(16),
+    flex: 1,
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    borderRadius: moderateScale(12),
+    paddingVertical: verticalScale(6),
+    paddingHorizontal: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: verticalScale(2) },
+    shadowOpacity: 0.15,
+    shadowRadius: moderateScale(8),
+    elevation: 8,
+    borderWidth: moderateScale(1),
+    maxHeight: verticalScale(200),
+  },
+  dropdownScrollView: {
+    maxHeight: verticalScale(200),
   },
   dropdownImageThumbnail: {
     width: scale(40),
@@ -1078,6 +1333,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: verticalScale(10),
     paddingHorizontal: scale(12),
+    borderRadius: moderateScale(8),
   },
   dropdownListItemText: {
     fontSize: moderateScale(14),
@@ -1086,6 +1342,7 @@ const styles = StyleSheet.create({
   dropdownSelectedItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
   },
   dropdownSelectedItemText: {
     fontSize: moderateScale(14),
