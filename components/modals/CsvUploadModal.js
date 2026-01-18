@@ -722,35 +722,39 @@ export default function CsvUploadModal({
 
             {tableGuideExpanded && (
               <View style={styles.expandableContent}>
+                <View style={[styles.stepContainer, { backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground, borderColor: colors.cardBorder }]}>
                 {/* BAŞLIK 1 */}
                 <Text style={[styles.headerTitle, { color: colors.text, marginBottom: scale(8) }]}>
                   {t('addCard.tableStructureTitle', 'CSV Formatı: ')}
                 </Text>
 
-                {/* İÇERİK 1 - \t yerine marginLeft daha güvenlidir */}
+                {/* İÇERİK 1 */}
                 <Text style={[styles.expandableText, { color: colors.text, marginLeft: scale(16) }]}>
                   {t('addCard.tableStructure', 'Tablo 2 zorunlu 3 opsiyonel olmak üzere 5 sütundan oluşabilir. Sütunlar:')}
                 </Text>
 
                 {/* SÜTUNLAR KUTUCUĞU */}
                 <View style={[styles.tableColumnsContainer, {
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   borderColor: colors.border,
                   borderWidth: moderateScale(1),
                   borderRadius: moderateScale(10),
                   padding: scale(8),
                   marginVertical: scale(10),
-                  alignSelf: 'flex-start' // Kutunun tüm satırı kaplamaması için
+                  alignSelf: 'center' 
                 }]}>
                   <Text style={[styles.expandableTextBold, { color: colors.text }]}>
                     {t('addCard.tableColumns', 'soru, cevap, ornek, not, gorsel')}
                   </Text>
                 </View>
-
+               
                 {/* UYARI METNİ */}
                 <Text style={[styles.expandableText, { color: colors.secondary, marginBottom: scale(16) }]}>
                   {t('addCard.requiredColumns', 'soru ve cevap sütunları zorunludur! ornek, not, gorsel sütunları isteğe bağlıdır.')}
                 </Text>
-
+                </View>
+                <View style={[styles.stepContainer, { backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground, borderColor: colors.cardBorder }]}>
                 {/* BAŞLIK 2 */}
                 <Text style={[styles.headerTitle, { color: colors.text, marginBottom: scale(8) }]}>
                   {t('addCard.tableImageInstructionsTitle', 'Görsel Ekleme: ')}
@@ -765,7 +769,7 @@ export default function CsvUploadModal({
                 <Text style={[styles.expandableText, { color: colors.border, fontStyle: 'italic' }]}>
                   {t('addCard.svgNote', 'Not: SVG formatı desteklenmemektedir.')}
                 </Text>
-
+                </View>
                 {/* KIRMIZI UYARI */}
                 <Text style={[styles.expandableText, { color: '#D32F2F', marginTop: scale(8), marginBottom: scale(16) }]}>
                   {t('addCard.csvUploadDescriptionThird', 'Her satır bir kartı temsil eder. Boş satırlar veya eksik zorunlu alanlar atlanır.')}
@@ -1126,6 +1130,13 @@ const styles = StyleSheet.create({
     paddingTop: verticalScale(12),
     paddingHorizontal: scale(16),
 
+  },
+  stepContainer: {
+    borderRadius: moderateScale(16),
+    padding: scale(12),
+    marginBottom: verticalScale(16),
+    borderWidth: moderateScale(1),
+    width: '100%',
   },
   expandableText: {
     fontSize: moderateScale(14),
