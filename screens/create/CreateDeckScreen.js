@@ -12,6 +12,7 @@ import UndoButton from '../../components/tools/UndoButton';
 import CreateButton from '../../components/tools/CreateButton';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
+import DeckLanguageModal from '../../components/modals/DeckLanguageModal';
 
 export default function CreateScreen() {
   const [name, setName] = useState('');
@@ -26,8 +27,29 @@ export default function CreateScreen() {
   const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
   const [isHowToCreateModalVisible, setHowToCreateModalVisible] = useState(false);
   const { showError } = useSnackbarHelpers();
+  const [selectedLanguage, setSelectedLanguage] = useState([]);
 
-  // Kategori ikonunu sort_order değerine göre al
+  const [isDeckLanguageModalVisible, setDeckLanguageModalVisible] = useState(false);
+  const [languages, setLanguages] = useState([]);
+
+
+  const selectedLang = languages.filter(l =>
+    selectedLanguage?.includes(l.id)
+  );
+
+
+  React.useEffect(() => {
+    const loadLanguages = async () => {
+      const { data, error } = await supabase
+        .from('languages')
+        .select('*');
+
+      console.log('LANGUAGES:', data, error);
+      setLanguages(data || []);
+    };
+    loadLanguages();
+  }, []);
+
   const getCategoryIcon = (sortOrder) => {
     const icons = {
       1: "hugeicons:language-skill", // Dil
@@ -41,6 +63,21 @@ export default function CreateScreen() {
     };
     return icons[sortOrder] || "material-symbols:category";
   };
+
+  const getDeckLanguageIcon = (sortOrder) => {
+    const icons = {
+      1: 'twemoji:flag-for-flag-turkey',
+      2: 'twemoji:flag-england',
+      3: 'twemoji:flag-spain',
+      4: 'twemoji:flag-spain',
+      5: 'twemoji:flag-france',
+      6: 'twemoji:flag-portugal',
+      7: 'twemoji:flag-saudi-arabia',
+    };
+
+    return icons[sortOrder] || 'twemoji:flag-for-flag-turkey';
+  };
+
 
   // Kategorileri yükle - hem ID hem de name çekelim
   React.useEffect(() => {
@@ -75,6 +112,10 @@ export default function CreateScreen() {
       showError(t('create.requiredCategory', 'Lütfen bir kategori seçin.'));
       return;
     }
+    if (!selectedLanguage) {
+      showError(t('create.requiredLanguage', 'Lütfen desteyle ilgili bir dil seçin.'));
+      return;
+    }
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -93,6 +134,20 @@ export default function CreateScreen() {
         })
         .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)')
         .single();
+      if (error) throw error;
+      const relations = selectedLanguages.map((languageId) => ({
+        deck_id: deck.id,
+        language_id: languageId,
+      }));
+
+      const { error: deckLangError } = await supabase
+        .from('decks_languages')
+        .insert(relations);
+
+      if (deckLangError) throw deckLangError;
+
+
+      deck.deck_language = deckLanguage;
       if (error) throw error;
       resetForm();
       navigation.navigate('DeckDetail', { deck: data });
@@ -114,7 +169,7 @@ export default function CreateScreen() {
             <View style={[styles.headerCardContent, styles.headerContent]}>
               <View style={styles.headerTitleContainer}>
                 <Iconify icon="fluent:tab-add-24-regular" size={moderateScale(26)} color="#F98A21" style={{ marginRight: scale(6) }} />
-                <Text style={[typography.styles.h2, { color: colors.text}]}>
+                <Text style={[typography.styles.h2, { color: colors.text }]}>
                   {t('createDeck.title', 'Desteni Oluştur')}
                 </Text>
               </View>
@@ -123,7 +178,7 @@ export default function CreateScreen() {
                   <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: moderateScale(22), flex: 1, alignSelf: 'flex-start' }]}>
                     {t('createDeck.motivationText', 'Kişiselleştirilmiş destelerle öğrenme yolculuğunu tasarla ve bilgini pekiştir.')}
                   </Text>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.howToCreateButton, { backgroundColor: colors.secondary + '15', borderColor: colors.secondary + '30' }]}
                     activeOpacity={0.7}
                     onPress={() => setHowToCreateModalVisible(true)}
@@ -266,7 +321,7 @@ export default function CreateScreen() {
                 <TouchableOpacity
                   onPress={() => setDescription('')}
                   accessibilityLabel={t('common.clear', 'Temizle')}
-                  hitSlop={{ top: moderateScale(8), bottom: moderateScale(8), left: moderateScale(8), right: moderateScale(8)}}
+                  hitSlop={{ top: moderateScale(8), bottom: moderateScale(8), left: moderateScale(8), right: moderateScale(8) }}
                   style={{ position: 'absolute', right: scale(8), top: verticalScale(8), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
                 >
                   <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
@@ -316,6 +371,67 @@ export default function CreateScreen() {
               <Iconify icon="flowbite:caret-down-solid" size={moderateScale(20)} color={colors.muted} />
             </TouchableOpacity>
           </View>
+          {/* Desteye Ait Dil Seçimi */}
+          <View
+            style={[
+              styles.inputCard,
+              {
+                backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+                borderColor: colors.cardBorder,
+                borderWidth: 1,
+                shadowColor: colors.shadowColor,
+                shadowOffset: colors.shadowOffset,
+                shadowOpacity: colors.shadowOpacity,
+                shadowRadius: colors.shadowRadius,
+                elevation: colors.elevation,
+              },
+            ]}
+          >
+            <View style={styles.labelRow}>
+              <Iconify
+                icon={getDeckLanguageIcon(selectedLang?.sort_order)}
+                size={moderateScale(20)}
+                color={selectedLang ? colors.text : colors.muted}
+                style={styles.categoryIcon}
+              />
+              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>
+                {t('createDeck.languageLabel', 'Dil')}
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.categorySelector, { borderColor: '#eee' }]}
+              accessibilityLabel={t('createDeck.selectLanguageA11y', 'Dil seç')}
+              onPress={() => setDeckLanguageModalVisible(true)}
+            >
+              <View style={styles.categoryRow}>
+                {selectedLang && (
+                  <Iconify
+                    icon={getDeckLanguageIcon(selectedLang.sort_order)}
+                    size={moderateScale(20)}
+                    style={styles.categoryIcon}
+                  />
+                )}
+
+                <Text
+                  style={[
+                    styles.categoryText,
+                    typography.styles.body,
+                    { color: selectedLang ? colors.text : colors.muted },
+                  ]}
+                >
+                {selectedLang?.length > 0 ? ` ${selectedLang.map(l => l.language_name).join(', ')}` : ''}
+                {selectedLang?.length < 0 ? ` (${t('createDeck.selectLanguage', 'Dil seç')})` : ''}
+                </Text>
+              </View>
+
+              <Iconify
+                icon="flowbite:caret-down-solid"
+                size={moderateScale(20)}
+                color={colors.muted}
+              />
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.buttonRowModern}>
             <UndoButton
@@ -341,11 +457,33 @@ export default function CreateScreen() {
           setCategoryModalVisible(false);
         }}
       />
-
-      <HowToCreateModal
-        isVisible={isHowToCreateModalVisible}
-        onClose={() => setHowToCreateModalVisible(false)}
+      <DeckLanguageModal
+        isVisible={isDeckLanguageModalVisible}
+        onClose={() => setDeckLanguageModalVisible(false)}
+        languages={languages}
+        selectedLanguage={selectedLanguage}
+        onSelectLanguage={(languageId) => {
+          setSelectedLanguage(prev => {
+            // zaten seçiliyse → kaldır
+            if (prev.includes(languageId)) {
+              return prev.filter(id => id !== languageId);
+            }
+        
+            // 2 dil zaten seçiliyse → 3.ye izin verme
+            if (prev.length >= 2) {
+              return prev;
+            }
+        
+            // ekle
+            return [...prev, languageId];
+          });
+        }}
+        
       />
+
+
+
+
     </View>
   );
 }
@@ -419,7 +557,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(28),
     padding: scale(20),
     marginBottom: verticalScale(11),
-    shadowOffset: { width: moderateScale(4), height: moderateScale(6)},
+    shadowOffset: { width: moderateScale(4), height: moderateScale(6) },
     shadowOpacity: 0.10,
     shadowRadius: moderateScale(10),
     elevation: 5,
