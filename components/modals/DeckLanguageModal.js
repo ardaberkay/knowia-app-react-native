@@ -8,22 +8,6 @@ import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { Iconify } from 'react-native-iconify';
 import { useState, useEffect } from 'react';
 
-
-const getDeckLanguageIcon = (sortOrder) => {
-    const icons = {
-      1: 'twemoji:flag-for-flag-turkey',
-      2: 'twemoji:flag-england',
-      3: 'twemoji:flag-spain',
-      4: 'twemoji:flag-spain',
-      5: 'twemoji:flag-france',
-      6: 'twemoji:flag-portugal',
-      7: 'twemoji:flag-saudi-arabia',
-    };
-
-    return icons[sortOrder] || 'twemoji:flag-for-flag-turkey';
-  };
-
-
 export default function DeckLanguageModal({
     isVisible,
     onClose,
@@ -32,28 +16,43 @@ export default function DeckLanguageModal({
     onSelectLanguage,
 }) {
     const { colors } = useTheme();
-    const { t } = useTranslation();
     const [error, setError] = useState('');
+    const { t } = useTranslation();
+
+    const getDeckLanguageIcon = (sortOrder) => {
+        const icons = {
+            1: 'twemoji:flag-for-flag-turkey',
+            2: 'twemoji:flag-england',
+            3: 'twemoji:flag-spain',
+            4: 'twemoji:flag-spain',
+            5: 'twemoji:flag-france',
+            6: 'twemoji:flag-portugal',
+            7: 'twemoji:flag-saudi-arabia',
+        };
+    
+        return icons[sortOrder] || 'twemoji:flag-for-flag-turkey';
+    };
+    
+    const getDeckLanguageName = (language) => {
+        const translation = t(`languages.${language.sort_order}`, null);
+        return translation;
+    };
 
     const handleToggle = (languageId) => {
         // kaldırılıyorsa hata temizle
         if (selectedLanguage.includes(languageId)) {
-          setError('');
-          onSelectLanguage(languageId);
-          return;
+            setError('');
+            onSelectLanguage(languageId);
+            return;
         }
-      
         // limit aşıldı
         if (selectedLanguage.length >= 2) {
-          setError(t('create.maxLanguage', 'En fazla 2 dil seçebilirsiniz.'));
-          return;
+            setError(t('create.maxLanguage', 'En fazla 2 dil seçebilirsiniz.'));
+            return;
         }
-      
-        // ekle
         setError('');
         onSelectLanguage(languageId);
-      };
-      
+    };
 
     return (
         <Modal
@@ -70,7 +69,7 @@ export default function DeckLanguageModal({
         >
             <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
                 <Text style={[typography.styles.h2, { color: colors.text, marginBottom: 16 }]}>
-                    {t('profile.language')}
+                    {t('create.language')}
                 </Text>
                 <View>
                     {languages.map((language) => {
@@ -103,19 +102,24 @@ export default function DeckLanguageModal({
                                 </View>
                                 {/* Language Name */}
                                 <Text style={[styles.optionText, { color: colors.text }]}>
-                                    {language.language_name}
+                                    {getDeckLanguageName(language)}
                                 </Text>
                             </TouchableOpacity>
 
                         );
                     })}
-                                             <View style={styles.errorText}>
-                                {error && (
-                                    <Text style={[styles.errorText, { color: 'red' }]}>
-                                        {error}
-                                    </Text>
-                                )}
+                    <View style={styles.errorText}>
+                        {error && (
+                            <View style={styles.errorContainer}>
+                            <Iconify icon="material-symbols:info-outline" size={24} color="red" />
+                            <View>
+                                <Text style={[styles.errorText, { color: 'red' }]}>
+                                    {error}
+                                </Text>
                             </View>
+                            </View>
+                        )}
+                    </View>
                 </View>
             </View>
         </Modal>
@@ -151,5 +155,11 @@ const styles = StyleSheet.create({
     },
     languageIcon: {
         marginRight: scale(12),
+    },
+    errorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: scale(8),
+        marginTop: verticalScale(8),
     },
 });

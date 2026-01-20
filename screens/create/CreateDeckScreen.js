@@ -28,7 +28,6 @@ export default function CreateScreen() {
   const [isHowToCreateModalVisible, setHowToCreateModalVisible] = useState(false);
   const { showError } = useSnackbarHelpers();
   const [selectedLanguage, setSelectedLanguage] = useState([]);
-
   const [isDeckLanguageModalVisible, setDeckLanguageModalVisible] = useState(false);
   const [languages, setLanguages] = useState([]);
 
@@ -36,7 +35,6 @@ export default function CreateScreen() {
   const selectedLang = languages.filter(l =>
     selectedLanguage?.includes(l.id)
   );
-
 
   React.useEffect(() => {
     const loadLanguages = async () => {
@@ -49,6 +47,12 @@ export default function CreateScreen() {
     };
     loadLanguages();
   }, []);
+
+  const getDeckLanguageName = (language) => {
+    const translation = t(`languages.${language.sort_order}`, null);
+    return translation;
+};
+
 
   const getCategoryIcon = (sortOrder) => {
     const icons = {
@@ -63,21 +67,6 @@ export default function CreateScreen() {
     };
     return icons[sortOrder] || "material-symbols:category";
   };
-
-  const getDeckLanguageIcon = (sortOrder) => {
-    const icons = {
-      1: 'twemoji:flag-for-flag-turkey',
-      2: 'twemoji:flag-england',
-      3: 'twemoji:flag-spain',
-      4: 'twemoji:flag-spain',
-      5: 'twemoji:flag-france',
-      6: 'twemoji:flag-portugal',
-      7: 'twemoji:flag-saudi-arabia',
-    };
-
-    return icons[sortOrder] || 'twemoji:flag-for-flag-turkey';
-  };
-
 
   // Kategorileri yükle - hem ID hem de name çekelim
   React.useEffect(() => {
@@ -101,6 +90,7 @@ export default function CreateScreen() {
     setToName('');
     setDescription('');
     setSelectedCategory(null);
+    setSelectedLanguage([]);
   };
 
   const handleCreate = async () => {
@@ -134,20 +124,18 @@ export default function CreateScreen() {
         })
         .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)')
         .single();
-      if (error) throw error;
-      const relations = selectedLanguages.map((languageId) => ({
-        deck_id: deck.id,
-        language_id: languageId,
-      }));
+      
+      if (selectedLanguage.length > 0) {
+        const relations = selectedLanguage.map((languageId) => ({
+          deck_id: data.id,
+          language_id: languageId,
+        }));
+        const { error: deckLangError } = await supabase
+          .from('decks_languages')
+          .insert(relations);
 
-      const { error: deckLangError } = await supabase
-        .from('decks_languages')
-        .insert(relations);
-
-      if (deckLangError) throw deckLangError;
-
-
-      deck.deck_language = deckLanguage;
+        if (deckLangError) throw deckLangError;
+      }
       if (error) throw error;
       resetForm();
       navigation.navigate('DeckDetail', { deck: data });
@@ -388,43 +376,28 @@ export default function CreateScreen() {
             ]}
           >
             <View style={styles.labelRow}>
-              <Iconify
-                icon={getDeckLanguageIcon(selectedLang?.sort_order)}
-                size={moderateScale(20)}
-                color={selectedLang ? colors.text : colors.muted}
-                style={styles.categoryIcon}
-              />
+            <Iconify icon="mdi:spoken-language" size={moderateScale(21)} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>
-                {t('createDeck.languageLabel', 'Dil')}
+                {t('create.language', 'İçerik Dili')}
               </Text>
             </View>
 
             <TouchableOpacity
               style={[styles.categorySelector, { borderColor: '#eee' }]}
-              accessibilityLabel={t('createDeck.selectLanguageA11y', 'Dil seç')}
+              accessibilityLabel={t('create.selectLanguage', 'Dil Seç')}
               onPress={() => setDeckLanguageModalVisible(true)}
             >
               <View style={styles.categoryRow}>
-                {selectedLang && (
-                  <Iconify
-                    icon={getDeckLanguageIcon(selectedLang.sort_order)}
-                    size={moderateScale(20)}
-                    style={styles.categoryIcon}
-                  />
-                )}
-
                 <Text
                   style={[
                     styles.categoryText,
                     typography.styles.body,
-                    { color: selectedLang ? colors.text : colors.muted },
+                    { color: selectedLang?.length > 0 ? colors.text : colors.muted },
                   ]}
                 >
-                {selectedLang?.length > 0 ? ` ${selectedLang.map(l => l.language_name).join(', ')}` : ''}
-                {selectedLang?.length < 0 ? ` (${t('createDeck.selectLanguage', 'Dil seç')})` : ''}
+                {selectedLang?.length > 0 ? ` ${selectedLang.map(l => getDeckLanguageName(l)).join(' | ')}` : ` ${t('create.selectLanguage', 'Dil seç')}` }
                 </Text>
               </View>
-
               <Iconify
                 icon="flowbite:caret-down-solid"
                 size={moderateScale(20)}
@@ -457,6 +430,12 @@ export default function CreateScreen() {
           setCategoryModalVisible(false);
         }}
       />
+
+      <HowToCreateModal
+        isVisible={isHowToCreateModalVisible}
+        onClose={() => setHowToCreateModalVisible(false)}
+      />
+
       <DeckLanguageModal
         isVisible={isDeckLanguageModalVisible}
         onClose={() => setDeckLanguageModalVisible(false)}
@@ -464,26 +443,17 @@ export default function CreateScreen() {
         selectedLanguage={selectedLanguage}
         onSelectLanguage={(languageId) => {
           setSelectedLanguage(prev => {
-            // zaten seçiliyse → kaldır
             if (prev.includes(languageId)) {
               return prev.filter(id => id !== languageId);
             }
-        
-            // 2 dil zaten seçiliyse → 3.ye izin verme
             if (prev.length >= 2) {
               return prev;
             }
-        
-            // ekle
             return [...prev, languageId];
           });
         }}
         
       />
-
-
-
-
     </View>
   );
 }

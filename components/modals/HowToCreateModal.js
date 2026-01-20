@@ -37,11 +37,17 @@ export default function HowToCreateModal({ isVisible, onClose }) {
       required: true,
     },
     {
+      icon: 'mdi:spoken-language',
+      title: t('howToCreate.step6Title', 'İçerik Dili Seç'),
+      description: t('howToCreate.step6Desc', 'Destenizin içerik dilini en fazla 2 dil olacak şekilde seçin. Bu, destenizin diğer kullanıcılar tarafından keşfedilmesini ve organize edilmesini kolaylaştırır.'),
+      required: true,
+    },
+    {
       icon: 'fluent:tab-add-24-regular',
       title: t('howToCreate.step5Title', 'Oluştur Butonuna Bas'),
       description: t('howToCreate.step5Desc', 'Tüm bilgileri doldurduktan sonra "Oluştur" butonuna basın. Deste oluşturulduktan sonra kart eklemeye başlayabilirsiniz.'),
       required: false,
-    },
+    }
   ];
 
   return (

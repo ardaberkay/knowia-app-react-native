@@ -114,6 +114,7 @@ module.exports = function (api) {
             'grommet-icons:apple',
             'hugeicons:document-validation',
             'icon-park-outline:invalid-files',
+            'mdi:spoken-language',
           ],
         },
       ],
