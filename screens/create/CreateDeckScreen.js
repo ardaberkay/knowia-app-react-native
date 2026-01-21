@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(12),
+    paddingHorizontal: scale(10),
     borderRadius: moderateScale(20),
     borderWidth: 1,
     marginTop: verticalScale(12),

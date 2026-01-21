@@ -101,7 +101,8 @@
     "save": "Save",
     "maxLanguage": "You can select up to 2 languages.",
     "language": "Content Language *",
-    "selectLanguage": "Select Language"
+    "selectLanguage": "Select Language",
+    "languageHeading": "Content Language"
   },
   "common": {
     "error": "An error occurred",

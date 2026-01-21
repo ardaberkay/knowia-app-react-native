@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     padding: scale(24),
     maxHeight: '85%',
     minHeight: verticalScale(300),
-    width: '95%',
+    width: '100%',
     alignSelf: 'center',
     overflow: 'hidden',
   },

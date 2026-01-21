@@ -136,11 +136,11 @@ export default function HowToCreateModal({ isVisible, onClose }) {
 
 const styles = StyleSheet.create({
   modalContainer: {
-    borderRadius: moderateScale(24),
+    borderRadius: moderateScale(32),
     padding: scale(24),
     maxHeight: '85%',
     minHeight: verticalScale(300),
-    width: '95%',
+    width: '100%',
     alignSelf: 'center',
     overflow: 'hidden',
   },

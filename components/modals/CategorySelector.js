@@ -91,7 +91,7 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
 
 const styles = StyleSheet.create({
   modalContainer: {
-    borderRadius: moderateScale(16),
+    borderRadius: moderateScale(32),
     padding: scale(24),
   },
   headerRow: {

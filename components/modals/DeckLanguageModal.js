@@ -23,16 +23,16 @@ export default function DeckLanguageModal({
         const icons = {
             1: 'twemoji:flag-for-flag-turkey',
             2: 'twemoji:flag-england',
-            3: 'twemoji:flag-spain',
+            3: 'twemoji:flag-germany',
             4: 'twemoji:flag-spain',
             5: 'twemoji:flag-france',
             6: 'twemoji:flag-portugal',
             7: 'twemoji:flag-saudi-arabia',
         };
-    
+
         return icons[sortOrder] || 'twemoji:flag-for-flag-turkey';
     };
-    
+
     const getDeckLanguageName = (language) => {
         const translation = t(`languages.${language.sort_order}`, null);
         return translation;
@@ -68,67 +68,72 @@ export default function DeckLanguageModal({
             statusBarTranslucent
         >
             <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-                <Text style={[typography.styles.h2, { color: colors.text, marginBottom: 16 }]}>
-                    {t('create.language')}
+                <View style={styles.headerRow}>
+                <Text style={[typography.styles.h2, { color: colors.text}]}>
+                    {t('create.languageHeading', 'İçerik Dili')}
                 </Text>
-                <View>
-                    {languages.map((language) => {
-                        const isChecked = selectedLanguage.includes(language.id);
+                <TouchableOpacity onPress={onClose} hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}>
+                    <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
+                </TouchableOpacity>
+            </View>
+            <View>
+                {languages.map((language) => {
+                    const isChecked = selectedLanguage.includes(language.id);
 
 
-                        return (
-                            <TouchableOpacity
-                                key={language.id}
-                                onPress={() => handleToggle(language.id)}
-                                style={styles.optionRow}
-                                activeOpacity={0.8}
+                    return (
+                        <TouchableOpacity
+                            key={language.id}
+                            onPress={() => handleToggle(language.id)}
+                            style={styles.optionRow}
+                            activeOpacity={0.8}
+                        >
+                            {/* Checkbox */}
+                            <View
+                                style={[
+                                    styles.checkbox,
+                                    {
+                                        borderColor: colors.primary || '#007AFF',
+                                        backgroundColor: isChecked
+                                            ? colors.primary || '#007AFF'
+                                            : 'transparent',
+                                    },
+                                ]}
                             >
-                                {/* Checkbox */}
-                                <View
-                                    style={[
-                                        styles.checkbox,
-                                        {
-                                            borderColor: colors.primary || '#007AFF',
-                                            backgroundColor: isChecked
-                                                ? colors.primary || '#007AFF'
-                                                : 'transparent',
-                                        },
-                                    ]}
-                                >
-                                    {isChecked && <Text style={styles.checkmark}>✓</Text>}
-                                </View>
-                                <View style={styles.languageIcon}>
-                                    <Iconify icon={getDeckLanguageIcon(language.sort_order)} size={24} />
-                                </View>
-                                {/* Language Name */}
-                                <Text style={[styles.optionText, { color: colors.text }]}>
-                                    {getDeckLanguageName(language)}
-                                </Text>
-                            </TouchableOpacity>
+                                {isChecked && <Text style={styles.checkmark}>✓</Text>}
+                            </View>
+                            <View style={styles.languageIcon}>
+                                <Iconify icon={getDeckLanguageIcon(language.sort_order)} size={24} />
+                            </View>
+                            {/* Language Name */}
+                            <Text style={[styles.optionText, { color: colors.text }]}>
+                                {getDeckLanguageName(language)}
+                            </Text>
+                        </TouchableOpacity>
 
-                        );
-                    })}
-                    <View style={styles.errorText}>
-                        {error && (
-                            <View style={styles.errorContainer}>
+                    );
+                })}
+                <View style={styles.errorText}>
+                    {error && (
+                        <View style={styles.errorContainer}>
                             <Iconify icon="material-symbols:info-outline" size={24} color="red" />
                             <View>
                                 <Text style={[styles.errorText, { color: 'red' }]}>
                                     {error}
                                 </Text>
                             </View>
-                            </View>
-                        )}
-                    </View>
+                        </View>
+                    )}
                 </View>
             </View>
-        </Modal>
+        </View>
+        </Modal >
     );
 }
 
 const styles = StyleSheet.create({
     modalContainer: {
-        borderRadius: moderateScale(16),
+        borderRadius: moderateScale(32),
         padding: scale(24),
     },
     optionRow: {
@@ -162,4 +167,10 @@ const styles = StyleSheet.create({
         gap: scale(8),
         marginTop: verticalScale(8),
     },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: verticalScale(16),
+      },
 });

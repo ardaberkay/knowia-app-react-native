@@ -11,22 +11,21 @@ import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 // Filter Modal Button Component
 export const FilterModalButton = ({ onPress, variant = 'default' }) => {
   const { colors } = useTheme();
-  
   const isLight = variant === 'light';
-  
+
   return (
     <TouchableOpacity
       style={[
-        styles.filterIconButton, 
+        styles.filterIconButton,
         { borderColor: isLight ? 'rgba(255, 255, 255, 0.3)' : colors.border }
       ]}
       onPress={onPress}
       activeOpacity={0.8}
     >
-      <Iconify 
-        icon="mage:filter" 
-        size={moderateScale(24)} 
-        color={isLight ? '#fff' : colors.subtext} 
+      <Iconify
+        icon="mage:filter"
+        size={moderateScale(24)}
+        color={isLight ? '#fff' : colors.subtext}
       />
     </TouchableOpacity>
   );
@@ -45,12 +44,12 @@ const getCategoryOptions = (t) => [
 ];
 
 // Main Filter Modal Component
-const FilterModal = ({ 
-  visible, 
-  onClose, 
-  currentSort, 
-  currentCategories, 
-  onApply, 
+const FilterModal = ({
+  visible,
+  onClose,
+  currentSort,
+  currentCategories,
+  onApply,
   showSortOptions = true,
   sortOptions: customSortOptions,
   defaultSort = 'default',
@@ -58,7 +57,7 @@ const FilterModal = ({
 }) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
-  
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [tempSort, setTempSort] = useState(currentSort || defaultSort);
   const [tempCategories, setTempCategories] = useState(currentCategories || []);
   const [sortDropdownVisible, setSortDropdownVisible] = useState(false);
@@ -148,15 +147,15 @@ const FilterModal = ({
           <Text style={[typography.styles.h2, { color: colors.text }]}>
             {modalTitle}
           </Text>
-          <TouchableOpacity 
-            onPress={onClose} 
+          <TouchableOpacity
+            onPress={onClose}
             hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
           >
             <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
           </TouchableOpacity>
         </View>
 
-        <ScrollView 
+        <ScrollView
           style={styles.modalContent}
           showsVerticalScrollIndicator={false}
         >
@@ -208,7 +207,7 @@ const FilterModal = ({
                         >
                           <Text style={[
                             styles.sortDropdownItemText,
-                            { 
+                            {
                               color: tempSort === option.key ? colors.buttonColor : colors.text,
                               fontWeight: tempSort === option.key ? '600' : 'normal'
                             }
@@ -227,11 +226,28 @@ const FilterModal = ({
           {/* Kategori Bölümü */}
           <View style={styles.section}>
             <Text style={[
-              showSortOptions ? styles.sectionTitle : styles.sectionSubtitle, 
+              showSortOptions ? styles.sectionTitle : styles.sectionSubtitle,
               { color: showSortOptions ? colors.text : colors.subtext }
             ]}>
               {showSortOptions ? t('common.categories') : t('common.selectCategories', 'Görmek istediğiniz kategorileri seçin')}
             </Text>
+            <TouchableOpacity
+              onPress={() => setIsCategoryOpen(prev => !prev)}
+              style={[styles.categoryHeader, { borderColor: colors.border }]}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.categoryHeaderText, { color: colors.text }]}>
+                {t('common.selectCategories', 'Kategorileri Seç')}
+              </Text>
+
+              <Iconify
+                icon={isCategoryOpen ? 'flowbite:caret-down-solid' : 'flowbite:caret-down-solid'}
+                size={moderateScale(22)}
+                color={colors.text}
+              />
+            </TouchableOpacity>
+            {isCategoryOpen && (
+              <>
             {categoryOptions.map((option) => {
               const isSelected = tempCategories.includes(option.sortOrder);
               return (
@@ -247,7 +263,7 @@ const FilterModal = ({
                   <View style={styles.categoryOptionContent}>
                     <View style={[
                       styles.checkbox,
-                      { 
+                      {
                         borderColor: isSelected ? colors.buttonColor : colors.border,
                         backgroundColor: isSelected ? colors.buttonColor : 'transparent'
                       }
@@ -256,15 +272,15 @@ const FilterModal = ({
                         <Iconify icon="hugeicons:tick-01" size={moderateScale(18)} color="#fff" />
                       )}
                     </View>
-                    <Iconify 
-                      icon={option.icon} 
-                      size={moderateScale(22)} 
+                    <Iconify
+                      icon={option.icon}
+                      size={moderateScale(22)}
                       color={isSelected ? colors.buttonColor : colors.text}
                       style={styles.categoryIcon}
                     />
                     <Text style={[
                       styles.categoryOptionText,
-                      { 
+                      {
                         color: isSelected ? colors.buttonColor : colors.text,
                         fontWeight: isSelected ? '600' : 'normal'
                       }
@@ -275,6 +291,8 @@ const FilterModal = ({
                 </TouchableOpacity>
               );
             })}
+            </>
+            )}
           </View>
         </ScrollView>
 
@@ -319,7 +337,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
-    borderRadius: moderateScale(30),
+    borderRadius: moderateScale(32),
     paddingHorizontal: scale(12),
     paddingVertical: verticalScale(8),
     borderWidth: moderateScale(1),
@@ -327,10 +345,10 @@ const styles = StyleSheet.create({
     width: scale(48),
   },
   modalContainer: {
-    borderRadius: moderateScale(24),
+    borderRadius: moderateScale(32),
     padding: 0,
     maxHeight: '80%',
-    width: '98%',
+    width: '100%',
     alignSelf: 'center',
     overflow: 'hidden',
   },
@@ -355,7 +373,7 @@ const styles = StyleSheet.create({
     ...typography.styles.h3,
     fontSize: moderateScale(18),
     fontWeight: '700',
-    marginBottom: verticalScale(16),
+    marginBottom: verticalScale(12),
   },
   sectionSubtitle: {
     fontSize: moderateScale(14),
@@ -468,6 +486,17 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#FFFFFF',
   },
+  categoryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: moderateScale(12),
+    paddingHorizontal: moderateScale(14),
+    borderBottomWidth: moderateScale(1),
+  },
+  categoryHeaderText: {
+    fontSize: moderateScale(16),
+  }
 });
 
 export default FilterModal;

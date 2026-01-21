@@ -70,6 +70,7 @@ module.exports = function (api) {
             'material-symbols:science',
             'twemoji:flag-for-flag-turkey',
             'twemoji:flag-england',
+            'twemoji:flag-germany',
             'twemoji:flag-saudi-arabia',
             'twemoji:flag-spain',
             'twemoji:flag-portugal',

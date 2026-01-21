@@ -102,7 +102,8 @@
     "errorMessage": "Hata",
     "maxLanguage": "En fazla 2 dil seçebilirsiniz.",
     "language": "İçerik Dili *",
-    "selectLanguage": "Dil Seç"
+    "selectLanguage": "Dil Seç",
+    "languageHeading": "İçerik Dili"
   },
   "common": {
     "error": "Bir hata oluştu",
