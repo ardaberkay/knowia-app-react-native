@@ -17,6 +17,7 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import HowToCreateCardModal from '../../components/modals/HowToCreateCardModal';
 import CsvUploadModal from '../../components/modals/CsvUploadModal';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import BadgeText from '../../components/modals/BadgeText';
 
 export default function AddCardScreen() {
   const navigation = useNavigation();
@@ -147,56 +148,61 @@ export default function AddCardScreen() {
         enableAutomaticScroll={true}
         extraScrollHeight={verticalScale(120)}
       >
-          {/* Header Card */}
-          <View style={[styles.headerCard, styles.headerCardContainer, { borderRadius: moderateScale(28), backgroundColor: colors.cardBackground || colors.cardBackgroundTransparent || (isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)') }]}>
-            <View style={[styles.headerCardContent, styles.headerContent]}>
-              <View style={styles.headerTitleContainer}>
-                <Iconify icon="hugeicons:file-add" size={moderateScale(26)} color="#F98A21" style={{ marginRight: scale(6) }} />
-                <Text style={[typography.styles.h2, { color: colors.text}]}>
-                  {t('addCard.title', 'Kart Oluştur')}
+        {/* Header Card */}
+        <View style={[styles.headerCard, styles.headerCardContainer, { borderRadius: moderateScale(28), backgroundColor: colors.cardBackground || colors.cardBackgroundTransparent || (isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)') }]}>
+          <View style={[styles.headerCardContent, styles.headerContent]}>
+            <View style={styles.headerTitleContainer}>
+              <Iconify icon="hugeicons:file-add" size={moderateScale(26)} color="#F98A21" style={{ marginRight: scale(6) }} />
+              <Text style={[typography.styles.h2, { color: colors.text }]}>
+                {t('addCard.title', 'Kart Oluştur')}
+              </Text>
+            </View>
+            <View style={styles.headerBottomRow}>
+              <View style={styles.headerTextColumn}>
+                <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: verticalScale(22), flex: 1, alignSelf: 'flex-start' }]}>
+                  {t('addCard.motivationText', 'Bilgini pekiştirmek için soru-cevap kartları oluştur ve öğrenme sürecini hızlandır.')}
                 </Text>
-              </View>
-              <View style={styles.headerBottomRow}>
-                <View style={styles.headerTextColumn}>
-                  <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: verticalScale(22), flex: 1, alignSelf: 'flex-start' }]}>
-                    {t('addCard.motivationText', 'Bilgini pekiştirmek için soru-cevap kartları oluştur ve öğrenme sürecini hızlandır.')}
+                <TouchableOpacity
+                  style={[styles.howToCreateButton, { backgroundColor: colors.secondary + '15', borderColor: colors.secondary + '30' }]}
+                  activeOpacity={0.7}
+                  onPress={() => setHowToCreateCardModalVisible(true)}
+                >
+                  <Iconify icon="material-symbols:info-outline" size={moderateScale(16)} color={colors.secondary} style={{ marginRight: scale(4) }} />
+                  <Text style={[typography.styles.caption, { color: colors.secondary, fontWeight: '600', textDecorationLine: 'underline' }]}>
+                    {t('addCard.howToCreate', 'Nasıl Oluşturulur?')}
                   </Text>
-                  <TouchableOpacity 
-                    style={[styles.howToCreateButton, { backgroundColor: colors.secondary + '15', borderColor: colors.secondary + '30' }]}
-                    activeOpacity={0.7}
-                    onPress={() => setHowToCreateCardModalVisible(true)}
-                  >
-                    <Iconify icon="material-symbols:info-outline" size={moderateScale(16)} color={colors.secondary} style={{ marginRight: scale(4) }} />
-                    <Text style={[typography.styles.caption, { color: colors.secondary, fontWeight: '600', textDecorationLine: 'underline' }]}>
-                      {t('addCard.howToCreate', 'Nasıl Oluşturulur?')}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.headerImageContainer}>
-                  <Image
-                    source={require('../../assets/create-card-item.png')}
-                    style={styles.headerImage}
-                    resizeMode="contain"
-                  />
-                </View>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.headerImageContainer}>
+                <Image
+                  source={require('../../assets/create-card-item.png')}
+                  style={styles.headerImage}
+                  resizeMode="contain"
+                />
               </View>
             </View>
           </View>
-          <View style={[styles.inputCard, { 
-            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
-            borderColor: colors.cardBorder,
-            borderWidth: 1,
-            shadowColor: colors.shadowColor,
-            shadowOffset: colors.shadowOffset,
-            shadowOpacity: colors.shadowOpacity,
-            shadowRadius: colors.shadowRadius,
-            elevation: colors.elevation,
-          }]}>
-            <View style={{ flex: 1 }}>
-              <View style={styles.labelRow}>
+        </View>
+        <View style={[styles.inputCard, {
+          backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+          borderColor: colors.cardBorder,
+          borderWidth: 1,
+          shadowColor: colors.shadowColor,
+          shadowOffset: colors.shadowOffset,
+          shadowOpacity: colors.shadowOpacity,
+          shadowRadius: colors.shadowRadius,
+          elevation: colors.elevation,
+        }]}>
+          <View style={{ flex: 1 }}>
+            <View style={styles.labelRow}>
+              <View style={styles.labelTextContainer}>
                 <Iconify icon="mage:image-fill" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.image", "Kart Görseli")}</Text>
+                <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t("addCard.image", "Kart Görseli")}</Text>
               </View>
+              <View>
+                <BadgeText required={false} />
+              </View>
+            </View>
             {image ? (
               <View style={{ alignItems: 'center', marginBottom: verticalScale(8) }}>
                 <Image source={{ uri: image }} style={styles.cardImage} />
@@ -210,170 +216,190 @@ export default function AddCardScreen() {
                 <Text style={styles.addImageButtonText}>{t("addCard.addImage", "Fotoğraf Ekle")}</Text>
               </TouchableOpacity>
             )}
-            </View>
           </View>
-          <View style={[styles.inputCard, { 
-            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
-            borderColor: colors.cardBorder,
-            borderWidth: 1,
-            shadowColor: colors.shadowColor,
-            shadowOffset: colors.shadowOffset,
-            shadowOpacity: colors.shadowOpacity,
-            shadowRadius: colors.shadowRadius,
-            elevation: colors.elevation,
-          }]}>
-            <View style={{ flex: 1 }}>
-              <View style={styles.labelRow}>
-                <Iconify icon="uil:comment-alt-question" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.question", "Soru")} *</Text>
+        </View>
+        <View style={[styles.inputCard, {
+          backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+          borderColor: colors.cardBorder,
+          borderWidth: 1,
+          shadowColor: colors.shadowColor,
+          shadowOffset: colors.shadowOffset,
+          shadowOpacity: colors.shadowOpacity,
+          shadowRadius: colors.shadowRadius,
+          elevation: colors.elevation,
+        }]}>
+          <View style={{ flex: 1 }}>
+            <View style={styles.labelRow}>
+              <View style={styles.labelTextContainer}>
+              <Iconify icon="uil:comment-alt-question" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+                <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t("addCard.question", "Soru")}</Text>
               </View>
-              <View style={{ position: 'relative' }}>
-                <TextInput
-                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: question?.length > 0 ? scale(48) : scale(12)}]}
-                  placeholder={t("addCard.questionPlaceholder", "Kartın sorusu")}
-                  placeholderTextColor={colors.muted}
-                  value={question}
-                  onChangeText={setQuestion}
-                  multiline
-                />
-                {question?.length > 0 ? (
-                  <TouchableOpacity
-                    onPress={() => setQuestion('')}
-                    accessibilityLabel={t('common.clear', 'Temizle')}
-                    hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
-                    style={{ position: 'absolute', right: scale(12), top: verticalScale(12), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
-                  >
-                    <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
-                  </TouchableOpacity>
-                ) : null}
+              <View>
+                <BadgeText required={true} />
               </View>
             </View>
+            <View style={{ position: 'relative' }}>
+              <TextInput
+                style={[styles.input, typography.styles.body, { color: colors.text, paddingRight: question?.length > 0 ? scale(48) : scale(12) }]}
+                placeholder={t("addCard.questionPlaceholder", "Kartın sorusu")}
+                placeholderTextColor={colors.muted}
+                value={question}
+                onChangeText={setQuestion}
+                multiline
+              />
+              {question?.length > 0 ? (
+                <TouchableOpacity
+                  onPress={() => setQuestion('')}
+                  accessibilityLabel={t('common.clear', 'Temizle')}
+                  hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
+                  style={{ position: 'absolute', right: scale(12), top: verticalScale(12), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
+                >
+                  <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
           </View>
-          <View style={[styles.inputCard, { 
-            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
-            borderColor: colors.cardBorder,
-            borderWidth: 1,
-            shadowColor: colors.shadowColor,
-            shadowOffset: colors.shadowOffset,
-            shadowOpacity: colors.shadowOpacity,
-            shadowRadius: colors.shadowRadius,
-            elevation: colors.elevation,
-          }]}>
-            <View style={{ flex: 1 }}>
-              <View style={styles.labelRow}>
+        </View>
+        <View style={[styles.inputCard, {
+          backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+          borderColor: colors.cardBorder,
+          borderWidth: 1,
+          shadowColor: colors.shadowColor,
+          shadowOffset: colors.shadowOffset,
+          shadowOpacity: colors.shadowOpacity,
+          shadowRadius: colors.shadowRadius,
+          elevation: colors.elevation,
+        }]}>
+          <View style={{ flex: 1 }}>
+            <View style={styles.labelRow}>
+              <View style={styles.labelTextContainer}>
                 <Iconify icon="uil:comment-alt-check" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.answer", "Cevap")} *</Text>
+                <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t("addCard.answer", "Cevap")}</Text>
               </View>
-              <View style={{ position: 'relative' }}>
-                <TextInput
-                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: answer?.length > 0 ? scale(48) : scale(12)}]}
-                  placeholder={t("addCard.answerPlaceholder", "Kartın cevabı")}
-                  placeholderTextColor={colors.muted}
-                  value={answer}
-                  onChangeText={setAnswer}
-                  multiline
-                />
-                {answer?.length > 0 ? (
-                  <TouchableOpacity
-                    onPress={() => setAnswer('')}
-                    accessibilityLabel={t('common.clear', 'Temizle')}
-                    hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
-                    style={{ position: 'absolute', right: scale(12), top: verticalScale(12), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
-                  >
-                    <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
-                  </TouchableOpacity>
-                ) : null}
+              <View>
+                <BadgeText required={true} />
               </View>
             </View>
-          </View>
-          <View style={[styles.inputCard, { 
-            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
-            borderColor: colors.cardBorder,
-            borderWidth: 1,
-            shadowColor: colors.shadowColor,
-            shadowOffset: colors.shadowOffset,
-            shadowOpacity: colors.shadowOpacity,
-            shadowRadius: colors.shadowRadius,
-            elevation: colors.elevation,
-          }]}>
-            <View style={{ flex: 1 }}>
-              <View style={styles.labelRow}>
-                <Iconify icon="lucide:lightbulb" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.example", "Örnek")}</Text>
-              </View>
-              <View style={{ position: 'relative' }}>
-                <TextInput
-                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: example?.length > 0 ? scale(48) : scale(12)}]}
-                  placeholder={t("addCard.examplePlaceholder", "Örnek cümle (opsiyonel)")}
-                  placeholderTextColor={colors.muted}
-                  value={example}
-                  onChangeText={setExample}
-                  multiline
-                />
-                {example?.length > 0 ? (
-                  <TouchableOpacity
-                    onPress={() => setExample('')}
-                    accessibilityLabel={t('common.clear', 'Temizle')}
-                    hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
-                    style={{ position: 'absolute', right: scale(12), top: verticalScale(12), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
-                  >
-                    <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
-                  </TouchableOpacity>
-                ) : null}
-              </View>
+            <View style={{ position: 'relative' }}>
+              <TextInput
+                style={[styles.input, typography.styles.body, { color: colors.text, paddingRight: answer?.length > 0 ? scale(48) : scale(12) }]}
+                placeholder={t("addCard.answerPlaceholder", "Kartın cevabı")}
+                placeholderTextColor={colors.muted}
+                value={answer}
+                onChangeText={setAnswer}
+                multiline
+              />
+              {answer?.length > 0 ? (
+                <TouchableOpacity
+                  onPress={() => setAnswer('')}
+                  accessibilityLabel={t('common.clear', 'Temizle')}
+                  hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
+                  style={{ position: 'absolute', right: scale(12), top: verticalScale(12), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
+                >
+                  <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
+                </TouchableOpacity>
+              ) : null}
             </View>
           </View>
-          <View style={[styles.inputCard, { 
-            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
-            borderColor: colors.cardBorder,
-            borderWidth: 1,
-            shadowColor: colors.shadowColor,
-            shadowOffset: colors.shadowOffset,
-            shadowOpacity: colors.shadowOpacity,
-            shadowRadius: colors.shadowRadius,
-            elevation: colors.elevation,
-          }]}>
-            <View style={{ flex: 1 }}>
-              <View style={styles.labelRow}>
-                <Iconify icon="material-symbols-light:stylus-note" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("addCard.note", "Not")}</Text>
+        </View>
+        <View style={[styles.inputCard, {
+          backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+          borderColor: colors.cardBorder,
+          borderWidth: 1,
+          shadowColor: colors.shadowColor,
+          shadowOffset: colors.shadowOffset,
+          shadowOpacity: colors.shadowOpacity,
+          shadowRadius: colors.shadowRadius,
+          elevation: colors.elevation,
+        }]}>
+          <View style={{ flex: 1 }}>
+            <View style={styles.labelRow}>
+              <View style={styles.labelTextContainer}>
+              <Iconify icon="lucide:lightbulb" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t("addCard.example", "Örnek")}</Text>
               </View>
-              <View style={{ position: 'relative' }}>
-                <TextInput
-                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: note?.length > 0 ? scale(48) : scale(12)}]}
-                  placeholder={t("addCard.notePlaceholder", "Not (opsiyonel)")}
-                  placeholderTextColor={colors.muted}
-                  value={note}
-                  onChangeText={setNote}
-                  multiline
-                />
-                {note?.length > 0 ? (
-                  <TouchableOpacity
-                    onPress={() => setNote('')}
-                    accessibilityLabel={t('common.clear', 'Temizle')}
-                    hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
-                    style={{ position: 'absolute', right: scale(12), top: verticalScale(12), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
-                  >
-                    <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
-                  </TouchableOpacity>
-                ) : null}
+              <View>
+                <BadgeText required={false} />
               </View>
             </View>
+            <View style={{ position: 'relative' }}>
+              <TextInput
+                style={[styles.input, typography.styles.body, { color: colors.text, paddingRight: example?.length > 0 ? scale(48) : scale(12) }]}
+                placeholder={t("addCard.examplePlaceholder", "Örnek cümle")}
+                placeholderTextColor={colors.muted}
+                value={example}
+                onChangeText={setExample}
+                multiline
+              />
+              {example?.length > 0 ? (
+                <TouchableOpacity
+                  onPress={() => setExample('')}
+                  accessibilityLabel={t('common.clear', 'Temizle')}
+                  hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
+                  style={{ position: 'absolute', right: scale(12), top: verticalScale(12), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
+                >
+                  <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
           </View>
-          <View style={styles.buttonRowModern}>
-            <UndoButton
-              onPress={handleResetForm}
-              disabled={loading}
-              text={t("addCard.undo", "Geri Al")}
-            />
-            <CreateButton
-              onPress={handleCreateCard}
-              disabled={loading}
-              loading={loading}
-              text={t("addCard.createCard", "Kartı Oluştur")}
-            />
+        </View>
+        <View style={[styles.inputCard, {
+          backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+          borderColor: colors.cardBorder,
+          borderWidth: 1,
+          shadowColor: colors.shadowColor,
+          shadowOffset: colors.shadowOffset,
+          shadowOpacity: colors.shadowOpacity,
+          shadowRadius: colors.shadowRadius,
+          elevation: colors.elevation,
+        }]}>
+          <View style={{ flex: 1 }}>
+            <View style={styles.labelRow}>
+              <View style={styles.labelTextContainer}>
+              <Iconify icon="material-symbols-light:stylus-note" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t("addCard.note", "Not")}</Text>
+              </View>
+              <View>
+                <BadgeText required={false} />
+              </View>
+            </View>
+            <View style={{ position: 'relative' }}>
+              <TextInput
+                style={[styles.input, typography.styles.body, { color: colors.text, paddingRight: note?.length > 0 ? scale(48) : scale(12) }]}
+                placeholder={t("addCard.notePlaceholder", "Not (opsiyonel)")}
+                placeholderTextColor={colors.muted}
+                value={note}
+                onChangeText={setNote}
+                multiline
+              />
+              {note?.length > 0 ? (
+                <TouchableOpacity
+                  onPress={() => setNote('')}
+                  accessibilityLabel={t('common.clear', 'Temizle')}
+                  hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
+                  style={{ position: 'absolute', right: scale(12), top: verticalScale(12), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
+                >
+                  <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
           </View>
-        </KeyboardAwareScrollView>
+        </View>
+        <View style={styles.buttonRowModern}>
+          <UndoButton
+            onPress={handleResetForm}
+            disabled={loading}
+            text={t("addCard.undo", "Geri Al")}
+          />
+          <CreateButton
+            onPress={handleCreateCard}
+            disabled={loading}
+            loading={loading}
+            text={t("addCard.createCard", "Kartı Oluştur")}
+          />
+        </View>
+      </KeyboardAwareScrollView>
 
       <HowToCreateCardModal
         isVisible={isHowToCreateCardModalVisible}
@@ -452,7 +478,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(28),
     padding: moderateScale(20),
     marginBottom: verticalScale(11),
-    shadowOffset: { width: scale(4), height: verticalScale(6)},
+    shadowOffset: { width: scale(4), height: verticalScale(6) },
     shadowOpacity: 0.10,
     shadowRadius: moderateScale(10),
     elevation: 5,
@@ -461,10 +487,13 @@ const styles = StyleSheet.create({
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: verticalScale(10),
+    justifyContent: 'space-between',
+    marginBottom: verticalScale(12),
   },
-  labelIcon: {
-    marginRight: scale(8),
+  labelTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(8),
   },
   label: {
     fontSize: moderateScale(16),
@@ -479,9 +508,9 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(16),
   },
   cardImage: {
-    width: scale(120),
+    width: '100%',
     height: verticalScale(160),
-    borderRadius: moderateScale(18),
+    borderRadius: moderateScale(32),
     marginBottom: verticalScale(8),
     resizeMode: 'cover',
     backgroundColor: '#f2f2f2',

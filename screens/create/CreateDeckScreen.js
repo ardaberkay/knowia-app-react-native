@@ -13,6 +13,7 @@ import CreateButton from '../../components/tools/CreateButton';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
 import DeckLanguageModal from '../../components/modals/DeckLanguageModal';
+import BadgeText from '../../components/modals/BadgeText';
 
 export default function CreateScreen() {
   const [name, setName] = useState('');
@@ -51,7 +52,7 @@ export default function CreateScreen() {
   const getDeckLanguageName = (language) => {
     const translation = t(`languages.${language.sort_order}`, null);
     return translation;
-};
+  };
 
 
   const getCategoryIcon = (sortOrder) => {
@@ -124,7 +125,7 @@ export default function CreateScreen() {
         })
         .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)')
         .single();
-      
+
       if (selectedLanguage.length > 0) {
         const relations = selectedLanguage.map((languageId) => ({
           deck_id: data.id,
@@ -203,8 +204,13 @@ export default function CreateScreen() {
             ]}
           >
             <View style={styles.labelRow}>
-              <Iconify icon="ion:book" size={moderateScale(20)} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.name', 'Deste Adı')}*</Text>
+              <View style={styles.labelTextContainer}>
+                <Iconify icon="ion:book" size={moderateScale(20)} color="#F98A21" style={styles.labelIcon} />
+                <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.name', 'Deste Adı')}</Text>
+              </View>
+              <View>
+                <BadgeText required={true} />
+              </View>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <TextInput
@@ -244,9 +250,13 @@ export default function CreateScreen() {
             ]}
           >
             <View style={styles.labelRow}>
+              <View style={styles.labelTextContainer}>
               <Iconify icon="icon-park-outline:translation" size={moderateScale(20)} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.toName', 'Karşılığı')}</Text>
-              <Text style={[typography.styles.caption, { color: colors.muted }]}> ({t('create.optional', 'opsiyonel')})</Text>
+                <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.toName', 'Karşılığı')}</Text>
+              </View>
+              <View>
+                <BadgeText required={false} />
+              </View>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <TextInput
@@ -286,9 +296,13 @@ export default function CreateScreen() {
             ]}
           >
             <View style={styles.labelRow}>
+              <View style={styles.labelTextContainer}>
               <Iconify icon="tabler:file-description-filled" size={moderateScale(20)} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.description', 'Açıklama')}</Text>
-              <Text style={[styles.optional, typography.styles.caption, { color: colors.muted }]}> ({t('create.optional', 'opsiyonel')})</Text>
+                <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.description', 'Açıklama')}</Text>
+              </View>
+              <View>
+                <BadgeText required={false} />
+              </View>
             </View>
             <View style={{ position: 'relative' }}>
               <TextInput
@@ -335,8 +349,13 @@ export default function CreateScreen() {
             ]}
           >
             <View style={styles.labelRow}>
-              <Iconify icon="mdi:category-plus-outline" size={moderateScale(21)} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('createDeck.categoryLabel', 'Kategori')}</Text>
+              <View style={styles.labelTextContainer}>
+                <Iconify icon="mdi:category-plus-outline" size={moderateScale(21)} color="#F98A21" style={styles.labelIcon} />
+                <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('createDeck.categoryLabel', 'Kategori')}</Text>
+              </View>
+              <View>
+                <BadgeText required={true} />
+                </View>
             </View>
             <TouchableOpacity
               style={[styles.categorySelector, { borderColor: '#eee' }]}
@@ -376,10 +395,15 @@ export default function CreateScreen() {
             ]}
           >
             <View style={styles.labelRow}>
-            <Iconify icon="mdi:spoken-language" size={moderateScale(21)} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>
-                {t('create.language', 'İçerik Dili')}
-              </Text>
+              <View style={styles.labelTextContainer}>
+              <Iconify icon="mdi:spoken-language" size={moderateScale(21)} color="#F98A21" style={styles.labelIcon} />
+                <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>
+                  {t('create.language', 'İçerik Dili')}
+                </Text>
+              </View>
+                <View>
+                  <BadgeText required={true} />
+                </View>
             </View>
 
             <TouchableOpacity
@@ -395,7 +419,7 @@ export default function CreateScreen() {
                     { color: selectedLang?.length > 0 ? colors.text : colors.muted },
                   ]}
                 >
-                {selectedLang?.length > 0 ? ` ${selectedLang.map(l => getDeckLanguageName(l)).join(' | ')}` : ` ${t('create.selectLanguage', 'Dil seç')}` }
+                  {selectedLang?.length > 0 ? ` ${selectedLang.map(l => getDeckLanguageName(l)).join(' | ')}` : ` ${t('create.selectLanguage', 'Dil seç')}`}
                 </Text>
               </View>
               <Iconify
@@ -452,7 +476,7 @@ export default function CreateScreen() {
             return [...prev, languageId];
           });
         }}
-        
+
       />
     </View>
   );
@@ -536,11 +560,16 @@ const styles = StyleSheet.create({
   },
   labelRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    
     marginBottom: verticalScale(11),
+  },
+  labelTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: scale(8),
   },
-
   input: {
     borderWidth: moderateScale(0.15),
     borderColor: '#eee',

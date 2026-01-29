@@ -422,9 +422,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
               </View>
             </View>
             <View style={styles.cardContent}>
-              <View style={{ alignSelf: 'center' }}>
                 <Image source={{ uri: card.image }} style={styles.cardImage} />
-              </View>
             </View>
           </View>
         ) : null}
@@ -589,9 +587,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   cardImage: {
-    width: scale(120),
+    width: '100%',
     height: verticalScale(160),
-    borderRadius: moderateScale(18),
+    borderRadius: moderateScale(32),
     resizeMode: 'cover',
     backgroundColor: '#f2f2f2',
     alignSelf: 'center',
@@ -616,13 +614,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: moderateScale(20),
     backgroundColor: 'transparent',
-  },
-  cardContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: scale(16),
-    width: '100%',
-    height: '100%',
   },
   quarterCircleContainer: {
     position: 'absolute',

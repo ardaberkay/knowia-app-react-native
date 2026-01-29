@@ -6,6 +6,7 @@ import { typography } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import BadgeText from './BadgeText';
 
 export default function HowToCreateModal({ isVisible, onClose }) {
   const { colors } = useTheme();
@@ -16,37 +17,36 @@ export default function HowToCreateModal({ isVisible, onClose }) {
       icon: 'ion:book',
       title: t('howToCreate.step1Title', 'Deste Adı Ekle'),
       description: t('howToCreate.step1Desc', 'Destenize bir isim verin. Bu isim destenizi tanımlar ve arama sonuçlarında görünür. Örn: "İngilizce Kelimeler", "Tarih Notları"'),
-      required: true,
+      required: <BadgeText required={true} />,
     },
     {
       icon: 'icon-park-outline:translation',
       title: t('howToCreate.step2Title', 'Karşılığı Ekle (Opsiyonel)'),
       description: t('howToCreate.step2Desc', 'Eğer desteniz çeviri veya eşleştirme içeriyorsa, karşılık alanını doldurabilirsiniz. Bu alan boş bırakılabilir. Örn: "English Words" için karşılık "Türkçe Kelimeler" olabilir.'),
-      required: false,
+      required: <BadgeText required={false} />,
     },
     {
       icon: 'tabler:file-description-filled',
       title: t('howToCreate.step3Title', 'Açıklama Ekle (Opsiyonel)'),
       description: t('howToCreate.step3Desc', 'Destenizin amacını, içeriğini veya kullanım şeklini açıklayabilirsiniz. Bu bilgi diğer kullanıcılar için faydalı olabilir.'),
-      required: false,
+      required: <BadgeText required={false} />,
     },
     {
       icon: 'mdi:category-plus-outline',
       title: t('howToCreate.step4Title', 'Kategori Seç'),
       description: t('howToCreate.step4Desc', 'Destenizin hangi konuya ait olduğunu belirlemek için bir kategori seçin. Bu, destenizin keşfedilmesini ve organize edilmesini kolaylaştırır.'),
-      required: true,
+      required: <BadgeText required={true} />,
     },
     {
       icon: 'mdi:spoken-language',
       title: t('howToCreate.step6Title', 'İçerik Dili Seç'),
       description: t('howToCreate.step6Desc', 'Destenizin içerik dilini en fazla 2 dil olacak şekilde seçin. Bu, destenizin diğer kullanıcılar tarafından keşfedilmesini ve organize edilmesini kolaylaştırır.'),
-      required: true,
+      required: <BadgeText required={true} />,
     },
     {
       icon: 'fluent:tab-add-24-regular',
       title: t('howToCreate.step5Title', 'Oluştur Butonuna Bas'),
       description: t('howToCreate.step5Desc', 'Tüm bilgileri doldurduktan sonra "Oluştur" butonuna basın. Deste oluşturulduktan sonra kart eklemeye başlayabilirsiniz.'),
-      required: false,
     }
   ];
 
@@ -68,7 +68,7 @@ export default function HowToCreateModal({ isVisible, onClose }) {
           <View style={styles.headerTitleContainer}>
             <Iconify icon="material-symbols:info-outline" size={moderateScale(24)} color={colors.secondary} style={{ marginRight: scale(8) }} />
             <Text style={[typography.styles.h2, { color: colors.text }]}>
-              {t('howToCreate.title', 'Deste Nasıl Oluşturulur?')}
+              {t('howToCreate.title', 'Nasıl Oluşturulur?')}
             </Text>
           </View>
           <TouchableOpacity onPress={onClose} hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}>
@@ -96,13 +96,7 @@ export default function HowToCreateModal({ isVisible, onClose }) {
                     <Text style={[styles.stepTitle, typography.styles.h3, { color: colors.text }]}>
                       {step.title}
                     </Text>
-                    {step.required && (
-                      <View style={[styles.requiredBadge, { backgroundColor: colors.error + '20' }]}>
-                        <Text style={[styles.requiredText, { color: colors.error }]}>
-                          {t('howToCreate.required', 'Zorunlu')}
-                        </Text>
-                      </View>
-                    )}
+                    {step.required}
                   </View>
                 </View>
               </View>
@@ -131,6 +125,7 @@ export default function HowToCreateModal({ isVisible, onClose }) {
         </TouchableOpacity>
       </View>
     </Modal>
+
   );
 }
 
@@ -173,6 +168,7 @@ const styles = StyleSheet.create({
   stepHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: verticalScale(8),
   },
   stepIconContainer: {
     width: scale(48),

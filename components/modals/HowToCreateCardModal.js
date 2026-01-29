@@ -6,6 +6,7 @@ import { typography } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import BadgeText from './BadgeText';
 
 export default function HowToCreateCardModal({ isVisible, onClose }) {
   const { colors } = useTheme();
@@ -16,37 +17,36 @@ export default function HowToCreateCardModal({ isVisible, onClose }) {
       icon: 'uil:comment-alt-question',
       title: t('howToCreateCard.step1Title', 'Soru Ekle'),
       description: t('howToCreateCard.step1Desc', 'Kartınızın sorusunu yazın. Bu soru kartın ön yüzünde görünecektir. Örn: "Book" kelimesinin Türkçe karşılığı nedir?'),
-      required: true,
+      required: <BadgeText required={true} />,
     },
     {
       icon: 'uil:comment-alt-check',
       title: t('howToCreateCard.step2Title', 'Cevap Ekle'),
       description: t('howToCreateCard.step2Desc', 'Kartınızın cevabını yazın. Bu cevap kartın arka yüzünde görünecektir. Örn: "Kitap"'),
-      required: true,
+      required: <BadgeText required={true} />,
     },
     {
       icon: 'lucide:lightbulb',
-      title: t('howToCreateCard.step3Title', 'Örnek Ekle (Opsiyonel)'),
+      title: t('howToCreateCard.step3Title', 'Örnek Ekle'),
       description: t('howToCreateCard.step3Desc', 'Kartınız için örnek bir cümle veya kullanım ekleyebilirsiniz. Bu alan boş bırakılabilir. Örn: "I am reading a book"'),
-      required: false,
+      required: <BadgeText required={false} />,
     },
     {
       icon: 'material-symbols-light:stylus-note',
-      title: t('howToCreateCard.step4Title', 'Not Ekle (Opsiyonel)'),
+      title: t('howToCreateCard.step4Title', 'Not Ekle'),
       description: t('howToCreateCard.step4Desc', 'Kartınız için ek notlar veya açıklamalar ekleyebilirsiniz. Bu alan boş bırakılabilir. Örn: "Bu kelime bu şekilde okunur"'),
-      required: false,
+      required: <BadgeText required={false} />,
     },
     {
       icon: 'mage:image-fill',
-      title: t('howToCreateCard.step5Title', 'Görsel Ekle (Opsiyonel)'),
+      title: t('howToCreateCard.step5Title', 'Görsel Ekle'),
       description: t('howToCreateCard.step5Desc', 'Kartınıza görsel ekleyebilirsiniz. Bu görsel kartın öğrenilmesini kolaylaştırabilir. Bu alan boş bırakılabilir.'),
-      required: false,
+      required: <BadgeText required={false} />,  
     },
     {
       icon: 'hugeicons:file-add',
       title: t('howToCreateCard.step6Title', 'Kartı Oluştur'),
-      description: t('howToCreateCard.step6Desc', 'Soru ve cevap alanlarını doldurduktan sonra "Kartı Oluştur" butonuna basın. Kart oluşturulduktan sonra destenize eklenir.'),
-      required: false,
+      description: t('howToCreateCard.step6Desc', 'Soru ve cevap alanlarını doldurduktan sonra "Kartı Oluştur" butonuna basın. Kart oluşturulduktan sonra destenize eklenir.')
     },
   ];
 
@@ -96,13 +96,7 @@ export default function HowToCreateCardModal({ isVisible, onClose }) {
                     <Text style={[styles.stepTitle, typography.styles.h3, { color: colors.text }]}>
                       {step.title}
                     </Text>
-                    {step.required && (
-                      <View style={[styles.requiredBadge, { backgroundColor: colors.error + '20' }]}>
-                        <Text style={[styles.requiredText, { color: colors.error }]}>
-                          {t('howToCreateCard.required', 'Zorunlu')}
-                        </Text>
-                      </View>
-                    )}
+                    {step.required}
                   </View>
                 </View>
               </View>
@@ -173,6 +167,7 @@ const styles = StyleSheet.create({
   stepHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: verticalScale(8),
   },
   stepIconContainer: {
     width: scale(48),

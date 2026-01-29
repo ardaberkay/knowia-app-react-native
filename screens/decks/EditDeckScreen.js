@@ -3,7 +3,6 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Platform, S
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { supabase } from '../../lib/supabase';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { typography } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +12,8 @@ import UndoButton from '../../components/tools/UndoButton';
 import CreateButton from '../../components/tools/CreateButton';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import BadgeText from '../../components/modals/BadgeText';
+import DeckLanguageModal from '../../components/modals/DeckLanguageModal';
 
 export default function DeckEditScreen() {
   const route = useRoute();
@@ -22,6 +23,8 @@ export default function DeckEditScreen() {
   const [description, setDescription] = useState(deck.description || '');
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(deck.category_id || null);
+  const [selectedLanguage, setSelectedLanguage] = useState([]);
+  const [isDeckLanguageModalVisible, setDeckLanguageModalVisible] = useState(false);
   // Deck'ten gelen kategori bilgisini kullan (eğer varsa)
   const deckCategory = deck.categories || null;
   const [categories, setCategories] = useState([]);
@@ -64,10 +67,10 @@ export default function DeckEditScreen() {
   }, []);
 
   const resetForm = () => {
-    setName(deck.name || '');
-    setToName(deck.to_name || '');
-    setDescription(deck.description || '');
-    setSelectedCategory(deck.category_id || null);
+    setName('');
+    setToName('');
+    setDescription('');
+    setSelectedCategory(null);
   };
 
   const handleSave = async () => {
@@ -124,8 +127,13 @@ export default function DeckEditScreen() {
             ]}
           >
             <View style={styles.labelRow}>
-              <Iconify icon="ion:book" size={moderateScale(20)} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.name', 'Deste Adı')}*</Text>
+              <View style={styles.labelTextContainer}>
+              <Iconify icon="ion:book" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+                <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.name', 'Deste Adı')}</Text>
+              </View>
+              <View>
+                <BadgeText required={true} />
+              </View>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <TextInput
@@ -166,9 +174,13 @@ export default function DeckEditScreen() {
             ]}
           >
             <View style={styles.labelRow}>
-              <Iconify icon="icon-park-outline:translation" size={moderateScale(20)} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.toName', 'Karşılığı')}</Text>
-              <Text style={[typography.styles.caption, { color: colors.muted }]}> ({t('create.optional', 'opsiyonel')})</Text>
+              <View style={styles.labelTextContainer}>
+              <Iconify icon="icon-park-outline:translation" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+                <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.toName', 'Karşılığı')}</Text>
+              </View>
+              <View>
+                <BadgeText required={false} />
+              </View>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <TextInput
@@ -208,9 +220,13 @@ export default function DeckEditScreen() {
             ]}
           >
             <View style={styles.labelRow}>
-              <Iconify icon="tabler:file-description-filled" size={moderateScale(20)} color="#F98A21" style={styles.labelIcon} />
+              <View style={styles.labelTextContainer}>
+              <Iconify icon="tabler:file-description-filled" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.description', 'Açıklama')}</Text>
-              <Text style={[styles.optional, typography.styles.caption, { color: colors.muted }]}> ({t('create.optional', 'opsiyonel')})</Text>
+              </View>
+              <View>
+                <BadgeText required={false} />
+              </View>
             </View>
             <View style={{ position: 'relative' }}>
               <TextInput
@@ -257,8 +273,13 @@ export default function DeckEditScreen() {
             ]}
           >
             <View style={styles.labelRow}>
-              <Iconify icon="mdi:category-plus-outline" size={moderateScale(21)} color="#F98A21" style={styles.labelIcon} />
+              <View style={styles.labelTextContainer}>
+              <Iconify icon="mdi:category-plus-outline" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('createDeck.categoryLabel', 'Kategori')}</Text>
+              </View>
+              <View>
+                <BadgeText required={true} />
+              </View>
             </View>
             <TouchableOpacity
               style={[styles.categorySelector, { borderColor: '#eee' }]}
@@ -303,7 +324,7 @@ export default function DeckEditScreen() {
 
           <View style={styles.buttonRowModern}>
             <UndoButton
-              onPress={() => navigation.goBack()}
+              onPress={resetForm}
               disabled={loading}
               style={{ flex: 1, minWidth: 0, marginRight: scale(10) }}
             />
@@ -354,11 +375,13 @@ const styles = StyleSheet.create({
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: verticalScale(11),
-    gap: scale(8),
+    marginBottom: verticalScale(12),
+    justifyContent: 'space-between',
   },
-  labelIcon: {
-    marginRight: scale(8),
+  labelTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(8),
   },
   label: {
     fontSize: moderateScale(16),

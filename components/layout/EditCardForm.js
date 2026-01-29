@@ -13,6 +13,7 @@ import { Iconify } from 'react-native-iconify';
 import CreateButton from '../tools/CreateButton';
 import UndoButton from '../tools/UndoButton';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import BadgeText from '../modals/BadgeText';
 
 export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) {
   const { colors } = useTheme();
@@ -120,8 +121,13 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
           }]}>
             <View style={{ flex: 1 }}>
               <View style={styles.labelRow}>
-                <Iconify icon="mage:image-fill" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.image", "Kart Görseli")}</Text>
+                <View style={styles.labelTextContainer}>
+                  <Iconify icon="mage:image-fill" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+                  <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.image", "Kart Görseli")}</Text>
+                </View>
+                <View>
+                  <BadgeText required={false} />
+                </View>
               </View>
             {image ? (
               <View style={{ alignItems: 'center', marginBottom: verticalScale(8) }}>
@@ -150,8 +156,13 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
           }]}>
             <View style={{ flex: 1 }}>
               <View style={styles.labelRow}>
-                <Iconify icon="uil:comment-alt-question" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.question", "Soru")} *</Text>
+                <View style={styles.labelTextContainer}>
+                <Iconify icon="uil:comment-alt-question" size={moderateScale(24)} color="#F98A21" />
+                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.question", "Soru")}</Text>
+                </View>
+                <View>
+                  <BadgeText required={true} />
+                </View>
               </View>
               <View style={{ position: 'relative' }}>
                 <TextInput
@@ -187,8 +198,13 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
           }]}>
             <View style={{ flex: 1 }}>
               <View style={styles.labelRow}>
+                <View style={styles.labelTextContainer}>
                 <Iconify icon="uil:comment-alt-check" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.answer", "Cevap")} *</Text>
+                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.answer", "Cevap")}</Text>
+                </View>
+                <View>
+                  <BadgeText required={true} />
+                </View>
               </View>
               <View style={{ position: 'relative' }}>
                 <TextInput
@@ -224,8 +240,13 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
           }]}>
             <View style={{ flex: 1 }}>
               <View style={styles.labelRow}>
+                <View style={styles.labelTextContainer}>
                 <Iconify icon="lucide:lightbulb" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.example", "Örnek")}</Text>
+                </View>
+                <View>
+                  <BadgeText required={false} />
+                </View>
               </View>
               <View style={{ position: 'relative' }}>
                 <TextInput
@@ -261,8 +282,13 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
           }]}>
             <View style={{ flex: 1 }}>
               <View style={styles.labelRow}>
+                <View style={styles.labelTextContainer}>
                 <Iconify icon="material-symbols-light:stylus-note" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.note", "Not")}</Text>
+                </View>
+                <View>
+                  <BadgeText required={false} />
+                </View>
               </View>
               <View style={{ position: 'relative' }}>
                 <TextInput
@@ -327,10 +353,14 @@ const styles = StyleSheet.create({
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: verticalScale(10),
+    justifyContent: 'space-between',
+    marginBottom: verticalScale(12),
+
   },
-  labelIcon: {
-    marginRight: scale(8),
+  labelTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(8),
   },
   label: {
     fontSize: moderateScale(16),
@@ -345,7 +375,7 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(16),
   },
   cardImage: {
-    width: scale(120),
+    width: '100%',
     height: verticalScale(160),
     borderRadius: moderateScale(18),
     marginBottom: verticalScale(8),
