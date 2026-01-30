@@ -17,22 +17,44 @@ import DeckLanguageModal from '../../components/modals/DeckLanguageModal';
 
 export default function DeckEditScreen() {
   const route = useRoute();
-  const { deck } = route.params;
+  const { deck, selectedLanguageIds , categoryInfo} = route.params;
   const [name, setName] = useState(deck.name || '');
   const [toName, setToName] = useState(deck.to_name || '');
   const [description, setDescription] = useState(deck.description || '');
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(deck.category_id || null);
-  const [selectedLanguage, setSelectedLanguage] = useState([]);
+  const [selectedLanguage, setSelectedLanguage] = useState(selectedLanguageIds || []);
   const [isDeckLanguageModalVisible, setDeckLanguageModalVisible] = useState(false);
-  // Deck'ten gelen kategori bilgisini kullan (eğer varsa)
-  const deckCategory = deck.categories || null;
+  const [languages, setLanguages] = useState([]);
   const [categories, setCategories] = useState([]);
   const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
   const navigation = useNavigation();
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { showSuccess, showError } = useSnackbarHelpers();
+
+  const deckCategory = deck.categories || null;
+
+  const selectedLang = languages.filter(l =>
+    selectedLanguage?.includes(l.id)
+  );
+
+  React.useEffect(() => {
+    const loadLanguages = async () => {
+      const { data, error } = await supabase
+        .from('languages')
+        .select('*');
+      console.log('LANGUAGES:', data, error);
+      setLanguages(data || []);
+    };
+    loadLanguages();
+  }, []);
+
+  const getDeckLanguageName = (language) => {
+    const translation = t(`languages.${language.sort_order}`, null);
+    return translation;
+  };
+
 
   // Kategori ikonunu sort_order değerine göre al
   const getCategoryIcon = (sortOrder) => {
@@ -71,11 +93,20 @@ export default function DeckEditScreen() {
     setToName('');
     setDescription('');
     setSelectedCategory(null);
+    setSelectedLanguage([]);
   };
 
   const handleSave = async () => {
     if (!name.trim()) {
       showError(t("common.requiredNameDeck", "Deste adı zorunludur."));
+      return;
+    }
+    if (!selectedCategory) {
+      showError(t("create.requiredCategory", "Lütfen bir kategori seçin."));
+      return;
+    }
+    if (!selectedLanguage) {
+      showError(t("create.requiredLanguage", "Lütfen desteyle ilgili bir dil seçin."));
       return;
     }
     setLoading(true);
@@ -90,6 +121,28 @@ export default function DeckEditScreen() {
         })
         .eq('id', deck.id);
       if (error) throw error;
+      // önce eski dilleri sil
+      const { error: deleteError } = await supabase
+        .from('decks_languages')
+        .delete()
+        .eq('deck_id', deck.id);
+
+      if (deleteError) throw deleteError;
+
+      // sonra yenileri ekle
+      if (selectedLanguage.length > 0) {
+        const relations = selectedLanguage.map((languageId) => ({
+          deck_id: deck.id,
+          language_id: languageId,
+        }));
+
+        const { error: deckLangError } = await supabase
+          .from('decks_languages')
+          .insert(relations);
+
+        if (deckLangError) throw deckLangError;
+      }
+
       showSuccess(t("common.successDeckMessage", "Deste güncellendi."));
       setTimeout(() => {
         navigation.navigate('DeckDetail', { deck: { ...deck, name: name.trim(), to_name: toName.trim() || null, description: description.trim() || null, category_id: selectedCategory } });
@@ -111,232 +164,283 @@ export default function DeckEditScreen() {
         enableAutomaticScroll={true}
         extraScrollHeight={verticalScale(20)}
       >
-          <View
-            style={[
-              styles.inputCard,
-              {
-                backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
-                borderColor: colors.cardBorder,
-                borderWidth: 1,
-                shadowColor: colors.shadowColor,
-                shadowOffset: colors.shadowOffset,
-                shadowOpacity: colors.shadowOpacity,
-                shadowRadius: colors.shadowRadius,
-                elevation: colors.elevation,
-              },
-            ]}
-          >
-            <View style={styles.labelRow}>
-              <View style={styles.labelTextContainer}>
+        <View
+          style={[
+            styles.inputCard,
+            {
+              backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+              borderColor: colors.cardBorder,
+              borderWidth: 1,
+              shadowColor: colors.shadowColor,
+              shadowOffset: colors.shadowOffset,
+              shadowOpacity: colors.shadowOpacity,
+              shadowRadius: colors.shadowRadius,
+              elevation: colors.elevation,
+            },
+          ]}
+        >
+          <View style={styles.labelRow}>
+            <View style={styles.labelTextContainer}>
               <Iconify icon="ion:book" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.name', 'Deste Adı')}</Text>
-              </View>
-              <View>
-                <BadgeText required={true} />
-              </View>
+              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.name', 'Deste Adı')}</Text>
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <TextInput
-                style={[styles.input, typography.styles.body, { color: colors.text, flex: 1 }]}
-                placeholder={t('create.nameExam', 'Örn: İngilizce')}
-                placeholderTextColor={colors.muted}
-                value={name}
-                onChangeText={setName}
-                returnKeyType="next"
-                accessibilityLabel={t('create.name', 'Deste Adı')}
-                autoFocus
-              />
-              {name?.length > 0 ? (
-                <TouchableOpacity
-                  onPress={() => setName('')}
-                  accessibilityLabel={t('common.clear', 'Temizle')}
-                  hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
-                  style={{ marginLeft: scale(8), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
-                >
-                  <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
-                </TouchableOpacity>
-              ) : null}
+            <View>
+              <BadgeText required={true} />
             </View>
           </View>
-          <View
-            style={[
-              styles.inputCard,
-              {
-                backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
-                borderColor: colors.cardBorder,
-                borderWidth: 1,
-                shadowColor: colors.shadowColor,
-                shadowOffset: colors.shadowOffset,
-                shadowOpacity: colors.shadowOpacity,
-                shadowRadius: colors.shadowRadius,
-                elevation: colors.elevation,
-              },
-            ]}
-          >
-            <View style={styles.labelRow}>
-              <View style={styles.labelTextContainer}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TextInput
+              style={[styles.input, typography.styles.body, { color: colors.text, flex: 1 }]}
+              placeholder={t('create.nameExam', 'Örn: İngilizce')}
+              placeholderTextColor={colors.muted}
+              value={name}
+              onChangeText={setName}
+              returnKeyType="next"
+              accessibilityLabel={t('create.name', 'Deste Adı')}
+              autoFocus
+            />
+            {name?.length > 0 ? (
+              <TouchableOpacity
+                onPress={() => setName('')}
+                accessibilityLabel={t('common.clear', 'Temizle')}
+                hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
+                style={{ marginLeft: scale(8), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
+              >
+                <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+        <View
+          style={[
+            styles.inputCard,
+            {
+              backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+              borderColor: colors.cardBorder,
+              borderWidth: 1,
+              shadowColor: colors.shadowColor,
+              shadowOffset: colors.shadowOffset,
+              shadowOpacity: colors.shadowOpacity,
+              shadowRadius: colors.shadowRadius,
+              elevation: colors.elevation,
+            },
+          ]}
+        >
+          <View style={styles.labelRow}>
+            <View style={styles.labelTextContainer}>
               <Iconify icon="icon-park-outline:translation" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.toName', 'Karşılığı')}</Text>
-              </View>
-              <View>
-                <BadgeText required={false} />
-              </View>
+              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.toName', 'Karşılığı')}</Text>
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <TextInput
-                style={[styles.input, typography.styles.body, { color: colors.text, flex: 1 }]}
-                placeholder={t('create.toNameExam', 'Örn: Türkçe')}
-                placeholderTextColor={colors.muted}
-                value={toName}
-                onChangeText={setToName}
-                returnKeyType="next"
-                accessibilityLabel={t('create.toName', 'Karşılığı')}
-              />
-              {toName?.length > 0 ? (
-                <TouchableOpacity
-                  onPress={() => setToName('')}
-                  accessibilityLabel={t('common.clear', 'Temizle')}
-                  hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
-                  style={{ marginLeft: scale(8), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
-                >
-                  <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
-                </TouchableOpacity>
-              ) : null}
+            <View>
+              <BadgeText required={false} />
             </View>
           </View>
-          <View
-            style={[
-              styles.inputCard,
-              {
-                backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
-                borderColor: colors.cardBorder,
-                borderWidth: 1,
-                shadowColor: colors.shadowColor,
-                shadowOffset: colors.shadowOffset,
-                shadowOpacity: colors.shadowOpacity,
-                shadowRadius: colors.shadowRadius,
-                elevation: colors.elevation,
-              },
-            ]}
-          >
-            <View style={styles.labelRow}>
-              <View style={styles.labelTextContainer}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TextInput
+              style={[styles.input, typography.styles.body, { color: colors.text, flex: 1 }]}
+              placeholder={t('create.toNameExam', 'Örn: Türkçe')}
+              placeholderTextColor={colors.muted}
+              value={toName}
+              onChangeText={setToName}
+              returnKeyType="next"
+              accessibilityLabel={t('create.toName', 'Karşılığı')}
+            />
+            {toName?.length > 0 ? (
+              <TouchableOpacity
+                onPress={() => setToName('')}
+                accessibilityLabel={t('common.clear', 'Temizle')}
+                hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
+                style={{ marginLeft: scale(8), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
+              >
+                <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+        <View
+          style={[
+            styles.inputCard,
+            {
+              backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+              borderColor: colors.cardBorder,
+              borderWidth: 1,
+              shadowColor: colors.shadowColor,
+              shadowOffset: colors.shadowOffset,
+              shadowOpacity: colors.shadowOpacity,
+              shadowRadius: colors.shadowRadius,
+              elevation: colors.elevation,
+            },
+          ]}
+        >
+          <View style={styles.labelRow}>
+            <View style={styles.labelTextContainer}>
               <Iconify icon="tabler:file-description-filled" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.description', 'Açıklama')}</Text>
-              </View>
-              <View>
-                <BadgeText required={false} />
-              </View>
             </View>
-            <View style={{ position: 'relative' }}>
-              <TextInput
-                style={[
-                  styles.input,
-                  typography.styles.body,
-                  { height: verticalScale(120), textAlignVertical: 'top', color: colors.text, paddingRight: scale(40) },
-                ]}
-                placeholder={t('create.descriptionExam', 'Deste hakkında açıklama...')}
-                placeholderTextColor={colors.muted}
-                value={description}
-                onChangeText={setDescription}
-                multiline
-                returnKeyType="done"
-                accessibilityLabel={t('create.description', 'Açıklama')}
-              />
-              {description?.length > 0 ? (
-                <TouchableOpacity
-                  onPress={() => setDescription('')}
-                  accessibilityLabel={t('common.clear', 'Temizle')}
-                  hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8)}}
-                  style={{ position: 'absolute', right: scale(8), top: verticalScale(8), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
-                >
-                  <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
-                </TouchableOpacity>
-              ) : null}
+            <View>
+              <BadgeText required={false} />
             </View>
           </View>
+          <View style={{ position: 'relative' }}>
+            <TextInput
+              style={[
+                styles.input,
+                typography.styles.body,
+                { height: verticalScale(120), textAlignVertical: 'top', color: colors.text, paddingRight: scale(40) },
+              ]}
+              placeholder={t('create.descriptionExam', 'Deste hakkında açıklama...')}
+              placeholderTextColor={colors.muted}
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              returnKeyType="done"
+              accessibilityLabel={t('create.description', 'Açıklama')}
+            />
+            {description?.length > 0 ? (
+              <TouchableOpacity
+                onPress={() => setDescription('')}
+                accessibilityLabel={t('common.clear', 'Temizle')}
+                hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
+                style={{ position: 'absolute', right: scale(8), top: verticalScale(8), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
+              >
+                <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
 
-          {/* Kategori Seçimi */}
-          <View
-            style={[
-              styles.inputCard,
-              {
-                backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
-                borderColor: colors.cardBorder,
-                borderWidth: 1,
-                shadowColor: colors.shadowColor,
-                shadowOffset: colors.shadowOffset,
-                shadowOpacity: colors.shadowOpacity,
-                shadowRadius: colors.shadowRadius,
-                elevation: colors.elevation,
-              },
-            ]}
-          >
-            <View style={styles.labelRow}>
-              <View style={styles.labelTextContainer}>
+        {/* Kategori Seçimi */}
+        <View
+          style={[
+            styles.inputCard,
+            {
+              backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+              borderColor: colors.cardBorder,
+              borderWidth: 1,
+              shadowColor: colors.shadowColor,
+              shadowOffset: colors.shadowOffset,
+              shadowOpacity: colors.shadowOpacity,
+              shadowRadius: colors.shadowRadius,
+              elevation: colors.elevation,
+            },
+          ]}
+        >
+          <View style={styles.labelRow}>
+            <View style={styles.labelTextContainer}>
               <Iconify icon="mdi:category-plus-outline" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('createDeck.categoryLabel', 'Kategori')}</Text>
-              </View>
-              <View>
-                <BadgeText required={true} />
-              </View>
             </View>
-            <TouchableOpacity
-              style={[styles.categorySelector, { borderColor: '#eee' }]}
-              accessibilityLabel={t('createDeck.selectCategoryA11y', 'Kategori seç')}
-              onPress={() => setCategoryModalVisible(true)}
-            >
-              <View style={styles.categoryRow}>
-                {selectedCategory && (() => {
+            <View>
+              <BadgeText required={true} />
+            </View>
+          </View>
+          <TouchableOpacity
+            style={[styles.categorySelector, { borderColor: '#eee' }]}
+            accessibilityLabel={t('createDeck.selectCategoryA11y', 'Kategori seç')}
+            onPress={() => setCategoryModalVisible(true)}
+          >
+            <View style={styles.categoryRow}>
+              {selectedCategory && (() => {
+                // Önce deck'ten gelen kategori bilgisini kullan, yoksa categories listesinden bul
+                const category = deckCategory && deckCategory.id === selectedCategory
+                  ? deckCategory
+                  : categories.find(c => c.id === selectedCategory);
+                const sortOrder = category?.sort_order;
+
+                return sortOrder ? (
+                  <Iconify
+                    icon={getCategoryIcon(sortOrder)}
+                    size={moderateScale(20)}
+                    color={selectedCategory ? colors.text : colors.muted}
+                    style={styles.categoryIcon}
+                  />
+                ) : null;
+              })()}
+              <Text style={[styles.categoryText, typography.styles.body, { color: selectedCategory ? colors.text : colors.muted }]}>
+                {selectedCategory ? (() => {
                   // Önce deck'ten gelen kategori bilgisini kullan, yoksa categories listesinden bul
-                  const category = deckCategory && deckCategory.id === selectedCategory 
-                    ? deckCategory 
+                  const category = deckCategory && deckCategory.id === selectedCategory
+                    ? deckCategory
                     : categories.find(c => c.id === selectedCategory);
                   const sortOrder = category?.sort_order;
-                  
-                  return sortOrder ? (
-                    <Iconify
-                      icon={getCategoryIcon(sortOrder)}
-                      size={moderateScale(20)}
-                      color={selectedCategory ? colors.text : colors.muted}
-                      style={styles.categoryIcon}
-                    />
-                  ) : null;
-                })()}
-                <Text style={[styles.categoryText, typography.styles.body, { color: selectedCategory ? colors.text : colors.muted }]}>
-                  {selectedCategory ? (() => {
-                    // Önce deck'ten gelen kategori bilgisini kullan, yoksa categories listesinden bul
-                    const category = deckCategory && deckCategory.id === selectedCategory 
-                      ? deckCategory 
-                      : categories.find(c => c.id === selectedCategory);
-                    const sortOrder = category?.sort_order;
-                    const categoryName = category?.name;
-                    
-                    return sortOrder 
-                      ? (t(`categories.${sortOrder}`) || categoryName || t('createDeck.selectCategory'))
-                      : t('createDeck.selectCategory');
-                  })() : t('createDeck.selectCategory')}
-                </Text>
-              </View>
-              <Iconify icon="flowbite:caret-down-solid" size={moderateScale(20)} color={colors.muted} />
-            </TouchableOpacity>
+                  const categoryName = category?.name;
+
+                  return sortOrder
+                    ? (t(`categories.${sortOrder}`) || categoryName || t('createDeck.selectCategory'))
+                    : t('createDeck.selectCategory');
+                })() : t('createDeck.selectCategory')}
+              </Text>
+            </View>
+            <Iconify icon="flowbite:caret-down-solid" size={moderateScale(20)} color={colors.muted} />
+          </TouchableOpacity>
+        </View>
+
+        <View
+          style={[
+            styles.inputCard,
+            {
+              backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+              borderColor: colors.cardBorder,
+              borderWidth: 1,
+              shadowColor: colors.shadowColor,
+              shadowOffset: colors.shadowOffset,
+              shadowOpacity: colors.shadowOpacity,
+              shadowRadius: colors.shadowRadius,
+              elevation: colors.elevation,
+            },
+          ]}
+        >
+          <View style={styles.labelRow}>
+            <View style={styles.labelTextContainer}>
+              <Iconify icon="mdi:spoken-language" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>
+                {t('create.language', 'İçerik Dili')}
+              </Text>
+            </View>
+            <View>
+              <BadgeText required={true} />
+            </View>
           </View>
 
-          <View style={styles.buttonRowModern}>
-            <UndoButton
-              onPress={resetForm}
-              disabled={loading}
-              style={{ flex: 1, minWidth: 0, marginRight: scale(10) }}
+          <TouchableOpacity
+            style={[styles.categorySelector, { borderColor: '#eee' }]}
+            accessibilityLabel={t('create.selectLanguage', 'Dil Seç')}
+            onPress={() => setDeckLanguageModalVisible(true)}
+          >
+            <View style={styles.categoryRow}>
+              <Text
+                style={[
+                  styles.categoryText,
+                  typography.styles.body,
+                  { color: selectedLang?.length > 0 ? colors.text : colors.muted },
+                ]}
+              >
+                {selectedLang?.length > 0 ? ` ${selectedLang.map(l => getDeckLanguageName(l)).join(' | ')}` : ` ${t('create.selectLanguage', 'Dil seç')}`}
+              </Text>
+              
+            </View>
+            <Iconify
+              icon="flowbite:caret-down-solid"
+              size={moderateScale(20)}
+              color={colors.muted}
             />
-            <CreateButton
-              onPress={handleSave}
-              disabled={loading}
-              loading={loading}
-              text={loading ? t("create.saving", "Kaydediliyor...") : t("create.save", "Kaydet")}
-              style={{ flex: 2}}
-            />
-          </View>
-        </KeyboardAwareScrollView>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.buttonRowModern}>
+          <UndoButton
+            onPress={resetForm}
+            disabled={loading}
+            style={{ flex: 1, minWidth: 0, marginRight: scale(10) }}
+          />
+          <CreateButton
+            onPress={handleSave}
+            disabled={loading}
+            loading={loading}
+            text={loading ? t("create.saving", "Kaydediliyor...") : t("create.save", "Kaydet")}
+            style={{ flex: 2 }}
+          />
+        </View>
+      </KeyboardAwareScrollView>
 
       <CategorySelector
         isVisible={isCategoryModalVisible}
@@ -347,6 +451,24 @@ export default function DeckEditScreen() {
           setSelectedCategory(id);
           setCategoryModalVisible(false);
         }}
+      />
+      <DeckLanguageModal
+        isVisible={isDeckLanguageModalVisible}
+        onClose={() => setDeckLanguageModalVisible(false)}
+        languages={languages}
+        selectedLanguage={selectedLanguage}
+        onSelectLanguage={(languageId) => {
+          setSelectedLanguage(prev => {
+            if (prev.includes(languageId)) {
+              return prev.filter(id => id !== languageId);
+            }
+            if (prev.length >= 2) {
+              return prev;
+            }
+            return [...prev, languageId];
+          });
+        }}
+
       />
     </View>
   );
@@ -366,7 +488,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(28),
     padding: moderateScale(20),
     marginBottom: verticalScale(11),
-    shadowOffset: { width: scale(4), height: verticalScale(6)},
+    shadowOffset: { width: scale(4), height: verticalScale(6) },
     shadowOpacity: 0.10,
     shadowRadius: moderateScale(10),
     elevation: 5,
@@ -398,8 +520,8 @@ const styles = StyleSheet.create({
   buttonRowModern: {
     flexDirection: 'row',
     gap: scale(10),
-    marginTop: verticalScale(32),
-    marginBottom: verticalScale(12),
+    marginTop: verticalScale(28),
+    marginBottom: verticalScale(32),
   },
   optional: {
     marginLeft: scale(4),

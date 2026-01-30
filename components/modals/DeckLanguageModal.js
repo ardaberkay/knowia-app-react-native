@@ -39,21 +39,22 @@ export default function DeckLanguageModal({
     };
 
     const handleToggle = (languageId) => {
-        // kaldırılıyorsa hata temizle
-        if (selectedLanguage.includes(languageId)) {
+        const isCurrentlySelected = selectedLanguage.includes(languageId);
+      
+        if (isCurrentlySelected) {
+          // 1. EĞER KALDIRILIYORSA: Hiçbir engel yok, direkt kaldır.
+          setError('');
+          onSelectLanguage(languageId);
+        } else {
+          // 2. EĞER EKLENİYORSA: Mevcut uzunluğu kontrol et.
+          if (selectedLanguage.length >= 2) {
+            setError(t('create.maxLanguage', 'En fazla 2 dil seçebilirsiniz.'));
+          } else {
             setError('');
             onSelectLanguage(languageId);
-            return;
+          }
         }
-        // limit aşıldı
-        if (selectedLanguage.length >= 2) {
-            setError(t('create.maxLanguage', 'En fazla 2 dil seçebilirsiniz.'));
-            return;
-        }
-        setError('');
-        onSelectLanguage(languageId);
-    };
-
+      };
     return (
         <Modal
             isVisible={isVisible}
@@ -89,6 +90,7 @@ export default function DeckLanguageModal({
                             activeOpacity={0.8}
                         >
                             {/* Checkbox */}
+                            <View style={[styles.checkboxContainer, { backgroundColor: isChecked ? '#007AFF'  + '40' : 'transparent' }]}>
                             <View
                                 style={[
                                     styles.checkbox,
@@ -109,6 +111,7 @@ export default function DeckLanguageModal({
                             <Text style={[styles.optionText, { color: colors.text }]}>
                                 {getDeckLanguageName(language)}
                             </Text>
+                            </View>
                         </TouchableOpacity>
 
                     );
@@ -139,11 +142,18 @@ const styles = StyleSheet.create({
     optionRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: verticalScale(10),
+        marginBottom: verticalScale(12),
+    },
+    checkboxContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: moderateScale(12),
+        borderRadius: moderateScale(12),
+        width: '100%',
     },
     checkbox: {
-        width: moderateScale(20),
-        height: moderateScale(20),
+        width: moderateScale(22),
+        height: moderateScale(22),
         borderWidth: 2,
         borderRadius: 4,
         justifyContent: 'center',
@@ -154,6 +164,8 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: moderateScale(14),
         fontWeight: 'bold',
+        textAlignVertical: 'center',
+        textAlign: 'center',
     },
     optionText: {
         fontSize: moderateScale(16),

@@ -102,7 +102,7 @@
     "save": "Kaydet",
     "errorMessage": "Hata",
     "maxLanguage": "En fazla 2 dil seçebilirsiniz.",
-    "language": "İçerik Dili *",
+    "language": "İçerik Dili",
     "selectLanguage": "Dil Seç",
     "languageHeading": "İçerik Dili"
   },
@@ -482,11 +482,11 @@
     "title": "Kategori Seçiniz"
   },
   "createDeck": {
-    "categoryLabel": "Kategori *",
+    "categoryLabel": "Kategori",
     "selectCategory": "Kategori seçiniz",
     "selectCategoryA11y": "Kategori seç",
     "title": "Desteni Oluştur",
-    "motivationText": "   Kişiselleştirilmiş destelerle öğrenme yolculuğunu tasarla ve bilgini pekiştir.",
+    "motivationText": "Kişiselleştirilmiş destelerle öğrenme yolculuğunu tasarla ve bilgini pekiştir.",
     "howToCreate": "Nasıl Oluşturulur?"
   },
   "howToCreate": {

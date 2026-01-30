@@ -101,7 +101,7 @@
     "saving": "Enregistrement...",
     "save": "Enregistrer",
     "maxLanguage": "Vous pouvez sélectionner jusqu'à 2 langues.",
-    "language": "Langue du contenu *",
+    "language": "Langue du contenu",
     "selectLanguage": "Choisir la langue",
     "languageHeading": "Langue du contenu"
   },
@@ -470,11 +470,11 @@
     "noChapters": "Pas encore de chapitres"
   },
   "createDeck": {
-    "categoryLabel": "Catégorie *",
+    "categoryLabel": "Catégorie",
     "selectCategory": "Sélectionner une catégorie",
     "selectCategoryA11y": "Sélectionner une catégorie",
     "title": "Créez votre Paquet",
-    "motivationText": "   Concevez votre parcours d'apprentissage avec des paquets personnalisés et maîtrisez vos connaissances.",
+    "motivationText": "Concevez votre parcours d'apprentissage avec des paquets personnalisés et maîtrisez vos connaissances.",
     "howToCreate": "Comment Créer?"
   },
   "howToCreate": {

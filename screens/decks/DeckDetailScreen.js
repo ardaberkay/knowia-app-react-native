@@ -47,9 +47,6 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [shareLoading, setShareLoading] = useState(false);
   const [categoryInfo, setCategoryInfo] = useState(deck.categories || null);
   const { t } = useTranslation();
-
-  // Header scroll affordance states
-  // Uzun metinlerde baştan gradient göster (karakter sayısına göre tahmin)
   const nameScrollRef = useRef(null);
   const toNameScrollRef = useRef(null);
   const [nameHasOverflow, setNameHasOverflow] = useState(deck?.name?.length > 21);
@@ -66,6 +63,7 @@ export default function DeckDetailScreen({ route, navigation }) {
   const fabMenuAnimation = useRef(new Animated.Value(0)).current;
   const [chapters, setChapters] = useState([]);
   const [chapterProgressMap, setChapterProgressMap] = useState(new Map());
+  const [decksLanguages, setDecksLanguages] = useState([]);
   // "Aksiyon" özel bölümü - tüm kartları gösterir
   const ACTION_CHAPTER = { id: 'action', name: 'Aksiyon', ordinal: null };
   const [selectedChapter, setSelectedChapter] = useState(ACTION_CHAPTER);
@@ -103,6 +101,27 @@ export default function DeckDetailScreen({ route, navigation }) {
   const heroAnim = useRef(new Animated.Value(0)).current;
   const statsAnim = useRef(new Animated.Value(0)).current;
   const cardsAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loadDecksLanguages = async () => {
+      const { data, error } = await supabase
+        .from('decks_languages')
+        .select('*')
+        .eq('deck_id', deck.id);
+  
+      if (error) {
+        console.error('SUPABASE HATASI:', error);
+        return;
+      }
+  
+      if (data) {
+        const ids = data.map(l => l.language_id);
+        console.log('VERİTABANINDAN GELEN IDLER:', ids); // Burayı kontrol et!
+        setDecksLanguages(ids);
+      }
+    };
+    loadDecksLanguages();
+  }, [deck.id]);
 
   useEffect(() => {
     // Staggered entrance animation
@@ -158,11 +177,11 @@ export default function DeckDetailScreen({ route, navigation }) {
   const triggerScrollHint = (scrollRef, contentWidth, containerWidth, hintDoneRef) => {
     if (hintDoneRef.current || !scrollRef.current) return;
     if (contentWidth <= containerWidth) return;
-    
+
     hintDoneRef.current = true;
     // Sadece taşan kadar scroll yap
     const scrollDistance = contentWidth - containerWidth;
-    
+
     // Daha hızlı başlasın
     setTimeout(() => {
       scrollRef.current?.scrollTo({ x: scrollDistance, animated: true });
@@ -208,7 +227,7 @@ export default function DeckDetailScreen({ route, navigation }) {
         return;
       }
     }
-    
+
     // Cache yoksa veya kullanılmıyorsa direkt API'den çek
     await fetchProgressFromAPI(true);
   };
@@ -219,39 +238,39 @@ export default function DeckDetailScreen({ route, navigation }) {
     }
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       // Bu destedeki toplam kart sayısını çek
       const { data: totalCards, error: totalError } = await supabase
         .from('cards')
         .select('id')
         .eq('deck_id', deck.id);
-      
+
       if (totalError) throw totalError;
       const total = totalCards ? totalCards.length : 0;
-      
+
       // Bu destedeki kart ID'lerini al
       const cardIds = totalCards.map(card => card.id);
-      
+
       // Kullanıcının bu destedeki tüm progress bilgilerini çek
       const { data: progressData, error } = await supabase
         .from('user_card_progress')
         .select('card_id, status')
         .eq('user_id', user.id)
         .in('card_id', cardIds);
-      
+
       if (error) throw error;
-      
+
       // Status'lere göre sayıları hesapla
       const learned = (progressData || []).filter(p => p.status === 'learned').length;
       const learning = (progressData || []).filter(p => p.status === 'learning').length;
       const newCount = total - learned - learning;
-      
+
       const calculatedProgress = total > 0 ? learned / total : 0;
       setProgress(calculatedProgress);
       setLearnedCardsCount(learned);
       const stats = { total, learned, learning, new: newCount };
       setDeckStats(stats);
-      
+
       // Progress'i cache'le (gelecek kullanımlar için)
       try {
         const storageKey = `deck_progress_${deck.id}_${user.id}`;
@@ -264,7 +283,7 @@ export default function DeckDetailScreen({ route, navigation }) {
       } catch (cacheError) {
         console.error('Error caching progress:', cacheError);
       }
-      
+
       // Progress değeri geldiğinde loading'i hemen false yap (progress hemen gösterilsin)
       if (showLoading) {
         setProgressLoading(false);
@@ -317,7 +336,7 @@ export default function DeckDetailScreen({ route, navigation }) {
       // Progress'i güncelle (cache kullanma, direkt güncel veriyi çek)
       // Bu sayede SwipeDeckScreen'den döndüğünde yeni learned değeri hemen görünür
       fetchProgressFromAPI(true);
-      
+
       // Chapter progress bilgisini güncelle
       if (currentUserId && chapters.length > 0) {
         try {
@@ -327,11 +346,11 @@ export default function DeckDetailScreen({ route, navigation }) {
           console.error('Error fetching chapter progress:', e);
         }
       }
-      
+
       // Deck verisini ve favori durumunu paralel olarak güncelle
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         // Deck verisini ve favori durumunu paralel çek
         const [deckResult, favoriteResult] = await Promise.all([
           supabase
@@ -346,9 +365,9 @@ export default function DeckDetailScreen({ route, navigation }) {
             .eq('deck_id', deck.id)
             .single() : Promise.resolve({ data: null, error: null })
         ]);
-        
+
         if (deckResult.error) throw deckResult.error;
-        
+
         // Deck verisini güncelle
         if (deckResult.data) {
           // is_admin_created kontrolü - tüm kategoriler için geçerli
@@ -438,7 +457,7 @@ export default function DeckDetailScreen({ route, navigation }) {
   useEffect(() => {
     const userId = session?.user?.id || null;
     setCurrentUserId(userId);
-    
+
     // Eğer kullanıcı deste sahibi ise share component'i göster, değilse gizle
     if (userId && deck.user_id === userId) {
       setShareComponentVisible(true);
@@ -453,14 +472,14 @@ export default function DeckDetailScreen({ route, navigation }) {
     try {
       const storageKey = `last_selected_chapter_${deck.id}`;
       const savedChapterId = await AsyncStorage.getItem(storageKey);
-      
+
       if (savedChapterId) {
         // Eğer "action" seçiliyse
         if (savedChapterId === 'action') {
           setSelectedChapter(ACTION_CHAPTER);
           return;
         }
-        
+
         // Kaydedilmiş chapter'ı bul
         const savedChapter = availableChapters.find(ch => ch.id === savedChapterId);
         if (savedChapter) {
@@ -468,7 +487,7 @@ export default function DeckDetailScreen({ route, navigation }) {
           return;
         }
       }
-      
+
       // Eğer kayıtlı chapter bulunamazsa veya yoksa, default olarak ACTION_CHAPTER seç
       setSelectedChapter(ACTION_CHAPTER);
     } catch (e) {
@@ -503,10 +522,10 @@ export default function DeckDetailScreen({ route, navigation }) {
         const data = await listChapters(deck.id);
         const availableChapters = data || [];
         setChapters(availableChapters);
-        
+
         // Son seçilen chapter'ı yükle
         await loadLastSelectedChapter(availableChapters);
-        
+
         // Progress bilgisini çek
         if (currentUserId && availableChapters.length > 0) {
           try {
@@ -677,7 +696,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                 .eq('user_id', user.id);
 
               if (error) throw error;
-              
+
               Alert.alert(
                 t('common.success', 'Başarılı'),
                 t('deckDetail.deleteSuccess', 'Deste başarıyla silindi.'),
@@ -785,15 +804,15 @@ export default function DeckDetailScreen({ route, navigation }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-    
-      <ScrollView 
-        contentContainerStyle={{ paddingBottom: verticalScale(screenHeight * 0.12) }} 
+
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: verticalScale(screenHeight * 0.12) }}
         showsVerticalScrollIndicator={false}
       >
         {/* GRADIENT FLOW DESIGN - Modern & Eye-catching */}
-        
+
         {/* Hero Gradient Banner */}
-        <Animated.View 
+        <Animated.View
           style={[
             styles.gfHeroBanner,
             { opacity: heroAnim, transform: [{ scale: heroAnim.interpolate({ inputRange: [0, 1], outputRange: [1.05, 1] }) }] }
@@ -811,7 +830,7 @@ export default function DeckDetailScreen({ route, navigation }) {
               <View style={[styles.gfDecorCircle, styles.gfDecorCircle2]} />
               <View style={[styles.gfDecorCircle, styles.gfDecorCircle3]} />
             </View>
-            
+
             {/* Category Badge */}
             <View style={styles.gfCategoryBadge}>
               <Iconify icon={getCategoryIcon(categoryInfo?.sort_order)} size={moderateScale(18)} color="#fff" />
@@ -819,7 +838,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                 {t(`categories.${categoryInfo?.sort_order}`) || categoryInfo?.name || t('common.category', 'Kategori')}
               </Text>
             </View>
-            
+
             {/* Title - Scrollable if overflows */}
             <View style={styles.gfTitleContainer}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(10) }}>
@@ -858,7 +877,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                 </ScrollView>
               </View>
             </View>
-            
+
             {/* Subtitle - Scrollable if overflows */}
             {deck.to_name && (
               <View style={styles.gfTitleContainer}>
@@ -899,12 +918,12 @@ export default function DeckDetailScreen({ route, navigation }) {
                 </View>
               </View>
             )}
-            
+
             {/* Description - Expandable */}
             {deck.description && deck.description.trim().length > 0 && (
               <View>
                 {/* Hidden text for measuring actual lines */}
-                <Text 
+                <Text
                   style={[styles.gfHeroDesc, { position: 'absolute', opacity: 0 }]}
                   onTextLayout={(e) => {
                     if (!descriptionLayoutDone.current) {
@@ -916,14 +935,14 @@ export default function DeckDetailScreen({ route, navigation }) {
                   {deck.description}
                 </Text>
                 {/* Visible text */}
-                <Text 
-                  style={styles.gfHeroDesc} 
+                <Text
+                  style={styles.gfHeroDesc}
                   numberOfLines={descriptionExpanded ? undefined : 2}
                 >
                   {deck.description}
                 </Text>
                 {descriptionNeedsExpand && (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={() => setDescriptionExpanded(!descriptionExpanded)}
                     activeOpacity={0.7}
                     style={styles.gfExpandButton}
@@ -932,9 +951,9 @@ export default function DeckDetailScreen({ route, navigation }) {
                       {descriptionExpanded ? t('common.showLess', 'Daha az göster') : t('common.showMore', 'Daha fazla göster')}
                     </Text>
                     <View style={{ marginTop: verticalScale(1) }}>
-                      <Iconify 
+                      <Iconify
                         icon="flowbite:caret-down-solid"
-                        size={moderateScale(14)} 
+                        size={moderateScale(14)}
                         color="rgba(255,255,255,0.9)"
                         style={{ transform: [{ rotate: descriptionExpanded ? '180deg' : '0deg' }] }}
                       />
@@ -943,16 +962,16 @@ export default function DeckDetailScreen({ route, navigation }) {
                 )}
               </View>
             )}
-            
+
             {/* Creator Chip */}
             {deck.profiles && (
               <View style={styles.gfCreatorChip}>
                 <Image
                   source={
-                    deck.is_admin_created 
+                    deck.is_admin_created
                       ? require('../../assets/app-icon.png')
-                      : deck.profiles?.image_url 
-                        ? { uri: deck.profiles.image_url } 
+                      : deck.profiles?.image_url
+                        ? { uri: deck.profiles.image_url }
                         : require('../../assets/avatar-default.png')
                   }
                   style={styles.gfCreatorAvatar}
@@ -966,10 +985,10 @@ export default function DeckDetailScreen({ route, navigation }) {
         </Animated.View>
 
         {/* Progress & Stats Card - Side by Side Layout */}
-        <Animated.View 
+        <Animated.View
           style={[
             styles.gfProgressCard,
-            { 
+            {
               backgroundColor: colors.cardBackground,
               opacity: statsAnim,
               transform: [{ translateY: statsAnim.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }) }]
@@ -980,16 +999,16 @@ export default function DeckDetailScreen({ route, navigation }) {
             {/* Left Side - Progress Ring */}
             <View style={styles.gfProgressSide}>
               <View style={[styles.gfProgressGlow, { backgroundColor: getCategoryColor(categoryInfo?.sort_order) + '15' }]} />
-              <CircularProgress 
-                progress={progress} 
-                size={scale(170)} 
+              <CircularProgress
+                progress={progress}
+                size={scale(170)}
                 strokeWidth={moderateScale(17)}
                 showText={!progressLoading || progress > 0}
                 shouldAnimate={!progressLoading}
                 fullCircle={true}
               />
             </View>
-            
+
             {/* Right Side - Stats */}
             <View style={styles.gfStatsSide}>
               {/* Total Cards - Top Badge with Gradient */}
@@ -1005,7 +1024,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                   <Text style={styles.gfTotalBadgeLabel}>{t('deckDetail.cards', 'Kart')}</Text>
                 </View>
               </LinearGradient>
-              
+
               {/* Stats List */}
               <View style={styles.gfStatsListVertical}>
                 <View style={styles.gfStatRowItem}>
@@ -1020,7 +1039,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                     <Text style={[styles.gfStatRowLabel, { color: colors.muted }]}>{t('deckDetail.learned', 'Öğrenildi')}</Text>
                   </View>
                 </View>
-                
+
                 <View style={styles.gfStatRowItem}>
                   <LinearGradient
                     colors={['#F98A21', '#FF6B35']}
@@ -1033,7 +1052,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                     <Text style={[styles.gfStatRowLabel, { color: colors.muted }]}>{t('deckDetail.learning', 'Öğreniliyor')}</Text>
                   </View>
                 </View>
-                
+
                 <View style={styles.gfStatRowItem}>
                   <LinearGradient
                     colors={[colors.secondary, colors.secondary + 'CC']}
@@ -1052,19 +1071,19 @@ export default function DeckDetailScreen({ route, navigation }) {
         </Animated.View>
 
         {/* Action Buttons - Combined Card */}
-        <Animated.View 
+        <Animated.View
           style={[
             styles.gfActionsCard,
-            { 
+            {
               backgroundColor: colors.cardBackground,
               borderColor: colors.cardBorder,
-              opacity: cardsAnim, 
-              transform: [{ translateY: cardsAnim.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) }] 
+              opacity: cardsAnim,
+              transform: [{ translateY: cardsAnim.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) }]
             }
           ]}
         >
           {/* Cards Button */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.gfActionRow}
             onPress={() => navigation.navigate('DeckCards', { deck })}
             activeOpacity={0.7}
@@ -1086,7 +1105,7 @@ export default function DeckDetailScreen({ route, navigation }) {
           <View style={[styles.gfActionDivider, { backgroundColor: colors.border }]} />
 
           {/* Chapters Button */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.gfActionRow}
             onPress={() => navigation.navigate('Chapters', { deck })}
             activeOpacity={0.7}
@@ -1108,7 +1127,7 @@ export default function DeckDetailScreen({ route, navigation }) {
 
         {/* Share Card - Modern Toggle */}
         {shareComponentVisible && (
-          <Animated.View 
+          <Animated.View
             style={[
               styles.gfShareCard,
               { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, opacity: cardsAnim }
@@ -1137,7 +1156,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                 disabled={shareLoading}
               />
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.gfShareInfoBtn, { borderTopColor: colors.border }]}
               onPress={handleShowShareDetails}
               activeOpacity={0.7}
@@ -1190,11 +1209,11 @@ export default function DeckDetailScreen({ route, navigation }) {
                   }}
                 >
                   <View style={styles.fabChapterItemBadge}>
-                      <Iconify 
-                        icon="streamline:startup-solid" 
-                        size={moderateScale(18)} 
-                        color={selectedChapter?.id === 'action' ? colors.buttonColor : '#fff'} 
-                      />
+                    <Iconify
+                      icon="streamline:startup-solid"
+                      size={moderateScale(18)}
+                      color={selectedChapter?.id === 'action' ? colors.buttonColor : '#fff'}
+                    />
                   </View>
                   <View style={styles.fabChapterItemContent}>
                     <View style={styles.fabChapterItemTitleRow}>
@@ -1368,10 +1387,10 @@ export default function DeckDetailScreen({ route, navigation }) {
                   {selectedChapter?.id === 'action' ? (
                     <View style={styles.fabChapterInfoRow}>
                       <View style={styles.fabChapterItemBadge}>
-                        <Iconify 
-                          icon="streamline:startup-solid" 
-                          size={moderateScale(22)} 
-                          color="#fff" 
+                        <Iconify
+                          icon="streamline:startup-solid"
+                          size={moderateScale(22)}
+                          color="#fff"
                         />
                       </View>
                       <View style={styles.fabChapterItemContent}>
@@ -1389,27 +1408,27 @@ export default function DeckDetailScreen({ route, navigation }) {
                             {t('deckDetail.action', 'Aksiyon')}
                           </Text>
                         </View>
-                          <View style={styles.fabChapterItemStats}>
-                            <View style={styles.fabChapterStatRow}>
-                              <Iconify icon="ri:stack-fill" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
-                              <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
-                                {deckStats.total}
-                              </Text>
-                            </View>
-                            <View style={styles.fabChapterStatRow}>
-                              <Iconify icon="basil:eye-closed-outline" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
-                              <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
-                                {deckStats.new || 0}
-                              </Text>
-                            </View>
-                            <View style={styles.fabChapterStatRow}>
-                              <Iconify icon="mdi:fire" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
-                              <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
-                                {deckStats.learning || 0}
-                              </Text>
-                            </View>
-                            <View style={styles.fabChapterStatRow}>
-                              <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
+                        <View style={styles.fabChapterItemStats}>
+                          <View style={styles.fabChapterStatRow}>
+                            <Iconify icon="ri:stack-fill" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
+                            <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
+                              {deckStats.total}
+                            </Text>
+                          </View>
+                          <View style={styles.fabChapterStatRow}>
+                            <Iconify icon="basil:eye-closed-outline" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
+                            <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
+                              {deckStats.new || 0}
+                            </Text>
+                          </View>
+                          <View style={styles.fabChapterStatRow}>
+                            <Iconify icon="mdi:fire" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
+                            <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
+                              {deckStats.learning || 0}
+                            </Text>
+                          </View>
+                          <View style={styles.fabChapterStatRow}>
+                            <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
                             <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
                               {deckStats.learned}
                             </Text>
@@ -1501,15 +1520,17 @@ export default function DeckDetailScreen({ route, navigation }) {
                 }
               }}
             >
-              <Animated.View style={{ opacity: fabMenuAnimation.interpolate({
-                inputRange: [0, 1],
-                outputRange: [1, 0],
-              }) }}>
+              <Animated.View style={{
+                opacity: fabMenuAnimation.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [1, 0],
+                })
+              }}>
                 {selectedChapter?.id === 'action' ? (
-                  <Iconify 
-                    icon="streamline:startup-solid" 
-                    size={moderateScale(22)} 
-                    color="#fff" 
+                  <Iconify
+                    icon="streamline:startup-solid"
+                    size={moderateScale(22)}
+                    color="#fff"
                   />
                 ) : (
                   <View style={{
@@ -1523,9 +1544,9 @@ export default function DeckDetailScreen({ route, navigation }) {
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}>
-                    <Text style={{ 
-                      color: '#fff', 
-                      fontSize: moderateScale(20), 
+                    <Text style={{
+                      color: '#fff',
+                      fontSize: moderateScale(20),
                       fontWeight: '700',
                       textShadowColor: 'rgba(0, 0, 0, 0.25)',
                       textShadowOffset: { width: 0, height: verticalScale(1) },
@@ -1541,7 +1562,7 @@ export default function DeckDetailScreen({ route, navigation }) {
         </View>
 
         <TouchableOpacity
-          style={[styles.fabButton, styles.fabButtonRight, { 
+          style={[styles.fabButton, styles.fabButtonRight, {
             borderColor: 'transparent',
             overflow: 'hidden',
           }]}
@@ -1554,7 +1575,7 @@ export default function DeckDetailScreen({ route, navigation }) {
               );
               return;
             }
-            
+
             // Deck başlatma kaydı oluştur (decks_stats tablosuna)
             try {
               const { data: { user } } = await supabase.auth.getUser();
@@ -1571,7 +1592,7 @@ export default function DeckDetailScreen({ route, navigation }) {
               // Hata olsa bile devam et (kritik değil)
               console.log('Deck stats log error:', error);
             }
-            
+
             // Aksiyon seçiliyse chapter parametresi gönderme (tüm kartlar gösterilecek)
             const chapterParam = selectedChapter.id === 'action' ? undefined : selectedChapter;
             navigation.navigate('SwipeDeck', { deck, chapter: chapterParam });
@@ -1622,13 +1643,14 @@ export default function DeckDetailScreen({ route, navigation }) {
             <TouchableOpacity
               onPress={() => {
                 setMoreMenuVisible(false);
-                // Kategori bilgisini deck objesine ekle (eğer varsa)
-                const deckWithCategory = {
-                  ...deck,
-                  categories: categoryInfo || deck.categories || null
-                };
-                navigation.navigate('DeckEdit', { deck: deckWithCategory });
+                console.log("Gönderilmeye hazırlanan diller:", decksLanguages);
+                navigation.navigate('DeckEdit', {
+                  deck,
+                  categoryInfo: categoryInfo || deck.categories || null,
+                  selectedLanguageIds: decksLanguages
+                });
               }}
+
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -1674,7 +1696,7 @@ export default function DeckDetailScreen({ route, navigation }) {
         />
       )}
 
-      </View>
+    </View>
   );
 }
 
@@ -1687,7 +1709,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: verticalScale(20),
   },
-  
+
   // GRADIENT FLOW STYLES - Modern & Eye-catching
   gfHeroBanner: {
     marginBottom: verticalScale(-50),

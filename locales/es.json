@@ -101,7 +101,7 @@
     "saving": "Guardando...",
     "save": "Guardar",
     "maxLanguage": "Puedes seleccionar hasta 2 idiomas.",
-    "language": "Idioma del contenido *",
+    "language": "Idioma del contenido",
     "selectLanguage": "Seleccionar idioma",
     "languageHeading": "Idioma del contenido"
   },
@@ -470,11 +470,11 @@
     "noChapters": "Aún no hay capítulos"
   },
   "createDeck": {
-    "categoryLabel": "Categoría *",
+    "categoryLabel": "Categoría",
     "selectCategory": "Seleccionar categoría",
     "selectCategoryA11y": "Seleccionar categoría",
     "title": "Crea tu Baraja",
-    "motivationText": "   Diseña tu viaje de aprendizaje con barajas personalizadas y domina tu conocimiento.",
+    "motivationText": "Diseña tu viaje de aprendizaje con barajas personalizadas y domina tu conocimiento.",
     "howToCreate": "¿Cómo Crear?"
   },
   "howToCreate": {

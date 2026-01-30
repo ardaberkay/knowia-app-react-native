@@ -22,22 +22,22 @@ export default function DiscoverScreen() {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  
+
   // useWindowDimensions hook'u - ekran döndürme desteği
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
-  
+
   // Responsive hero card genişliği - useMemo ile optimize edilmiş
   const HERO_CARD_WIDTH = useMemo(() => {
     const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
     const padding = isSmallPhone ? scale(20) : scale(32);
     return width - padding;
   }, [width]);
-  
+
   // Responsive hero boyutları - useMemo ile optimize edilmiş
   const heroDimensions = useMemo(() => {
     const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
-    
+
     return {
       iconSize: isSmallPhone ? scale(56) : scale(64),
       iconBorderRadius: isSmallPhone ? moderateScale(28) : moderateScale(32),
@@ -80,26 +80,38 @@ export default function DiscoverScreen() {
   const [startedDecksList, setStartedDecksList] = useState([]);
   const [uniqueDecksList, setUniqueDecksList] = useState([]);
   const [newDecks, setNewDecks] = useState([]);
-
   const heroScrollRef = useRef(null);
   const isUserScrolling = useRef(false);
   const loadDecksTimeoutRef = useRef(null);
   const isRefreshingRef = useRef(false);
+  const [selectedLanguages, setSelectedLanguages] = useState([]); // Seçili diller
+  const [allLanguages, setAllLanguages] = useState([]);
 
   useEffect(() => {
     loadFavoriteDecks();
     // loadDecks() ikinci useEffect'te yapılıyor (ilk mount'ta)
   }, []);
 
+  useEffect(() => {
+    const fetchLanguages = async () => {
+      const { data } = await supabase
+        .from('languages')
+        .select('*')
+        .order('sort_order', { ascending: true });
+      if (data) setAllLanguages(data);
+    };
+    fetchLanguages();
+  }, []);
+
   const previousTimeFilterRef = useRef(timeFilter);
   const previousActiveTabRef = useRef(activeTab);
   const isInitialMount = useRef(true);
-  
+
   useEffect(() => {
     // Tab veya timeFilter değişti mi kontrol et
     const tabChanged = previousActiveTabRef.current !== activeTab;
     const timeFilterChanged = previousTimeFilterRef.current !== timeFilter;
-    
+
     // İlk mount'ta veya tab değiştiyse veya timeFilter değiştiyse yükle
     if (isInitialMount.current || tabChanged || timeFilterChanged) {
       // timeFilter değiştiğinde o tab'ı loadedTabs'tan kaldır
@@ -110,23 +122,23 @@ export default function DiscoverScreen() {
           return newSet;
         });
       }
-      
+
       // Debouncing: Hızlı geçişlerde gereksiz çağrıları önle
       if (loadDecksTimeoutRef.current) {
         clearTimeout(loadDecksTimeoutRef.current);
       }
-      
+
       loadDecksTimeoutRef.current = setTimeout(() => {
         loadDecks();
         loadDecksTimeoutRef.current = null;
       }, 150); // 150ms debounce
-      
+
       isInitialMount.current = false;
     }
-    
+
     previousActiveTabRef.current = activeTab;
     previousTimeFilterRef.current = timeFilter;
-    
+
     // Cleanup: Component unmount olduğunda timeout'u temizle
     return () => {
       if (loadDecksTimeoutRef.current) {
@@ -171,9 +183,9 @@ export default function DiscoverScreen() {
       if (showLoadingIndicator) {
         setLoading(true);
       }
-      
+
       let decks = [];
-      
+
       if (activeTab === 'trend') {
         decks = await getPopularDecks(100, timeFilter);
         setTrendDecksList(decks || []);
@@ -190,7 +202,7 @@ export default function DiscoverScreen() {
         decks = await getNewDecks(100);
         setNewDecks(decks || []);
       }
-      
+
       // Veriyi cache'le
       await cacheDiscoverDecks(activeTab, timeFilter, decks || []);
     } catch (error) {
@@ -215,7 +227,7 @@ export default function DiscoverScreen() {
 
     // Cache'den hemen veriyi yükle (stale-while-revalidate)
     const cachedData = await getCachedDiscoverDecks(activeTab, timeFilter);
-    
+
     // Eğer cache varsa ve force refresh değilse, hemen göster
     if (cachedData && !forceRefresh && cachedData.data && cachedData.data.length > 0) {
       // Cache'den veriyi hemen göster
@@ -230,11 +242,11 @@ export default function DiscoverScreen() {
       } else {
         setNewDecks(cachedData.data);
       }
-      
+
       // Cache'den veri geldiğinde loading'i false yap
       setLoading(false);
       setLoadedTabs(prev => new Set([...prev, activeTab]));
-      
+
       // Eğer cache stale ise, arka planda fresh data yükle (loading gösterme)
       if (cachedData.isStale) {
         loadFreshData(false); // showLoadingIndicator = false
@@ -258,34 +270,39 @@ export default function DiscoverScreen() {
 
   const filteredDecks = useMemo(() => {
     const filtered = currentDecks.filter(deck => {
-      const matchesSearch = 
+      // 1. Arama Kontrolü
+      const matchesSearch =
         (deck.name && deck.name.toLowerCase().includes(search.toLowerCase())) ||
         (deck.to_name && deck.to_name.toLowerCase().includes(search.toLowerCase()));
 
+      // 2. Kategori Kontrolü
       const deckSortOrder = deck.categories?.sort_order;
       const hasActiveCategoryFilter = selectedCategories.length > 0;
       const matchesCategory = !hasActiveCategoryFilter
         ? true
         : (deckSortOrder != null && selectedCategories.includes(deckSortOrder));
-      
-      return matchesSearch && matchesCategory;
+
+      // 3. Dil Kontrolü
+      const hasActiveLanguageFilter = selectedLanguages.length > 0;
+
+      // NOT: Supabase sorgunda decks_languages'i (language_id) olarak çekmelisin
+      const deckLanguageIds = deck.decks_languages?.map(dl => dl.language_id) || [];
+
+      const matchesLanguage = !hasActiveLanguageFilter
+        ? true
+        : deckLanguageIds.some(id => selectedLanguages.includes(id));
+
+      return matchesSearch && matchesCategory && matchesLanguage;
     });
 
-    // is_admin_created kontrolü - tüm kategoriler için geçerli
     return filtered.map((deck) => {
+      // ... admin created mantığın (Knowia) aynen kalsın
       if (deck.is_admin_created) {
-        return {
-          ...deck,
-          profiles: {
-            ...deck.profiles,
-            username: 'Knowia',
-            image_url: null, // app-icon.png kullanılacak
-          },
-        };
+        return { ...deck, profiles: { ...deck.profiles, username: 'Knowia', image_url: null } };
       }
       return deck;
     });
-  }, [currentDecks, search, selectedCategories]);
+  }, [currentDecks, search, selectedCategories, selectedLanguages]); // <--- selectedLanguages BURAYA EKLENDİ
 
   const handleDeckPress = (deck) => {
     navigation.navigate('DeckDetail', { deck });
@@ -297,21 +314,21 @@ export default function DiscoverScreen() {
       if (!user) return;
 
       const isFavorite = favoriteDecks.includes(deckId);
-      
+
       if (isFavorite) {
         const { error } = await supabase
           .from('favorite_decks')
           .delete()
           .eq('user_id', user.id)
           .eq('deck_id', deckId);
-        
+
         if (error) throw error;
         setFavoriteDecks(prev => prev.filter(id => id !== deckId));
       } else {
         const { error } = await supabase
           .from('favorite_decks')
           .insert({ user_id: user.id, deck_id: deckId });
-        
+
         if (error) throw error;
         setFavoriteDecks(prev => [...prev, deckId]);
       }
@@ -333,8 +350,9 @@ export default function DiscoverScreen() {
     }
   };
 
-  const handleApplyFilters = (newCategories) => {
+  const handleApplyFilters = (newCategories, newLanguages) => {
     setSelectedCategories(newCategories);
+    setSelectedLanguages(newLanguages || []); // Yeni dilleri kaydet
     setFilterModalVisible(false);
   };
 
@@ -349,7 +367,7 @@ export default function DiscoverScreen() {
     const offsetX = event.nativeEvent.contentOffset.x;
     const pageIndex = Math.round(offsetX / HERO_CARD_WIDTH);
     const tabKeys = ['trend', 'favorites', 'starts', 'unique', 'new'];
-    
+
     if (pageIndex >= 0 && pageIndex < tabKeys.length) {
       const newTab = tabKeys[pageIndex];
       if (newTab !== activeTab) {
@@ -413,7 +431,7 @@ export default function DiscoverScreen() {
     const headerHeight = Platform.OS === 'ios' ? insets.top + 44 : 56;
     const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
     const headerPaddingTop = isSmallPhone ? headerHeight + verticalScale(40) : headerHeight + verticalScale(50);
-    
+
     return (
       <View style={[
         styles.fixedHeaderContainer,
@@ -498,7 +516,7 @@ export default function DiscoverScreen() {
               );
             })}
           </ScrollView>
-          
+
           <View style={[
             styles.paginationContainer,
             {
@@ -539,7 +557,7 @@ export default function DiscoverScreen() {
               {timeFilters.map((filter) => {
                 const isActive = timeFilter === filter.key;
                 const accentColor = tabConfigs[activeTab]?.accentColor || colors.buttonColor;
-                
+
                 return (
                   <TouchableOpacity
                     key={filter.key}
@@ -607,10 +625,12 @@ export default function DiscoverScreen() {
 
       <FilterModal
         visible={filterModalVisible}
-        onClose={() => setFilterModalVisible(false)}
+        languages={allLanguages} // Tüm diller
+        currentLanguages={selectedLanguages} // Seçili diller
         currentCategories={selectedCategories}
-        onApply={handleApplyFilters}
-        showSortOptions={false}
+        onClose={() => setFilterModalVisible(false)}
+        onApply={(cats, langs) => handleApplyFilters(cats, langs)} // Dil parametresini ekledik
+        showSortOptions={false} // Discover ekranındaki ihtiyacına göre
       />
     </View>
   );

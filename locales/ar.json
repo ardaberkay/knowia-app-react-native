@@ -101,7 +101,7 @@
     "saving": "جاري الحفظ...",
     "save": "حفظ",
     "maxLanguage": "يمكنك اختيار لغتين بحد أقصى.",
-    "language": "لغة المحتوى *",
+    "language": "لغة المحتوى",
     "selectLanguage": "اختر اللغة",
     "languageHeading": "لغة المحتوى"
   },
@@ -470,11 +470,11 @@
     "noChapters": "لا توجد فصول بعد"
   },
   "createDeck": {
-    "categoryLabel": "الفئة *",
+    "categoryLabel": "الفئة",
     "selectCategory": "اختر الفئة",
     "selectCategoryA11y": "اختر الفئة",
     "title": "أنشئ مجموعتك",
-    "motivationText": "   صمم رحلتك التعليمية مع المجموعات الشخصية وأتقن معرفتك.",
+    "motivationText": "صمم رحلتك التعليمية مع المجموعات الشخصية وأتقن معرفتك.",
     "howToCreate": "كيفية الإنشاء؟"
   },
   "howToCreate": {

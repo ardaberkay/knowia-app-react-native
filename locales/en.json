@@ -101,7 +101,7 @@
     "saving": "Saving...",
     "save": "Save",
     "maxLanguage": "You can select up to 2 languages.",
-    "language": "Content Language *",
+    "language": "Content Language",
     "selectLanguage": "Select Language",
     "languageHeading": "Content Language"
   },
@@ -477,11 +477,11 @@
     "title": "Select Category"
   },
   "createDeck": {
-    "categoryLabel": "Category*",
+    "categoryLabel": "Category",
     "selectCategory": "Select category",
     "selectCategoryA11y": "Select category",
     "title": "Create Your Deck",
-    "motivationText": "   Design your learning journey with personalized decks and master your knowledge.",
+    "motivationText": "Design your learning journey with personalized decks and master your knowledge.",
     "howToCreate": "How to Create?"
   },
   "howToCreate": {

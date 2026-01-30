@@ -49,6 +49,8 @@ const FilterModal = ({
   onClose,
   currentSort,
   currentCategories,
+  currentLanguages = [],
+  languages = [],
   onApply,
   showSortOptions = true,
   sortOptions: customSortOptions,
@@ -63,11 +65,25 @@ const FilterModal = ({
   const [sortDropdownVisible, setSortDropdownVisible] = useState(false);
   const sortDropdownRef = useRef(null);
   const [sortDropdownPos, setSortDropdownPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [isLanguageOpen, setIsLanguageOpen] = useState(false);
+  const [tempLanguages, setTempLanguages] = useState(currentLanguages || []);
 
   useEffect(() => {
-    setTempSort(currentSort || defaultSort);
-    setTempCategories(currentCategories || []);
-  }, [visible, currentSort, currentCategories, defaultSort]);
+    if (visible) {
+      setTempSort(currentSort || defaultSort);
+      setTempCategories(currentCategories || []);
+      setTempLanguages(currentLanguages || []);
+    }
+  }, [visible]);
+
+  const handleLanguageToggle = (langId) => {
+    setTempLanguages(prev => {
+      if (prev.includes(langId)) {
+        return prev.filter(lang => lang !== langId);
+      }
+      return [...prev, langId];
+    });
+  };
 
   const handleCategoryToggle = (categoryKey) => {
     setTempCategories(prev => {
@@ -80,9 +96,9 @@ const FilterModal = ({
 
   const handleApply = () => {
     if (showSortOptions) {
-      onApply(tempSort, tempCategories);
+      onApply(tempSort, tempCategories, tempLanguages);
     } else {
-      onApply(tempCategories);
+      onApply(tempCategories, tempLanguages);
     }
   };
 
@@ -248,50 +264,110 @@ const FilterModal = ({
             </TouchableOpacity>
             {isCategoryOpen && (
               <>
-            {categoryOptions.map((option) => {
-              const isSelected = tempCategories.includes(option.sortOrder);
-              return (
-                <TouchableOpacity
-                  key={option.sortOrder}
-                  onPress={() => handleCategoryToggle(option.sortOrder)}
-                  style={[
-                    styles.categoryOption,
-                    isSelected && { backgroundColor: colors.buttonColor + '20' }
-                  ]}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.categoryOptionContent}>
-                    <View style={[
-                      styles.checkbox,
-                      {
-                        borderColor: isSelected ? colors.buttonColor : colors.border,
-                        backgroundColor: isSelected ? colors.buttonColor : 'transparent'
-                      }
-                    ]}>
-                      {isSelected && (
-                        <Iconify icon="hugeicons:tick-01" size={moderateScale(18)} color="#fff" />
-                      )}
-                    </View>
-                    <Iconify
-                      icon={option.icon}
-                      size={moderateScale(22)}
-                      color={isSelected ? colors.buttonColor : colors.text}
-                      style={styles.categoryIcon}
-                    />
-                    <Text style={[
-                      styles.categoryOptionText,
-                      {
-                        color: isSelected ? colors.buttonColor : colors.text,
-                        fontWeight: isSelected ? '600' : 'normal'
-                      }
-                    ]}>
-                      {option.label}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-            </>
+                {categoryOptions.map((option) => {
+                  const isSelected = tempCategories.includes(option.sortOrder);
+                  return (
+                    <TouchableOpacity
+                      key={option.sortOrder}
+                      onPress={() => handleCategoryToggle(option.sortOrder)}
+                      style={[
+                        styles.categoryOption,
+                        isSelected && { backgroundColor: colors.buttonColor + '20' }
+                      ]}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.categoryOptionContent}>
+                        <View style={[
+                          styles.checkbox,
+                          {
+                            borderColor: isSelected ? colors.buttonColor : colors.border,
+                            backgroundColor: isSelected ? colors.buttonColor : 'transparent'
+                          }
+                        ]}>
+                          {isSelected && (
+                            <Iconify icon="hugeicons:tick-01" size={moderateScale(18)} color="#fff" />
+                          )}
+                        </View>
+                        <Iconify
+                          icon={option.icon}
+                          size={moderateScale(22)}
+                          color={isSelected ? colors.buttonColor : colors.text}
+                          style={styles.categoryIcon}
+                        />
+                        <Text style={[
+                          styles.categoryOptionText,
+                          {
+                            color: isSelected ? colors.buttonColor : colors.text,
+                            fontWeight: isSelected ? '600' : 'normal'
+                          }
+                        ]}>
+                          {option.label}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </>
+            )}
+          </View>
+          {/* Dil Bölümü */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              {t('common.languages', 'Diller')}
+            </Text>
+            <TouchableOpacity
+              onPress={() => setIsLanguageOpen(prev => !prev)}
+              style={[styles.categoryHeader, { borderColor: colors.border }]}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.categoryHeaderText, { color: colors.text }]}>
+                {tempLanguages.length > 0
+                  ? `${tempLanguages.length} ${t('common.selected', 'Seçili')}`
+                  : t('common.selectLanguages', 'Dil Seç')}
+              </Text>
+              <Iconify
+                icon={'flowbite:caret-down-solid'}
+                size={moderateScale(22)}
+                color={colors.text}
+              />
+            </TouchableOpacity>
+
+            {isLanguageOpen && (
+              <View style={styles.languageList}>
+                {languages.map((lang) => {
+                  const isSelected = tempLanguages.includes(lang.id);
+                  return (
+                    <TouchableOpacity
+                      key={lang.id}
+                      onPress={() => handleLanguageToggle(lang.id)}
+                      style={[
+                        styles.categoryOption,
+                        isSelected && { backgroundColor: colors.buttonColor + '20' }
+                      ]}
+                    >
+                      <View style={styles.categoryOptionContent}>
+                        <View style={[
+                          styles.checkbox,
+                          {
+                            borderColor: isSelected ? colors.buttonColor : colors.border,
+                            backgroundColor: isSelected ? colors.buttonColor : 'transparent'
+                          }
+                        ]}>
+                          {isSelected && <Iconify icon="hugeicons:tick-01" size={moderateScale(18)} color="#fff" />}
+                        </View>
+                        {/* İsteğe bağlı: getDeckLanguageIcon fonksiyonunu buraya da taşıyabilirsin */}
+                        <Text style={[
+                          styles.categoryOptionText,
+                          { color: isSelected ? colors.buttonColor : colors.text }
+                        ]}>
+                          {/* t fonksiyonu ile dil adını getir */}
+                          {t(`languages.${lang.sort_order}`, lang.name)}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             )}
           </View>
         </ScrollView>
@@ -493,6 +569,7 @@ const styles = StyleSheet.create({
     paddingBottom: moderateScale(12),
     paddingHorizontal: moderateScale(14),
     borderBottomWidth: moderateScale(1),
+    marginBottom: verticalScale(12),
   },
   categoryHeaderText: {
     fontSize: moderateScale(16),

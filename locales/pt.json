@@ -101,7 +101,7 @@
     "saving": "Salvando...",
     "save": "Salvar",
     "maxLanguage": "Você pode selecionar até 2 idiomas.",
-    "language": "Idioma do conteúdo *",
+    "language": "Idioma do conteúdo",
     "selectLanguage": "Selecionar idioma",
     "languageHeading": "Idioma do conteúdo"
   },
@@ -470,11 +470,11 @@
     "noChapters": "Ainda não há capítulos"
   },
   "createDeck": {
-    "categoryLabel": "Categoria *",
+    "categoryLabel": "Categoria",
     "selectCategory": "Selecionar categoria",
     "selectCategoryA11y": "Selecionar categoria",
     "title": "Crie seu Baralho",
-    "motivationText": "   Projete sua jornada de aprendizado com baralhos personalizados e domine seu conhecimento.",
+    "motivationText": "Projete sua jornada de aprendizado com baralhos personalizados e domine seu conhecimento.",
     "howToCreate": "Como Criar?"
   },
   "howToCreate": {
