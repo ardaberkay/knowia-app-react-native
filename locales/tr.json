@@ -148,7 +148,10 @@
     "showMore": "Daha Fazla Göster",
     "showLess": "Daha Az Göster",
     "clickToExpand": "Tıkla!",
-    "clickToCollapse": "Tıkla!"
+    "clickToCollapse": "Tıkla!",
+    "selectCategories": "Kategorileri Seç",
+    "selectLanguages": "Dilleri Seç",
+    "selected": "Seçildi"
   },
   "tabs": {
     "home": "Anasayfa",

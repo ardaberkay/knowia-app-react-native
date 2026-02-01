@@ -145,7 +145,10 @@
     "showMore": "Mostrar Más",
     "showLess": "Mostrar Menos",
     "clickToExpand": "¡Haz clic!",
-    "clickToCollapse": "¡Haz clic!"
+    "clickToCollapse": "¡Haz clic!",
+    "selectCategories": "Seleccionar Categorías",
+    "selectLanguages": "Seleccionar Idiomas",
+    "selected": "Seleccionado"
   },
   "tabs": {
     "home": "Inicio",

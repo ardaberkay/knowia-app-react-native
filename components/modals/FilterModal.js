@@ -56,6 +56,7 @@ const FilterModal = ({
   sortOptions: customSortOptions,
   defaultSort = 'default',
   hideFavorites = false,
+
 }) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -142,9 +143,6 @@ const FilterModal = ({
     setSortDropdownVisible(false);
   };
 
-  // Title based on whether we show sort options
-  const modalTitle = showSortOptions ? t('common.filters') : t('common.categories');
-
   return (
     <Modal
       isVisible={visible}
@@ -160,9 +158,12 @@ const FilterModal = ({
     >
       <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
         <View style={styles.modalHeader}>
-          <Text style={[typography.styles.h2, { color: colors.text }]}>
-            {modalTitle}
-          </Text>
+          <View style={styles.filterHeaderContainer}>
+            <Iconify icon="si:filter-list-alt-fill" size={moderateScale(28)} color={colors.text} />
+            <Text style={[typography.styles.h2, { color: colors.text }]}>
+              {t('common.filters', 'Filtreler')}
+            </Text>
+          </View>
           <TouchableOpacity
             onPress={onClose}
             hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
@@ -178,9 +179,12 @@ const FilterModal = ({
           {/* Sıralama Bölümü */}
           {showSortOptions && (
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {t('common.sortBy')}
-              </Text>
+              <View style={styles.filterHeaderContainer}>
+                <Iconify icon="lucide:sort-asc" size={moderateScale(24)} color={colors.secondary} />
+                <Text style={[styles.sectionTitle, { color: colors.secondary }]}>
+                  {t('common.sortBy', 'Sıralama')}
+                </Text>
+              </View>
               <TouchableOpacity
                 ref={sortDropdownRef}
                 onPress={openSortDropdown}
@@ -190,7 +194,7 @@ const FilterModal = ({
                 <Text style={[styles.sortDropdownText, { color: colors.text }]}>
                   {selectedSortLabel}
                 </Text>
-                <Iconify icon="flowbite:caret-down-solid" size={moderateScale(20)} color={colors.text} />
+                <Iconify icon={sortDropdownVisible ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'} size={moderateScale(20)} color={colors.text} />
               </TouchableOpacity>
 
               {/* Dropdown Menu */}
@@ -241,12 +245,14 @@ const FilterModal = ({
 
           {/* Kategori Bölümü */}
           <View style={styles.section}>
-            <Text style={[
-              showSortOptions ? styles.sectionTitle : styles.sectionSubtitle,
-              { color: showSortOptions ? colors.text : colors.subtext }
-            ]}>
-              {showSortOptions ? t('common.categories') : t('common.selectCategories', 'Görmek istediğiniz kategorileri seçin')}
-            </Text>
+            <View style={styles.filterHeaderContainer}>
+              <Iconify icon="material-symbols:category-search-rounded" size={moderateScale(24)} color={colors.secondary} />
+              <Text style={[
+                styles.sectionTitle, { color: colors.secondary }
+              ]}>
+                {t('common.categories', 'Kategoriler')}
+              </Text>
+            </View>
             <TouchableOpacity
               onPress={() => setIsCategoryOpen(prev => !prev)}
               style={[styles.categoryHeader, { borderColor: colors.border }]}
@@ -257,7 +263,7 @@ const FilterModal = ({
               </Text>
 
               <Iconify
-                icon={isCategoryOpen ? 'flowbite:caret-down-solid' : 'flowbite:caret-down-solid'}
+                icon={isCategoryOpen ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'}
                 size={moderateScale(22)}
                 color={colors.text}
               />
@@ -312,9 +318,12 @@ const FilterModal = ({
           </View>
           {/* Dil Bölümü */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              {t('common.languages', 'Diller')}
-            </Text>
+            <View style={styles.filterHeaderContainer}>
+              <Iconify icon="fa:language" size={moderateScale(24)} color={colors.secondary} />
+              <Text style={[styles.sectionTitle, { color: colors.secondary }]}>
+                {t('create.language', 'İçerik Dili')}
+              </Text>
+            </View>
             <TouchableOpacity
               onPress={() => setIsLanguageOpen(prev => !prev)}
               style={[styles.categoryHeader, { borderColor: colors.border }]}
@@ -326,7 +335,7 @@ const FilterModal = ({
                   : t('common.selectLanguages', 'Dil Seç')}
               </Text>
               <Iconify
-                icon={'flowbite:caret-down-solid'}
+                icon={isLanguageOpen ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'}
                 size={moderateScale(22)}
                 color={colors.text}
               />
@@ -434,8 +443,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: scale(24),
     paddingTop: verticalScale(24),
-    paddingBottom: verticalScale(16),
+    paddingBottom: verticalScale(2),
     borderBottomWidth: moderateScale(1),
+    marginBottom: verticalScale(12),
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   modalContent: {
@@ -443,13 +453,12 @@ const styles = StyleSheet.create({
     paddingVertical: verticalScale(16),
   },
   section: {
-    marginBottom: verticalScale(24),
+    marginBottom: verticalScale(32),
   },
   sectionTitle: {
     ...typography.styles.h3,
     fontSize: moderateScale(18),
     fontWeight: '700',
-    marginBottom: verticalScale(12),
   },
   sectionSubtitle: {
     fontSize: moderateScale(14),
@@ -573,7 +582,13 @@ const styles = StyleSheet.create({
   },
   categoryHeaderText: {
     fontSize: moderateScale(16),
-  }
+  },
+  filterHeaderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: verticalScale(12),
+    gap: scale(8),
+  },
 });
 
 export default FilterModal;

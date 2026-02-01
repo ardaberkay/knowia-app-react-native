@@ -147,7 +147,10 @@
     "showMore": "Show More",
     "showLess": "Show Less",
     "clickToExpand": "Click!",
-    "clickToCollapse": "Click!"
+    "clickToCollapse": "Click!",
+    "selectCategories": "Select Categories",
+    "selectLanguages": "Select Languages",
+    "selected": "Selected"
   },
   "tabs": {
     "home": "Home",

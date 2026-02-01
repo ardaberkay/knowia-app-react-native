@@ -12,6 +12,7 @@ import LottieView from 'lottie-react-native';
 import { typography } from '../../theme/typography';
 import { StyleSheet } from 'react-native';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import { getLanguages } from '../../services/LanguageService';
 
 export default function FavoriteDecks() {
   const navigation = useNavigation();
@@ -24,6 +25,8 @@ export default function FavoriteDecks() {
   const [sort, setSort] = useState('default');
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [selectedLanguages, setSelectedLanguages] = useState([]);
+  const [allLanguages, setAllLanguages] = useState([]);
 
   const fetchFavorites = async () => {
     setLoading(true);
@@ -55,6 +58,10 @@ export default function FavoriteDecks() {
   };
 
   useEffect(() => {
+    getLanguages().then(setAllLanguages);
+  }, []);
+
+  useEffect(() => {
     fetchFavorites();
   }, []);
 
@@ -75,6 +82,13 @@ export default function FavoriteDecks() {
       list = list.filter(d => {
         const deckSortOrder = d.categories?.sort_order;
         return deckSortOrder != null && selectedCategories.includes(deckSortOrder);
+      });
+    }
+
+    if (selectedLanguages.length > 0) {
+      list = list.filter(d => {
+        const deckLanguageIds = d.decks_languages?.map(dl => dl.language_id) || [];
+        return deckLanguageIds.some(id => selectedLanguages.includes(id));
       });
     }
     
@@ -101,7 +115,7 @@ export default function FavoriteDecks() {
     }
     
     return list;
-  }, [favoriteDecks, query, sort, selectedCategories]);
+  }, [favoriteDecks, query, sort, selectedCategories, selectedLanguages]);
 
   const handleAddFavoriteDeck = async (deckId) => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -147,10 +161,11 @@ export default function FavoriteDecks() {
     setFavoriteDecks(modifiedDecks);
   };
 
-  const handleApplyFilters = (newSort, newCategories) => {
+  const handleApplyFilters = (newSort, newCategories, newLanguages) => {
     setSort(newSort);
     setSelectedCategories(newCategories);
     setFilterModalVisible(false);
+    setSelectedLanguages(newLanguages || []);
   };
 
   return (
@@ -209,6 +224,8 @@ export default function FavoriteDecks() {
         onApply={handleApplyFilters}
         showSortOptions={true}
         hideFavorites={true}
+        languages={allLanguages}
+        currentLanguages={selectedLanguages}
       />
     </View>
   );

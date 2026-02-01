@@ -116,6 +116,11 @@ module.exports = function (api) {
             'hugeicons:document-validation',
             'icon-park-outline:invalid-files',
             'mdi:spoken-language',
+            'lucide:sort-asc',
+            'flowbite:caret-up-solid',
+            'material-symbols:category-search-rounded',
+            'streamline-flex:search-category-remix',
+            'fa:language'
           ],
         },
       ],

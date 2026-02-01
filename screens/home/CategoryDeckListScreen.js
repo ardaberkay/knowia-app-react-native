@@ -15,6 +15,7 @@ import { getCategoryConfig } from '../../components/ui/CategoryHeroHeader';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
+import { getLanguages } from '../../services/LanguageService';
 
 export default function CategoryDeckListScreen({ route }) {
   const { category, title, decks: initialDecks, favoriteDecks: initialFavoriteDecks } = route.params || {};
@@ -22,15 +23,14 @@ export default function CategoryDeckListScreen({ route }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  
   // useWindowDimensions hook'u - ekran döndürme desteği
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
-  
+
   // Responsive hero boyutları - useMemo ile optimize edilmiş
   const heroDimensions = useMemo(() => {
     const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
-    
+
     return {
       iconSize: isSmallPhone ? scale(56) : scale(64),
       iconBorderRadius: isSmallPhone ? moderateScale(28) : moderateScale(32),
@@ -53,11 +53,17 @@ export default function CategoryDeckListScreen({ route }) {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('default');
   const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedLanguages, setSelectedLanguages] = useState([]);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [favoriteDecks, setFavoriteDecks] = useState(initialFavoriteDecks || []);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [decks, setDecks] = useState(initialDecks || []);
+  const [allLanguages, setAllLanguages] = useState([]);
+
+  useEffect(() => {
+    getLanguages().then(setAllLanguages);
+  }, []);
 
   useEffect(() => {
     if (!initialFavoriteDecks || initialFavoriteDecks.length === 0) {
@@ -91,7 +97,7 @@ export default function CategoryDeckListScreen({ route }) {
         .eq('user_id', user.id);
 
       if (error) throw error;
-      
+
       const favoriteDeckIds = data.map(item => item.deck_id);
       setFavoriteDecks(favoriteDeckIds);
     } catch (error) {
@@ -101,7 +107,7 @@ export default function CategoryDeckListScreen({ route }) {
 
   const loadDecks = async () => {
     if (!category) return;
-    
+
     try {
       setLoading(true);
       const loadedDecks = await getDecksByCategory(category);
@@ -116,7 +122,7 @@ export default function CategoryDeckListScreen({ route }) {
 
   const filteredDecks = useMemo(() => {
     let filtered = decks.filter(deck => {
-      const matchesSearch = 
+      const matchesSearch =
         (deck.name && deck.name.toLowerCase().includes(search.toLowerCase())) ||
         (deck.to_name && deck.to_name.toLowerCase().includes(search.toLowerCase()));
 
@@ -126,11 +132,21 @@ export default function CategoryDeckListScreen({ route }) {
         ? true
         : (deckSortOrder != null && selectedCategories.includes(deckSortOrder));
 
+      // 3. Dil Kontrolü
+      const hasActiveLanguageFilter = selectedLanguages.length > 0;
+
+      // NOT: Supabase sorgunda decks_languages'i (language_id) olarak çekmelisin
+      const deckLanguageIds = deck.decks_languages?.map(dl => dl.language_id) || [];
+
+      const matchesLanguage = !hasActiveLanguageFilter
+        ? true
+        : deckLanguageIds.some(id => selectedLanguages.includes(id));
+
       if (sort === 'favorites') {
-        return matchesSearch && matchesCategory && favoriteDecks.includes(deck.id);
+        return matchesSearch && matchesCategory && matchesLanguage && favoriteDecks.includes(deck.id);
       }
-      
-      return matchesSearch && matchesCategory;
+
+      return matchesSearch && matchesCategory && matchesLanguage;
     });
 
     switch (sort) {
@@ -176,7 +192,7 @@ export default function CategoryDeckListScreen({ route }) {
       }
       return deck;
     });
-  }, [decks, search, sort, favoriteDecks, selectedCategories]);
+  }, [decks, search, sort, favoriteDecks, selectedCategories, selectedLanguages]);
 
   const handleDeckPress = (deck) => {
     navigation.navigate('DeckDetail', { deck });
@@ -188,21 +204,21 @@ export default function CategoryDeckListScreen({ route }) {
       if (!user) return;
 
       const isFavorite = favoriteDecks.includes(deckId);
-      
+
       if (isFavorite) {
         const { error } = await supabase
           .from('favorite_decks')
           .delete()
           .eq('user_id', user.id)
           .eq('deck_id', deckId);
-        
+
         if (error) throw error;
         setFavoriteDecks(prev => prev.filter(id => id !== deckId));
       } else {
         const { error } = await supabase
           .from('favorite_decks')
           .insert({ user_id: user.id, deck_id: deckId });
-        
+
         if (error) throw error;
         setFavoriteDecks(prev => [...prev, deckId]);
       }
@@ -222,10 +238,11 @@ export default function CategoryDeckListScreen({ route }) {
     }
   };
 
-  const handleApplyFilters = (newSort, newCategories) => {
+  const handleApplyFilters = (newSort, newCategories, newLanguages) => {
     setSort(newSort);
     setSelectedCategories(newCategories);
     setFilterModalVisible(false);
+    setSelectedLanguages(newLanguages || []);
   };
 
   const renderFixedHeader = useCallback(() => {
@@ -233,7 +250,7 @@ export default function CategoryDeckListScreen({ route }) {
     const headerHeight = Platform.OS === 'ios' ? insets.top + 44 : 56;
     const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
     const gradientPaddingTop = isSmallPhone ? headerHeight + 24 : headerHeight + 32;
-    
+
     return (
       <View style={styles.fixedHeaderContainer}>
         <LinearGradient
@@ -304,7 +321,7 @@ export default function CategoryDeckListScreen({ route }) {
                 style={styles.searchBar}
                 variant="light"
               />
-              <FilterModalButton 
+              <FilterModalButton
                 onPress={() => setFilterModalVisible(true)}
                 variant="light"
               />
@@ -340,6 +357,8 @@ export default function CategoryDeckListScreen({ route }) {
         currentCategories={selectedCategories}
         onApply={handleApplyFilters}
         showSortOptions={true}
+        languages={allLanguages}
+        currentLanguages={selectedLanguages}
       />
     </View>
   );

@@ -24,6 +24,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ProfileAvatarButton from '../../components/layout/ProfileAvatarButton';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
+import { getLanguages } from '../../services/LanguageService';
 
 // Fade efekti - karakter bazlı opacity (MaskedView sorunlarından kaçınır)
 const FadeText = ({ text, style, maxChars = 15 }) => {
@@ -91,6 +92,12 @@ export default function LibraryScreen() {
   const [myDecksFilterModalVisible, setMyDecksFilterModalVisible] = useState(false);
   const [cardDetailModalVisible, setCardDetailModalVisible] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
+  const [allLanguages, setAllLanguages] = useState([]);
+  const [selectedLanguages, setSelectedLanguages] = useState([]);
+
+  useEffect(() => {
+    getLanguages().then(setAllLanguages);
+  }, []);
 
   // useWindowDimensions hook'u - ekran döndürme desteği
   const { width, height } = useWindowDimensions();
@@ -621,29 +628,43 @@ export default function LibraryScreen() {
     return list;
   }, [favoriteCards, favCardsQuery, favCardsSort]);
 
-  const filteredMyDecks = (() => {
+  const filteredMyDecks = useMemo(() => {
+    // Orijinal diziyi bozmamak için kopyalıyoruz
     let list = myDecks.slice();
-    
-    // Search filter
+  
+    // 1. Search filter
     if (myDecksQuery && myDecksQuery.trim()) {
       const q = myDecksQuery.toLowerCase();
-      list = list.filter(d => (d.name || '').toLowerCase().includes(q) || (d.to_name || '').toLowerCase().includes(q));
+      list = list.filter(d => 
+        (d.name || '').toLowerCase().includes(q) || 
+        (d.to_name || '').toLowerCase().includes(q)
+      );
     }
-    
-    // Category filter
+  
+    // 2. Category filter
     if (myDecksSelectedCategories.length > 0) {
       list = list.filter(d => {
         const deckSortOrder = d.categories?.sort_order;
         return deckSortOrder != null && myDecksSelectedCategories.includes(deckSortOrder);
       });
     }
-    
-    // Favorites filter (if sort is 'favorites')
-    if (myDecksSort === 'favorites') {
-      list = list.filter(d => favoriteDecks.some(favDeck => favDeck.id === d.id));
+  
+    // 3. Language filter (İkinci koddan gelen yeni özellik)
+    if (typeof selectedLanguages !== 'undefined' && selectedLanguages.length > 0) {
+      list = list.filter(d => {
+        const deckLanguageIds = d.decks_languages?.map(dl => dl.language_id) || [];
+        return deckLanguageIds.some(id => selectedLanguages.includes(id));
+      });
     }
-    
-    // Apply sorting
+  
+    // 4. Favorites filter (Eğer sort 'favorites' ise sadece favorileri gösterir)
+    if (myDecksSort === 'favorites') {
+      list = list.filter(d => favoriteDecks.some(favDeck => 
+        (typeof favDeck === 'object' ? favDeck.id : favDeck) === d.id
+      ));
+    }
+  
+    // 5. Apply sorting
     switch (myDecksSort) {
       case 'az':
         list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
@@ -651,8 +672,8 @@ export default function LibraryScreen() {
       case 'favorites':
         // Favoriler önce, sonra A-Z
         list.sort((a, b) => {
-          const aIsFavorite = favoriteDecks.some(favDeck => favDeck.id === a.id);
-          const bIsFavorite = favoriteDecks.some(favDeck => favDeck.id === b.id);
+          const aIsFavorite = favoriteDecks.some(favDeck => (typeof favDeck === 'object' ? favDeck.id : favDeck) === a.id);
+          const bIsFavorite = favoriteDecks.some(favDeck => (typeof favDeck === 'object' ? favDeck.id : favDeck) === b.id);
           if (aIsFavorite && !bIsFavorite) return -1;
           if (!aIsFavorite && bIsFavorite) return 1;
           return (a.name || '').localeCompare(b.name || '');
@@ -665,17 +686,18 @@ export default function LibraryScreen() {
           if (scoreA !== scoreB) {
             return scoreB - scoreA;
           }
-          return new Date(b.created_at) - new Date(a.created_at);
+          return new Date(b.created_at || 0) - new Date(a.created_at || 0);
         });
         break;
       case 'default':
       default:
-        list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
         break;
     }
-    
+  
     return list;
-  })();
+    // Bağımlılık listesi: Bu değişkenlerden biri değiştiğinde kod yeniden çalışır
+  }, [myDecks, myDecksQuery, myDecksSelectedCategories, myDecksSort, favoriteDecks, selectedLanguages]);
 
   // MyDecks Card
   const renderMyDecksCard = () => {
@@ -1115,12 +1137,15 @@ export default function LibraryScreen() {
         onClose={() => setMyDecksFilterModalVisible(false)}
         currentSort={myDecksSort}
         currentCategories={myDecksSelectedCategories}
-        onApply={(newSort, newCategories) => {
+        onApply={(newSort, newCategories, newLanguages) => {
           setMyDecksSort(newSort);
           setMyDecksSelectedCategories(newCategories);
           setMyDecksFilterModalVisible(false);
+          setSelectedLanguages(newLanguages || []);
         }}
         showSortOptions={true}
+        languages={allLanguages}
+        currentLanguages={selectedLanguages}
       />
     </View>
   );

@@ -2,44 +2,41 @@ import { supabase } from '../lib/supabase';
 
 export const getDecksByCategory = async (category) => {
   const { data: { user } } = await supabase.auth.getUser();
-  
   // inProgressDecks için özel işlem: decks_stats tablosundan kullanıcının başlattığı deck'leri al
   if (category === 'inProgressDecks') {
     if (!user?.id) {
       return [];
     }
-    
     // Önce kullanıcının başlattığı deck ID'lerini al
     const { data: statsData, error: statsError } = await supabase
       .from('decks_stats')
       .select('deck_id')
       .eq('user_id', user.id);
-    
     if (statsError) {
       console.error('Error fetching decks_stats:', statsError);
       return [];
     }
-    
+
     if (!statsData || statsData.length === 0) {
       return [];
     }
-    
+
     // Unique deck ID'leri al
     const deckIds = [...new Set(statsData.map(stat => stat.deck_id))];
-    
+
     // Bu deck ID'lerine göre deck'leri getir
     const { data, error } = await supabase
       .from('decks')
-      .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)')
+      .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order), decks_languages(language_id)')
       .in('id', deckIds);
-    
+
     console.log(`${category} decks:`, data); // Debug için
-    
+
     if (error) {
       console.error(`Error fetching ${category} decks:`, error);
       return [];
     }
-    
+
     // Favori durumunu ekle
     if (user && data && data.length > 0) {
       try {
@@ -49,7 +46,7 @@ export const getDecksByCategory = async (category) => {
           .select('deck_id')
           .eq('user_id', user.id)
           .in('deck_id', favoriteDeckIds);
-        
+
         if (!favoriteError && favoriteData) {
           const favoriteDeckIdSet = new Set(favoriteData.map(f => f.deck_id));
           data.forEach(deck => {
@@ -67,16 +64,16 @@ export const getDecksByCategory = async (category) => {
         deck.is_favorite = false;
       });
     }
-    
+
     return data || [];
   }
-  
+
   // Diğer kategoriler için mevcut mantık
   let query = supabase
     .from('decks')
-    .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)');
+    .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order), decks_languages(language_id)');
 
-  switch(category) {
+  switch (category) {
     case 'myDecks':
       query = query
         .eq('user_id', user.id)
@@ -94,9 +91,9 @@ export const getDecksByCategory = async (category) => {
   }
 
   const { data, error } = await query;
-  
+
   console.log(`${category} decks:`, data); // Debug için
-  
+
   if (error) {
     console.error(`Error fetching ${category} decks:`, error);
     throw error;
@@ -111,7 +108,7 @@ export const getDecksByCategory = async (category) => {
         .select('deck_id')
         .eq('user_id', user.id)
         .in('deck_id', deckIds);
-      
+
       if (!favoriteError && favoriteData) {
         const favoriteDeckIds = new Set(favoriteData.map(f => f.deck_id));
         // Her deck'e is_favorite property'si ekle
@@ -152,11 +149,11 @@ export const setDeckStarted = async (deckId) => {
 // timeFilter: 'today' | 'week' | 'month' | 'year' | 'all'
 export const getPopularDecks = async (limit = 20, timeFilter = 'all') => {
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   // 1. Paylaşılmış/admin destelerini al
   const { data: allDecks, error: decksError } = await supabase
     .from('decks')
-    .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)')
+    .select('*, profiles(username, image_url), categories(id, name, sort_order), decks_languages(language_id)')
     .or('is_shared.eq.true,is_admin_created.eq.true');
 
   if (decksError) {
@@ -170,7 +167,7 @@ export const getPopularDecks = async (limit = 20, timeFilter = 'all') => {
 
   // 2. Batch sorgular ile tüm metrikleri toplu olarak al
   const deckIds = allDecks.map(d => d.id);
-  
+
   // Zaman bazlı filtreleme için tarih hesapla
   let startDate = null;
   if (timeFilter !== 'all') {
@@ -196,7 +193,7 @@ export const getPopularDecks = async (limit = 20, timeFilter = 'all') => {
     .from('cards')
     .select('id, deck_id')
     .in('deck_id', deckIds);
-  
+
   const allCardIds = allCards?.map(c => c.id) || [];
 
   // Batch sorgular - paralel çalıştır
@@ -210,7 +207,7 @@ export const getPopularDecks = async (limit = 20, timeFilter = 'all') => {
       .from('favorite_decks')
       .select('deck_id')
       .in('deck_id', deckIds),
-    
+
     // b) Tüm deck'ler için stats (zaman bazlı filtreleme ile)
     (() => {
       let query = supabase
@@ -222,7 +219,7 @@ export const getPopularDecks = async (limit = 20, timeFilter = 'all') => {
       }
       return query;
     })(),
-    
+
     // c) Tüm card'lar için progress (unique users ve active usage için)
     allCardIds.length > 0 ? supabase
       .from('user_card_progress')
@@ -283,7 +280,7 @@ export const getPopularDecks = async (limit = 20, timeFilter = 'all') => {
     // Unique started count - bu deck'in card'larına sahip unique user sayısı
     let uniqueStartedCount = 0;
     let activeUsageCount = 0;
-    
+
     if (cardIds.length > 0) {
       const allUsers = new Set();
       cardIds.forEach(cardId => {
@@ -296,14 +293,17 @@ export const getPopularDecks = async (limit = 20, timeFilter = 'all') => {
     }
 
     // Skor hesapla (yüzdelik dağılım)
-    const popularityScore = 
+    const popularityScore =
       favoriteCount * 0.35 +
       uniqueStartedCount * 0.25 +
       totalStartsCount * 0.20 +
       activeUsageCount * 0.20;
 
+
     return {
       ...deck,
+      profiles: Array.isArray(deck.profiles) ? deck.profiles[0] : deck.profiles,
+      categories: Array.isArray(deck.categories) ? deck.categories[0] : deck.categories,
       favorite_count: favoriteCount,
       unique_started_count: uniqueStartedCount,
       total_starts_count: totalStartsCount,
@@ -326,7 +326,7 @@ export const getPopularDecks = async (limit = 20, timeFilter = 'all') => {
         .select('deck_id')
         .eq('user_id', user.id)
         .in('deck_id', deckIds);
-      
+
       if (!favoriteError && favoriteData) {
         const favoriteDeckIds = new Set(favoriteData.map(f => f.deck_id));
         sortedDecks.forEach(deck => {
@@ -344,17 +344,17 @@ export const getPopularDecks = async (limit = 20, timeFilter = 'all') => {
       deck.is_favorite = false;
     });
   }
-
+  console.log("GELEN İLK DESTE:", JSON.stringify(allDecks[0], null, 2));
   return sortedDecks;
 };
 
 // Yeni eklenen desteleri getir
 export const getNewDecks = async (limit = 20) => {
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   const { data: allDecks, error: decksError } = await supabase
     .from('decks')
-    .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)')
+    .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order), decks_languages(language_id)')
     .or('is_shared.eq.true,is_admin_created.eq.true')
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -377,7 +377,7 @@ export const getNewDecks = async (limit = 20) => {
         .select('deck_id')
         .eq('user_id', user.id)
         .in('deck_id', deckIds);
-      
+
       if (!favoriteError && favoriteData) {
         const favoriteDeckIds = new Set(favoriteData.map(f => f.deck_id));
         allDecks.forEach(deck => {
@@ -403,11 +403,11 @@ export const getNewDecks = async (limit = 20) => {
 // timeFilter: 'today' | 'week' | 'month' | 'year' | 'all'
 export const getMostFavoritedDecks = async (limit = 20, timeFilter = 'all') => {
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   // 1. Paylaşılmış/admin destelerini al
   const { data: allDecks, error: decksError } = await supabase
     .from('decks')
-    .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)')
+    .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order), decks_languages(language_id)')
     .or('is_shared.eq.true,is_admin_created.eq.true');
 
   if (decksError) {
@@ -421,7 +421,7 @@ export const getMostFavoritedDecks = async (limit = 20, timeFilter = 'all') => {
 
   // 2. Batch sorgu ile tüm favori sayılarını al
   const deckIds = allDecks.map(d => d.id);
-  
+
   // Zaman bazlı filtreleme için tarih hesapla
   let startDate = null;
   if (timeFilter !== 'all') {
@@ -447,11 +447,11 @@ export const getMostFavoritedDecks = async (limit = 20, timeFilter = 'all') => {
     .from('favorite_decks')
     .select('deck_id')
     .in('deck_id', deckIds);
-  
+
   if (startDate) {
     favoriteQuery = favoriteQuery.gte('created_at', startDate.toISOString());
   }
-  
+
   const { data: favoriteData } = await favoriteQuery;
 
   // Favori sayılarını hesapla
@@ -482,7 +482,7 @@ export const getMostFavoritedDecks = async (limit = 20, timeFilter = 'all') => {
         .select('deck_id')
         .eq('user_id', user.id)
         .in('deck_id', deckIds);
-      
+
       if (favoriteData) {
         const favoriteDeckIds = new Set(favoriteData.map(f => f.deck_id));
         sortedDecks.forEach(deck => {
@@ -501,11 +501,11 @@ export const getMostFavoritedDecks = async (limit = 20, timeFilter = 'all') => {
 // timeFilter: 'today' | 'week' | 'month' | 'year' | 'all'
 export const getMostStartedDecks = async (limit = 20, timeFilter = 'all') => {
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   // 1. Paylaşılmış/admin destelerini al
   const { data: allDecks, error: decksError } = await supabase
     .from('decks')
-    .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)')
+    .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order), decks_languages(language_id)')
     .or('is_shared.eq.true,is_admin_created.eq.true');
 
   if (decksError) {
@@ -519,7 +519,7 @@ export const getMostStartedDecks = async (limit = 20, timeFilter = 'all') => {
 
   // 2. Batch sorgu ile tüm başlatma sayılarını al
   const deckIds = allDecks.map(d => d.id);
-  
+
   // Zaman bazlı filtreleme için tarih hesapla
   let startDate = null;
   if (timeFilter !== 'all') {
@@ -545,11 +545,11 @@ export const getMostStartedDecks = async (limit = 20, timeFilter = 'all') => {
     .from('decks_stats')
     .select('deck_id')
     .in('deck_id', deckIds);
-  
+
   if (startDate) {
     statsQuery = statsQuery.gte('started_at', startDate.toISOString());
   }
-  
+
   const { data: statsData } = await statsQuery;
 
   // Başlatma sayılarını hesapla
@@ -580,7 +580,7 @@ export const getMostStartedDecks = async (limit = 20, timeFilter = 'all') => {
         .select('deck_id')
         .eq('user_id', user.id)
         .in('deck_id', deckIds);
-      
+
       if (favoriteData) {
         const favoriteDeckIds = new Set(favoriteData.map(f => f.deck_id));
         sortedDecks.forEach(deck => {
@@ -599,11 +599,11 @@ export const getMostStartedDecks = async (limit = 20, timeFilter = 'all') => {
 // timeFilter: 'today' | 'week' | 'month' | 'year' | 'all'
 export const getMostUniqueStartedDecks = async (limit = 20, timeFilter = 'all') => {
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   // 1. Paylaşılmış/admin destelerini al
   const { data: allDecks, error: decksError } = await supabase
     .from('decks')
-    .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)')
+    .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order), decks_languages(language_id)')
     .or('is_shared.eq.true,is_admin_created.eq.true');
 
   if (decksError) {
@@ -617,15 +617,15 @@ export const getMostUniqueStartedDecks = async (limit = 20, timeFilter = 'all') 
 
   // 2. Batch sorgular ile unique başlatma sayılarını al
   const deckIds = allDecks.map(d => d.id);
-  
+
   // Önce tüm card'ları al
   const { data: allCards } = await supabase
     .from('cards')
     .select('id, deck_id')
     .in('deck_id', deckIds);
-  
+
   const allCardIds = allCards?.map(c => c.id) || [];
-  
+
   // Zaman bazlı filtreleme için tarih hesapla
   let startDate = null;
   if (timeFilter !== 'all') {
@@ -651,11 +651,11 @@ export const getMostUniqueStartedDecks = async (limit = 20, timeFilter = 'all') 
     .from('user_card_progress')
     .select('card_id, user_id')
     .in('card_id', allCardIds);
-  
+
   if (startDate) {
     progressQuery = progressQuery.gte('created_at', startDate.toISOString());
   }
-  
+
   const { data: progressData } = await progressQuery;
 
   // Card'ları deck_id'ye göre grupla
@@ -684,7 +684,7 @@ export const getMostUniqueStartedDecks = async (limit = 20, timeFilter = 'all') 
   const decksWithUniqueStarts = allDecks.map(deck => {
     const cardIds = cardsByDeck[deck.id] || [];
     const allUsers = new Set();
-    
+
     cardIds.forEach(cardId => {
       if (progressByCard[cardId]) {
         progressByCard[cardId].forEach(userId => allUsers.add(userId));
@@ -711,7 +711,7 @@ export const getMostUniqueStartedDecks = async (limit = 20, timeFilter = 'all') 
         .select('deck_id')
         .eq('user_id', user.id)
         .in('deck_id', deckIds);
-      
+
       if (favoriteData) {
         const favoriteDeckIds = new Set(favoriteData.map(f => f.deck_id));
         sortedDecks.forEach(deck => {
@@ -724,4 +724,19 @@ export const getMostUniqueStartedDecks = async (limit = 20, timeFilter = 'all') 
   }
 
   return sortedDecks;
+};
+
+
+export const getDecks = async () => {
+  const { data, error } = await supabase
+    .from('decks')
+    .select(`
+      *,
+      profiles:profiles(username, image_url),
+      categories:categories(id, name, sort_order),
+      decks_languages(language_id)
+    `);
+
+  if (error) throw error;
+  return data || [];
 };

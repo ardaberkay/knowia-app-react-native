@@ -145,7 +145,10 @@
     "showMore": "Afficher Plus",
     "showLess": "Afficher Moins",
     "clickToExpand": "Cliquez !",
-    "clickToCollapse": "Cliquez !"
+    "clickToCollapse": "Cliquez !",
+    "selectCategories": "Catégories",
+    "selectLanguages": "Langues",
+    "selected": "Sélectionné"
   },
   "tabs": {
     "home": "Accueil",

@@ -145,7 +145,10 @@
     "showMore": "عرض المزيد",
     "showLess": "عرض أقل",
     "clickToExpand": "انقر!",
-    "clickToCollapse": "انقر!"
+    "clickToCollapse": "انقر!",
+    "selectCategories": "الفئات",
+    "selectLanguages": "اللغات",
+    "selected": "محدد"
   },
   "tabs": {
     "home": "الرئيسية",

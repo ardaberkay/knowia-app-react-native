@@ -173,7 +173,7 @@ export default function DeckList({
       7: "ic:outline-self-improvement", // Kişisel Gelişim
       8: "streamline-ultimate:module-puzzle-2-bold" // Genel Kültür
     };
-    return icons[sortOrder] || "material-symbols:category";
+    return icons[sortOrder] || "hugeicons:language-skill";
   };
 
   const rows = useMemo(() => {
