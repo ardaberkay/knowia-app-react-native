@@ -120,7 +120,8 @@ module.exports = function (api) {
             'flowbite:caret-up-solid',
             'material-symbols:category-search-rounded',
             'streamline-flex:search-category-remix',
-            'fa:language'
+            'fa:language',
+            'lsicon:filter-filled'
           ],
         },
       ],

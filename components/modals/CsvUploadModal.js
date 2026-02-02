@@ -710,7 +710,7 @@ export default function CsvUploadModal({
             >
               <Iconify icon="material-symbols:info-outline" size={moderateScale(24)} color={colors.secondary} style={{ marginRight: scale(8) }} />
               <Text style={[styles.expandableHeaderText, { color: colors.text }]}>
-                {t('addCard.howToCreateTable', 'Tablo Nasıl Oluşturulur?')} {tableGuideExpanded ? t('common.clickToCollapse', 'Tıkla!') : t('common.clickToExpand', 'Tıkla!')}
+                {t('addCard.howToCreateTable', 'Tablo Nasıl Oluşturulur?')}
               </Text>
               <Iconify
                 icon="flowbite:caret-down-solid"

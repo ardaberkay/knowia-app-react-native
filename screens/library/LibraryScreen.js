@@ -708,7 +708,7 @@ export default function LibraryScreen() {
             <View style={styles.myDecksTitleContainer}>
               <Iconify icon="ph:cards-fill" size={moderateScale(26)} color="#F98A21" style={{ marginRight: scale(6) }} />
               <Text style={[typography.styles.h2, { color: colors.text}]}>
-                {t('library.myDecks', 'Destelerim')}
+                {t('library.myDecksHeading', 'Destelerim')}
               </Text>
             </View>
             <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: moderateScale(22), marginRight: scale(3) }]}>

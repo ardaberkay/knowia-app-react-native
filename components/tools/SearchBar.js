@@ -5,10 +5,11 @@ import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
+import { useTranslation } from 'react-i18next';
 
 export default function SearchBar({ value, onChangeText, placeholder, style, variant = 'default' }) {
   const { colors } = useTheme();
-  
+  const { t } = useTranslation();
   // useWindowDimensions hook'u - ekran döndürme desteği
   const { width } = useWindowDimensions();
   const isTablet = getIsTablet();
@@ -74,7 +75,7 @@ export default function SearchBar({ value, onChangeText, placeholder, style, var
             paddingVertical: searchBarDimensions.paddingVertical,
           }
         ]}
-        placeholder={placeholder}
+        placeholder={t('common.searchPlaceholder', 'Ara...')}
         value={value}
         onChangeText={onChangeText}
         placeholderTextColor={placeholderColor}
