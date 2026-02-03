@@ -724,6 +724,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
                   style={styles.editModeButton}
                   activeOpacity={0.7}
                 >
+                  <Iconify icon={selectedCards.size === filteredCards.length ? "material-symbols:all-out-rounded" : "material-symbols:all-out-outline-rounded"} size={moderateScale(20)} color="#fff" />
                   <Text style={[styles.editModeButtonText, { color: '#fff' }]}>
                     {selectedCards.size === filteredCards.length 
                       ? t('chapterCards.deselectAll', 'Tümünü Kaldır')
@@ -1037,8 +1038,10 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.1)',
   },
   editModeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(4),
     paddingVertical: verticalScale(6),
-    paddingHorizontal: scale(12),
   },
   editModeButtonText: {
     fontSize: moderateScale(14),

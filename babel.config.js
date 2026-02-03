@@ -121,7 +121,9 @@ module.exports = function (api) {
             'material-symbols:category-search-rounded',
             'streamline-flex:search-category-remix',
             'fa:language',
-            'lsicon:filter-filled'
+            'lsicon:filter-filled',
+            'material-symbols:all-out-outline-rounded',
+            'material-symbols:all-out-rounded',
           ],
         },
       ],

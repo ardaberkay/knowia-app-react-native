@@ -619,6 +619,7 @@ const styles = StyleSheet.create({
   popularDecksImage: {
     width: moderateScale(160, 0.3), // Görsel boyutu optimize edildi
     height: moderateScale(160, 0.3),
+    top: verticalScale(-20),
   },
   exploreButton: {
     borderRadius: moderateScale(99),
