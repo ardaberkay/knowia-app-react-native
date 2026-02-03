@@ -590,9 +590,11 @@ const styles = StyleSheet.create({
     width: '100%',
     height: verticalScale(160),
     borderRadius: moderateScale(32),
-    resizeMode: 'cover',
-    backgroundColor: '#f2f2f2',
+    resizeMode: 'contain',
+    backgroundColor: 'transparent',
     alignSelf: 'center',
+    borderWidth: moderateScale(1),
+    borderColor: '#666666',
   },
   cardAnswer: {
     fontSize: moderateScale(15),

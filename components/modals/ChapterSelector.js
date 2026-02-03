@@ -8,11 +8,11 @@ import { useTranslation } from 'react-i18next';
 import CircularProgress from '../ui/CircularProgress';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
-export default function ChapterSelector({ 
-  isVisible, 
-  onClose, 
-  chapters = [], 
-  selectedChapterId, 
+export default function ChapterSelector({
+  isVisible,
+  onClose,
+  chapters = [],
+  selectedChapterId,
   onSelectChapter,
   progressMap = null // Optional: Map with chapter progress data
 }) {
@@ -32,11 +32,14 @@ export default function ChapterSelector({
     >
       <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
         <View style={styles.headerRow}>
-          <Text style={[typography.styles.h2, { color: colors.text }]}>
-            {t('chapterCards.selectChapter', 'Bölüm Seç')}
-          </Text>
-          <TouchableOpacity 
-            onPress={onClose} 
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={moderateScale(24)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
+            <Text style={[typography.styles.h2, { color: colors.text }]}>
+              {t('chapterCards.selectChapter', 'Bölüm Seç')}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={onClose}
             hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
           >
             <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
@@ -55,7 +58,7 @@ export default function ChapterSelector({
               const isSelected = selectedChapterId === chapter.id;
               const chapterProgress = progressMap?.get(chapter.id) || { total: 0, learned: 0, learning: 0, progress: 0 };
               const learningCount = chapterProgress.learning || 0;
-              
+
               return (
                 <TouchableOpacity
                   key={chapter.id?.toString() || index}
@@ -78,21 +81,21 @@ export default function ChapterSelector({
                   {/* Chapter Header */}
                   <View style={styles.chapterHeader}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <Iconify 
-                        icon="streamline-freehand:plugin-jigsaw-puzzle" 
-                        size={moderateScale(22)} 
-                        color={colors.buttonColor} 
-                        style={{ marginRight: scale(8) }} 
+                      <Iconify
+                        icon="streamline-freehand:plugin-jigsaw-puzzle"
+                        size={moderateScale(22)}
+                        color={colors.buttonColor}
+                        style={{ marginRight: scale(8) }}
                       />
                       <Text style={[typography.styles.body, styles.chapterTitle, { color: colors.text }]}>
                         {t('chapters.chapter', 'Bölüm')} {index + 1}
                       </Text>
                     </View>
                   </View>
-                  
+
                   {/* Divider */}
                   <View style={[styles.chapterDivider, { backgroundColor: colors.border }]} />
-                  
+
                   {/* Progress and Stats Section */}
                   <View style={styles.chapterContent}>
                     <View style={styles.progressContainer}>
@@ -106,7 +109,7 @@ export default function ChapterSelector({
                         textStyle={{ fontSize: moderateScale(16), fontWeight: '900', color: colors.text }}
                       />
                     </View>
-                    
+
                     <View style={styles.statsContainer}>
                       {/* Learning */}
                       <View style={styles.statRow}>
@@ -115,7 +118,7 @@ export default function ChapterSelector({
                           {t('chapters.learning', 'Learning')}: {learningCount}
                         </Text>
                       </View>
-                      
+
                       {/* Learned */}
                       <View style={styles.statRow}>
                         <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
@@ -123,7 +126,7 @@ export default function ChapterSelector({
                           {t('chapters.learned', 'Learned')}: {chapterProgress.learned}
                         </Text>
                       </View>
-                      
+
                       {/* Total */}
                       <View style={styles.statRow}>
                         <Iconify icon="ri:stack-fill" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />

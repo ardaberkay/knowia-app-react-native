@@ -379,8 +379,8 @@ const styles = StyleSheet.create({
     height: verticalScale(160),
     borderRadius: moderateScale(18),
     marginBottom: verticalScale(8),
-    resizeMode: 'cover',
-    backgroundColor: '#f2f2f2',
+    resizeMode: 'contain',
+    backgroundColor: 'transparent',
   },
   addImageButton: {
     flexDirection: 'row',

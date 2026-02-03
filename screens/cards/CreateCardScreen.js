@@ -510,10 +510,10 @@ const styles = StyleSheet.create({
   cardImage: {
     width: '100%',
     height: verticalScale(160),
-    borderRadius: moderateScale(32),
+    borderRadius: moderateScale(24),
     marginBottom: verticalScale(8),
-    resizeMode: 'cover',
-    backgroundColor: '#f2f2f2',
+    resizeMode: 'contain',
+    backgroundColor: 'transparent',
   },
   addImageButton: {
     flexDirection: 'row',

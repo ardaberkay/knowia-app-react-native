@@ -75,7 +75,7 @@ const FilterIcon = ({ style, size, color = "#B0B0B0", value = 'original', onChan
         onPress={openMenu}
         activeOpacity={0.8}
       >
-        <Icon icon="mage:filter" size={filterIconDimensions.iconSize} color={color} />
+        <Icon icon="lsicon:filter-filled" size={filterIconDimensions.iconSize} color={color} />
       </TouchableOpacity>
 
       <Modal
@@ -100,7 +100,7 @@ const FilterIcon = ({ style, size, color = "#B0B0B0", value = 'original', onChan
               shadowOffset: { width: 0, height: verticalScale(2) },
               shadowOpacity: 0.10,
               shadowRadius: moderateScale(8),
-              elevation: 8,
+              elevation: 2,
               borderWidth: moderateScale(1),
               borderColor: colors.iconBackground,
             }}>
@@ -117,6 +117,9 @@ const FilterIcon = ({ style, size, color = "#B0B0B0", value = 'original', onChan
               )}
               <TouchableOpacity onPress={() => handleSelect('unlearned')} style={{ paddingVertical: filterIconDimensions.dropdownItemPaddingVertical, paddingHorizontal: filterIconDimensions.dropdownItemPaddingHorizontal, backgroundColor: value === 'unlearned' ? colors.iconBackground : 'transparent', borderRadius: filterIconDimensions.dropdownItemBorderRadius }}>
                 <Text style={{ color: value === 'unlearned' ? '#fff' : colors.text, fontWeight: value === 'unlearned' ? 'bold' : 'normal', fontSize: filterIconDimensions.dropdownFontSize }}>{t('deckDetail.inProgress', 'Devam Eden')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleSelect('learned')} style={{ paddingVertical: filterIconDimensions.dropdownItemPaddingVertical, paddingHorizontal: filterIconDimensions.dropdownItemPaddingHorizontal, backgroundColor: value === 'learned' ? colors.iconBackground : 'transparent', borderRadius: filterIconDimensions.dropdownItemBorderRadius }}>
+                <Text style={{ color: value === 'learned' ? '#fff' : colors.text, fontWeight: value === 'learned' ? 'bold' : 'normal', fontSize: filterIconDimensions.dropdownFontSize }}>{t('deckDetail.inLearned', 'Öğrenildi')}</Text>
               </TouchableOpacity>
             </View>
           </View>

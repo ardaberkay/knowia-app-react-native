@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Dimensions, Platform } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Platform, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';

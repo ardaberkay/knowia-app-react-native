@@ -1028,7 +1028,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: scale(18),
     paddingVertical: verticalScale(12),
-    marginHorizontal: scale(18),
+    marginHorizontal: scale(14),
     marginTop: verticalScale(12),
     marginBottom: verticalScale(10),
     minHeight: verticalScale(48),

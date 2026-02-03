@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import { getFavoriteCards } from '../../services/FavoriteService';
 import SearchBar from '../../components/tools/SearchBar';
-import FilterIcon from '../../components/tools/FilterIcon';
+import FilterIcon from '../../components/modals/CardFilterIcon';
 import CardListItem from '../../components/lists/CardList';
 import CardDetailView from '../../components/layout/CardDetailView';
 import LottieView from 'lottie-react-native';
@@ -117,6 +117,8 @@ export default function FavoriteCards() {
       // already favorites; keep original order
     } else if (sort === 'unlearned') {
       list = list.filter(c => c.status !== 'learned');
+    } else if (sort === 'learned') {
+      list = list.filter(c => c.status === 'learned');
     } else {
       list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     }

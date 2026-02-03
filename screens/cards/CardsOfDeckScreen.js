@@ -11,11 +11,11 @@ import AddEditCardInlineForm from '../../components/layout/EditCardForm';
 import { useTranslation } from 'react-i18next';
 import CardListItem from '../../components/lists/CardList';
 import SearchBar from '../../components/tools/SearchBar';
-import FilterIcon from '../../components/tools/FilterIcon';
+import FilterIcon from '../../components/modals/CardFilterIcon';
 import CardDetailView from '../../components/layout/CardDetailView';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
- 
+
 
 export default function DeckCardsScreen({ route, navigation }) {
   const { deck } = route.params;
@@ -51,7 +51,7 @@ export default function DeckCardsScreen({ route, navigation }) {
       try {
         setLoading(true);
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         // Fetch cards, favorite cards, and user progress in parallel
         const [cardsResult, favoritesResult, progressResult] = await Promise.all([
           supabase
@@ -73,9 +73,9 @@ export default function DeckCardsScreen({ route, navigation }) {
             .select('card_id, status')
             .eq('user_id', user.id) : Promise.resolve({ data: [], error: null })
         ]);
-        
+
         if (cardsResult.error) throw cardsResult.error;
-        
+
         // Create a map of card statuses
         const statusMap = {};
         if (progressResult.data) {
@@ -83,16 +83,16 @@ export default function DeckCardsScreen({ route, navigation }) {
             statusMap[p.card_id] = p.status;
           });
         }
-        
+
         // Merge status into cards (default: 'new' if no progress record)
         const cardsWithProgress = (cardsResult.data || []).map(card => ({
           ...card,
           status: statusMap[card.id] || 'new'
         }));
-        
+
         setCards(cardsWithProgress);
         setOriginalCards(cardsWithProgress);
-        
+
         if (favoritesResult.error) throw favoritesResult.error;
         setFavoriteCards((favoritesResult.data || []).map(f => f.card_id));
       } catch (e) {
@@ -194,8 +194,8 @@ export default function DeckCardsScreen({ route, navigation }) {
             return null;
           }
           return (
-            <TouchableOpacity 
-              onPress={() => navigation.navigate('AddCard', { deck })} 
+            <TouchableOpacity
+              onPress={() => navigation.navigate('AddCard', { deck })}
               style={{ marginRight: scale(8) }}
             >
               <Iconify icon="ic:round-plus" size={moderateScale(28)} color={colors.text} />
@@ -229,6 +229,9 @@ export default function DeckCardsScreen({ route, navigation }) {
       return [...cardsList].filter(card => favoriteCards.includes(card.id));
     } else if (type === 'unlearned') {
       return [...cardsList].filter(card => card.status !== 'learned');
+    }
+    else if (type === 'learned') {
+      return [...cardsList].filter(card => card.status === 'learned');
     } else {
       return [...originalCards];
     }
@@ -250,7 +253,7 @@ export default function DeckCardsScreen({ route, navigation }) {
           .insert({ user_id: user.id, card_id: cardId });
         setFavoriteCards([...favoriteCards, cardId]);
       }
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const handleEditSelectedCard = () => {
@@ -266,11 +269,11 @@ export default function DeckCardsScreen({ route, navigation }) {
         .from('cards')
         .delete()
         .eq('id', selectedCard.id);
-      
+
       if (error) {
         throw error;
       }
-      
+
       setCards(cards.filter(c => c.id !== selectedCard.id));
       setOriginalCards(originalCards.filter(c => c.id !== selectedCard.id));
       setSelectedCard(null);
@@ -378,7 +381,7 @@ export default function DeckCardsScreen({ route, navigation }) {
         </Modal>
       </>
     ) : (
-             <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
         {/* Kartlar Listesi veya Detay */}
         <View style={{ flex: 1, minHeight: 0 }}>
           {loading ? (
@@ -395,92 +398,92 @@ export default function DeckCardsScreen({ route, navigation }) {
             >
               <CardDetailView card={selectedCard} cards={cards} onSelectCard={setSelectedCard} />
             </LinearGradient>
-        ) : (
-                     <FlatList
-             data={filteredCards}
-             keyExtractor={item => item.id?.toString()}
-             showsVerticalScrollIndicator={false}
-             contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(24) }}
-             ListHeaderComponent={
-               !selectedCard && filteredCards.length > 0 && (
-                <View style={styles.cardsBlurSearchContainer}>
-                  <SearchBar
-                    value={search}
-                    onChangeText={setSearch}
-                    placeholder={t("common.searchPlaceholder", "Kartlarda ara...")}
-                    style={{ flex: 1 }}
+          ) : (
+            <FlatList
+              data={filteredCards}
+              keyExtractor={item => item.id?.toString()}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(24) }}
+              ListHeaderComponent={
+                !selectedCard && filteredCards.length > 0 && (
+                  <View style={styles.cardsBlurSearchContainer}>
+                    <SearchBar
+                      value={search}
+                      onChangeText={setSearch}
+                      placeholder={t("common.searchPlaceholder", "Kartlarda ara...")}
+                      style={{ flex: 1 }}
+                    />
+                    <FilterIcon
+                      value={cardSort}
+                      onChange={setCardSort}
+                    />
+                  </View>
+                )
+              }
+              ListEmptyComponent={
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: 400, marginTop: -250 }}>
+                  <Image
+                    source={require('../../assets/cardbg.png')}
+                    style={{ width: 500, height: 500, opacity: 0.2 }}
+                    resizeMode="contain"
                   />
-                  <FilterIcon
-                    value={cardSort}
-                    onChange={setCardSort}
-                  />
+                  <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, fontSize: 16, marginTop: -150 }]}>
+                    {t('cardDetail.addToDeck', 'Desteye bir kart ekle')}
+                  </Text>
                 </View>
-               )
-             }
-                         ListEmptyComponent={
-                 <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', height: 400, marginTop: -250}}>
-                   <Image
-                     source={require('../../assets/cardbg.png')}
-                     style={{ width: 500, height: 500, opacity: 0.2 }}
-                     resizeMode="contain"
-                   />
-                   <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, fontSize: 16, marginTop: -150 }]}>
-                     {t('cardDetail.addToDeck', 'Desteye bir kart ekle')}
-                   </Text>
-                 </View>
-             }
-                         renderItem={({ item }) => {
-              const isOwner = currentUserId && (item.deck?.user_id || deck.user_id) === currentUserId;
-              return (
-                <View style={styles.cardListItem}>
-                  <CardListItem
-                    question={item.question}
-                    answer={item.answer}
-                    onPress={() => {
-                      setEditMode(false);
-                      setSelectedCard(item);
-                    }}
-                    onToggleFavorite={() => handleToggleFavoriteCard(item.id)}
-                    isFavorite={favoriteCards.includes(item.id)}
-                    onDelete={async () => {
-                      Alert.alert(
-                        t('cardDetail.deleteConfirmation', 'Kart Silinsin mi?'),
-                        t('cardDetail.deleteConfirm', 'Kartı silmek istediğinize emin misiniz?'),
-                        [
-                          { text: t('cardDetail.cancel', 'İptal'), style: 'cancel' },
-                          {
-                            text: t('cardDetail.delete', 'Sil'), style: 'destructive', onPress: async () => {
-                              try {
-                                const { error } = await supabase
-                                  .from('cards')
-                                  .delete()
-                                  .eq('id', item.id);
-                                
-                                if (error) {
-                                  throw error;
+              }
+              renderItem={({ item }) => {
+                const isOwner = currentUserId && (item.deck?.user_id || deck.user_id) === currentUserId;
+                return (
+                  <View style={styles.cardListItem}>
+                    <CardListItem
+                      question={item.question}
+                      answer={item.answer}
+                      onPress={() => {
+                        setEditMode(false);
+                        setSelectedCard(item);
+                      }}
+                      onToggleFavorite={() => handleToggleFavoriteCard(item.id)}
+                      isFavorite={favoriteCards.includes(item.id)}
+                      onDelete={async () => {
+                        Alert.alert(
+                          t('cardDetail.deleteConfirmation', 'Kart Silinsin mi?'),
+                          t('cardDetail.deleteConfirm', 'Kartı silmek istediğinize emin misiniz?'),
+                          [
+                            { text: t('cardDetail.cancel', 'İptal'), style: 'cancel' },
+                            {
+                              text: t('cardDetail.delete', 'Sil'), style: 'destructive', onPress: async () => {
+                                try {
+                                  const { error } = await supabase
+                                    .from('cards')
+                                    .delete()
+                                    .eq('id', item.id);
+
+                                  if (error) {
+                                    throw error;
+                                  }
+
+                                  setCards(cards.filter(c => c.id !== item.id));
+                                  setOriginalCards(originalCards.filter(c => c.id !== item.id));
+                                  showSuccess(t('cardDetail.deleteSuccess', 'Kart başarıyla silindi'));
+                                } catch (e) {
+                                  showError(t('cardDetail.deleteError', 'Kart silinemedi'));
                                 }
-                                
-                                setCards(cards.filter(c => c.id !== item.id));
-                                setOriginalCards(originalCards.filter(c => c.id !== item.id));
-                                showSuccess(t('cardDetail.deleteSuccess', 'Kart başarıyla silindi'));
-                              } catch (e) {
-                                showError(t('cardDetail.deleteError', 'Kart silinemedi'));
                               }
                             }
-                          }
-                        ]
-                      );
-                    }}
-                    canDelete={true}
-                    isOwner={isOwner}
-                  />
-                </View>
-              );
-            }}
-          />
-        )}
+                          ]
+                        );
+                      }}
+                      canDelete={true}
+                      isOwner={isOwner}
+                    />
+                  </View>
+                );
+              }}
+            />
+          )}
+        </View>
       </View>
-    </View>
     )
   );
 }
@@ -499,7 +502,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  
+
   cardsBlurSearchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -514,7 +517,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(12),
     paddingVertical: 0,
   },
-}); 
+});
 
 
 

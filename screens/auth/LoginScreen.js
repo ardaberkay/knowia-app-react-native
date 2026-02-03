@@ -54,7 +54,16 @@ export default function LoginScreen({ navigation }) {
       const { error } = await login(email, password);
       if (error) throw error;
     } catch (error) {
-      Alert.alert(t('login.error', 'Hata'), error.message);
+      // Hata mesajını veya kodunu kontrol ediyoruz
+      let errorMessage = t('login.error_generic', 'Bir hata oluştu');
+
+      if (error.message === 'Invalid login credentials' || error.status === 400) {
+        errorMessage = t('login.invalid_credentials', 'E-posta veya şifre hatalı.');
+      } else if (error.message.includes('network')) {
+        errorMessage = t('login.network_error', 'İnternet bağlantınızı kontrol edin.');
+      }
+
+      Alert.alert(t('login.error_title', 'Hata'), errorMessage);
     } finally {
       setLoading(false);
     }

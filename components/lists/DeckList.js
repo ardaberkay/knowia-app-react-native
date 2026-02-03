@@ -443,15 +443,21 @@ export default function DeckList({
       contentContainerStyle={{ paddingBottom: '10%', paddingTop: contentPaddingTop }}
       ListHeaderComponent={ListHeaderComponent}
       renderItem={({ item: row }) => (row.type === 'double' ? renderDoubleRow(row) : renderSingleRow(row))}
-      ListEmptyComponent={
-        loading ? (
-          <View style={{ paddingVertical: verticalScale(40), alignItems: 'center' }}>
-            <ActivityIndicator size="large" color={colors.buttonColor} />
-          </View>
-        ) : (
-          <View style={{ paddingVertical: verticalScale(40), alignItems: 'center' }}>
-            <Text style={[styles.emptyText, typography.styles.caption]}>{t('library.noDecks', 'Henüz deste bulunmuyor')}</Text>
-          </View>
+      ListEmptyComponent={(
+        <View style={styles.noDecksEmpty}>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Image
+          source={require('../../assets/deckbg.png')}
+          style={{ position: 'absolute', alignSelf: 'center', width: moderateScale(300, 0.3), height: moderateScale(300, 0.3), opacity: 0.2 }}
+          resizeMode="contain"
+        />
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={[typography.styles.body, { color: colors.border, textAlign: 'center', fontSize: moderateScale(16), marginTop: verticalScale(20) }]}>
+          {t('discover.noDecks', 'Deste Bulunamadı')}
+        </Text>
+        </View>
+      </View>
         )
       }
       showsVerticalScrollIndicator={false}
@@ -504,6 +510,17 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(14),
     textAlign: 'center',
     marginTop: verticalScale(20),
+  },
+    noDecksEmpty: {
+    height: verticalScale(200),
+    borderRadius: moderateScale(18),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: scale(16),
+    backgroundColor: 'transparent',
+    flexDirection: 'column',
+    gap: verticalScale(10),
+    marginTop: verticalScale(150),
   },
   backgroundCategoryIcon: {
     position: 'absolute',

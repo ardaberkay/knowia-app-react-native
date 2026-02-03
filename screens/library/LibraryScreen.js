@@ -11,7 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import PagerView from 'react-native-pager-view';
 import SearchBar from '../../components/tools/SearchBar';
-import FilterIcon from '../../components/tools/FilterIcon';
+import FilterIcon from '../../components/modals/CardFilterIcon';
 import CardListItem from '../../components/lists/CardList';
 import LottieView from 'lottie-react-native';
 import MyDecksList from '../../components/lists/MyDecksList';
@@ -621,6 +621,8 @@ export default function LibraryScreen() {
       // Sadece orijinal sıralamayı koruyoruz
     } else if (favCardsSort === 'unlearned') {
       list = list.filter(c => c.status !== 'learned');
+    } else if (favCardsSort === 'learned') {
+      list = list.filter(c => c.status === 'learned');
     } else {
       list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     }

@@ -936,7 +936,9 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     resizeMode: 'contain',
-    borderRadius: moderateScale(12),
+    borderRadius: moderateScale(24),
+    borderWidth: moderateScale(1),
+    borderColor: '#666666',
   },
   counterRow: {
     position: 'absolute',
