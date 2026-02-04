@@ -175,7 +175,7 @@ export default function FavoriteDecks() {
           <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: scale(200), height: verticalScale(200) }} />
           <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100), height: verticalScale(100) }} />
         </View>
-      ) : filteredDecks.length === 0 ? (
+      ) : filteredDecks.length < 0 ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: verticalScale(-150)}}>
           <Image
             source={require('../../assets/deckbg.png')}
@@ -199,6 +199,7 @@ export default function FavoriteDecks() {
           }}
           onPressDeck={(deck) => navigation.navigate('DeckDetail', { deck })}
           ListHeaderComponent={(
+            favoriteDecks.length > 0 ? (
             <View style={{ backgroundColor: colors.background, marginVertical: verticalScale(8) }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(10), width: '95%', alignSelf: 'center' }}>
                 <SearchBar
@@ -210,6 +211,7 @@ export default function FavoriteDecks() {
                 <FilterModalButton onPress={() => setFilterModalVisible(true)} />
               </View>
             </View>
+          ) : null
           )}
           refreshing={loading}
           onRefresh={fetchFavorites}

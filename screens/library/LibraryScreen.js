@@ -532,6 +532,8 @@ export default function LibraryScreen() {
     }
   };
 
+  
+
   const handleToggleFavoriteCard = async (cardId) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -1049,7 +1051,7 @@ export default function LibraryScreen() {
                     />
                   </View>
                   {/* Favorite Cards List */}
-                  <View style={{ marginTop: verticalScale(14), paddingHorizontal: scale(4) }}>
+                  <View style={{ marginTop: verticalScale(14), paddingHorizontal: scale(4), pointerEvents: 'none' }}>
                     {filteredFavoriteCards.map((card) => {
                       const isOwner = currentUserId && card.deck?.user_id && card.deck.user_id === currentUserId;
                       return (

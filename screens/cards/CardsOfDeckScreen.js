@@ -29,7 +29,6 @@ export default function DeckCardsScreen({ route, navigation }) {
   const [originalCards, setOriginalCards] = useState([]);
   const [selectedCard, setSelectedCard] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
-  const [favLoading, setFavLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const spinValue = useRef(new Animated.Value(0)).current;
@@ -405,7 +404,7 @@ export default function DeckCardsScreen({ route, navigation }) {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(24) }}
               ListHeaderComponent={
-                !selectedCard && filteredCards.length > 0 && (
+                !selectedCard && cards.length > 0 && (
                   <View style={styles.cardsBlurSearchContainer}>
                     <SearchBar
                       value={search}
@@ -421,7 +420,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                 )
               }
               ListEmptyComponent={
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: 400, marginTop: -250 }}>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: 400, marginTop: -250, pointerEvents: 'none' }}>
                   <Image
                     source={require('../../assets/cardbg.png')}
                     style={{ width: 500, height: 500, opacity: 0.2 }}

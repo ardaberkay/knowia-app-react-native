@@ -114,29 +114,6 @@ export default function ChaptersScreen({ route, navigation }) {
     });
   }, [loading, navigation, currentUserId, deck?.user_id, deck?.is_shared, editMode]);
 
-  const handleDistribute = async () => {
-    if (!deck?.id) return;
-    if (!chapters?.length) {
-      showError(t('chapters.needChapters', 'Dağıtım için en az bir bölüm oluşturmalısın.'));
-      return;
-    }
-    setDistLoading(true);
-    try {
-      await distributeUnassignedEvenly(deck.id, chapters.map(c => c.id));
-      showSuccess(t('chapters.distributed', 'Atanmamış kartlar bölümlere dağıtıldı.'));
-      // Refresh progress after distribution
-      if (currentUserId) {
-        const chaptersWithUnassigned = [{ id: null }, ...chapters];
-        const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, currentUserId);
-        setProgressMap(progress);
-      }
-    } catch (e) {
-      showError(e.message || t('chapters.distributeError', 'Dağıtım yapılamadı.'));
-    } finally {
-      setDistLoading(false);
-    }
-  };
-
   const handleAddChapter = async () => {
     if (!deck?.id) return;
     if (!isOwner) {

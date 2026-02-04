@@ -190,6 +190,7 @@ export default function FavoriteCards() {
     );
   };
 
+
   // Header'ı ayarla - selectedCard durumuna göre
   useLayoutEffect(() => {
     if (loading) {
@@ -233,7 +234,7 @@ export default function FavoriteCards() {
         </View>
       ) : selectedCard ? (
         <CardDetailView card={selectedCard} cards={filteredCards} onSelectCard={setSelectedCard} />
-      ) : filteredCards.length === 0 ? (
+      ) : cards.length === 0 ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: verticalScale(-250)}}>
           <Image
             source={require('../../assets/cardbg.png')}
@@ -251,7 +252,7 @@ export default function FavoriteCards() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(24) }}
           ListHeaderComponent={
-            !selectedCard && (
+            !selectedCard && cards.length > 0 && (
               <View style={styles.searchContainer}>
                 <SearchBar
                   value={query}
@@ -268,14 +269,14 @@ export default function FavoriteCards() {
             )
           }
           ListEmptyComponent={
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: verticalScale(400) }}>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: 400, marginTop: -250, pointerEvents: 'none' }}>
               <Image
                 source={require('../../assets/cardbg.png')}
-                style={{ width: scale(300), height: verticalScale(300), opacity: 0.2 }}
+                style={{ width: 500, height: 500, opacity: 0.2 }}
                 resizeMode="contain"
               />
-              <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, textAlign: 'center', fontSize: moderateScale(16), marginTop: verticalScale(20) }]}>
-                {t('library.addFavoriteCardEmpty', 'Bir kart favorilere ekle')}
+              <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, fontSize: 16, marginTop: -150 }]}>
+                {t('cardDetail.addToDeck', 'Desteye bir kart ekle')}
               </Text>
             </View>
           }

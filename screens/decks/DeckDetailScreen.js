@@ -651,23 +651,37 @@ export default function DeckDetailScreen({ route, navigation }) {
 
   const handleToggleShare = (nextValue) => {
     if (shareLoading) return;
+  
     if (nextValue) {
+      // Switch hemen açılır
+      setIsShared(true);
+  
       Alert.alert(
         t('common.warning', 'Uyarı'),
         t(
           'deckDetail.shareConfirmMessage',
-          'Desteyi toplulukta paylaştıktan sonra bölümlerde herhangi bir değisiklik yapamayacaksın. Onaylıyor musun?'
+          'Desteyi toplulukta paylaştıktan sonra bölümlerde herhangi bir değişiklik yapamayacaksın. Onaylıyor musun?'
         ),
         [
-          { text: t('common.no', 'Hayır'), style: 'cancel' },
-          { text: t('common.yes', 'Evet'), onPress: () => updateShareSetting(true) },
+          {
+            text: t('common.no', 'Hayır'),
+            style: 'cancel',
+            onPress: () => setIsShared(false), // kullanıcı iptal ederse geri kapat
+          },
+          { text: t('common.yes', 'Evet'), onPress: () => updateShareSetting(true) }, // API çağrısı sadece
         ],
         { cancelable: true }
       );
     } else {
+      // Kapatırken direkt hem switch hem API
+      setIsShared(false);
       updateShareSetting(false);
     }
   };
+  
+  
+  
+  
 
   const handleShowShareDetails = () => {
     Alert.alert(

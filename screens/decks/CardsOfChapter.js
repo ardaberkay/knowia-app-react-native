@@ -136,7 +136,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
       });
       return;
     }
-
+    
     // Normal durumda header'ı şeffaf yap (appbar görünmesin)
     navigation.setOptions({
       headerShown: true,
@@ -1002,6 +1002,7 @@ const styles = StyleSheet.create({
     height: scale(70),
     borderRadius: moderateScale(35),
     overflow: 'hidden',
+    zIndex: 1000,
   },
   fabGradient: {
     width: '100%',

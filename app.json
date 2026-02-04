@@ -20,8 +20,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon-adaptive.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/android-logo.png",
+        "backgroundColor": "#FF8D1A"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.arda.knowia",
