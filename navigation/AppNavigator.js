@@ -27,7 +27,6 @@ import FavoriteCards from '../screens/library/FavoriteCards';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
-import { BlurView } from 'expo-blur';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();

@@ -12,13 +12,14 @@
     "info": "Bilgi & Destek",
     "about": "Hakkımızda",
     "feedback": "Geri Bildirim Gönder",
-    "terms": "Hükümler ve Politikalar",
+    "terms": "Kullanım Koşulları",
     "error": "Hata",
     "errorMessage": "Hata",
     "errorMessageProfile": "Profil yüklenemedi",
     "inviteMessage": "Bilgi evreninde öğrenme yolunu Knowia ile bul! Ücretsiz kaydol: ",
     "logoutError": "Çıkış yapılırken bir hata oluştu",
-    "accountDeleted": "Hesap silindi!"
+    "accountDeleted": "Hesap silindi!",
+    "privacy": "Gizlilik Politikası"
   },
   "library": {
     "all": "Tümü",

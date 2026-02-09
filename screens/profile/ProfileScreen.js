@@ -7,13 +7,14 @@ import { useNavigation } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { cacheProfile, getCachedProfile, cacheProfileImage, getCachedProfileImage } from '../../services/CacheService';
+import { cacheProfile, getCachedProfile, cacheProfileImage } from '../../services/CacheService';
 import ProfileSkeleton from '../../components/skeleton/ProfileSkeleton';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from '../../components/modals/LanguageSelector';
 import { Iconify } from 'react-native-iconify';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
+import * as WebBrowser from 'expo-web-browser';
 
 export default function ProfileScreen() {
   const { colors, isDarkMode, toggleTheme, themePreference, loading: themeLoading } = useTheme();
@@ -35,21 +36,21 @@ export default function ProfileScreen() {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Önce kullanıcı ID'sini al
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) {
         setError(t('profile.errorMessageProfile'));
         return;
       }
-      
+
       // Cache kullanılacaksa önce cache'den yükle
       if (useCache) {
         const cachedProfile = await getCachedProfile(user.id);
         if (cachedProfile) {
           setProfile(cachedProfile);
           setUserId(cachedProfile.id);
-          
+
           // Bildirim durumunu kontrol et
           const { status } = await Notifications.getPermissionsAsync();
           if (status === 'granted' && cachedProfile.notifications_enabled) {
@@ -57,21 +58,21 @@ export default function ProfileScreen() {
           } else {
             setNotificationsEnabled(false);
           }
-          
+
           setLoading(false);
-          
+
           // Arka planda güncel veriyi çek ve cache'le
           try {
             const freshProfile = await getCurrentUserProfile();
             setProfile(freshProfile);
             setUserId(freshProfile.id);
             await cacheProfile(user.id, freshProfile);
-            
+
             // Profil görselini de cache'le
             if (freshProfile?.image_url) {
               await cacheProfileImage(user.id, freshProfile.image_url);
             }
-            
+
             // Bildirim durumunu güncelle
             const { status: freshStatus } = await Notifications.getPermissionsAsync();
             if (freshStatus === 'granted' && freshProfile.notifications_enabled) {
@@ -86,18 +87,18 @@ export default function ProfileScreen() {
           return;
         }
       }
-      
+
       // Cache yoksa veya cache kullanılmayacaksa API'den çek
       const profile = await getCurrentUserProfile();
       setProfile(profile);
       setUserId(profile.id);
-      
+
       // Cache'le
       await cacheProfile(user.id, profile);
       if (profile?.image_url) {
         await cacheProfileImage(user.id, profile.image_url);
       }
-      
+
       const { status } = await Notifications.getPermissionsAsync();
       if (status === 'granted' && profile.notifications_enabled) {
         setNotificationsEnabled(true);
@@ -127,7 +128,7 @@ export default function ProfileScreen() {
       if (isInitialMount.current) {
         return;
       }
-      
+
       // Sadece EditProfileScreen'den gelindiğinde yenile
       if (shouldRefreshOnFocus.current) {
         shouldRefreshOnFocus.current = false;
@@ -181,8 +182,8 @@ export default function ProfileScreen() {
 
   // Menü kategorileri
   const accountItems = useMemo(() => [
-    { 
-      label: t('profile.edit'), 
+    {
+      label: t('profile.edit'),
       onPress: () => {
         shouldRefreshOnFocus.current = true;
         navigation.navigate('EditProfile');
@@ -217,9 +218,9 @@ export default function ProfileScreen() {
       right: (
         <View style={styles.languageRow}>
           <Iconify icon={i18n.language === 'tr' ? 'twemoji:flag-for-flag-turkey' : i18n.language === 'en' ? 'twemoji:flag-england' : i18n.language === 'es' ? 'twemoji:flag-spain' : i18n.language === 'fr' ? 'twemoji:flag-france' : i18n.language === 'pt' ? 'twemoji:flag-portugal' : i18n.language === 'ar' ? 'twemoji:flag-saudi-arabia' : ''} size={moderateScale(20)} />
-        <Text style={{ color: colors.text, marginRight: scale(8), fontSize: moderateScale(15) }}>
-          {i18n.language === 'tr' ? 'Türkçe' : i18n.language === 'en' ? 'English' : i18n.language === 'es' ? 'Spanish' : i18n.language === 'fr' ? 'French' : i18n.language === 'pt' ? 'Portuguese' : i18n.language === 'ar' ? 'Arabic' : ''}
-        </Text>
+          <Text style={{ color: colors.text, marginRight: scale(8), fontSize: moderateScale(15) }}>
+            {i18n.language === 'tr' ? 'Türkçe' : i18n.language === 'en' ? 'English' : i18n.language === 'es' ? 'Spanish' : i18n.language === 'fr' ? 'French' : i18n.language === 'pt' ? 'Portuguese' : i18n.language === 'ar' ? 'Arabic' : ''}
+          </Text>
         </View>
       ),
     },
@@ -234,15 +235,34 @@ export default function ProfileScreen() {
           ios_backgroundColor="#ccc"
         />
       ),
-      onPress: () => {},
+      onPress: () => { },
     },
   ], [t, toggleTheme, themePreference, isDarkMode, colors, i18n.language, notificationsEnabled, handleToggleNotifications]);
 
+  const openLink = useCallback(async (url) => {
+    try {
+      await WebBrowser.openBrowserAsync(url, {
+        toolbarColor: colors.buttonColor,
+        enableBarCollapsing: true,
+      });
+    } catch (err) {
+      showError(t('profile.linkError', 'Link açılamadı'));
+    }
+  }, [colors.buttonColor, showError, t]);
+
+  const PROFILE_LINKS = {
+    about: 'https://www.knowia.online/about',
+    privacy: 'https://www.knowia.online/policy',
+    terms: 'https://www.knowia.online/terms',
+    feedback: 'https://www.knowia.online/contact',
+  };
+
   const infoItems = useMemo(() => [
-    { label: t('profile.about'), onPress: () => Alert.alert(t('profile.about'), '') },
-    { label: t('profile.feedback'), onPress: () => Alert.alert(t('profile.feedback'), '') },
-    { label: t('profile.terms'), onPress: () => Alert.alert(t('profile.terms'), '') },
-  ], [t]);
+    { label: t('profile.about'), onPress: () => openLink(PROFILE_LINKS.about) },
+    { label: t('profile.privacy'), onPress: () => openLink(PROFILE_LINKS.privacy) },
+    { label: t('profile.terms'), onPress: () => openLink(PROFILE_LINKS.terms) },
+    { label: t('profile.feedback'), onPress: () => openLink(PROFILE_LINKS.feedback) },
+  ], [t, openLink]);
 
   const handleLogout = async () => {
     try {
@@ -270,7 +290,7 @@ export default function ProfileScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}> 
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Sabit profil alanı */}
       <View style={styles.profileRow}>
         {(loading || themeLoading) ? (

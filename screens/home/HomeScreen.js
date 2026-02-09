@@ -451,11 +451,14 @@ const DECK_CATEGORIES = {
     <View style={[styles.container, { backgroundColor: colors.background }] }>
       <View style={[styles.header, { backgroundColor: colors.appbar, borderBottomColor: colors.border }]}>
         <View style={styles.headerContent}>
+          <View style={styles.logoContainer}>
           <Image
-            source={isDarkMode ? require('../../assets/logo-white.png') : require('../../assets/logo-black.png')}
+            source={ require('../../assets/home-logo.png')}
             style={styles.logoImage}
             resizeMode="contain"
           />
+          <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(24), letterSpacing: moderateScale(-1) }]}>Knowia</Text>
+          </View>
           <TouchableOpacity
             style={[styles.profileAvatarButton, { position: 'absolute', right: 0 }]}
             onPress={() => navigation.navigate('Profile')}
@@ -573,8 +576,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   logoImage: {
-    width: scale(120),
+    width: scale(44),
     height: scale(44),
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   glassCard: {
     borderRadius: moderateScale(36),
