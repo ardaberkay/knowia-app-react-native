@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, Modal, Pressable, Image, Switch, Animated, Dimensions } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -13,6 +13,7 @@ import CircularProgress from '../../components/ui/CircularProgress';
 import { useAuth } from '../../contexts/AuthContext';
 import { listChapters, getChaptersProgress } from '../../services/ChapterService';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import { useFocusEffect } from '@react-navigation/native';
 
 const AnimatedFabContainer = Animated.createAnimatedComponent(View);
 
@@ -36,6 +37,7 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [moreMenuVisible, setMoreMenuVisible] = useState(false);
   const [moreMenuPos, setMoreMenuPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const moreMenuRef = useRef(null);
+  const chaptersFetchedRef = useRef(false);
   // Session'dan user ID'yi al (eğer varsa)
   const initialUserId = session?.user?.id || null;
   const [currentUserId, setCurrentUserId] = useState(initialUserId);
@@ -515,37 +517,48 @@ export default function DeckDetailScreen({ route, navigation }) {
     saveLastSelectedChapter(chapter);
   };
 
-  // Chapter'ları çek
-  useEffect(() => {
-    const fetchChapters = async () => {
-      try {
-        const data = await listChapters(deck.id);
-        const availableChapters = data || [];
-        setChapters(availableChapters);
+  // Chapter'ları çek (mount ve focus'ta sessiz yenileme için kullanılır)
+  const fetchChapters = useCallback(async () => {
+    if (!deck?.id) return;
+    try {
+      const data = await listChapters(deck.id);
+      const availableChapters = data || [];
+      setChapters(availableChapters);
+      chaptersFetchedRef.current = true;
 
-        // Son seçilen chapter'ı yükle
-        await loadLastSelectedChapter(availableChapters);
+      // Son seçilen chapter'ı yükle
+      await loadLastSelectedChapter(availableChapters);
 
-        // Progress bilgisini çek
-        if (currentUserId && availableChapters.length > 0) {
-          try {
-            const progress = await getChaptersProgress(availableChapters, deck.id, currentUserId);
-            setChapterProgressMap(progress);
-          } catch (e) {
-            console.error('Error fetching chapter progress:', e);
-          }
+      // Progress bilgisini çek
+      if (currentUserId && availableChapters.length > 0) {
+        try {
+          const progress = await getChaptersProgress(availableChapters, deck.id, currentUserId);
+          setChapterProgressMap(progress);
+        } catch (e) {
+          console.error('Error fetching chapter progress:', e);
         }
-      } catch (e) {
-        console.error('Error fetching chapters:', e);
-        setChapters([]);
-        // Hata durumunda default olarak ACTION_CHAPTER seç
-        setSelectedChapter(ACTION_CHAPTER);
       }
-    };
+    } catch (e) {
+      console.error('Error fetching chapters:', e);
+      setChapters([]);
+      setSelectedChapter(ACTION_CHAPTER);
+    }
+  }, [deck?.id, currentUserId]);
+
+  useEffect(() => {
+    chaptersFetchedRef.current = false;
     if (deck?.id) {
       fetchChapters();
     }
-  }, [deck.id, currentUserId]);
+  }, [deck?.id, currentUserId, fetchChapters]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (chaptersFetchedRef.current) {
+        fetchChapters();
+      }
+    }, [fetchChapters])
+  );
 
   // FAB menü animasyonu
   useEffect(() => {

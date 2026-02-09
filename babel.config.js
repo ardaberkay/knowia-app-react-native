@@ -124,7 +124,9 @@ module.exports = function (api) {
             'material-symbols:all-out-outline-rounded',
             'material-symbols:all-out-rounded',
             'tabler:file-download-filled',
-            'cuida:upload-outline'
+            'cuida:upload-outline',
+            'ic:round-report-problem',
+            'twemoji:flag-saudi-arabia'
           ],
         },
       ],

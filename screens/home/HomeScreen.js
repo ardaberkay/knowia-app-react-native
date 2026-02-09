@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Dimensions
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDecksByCategory, getPopularDecks } from '../../services/DeckService';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
 import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
@@ -105,6 +105,7 @@ export default function HomeScreen() {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [favoriteDecks, setFavoriteDecks] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const decksLoadedRef = useRef(false);
 
   const { t } = useTranslation();
 
@@ -153,12 +154,31 @@ const DECK_CATEGORIES = {
       );
       
       setDecks(decksData);
+      decksLoadedRef.current = true;
     } catch (err) {
       Alert.alert(t('home.errorMessage', 'Hata'), t('home.errorMessageDeck', 'Desteler yüklenirken bir hata oluştu'));
     } finally {
       setLoading(false);
     }
   };
+
+  const loadInProgressDecks = useCallback(async () => {
+    try {
+      const data = await getDecksByCategory('inProgressDecks');
+      setDecks(prev => ({ ...prev, inProgressDecks: data || [] }));
+    } catch (err) {
+      console.error('Error loading inProgressDecks:', err);
+      setDecks(prev => ({ ...prev, inProgressDecks: [] }));
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (decksLoadedRef.current) {
+        loadInProgressDecks();
+      }
+    }, [loadInProgressDecks])
+  );
 
   const onRefresh = async () => {
     try {

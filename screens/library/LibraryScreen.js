@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, Modal, Alert, ActivityIndicator, Animated, ScrollView, RefreshControl, Image, SafeAreaView, StatusBar } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { getDecksByCategory } from '../../services/DeckService';
@@ -260,8 +260,8 @@ export default function LibraryScreen() {
     }
   }, [activeTab, favoritesFetched]);
 
-  const fetchFavorites = async () => {
-    setFavoritesLoading(true);
+  const fetchFavorites = async (silent = false) => {
+    if (!silent) setFavoritesLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUserId(user?.id); // currentUserId'yi burada da set et
@@ -313,9 +313,17 @@ export default function LibraryScreen() {
       setFavoriteCards([]);
       setFavoriteCardIds([]);
     } finally {
-      setFavoritesLoading(false);
+      if (!silent) setFavoritesLoading(false);
     }
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      if (favoritesFetched) {
+        fetchFavorites(true);
+      }
+    }, [favoritesFetched])
+  );
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setCurrentUserId(user?.id));
@@ -874,16 +882,16 @@ export default function LibraryScreen() {
               }
             >
               <View style={styles.favoriteSliderWrapper}>
-                <View style={styles.favoriteHeaderRow}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(8) }}>
+                <View style={[styles.favoriteHeaderRow, (favoriteDecks?.length === 0 && { zIndex: 10, elevation: 10 })]}>
+                  <View style={{ flex: 1, flexShrink: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: scale(8) }}>
                     <View style={[styles.iconBackground, { backgroundColor: colors.iconBackground }]}>
                       <Iconify icon="ph:cards-fill" size={moderateScale(26)} color="#F98A21" />
                     </View>
-                    <Text style={[styles.favoriteHeaderTitle, { color: colors.text }]}>
+                    <Text style={[styles.favoriteHeaderTitle, { color: colors.text }]} numberOfLines={1}>
                       {t('library.favoriteDecksTitle', 'Favori Destelerim')}
                     </Text>
                   </View>
-                  <TouchableOpacity activeOpacity={0.8} style={[styles.seeAllButton, { borderColor: colors.secondary, backgroundColor: colors.secondary + '30' }]} onPress={() => navigation.navigate('FavoriteDecks')}>
+                  <TouchableOpacity activeOpacity={0.8} style={[styles.seeAllButton, { borderColor: colors.secondary, backgroundColor: colors.secondary + '30', flexShrink: 0 }]} onPress={() => navigation.navigate('FavoriteDecks')}>
                     <Text style={[styles.seeAllText, { color: colors.secondary }]}>
                       {t('library.all', 'Tümü')}
                     </Text>
@@ -1010,7 +1018,7 @@ export default function LibraryScreen() {
                     </View>
                   </>
                 ) : (
-                  <View style={styles.favoriteSliderEmpty}>
+                  <View style={[styles.favoriteSliderEmpty, { pointerEvents: 'box-none' }]}>
                     <Image
                       source={require('../../assets/deckbg.png')}
                       style={{ position: 'absolute', alignSelf: 'center', width: moderateScale(300, 0.3), height: moderateScale(300, 0.3), opacity: 0.2 }}
@@ -1021,15 +1029,15 @@ export default function LibraryScreen() {
 
                 {/* Favorite Cards Section Header + Controls */}
                 <View style={[styles.favoriteHeaderRow, { marginTop: verticalScale(40) }]}> 
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(8) }}>
+                  <View style={{ flex: 1, flexShrink: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: scale(8) }}>
                     <View style={[styles.iconBackground, { backgroundColor: colors.iconBackground }]}>
                       <Iconify icon="mdi:cards" size={moderateScale(26)} color="#F98A21" />
                     </View>
-                    <Text style={[styles.favoriteHeaderTitle, { color: colors.text }]}> 
+                    <Text style={[styles.favoriteHeaderTitle, { color: colors.text }]} numberOfLines={1}> 
                       {t('library.favoriteCardsTitle', 'Favori Kartlarım')}
                     </Text>
                   </View>
-                  <TouchableOpacity activeOpacity={0.8} style={[styles.seeAllButton, { borderColor: colors.secondary, backgroundColor: colors.secondary + '30' }]} onPress={() => navigation.navigate('FavoriteCards')}>
+                  <TouchableOpacity activeOpacity={0.8} style={[styles.seeAllButton, { borderColor: colors.secondary, backgroundColor: colors.secondary + '30', flexShrink: 0 }]} onPress={() => navigation.navigate('FavoriteCards')}>
                     <Text style={[styles.seeAllText, { color: colors.secondary }]}> 
                       {t('library.all', 'Tümü')}
                     </Text>
@@ -1051,7 +1059,7 @@ export default function LibraryScreen() {
                     />
                   </View>
                   {/* Favorite Cards List */}
-                  <View style={{ marginTop: verticalScale(14), paddingHorizontal: scale(4), pointerEvents: 'none' }}>
+                  <View style={{ marginTop: verticalScale(14), paddingHorizontal: scale(4), pointerEvents: filteredFavoriteCards.length > 0 ? 'auto' : 'none' }}>
                     {filteredFavoriteCards.map((card) => {
                       const isOwner = currentUserId && card.deck?.user_id && card.deck.user_id === currentUserId;
                       return (

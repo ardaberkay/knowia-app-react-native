@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, BackHandler, Alert, Dimensions, Animated, Easing, ActivityIndicator, Modal, Image } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -15,6 +15,7 @@ import FilterIcon from '../../components/modals/CardFilterIcon';
 import CardDetailView from '../../components/layout/CardDetailView';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import { useFocusEffect } from '@react-navigation/native';
 
 
 export default function DeckCardsScreen({ route, navigation }) {
@@ -33,6 +34,7 @@ export default function DeckCardsScreen({ route, navigation }) {
   const [loading, setLoading] = useState(false);
   const spinValue = useRef(new Animated.Value(0)).current;
   const moreMenuRef = useRef(null);
+  const dataFetchedRef = useRef(false);
   const [moreMenuVisible, setMoreMenuVisible] = useState(false);
   const [moreMenuPos, setMoreMenuPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const { t } = useTranslation();
@@ -45,65 +47,76 @@ export default function DeckCardsScreen({ route, navigation }) {
     fetchUserId();
   }, []);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const { data: { user } } = await supabase.auth.getUser();
+  const fetchData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
 
-        // Fetch cards, favorite cards, and user progress in parallel
-        const [cardsResult, favoritesResult, progressResult] = await Promise.all([
-          supabase
-            .from('cards')
-            .select(`
+      // Fetch cards, favorite cards, and user progress in parallel
+      const [cardsResult, favoritesResult, progressResult] = await Promise.all([
+        supabase
+          .from('cards')
+          .select(`
               id, question, answer, image, example, note, created_at,
               deck:decks(
                 id, name, user_id, categories:categories(id, name, sort_order)
               )
             `)
-            .eq('deck_id', deck.id)
-            .order('created_at', { ascending: false }),
-          user ? supabase
-            .from('favorite_cards')
-            .select('card_id')
-            .eq('user_id', user.id) : Promise.resolve({ data: [], error: null }),
-          user ? supabase
-            .from('user_card_progress')
-            .select('card_id, status')
-            .eq('user_id', user.id) : Promise.resolve({ data: [], error: null })
-        ]);
+          .eq('deck_id', deck.id)
+          .order('created_at', { ascending: false }),
+        user ? supabase
+          .from('favorite_cards')
+          .select('card_id')
+          .eq('user_id', user.id) : Promise.resolve({ data: [], error: null }),
+        user ? supabase
+          .from('user_card_progress')
+          .select('card_id, status')
+          .eq('user_id', user.id) : Promise.resolve({ data: [], error: null })
+      ]);
 
-        if (cardsResult.error) throw cardsResult.error;
+      if (cardsResult.error) throw cardsResult.error;
 
-        // Create a map of card statuses
-        const statusMap = {};
-        if (progressResult.data) {
-          progressResult.data.forEach(p => {
-            statusMap[p.card_id] = p.status;
-          });
-        }
-
-        // Merge status into cards (default: 'new' if no progress record)
-        const cardsWithProgress = (cardsResult.data || []).map(card => ({
-          ...card,
-          status: statusMap[card.id] || 'new'
-        }));
-
-        setCards(cardsWithProgress);
-        setOriginalCards(cardsWithProgress);
-
-        if (favoritesResult.error) throw favoritesResult.error;
-        setFavoriteCards((favoritesResult.data || []).map(f => f.card_id));
-      } catch (e) {
-        setCards([]);
-        setOriginalCards([]);
-        setFavoriteCards([]);
-      } finally {
-        setLoading(false);
+      // Create a map of card statuses
+      const statusMap = {};
+      if (progressResult.data) {
+        progressResult.data.forEach(p => {
+          statusMap[p.card_id] = p.status;
+        });
       }
-    };
-    fetchData();
+
+      // Merge status into cards (default: 'new' if no progress record)
+      const cardsWithProgress = (cardsResult.data || []).map(card => ({
+        ...card,
+        status: statusMap[card.id] || 'new'
+      }));
+
+      setCards(cardsWithProgress);
+      setOriginalCards(cardsWithProgress);
+      dataFetchedRef.current = true;
+
+      if (favoritesResult.error) throw favoritesResult.error;
+      setFavoriteCards((favoritesResult.data || []).map(f => f.card_id));
+    } catch (e) {
+      setCards([]);
+      setOriginalCards([]);
+      setFavoriteCards([]);
+    } finally {
+      if (!silent) setLoading(false);
+    }
   }, [deck.id]);
+
+  useEffect(() => {
+    dataFetchedRef.current = false;
+    fetchData();
+  }, [deck.id, fetchData]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (dataFetchedRef.current) {
+        fetchData(true);
+      }
+    }, [fetchData])
+  );
 
   useEffect(() => {
     if (!search.trim()) {
