@@ -180,6 +180,52 @@ export default function ProfileScreen() {
     setLanguageModalVisible(false);
   }, [i18n]);
 
+  const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+  const callEdgeFunction = useCallback(async (functionName) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      showError(t('profile.deleteDeactivateError', 'İşlem sırasında bir hata oluştu'));
+      return false;
+    }
+    const res = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(json.error || res.statusText);
+    }
+    return true;
+  }, [showError, t]);
+
+  const handleDeleteAccount = useCallback(() => {
+    Alert.alert(
+      t('profile.deleteAccountTitle'),
+      t('profile.deleteAccountIrreversible'),
+      [
+        { text: t('library.cancel', 'İptal'), style: 'cancel' },
+        {
+          text: t('profile.deleteAccountConfirm'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const ok = await callEdgeFunction('delete-account');
+              if (ok) {
+                showSuccess(t('profile.deleteSuccess'));
+                await logout();
+              }
+            } catch (e) {
+              showError(t('profile.deleteDeactivateError'));
+            }
+          },
+        },
+      ]
+    );
+  }, [t, callEdgeFunction, showSuccess, showError, logout]);
+
   // Menü kategorileri
   const accountItems = useMemo(() => [
     {
@@ -273,7 +319,6 @@ export default function ProfileScreen() {
     }
   };
 
-
   // Kategori render fonksiyonu
   const renderMenuSection = (title, items) => (
     <View style={styles.menuSection}>
@@ -323,6 +368,9 @@ export default function ProfileScreen() {
         <View style={styles.bottomButtonsRow}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Text style={[typography.styles.button, { color: colors.buttonText }, styles.logoutText]}>{t('profile.logout')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.deleteAccountButton, { borderColor: colors.error || '#ff5252' }]} onPress={handleDeleteAccount}>
+            <Text style={[typography.styles.body, { color: colors.error || '#ff5252' }, styles.deleteAccountText]}>{t('profile.deleteAccount')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -393,6 +441,16 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(999),
   },
   logoutText: {
+    textAlign: 'center',
+  },
+  deleteAccountButton: {
+    marginTop: verticalScale(12),
+    paddingVertical: verticalScale(12),
+    borderRadius: moderateScale(999),
+    borderWidth: moderateScale(1),
+    alignItems: 'center',
+  },
+  deleteAccountText: {
     textAlign: 'center',
   },
   languageRow: {

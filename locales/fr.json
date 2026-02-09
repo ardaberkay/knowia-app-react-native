@@ -19,7 +19,14 @@
     "errorMessageProfile": "Le profil n'a pas pu être chargé",
     "inviteMessage": "Trouvez votre chemin vers l'apprentissage dans l'univers de la connaissance avec Knowia. Inscrivez-vous gratuitement !",
     "logoutError": "Une erreur s'est produite lors de la déconnexion",
-    "accountDeleted": "Compte supprimé !"
+    "accountDeleted": "Compte supprimé !",
+    "deleteAccount": "Supprimer le compte définitivement",
+    "deleteAccountTitle": "Supprimer le compte définitivement",
+    "deleteAccountMessage": "Votre compte et toutes vos données seront définitivement supprimés. Cette action est irréversible.",
+    "deleteAccountIrreversible": "Votre compte et toutes vos données seront définitivement supprimés. Cette action est irréversible. Êtes-vous sûr ?",
+    "deleteAccountConfirm": "Supprimer définitivement",
+    "deleteSuccess": "Votre compte a été supprimé",
+    "deleteDeactivateError": "Une erreur s'est produite lors de l'opération"
   },
   "library": {
     "all": "Tout",

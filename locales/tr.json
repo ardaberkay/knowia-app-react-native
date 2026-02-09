@@ -19,7 +19,14 @@
     "inviteMessage": "Bilgi evreninde öğrenme yolunu Knowia ile bul! Ücretsiz kaydol: ",
     "logoutError": "Çıkış yapılırken bir hata oluştu",
     "accountDeleted": "Hesap silindi!",
-    "privacy": "Gizlilik Politikası"
+    "privacy": "Gizlilik Politikası",
+    "deleteAccount": "Hesabı Kalıcı Olarak Sil",
+    "deleteAccountTitle": "Hesabı Kalıcı Olarak Sil",
+    "deleteAccountMessage": "Hesabınız ve tüm verileriniz kalıcı olarak silinecek. Bu işlem geri alınamaz.",
+    "deleteAccountIrreversible": "Hesabınız ve tüm verileriniz kalıcı olarak silinecek. Bu işlem geri alınamaz. Emin misiniz?",
+    "deleteAccountConfirm": "Kalıcı Olarak Sil",
+    "deleteSuccess": "Hesabınız silindi",
+    "deleteDeactivateError": "İşlem sırasında bir hata oluştu"
   },
   "library": {
     "all": "Tümü",

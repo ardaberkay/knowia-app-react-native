@@ -19,7 +19,14 @@
     "errorMessageProfile": "Profil konnte nicht geladen werden",
     "inviteMessage": "Finde deinen Lernweg im Wissensuniversum – mit Knowia. Jetzt kostenlos anmelden!",
     "logoutError": "Fehler beim Abmelden",
-    "accountDeleted": "Konto gelöscht!"
+    "accountDeleted": "Konto gelöscht!",
+    "deleteAccount": "Konto dauerhaft löschen",
+    "deleteAccountTitle": "Konto dauerhaft löschen",
+    "deleteAccountMessage": "Dein Konto und alle deine Daten werden dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
+    "deleteAccountIrreversible": "Dein Konto und alle deine Daten werden dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden. Bist du sicher?",
+    "deleteAccountConfirm": "Dauerhaft löschen",
+    "deleteSuccess": "Dein Konto wurde gelöscht",
+    "deleteDeactivateError": "Bei der Aktion ist ein Fehler aufgetreten"
   },
   "library": {
     "all": "Alle",

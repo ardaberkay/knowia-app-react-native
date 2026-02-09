@@ -19,7 +19,14 @@
     "errorMessageProfile": "Profile could not be loaded",
     "inviteMessage": "Find your path to learning in the universe of knowledge — with Knowia. Sign up for free!",
     "logoutError": "An error occurred while logging out",
-    "accountDeleted": "Account deleted!"
+    "accountDeleted": "Account deleted!",
+    "deleteAccount": "Delete Account Permanently",
+    "deleteAccountTitle": "Delete Account Permanently",
+    "deleteAccountMessage": "Your account and all your data will be permanently deleted. This action cannot be undone.",
+    "deleteAccountIrreversible": "Your account and all your data will be permanently deleted. This action cannot be undone. Are you sure?",
+    "deleteAccountConfirm": "Delete Permanently",
+    "deleteSuccess": "Your account has been deleted",
+    "deleteDeactivateError": "An error occurred during the operation"
   },
   "library": {
     "all": "All",

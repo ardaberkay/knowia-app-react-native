@@ -19,7 +19,14 @@
     "errorMessageProfile": "Não foi possível carregar o perfil",
     "inviteMessage": "Encontre seu caminho para o aprendizado no universo do conhecimento com Knowia. Inscreva-se gratuitamente!",
     "logoutError": "Ocorreu um erro ao sair",
-    "accountDeleted": "Conta excluída!"
+    "accountDeleted": "Conta excluída!",
+    "deleteAccount": "Excluir conta permanentemente",
+    "deleteAccountTitle": "Excluir conta permanentemente",
+    "deleteAccountMessage": "Sua conta e todos os seus dados serão excluídos permanentemente. Esta ação não pode ser desfeita.",
+    "deleteAccountIrreversible": "Sua conta e todos os seus dados serão excluídos permanentemente. Esta ação não pode ser desfeita. Tem certeza?",
+    "deleteAccountConfirm": "Excluir permanentemente",
+    "deleteSuccess": "Sua conta foi excluída",
+    "deleteDeactivateError": "Ocorreu um erro durante a operação"
   },
   "library": {
     "all": "Tudo",
