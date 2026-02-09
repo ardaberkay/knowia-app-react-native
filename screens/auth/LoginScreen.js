@@ -137,7 +137,7 @@ export default function LoginScreen({ navigation }) {
           >
             <Iconify icon="material-symbols:translate-rounded" size={moderateScale(20)} color="#fff" />
             <Text style={[styles.languageButtonText, { color: '#fff' }]}>
-              {i18n.language === 'tr' ? 'Türkçe' : i18n.language === 'en' ? 'English' : i18n.language === 'es' ? 'Spanish' : i18n.language === 'fr' ? 'French' : i18n.language === 'pt' ? 'Portuguese' : i18n.language === 'ar' ? 'Arabic' : ''}
+              {i18n.language === 'tr' ? 'Türkçe' : i18n.language === 'en' ? 'English' : i18n.language === 'es' ? 'Spanish' : i18n.language === 'fr' ? 'French' : i18n.language === 'pt' ? 'Portuguese' : i18n.language === 'de' ? 'German' : ''}
             </Text>
           </TouchableOpacity>
           <View style={[styles.inputContainer, emailError && { borderColor: colors.error || '#FF3B30', borderWidth: moderateScale(2) }]}>

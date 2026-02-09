@@ -217,9 +217,9 @@ export default function ProfileScreen() {
       onPress: () => setLanguageModalVisible(true),
       right: (
         <View style={styles.languageRow}>
-          <Iconify icon={i18n.language === 'tr' ? 'twemoji:flag-for-flag-turkey' : i18n.language === 'en' ? 'twemoji:flag-england' : i18n.language === 'es' ? 'twemoji:flag-spain' : i18n.language === 'fr' ? 'twemoji:flag-france' : i18n.language === 'pt' ? 'twemoji:flag-portugal' : i18n.language === 'ar' ? 'twemoji:flag-saudi-arabia' : ''} size={moderateScale(20)} />
+          <Iconify icon={i18n.language === 'tr' ? 'twemoji:flag-for-flag-turkey' : i18n.language === 'en' ? 'twemoji:flag-england' : i18n.language === 'es' ? 'twemoji:flag-spain' : i18n.language === 'fr' ? 'twemoji:flag-france' : i18n.language === 'pt' ? 'twemoji:flag-portugal' : i18n.language === 'de' ? 'twemoji:flag-germany' : ''} size={moderateScale(20)} />
           <Text style={{ color: colors.text, marginRight: scale(8), fontSize: moderateScale(15) }}>
-            {i18n.language === 'tr' ? 'Türkçe' : i18n.language === 'en' ? 'English' : i18n.language === 'es' ? 'Spanish' : i18n.language === 'fr' ? 'French' : i18n.language === 'pt' ? 'Portuguese' : i18n.language === 'ar' ? 'Arabic' : ''}
+            {i18n.language === 'tr' ? 'Türkçe' : i18n.language === 'en' ? 'English' : i18n.language === 'es' ? 'Spanish' : i18n.language === 'fr' ? 'French' : i18n.language === 'pt' ? 'Portuguese' : i18n.language === 'de' ? 'German' : ''}
           </Text>
         </View>
       ),

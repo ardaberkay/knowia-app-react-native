@@ -15,6 +15,7 @@ import { Buffer } from 'buffer';
 import { supabase } from '../../lib/supabase';
 import { useSnackbarHelpers } from '../ui/Snackbar';
 
+
 export default function CsvUploadModal({
   isVisible,
   onClose,
@@ -56,6 +57,51 @@ export default function CsvUploadModal({
     normalized = normalized.replace(/[^\x00-\x7F]/g, 'o');
 
     return normalized;
+  };
+
+  // UTF-8 geçerlilik kontrolü
+  const isValidUtf8 = (buffer) => {
+    let i = 0;
+    while (i < buffer.length) {
+      if (buffer[i] <= 0x7F) {
+        i++;
+      } else if ((buffer[i] & 0xE0) === 0xC0) {
+        if (i + 1 >= buffer.length || (buffer[i + 1] & 0xC0) !== 0x80) return false;
+        i += 2;
+      } else if ((buffer[i] & 0xF0) === 0xE0) {
+        if (i + 2 >= buffer.length || (buffer[i + 1] & 0xC0) !== 0x80 || (buffer[i + 2] & 0xC0) !== 0x80) return false;
+        i += 3;
+      } else if ((buffer[i] & 0xF8) === 0xF0) {
+        if (i + 3 >= buffer.length || (buffer[i + 1] & 0xC0) !== 0x80 || (buffer[i + 2] & 0xC0) !== 0x80 || (buffer[i + 3] & 0xC0) !== 0x80) return false;
+        i += 4;
+      } else {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Windows-1254 (Türkçe) encoding'den string'e çevirme
+  const decodeWindows1254 = (buffer) => {
+    const win1254Map = {
+      0xD0: 'Ğ',
+      0xDD: 'İ',
+      0xDE: 'Ş',
+      0xF0: 'ğ',
+      0xFD: 'ı',
+      0xFE: 'ş',
+    };
+
+    let result = '';
+    for (let i = 0; i < buffer.length; i++) {
+      const byte = buffer[i];
+      if (win1254Map[byte] !== undefined) {
+        result += win1254Map[byte];
+      } else {
+        result += String.fromCharCode(byte);
+      }
+    }
+    return result;
   };
 
   // Header mapping sistemi
@@ -450,9 +496,26 @@ export default function CsvUploadModal({
           setCsvLoading(false);
           return;
         }
-        const csvContent = await FileSystem.readAsStringAsync(file.uri, {
+        // Önce native UTF-8 okuma dene (en güvenilir yöntem)
+        let csvContent = await FileSystem.readAsStringAsync(file.uri, {
           encoding: FileSystem.EncodingType.UTF8,
         });
+
+        // Bozuk karakter kontrolü (UTF-8 olarak okunamayan Windows-1254 dosyaları için)
+        if (csvContent.includes('\uFFFD') || csvContent.includes('\u0000')) {
+          // Native UTF-8 okuma başarısız, Base64 ile Windows-1254 decode dene
+          const base64Content = await FileSystem.readAsStringAsync(file.uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          const fileBuffer = Buffer.from(base64Content, 'base64');
+
+          if (fileBuffer[0] === 0xEF && fileBuffer[1] === 0xBB && fileBuffer[2] === 0xBF) {
+            csvContent = fileBuffer.slice(3).toString('utf-8');
+          } else {
+            csvContent = decodeWindows1254(fileBuffer);
+          }
+        }
+
         const { validCards, errors, ignoredColumns, totalRows } = parseCSV(csvContent);
 
         // CSV'de görsel sütunu var mı kontrol et
@@ -584,26 +647,27 @@ export default function CsvUploadModal({
           }
           return {
             deck_id: deck.id,
-            question: card.question.trim(),
-            answer: card.answer.trim(),
-            example: card.example.trim() || null,
-            note: card.note.trim() || null,
+            question: card.question?.trim() || '',
+            answer: card.answer?.trim() || '',
+            example: card.example?.trim() || null,
+            note: card.note?.trim() || null,
             image: imageUrl || null,
           };
         })
       );
 
-      // Kartları batch'ler halinde ekle
-      const batchSize = 50;
-      for (let i = 0; i < processedCards.length; i += batchSize) {
-        const batch = processedCards.slice(i, i + batchSize);
-        const { error } = await supabase
+      // Kartları tek tek ekle (CreateCardScreen ile aynı yöntem)
+      for (let i = 0; i < processedCards.length; i++) {
+        const card = processedCards[i];
+        const { data, error } = await supabase
           .from('cards')
-          .insert(batch);
+          .insert(card)
+          .select();
         if (error) {
-          errorCount += batch.length;
+          console.error('Supabase insert hatası:', JSON.stringify(error), 'Kart:', JSON.stringify(card));
+          errorCount++;
         } else {
-          successCount += batch.length;
+          successCount++;
         }
       }
       const message = `${successCount} ${t('addCard.importCompletedMessage', 'kart başarıyla eklendi.')}${errorCount > 0 ? ` ${errorCount} ${t('addCard.importCompletedError', 'kart eklenemedi.')}` : ''}`;
@@ -614,6 +678,7 @@ export default function CsvUploadModal({
         onClose();
       }, 1500);
     } catch (e) {
+      console.error('Import exception:', e);
       showError(t('addCard.errorImport', 'Kartlar eklenirken bir hata oluştu: ') + e.message);
     } finally {
       setCsvLoading(false);
@@ -1050,31 +1115,36 @@ export default function CsvUploadModal({
                 </Text>
               </TouchableOpacity>
             </View>
-          ) : (
-            <View style={styles.actionsContainer}>
-              <TouchableOpacity
-                onPress={handleDownloadTemplate}
-                style={[styles.downloadButton, { backgroundColor: '#F98A21' }]}
-              >
-                <Text style={styles.downloadButtonText}>
-                  {t('addCard.downloadTemplate', 'Örnek CSV İndir')}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handlePickCSV}
-                style={[styles.selectButton, {
-                  backgroundColor: colors.blurView,
-                  borderColor: colors.border
-                }]}
-                disabled={csvLoading}
-              >
-                <Text style={[styles.selectButtonText, { color: colors.text }]}>
-                  {csvLoading ? t('addCard.loading', 'Yükleniyor...') : t('addCard.selectCSV', 'CSV Dosyası Seç')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          ) : null}
         </ScrollView>
+
+        {/* Sabit ve responsive butonlar - ScrollView dışında */}
+        {!csvPreview && (
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity
+              onPress={handleDownloadTemplate}
+              style={[styles.downloadButton, { backgroundColor: '#F98A21' }]}
+            >
+              <Iconify icon="tabler:file-download-filled" size={moderateScale(20)} color="#fff" style={{ marginRight: scale(6) }} />
+              <Text style={styles.downloadButtonText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+                {t('addCard.downloadTemplate', 'Örnek CSV İndir')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handlePickCSV}
+              style={[styles.selectButton, {
+                backgroundColor: colors.blurView,
+                borderColor: colors.border
+              }]}
+              disabled={csvLoading}
+            >
+              <Iconify icon="cuida:upload-outline" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(6) }} />
+              <Text style={[styles.selectButtonText, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+                {csvLoading ? t('addCard.loading', 'Yükleniyor...') : t('addCard.selectCSV', 'CSV Dosyası Seç')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </Modal>
 
@@ -1209,30 +1279,44 @@ const styles = StyleSheet.create({
   },
   actionsContainer: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: scale(16),
-    marginTop: verticalScale(8),
+    justifyContent: 'space-between',
+    gap: scale(12),
+    marginTop: verticalScale(12),
+    paddingTop: verticalScale(8),
   },
   downloadButton: {
-    borderRadius: moderateScale(8),
-    paddingVertical: verticalScale(12),
-    paddingHorizontal: scale(18),
-    marginRight: scale(8),
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: moderateScale(10),
+    paddingVertical: verticalScale(14),
+    paddingHorizontal: scale(12),
+    minHeight: verticalScale(48),
   },
   downloadButtonText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: moderateScale(15),
+    fontSize: moderateScale(14),
+    textAlign: 'center',
+    flexShrink: 1,
   },
   selectButton: {
-    borderRadius: moderateScale(8),
-    paddingVertical: verticalScale(12),
-    paddingHorizontal: scale(18),
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: moderateScale(10),
+    paddingVertical: verticalScale(14),
+    paddingHorizontal: scale(12),
     borderWidth: moderateScale(1),
+    minHeight: verticalScale(48),
   },
   selectButtonText: {
     fontWeight: 'bold',
-    fontSize: moderateScale(15),
+    fontSize: moderateScale(14),
+    textAlign: 'center',
+    flexShrink: 1,
   },
   imagesContainer: {
     marginTop: verticalScale(12),

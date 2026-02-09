@@ -71,7 +71,6 @@ module.exports = function (api) {
             'twemoji:flag-for-flag-turkey',
             'twemoji:flag-england',
             'twemoji:flag-germany',
-            'twemoji:flag-saudi-arabia',
             'twemoji:flag-spain',
             'twemoji:flag-portugal',
             'twemoji:flag-france',
@@ -124,6 +123,8 @@ module.exports = function (api) {
             'lsicon:filter-filled',
             'material-symbols:all-out-outline-rounded',
             'material-symbols:all-out-rounded',
+            'tabler:file-download-filled',
+            'cuida:upload-outline'
           ],
         },
       ],

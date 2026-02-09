@@ -18,7 +18,7 @@ export default function LanguageSelector({ isVisible, onClose, onLanguageChange 
     { code: 'es', name: 'Spanish', icon: 'twemoji:flag-spain' },
     { code: 'fr', name: 'French', icon: 'twemoji:flag-france' },
     { code: 'pt', name: 'Portuguese', icon: 'twemoji:flag-portugal' },
-    { code: 'ar', name: 'Arabic', icon: 'twemoji:flag-saudi-arabia' },
+    { code: 'de', name: 'German', icon: 'twemoji:flag-germany' },
   ], []);
 
   const handleLanguageSelect = async (languageCode) => {
