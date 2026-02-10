@@ -19,7 +19,6 @@ import MyDecksSkeleton from '../../components/skeleton/MyDecksSkeleton';
 import CardDetailView from '../../components/layout/CardDetailView';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
-import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ProfileAvatarButton from '../../components/layout/ProfileAvatarButton';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
@@ -80,7 +79,7 @@ export default function LibraryScreen() {
   const { t } = useTranslation();
   const pagerRef = useRef(null);
   const tabScroll = useRef(new Animated.Value(0)).current; // 0 -> MyDecks, 1 -> Favorites
-  const [pillWidth, setPillWidth] = useState(0);
+  const [pillWidth, setPillWidth] = useState(() => Dimensions.get('window').width * 0.59);
   const [favSlideIndex, setFavSlideIndex] = useState(0);
   const [favCardsQuery, setFavCardsQuery] = useState('');
   const [favCardsSort, setFavCardsSort] = useState('original');
@@ -759,13 +758,10 @@ export default function LibraryScreen() {
 
   return (
     <View style={[styles.container]}>
-      {/* Header + Pill Tabs - Tek birleşik BlurView */}
+      {/* Header + Pill Tabs - Hafif saydam arka plan (BlurView kaldırıldı, geçişte dim sorununu önlemek için) */}
       <View style={[styles.segmentedControlContainer, { top: 0 }]} pointerEvents="box-none">
-        <BlurView
-          intensity={8}
-          tint={'systemMaterialDark'}
-          experimentalBlurMethod="dimezisBlurView"
-          style={[styles.segmentedControlInner, { paddingTop: insets.top }]}
+        <View
+          style={[styles.segmentedControlInner, { paddingTop: insets.top, backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground || (isDarkMode ? 'rgba(50, 50, 50, 0.95)' : 'rgba(50, 50, 50, 0.1)') }]}
           pointerEvents="box-none"
         >
           {/* Header Content */}
@@ -814,7 +810,7 @@ export default function LibraryScreen() {
             </Text>
           </TouchableOpacity>
           </View>
-        </BlurView>
+        </View>
       </View>
       {/* PagerView: 0 - MyDecks, 1 - Favorites */}
       <PagerView

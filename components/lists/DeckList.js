@@ -229,12 +229,12 @@ export default function DeckList({
 
       const singleDeck = decks[i];
       builtRows.push({ 
-        type: 'double', 
-        items: [{
+        type: 'singleVertical', 
+        item: {
           ...singleDeck,
           gradientColors: getCategoryColors(singleDeck.categories?.sort_order),
           categoryIcon: getCategoryIcon(singleDeck.categories?.sort_order)
-        }].filter(Boolean)
+        }
       });
       i += 1;
     }
@@ -242,6 +242,9 @@ export default function DeckList({
     return builtRows;
   }, [decks]);
 
+  const renderSingleVerticalRow = (row) => {
+    return renderDoubleRow({ ...row, items: [row.item] });
+  };
 
   const renderDoubleRow = (row) => (
     <View style={[styles.deckList, styles.deckRow, { paddingHorizontal: responsiveSpacing.listPaddingHorizontal, paddingVertical: responsiveSpacing.listPaddingVertical }]}>
@@ -336,6 +339,9 @@ export default function DeckList({
           </LinearGradient>
         </TouchableOpacity>
       ))}
+      {row.items.length === 1 && (
+        <View style={{ flex: 1, marginLeft: responsiveSpacing.cardMargin }} />
+      )}
     </View>
   );
 
@@ -438,11 +444,17 @@ export default function DeckList({
 
   return (
     <FlatList
+      key={`decks-${decks.length}`}
       data={rows}
       keyExtractor={(_, idx) => `row_${idx}`}
       contentContainerStyle={{ paddingBottom: '10%', paddingTop: contentPaddingTop }}
       ListHeaderComponent={ListHeaderComponent}
-      renderItem={({ item: row }) => (row.type === 'double' ? renderDoubleRow(row) : renderSingleRow(row))}
+      renderItem={({ item: row }) => {
+        if (row.type === 'singleVertical') return renderSingleVerticalRow(row);
+        if (row.type === 'single' && rows.length === 1) return renderSingleVerticalRow(row);
+        if (row.type === 'double') return renderDoubleRow(row);
+        return renderSingleRow(row);
+      }}
       ListEmptyComponent={(
         <View style={styles.noDecksEmpty}>
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>

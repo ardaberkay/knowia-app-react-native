@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { AuthProvider } from './contexts/AuthContext';
+import { ProfileProvider } from './contexts/ProfileContext';
 import { ThemeProvider } from './theme/theme';
 import { SnackbarProvider } from './components/ui/Snackbar';
 import AppNavigator from './navigation/AppNavigator';
@@ -230,12 +231,14 @@ function AppContent() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <AuthProvider>
-        <SnackbarProvider>
-          <NavigationContainer ref={navigationRef} theme={navigationTheme} linking={linking}>
-            <AppNavigator />
-            <StatusBar style={isDarkMode ? "light" : "dark"} />
-          </NavigationContainer>
-        </SnackbarProvider>
+        <ProfileProvider>
+          <SnackbarProvider>
+            <NavigationContainer ref={navigationRef} theme={navigationTheme} linking={linking}>
+              <AppNavigator />
+              <StatusBar style={isDarkMode ? "light" : "dark"} />
+            </NavigationContainer>
+          </SnackbarProvider>
+        </ProfileProvider>
       </AuthProvider>
     </View>
   );

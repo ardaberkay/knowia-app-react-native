@@ -1,28 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { TouchableOpacity, Image, ActivityIndicator, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
-import { getCurrentUserProfile } from '../../services/ProfileService';
+import { useProfile } from '../../contexts/ProfileContext';
 
 export default function ProfileAvatarButton() {
   const navigation = useNavigation();
   const { colors } = useTheme();
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        const data = await getCurrentUserProfile();
-        setProfile(data);
-      } catch {
-        setProfile(null);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+  const { profile, loading } = useProfile();
 
   return (
     <TouchableOpacity

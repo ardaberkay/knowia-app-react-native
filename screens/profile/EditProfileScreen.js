@@ -4,6 +4,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { getCurrentUserProfile } from '../../services/ProfileService';
+import { useProfile } from '../../contexts/ProfileContext';
 import { supabase } from '../../lib/supabase';
 import { cacheProfile, cacheProfileImage, clearUserCache } from '../../services/CacheService';
 import * as ImagePicker from 'expo-image-picker';
@@ -37,6 +38,7 @@ export default function EditProfileScreen({ navigation }) {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const { t } = useTranslation();
   const { showSuccess, showError } = useSnackbarHelpers();
+  const { refetch: refetchProfile } = useProfile();
 
   // Email validasyonu için regex
   const isValidEmail = (email) => {
@@ -265,7 +267,10 @@ export default function EditProfileScreen({ navigation }) {
       if (!emailChanged) {
         showSuccess(t('common.profileUpdated'));
       }
-      
+
+      // Global profil cache'ini (ProfileContext) güncelle; avatar ve diğer ekranlar güncel veriyi gösterir
+      await refetchProfile();
+
       setTimeout(() => {
         navigation.goBack();
       }, 500);

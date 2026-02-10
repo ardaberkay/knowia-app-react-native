@@ -225,18 +225,22 @@ export default function MyDecksList({
 
       const singleDeck = decks[i];
       builtRows.push({ 
-        type: 'double', 
-        items: [{
+        type: 'singleVertical', 
+        item: {
           ...singleDeck,
           gradientColors: getCategoryColors(singleDeck.categories?.sort_order),
           categoryIcon: getCategoryIcon(singleDeck.categories?.sort_order)
-        }].filter(Boolean)
+        }
       });
       i += 1;
     }
 
     return builtRows;
   }, [decks]);
+
+  const renderSingleVerticalRow = (row) => {
+    return renderDoubleRow({ ...row, items: [row.item] });
+  };
 
   const renderDoubleRow = (row) => (
     <View style={[styles.myDecksList, styles.myDeckRow, { paddingHorizontal: responsiveSpacing.listPaddingHorizontal, paddingVertical: responsiveSpacing.listPaddingVertical }]}>
@@ -312,6 +316,9 @@ export default function MyDecksList({
           </LinearGradient>
         </TouchableOpacity>
       ))}
+      {row.items.length === 1 && (
+        <View style={{ flex: 1, marginLeft: responsiveSpacing.cardMargin }} />
+      )}
     </View>
   );
 
@@ -404,11 +411,17 @@ export default function MyDecksList({
 
   return (
     <FlatList
+      key={`mydecks-${decks.length}`}
       data={rows}
       keyExtractor={(_, idx) => `row_${idx}`}
       contentContainerStyle={{ paddingBottom: '25%', paddingTop: '25%' }}
       ListHeaderComponent={ListHeaderComponent}
-      renderItem={({ item: row }) => (row.type === 'double' ? renderDoubleRow(row) : renderSingleRow(row))}
+      renderItem={({ item: row }) => {
+        if (row.type === 'singleVertical') return renderSingleVerticalRow(row);
+        if (row.type === 'single' && rows.length === 1) return renderSingleVerticalRow(row);
+        if (row.type === 'double') return renderDoubleRow(row);
+        return renderSingleRow(row);
+      }}
       ListEmptyComponent={renderEmptyComponent}
       showsVerticalScrollIndicator={false}
       refreshControl={

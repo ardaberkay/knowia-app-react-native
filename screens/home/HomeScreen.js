@@ -9,11 +9,9 @@ import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
-import { getCurrentUserProfile, updateLastActiveAt } from '../../services/ProfileService';
-import { registerForPushNotificationsAsync } from '../../services/NotificationService';
 import { supabase } from '../../lib/supabase';
 import { getFavoriteDecks } from '../../services/FavoriteService';
-import { cacheProfile, getCachedProfile, cacheProfileImage, getCachedProfileImage } from '../../services/CacheService';
+import ProfileAvatarButton from '../../components/layout/ProfileAvatarButton';
 import DeckSkeleton from '../../components/skeleton/DeckSkeleton';
 import { useTranslation } from 'react-i18next';
 import DeckCard from '../../components/ui/DeckUi';
@@ -100,8 +98,6 @@ export default function HomeScreen() {
   
   const [decks, setDecks] = useState({});
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState(null);
-  const [profileLoading, setProfileLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [favoriteDecks, setFavoriteDecks] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -117,7 +113,6 @@ const DECK_CATEGORIES = {
 
   useEffect(() => {
     loadDecks();
-    loadProfile();
     supabase.auth.getUser().then(({ data: { user } }) => setCurrentUserId(user?.id));
     // Favori desteleri de çek
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -127,14 +122,6 @@ const DECK_CATEGORIES = {
       }
     });
   }, []);
-
-  // Profil yüklendiğinde push bildirim izni iste ve token'ı kaydet + last_active_at güncelle
-  useEffect(() => {
-    /*if (profile?.id) {
-      registerForPushNotificationsAsync(profile.id);
-      updateLastActiveAt(profile.id);
-    }*/
-  }, [profile]);
 
   const loadDecks = async () => {
     try {
@@ -185,7 +172,6 @@ const DECK_CATEGORIES = {
       setRefreshing(true);
       await Promise.all([
         loadDecks(),
-        loadProfile(),
         (async () => {
           const { data: { user } } = await supabase.auth.getUser();
           if (user?.id) {
@@ -196,55 +182,6 @@ const DECK_CATEGORIES = {
       ]);
     } finally {
       setRefreshing(false);
-    }
-  };
-
-  const loadProfile = async () => {
-    try {
-      setProfileLoading(true);
-      
-      // Önce kullanıcı ID'sini al
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.id) {
-        setProfile(null);
-        return;
-      }
-      
-      // Cache'den profil bilgilerini yükle
-      const cachedProfile = await getCachedProfile(user.id);
-      if (cachedProfile) {
-        setProfile(cachedProfile);
-        setProfileLoading(false);
-        
-        // Arka planda güncel veriyi çek ve cache'le
-        try {
-          const freshData = await getCurrentUserProfile();
-          setProfile(freshData);
-          await cacheProfile(user.id, freshData);
-          // Profil görselini de cache'le
-          if (freshData?.image_url) {
-            await cacheProfileImage(user.id, freshData.image_url);
-          }
-        } catch (err) {
-          // Hata durumunda cache'deki veriyi kullanmaya devam et
-          console.error('Error fetching fresh profile:', err);
-        }
-        return;
-      }
-      
-      // Cache yoksa API'den çek
-      const data = await getCurrentUserProfile();
-      setProfile(data);
-      
-      // Cache'le
-      await cacheProfile(user.id, data);
-      if (data?.image_url) {
-        await cacheProfileImage(user.id, data.image_url);
-      }
-    } catch (err) {
-      setProfile(null);
-    } finally {
-      setProfileLoading(false);
     }
   };
 
@@ -479,21 +416,9 @@ const DECK_CATEGORIES = {
           />
           <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(24), letterSpacing: moderateScale(-1) }]}>Knowia</Text>
           </View>
-          <TouchableOpacity
-            style={[styles.profileAvatarButton, { position: 'absolute', right: 0 }]}
-            onPress={() => navigation.navigate('Profile')}
-            activeOpacity={0.8}
-          >
-            {profileLoading ? (
-              <ActivityIndicator size="small" color={colors.buttonColor} />
-            ) : (
-              <Image
-                source={profile?.image_url ? { uri: profile.image_url } : require('../../assets/avatar-default.png')}
-                style={styles.profileAvatar}
-                // Cache'den görsel yüklendiğinde otomatik olarak React Native Image component cache'i kullanır
-              />
-            )}
-          </TouchableOpacity>
+          <View style={{ position: 'absolute', right: 0 }}>
+            <ProfileAvatarButton />
+          </View>
         </View>
       </View>
       <ScrollView 
@@ -577,23 +502,6 @@ const styles = StyleSheet.create({
     width: scale(44),
     marginLeft: scale(4),
     marginRight: scale(8),
-  },
-  profileAvatarButton: {
-    marginLeft: scale(12),
-    width: scale(47),
-    height: scale(47),
-    borderRadius: moderateScale(22),
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-  },
-  profileAvatar: {
-    width: scale(47),
-    height: scale(47),
-    borderRadius: moderateScale(22),
-    resizeMode: 'cover',
-    backgroundColor: '#fff',
   },
   logoImage: {
     width: scale(44),
