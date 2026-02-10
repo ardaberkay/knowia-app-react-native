@@ -416,7 +416,7 @@ const DECK_CATEGORIES = {
           />
           <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(24), letterSpacing: moderateScale(-1) }]}>Knowia</Text>
           </View>
-          <View style={{ position: 'absolute', right: 0 }}>
+          <View style={{ position: 'absolute', right: -24 }}>
             <ProfileAvatarButton />
           </View>
         </View>

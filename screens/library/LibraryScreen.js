@@ -770,7 +770,7 @@ export default function LibraryScreen() {
             <Text style={[styles.headerTitle, { color: colors.text }]}>
               {t('tabs.myLibrary', 'Kitaplığım')}
             </Text>
-            <View style={styles.headerRight}>
+            <View style={{ marginRight: -36 }}>
               <ProfileAvatarButton />
             </View>
           </View>
@@ -1194,11 +1194,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
   },
-  headerRight: {
-    width: scale(50),
-    alignItems: 'flex-end',
-    right: scale(-25),
-  },
+
   pillContainer: {
     borderWidth: 1,
     borderColor: '#444444',

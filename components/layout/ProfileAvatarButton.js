@@ -30,7 +30,7 @@ export default function ProfileAvatarButton() {
 const styles = StyleSheet.create({
   profileAvatarButton: {
     marginLeft: 12,
-    marginRight: 18,
+    marginRight: 24,
     width: 47,
     height: 47,
     borderRadius: 22,
