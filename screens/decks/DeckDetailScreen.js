@@ -6,12 +6,14 @@ import { Alert } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import CircularProgress from '../../components/ui/CircularProgress';
 import { useAuth } from '../../contexts/AuthContext';
 import { listChapters, getChaptersProgress } from '../../services/ChapterService';
+import * as BlockService from '../../services/BlockService';
+import { useSnackbarHelpers } from '../../components/ui/Snackbar';
+import ReportModal from '../../components/modals/ReportModal';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -37,6 +39,13 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [moreMenuVisible, setMoreMenuVisible] = useState(false);
   const [moreMenuPos, setMoreMenuPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const moreMenuRef = useRef(null);
+  const [creatorMenuVisible, setCreatorMenuVisible] = useState(false);
+  const [creatorMenuPos, setCreatorMenuPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const creatorChipRef = useRef(null);
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [reportModalType, setReportModalType] = useState('user');
+  const [reportModalTargetId, setReportModalTargetId] = useState(null);
+  const [reportModalAlreadyCodes, setReportModalAlreadyCodes] = useState([]);
   const chaptersFetchedRef = useRef(false);
   // Session'dan user ID'yi al (eğer varsa)
   const initialUserId = session?.user?.id || null;
@@ -49,6 +58,7 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [shareLoading, setShareLoading] = useState(false);
   const [categoryInfo, setCategoryInfo] = useState(deck.categories || null);
   const { t } = useTranslation();
+  const { showSuccess, showError } = useSnackbarHelpers();
   const nameScrollRef = useRef(null);
   const toNameScrollRef = useRef(null);
   const [nameHasOverflow, setNameHasOverflow] = useState(deck?.name?.length > 21);
@@ -754,6 +764,106 @@ export default function DeckDetailScreen({ route, navigation }) {
     }
   };
 
+  const openCreatorMenu = () => {
+    if (creatorChipRef.current && creatorChipRef.current.measureInWindow) {
+      creatorChipRef.current.measureInWindow((x, y, width, height) => {
+        setCreatorMenuPos({ x, y, width, height });
+        setCreatorMenuVisible(true);
+      });
+    } else {
+      setCreatorMenuVisible(true);
+    }
+  };
+
+  const openReportUserModal = async () => {
+    setCreatorMenuVisible(false);
+    if (!deck?.user_id) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.id) { showError(t('common.error')); return; }
+    try {
+      const codes = await BlockService.getMyReportReasonCodesForTarget(user.id, 'user', deck.user_id);
+      setReportModalAlreadyCodes(codes);
+      setReportModalType('user');
+      setReportModalTargetId(deck.user_id);
+      setReportModalVisible(true);
+    } catch (e) {
+      showError(e?.message || t('common.error'));
+    }
+  };
+
+  const handleBlockUser = () => {
+    setCreatorMenuVisible(false);
+    if (!deck?.user_id) return;
+    Alert.alert(
+      t('moderation.blockUser'),
+      t('moderation.confirmBlock'),
+      [
+        { text: t('moderation.cancel'), style: 'cancel' },
+        {
+          text: t('common.ok'),
+          onPress: async () => {
+            try {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user?.id) { showError(t('common.error')); return; }
+              await BlockService.blockUser(user.id, deck.user_id);
+              showSuccess(t('moderation.blocked'));
+              navigation.goBack();
+            } catch (err) {
+              showError(err?.message || t('common.error'));
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleHideDeck = async () => {
+    setMoreMenuVisible(false);
+    if (!deck?.id) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) { showError(t('common.error')); return; }
+      await BlockService.hideDeck(user.id, deck.id);
+      showSuccess(t('moderation.deckHidden'));
+      navigation.goBack();
+    } catch (e) {
+      showError(e?.message || t('common.error'));
+    }
+  };
+
+  const openReportDeckModal = async () => {
+    setMoreMenuVisible(false);
+    if (!deck?.id) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.id) { showError(t('common.error')); return; }
+    try {
+      const codes = await BlockService.getMyReportReasonCodesForTarget(user.id, 'deck', deck.id);
+      setReportModalAlreadyCodes(codes);
+      setReportModalType('deck');
+      setReportModalTargetId(deck.id);
+      setReportModalVisible(true);
+    } catch (e) {
+      showError(e?.message || t('common.error'));
+    }
+  };
+
+  const handleReportModalSubmit = async (reasonCode, reasonText) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.id || !reportModalTargetId) return;
+    try {
+      if (reportModalType === 'user') {
+        await BlockService.reportUser(user.id, reportModalTargetId, reasonCode, reasonText);
+      } else if (reportModalType === 'deck') {
+        await BlockService.reportDeck(user.id, reportModalTargetId, reasonCode, reasonText);
+      }
+      showSuccess(t('moderation.reportReceived'));
+    } catch (e) {
+      if (e?.code === '23505') showError(t('moderation.alreadyReported'));
+      else showError(e?.message || t('common.error'));
+      throw e;
+    }
+  };
+
   // Header'a ikonları ekle
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -772,8 +882,8 @@ export default function DeckDetailScreen({ route, navigation }) {
             />
           </TouchableOpacity>
 
-          {/* More menüsü - Sadece deste sahibi ise görünür */}
-          {currentUserId && deck.user_id === currentUserId && (
+          {/* More menüsü - Giriş yapmış her kullanıcı için görünür */}
+          {currentUserId && (
             <TouchableOpacity
               ref={moreMenuRef}
               onPress={openMoreMenu}
@@ -990,23 +1100,45 @@ export default function DeckDetailScreen({ route, navigation }) {
               </View>
             )}
 
-            {/* Creator Chip */}
-            {deck.profiles && (
-              <View style={styles.gfCreatorChip}>
-                <Image
-                  source={
-                    deck.is_admin_created
-                      ? require('../../assets/app-icon.png')
-                      : deck.profiles?.image_url
+            {/* Creator Chip - admin veya user_id varsa göster; başkasının destesinde tıklanabilir (şikayet/engelle) */}
+            {(deck.is_admin_created || deck.user_id) && (
+              (currentUserId && deck.user_id !== currentUserId && !deck.is_admin_created) ? (
+                <TouchableOpacity
+                  ref={creatorChipRef}
+                  onPress={openCreatorMenu}
+                  activeOpacity={0.8}
+                  style={styles.gfCreatorChip}
+                >
+                  <Image
+                    source={
+                      deck.profiles?.image_url
                         ? { uri: deck.profiles.image_url }
                         : require('../../assets/avatar-default.png')
-                  }
-                  style={styles.gfCreatorAvatar}
-                />
-                <Text style={styles.gfCreatorName}>
-                  {deck.profiles?.username || t('common.user', 'Kullanıcı')}
-                </Text>
-              </View>
+                    }
+                    style={styles.gfCreatorAvatar}
+                  />
+                  <Text style={styles.gfCreatorName}>
+                    {deck.profiles?.username || t('common.user', 'Kullanıcı')}
+                  </Text>
+                  <Iconify icon="flowbite:caret-down-solid" size={moderateScale(18)} color="#fff" style={{ marginLeft: scale(2) }} />
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.gfCreatorChip}>
+                  <Image
+                    source={
+                      deck.is_admin_created
+                        ? require('../../assets/app-icon.png')
+                        : deck.profiles?.image_url
+                          ? { uri: deck.profiles.image_url }
+                          : require('../../assets/avatar-default.png')
+                    }
+                    style={styles.gfCreatorAvatar}
+                  />
+                  <Text style={styles.gfCreatorName}>
+                    {deck.profiles?.username || t('common.user', 'Kullanıcı')}
+                  </Text>
+                </View>
+              )
             )}
           </LinearGradient>
         </Animated.View>
@@ -1637,7 +1769,7 @@ export default function DeckDetailScreen({ route, navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* More Menüsü Modal */}
+      {/* More Menüsü Modal - sahibi: Düzenle/Sil; sahibi değil: Gizle/Şikayet et */}
       <Modal
         visible={moreMenuVisible}
         transparent
@@ -1667,17 +1799,121 @@ export default function DeckDetailScreen({ route, navigation }) {
               borderColor: colors.cardBorder,
             }}
           >
-            <TouchableOpacity
-              onPress={() => {
-                setMoreMenuVisible(false);
-                console.log("Gönderilmeye hazırlanan diller:", decksLanguages);
-                navigation.navigate('DeckEdit', {
-                  deck,
-                  categoryInfo: categoryInfo || deck.categories || null,
-                  selectedLanguageIds: decksLanguages
-                });
-              }}
+            {currentUserId && deck.user_id === currentUserId ? (
+              <>
+                <TouchableOpacity
+                  onPress={() => {
+                    setMoreMenuVisible(false);
+                    navigation.navigate('DeckEdit', {
+                      deck,
+                      categoryInfo: categoryInfo || deck.categories || null,
+                      selectedLanguageIds: decksLanguages
+                    });
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: verticalScale(12),
+                    paddingHorizontal: scale(16),
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Iconify icon="lucide:edit" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
+                  <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
+                    {t('deckDetail.edit', 'Desteyi Düzenle')}
+                  </Text>
+                </TouchableOpacity>
+                <View style={{ height: verticalScale(1), backgroundColor: colors.border, marginVertical: verticalScale(4) }} />
+                <TouchableOpacity
+                  onPress={() => {
+                    setMoreMenuVisible(false);
+                    handleDeleteDeck();
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: verticalScale(12),
+                    paddingHorizontal: scale(16),
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Iconify icon="mdi:garbage" size={moderateScale(20)} color="#E74C3C" style={{ marginRight: scale(12) }} />
+                  <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: moderateScale(16) }]}>
+                    {t('deckDetail.deleteDeck', 'Desteyi Sil')}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <TouchableOpacity
+                  onPress={handleHideDeck}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: verticalScale(12),
+                    paddingHorizontal: scale(16),
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Iconify icon="ph:cards-three" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
+                  <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
+                    {t('moderation.hideDeck')}
+                  </Text>
+                </TouchableOpacity>
+                <View style={{ height: verticalScale(1), backgroundColor: colors.border, marginVertical: verticalScale(4) }} />
+                <TouchableOpacity
+                  onPress={openReportDeckModal}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: verticalScale(12),
+                    paddingHorizontal: scale(16),
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Iconify icon="ic:round-report-problem" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
+                  <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
+                    {t('moderation.reportDeck')}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
+      {/* Creator menüsü (kullanıcıyı şikayet et / engelle) */}
+      <Modal
+        visible={creatorMenuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCreatorMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={{ flex: 1 }}
+          activeOpacity={1}
+          onPress={() => setCreatorMenuVisible(false)}
+        >
+          <View
+            style={{
+              position: 'absolute',
+              left: creatorMenuPos.x,
+              top: Platform.OS === 'android' ? creatorMenuPos.y + creatorMenuPos.height + verticalScale(4) : creatorMenuPos.y + creatorMenuPos.height + verticalScale(8),
+              minWidth: scale(180),
+              backgroundColor: colors.cardBackground,
+              borderRadius: moderateScale(14),
+              paddingVertical: verticalScale(8),
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: verticalScale(2) },
+              shadowOpacity: 0.15,
+              shadowRadius: moderateScale(8),
+              elevation: 8,
+              borderWidth: moderateScale(1),
+              borderColor: colors.cardBorder,
+            }}
+          >
+            <TouchableOpacity
+              onPress={openReportUserModal}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -1686,17 +1922,14 @@ export default function DeckDetailScreen({ route, navigation }) {
               }}
               activeOpacity={0.7}
             >
-              <Iconify icon="lucide:edit" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
+              <Iconify icon="ic:round-report-problem" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
               <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
-                {t('deckDetail.edit', 'Desteyi Düzenle')}
+                {t('moderation.reportUser')}
               </Text>
             </TouchableOpacity>
             <View style={{ height: verticalScale(1), backgroundColor: colors.border, marginVertical: verticalScale(4) }} />
             <TouchableOpacity
-              onPress={() => {
-                setMoreMenuVisible(false);
-                handleDeleteDeck();
-              }}
+              onPress={handleBlockUser}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -1705,14 +1938,22 @@ export default function DeckDetailScreen({ route, navigation }) {
               }}
               activeOpacity={0.7}
             >
-              <Iconify icon="mdi:garbage" size={moderateScale(20)} color="#E74C3C" style={{ marginRight: scale(12) }} />
-              <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: moderateScale(16) }]}>
-                {t('deckDetail.deleteDeck', 'Desteyi Sil')}
+              <Iconify icon="cuida:upload-outline" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
+              <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
+                {t('moderation.blockUser')}
               </Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>
+
+      <ReportModal
+        visible={reportModalVisible}
+        onClose={() => setReportModalVisible(false)}
+        reportType={reportModalType}
+        alreadyReportedCodes={reportModalAlreadyCodes}
+        onSubmit={handleReportModalSubmit}
+      />
 
       {/* FAB Menü Overlay - Dışarı tıklandığında kapat */}
       {fabMenuOpen && (

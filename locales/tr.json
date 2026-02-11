@@ -160,6 +160,34 @@
     "selectLanguages": "Dilleri Seç",
     "selected": "Seçildi"
   },
+  "moderation": {
+    "reportUser": "Kullanıcıyı şikayet et",
+    "blockUser": "Kullanıcıyı engelle",
+    "reportDeck": "Desteyi şikayet et",
+    "hideDeck": "Desteyi gizle",
+    "reportCard": "Kartı şikayet et",
+    "confirmBlock": "Bu kullanıcının destelerini artık görmeyeceksiniz. Emin misiniz?",
+    "confirmHide": "Bu desteyi gizlemek istediğinize emin misiniz?",
+    "reportReceived": "Şikayetiniz alındı",
+    "alreadyReported": "Bu içeriği daha önce şikayet ettiniz",
+    "alreadyReportedWithThis": "Zaten şikayet ettiniz",
+    "blocked": "Kullanıcı engellendi",
+    "deckHidden": "Deste gizlendi",
+    "cancel": "İptal",
+    "reportReasonHint": "Lütfen bir sebep seçin. Aynı sebeple tekrar şikayet edemezsiniz.",
+    "submitReport": "Gönder",
+    "reasonOtherPlaceholder": "Şikayetinizi kısaca yazın...",
+    "reason": {
+      "spam": "Spam",
+      "harassment": "Taciz veya zorbalık",
+      "hate_speech": "Nefret söylemi",
+      "inappropriate": "Uygunsuz içerik",
+      "copyright": "Telif hakkı ihlali",
+      "misleading": "Yanıltıcı bilgi",
+      "impersonation": "Kimlik taklidi",
+      "other": "Diğer"
+    }
+  },
   "tabs": {
     "home": "Anasayfa",
     "create": "Oluştur",

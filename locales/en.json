@@ -159,6 +159,34 @@
     "selectLanguages": "Select Languages",
     "selected": "Selected"
   },
+  "moderation": {
+    "reportUser": "Report user",
+    "blockUser": "Block user",
+    "reportDeck": "Report deck",
+    "hideDeck": "Hide deck",
+    "reportCard": "Report card",
+    "confirmBlock": "You will no longer see this user's decks. Are you sure?",
+    "confirmHide": "Are you sure you want to hide this deck?",
+    "reportReceived": "Your report has been received",
+    "alreadyReported": "You have already reported this content",
+    "alreadyReportedWithThis": "Already reported",
+    "blocked": "User blocked",
+    "deckHidden": "Deck hidden",
+    "cancel": "Cancel",
+    "reportReasonHint": "Please select a reason. You cannot report again with the same reason.",
+    "submitReport": "Submit",
+    "reasonOtherPlaceholder": "Describe your report briefly...",
+    "reason": {
+      "spam": "Spam",
+      "harassment": "Harassment or bullying",
+      "hate_speech": "Hate speech or symbols",
+      "inappropriate": "Inappropriate content",
+      "copyright": "Copyright violation",
+      "misleading": "Misleading information",
+      "impersonation": "Impersonation",
+      "other": "Other"
+    }
+  },
   "tabs": {
     "home": "Home",
     "create": "Create",
