@@ -15,7 +15,7 @@ const ShimmerView = ({ style, isDarkMode }) => {
     Animated.loop(
       Animated.timing(shimmerAnim, {
         toValue: 1,
-        duration: 1500,
+        duration: 2000,
         useNativeDriver: true,
       })
     ).start();
@@ -76,12 +76,12 @@ const styles = StyleSheet.create({
   name: {
     width: '80%',
     height: typography.styles.h2.fontSize,
-    borderRadius: 4,
+    borderRadius: 24,
     marginBottom: verticalScale(8),
   },
   email: {
     width: '90%',
     height: typography.styles.body.fontSize,
-    borderRadius: 4,
+    borderRadius: 24,
   },
 });

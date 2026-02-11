@@ -2100,6 +2100,7 @@ const styles = StyleSheet.create({
     paddingRight: scale(18),
     borderRadius: moderateScale(32),
     gap: scale(12),
+    marginTop: verticalScale(8),
   },
   gfCreatorAvatar: {
     width: scale(28),

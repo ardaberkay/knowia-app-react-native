@@ -17,6 +17,8 @@ import { Iconify } from 'react-native-iconify';
 import UndoButton from '../../components/tools/UndoButton';
 import CreateButton from '../../components/tools/CreateButton';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import LottieView from 'lottie-react-native';
+
 
 export default function EditProfileScreen({ navigation }) {
   const { colors, isDarkMode } = useTheme();
@@ -296,10 +298,10 @@ export default function EditProfileScreen({ navigation }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
-        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-        <ActivityIndicator size="large" color={colors.buttonColor} />
-      </SafeAreaView>
+      <View style={styles.loadingContainer}>
+      <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: moderateScale(200, 0.3), height: moderateScale(200, 0.3) }} />
+      <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: moderateScale(100, 0.3), height: moderateScale(100, 0.3) }} />
+    </View>
     );
   }
 
@@ -630,6 +632,14 @@ const styles = StyleSheet.create({
   },
   labelIcon: {
     marginRight: 0,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: verticalScale(200),
+    flexDirection: 'column',
+    gap: verticalScale(-65),
   },
   profilePhotoContainer: {
     alignItems: 'center',

@@ -15,7 +15,7 @@ const ShimmerOverlay = ({ style, delay = 0, isDarkMode = false, borderRadius = 0
         Animated.sequence([
           Animated.timing(shimmerAnim, {
             toValue: 1,
-            duration: 2000,
+            duration: 4000,
             delay: delay,
             useNativeDriver: true,
           }),
