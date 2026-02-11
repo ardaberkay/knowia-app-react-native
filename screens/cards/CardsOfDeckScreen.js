@@ -16,6 +16,8 @@ import CardDetailView from '../../components/layout/CardDetailView';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { useFocusEffect } from '@react-navigation/native';
+import * as BlockService from '../../services/BlockService';
+import ReportModal from '../../components/modals/ReportModal';
 
 
 export default function DeckCardsScreen({ route, navigation }) {
@@ -37,6 +39,9 @@ export default function DeckCardsScreen({ route, navigation }) {
   const dataFetchedRef = useRef(false);
   const [moreMenuVisible, setMoreMenuVisible] = useState(false);
   const [moreMenuPos, setMoreMenuPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [reportModalAlreadyCodes, setReportModalAlreadyCodes] = useState([]);
+  const [reportCardId, setReportCardId] = useState(null);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -185,6 +190,15 @@ export default function DeckCardsScreen({ route, navigation }) {
                 color={favoriteCards.includes(selectedCard.id) ? '#F98A21' : colors.text}
               />
             </TouchableOpacity>
+            {!isOwner && (
+              <TouchableOpacity
+                onPress={openReportCardModal}
+                activeOpacity={0.7}
+                style={{ paddingHorizontal: scale(6) }}
+              >
+                <Iconify icon="ic:round-report-problem" size={moderateScale(24)} color={colors.text} />
+              </TouchableOpacity>
+            )}
             {isOwner && (
               <TouchableOpacity
                 ref={moreMenuRef}
@@ -216,7 +230,7 @@ export default function DeckCardsScreen({ route, navigation }) {
         },
       });
     }
-  }, [loading, selectedCard, editMode, colors.text, navigation, deck, favoriteCards, currentUserId, handleToggleFavoriteCard, openMoreMenu]);
+  }, [loading, selectedCard, editMode, colors.text, navigation, deck, favoriteCards, currentUserId, handleToggleFavoriteCard, openMoreMenu, openReportCardModal]);
 
   useEffect(() => {
     if (loading) {
@@ -248,6 +262,34 @@ export default function DeckCardsScreen({ route, navigation }) {
       return [...originalCards];
     }
   };
+
+  const openReportCardModal = useCallback(async () => {
+    if (!currentUserId || !selectedCard) return;
+    try {
+      const codes = await BlockService.getMyReportReasonCodesForTarget(currentUserId, 'card', selectedCard.id);
+      setReportModalAlreadyCodes(codes || []);
+      setReportCardId(selectedCard.id);
+      setReportModalVisible(true);
+    } catch (e) {
+      showError(t('moderation.alreadyReported', 'Zaten şikayet ettiniz') || e?.message);
+    }
+  }, [currentUserId, selectedCard, t, showError]);
+
+  const handleReportModalSubmit = useCallback(async (reasonCode, reasonText) => {
+    if (!currentUserId || !reportCardId) return;
+    try {
+      await BlockService.reportCard(currentUserId, reportCardId, reasonCode, reasonText);
+      setReportModalVisible(false);
+      setReportCardId(null);
+      showSuccess(t('moderation.reportReceived', 'Şikayetiniz alındı'));
+    } catch (e) {
+      if (e?.code === '23505' || e?.message?.includes('unique') || e?.message?.includes('duplicate')) {
+        showError(t('moderation.alreadyReportedWithThis', 'Zaten bu sebeple şikayet ettiniz'));
+      } else {
+        showError(e?.message || t('moderation.alreadyReported', 'Zaten şikayet ettiniz'));
+      }
+    }
+  }, [currentUserId, reportCardId, t, showSuccess, showError]);
 
   const handleToggleFavoriteCard = async (cardId) => {
     try {
@@ -313,7 +355,8 @@ export default function DeckCardsScreen({ route, navigation }) {
     setMoreMenuVisible(false);
   };
   return (
-    selectedCard && editMode ? (
+    <>
+    {selectedCard && editMode ? (
       <AddEditCardInlineForm
         card={selectedCard}
         deck={deck}
@@ -393,6 +436,7 @@ export default function DeckCardsScreen({ route, navigation }) {
         </Modal>
       </>
     ) : (
+      <>
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         {/* Kartlar Listesi veya Detay */}
         <View style={{ flex: 1, minHeight: 0 }}>
@@ -496,7 +540,17 @@ export default function DeckCardsScreen({ route, navigation }) {
           )}
         </View>
       </View>
-    )
+
+      </>
+    )}
+    <ReportModal
+      visible={reportModalVisible}
+      onClose={() => { setReportModalVisible(false); setReportCardId(null); }}
+      reportType="card"
+      alreadyReportedCodes={reportModalAlreadyCodes}
+      onSubmit={handleReportModalSubmit}
+    />
+    </>
   );
 }
 

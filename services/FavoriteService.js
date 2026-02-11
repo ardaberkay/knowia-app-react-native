@@ -1,21 +1,27 @@
 import { supabase } from '../lib/supabase';
+import { getBlockedUserIds, getHiddenDeckIds } from './BlockService';
+import { filterDecksByBlockAndHide } from './DeckService';
 
-// Favori Desteleri Getir (ilişkili deck verisiyle birlikte)
+// Favori Desteleri Getir (ilişkili deck verisiyle birlikte). Engel/gizle filtresi uygulanır.
 export const getFavoriteDecks = async (userId) => {
-  // Eğer foreign key ilişkisi varsa join ile çek
   const { data, error } = await supabase
     .from('favorite_decks')
     .select('deck_id, decks(*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order), decks_languages(language_id))')
     .eq('user_id', userId);
 
   if (error) throw error;
-  // data: [{ deck_id, decks: { ...deckData, profiles: { username, image_url } } }]
-  // Eğer join yoksa, deck_id'leri döndürüp, DeckService ile topluca çekebilirsin
-  // Her deck'e is_favorite: true ekle (çünkü bunlar zaten favori deck'ler)
-  return data.map(item => ({
+
+  let decks = (data || []).map(item => ({
     ...item.decks,
     is_favorite: true
   }));
+
+  if (userId) {
+    const [blockedIds, hiddenIds] = await Promise.all([getBlockedUserIds(userId), getHiddenDeckIds(userId)]);
+    decks = filterDecksByBlockAndHide(decks, blockedIds, hiddenIds);
+  }
+
+  return decks;
 };
 
 // Favori Kartları Getir (ilişkili card verisiyle birlikte)

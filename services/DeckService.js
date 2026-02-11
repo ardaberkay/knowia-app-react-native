@@ -1,4 +1,15 @@
 import { supabase } from '../lib/supabase';
+import { getBlockedUserIds, getHiddenDeckIds } from './BlockService';
+
+/**
+ * Engel ve gizle setlerine göre deck listesini filtreler (topluluk/keşfet/favori/çalıştığım/hazır listeleri için).
+ * @param {Array} decks
+ * @param {Set<string>} blockedIds - Engellenen user_id'ler
+ * @param {Set<string>} hiddenIds - Gizlenen deck id'leri
+ */
+export function filterDecksByBlockAndHide(decks, blockedIds, hiddenIds) {
+  return decks.filter((d) => !blockedIds.has(d.user_id) && !hiddenIds.has(d.id));
+}
 
 export const getDecksByCategory = async (category) => {
   const { data: { user } } = await supabase.auth.getUser();
@@ -37,10 +48,14 @@ export const getDecksByCategory = async (category) => {
       return [];
     }
 
+    let resultData = data || [];
+    const [blockedIds, hiddenIds] = await Promise.all([getBlockedUserIds(user.id), getHiddenDeckIds(user.id)]);
+    resultData = filterDecksByBlockAndHide(resultData, blockedIds, hiddenIds);
+
     // Favori durumunu ekle
-    if (user && data && data.length > 0) {
+    if (user && resultData.length > 0) {
       try {
-        const favoriteDeckIds = data.map(deck => deck.id);
+        const favoriteDeckIds = resultData.map(deck => deck.id);
         const { data: favoriteData, error: favoriteError } = await supabase
           .from('favorite_decks')
           .select('deck_id')
@@ -49,23 +64,23 @@ export const getDecksByCategory = async (category) => {
 
         if (!favoriteError && favoriteData) {
           const favoriteDeckIdSet = new Set(favoriteData.map(f => f.deck_id));
-          data.forEach(deck => {
+          resultData.forEach(deck => {
             deck.is_favorite = favoriteDeckIdSet.has(deck.id);
           });
         }
       } catch (e) {
         console.error('Error fetching favorite status:', e);
-        data.forEach(deck => {
+        resultData.forEach(deck => {
           deck.is_favorite = false;
         });
       }
-    } else if (data) {
-      data.forEach(deck => {
+    } else if (resultData.length > 0) {
+      resultData.forEach(deck => {
         deck.is_favorite = false;
       });
     }
 
-    return data || [];
+    return resultData;
   }
 
   // Diğer kategoriler için mevcut mantık
@@ -99,10 +114,16 @@ export const getDecksByCategory = async (category) => {
     throw error;
   }
 
+  let resultData = data || [];
+  if ((category === 'communityDecks' || category === 'defaultDecks') && user?.id) {
+    const [blockedIds, hiddenIds] = await Promise.all([getBlockedUserIds(user.id), getHiddenDeckIds(user.id)]);
+    resultData = filterDecksByBlockAndHide(resultData, blockedIds, hiddenIds);
+  }
+
   // Favori durumunu ekle (eğer kullanıcı varsa)
-  if (user && data && data.length > 0) {
+  if (user && resultData.length > 0) {
     try {
-      const deckIds = data.map(deck => deck.id);
+      const deckIds = resultData.map(deck => deck.id);
       const { data: favoriteData, error: favoriteError } = await supabase
         .from('favorite_decks')
         .select('deck_id')
@@ -111,26 +132,23 @@ export const getDecksByCategory = async (category) => {
 
       if (!favoriteError && favoriteData) {
         const favoriteDeckIds = new Set(favoriteData.map(f => f.deck_id));
-        // Her deck'e is_favorite property'si ekle
-        data.forEach(deck => {
+        resultData.forEach(deck => {
           deck.is_favorite = favoriteDeckIds.has(deck.id);
         });
       }
     } catch (e) {
       console.error('Error fetching favorite status:', e);
-      // Hata durumunda tüm deck'leri favori değil olarak işaretle
-      data.forEach(deck => {
+      resultData.forEach(deck => {
         deck.is_favorite = false;
       });
     }
-  } else if (data) {
-    // Kullanıcı yoksa tüm deck'leri favori değil olarak işaretle
-    data.forEach(deck => {
+  } else if (resultData.length > 0) {
+    resultData.forEach(deck => {
       deck.is_favorite = false;
     });
   }
 
-  return data;
+  return resultData;
 };
 
 // Kullanıcı bir destede çalışmaya başladığında is_started alanını true yapar
@@ -165,8 +183,15 @@ export const getPopularDecks = async (limit = 20, timeFilter = 'all') => {
     return [];
   }
 
+  let decksToUse = allDecks;
+  if (user?.id) {
+    const [blockedIds, hiddenIds] = await Promise.all([getBlockedUserIds(user.id), getHiddenDeckIds(user.id)]);
+    decksToUse = filterDecksByBlockAndHide(allDecks, blockedIds, hiddenIds);
+  }
+  if (decksToUse.length === 0) return [];
+
   // 2. Batch sorgular ile tüm metrikleri toplu olarak al
-  const deckIds = allDecks.map(d => d.id);
+  const deckIds = decksToUse.map(d => d.id);
 
   // Zaman bazlı filtreleme için tarih hesapla
   let startDate = null;
@@ -272,7 +297,7 @@ export const getPopularDecks = async (limit = 20, timeFilter = 'all') => {
   }
 
   // Her deck için metrikleri hesapla
-  const decksWithMetrics = allDecks.map((deck) => {
+  const decksWithMetrics = decksToUse.map((deck) => {
     const cardIds = cardsByDeck[deck.id] || [];
     const favoriteCount = favoriteCountsByDeck[deck.id] || 0;
     const totalStartsCount = statsCountsByDeck[deck.id] || 0;
@@ -344,7 +369,7 @@ export const getPopularDecks = async (limit = 20, timeFilter = 'all') => {
       deck.is_favorite = false;
     });
   }
-  console.log("GELEN İLK DESTE:", JSON.stringify(allDecks[0], null, 2));
+  console.log("GELEN İLK DESTE:", JSON.stringify(decksToUse[0], null, 2));
   return sortedDecks;
 };
 
@@ -368,10 +393,16 @@ export const getNewDecks = async (limit = 20) => {
     return [];
   }
 
+  let decksToUse = allDecks;
+  if (user?.id) {
+    const [blockedIds, hiddenIds] = await Promise.all([getBlockedUserIds(user.id), getHiddenDeckIds(user.id)]);
+    decksToUse = filterDecksByBlockAndHide(allDecks, blockedIds, hiddenIds);
+  }
+
   // Favori durumunu ekle (eğer kullanıcı varsa)
-  if (user && allDecks.length > 0) {
+  if (user && decksToUse.length > 0) {
     try {
-      const deckIds = allDecks.map(deck => deck.id);
+      const deckIds = decksToUse.map(deck => deck.id);
       const { data: favoriteData, error: favoriteError } = await supabase
         .from('favorite_decks')
         .select('deck_id')
@@ -380,23 +411,23 @@ export const getNewDecks = async (limit = 20) => {
 
       if (!favoriteError && favoriteData) {
         const favoriteDeckIds = new Set(favoriteData.map(f => f.deck_id));
-        allDecks.forEach(deck => {
+        decksToUse.forEach(deck => {
           deck.is_favorite = favoriteDeckIds.has(deck.id);
         });
       }
     } catch (e) {
       console.error('Error fetching favorite status:', e);
-      allDecks.forEach(deck => {
+      decksToUse.forEach(deck => {
         deck.is_favorite = false;
       });
     }
-  } else if (allDecks) {
-    allDecks.forEach(deck => {
+  } else if (decksToUse.length > 0) {
+    decksToUse.forEach(deck => {
       deck.is_favorite = false;
     });
   }
 
-  return allDecks;
+  return decksToUse;
 };
 
 // En çok favorilenen desteleri getir (zaman bazlı filtreleme ile)
@@ -419,8 +450,15 @@ export const getMostFavoritedDecks = async (limit = 20, timeFilter = 'all') => {
     return [];
   }
 
+  let decksToUse = allDecks;
+  if (user?.id) {
+    const [blockedIds, hiddenIds] = await Promise.all([getBlockedUserIds(user.id), getHiddenDeckIds(user.id)]);
+    decksToUse = filterDecksByBlockAndHide(allDecks, blockedIds, hiddenIds);
+  }
+  if (decksToUse.length === 0) return [];
+
   // 2. Batch sorgu ile tüm favori sayılarını al
-  const deckIds = allDecks.map(d => d.id);
+  const deckIds = decksToUse.map(d => d.id);
 
   // Zaman bazlı filtreleme için tarih hesapla
   let startDate = null;
@@ -463,7 +501,7 @@ export const getMostFavoritedDecks = async (limit = 20, timeFilter = 'all') => {
   }
 
   // Her deck için favori sayısını ekle
-  const decksWithFavorites = allDecks.map(deck => ({
+  const decksWithFavorites = decksToUse.map(deck => ({
     ...deck,
     favorite_count: favoriteCountsByDeck[deck.id] || 0,
   }));
@@ -517,8 +555,15 @@ export const getMostStartedDecks = async (limit = 20, timeFilter = 'all') => {
     return [];
   }
 
+  let decksToUse = allDecks;
+  if (user?.id) {
+    const [blockedIds, hiddenIds] = await Promise.all([getBlockedUserIds(user.id), getHiddenDeckIds(user.id)]);
+    decksToUse = filterDecksByBlockAndHide(allDecks, blockedIds, hiddenIds);
+  }
+  if (decksToUse.length === 0) return [];
+
   // 2. Batch sorgu ile tüm başlatma sayılarını al
-  const deckIds = allDecks.map(d => d.id);
+  const deckIds = decksToUse.map(d => d.id);
 
   // Zaman bazlı filtreleme için tarih hesapla
   let startDate = null;
@@ -561,7 +606,7 @@ export const getMostStartedDecks = async (limit = 20, timeFilter = 'all') => {
   }
 
   // Her deck için başlatma sayısını ekle
-  const decksWithStarts = allDecks.map(deck => ({
+  const decksWithStarts = decksToUse.map(deck => ({
     ...deck,
     total_starts_count: startsCountsByDeck[deck.id] || 0,
   }));
@@ -615,8 +660,15 @@ export const getMostUniqueStartedDecks = async (limit = 20, timeFilter = 'all') 
     return [];
   }
 
+  let decksToUse = allDecks;
+  if (user?.id) {
+    const [blockedIds, hiddenIds] = await Promise.all([getBlockedUserIds(user.id), getHiddenDeckIds(user.id)]);
+    decksToUse = filterDecksByBlockAndHide(allDecks, blockedIds, hiddenIds);
+  }
+  if (decksToUse.length === 0) return [];
+
   // 2. Batch sorgular ile unique başlatma sayılarını al
-  const deckIds = allDecks.map(d => d.id);
+  const deckIds = decksToUse.map(d => d.id);
 
   // Önce tüm card'ları al
   const { data: allCards } = await supabase
@@ -681,7 +733,7 @@ export const getMostUniqueStartedDecks = async (limit = 20, timeFilter = 'all') 
   }
 
   // Her deck için unique başlatma sayısını hesapla
-  const decksWithUniqueStarts = allDecks.map(deck => {
+  const decksWithUniqueStarts = decksToUse.map(deck => {
     const cardIds = cardsByDeck[deck.id] || [];
     const allUsers = new Set();
 

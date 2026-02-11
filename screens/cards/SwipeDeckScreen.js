@@ -13,6 +13,9 @@ import { addFavoriteCard, removeFavoriteCard, getFavoriteCards } from '../../ser
 import LottieView from 'lottie-react-native';
 import { scale, moderateScale, verticalScale, getIsTablet, useWindowDimensions } from '../../lib/scaling';
 import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
+import * as BlockService from '../../services/BlockService';
+import ReportModal from '../../components/modals/ReportModal';
+import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 
 export default function SwipeDeckScreen({ route, navigation }) {
   const { deck, chapter } = route.params || {};
@@ -117,30 +120,76 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const { t } = useTranslation();
   const [favoriteIds, setFavoriteIds] = useState(new Set());
   const [categorySortOrder, setCategorySortOrder] = useState(null);
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [reportModalAlreadyCodes, setReportModalAlreadyCodes] = useState([]);
+  const [reportCardId, setReportCardId] = useState(null);
+  const { showSuccess, showError } = useSnackbarHelpers();
+  const isOwner = userId && deck?.user_id === userId;
 
-  // Header'a favori butonunu ekle
+  const openReportCardModal = useCallback(async () => {
+    if (!userId || !cards[currentIndex]) return;
+    const currentCard = cards[currentIndex];
+    try {
+      const codes = await BlockService.getMyReportReasonCodesForTarget(userId, 'card', currentCard.card_id);
+      setReportModalAlreadyCodes(codes || []);
+      setReportCardId(currentCard.card_id);
+      setReportModalVisible(true);
+    } catch (e) {
+      showError(t('moderation.alreadyReported', 'Zaten şikayet ettiniz') || e?.message);
+    }
+  }, [userId, cards, currentIndex, t, showError]);
+
+  const handleReportModalSubmit = useCallback(async (reasonCode, reasonText) => {
+    if (!userId || !reportCardId) return;
+    try {
+      await BlockService.reportCard(userId, reportCardId, reasonCode, reasonText);
+      setReportModalVisible(false);
+      setReportCardId(null);
+      showSuccess(t('moderation.reportReceived', 'Şikayetiniz alındı'));
+    } catch (e) {
+      if (e?.code === '23505' || e?.message?.includes('unique') || e?.message?.includes('duplicate')) {
+        showError(t('moderation.alreadyReportedWithThis', 'Zaten bu sebeple şikayet ettiniz'));
+      } else {
+        showError(e?.message || t('moderation.alreadyReported', 'Zaten şikayet ettiniz'));
+      }
+    }
+  }, [userId, reportCardId, t, showSuccess, showError]);
+
+  // Header'a favori ve (deste sahibi değilse) şikayet butonunu ekle
   useEffect(() => {
     const currentCard = cards[currentIndex];
     const isCurrentCardFavorite = currentCard ? favoriteIds.has(currentCard.card_id) : false;
     
     navigation.setOptions({
-      headerRight: () => (
-        !loading && currentCard ? (
-          <TouchableOpacity
-            onPress={() => toggleFavorite(currentCard.card_id)}
-            style={{ marginRight: scale(16) }}
-            hitSlop={{ top: scale(8), right: scale(8), bottom: scale(8), left: scale(8) }}
-          >
-            <Iconify
-              icon={isCurrentCardFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
-              size={moderateScale(26)}
-              color={isCurrentCardFavorite ? colors.buttonColor : colors.text}
-            />
-          </TouchableOpacity>
-        ) : null
-      ),
+      headerRight: () => {
+        if (loading || !currentCard) return null;
+        return (
+          <View style={{ flexDirection: 'row', alignItems: 'center'}}>
+            <TouchableOpacity
+              onPress={() => toggleFavorite(currentCard.card_id)}
+              style={{ marginRight: scale(8) }}
+              hitSlop={{ top: scale(8), right: scale(8), bottom: scale(8), left: scale(8) }}
+            >
+              <Iconify
+                icon={isCurrentCardFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
+                size={moderateScale(26)}
+                color={isCurrentCardFavorite ? colors.buttonColor : colors.text}
+              />
+            </TouchableOpacity>
+            {!isOwner && (
+              <TouchableOpacity
+                onPress={openReportCardModal}
+                style={{ paddingHorizontal: scale(6) }}
+                activeOpacity={0.7}
+              >
+                <Iconify icon="ic:round-report-problem" size={moderateScale(24)} color={colors.text} />
+              </TouchableOpacity>
+            )}
+          </View>
+        );
+      },
     });
-  }, [navigation, cards, currentIndex, favoriteIds, colors.buttonColor, colors.text, toggleFavorite, loading]);
+  }, [navigation, cards, currentIndex, favoriteIds, colors.buttonColor, colors.text, toggleFavorite, loading, isOwner, openReportCardModal]);
 
   // Kategoriye göre renkleri al (Supabase sort_order kullanarak)
   const getCategoryColors = (sortOrder) => {
@@ -762,6 +811,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
   }
 
   return (
+    <>
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Sayaçlar */}
       <View style={styles.counterRow}>
@@ -909,6 +959,14 @@ export default function SwipeDeckScreen({ route, navigation }) {
         <View style={[styles.progressBarFill, { width: totalCardCount > 0 ? `${((leftCount + initialLearnedCount + rightCount) / totalCardCount) * 100}%` : '0%', backgroundColor: colors.buttonColor }]} />
       </View>
     </SafeAreaView>
+    <ReportModal
+      visible={reportModalVisible}
+      onClose={() => { setReportModalVisible(false); setReportCardId(null); }}
+      reportType="card"
+      alreadyReportedCodes={reportModalAlreadyCodes}
+      onSubmit={handleReportModalSubmit}
+    />
+    </>
   );
 }
 

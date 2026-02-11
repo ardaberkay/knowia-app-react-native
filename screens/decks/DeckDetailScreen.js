@@ -1912,37 +1912,42 @@ export default function DeckDetailScreen({ route, navigation }) {
               borderColor: colors.cardBorder,
             }}
           >
-            <TouchableOpacity
-              onPress={openReportUserModal}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingVertical: verticalScale(12),
-                paddingHorizontal: scale(16),
-              }}
-              activeOpacity={0.7}
-            >
-              <Iconify icon="ic:round-report-problem" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
-              <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
-                {t('moderation.reportUser')}
-              </Text>
-            </TouchableOpacity>
-            <View style={{ height: verticalScale(1), backgroundColor: colors.border, marginVertical: verticalScale(4) }} />
-            <TouchableOpacity
-              onPress={handleBlockUser}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingVertical: verticalScale(12),
-                paddingHorizontal: scale(16),
-              }}
-              activeOpacity={0.7}
-            >
-              <Iconify icon="cuida:upload-outline" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
-              <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
-                {t('moderation.blockUser')}
-              </Text>
-            </TouchableOpacity>
+            {/* Admin destelerinde kullanıcıyı şikayet/engelle gösterme; sadece deste gizleme/şikayet kebab'tan */}
+            {!deck?.is_admin_created && (
+              <>
+                <TouchableOpacity
+                  onPress={openReportUserModal}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: verticalScale(12),
+                    paddingHorizontal: scale(16),
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Iconify icon="ic:round-report-problem" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
+                  <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
+                    {t('moderation.reportUser')}
+                  </Text>
+                </TouchableOpacity>
+                <View style={{ height: verticalScale(1), backgroundColor: colors.border, marginVertical: verticalScale(4) }} />
+                <TouchableOpacity
+                  onPress={handleBlockUser}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: verticalScale(12),
+                    paddingHorizontal: scale(16),
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Iconify icon="cuida:upload-outline" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
+                  <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
+                    {t('moderation.blockUser')}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </TouchableOpacity>
       </Modal>
