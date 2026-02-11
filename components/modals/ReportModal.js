@@ -67,69 +67,61 @@ export default function ReportModal({
       statusBarTranslucent
     >
       <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-          <View style={styles.headerRow}>
-            <Text style={[typography.styles.h2, { color: colors.text }]}>{t(titleKey)}</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}>
-              <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-
-          <Text style={[typography.styles.body, { color: colors.subtext, marginBottom: verticalScale(12) }]}>
-            {t('moderation.reportReasonHint', 'Lütfen bir sebep seçin. Aynı sebeple tekrar şikayet edemezsiniz.')}
-          </Text>
-
-          <ScrollView
-            style={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            >
-            {options.map((code) => {
-              const disabled = alreadySet.has(code);
-              const isSelected = selectedCode === code;
-              const labelKey = `moderation.reason.${code}`;
-              return (
-                <TouchableOpacity
-                  key={code}
-                  onPress={() => !disabled && setSelectedCode(code)}
-                  disabled={disabled}
-                  style={[
-                    styles.option,
-                    { borderColor: colors.border, backgroundColor: isSelected ? colors.iconBackground || colors.buttonColor + '18' : 'transparent' },
-                    disabled && styles.optionDisabled,
-                  ]}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.radioOuter, { borderColor: disabled ? colors.border : colors.buttonColor }]}>
-                    {isSelected && <View style={[styles.radioInner, { backgroundColor: colors.buttonColor }]} />}
-                  </View>
-                  <Text style={[typography.styles.body, { color: disabled ? colors.subtext : colors.text }]}>
-                    {t(labelKey, code)}
-                  </Text>
-                  {disabled && (
-                    <Text style={[typography.styles.body, { color: colors.subtext, fontSize: moderateScale(12) }]}>
-                      {t('moderation.alreadyReportedWithThis', 'Zaten şikayet ettiniz')}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-
-          <TouchableOpacity
-            onPress={handleSubmit}
-            disabled={!canSubmit || loading}
-            style={[
-              styles.submitBtn,
-              { backgroundColor: canSubmit ? colors.buttonColor : colors.border },
-            ]}
-            activeOpacity={0.8}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={[typography.styles.button, { color: '#fff' }]}>{t('moderation.submitReport', 'Gönder')}</Text>
-            )}
+        <View style={styles.headerRow}>
+          <Text style={[typography.styles.h2, { color: colors.text }]}>{t(titleKey)}</Text>
+          <TouchableOpacity onPress={onClose} hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}>
+            <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
           </TouchableOpacity>
         </View>
+
+        <Text style={[typography.styles.body, { color: colors.subtext, marginBottom: verticalScale(12) }]}>
+          {t('moderation.reportReasonHint', 'Lütfen bir sebep seçin. Aynı sebeple tekrar şikayet edemezsiniz.')}
+        </Text>
+
+        <ScrollView
+          style={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {options.map((code) => {
+            const disabled = alreadySet.has(code);
+            const isSelected = selectedCode === code;
+            const labelKey = `moderation.reason.${code}`;
+            return (
+              <TouchableOpacity
+                key={code}
+                onPress={() => !disabled && setSelectedCode(code)}
+                disabled={disabled}
+                style={[
+                  styles.option,
+                  { borderColor: colors.border, backgroundColor: isSelected ? colors.iconBackground || colors.buttonColor + '18' : 'transparent' },
+                  disabled && styles.optionDisabled,
+                ]}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.radioOuter, { borderColor: disabled ? colors.border : colors.buttonColor }]}>
+                  {isSelected && <View style={[styles.radioInner, { backgroundColor: colors.buttonColor }]} />}
+                </View>
+                <Text style={[typography.styles.body, { color: disabled ? colors.subtext : colors.text }]}>
+                  {t(labelKey, code)}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        <TouchableOpacity
+          onPress={handleSubmit}
+          disabled={!canSubmit || loading}
+          style={[
+            styles.submitBtn,
+            { backgroundColor: canSubmit ? colors.buttonColor : colors.border },
+          ]}
+          activeOpacity={0.8}
+        > 
+            <Text style={[typography.styles.button, { color: '#fff' }]}>{t('moderation.submitReport', 'Gönder')}</Text>
+          
+        </TouchableOpacity>
+      </View>
     </Modal>
   );
 }

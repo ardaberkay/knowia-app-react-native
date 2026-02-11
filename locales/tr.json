@@ -283,7 +283,7 @@
   },
   "addCard": {
     "title": "Kart Oluştur",
-    "motivationText": "   Bilgini pekiştirmek için soru-cevap kartları oluştur ve öğrenme sürecini hızlandır.",
+    "motivationText": "   Bilgini pekiştirmek için soru cevap kartları oluştur ve öğrenme sürecini hızlandır.",
     "howToCreate": "Nasıl Oluşturulur?",
     "question": "Soru",
     "answer": "Cevap",

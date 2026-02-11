@@ -85,7 +85,7 @@
     "popularDecksSubtitle": "   Master your knowledge with the most popular and trending decks",
     "exploreButton": "Explore",
     "inProgressDecksDescription": "Reinforce your knowledge with the decks you're studying",
-    "defaultDecksDescription": "Start learning quickly with ready-made decks",
+    "defaultDecksDescription": "Start learning quickly with ready made decks",
     "communityDecksDescription": "Discover and share community decks"
   },
   "create": {
@@ -278,7 +278,7 @@
   },
   "addCard": {
     "title": "Create Card",
-    "motivationText": "   Create question-answer cards to reinforce your knowledge and accelerate your learning process.",
+    "motivationText": "   Create question answer cards to reinforce your knowledge and accelerate your learning process.",
     "howToCreate": "How to Create?",
     "question": "Question",
     "answer": "Answer",

@@ -182,7 +182,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
                 style={{ paddingHorizontal: scale(6) }}
                 activeOpacity={0.7}
               >
-                <Iconify icon="ic:round-report-problem" size={moderateScale(24)} color={colors.text} />
+                <Iconify icon="ic:round-report-problem" size={moderateScale(24)} color='#FED7AA' />
               </TouchableOpacity>
             )}
           </View>

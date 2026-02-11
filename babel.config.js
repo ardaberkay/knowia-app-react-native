@@ -126,7 +126,9 @@ module.exports = function (api) {
             'tabler:file-download-filled',
             'cuida:upload-outline',
             'ic:round-report-problem',
-            'twemoji:flag-saudi-arabia'
+            'twemoji:flag-saudi-arabia',
+            'basil:user-block-solid',
+            'mingcute:user-hide-fill'
           ],
         },
       ],

@@ -196,7 +196,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                 activeOpacity={0.7}
                 style={{ paddingHorizontal: scale(6) }}
               >
-                <Iconify icon="ic:round-report-problem" size={moderateScale(24)} color={colors.text} />
+                <Iconify icon="ic:round-report-problem" size={moderateScale(24)} color='#FED7AA' />
               </TouchableOpacity>
             )}
             {isOwner && (

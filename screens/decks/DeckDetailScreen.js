@@ -120,12 +120,12 @@ export default function DeckDetailScreen({ route, navigation }) {
         .from('decks_languages')
         .select('*')
         .eq('deck_id', deck.id);
-  
+
       if (error) {
         console.error('SUPABASE HATASI:', error);
         return;
       }
-  
+
       if (data) {
         const ids = data.map(l => l.language_id);
         console.log('VERİTABANINDAN GELEN IDLER:', ids); // Burayı kontrol et!
@@ -674,11 +674,11 @@ export default function DeckDetailScreen({ route, navigation }) {
 
   const handleToggleShare = (nextValue) => {
     if (shareLoading) return;
-  
+
     if (nextValue) {
       // Switch hemen açılır
       setIsShared(true);
-  
+
       Alert.alert(
         t('common.warning', 'Uyarı'),
         t(
@@ -701,10 +701,10 @@ export default function DeckDetailScreen({ route, navigation }) {
       updateShareSetting(false);
     }
   };
-  
-  
-  
-  
+
+
+
+
 
   const handleShowShareDetails = () => {
     Alert.alert(
@@ -1846,22 +1846,6 @@ export default function DeckDetailScreen({ route, navigation }) {
             ) : (
               <>
                 <TouchableOpacity
-                  onPress={handleHideDeck}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingVertical: verticalScale(12),
-                    paddingHorizontal: scale(16),
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Iconify icon="ph:cards-three" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
-                  <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
-                    {t('moderation.hideDeck')}
-                  </Text>
-                </TouchableOpacity>
-                <View style={{ height: verticalScale(1), backgroundColor: colors.border, marginVertical: verticalScale(4) }} />
-                <TouchableOpacity
                   onPress={openReportDeckModal}
                   style={{
                     flexDirection: 'row',
@@ -1871,9 +1855,25 @@ export default function DeckDetailScreen({ route, navigation }) {
                   }}
                   activeOpacity={0.7}
                 >
-                  <Iconify icon="ic:round-report-problem" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
-                  <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
+                  <Iconify icon="ic:round-report-problem" size={moderateScale(20)} color= '#FED7AA' style={{ marginRight: scale(12) }} />
+                  <Text style={[typography.styles.body, { color: '#FED7AA', fontSize: moderateScale(16) }]}>
                     {t('moderation.reportDeck')}
+                  </Text>
+                </TouchableOpacity>
+                <View style={{ height: verticalScale(1), backgroundColor: colors.border, marginVertical: verticalScale(4) }} />
+                <TouchableOpacity
+                  onPress={handleHideDeck}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: verticalScale(12),
+                    paddingHorizontal: scale(16),
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Iconify icon="mingcute:user-hide-fill" size={moderateScale(20)} color= '#E74C3C' style={{ marginRight: scale(12) }} />
+                  <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: moderateScale(16) }]}>
+                    {t('moderation.hideDeck')}
                   </Text>
                 </TouchableOpacity>
               </>
@@ -1925,8 +1925,8 @@ export default function DeckDetailScreen({ route, navigation }) {
                   }}
                   activeOpacity={0.7}
                 >
-                  <Iconify icon="ic:round-report-problem" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
-                  <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
+                  <Iconify icon="ic:round-report-problem" size={moderateScale(20)} color= '#FED7AA' style={{ marginRight: scale(12) }} />
+                  <Text style={[typography.styles.body, { color: '#FED7AA', fontSize: moderateScale(16) }]}>
                     {t('moderation.reportUser')}
                   </Text>
                 </TouchableOpacity>
@@ -1941,8 +1941,8 @@ export default function DeckDetailScreen({ route, navigation }) {
                   }}
                   activeOpacity={0.7}
                 >
-                  <Iconify icon="cuida:upload-outline" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
-                  <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
+                  <Iconify icon="basil:user-block-solid" size={moderateScale(22)} color= '#E74C3C' style={{ marginRight: scale(12) }} />
+                  <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: moderateScale(16) }]}>
                     {t('moderation.blockUser')}
                   </Text>
                 </TouchableOpacity>
