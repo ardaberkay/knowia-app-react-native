@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ImageBackground } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -8,6 +9,11 @@ import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
+
+const REGISTER_LINKS = {
+  privacy: 'https://www.knowia.online/policy',
+  terms: 'https://www.knowia.online/terms',
+};
 
 export default function RegisterScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -42,6 +48,17 @@ export default function RegisterScreen({ navigation }) {
       return height * 0.25; // Normal ekranlar: %25
     }
   }, [width, height, isTablet]);
+
+  const openLink = useCallback(async (url) => {
+    try {
+      await WebBrowser.openBrowserAsync(url, {
+        toolbarColor: colors.buttonColor,
+        enableBarCollapsing: true,
+      });
+    } catch (err) {
+      Alert.alert(t('register.error', 'Hata'), t('register.linkError', 'Link açılamadı'));
+    }
+  }, [colors.buttonColor, t]);
 
   const handleRegister = async () => {
     if (loading) return;
@@ -137,6 +154,24 @@ export default function RegisterScreen({ navigation }) {
               <Iconify icon={showConfirmPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={moderateScale(22)} color={colors.muted} />
             </TouchableOpacity>
           </View>
+          <View style={styles.policyLinksRow}>
+            <TouchableOpacity onPress={() => openLink(REGISTER_LINKS.privacy)} activeOpacity={0.7}>
+              <Text style={[typography.styles.caption, styles.policyLink, { color: colors.secondary }]}>
+                {t('profile.privacy', 'Gizlilik Politikası')}
+              </Text>
+            </TouchableOpacity>
+            <Text style={[typography.styles.caption, styles.policyText, { color: colors.text }]}>
+              {t('register.and', ' ve ')}
+            </Text>
+            <TouchableOpacity onPress={() => openLink(REGISTER_LINKS.terms)} activeOpacity={0.7}>
+              <Text style={[typography.styles.caption, styles.policyLink, { color: colors.secondary }]}>
+                {t('profile.terms', 'Kullanım Koşulları')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={[typography.styles.caption, styles.policyAgreeText, { color: colors.text }]}>
+            {t('register.agreeByRegistering', 'Kayıt olarak kabul etmiş olursunuz.')}
+          </Text>
           <TouchableOpacity 
             style={[styles.button, { backgroundColor: colors.buttonColor, borderWidth: moderateScale(1), borderColor: 'rgba(0, 0, 0, 0.1)' }, loading && styles.buttonDisabled]}
             onPress={handleRegister}
@@ -181,6 +216,25 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: verticalScale(15),
+  },
+  policyLinksRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 0,
+    paddingHorizontal: scale(8),
+  },
+  policyText: {
+    marginRight: 0,
+  },
+  policyLink: {
+    textDecorationLine: 'underline',
+  },
+  policyAgreeText: {
+    textAlign: 'center',
+    paddingHorizontal: scale(12),
+    marginTop: verticalScale(-6),
   },
   input: {
     flex: 1,

@@ -428,7 +428,11 @@
     "registeringWithGoogle": "Inscription avec Google...",
     "didUAcc": "Compte existant?",
     "login": "Connexion",
-    "emailPlaceholder": "Email"
+    "emailPlaceholder": "Email",
+    "readPolicyPrefix": "Lire ",
+    "and": " et ",
+    "agreeByRegistering": "En t'inscrivant tu les acceptes.",
+    "linkError": "Impossible d'ouvrir le lien"
   },
   "notifications": {
     "title": "Il est temps d'apprendre avec Knowia!",

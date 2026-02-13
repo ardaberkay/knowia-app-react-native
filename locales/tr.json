@@ -468,7 +468,11 @@
     "registeringWithGoogle": "Google ile kayıt yapılıyor...",
     "didUAcc": "Zaten hesabınız var mı?",
     "login": "Giriş yapın",
-    "emailPlaceholder": "E-posta"
+    "emailPlaceholder": "E-posta",
+    "readPolicyPrefix": "Oku: ",
+    "and": " ve ",
+    "agreeByRegistering": "Kayıt olarak kabul etmiş olursunuz.",
+    "linkError": "Link açılamadı"
   },
   "notifications": {
     "title": "Knowia ile öğrenme zamanı!",
