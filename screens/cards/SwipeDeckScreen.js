@@ -117,6 +117,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const [autoPlay, setAutoPlay] = useState(false);
   const autoPlayTimeout = useRef(null);
   const autoPlayFlipTimeout = useRef(null);
+  const currentIndexRef = useRef(0);
+  const [pendingReinserts, setPendingReinserts] = useState([]); // { card, insertAt }[] — next_review ile uyumlu, 2 dk sonra kuyruğa rastgele
+  const leftCountedCardIds = useRef(new Set()); // Sola veya butonla bir kez sayılmış kartlar; reinsert sonrası tekrar sayılmasın
+  const historyLeftCardIds = useRef([]); // Undo için: son left kaydın card_id
   const { t } = useTranslation();
   const [favoriteIds, setFavoriteIds] = useState(new Set());
   const [categorySortOrder, setCategorySortOrder] = useState(null);
@@ -337,6 +341,34 @@ export default function SwipeDeckScreen({ route, navigation }) {
     fetchCards();
   }, [deck.id, chapter?.id]);
 
+  currentIndexRef.current = currentIndex;
+
+  // next_review (2 dk) geçen kartları kuyruğa rastgele ekle
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setPendingReinserts((prev) => {
+        const due = prev.filter((p) => p.insertAt <= now);
+        if (due.length === 0) return prev;
+        const stillPending = prev.filter((p) => p.insertAt > now);
+        setCards((prevCards) => {
+          let nextCards = prevCards;
+          const idx = Math.min(currentIndexRef.current, nextCards.length - 1);
+          const tailStart = idx + 1;
+          for (const { card } of due) {
+            const rest = nextCards.slice(tailStart);
+            const randomPos = Math.floor(Math.random() * (rest.length + 1));
+            const newRest = [...rest.slice(0, randomPos), card, ...rest.slice(randomPos)];
+            nextCards = [...nextCards.slice(0, tailStart), ...newRest];
+          }
+          return nextCards;
+        });
+        return stillPending;
+      });
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleSwipe = useCallback(async (cardIndex, direction) => {
     setFlipped((prev) => ({ ...prev, [cardIndex]: false }));
     if (!cards[cardIndex]) return;
@@ -355,15 +387,20 @@ export default function SwipeDeckScreen({ route, navigation }) {
         .eq('user_id', userId)
         .eq('card_id', card.card_id);
     } else if (direction === 'left') {
-      setLeftCount((prev) => prev + 1);
+      historyLeftCardIds.current.push(card.card_id);
+      if (!leftCountedCardIds.current.has(card.card_id)) {
+        leftCountedCardIds.current.add(card.card_id);
+        setLeftCount((prev) => prev + 1);
+      }
       setLeftHighlight(true);
       setTimeout(() => setLeftHighlight(false), 400);
-      // 1 dakika sonra tekrar göster
+      const insertAt = Date.now() + 2 * 60 * 1000;
       await supabase
         .from('user_card_progress')
-        .update({ status: 'learning', next_review: new Date(Date.now() + 60 * 1000) })
+        .update({ status: 'learning', next_review: new Date(insertAt) })
         .eq('user_id', userId)
         .eq('card_id', card.card_id);
+      setPendingReinserts((prev) => [...prev, { card, insertAt }]);
     }
     setCurrentIndex(cardIndex + 1);
   }, [cards, userId]);
@@ -417,6 +454,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
         if (lastDirection === 'right') {
           setRightCount((c) => Math.max(0, c - 1));
         } else if (lastDirection === 'left') {
+          const removedCardId = historyLeftCardIds.current.pop();
+          if (removedCardId) leftCountedCardIds.current.delete(removedCardId);
           setLeftCount((c) => Math.max(0, c - 1));
         }
         return prev.slice(0, -1);
