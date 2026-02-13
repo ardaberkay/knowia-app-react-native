@@ -92,25 +92,29 @@ export default function FavoriteDecks() {
       });
     }
     
-    // Sorting
+    // Sorting (en son favorilenen en üstte: favorited_at)
+    const favAt = (d) => new Date(d.favorited_at || d.created_at || 0).getTime();
     switch (sort) {
       case 'az':
-        list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        list.sort((a, b) => {
+          const cmp = (a.name || '').localeCompare(b.name || '');
+          return cmp !== 0 ? cmp : favAt(b) - favAt(a);
+        });
         break;
       case 'favorites':
-        // Already favorites; keep original order
+        // Already favorites; keep API order (en son favorilenen en üstte)
         break;
       case 'popularity':
         list.sort((a, b) => {
           const scoreA = a.popularity_score || 0;
           const scoreB = b.popularity_score || 0;
           if (scoreA !== scoreB) return scoreB - scoreA;
-          return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+          return favAt(b) - favAt(a);
         });
         break;
       case 'default':
       default:
-        list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+        list.sort((a, b) => favAt(b) - favAt(a));
         break;
     }
     

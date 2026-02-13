@@ -101,26 +101,30 @@ export default function FavoriteCards() {
     return unsubscribe;
   }, [navigation, selectedCard]);
 
+  const favoritedAt = (c) => new Date(c.favorited_at || c.created_at || 0).getTime();
   const filteredCards = useMemo(() => {
     let list = cards.slice();
     
-    // Search filter
     if (query && query.trim()) {
       const q = query.toLowerCase();
       list = list.filter(c => (c.question || '').toLowerCase().includes(q) || (c.answer || '').toLowerCase().includes(q));
     }
     
-    // Sort/Filter options
     if (sort === 'az') {
-      list.sort((a, b) => (a.question || '').localeCompare(b.question || ''));
+      list.sort((a, b) => {
+        const cmp = (a.question || '').localeCompare(b.question || '');
+        return cmp !== 0 ? cmp : favoritedAt(b) - favoritedAt(a);
+      });
     } else if (sort === 'fav') {
-      // already favorites; keep original order
+      // already favorites; keep API order (en son favorilenen en üstte)
     } else if (sort === 'unlearned') {
       list = list.filter(c => c.status !== 'learned');
+      list.sort((a, b) => favoritedAt(b) - favoritedAt(a));
     } else if (sort === 'learned') {
       list = list.filter(c => c.status === 'learned');
+      list.sort((a, b) => favoritedAt(b) - favoritedAt(a));
     } else {
-      list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      list.sort((a, b) => favoritedAt(b) - favoritedAt(a));
     }
     
     return list;

@@ -118,6 +118,7 @@ export default function DeckEditScreen() {
           to_name: toName.trim() || null,
           description: description.trim() || null,
           category_id: selectedCategory,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', deck.id);
       if (error) throw error;

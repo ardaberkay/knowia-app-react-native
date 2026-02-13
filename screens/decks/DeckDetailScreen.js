@@ -656,7 +656,7 @@ export default function DeckDetailScreen({ route, navigation }) {
       const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase
         .from('decks')
-        .update({ is_shared: newValue })
+        .update({ is_shared: newValue, updated_at: new Date().toISOString() })
         .eq('id', deck.id)
         .eq('user_id', user.id);
 

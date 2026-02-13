@@ -149,12 +149,16 @@ export default function CategoryDeckListScreen({ route }) {
       return matchesSearch && matchesCategory && matchesLanguage;
     });
 
+    // default: API sırası korunur (communityDecks: shared_at, inProgressDecks: en son çalışılan, vb.)
+    const sortDate = (d) => new Date(d.updated_at != null ? d.updated_at : d.created_at || 0).getTime();
     switch (sort) {
       case 'default':
-        filtered.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
         break;
       case 'az':
-        filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        filtered.sort((a, b) => {
+          const cmp = (a.name || '').localeCompare(b.name || '');
+          return cmp !== 0 ? cmp : sortDate(b) - sortDate(a);
+        });
         break;
       case 'favorites':
         filtered.sort((a, b) => {
@@ -162,7 +166,7 @@ export default function CategoryDeckListScreen({ route }) {
           const bIsFavorite = favoriteDecks.includes(b.id);
           if (aIsFavorite && !bIsFavorite) return -1;
           if (!aIsFavorite && bIsFavorite) return 1;
-          return (a.name || '').localeCompare(b.name || '');
+          return sortDate(b) - sortDate(a);
         });
         break;
       case 'popularity':
@@ -170,11 +174,10 @@ export default function CategoryDeckListScreen({ route }) {
           const scoreA = a.popularity_score || 0;
           const scoreB = b.popularity_score || 0;
           if (scoreA !== scoreB) return scoreB - scoreA;
-          return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+          return sortDate(b) - sortDate(a);
         });
         break;
       default:
-        filtered.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
         break;
     }
 

@@ -441,12 +441,14 @@ export default function LibraryScreen() {
                   const q = favCardsQuery.toLowerCase();
                   remainingCards = remainingCards.filter(c => (c.question || '').toLowerCase().includes(q) || (c.answer || '').toLowerCase().includes(q));
                 }
+                const favAt = (c) => new Date(c.favorited_at || c.created_at || 0).getTime();
                 if (favCardsSort === 'az') {
-                  remainingCards.sort((a, b) => (a.question || '').localeCompare(b.question || ''));
+                  remainingCards.sort((a, b) => (a.question || '').localeCompare(b.question || '') || favAt(b) - favAt(a));
                 } else if (favCardsSort === 'unlearned') {
                   remainingCards = remainingCards.filter(c => c.status !== 'learned');
+                  remainingCards.sort((a, b) => favAt(b) - favAt(a));
                 } else if (favCardsSort !== 'fav') {
-                  remainingCards.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                  remainingCards.sort((a, b) => favAt(b) - favAt(a));
                 }
                 
                 if (remainingCards.length > 0) {
@@ -509,12 +511,14 @@ export default function LibraryScreen() {
         const q = favCardsQuery.toLowerCase();
         remainingCards = remainingCards.filter(c => (c.question || '').toLowerCase().includes(q) || (c.answer || '').toLowerCase().includes(q));
       }
+      const favAt = (c) => new Date(c.favorited_at || c.created_at || 0).getTime();
       if (favCardsSort === 'az') {
-        remainingCards.sort((a, b) => (a.question || '').localeCompare(b.question || ''));
+        remainingCards.sort((a, b) => (a.question || '').localeCompare(b.question || '') || favAt(b) - favAt(a));
       } else if (favCardsSort === 'unlearned') {
         remainingCards = remainingCards.filter(c => c.status !== 'learned');
+        remainingCards.sort((a, b) => favAt(b) - favAt(a));
       } else if (favCardsSort !== 'fav') {
-        remainingCards.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        remainingCards.sort((a, b) => favAt(b) - favAt(a));
       }
       
       if (remainingCards.length > 0) {
@@ -570,12 +574,14 @@ export default function LibraryScreen() {
             const q = favCardsQuery.toLowerCase();
             remainingCards = remainingCards.filter(c => (c.question || '').toLowerCase().includes(q) || (c.answer || '').toLowerCase().includes(q));
           }
+          const favAt = (c) => new Date(c.favorited_at || c.created_at || 0).getTime();
           if (favCardsSort === 'az') {
-            remainingCards.sort((a, b) => (a.question || '').localeCompare(b.question || ''));
+            remainingCards.sort((a, b) => (a.question || '').localeCompare(b.question || '') || favAt(b) - favAt(a));
           } else if (favCardsSort === 'unlearned') {
             remainingCards = remainingCards.filter(c => c.status !== 'learned');
+            remainingCards.sort((a, b) => favAt(b) - favAt(a));
           } else if (favCardsSort !== 'fav') {
-            remainingCards.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            remainingCards.sort((a, b) => favAt(b) - favAt(a));
           }
           
           if (remainingCards.length > 0) {
@@ -613,27 +619,30 @@ export default function LibraryScreen() {
     } catch (e) {}
   };
 
+  const favCardFavoritedAt = (c) => new Date(c.favorited_at || c.created_at || 0).getTime();
   const filteredFavoriteCards = useMemo(() => {
     let list = favoriteCards.slice();
     
-    // Search filter
     if (favCardsQuery && favCardsQuery.trim()) {
       const q = favCardsQuery.toLowerCase();
       list = list.filter(c => (c.question || '').toLowerCase().includes(q) || (c.answer || '').toLowerCase().includes(q));
     }
     
-    // Sort/Filter options
     if (favCardsSort === 'az') {
-      list.sort((a, b) => (a.question || '').localeCompare(b.question || ''));
+      list.sort((a, b) => {
+        const cmp = (a.question || '').localeCompare(b.question || '');
+        return cmp !== 0 ? cmp : favCardFavoritedAt(b) - favCardFavoritedAt(a);
+      });
     } else if (favCardsSort === 'fav') {
-      // Favori kartlar zaten favori olduğu için burada bir değişiklik yapmıyoruz
-      // Sadece orijinal sıralamayı koruyoruz
+      // Favori kartlar; API sırası (en son favorilenen en üstte) korunur
     } else if (favCardsSort === 'unlearned') {
       list = list.filter(c => c.status !== 'learned');
+      list.sort((a, b) => favCardFavoritedAt(b) - favCardFavoritedAt(a));
     } else if (favCardsSort === 'learned') {
       list = list.filter(c => c.status === 'learned');
+      list.sort((a, b) => favCardFavoritedAt(b) - favCardFavoritedAt(a));
     } else {
-      list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      list.sort((a, b) => favCardFavoritedAt(b) - favCardFavoritedAt(a));
     }
     
     return list;
@@ -675,34 +684,35 @@ export default function LibraryScreen() {
       ));
     }
   
-    // 5. Apply sorting
+    // 5. Apply sorting: updated_at'e göre (yeni oluşturulanda created_at atanıyor; güncellenince yine en üste çıkar). updated_at yoksa eski kayıt için created_at kullanılır.
+    const sortDate = (d) => new Date(d.updated_at != null ? d.updated_at : d.created_at || 0).getTime();
     switch (myDecksSort) {
       case 'az':
-        list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        list.sort((a, b) => {
+          const cmp = (a.name || '').localeCompare(b.name || '');
+          return cmp !== 0 ? cmp : sortDate(b) - sortDate(a);
+        });
         break;
       case 'favorites':
-        // Favoriler önce, sonra A-Z
         list.sort((a, b) => {
           const aIsFavorite = favoriteDecks.some(favDeck => (typeof favDeck === 'object' ? favDeck.id : favDeck) === a.id);
           const bIsFavorite = favoriteDecks.some(favDeck => (typeof favDeck === 'object' ? favDeck.id : favDeck) === b.id);
           if (aIsFavorite && !bIsFavorite) return -1;
           if (!aIsFavorite && bIsFavorite) return 1;
-          return (a.name || '').localeCompare(b.name || '');
+          return sortDate(b) - sortDate(a);
         });
         break;
       case 'popularity':
         list.sort((a, b) => {
           const scoreA = a.popularity_score || 0;
           const scoreB = b.popularity_score || 0;
-          if (scoreA !== scoreB) {
-            return scoreB - scoreA;
-          }
-          return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+          if (scoreA !== scoreB) return scoreB - scoreA;
+          return sortDate(b) - sortDate(a);
         });
         break;
       case 'default':
       default:
-        list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+        list.sort((a, b) => sortDate(b) - sortDate(a));
         break;
     }
   
@@ -905,7 +915,7 @@ export default function LibraryScreen() {
                     >
                       {favoriteDecks
                         .slice()
-                        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                        .sort((a, b) => new Date(b.favorited_at || b.created_at) - new Date(a.favorited_at || a.created_at))
                         .slice(0, 5)
                         .map(deck => (
                           <View key={'fav_slide_' + deck.id} style={styles.favoriteSlideItem}>
@@ -1003,7 +1013,7 @@ export default function LibraryScreen() {
                     <View style={styles.favoriteSliderDots}>
                       {favoriteDecks
                         .slice()
-                        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                        .sort((a, b) => new Date(b.favorited_at || b.created_at) - new Date(a.favorited_at || a.created_at))
                         .slice(0, 5)
                         .map((_, i) => (
                           <View

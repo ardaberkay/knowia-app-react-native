@@ -18,10 +18,9 @@ export const getDecksByCategory = async (category) => {
     if (!user?.id) {
       return [];
     }
-    // Önce kullanıcının başlattığı deck ID'lerini al
     const { data: statsData, error: statsError } = await supabase
       .from('decks_stats')
-      .select('deck_id')
+      .select('deck_id, started_at')
       .eq('user_id', user.id);
     if (statsError) {
       console.error('Error fetching decks_stats:', statsError);
@@ -32,16 +31,20 @@ export const getDecksByCategory = async (category) => {
       return [];
     }
 
-    // Unique deck ID'leri al
-    const deckIds = [...new Set(statsData.map(stat => stat.deck_id))];
+    // deck_id başına en son started_at (MAX)
+    const lastStartedAtByDeck = {};
+    statsData.forEach((row) => {
+      const t = new Date(row.started_at || 0).getTime();
+      if (!lastStartedAtByDeck[row.deck_id] || lastStartedAtByDeck[row.deck_id] < t) {
+        lastStartedAtByDeck[row.deck_id] = t;
+      }
+    });
+    const deckIds = Object.keys(lastStartedAtByDeck);
 
-    // Bu deck ID'lerine göre deck'leri getir
     const { data, error } = await supabase
       .from('decks')
       .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order), decks_languages(language_id)')
       .in('id', deckIds);
-
-    console.log(`${category} decks:`, data); // Debug için
 
     if (error) {
       console.error(`Error fetching ${category} decks:`, error);
@@ -51,6 +54,9 @@ export const getDecksByCategory = async (category) => {
     let resultData = data || [];
     const [blockedIds, hiddenIds] = await Promise.all([getBlockedUserIds(user.id), getHiddenDeckIds(user.id)]);
     resultData = filterDecksByBlockAndHide(resultData, blockedIds, hiddenIds);
+
+    // En son çalışılan en üstte sırala
+    resultData.sort((a, b) => (lastStartedAtByDeck[b.id] || 0) - (lastStartedAtByDeck[a.id] || 0));
 
     // Favori durumunu ekle
     if (user && resultData.length > 0) {
@@ -93,15 +99,18 @@ export const getDecksByCategory = async (category) => {
       query = query
         .eq('user_id', user.id)
         .eq('is_admin_created', false)
+        .order('updated_at', { ascending: false });
       break;
     case 'defaultDecks':
       query = query
-        .eq('is_admin_created', true);
+        .eq('is_admin_created', true)
+        .order('updated_at', { ascending: false });
       break;
     case 'communityDecks':
       query = query
         .eq('is_shared', true)
-        .eq('is_admin_created', false);
+        .eq('is_admin_created', false)
+        .order('shared_at', { ascending: false });
       break;
   }
 

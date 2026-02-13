@@ -3,17 +3,21 @@ import { getBlockedUserIds, getHiddenDeckIds } from './BlockService';
 import { filterDecksByBlockAndHide } from './DeckService';
 
 // Favori Desteleri Getir (ilişkili deck verisiyle birlikte). Engel/gizle filtresi uygulanır.
+// Sıra: en son favorilenen en üstte (favorite_decks.created_at desc).
 export const getFavoriteDecks = async (userId) => {
   const { data, error } = await supabase
     .from('favorite_decks')
-    .select('deck_id, decks(*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order), decks_languages(language_id))')
-    .eq('user_id', userId);
+    .select('deck_id, created_at, decks(*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order), decks_languages(language_id))')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
 
   if (error) throw error;
 
+  // favorited_at: favorite_decks.created_at (favori eklenme zamanı; tabloda sütun yok, sadece objede kullanılıyor)
   let decks = (data || []).map(item => ({
     ...item.decks,
-    is_favorite: true
+    is_favorite: true,
+    favorited_at: item.created_at
   }));
 
   if (userId) {
@@ -24,12 +28,13 @@ export const getFavoriteDecks = async (userId) => {
   return decks;
 };
 
-// Favori Kartları Getir (ilişkili card verisiyle birlikte)
+// Favori Kartları Getir (ilişkili card verisiyle birlikte). Sıra: en son favorilenen en üstte (favorite_cards.created_at desc).
 export const getFavoriteCards = async (userId) => {
   const { data, error } = await supabase
     .from('favorite_cards')
     .select(`
-      card_id, 
+      card_id,
+      created_at,
       cards(
         *,
         deck:decks(
@@ -40,10 +45,11 @@ export const getFavoriteCards = async (userId) => {
         )
       )
     `)
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data.map(item => item.cards);
+  return (data || []).map(item => ({ ...item.cards, favorited_at: item.created_at }));
 };
 
 // Favori Kart Ekle
