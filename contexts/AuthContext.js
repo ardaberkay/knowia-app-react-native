@@ -1,5 +1,9 @@
 import { createContext, useState, useContext, useEffect } from 'react';
+import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../lib/supabase';
+import { useTheme } from '../theme/theme';
+
+const OAUTH_REDIRECT = 'knowia://auth/callback';
 
 // Context oluştur
 const AuthContext = createContext({});
@@ -9,6 +13,7 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+  const { colors } = useTheme();
 
   useEffect(() => {
     console.log('AuthContext useEffect çalıştı');
@@ -95,13 +100,19 @@ const register = async (email, password) => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'knowia://auth/callback'
-        }
+          redirectTo: OAUTH_REDIRECT,
+          skipBrowserRedirect: true,
+        },
       });
       console.log('Supabase OAuth yanıtı:', data ? 'Data var' : 'Data yok', error ? 'Hata var' : 'Hata yok');
       if (error) {
         console.log('Supabase OAuth hatası:', error.message);
         throw error;
+      }
+      if (data?.url) {
+        await WebBrowser.openAuthSessionAsync(data.url, OAUTH_REDIRECT, {
+          toolbarColor: colors.buttonColor,
+        });
       }
       return { error: null };
     } catch (error) {
@@ -110,20 +121,26 @@ const register = async (email, password) => {
     }
   };
 
-  // Apple ile giriş fonksiyonu
+  // Apple ile giriş fonksiyonu (Apple Developer hesabı açıldığında Supabase’te provider yapılandırılınca çalışır)
   const signInWithApple = async () => {
     try {
       console.log('Supabase Apple OAuth başlatılıyor...');
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
         options: {
-          redirectTo: 'knowia://auth/callback'
-        }
+          redirectTo: OAUTH_REDIRECT,
+          skipBrowserRedirect: true,
+        },
       });
       console.log('Supabase Apple OAuth yanıtı:', data ? 'Data var' : 'Data yok', error ? 'Hata var' : 'Hata yok');
       if (error) {
         console.log('Supabase Apple OAuth hatası:', error.message);
         throw error;
+      }
+      if (data?.url) {
+        await WebBrowser.openAuthSessionAsync(data.url, OAUTH_REDIRECT, {
+          toolbarColor: colors.buttonColor,
+        });
       }
       return { error: null };
     } catch (error) {

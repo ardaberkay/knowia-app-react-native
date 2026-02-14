@@ -237,8 +237,8 @@ export default function LoginScreen({ navigation }) {
             </Text>
           </TouchableOpacity>
 
-          {/* Apple ile giriş butonu - sadece iOS'ta görünür */}
-          
+          {/* Apple ile giriş butonu - sadece iOS'ta görünür (Android'de gizli) */}
+          {Platform.OS === 'ios' && (
             <TouchableOpacity
               style={[styles.appleButton, { backgroundColor: 'rgba(255, 255, 255, 0.95)' }]}
               onPress={handleAppleLogin}
@@ -249,7 +249,7 @@ export default function LoginScreen({ navigation }) {
                 {t('login.loginWithApple', 'Apple ile Giriş Yap')}
               </Text>
             </TouchableOpacity>
-          
+          )}
 
           <TouchableOpacity
             style={[styles.linkButton, { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: moderateScale(8), paddingHorizontal: scale(12), paddingVertical: verticalScale(8) }]}

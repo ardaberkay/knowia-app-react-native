@@ -14,6 +14,7 @@ import { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useTheme } from './theme/theme';
 import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { supabase } from './lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import './lib/i18n';
@@ -38,6 +39,10 @@ function AppContent() {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
+
+  useEffect(() => {
+    WebBrowser.maybeCompleteAuthSession();
+  }, []);
 
   useEffect(() => {
     const handleUrl = async ({ url }) => {

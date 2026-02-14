@@ -5,6 +5,7 @@ import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { getCurrentUserProfile } from '../../services/ProfileService';
 import { useProfile } from '../../contexts/ProfileContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { cacheProfile, cacheProfileImage, clearUserCache } from '../../services/CacheService';
 import * as ImagePicker from 'expo-image-picker';
@@ -41,6 +42,13 @@ export default function EditProfileScreen({ navigation }) {
   const { t } = useTranslation();
   const { showSuccess, showError } = useSnackbarHelpers();
   const { refetch: refetchProfile } = useProfile();
+  const { session } = useAuth();
+
+  const isOAuthUser = React.useMemo(() => {
+    const provider = session?.user?.app_metadata?.provider;
+    if (provider === 'google' || provider === 'apple') return true;
+    return session?.user?.identities?.some(i => i.provider === 'google' || i.provider === 'apple') ?? false;
+  }, [session]);
 
   // Email validasyonu için regex
   const isValidEmail = (email) => {
@@ -412,7 +420,7 @@ export default function EditProfileScreen({ navigation }) {
             </Text>
           </View>
 
-          {/* Email Card */}
+          {/* Email Card - OAuth kullanıcıda kilitli */}
           <View style={[styles.inputCard, {
             backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
             shadowColor: colors.shadowColor,
@@ -420,7 +428,14 @@ export default function EditProfileScreen({ navigation }) {
             shadowOpacity: colors.shadowOpacity,
             shadowRadius: colors.shadowRadius,
             elevation: colors.elevation,
+            opacity: isOAuthUser ? 0.80 : 1,
+            position: 'relative',
           }]}>
+            {isOAuthUser && (
+              <View style={{ position: 'absolute', top: verticalScale(16), right: scale(20), zIndex: 10 }}>
+                <Iconify icon="fontisto:locked" size={moderateScale(22)} color={colors.muted} />
+              </View>
+            )}
             <View style={styles.labelRow}>
               <Iconify icon="tabler:mail-filled" size={moderateScale(20)} color={colors.buttonColor} style={styles.labelIcon} />
               <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
@@ -437,13 +452,15 @@ export default function EditProfileScreen({ navigation }) {
               placeholderTextColor={colors.muted}
               value={email}
               onChangeText={setEmail}
+              editable={!isOAuthUser}
+              pointerEvents={isOAuthUser ? 'none' : 'auto'}
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
             />
           </View>
 
-          {/* Current Password Card */}
+          {/* Current Password Card - OAuth kullanıcıda kilitli */}
           <View style={[styles.inputCard, {
             backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
             shadowColor: colors.shadowColor,
@@ -451,7 +468,14 @@ export default function EditProfileScreen({ navigation }) {
             shadowOpacity: colors.shadowOpacity,
             shadowRadius: colors.shadowRadius,
             elevation: colors.elevation,
+            opacity: isOAuthUser ? 0.80 : 1,
+            position: 'relative',
           }]}>
+            {isOAuthUser && (
+              <View style={{ position: 'absolute', top: verticalScale(16), right: scale(20), zIndex: 10 }}>
+                <Iconify icon="fontisto:locked" size={moderateScale(22)} color={colors.muted} />
+              </View>
+            )}
             <View style={styles.labelRow}>
               <Iconify icon="carbon:password" size={moderateScale(20)} color={colors.buttonColor} style={styles.labelIcon} />
               <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
@@ -469,6 +493,8 @@ export default function EditProfileScreen({ navigation }) {
                 placeholderTextColor={colors.muted}
                 value={currentPassword}
                 onChangeText={setCurrentPassword}
+                editable={!isOAuthUser}
+                pointerEvents={isOAuthUser ? 'none' : 'auto'}
                 autoCapitalize="none"
                 secureTextEntry={!showCurrentPassword}
                 autoComplete="password"
@@ -477,6 +503,7 @@ export default function EditProfileScreen({ navigation }) {
                 style={styles.eyeButton}
                 onPress={() => setShowCurrentPassword(!showCurrentPassword)}
                 hitSlop={{ top: scale(10), bottom: scale(10), left: scale(10), right: scale(10) }}
+                disabled={isOAuthUser}
               >
                 <Iconify 
                   icon={showCurrentPassword ? "oi:eye" : "system-uicons:eye-no"} 
@@ -504,7 +531,7 @@ export default function EditProfileScreen({ navigation }) {
             </View>
           </View>
 
-          {/* Password Card */}
+          {/* Password Card - OAuth kullanıcıda kilitli */}
           <View style={[styles.inputCard, {
             backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
             shadowColor: colors.shadowColor,
@@ -512,7 +539,14 @@ export default function EditProfileScreen({ navigation }) {
             shadowOpacity: colors.shadowOpacity,
             shadowRadius: colors.shadowRadius,
             elevation: colors.elevation,
+            opacity: isOAuthUser ? 0.80 : 1,
+            position: 'relative',
           }]}>
+            {isOAuthUser && (
+              <View style={{ position: 'absolute', top: verticalScale(16), right: scale(20), zIndex: 10 }}>
+                <Iconify icon="fontisto:locked" size={moderateScale(22)} color={colors.muted} />
+              </View>
+            )}
             <View style={styles.labelRow}>
               <Iconify icon="carbon:password" size={moderateScale(20)} color={colors.buttonColor} style={styles.labelIcon} />
               <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
@@ -533,6 +567,8 @@ export default function EditProfileScreen({ navigation }) {
                 placeholderTextColor={colors.muted}
                 value={password}
                 onChangeText={setPassword}
+                editable={!isOAuthUser}
+                pointerEvents={isOAuthUser ? 'none' : 'auto'}
                 autoCapitalize="none"
                 secureTextEntry={!showPassword}
                 autoComplete="password-new"
@@ -541,6 +577,7 @@ export default function EditProfileScreen({ navigation }) {
                 style={styles.eyeButton}
                 onPress={() => setShowPassword(!showPassword)}
                 hitSlop={{ top: scale(10), bottom: scale(10), left: scale(10), right: scale(10) }}
+                disabled={isOAuthUser}
               >
                 <Iconify 
                   icon={showPassword ? "oi:eye" : "system-uicons:eye-no"} 
@@ -560,6 +597,8 @@ export default function EditProfileScreen({ navigation }) {
                 placeholderTextColor={colors.muted}
                 value={passwordConfirm}
                 onChangeText={setPasswordConfirm}
+                editable={!isOAuthUser}
+                pointerEvents={isOAuthUser ? 'none' : 'auto'}
                 autoCapitalize="none"
                 secureTextEntry={!showPasswordConfirm}
                 autoComplete="password-new"
@@ -568,6 +607,7 @@ export default function EditProfileScreen({ navigation }) {
                 style={styles.eyeButton}
                 onPress={() => setShowPasswordConfirm(!showPasswordConfirm)}
                 hitSlop={{ top: scale(10), bottom: scale(10), left: scale(10), right: scale(10) }}
+                disabled={isOAuthUser}
               >
                 <Iconify 
                   icon={showPasswordConfirm ? "oi:eye" : "system-uicons:eye-no"} 

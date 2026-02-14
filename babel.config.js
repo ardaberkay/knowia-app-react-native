@@ -129,7 +129,8 @@ module.exports = function (api) {
             'twemoji:flag-saudi-arabia',
             'basil:user-block-solid',
             'mingcute:user-hide-fill',
-            'fluent:arrow-repeat-all-48-regular'
+            'fluent:arrow-repeat-all-48-regular',
+            'fontisto:locked'
           ],
         },
       ],
