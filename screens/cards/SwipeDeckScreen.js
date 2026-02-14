@@ -109,6 +109,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const [history, setHistory] = useState([]);
   const [undoDisabled, setUndoDisabled] = useState(false);
   const [historyDirections, setHistoryDirections] = useState([]);
+  const [totalSwipeCount, setTotalSwipeCount] = useState(0);
   const [totalCardCount, setTotalCardCount] = useState(0);
   const [remainingCardCount, setRemainingCardCount] = useState(0);
   const [totalLearningCount, setTotalLearningCount] = useState(0);
@@ -118,7 +119,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const autoPlayTimeout = useRef(null);
   const autoPlayFlipTimeout = useRef(null);
   const currentIndexRef = useRef(0);
-  const [pendingReinserts, setPendingReinserts] = useState([]); // { card, insertAt }[] — next_review ile uyumlu, 2 dk sonra kuyruğa rastgele
+  const cardsLengthRef = useRef(0);
+  const [pendingReinserts, setPendingReinserts] = useState([]); // { card, insertAt }[]
   const leftCountedCardIds = useRef(new Set()); // Sola veya butonla bir kez sayılmış kartlar; reinsert sonrası tekrar sayılmasın
   const historyLeftCardIds = useRef([]); // Undo için: son left kaydın card_id
   const { t } = useTranslation();
@@ -342,10 +344,15 @@ export default function SwipeDeckScreen({ route, navigation }) {
   }, [deck.id, chapter?.id]);
 
   currentIndexRef.current = currentIndex;
+  cardsLengthRef.current = cards.length;
 
   // next_review (2 dk) geçen kartları kuyruğa rastgele ekle
   useEffect(() => {
     const interval = setInterval(() => {
+      if (currentIndexRef.current >= cardsLengthRef.current) {
+        setPendingReinserts([]);
+        return;
+      }
       const now = Date.now();
       setPendingReinserts((prev) => {
         const due = prev.filter((p) => p.insertAt <= now);
@@ -376,6 +383,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     if (!userId) return;
     setHistory((prev) => [...prev, cardIndex]);
     setHistoryDirections((prev) => [...prev, direction]);
+    setTotalSwipeCount((prev) => prev + 1);
     if (direction === 'right') {
       setRightCount((prev) => prev + 1);
       setRightHighlight(true);
@@ -425,6 +433,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     if (!cards[currentIndex]) return;
     const card = cards[currentIndex];
     if (!userId) return;
+    setTotalSwipeCount((prev) => prev + 1);
     const nextReview = new Date(Date.now() + minutes * 60 * 1000);
     await supabase
       .from('user_card_progress')
@@ -458,6 +467,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
           if (removedCardId) leftCountedCardIds.current.delete(removedCardId);
           setLeftCount((c) => Math.max(0, c - 1));
         }
+        setTotalSwipeCount((c) => Math.max(0, c - 1));
         return prev.slice(0, -1);
       });
     } else {
@@ -819,7 +829,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={{ width: '100%', alignItems: 'center', marginTop: verticalScale(110)}}>
           <Image source={logoasil} style={{ width: scale(260), height: scale(260), resizeMode: 'cover' }} />
-          <Text style={[typography.styles.h2, { color: colors.text, textAlign: 'center', marginTop: verticalScale(16) }]}> 
+          <Text style={[typography.styles.h2, { color: colors.text, textAlign: 'center', marginTop: verticalScale(16), paddingHorizontal: scale(32) }]}> 
             {progress === totalCardCount ? t('swipeDeck.bravo', "Bravo! Tüm Kartları Tamamladın") : t('swipeDeck.learnTime', "Kalan Kartları Öğrenmeye Vakit Var")}
           </Text>
           <View style={{ width: scale(72), height: verticalScale(1), backgroundColor: colors.orWhite, borderRadius: moderateScale(2), alignSelf: 'center', marginTop: verticalScale(16), marginBottom: verticalScale(32) }} />
@@ -843,6 +853,16 @@ export default function SwipeDeckScreen({ route, navigation }) {
               <Text style={[styles.statNumber, { color: colors.text }]}>{learnedCount}</Text>
               <Text style={[styles.statLabel, { color: colors.subtext }]}>{t('swipeDeck.learned', 'Öğrenildi')}</Text>
             </View>
+
+            {/* Toplam kaydırma */}
+            
+            <View style={[styles.statCardWide, { backgroundColor: colors.cardBackground, borderColor: colors.border || '#6b7b8c'  }]}>
+              <View style={[styles.statIconContainer, { backgroundColor: 'rgba(107, 123, 140, 0.15)', width: scale(36), height: scale(36), marginBottom: '0'}]}>
+                <Iconify icon="fluent:arrow-repeat-all-48-regular" size={moderateScale(20)} color={colors.text || '#6b7b8c'} />
+              </View>
+              <Text style={[styles.statLabel, { color: colors.subtext }]}>{t('swipeDeck.totalSwipes', 'Toplam kaydırma')}:</Text>
+              <Text style={[styles.statNumber, { color: colors.text, fontSize: moderateScale(24) }]}>{totalSwipeCount}</Text>
+            </View>
           </View>
         </View>
       </SafeAreaView>
@@ -861,8 +881,46 @@ export default function SwipeDeckScreen({ route, navigation }) {
             <Text style={styles.counterText} adjustsFontSizeToFit minimumFontScale={0.7}>{leftCount}</Text>
           )}
         </View>
-        <View style={styles.deckProgressBox}>
-          <Text style={[styles.deckProgressText, {color: colors.text}]}>{leftCount + initialLearnedCount + rightCount}/{totalCardCount}</Text>
+        <View style={[styles.deckProgressBox, { flexDirection: 'row' }]}>
+          {(() => {
+            const uniqueCardIdsUpToNow = new Set(
+              cards.slice(0, currentIndex + 1).map((c) => c?.card_id).filter(Boolean)
+            );
+            const currentCardNumber = uniqueCardIdsUpToNow.size;
+            const allUniqueSeen = currentCardNumber >= totalCardCount;
+            const currentCardIsReinserted = cards[currentIndex] && leftCountedCardIds.current.has(cards[currentIndex].card_id);
+            const hasReinsertToShow =
+              pendingReinserts.length > 0 ||
+              cards.slice(currentIndex + 1).some((c) => c?.card_id && leftCountedCardIds.current.has(c.card_id));
+            const showVaktiGeldi =
+              totalCardCount > 0 && allUniqueSeen && hasReinsertToShow && currentCardIsReinserted;
+            const iconWrapStyle = {
+              borderRadius: moderateScale(10),
+              padding: scale(6),
+              backgroundColor: colors.cardBackground || 'rgba(128,128,128,0.15)',
+              marginRight: scale(10),
+            };
+            if (showVaktiGeldi) {
+              return (
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={iconWrapStyle}>
+                    <Iconify icon="fluent:arrow-repeat-all-48-regular" size={moderateScale(22)} color={colors.text} />
+                  </View>
+                  <Text style={[styles.deckProgressText, { color: colors.text }]}>{t('swipeDeck.vaktiGeldi', 'Vakti Geldi')}</Text>
+                </View>
+              );
+            }
+            return (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {currentCardIsReinserted && (
+                  <View style={iconWrapStyle}>
+                    <Iconify icon="fluent:arrow-repeat-all-48-regular" size={moderateScale(18)} color={colors.text} />
+                  </View>
+                )}
+                <Text style={[styles.deckProgressText, { color: colors.text }]}>{currentCardNumber}/{totalCardCount}</Text>
+              </View>
+            );
+          })()}
         </View>
         <View style={[styles.counterBoxRight, { backgroundColor: rightHighlight ? rightActiveColor : rightInactiveColor }]}>
           {rightHighlight ? (
@@ -1213,7 +1271,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: moderateScale(8),
     elevation: 3,
-    marginBottom: verticalScale(12),
+  },
+  statCardWide: {
+    width: '95%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: verticalScale(10),
+    borderRadius: moderateScale(16),
+    borderWidth: moderateScale(1),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: verticalScale(2) },
+    shadowOpacity: 0.1,
+    shadowRadius: moderateScale(8),
+    elevation: 3,
+    flexDirection: 'row',
+    gap: scale(10),
   },
   statIconContainer: {
     width: scale(48),
@@ -1221,6 +1293,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(24),
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'center',
     marginBottom: verticalScale(12),
   },
   statNumber: {

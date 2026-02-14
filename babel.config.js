@@ -128,7 +128,8 @@ module.exports = function (api) {
             'ic:round-report-problem',
             'twemoji:flag-saudi-arabia',
             'basil:user-block-solid',
-            'mingcute:user-hide-fill'
+            'mingcute:user-hide-fill',
+            'fluent:arrow-repeat-all-48-regular'
           ],
         },
       ],
