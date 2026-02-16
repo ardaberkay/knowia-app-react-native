@@ -11,6 +11,9 @@ import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet }
 import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 import { supabase } from '../../lib/supabase';
 import { getFavoriteDecks } from '../../services/FavoriteService';
+import { updateLastActiveAt, updateNotificationPreference } from '../../services/ProfileService';
+import { registerForPushNotificationsAsync } from '../../services/NotificationService';
+import * as Notifications from 'expo-notifications';
 import ProfileAvatarButton from '../../components/layout/ProfileAvatarButton';
 import DeckSkeleton from '../../components/skeleton/DeckSkeleton';
 import { useTranslation } from 'react-i18next';
@@ -102,6 +105,7 @@ export default function HomeScreen() {
   const [favoriteDecks, setFavoriteDecks] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const decksLoadedRef = useRef(false);
+  const notificationSetupDoneRef = useRef(false);
 
   const { t } = useTranslation();
 
@@ -164,6 +168,21 @@ const DECK_CATEGORIES = {
       if (decksLoadedRef.current) {
         loadInProgressDecks();
       }
+      (async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.id) return;
+        await updateLastActiveAt(user.id);
+        if (notificationSetupDoneRef.current) return;
+        notificationSetupDoneRef.current = true;
+        const { status } = await Notifications.getPermissionsAsync();
+        if (status === 'granted') {
+          await registerForPushNotificationsAsync(user.id);
+          await updateNotificationPreference(true);
+        } else {
+          const token = await registerForPushNotificationsAsync(user.id);
+          if (token) await updateNotificationPreference(true);
+        }
+      })();
     }, [loadInProgressDecks])
   );
 

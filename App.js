@@ -24,7 +24,7 @@ SplashScreen.preventAutoHideAsync();
 
 // Navigation reference oluştur
 export const navigationRef = createNavigationContainerRef();
-
+ 
 function AppContent() {
   const { colors, isDarkMode } = useTheme();
   const [fontsLoaded] = useFonts({

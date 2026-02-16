@@ -442,7 +442,9 @@
     "error": "Fehler",
     "errorMessage": "Ein Fehler ist aufgetreten",
     "errorMessageNotification": "Benachrichtigungsberechtigung nicht erteilt!",
-    "errorMessageNotificationDevice": "Zum Empfangen von Benachrichtigungen ist ein physisches Gerät erforderlich."
+    "errorMessageNotificationDevice": "Zum Empfangen von Benachrichtigungen ist ein physisches Gerät erforderlich.",
+    "openSettingsHint": "Aktivieren Sie Benachrichtigungen in den Einstellungen.",
+    "openSettings": "Einstellungen"
   },
   "chapters": {
     "title": "Kapitel",

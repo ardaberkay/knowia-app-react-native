@@ -475,7 +475,9 @@
     "error": "Error",
     "errorMessage": "An error occurred",
     "errorMessageNotification": "Notification permission not granted!",
-    "errorMessageNotificationDevice": "A physical device is required to receive notifications."
+    "errorMessageNotificationDevice": "A physical device is required to receive notifications.",
+    "openSettingsHint": "To enable notifications, go to Settings.",
+    "openSettings": "Settings"
   },
   "chapters": {
     "title": "Chapters",

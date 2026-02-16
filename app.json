@@ -25,6 +25,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.arda.knowia",
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.DETECT_SCREEN_CAPTURE"
       ],
@@ -51,6 +52,7 @@
       "expo-font",
       "expo-localization",
       "expo-dev-client",
+      "expo-notifications",
       "./plugins/withAndroidKeyboardMode"
     ],
     "extra": {

@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Pressable } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Alert, Pressable } from 'react-native';
 import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import MathText from '../ui/MathText';
 
 export default function CardListItem({
   question,
@@ -37,13 +38,17 @@ export default function CardListItem({
     >
       <View style={styles.topRow}>
         <View style={styles.textCol}>
-          <Text style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]} numberOfLines={1}>
-            {question}
-          </Text>
+          <MathText
+            value={question}
+            style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]}
+            numberOfLines={1}
+          />
           <View style={[styles.divider, { backgroundColor: colors.cardDivider }]} />
-          <Text style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]} numberOfLines={1}>
-            {answer}
-          </Text>
+          <MathText
+            value={answer}
+            style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]}
+            numberOfLines={1}
+          />
         </View>
         <View style={{ alignItems: 'center' }}>
           <TouchableOpacity

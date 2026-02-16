@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import Svg, { Path } from 'react-native-svg';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import MathText from '../ui/MathText';
 
 export default function CardDetailView({ card, cards = [], onSelectCard, showCreatedAt = true }) {
   const { colors } = useTheme();
@@ -307,9 +308,11 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
                           ]}
                         >
                           <View style={styles.cardContent}>
-                            <Text style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText }]} numberOfLines={3}>
-                              {item?.question || item?.name || item?.title || t('cardDetail.unnamed', 'İsimsiz Kart')}
-                            </Text>
+                            <MathText
+                              value={item?.question || item?.name || item?.title || t('cardDetail.unnamed', 'İsimsiz Kart')}
+                              style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText }]}
+                              numberOfLines={3}
+                            />
                           </View>
                         </Animated.View>
 
@@ -324,9 +327,15 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
                           ]}
                         >
                           <View style={styles.cardContent}>
-                            <Text style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText, transform: [{ scaleX: -1 }] }]} numberOfLines={4}>
-                              {item?.answer || t('cardDetail.noAnswer', 'Cevap yok')}
-                            </Text>
+                            <MathText
+                              value={item?.answer || t('cardDetail.noAnswer', 'Cevap yok')}
+                              style={[
+                                typography.styles.body,
+                                styles.sliderItemTitle,
+                                { color: colors.headText, transform: [{ scaleX: -1 }] },
+                              ]}
+                              numberOfLines={4}
+                            />
                           </View>
                         </Animated.View>
                       </TouchableOpacity>
@@ -446,9 +455,10 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
             </View>
           </View>
           <View style={styles.cardContent}>
-            <Text style={[typography.styles.body, { fontSize: 16, color: colors.cardAnswerText, marginLeft: 24 }]}>
-              {card?.question}
-            </Text>
+            <MathText
+              value={card?.question}
+              style={[typography.styles.body, { fontSize: 16, color: colors.cardAnswerText, marginLeft: 24 }]}
+            />
           </View>
         </View>
 
@@ -472,9 +482,10 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
               </View>
             </View>
             <View style={styles.cardContent}>
-              <Text style={[typography.styles.body, { fontSize: moderateScale(16), color: colors.cardAnswerText, marginLeft: scale(24) }]}>
-                {card.answer}
-              </Text>
+              <MathText
+                value={card.answer}
+                style={[typography.styles.body, { fontSize: moderateScale(16), color: colors.cardAnswerText, marginLeft: scale(24) }]}
+              />
             </View>
           </View>
         ) : null}
@@ -499,9 +510,10 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
               </View>
             </View>
             <View style={styles.cardContent}>
-              <Text style={[typography.styles.body, { fontSize: moderateScale(16), color: colors.cardAnswerText, marginLeft: scale(24) }]}>
-                {card.example}
-              </Text>
+              <MathText
+                value={card.example}
+                style={[typography.styles.body, { fontSize: moderateScale(16), color: colors.cardAnswerText, marginLeft: scale(24) }]}
+              />
             </View>
           </View>
         ) : null}
@@ -526,9 +538,10 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
               </View>
             </View>
             <View style={styles.cardContent}>
-              <Text style={[typography.styles.body, { fontSize: moderateScale(16), color: colors.cardAnswerText, marginLeft: scale(24) }]}>
-                {card.note}
-              </Text>
+              <MathText
+                value={card.note}
+                style={[typography.styles.body, { fontSize: moderateScale(16), color: colors.cardAnswerText, marginLeft: scale(24) }]}
+              />
             </View>
           </View>
         ) : null}
@@ -538,9 +551,10 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
       {/* Oluşturulma tarihi */}
       {showCreatedAt && card?.created_at ? (
         <View style={{ paddingHorizontal: scale(18), marginTop: 'auto', marginBottom: verticalScale(12) }}>
-          <Text style={[typography.styles.caption, { color: colors.muted, textAlign: 'center', fontSize: moderateScale(14) }]}>
-            {t("cardDetail.createdAt", "Oluşturulma Tarihi")} {new Date(card.created_at).toLocaleString('tr-TR')}
-          </Text>
+          <MathText
+            value={`${t("cardDetail.createdAt", "Oluşturulma Tarihi")} ${new Date(card.created_at).toLocaleString('tr-TR')}`}
+            style={[typography.styles.caption, { color: colors.muted, textAlign: 'center', fontSize: moderateScale(14) }]}
+          />
         </View>
       ) : null}
     </ScrollView>

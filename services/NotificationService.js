@@ -1,8 +1,10 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
-import { Alert } from 'react-native';
+import { Alert, Linking } from 'react-native';
 import { supabase } from '../lib/supabase';
 import i18n from '../lib/i18n';
+
+const projectId = require('../app.json')?.expo?.extra?.eas?.projectId ?? null;
 
 
 /**
@@ -32,15 +34,27 @@ export async function registerForPushNotificationsAsync(userId) {
   if (finalStatus !== 'granted') {
     Alert.alert(
       i18n.t('common.error', 'Hata'),
-      i18n.t('notifications.errorMessageNotification', 'Push bildirim izni verilmedi!')
+      i18n.t('notifications.errorMessageNotification', 'Push bildirim izni verilmedi!') +
+        ' ' +
+        i18n.t('notifications.openSettingsHint', 'Açmak için Ayarlar\'a gidin.'),
+      [
+        { text: i18n.t('common.cancel', 'İptal'), style: 'cancel' },
+        { text: i18n.t('notifications.openSettings', 'Ayarlar'), onPress: () => Linking.openSettings() },
+      ]
     );
     return null;
   }
 
-  // Expo push token'ı al
-  token = (await Notifications.getExpoPushTokenAsync()).data;
+  try {
+    const options = projectId ? { projectId } : {};
+    token = (await Notifications.getExpoPushTokenAsync(options)).data;
+  } catch (e) {
+    if (__DEV__) {
+      console.warn('Push token alınamadı (dev build veya push yapılandırması eksik olabilir):', e?.message || e);
+    }
+    return null;
+  }
 
-  // Supabase'deki profiles tablosuna kaydet
   const { error } = await supabase
     .from('profiles')
     .update({ expo_push_token: token })

@@ -440,7 +440,9 @@
     "error": "Erreur",
     "errorMessage": "Une erreur s'est produite",
     "errorMessageNotification": "Permission de notification non accordée !",
-    "errorMessageNotificationDevice": "Un appareil physique est nécessaire pour recevoir des notifications."
+    "errorMessageNotificationDevice": "Un appareil physique est nécessaire pour recevoir des notifications.",
+    "openSettingsHint": "Pour activer les notifications, allez dans Réglages.",
+    "openSettings": "Réglages"
   },
   "categories": {
     "1": "Langue",

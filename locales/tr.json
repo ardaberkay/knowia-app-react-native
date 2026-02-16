@@ -480,7 +480,9 @@
     "error": "Hata",
     "errorMessage": "Bir hata oluştu",
     "errorMessageNotification": "Push bildirim izni verilmedi!",
-    "errorMessageNotificationDevice": "Push bildirimleri için gerçek bir cihaz gereklidir."
+    "errorMessageNotificationDevice": "Push bildirimleri için gerçek bir cihaz gereklidir.",
+    "openSettingsHint": "Bildirimleri açmak için Ayarlar'a gidin.",
+    "openSettings": "Ayarlar"
   },
   "chapters": {
     "title": "Bölümler",

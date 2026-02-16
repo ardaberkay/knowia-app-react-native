@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator, Share, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator, Share, Switch, Alert, Linking } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { getCurrentUserProfile, updateNotificationPreference } from '../../services/ProfileService';
+import { registerForPushNotificationsAsync } from '../../services/NotificationService';
 import { useNavigation } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '../../lib/supabase';
@@ -156,11 +157,21 @@ export default function ProfileScreen() {
       if (status === 'granted') {
         setNotificationsEnabled(true);
         await updateNotificationPreference(true);
-        // Token kaydetme fonksiyonunu çağırabilirsin (isteğe bağlı)
+        const uid = userId || (await supabase.auth.getUser()).data?.user?.id;
+        if (uid) {
+          await registerForPushNotificationsAsync(uid);
+        }
       } else {
         setNotificationsEnabled(false);
         await updateNotificationPreference(false);
-        // Token silmeye gerek yok, çünkü izin yoksa token alınamaz
+        Alert.alert(
+          t('profile.notifications'),
+          t('notifications.openSettingsHint', 'Bildirimleri açmak için Ayarlar\'a gidin.'),
+          [
+            { text: t('common.cancel', 'İptal'), style: 'cancel' },
+            { text: t('notifications.openSettings', 'Ayarlar'), onPress: () => Linking.openSettings() },
+          ]
+        );
       }
     } else {
       setNotificationsEnabled(false);
