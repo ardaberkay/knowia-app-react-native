@@ -27,9 +27,13 @@ serve(async (req) => {
     return (now.getTime() - lastActive.getTime()) > 24 * 60 * 60 * 1000;
   });
 
+  console.log('inactiveUsers count:', inactiveUsers.length);
+
+  const expoResponses: unknown[] = [];
+
   // Expo push API'ye bildirim gönder
   for (const user of inactiveUsers) {
-    await fetch('https://exp.host/--/api/v2/push/send', {
+    const res = await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -43,7 +47,13 @@ serve(async (req) => {
         body: NOTIFICATION_BODY,
       }),
     });
+    const body = await res.json().catch(() => ({}));
+    console.log('Expo response (user ' + user.id + '):', JSON.stringify(body));
+    expoResponses.push({ userId: user.id, status: res.status, body });
   }
 
-  return new Response(JSON.stringify({ sent: inactiveUsers.length }), { status: 200 });
+  return new Response(
+    JSON.stringify({ sent: inactiveUsers.length, expoResponses }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } }
+  );
 });
