@@ -725,11 +725,6 @@ export default function LibraryScreen() {
         >
           {/* Header Content */}
           <View style={styles.headerContent}>
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <Text style={[styles.headerTitle, { color: colors.text }]}>
-                {t('tabs.myLibrary', 'Kitaplığım')}
-              </Text>
-            </View>
             <View style={{ position: 'absolute', right: scale(-24), top: scale(8) }}>
               <ProfileAvatarButton />
             </View>
@@ -1133,14 +1128,15 @@ const styles = StyleSheet.create({
   },
   segmentedControlInner: {
     paddingHorizontal: scale(24),
-    paddingBottom: verticalScale(16),
+    paddingBottom: '16%',
     borderBottomEndRadius: moderateScale(70),
     borderBottomStartRadius: moderateScale(70),
     overflow: 'hidden',
+  
   },
   headerContent: {
-    height: scale(60),
-    marginBottom: verticalScale(12),
+    height: '100%',
+
   },
   headerLeft: {
   },
@@ -1155,7 +1151,7 @@ const styles = StyleSheet.create({
   pillContainer: {
     borderWidth: 1,
     borderColor: '#444444',
-    height: scale(44),
+    height: '100%',
     marginHorizontal: '17%',
     borderRadius: moderateScale(25),
     overflow: 'hidden',
@@ -1171,6 +1167,7 @@ const styles = StyleSheet.create({
     right: moderateScale(2),
     overflow: 'hidden',
     borderRadius: moderateScale(23),
+    
   },
   pillIndicator: {
     position: 'absolute',
@@ -1178,6 +1175,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     borderRadius: moderateScale(23),
+    
   },
   pillTab: {
     height: '100%',

@@ -15,6 +15,7 @@ import LottieView from 'lottie-react-native';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import ChapterSelector from '../../components/modals/ChapterSelector';
+import MathText from '../../components/ui/MathText';
 
 export default function ChapterCardsScreen({ route, navigation }) {
   const { chapter, deck } = route.params;
@@ -503,13 +504,17 @@ export default function ChapterCardsScreen({ route, navigation }) {
               flex: editMode ? 2 : 3,
             }
           ]}>
-            <Text style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]} numberOfLines={1}>
-              {card.question}
-            </Text>
+            <MathText
+              value={card.question}
+              style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]}
+              numberOfLines={1}
+            />
             <View style={[styles.divider, { backgroundColor: colors.cardDivider }]} />
-            <Text style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]} numberOfLines={1}>
-              {card.answer}
-            </Text>
+            <MathText
+              value={card.answer}
+              style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]}
+              numberOfLines={1}
+            />
           </View>
           
           {/* Sağ bölüm - sabit genişlik, daha koyu renk */}

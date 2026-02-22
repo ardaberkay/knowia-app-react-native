@@ -213,7 +213,7 @@ export default function DeckCardsScreen({ route, navigation }) {
         ),
       });
     } else {
-      const isOwner = currentUserId && deck.user_id === currentUserId;
+      const isOwner = currentUserId && deck.user_id === currentUserId && !deck.is_shared;
       navigation.setOptions({
         headerRight: () => {
           if (!isOwner) {
