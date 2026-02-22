@@ -91,25 +91,10 @@ export default function DeckSkeleton() {
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
   
-  // Responsive deck skeleton kart boyutları - useMemo ile optimize edilmiş
-  // Hibrit yaklaşım: scale() (dp bazlı) + ekran boyutu sınırları (fiziksel boyut kontrolü)
   const deckSkeletonDimensions = useMemo(() => {
     const { DECK_CARD } = RESPONSIVE_CONSTANTS;
-    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
-    
-    // scale() ile referans değer
     const scaledWidth = scale(DECK_CARD.REFERENCE_WIDTH);
-    
-    // Küçük telefonlarda biraz daha küçük yap
-    let maxWidth;
-    if (isSmallPhone) {
-      maxWidth = width * 0.36;
-    } else if (isTablet) {
-      maxWidth = width * 0.20;
-    } else {
-      maxWidth = width * 0.34;
-    }
-    
+    const maxWidth = isTablet ? width * 0.20 : width * 0.36;
     const cardWidth = Math.min(scaledWidth, maxWidth);
     const cardHeight = cardWidth * DECK_CARD.ASPECT_RATIO;
     

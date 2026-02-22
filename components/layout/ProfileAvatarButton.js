@@ -3,6 +3,7 @@ import { TouchableOpacity, Image, ActivityIndicator, StyleSheet } from 'react-na
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
 import { useProfile } from '../../contexts/ProfileContext';
+import { scale, moderateScale } from '../../lib/scaling';
 
 export default function ProfileAvatarButton() {
   const navigation = useNavigation();
@@ -29,20 +30,20 @@ export default function ProfileAvatarButton() {
 
 const styles = StyleSheet.create({
   profileAvatarButton: {
-    marginLeft: 12,
-    marginRight: 24,
-    width: 47,
-    height: 47,
-    borderRadius: 22,
+    marginLeft: scale(12),
+    marginRight: scale(24),
+    width: scale(47),
+    height: scale(47),
+    borderRadius: moderateScale(22),
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
   },
   profileAvatar: {
-    width: 47,
-    height: 47,
-    borderRadius: 22,
+    width: scale(47),
+    height: scale(47),
+    borderRadius: moderateScale(22),
     resizeMode: 'cover',
     backgroundColor: 'transparent',
   },

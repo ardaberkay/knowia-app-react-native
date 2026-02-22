@@ -273,13 +273,13 @@ export default function FavoriteCards() {
             )
           }
           ListEmptyComponent={
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: 400, marginTop: -250, pointerEvents: 'none' }}>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: verticalScale(400), marginTop: verticalScale(-250), pointerEvents: 'none' }}>
               <Image
                 source={require('../../assets/cardbg.png')}
-                style={{ width: 500, height: 500, opacity: 0.2 }}
+                style={{ width: scale(500), height: scale(500), opacity: 0.2 }}
                 resizeMode="contain"
               />
-              <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, fontSize: 16, marginTop: -150 }]}>
+              <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, fontSize: moderateScale(16), marginTop: verticalScale(-150) }]}>
                 {t('cardDetail.addToDeck', 'Desteye bir kart ekle')}
               </Text>
             </View>

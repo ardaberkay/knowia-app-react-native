@@ -13,8 +13,8 @@ import { listChapters, distributeUnassignedEvenly } from '../../services/Chapter
 import { LinearGradient } from 'expo-linear-gradient';
 import LottieView from 'lottie-react-native';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
-import ChapterSelector from '../../components/modals/ChapterSelector';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import ChapterSelector from '../../components/modals/ChapterSelector';
 
 export default function ChapterCardsScreen({ route, navigation }) {
   const { chapter, deck } = route.params;
@@ -586,18 +586,18 @@ export default function ChapterCardsScreen({ route, navigation }) {
                 <View
                   style={{
                     position: 'absolute',
-                    right: 20,
-                    top: Platform.OS === 'android' ? moreMenuPos.y + moreMenuPos.height + 4 : moreMenuPos.y + moreMenuPos.height + 8,
-                    minWidth: 160,
+                    right: scale(20),
+                    top: Platform.OS === 'android' ? moreMenuPos.y + moreMenuPos.height + verticalScale(4) : moreMenuPos.y + moreMenuPos.height + verticalScale(8),
+                    minWidth: scale(160),
                     backgroundColor: colors.cardBackground,
-                    borderRadius: 14,
-                    paddingVertical: 8,
+                    borderRadius: moderateScale(14),
+                    paddingVertical: verticalScale(8),
                     shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
+                    shadowOffset: { width: 0, height: verticalScale(2) },
                     shadowOpacity: 0.15,
-                    shadowRadius: 8,
+                    shadowRadius: moderateScale(8),
                     elevation: 8,
-                    borderWidth: 1,
+                    borderWidth: moderateScale(1),
                     borderColor: colors.cardBorder,
                   }}
                 >
@@ -606,29 +606,29 @@ export default function ChapterCardsScreen({ route, navigation }) {
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
-                      paddingVertical: 12,
-                      paddingHorizontal: 16,
+                      paddingVertical: verticalScale(12),
+                      paddingHorizontal: scale(16),
                     }}
                     activeOpacity={0.7}
                   >
-                    <Iconify icon="lucide:edit" size={20} color={colors.text} style={{ marginRight: 12 }} />
-                    <Text style={[typography.styles.body, { color: colors.text, fontSize: 16 }]}>
+                    <Iconify icon="lucide:edit" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
+                    <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
                       {t('cardDetail.edit', 'Kartı Düzenle')}
                     </Text>
                   </TouchableOpacity>
-                  <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
+                  <View style={{ height: moderateScale(1), backgroundColor: colors.border, marginVertical: verticalScale(4) }} />
                   <TouchableOpacity
                     onPress={handleDeleteSelectedCard}
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
-                      paddingVertical: 12,
-                      paddingHorizontal: 16,
+                      paddingVertical: verticalScale(12),
+                      paddingHorizontal: scale(16),
                     }}
                     activeOpacity={0.7}
                   >
-                    <Iconify icon="mdi:garbage" size={20} color="#E74C3C" style={{ marginRight: 12 }} />
-                    <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: 16 }]}>
+                    <Iconify icon="mdi:garbage" size={moderateScale(20)} color="#E74C3C" style={{ marginRight: scale(12) }} />
+                    <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: moderateScale(16) }]}>
                       {t('cardDetail.delete', 'Kartı Sil')}
                     </Text>
                   </TouchableOpacity>
@@ -764,21 +764,21 @@ export default function ChapterCardsScreen({ route, navigation }) {
           <View style={styles.emptyState}>
             <Image
               source={require('../../assets/cardbg.png')}
-              style={{ width: 500, height: 500, opacity: 0.2 }}
+              style={{ width: scale(500), height: scale(500), opacity: 0.2 }}
               resizeMode="contain"
             />
-            <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, textAlign: 'center', fontSize: 16, marginTop: -150 }]}>
+            <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, textAlign: 'center', fontSize: moderateScale(16), marginTop: verticalScale(-150) }]}>
               {t('chapterCards.noCardsDesc', 'Bu bölümde henüz kart oluşturulmamış.')}
             </Text>
           </View>
         ) : (
-          <View style={{ paddingHorizontal: 18 }}>
+          <View style={{ paddingHorizontal: scale(18) }}>
             <FlatList
               data={filteredCards}
               renderItem={renderCardItem}
               keyExtractor={(item) => item.id.toString()}
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={[styles.cardsList, { paddingBottom: Dimensions.get('window').height * 0.11, paddingTop: 20 }]}
+              contentContainerStyle={[styles.cardsList, { paddingBottom: verticalScale(100), paddingTop: verticalScale(20) }]}
             />
           </View>
         )}

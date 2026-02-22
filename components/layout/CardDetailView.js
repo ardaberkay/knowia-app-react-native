@@ -6,13 +6,13 @@ import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import Svg, { Path } from 'react-native-svg';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import { scale, moderateScale, verticalScale, useWindowDimensions } from '../../lib/scaling';
 import MathText from '../ui/MathText';
 
 export default function CardDetailView({ card, cards = [], onSelectCard, showCreatedAt = true }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const screenWidth = Dimensions.get('window').width;
+  const { width: screenWidth } = useWindowDimensions();
   const flatListRef = useRef(null);
   const [flippedCards, setFlippedCards] = useState({});
   const flipAnimations = useRef({});
@@ -457,7 +457,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
           <View style={styles.cardContent}>
             <MathText
               value={card?.question}
-              style={[typography.styles.body, { fontSize: 16, color: colors.cardAnswerText, marginLeft: 24 }]}
+              style={[typography.styles.body, { fontSize: moderateScale(16), color: colors.cardAnswerText, marginLeft: scale(24) }]}
             />
           </View>
         </View>
@@ -650,33 +650,33 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   flipIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: scale(32),
+    height: scale(32),
+    borderRadius: moderateScale(8),
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
-    borderWidth: 2,
+    borderWidth: moderateScale(2),
     borderColor: '#F98A21',
     shadowColor: '#000',
-    shadowOffset: { width: 2, height: 4 },
+    shadowOffset: { width: scale(2), height: verticalScale(4) },
     shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowRadius: moderateScale(6),
     elevation: 8,
   },
   quarterCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
+    width: scale(40),
+    height: scale(40),
+    borderRadius: moderateScale(8),
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
-    borderWidth: 2,
+    borderWidth: moderateScale(2),
     borderColor: '#F98A21',
     shadowColor: '#000',
-    shadowOffset: { width: 2, height: 4 },
+    shadowOffset: { width: scale(2), height: verticalScale(4) },
     shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowRadius: moderateScale(6),
     elevation: 8,
   },
   cardTouchable: {

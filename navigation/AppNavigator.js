@@ -27,6 +27,7 @@ import FavoriteCards from '../screens/library/FavoriteCards';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
+import { scale, moderateScale, verticalScale } from '../lib/scaling';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -50,15 +51,14 @@ function MainTabs() {
           backgroundColor: colors.tabBarBackground,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
-          marginBottom: 4,
+          fontSize: moderateScale(12),
+          marginBottom: verticalScale(10),
           fontFamily: 'Inter',
           textAlign: 'center',
-          marginBottom: 10,
-          marginTop: -8
+          marginTop: verticalScale(-8),
         },
         tabBarIconStyle: {
-          marginTop: 4,
+          marginTop: verticalScale(4),
           alignItems: 'center',
           justifyContent: 'center',
         },
@@ -81,7 +81,7 @@ function MainTabs() {
           return (
             <Iconify
               icon={homeIcon}
-              size={28}
+              size={moderateScale(28)}
               color={color}
               style={{
                 opacity: focused ? 1 : 0.7,
@@ -186,12 +186,12 @@ export default function AppNavigator() {
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  marginRight: 12,
-                  borderWidth: 1, borderColor: colors.text, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8
+                  marginRight: scale(12),
+                  borderWidth: moderateScale(1), borderColor: colors.text, paddingHorizontal: scale(6), paddingVertical: verticalScale(2), borderRadius: moderateScale(8)
                 }}
               >
-                <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15, marginRight: 6}}>CSV</Text>
-                <Iconify icon="solar:cloud-upload-broken" size={22} color={colors.text} />
+                <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: moderateScale(15), marginRight: scale(6)}}>CSV</Text>
+                <Iconify icon="solar:cloud-upload-broken" size={moderateScale(22)} color={colors.text} />
               </TouchableOpacity>
             ),
           })} />

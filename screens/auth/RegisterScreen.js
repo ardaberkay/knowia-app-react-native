@@ -8,7 +8,6 @@ import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
-import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 
 const REGISTER_LINKS = {
   privacy: 'https://www.knowia.online/policy',
@@ -30,24 +29,10 @@ export default function RegisterScreen({ navigation }) {
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
   
-  // Küçük cihazlar ve tablet için responsive paddingTop - useMemo ile optimize edilmiş
   const containerPaddingTop = useMemo(() => {
-    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
-    const isSmallScreen = height < RESPONSIVE_CONSTANTS.SMALL_SCREEN_MAX_HEIGHT;
-    
-    // Tablet için paddingTop'u azalt
-    if (isTablet) {
-      return height * 0.15; // Tablet: %15
-    }
-    // Küçük telefonlarda paddingTop'u azalt
-    if (isSmallPhone) {
-      return height * 0.30; // Küçük telefon: %30
-    } else if (isSmallScreen) {
-      return height * 0.30; // Küçük ekran: %30
-    } else {
-      return height * 0.25; // Normal ekranlar: %25
-    }
-  }, [width, height, isTablet]);
+    if (isTablet) return height * 0.15;
+    return height * 0.27;
+  }, [height, isTablet]);
 
   const openLink = useCallback(async (url) => {
     try {

@@ -3,7 +3,6 @@ import { View, StyleSheet, ScrollView, Animated, Dimensions } from 'react-native
 import { useTheme } from '../../theme/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
-import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 
 // Shimmer overlay component
 const ShimmerOverlay = ({ style, delay = 0, isDarkMode = false, borderRadius = 0, screenWidth = Dimensions.get('window').width }) => {
@@ -91,60 +90,21 @@ export default function DiscoverDecksSkeleton() {
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
   
-  // Responsive deck skeleton kart boyutları - useMemo ile optimize edilmiş
   const deckSkeletonDimensions = useMemo(() => {
-    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
-    const isSmallScreen = height < RESPONSIVE_CONSTANTS.SMALL_SCREEN_MAX_HEIGHT;
+    const verticalHeight = isTablet ? height * 0.24 : height * 0.28;
+    const horizontalHeight = isTablet ? height * 0.20 : height * 0.23;
     
-    // Vertical card height - referans: verticalScale(240)
-    const baseVerticalHeight = verticalScale(240);
-    let verticalHeight;
-    if (isSmallPhone) {
-      verticalHeight = height * 0.32;
-    } else if (isSmallScreen) {
-      verticalHeight = height * 0.30;
-    } else if (isTablet) {
-      // Tablet: ekran yüksekliğinin %28'i (artırıldı - DeckList ile eşleştirildi)
-      verticalHeight = height * 0.28;
-    } else {
-      const maxHeight = height * 0.26;
-      verticalHeight = Math.min(baseVerticalHeight, maxHeight);
-    }
-    
-    // Horizontal card height - referans: verticalScale(180)
-    const baseHorizontalHeight = verticalScale(180);
-    let horizontalHeight;
-    if (isSmallPhone) {
-      horizontalHeight = height * 0.26;
-    } else if (isSmallScreen) {
-      horizontalHeight = height * 0.24;
-    } else if (isTablet) {
-      // Tablet: ekran yüksekliğinin %22'si (artırıldı - DeckList ile eşleştirildi)
-      horizontalHeight = height * 0.22;
-    } else {
-      const maxHeight = height * 0.20;
-      horizontalHeight = Math.min(baseHorizontalHeight, maxHeight);
-    }
-    
-    return {
-      verticalHeight,
-      horizontalHeight,
-    };
-  }, [width, height, isTablet]);
+    return { verticalHeight, horizontalHeight };
+  }, [height, isTablet]);
   
   const DECK_SKELETON_VERTICAL_HEIGHT = deckSkeletonDimensions.verticalHeight;
   const DECK_SKELETON_HORIZONTAL_HEIGHT = deckSkeletonDimensions.horizontalHeight;
   
-  // Responsive spacing
-  const responsiveSpacing = useMemo(() => {
-    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
-    
-    return {
-      cardMargin: isSmallPhone ? scale(5) : scale(5),
-      listPaddingHorizontal: isSmallPhone ? scale(12) : scale(12),
-      listPaddingVertical: isSmallPhone ? verticalScale(5) : verticalScale(5),
-    };
-  }, [width]);
+  const responsiveSpacing = useMemo(() => ({
+    cardMargin: scale(5),
+    listPaddingHorizontal: scale(12),
+    listPaddingVertical: verticalScale(5),
+  }), []);
   
   // Shimmer animasyonu için ekran genişliği
   const SCREEN_WIDTH = width;

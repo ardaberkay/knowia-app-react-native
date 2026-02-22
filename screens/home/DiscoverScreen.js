@@ -15,7 +15,6 @@ import { typography } from '../../theme/typography';
 import { LinearGradient } from 'expo-linear-gradient';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
-import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 
 export default function DiscoverScreen() {
   const navigation = useNavigation();
@@ -27,44 +26,36 @@ export default function DiscoverScreen() {
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
 
-  // Responsive hero card genişliği - useMemo ile optimize edilmiş
   const HERO_CARD_WIDTH = useMemo(() => {
-    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
-    const padding = isSmallPhone ? scale(20) : scale(32);
-    return width - padding;
+    return width - scale(32);
   }, [width]);
 
-  // Responsive hero boyutları - useMemo ile optimize edilmiş
-  const heroDimensions = useMemo(() => {
-    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
-
-    return {
-      iconSize: isSmallPhone ? scale(56) : scale(64),
-      iconBorderRadius: isSmallPhone ? moderateScale(28) : moderateScale(32),
-      iconBorderWidth: isSmallPhone ? moderateScale(1.5) : moderateScale(2),
-      iconInnerSize: isSmallPhone ? moderateScale(24) : moderateScale(28),
-      titleFontSize: isSmallPhone ? moderateScale(24) : moderateScale(28),
-      subtitleFontSize: isSmallPhone ? moderateScale(13) : moderateScale(15),
-      subtitleLineHeight: isSmallPhone ? moderateScale(18) : moderateScale(20),
-      heroContentMarginRight: isSmallPhone ? scale(12) : scale(16),
-      heroGradientPadding: isSmallPhone ? moderateScale(18) : moderateScale(24),
-      heroGradientMinHeight: isSmallPhone ? verticalScale(145) : verticalScale(140),
-      titleMarginBottom: isSmallPhone ? verticalScale(3) : verticalScale(6),
-      heroCarouselPaddingHorizontal: isSmallPhone ? scale(10) : scale(16),
-      paginationDotHeight: isSmallPhone ? verticalScale(6) : verticalScale(8),
-      paginationDotWidth: isSmallPhone ? scale(6) : scale(8),
-      paginationDotActiveWidth: isSmallPhone ? scale(20) : scale(24),
-      paginationGap: isSmallPhone ? scale(4) : scale(6),
-      paginationMarginTop: isSmallPhone ? verticalScale(8) : verticalScale(12),
-      timeFilterWrapperPadding: isSmallPhone ? scale(10) : scale(16),
-      timeFilterWrapperMarginBottom: isSmallPhone ? verticalScale(6) : verticalScale(8),
-      searchRowGap: isSmallPhone ? scale(8) : scale(12),
-      searchRowPadding: isSmallPhone ? scale(10) : scale(16),
-      searchRowMarginTop: isSmallPhone ? verticalScale(6) : verticalScale(8),
-      fixedHeaderPaddingTop: isSmallPhone ? verticalScale(8) : verticalScale(12),
-      fixedHeaderPaddingBottom: isSmallPhone ? verticalScale(8) : verticalScale(12),
-    };
-  }, [width, isTablet]);
+  const heroDimensions = useMemo(() => ({
+    iconSize: scale(64),
+    iconBorderRadius: moderateScale(32),
+    iconBorderWidth: moderateScale(2),
+    iconInnerSize: moderateScale(28),
+    titleFontSize: moderateScale(28),
+    subtitleFontSize: moderateScale(15),
+    subtitleLineHeight: moderateScale(20),
+    heroContentMarginRight: scale(16),
+    heroGradientPadding: moderateScale(24),
+    heroGradientMinHeight: verticalScale(140),
+    titleMarginBottom: verticalScale(6),
+    heroCarouselPaddingHorizontal: scale(16),
+    paginationDotHeight: verticalScale(8),
+    paginationDotWidth: scale(8),
+    paginationDotActiveWidth: scale(24),
+    paginationGap: scale(6),
+    paginationMarginTop: verticalScale(12),
+    timeFilterWrapperPadding: scale(16),
+    timeFilterWrapperMarginBottom: verticalScale(8),
+    searchRowGap: scale(12),
+    searchRowPadding: scale(16),
+    searchRowMarginTop: verticalScale(8),
+    fixedHeaderPaddingTop: verticalScale(12),
+    fixedHeaderPaddingBottom: verticalScale(12),
+  }), []);
 
   const [activeTab, setActiveTab] = useState('trend');
   const [timeFilter, setTimeFilter] = useState('all');
@@ -429,8 +420,7 @@ export default function DiscoverScreen() {
 
   const renderFixedHeader = () => {
     const headerHeight = Platform.OS === 'ios' ? insets.top + 44 : 56;
-    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
-    const headerPaddingTop = isSmallPhone ? headerHeight + verticalScale(40) : headerHeight + verticalScale(50);
+    const headerPaddingTop = headerHeight + verticalScale(50);
 
     return (
       <View style={[

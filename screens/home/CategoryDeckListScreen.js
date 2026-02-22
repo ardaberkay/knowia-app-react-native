@@ -14,7 +14,6 @@ import { typography } from '../../theme/typography';
 import { getCategoryConfig } from '../../components/ui/CategoryHeroHeader';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
-import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 import { getLanguages } from '../../services/LanguageService';
 
 export default function CategoryDeckListScreen({ route }) {
@@ -27,28 +26,23 @@ export default function CategoryDeckListScreen({ route }) {
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
 
-  // Responsive hero boyutları - useMemo ile optimize edilmiş
-  const heroDimensions = useMemo(() => {
-    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
-
-    return {
-      iconSize: isSmallPhone ? scale(56) : scale(64),
-      iconBorderRadius: isSmallPhone ? moderateScale(28) : moderateScale(32),
-      iconBorderWidth: isSmallPhone ? moderateScale(1.5) : moderateScale(2),
-      iconInnerSize: isSmallPhone ? moderateScale(24) : moderateScale(28),
-      titleFontSize: isSmallPhone ? moderateScale(24) : moderateScale(28),
-      subtitleFontSize: isSmallPhone ? moderateScale(13) : moderateScale(15),
-      subtitleLineHeight: isSmallPhone ? moderateScale(18) : moderateScale(20),
-      heroContentMarginBottom: isSmallPhone ? verticalScale(12) : verticalScale(20),
-      heroIconMarginRight: isSmallPhone ? scale(12) : scale(16),
-      headerContentPaddingTop: isSmallPhone ? verticalScale(12) : verticalScale(20),
-      headerContentPaddingBottom: isSmallPhone ? verticalScale(12) : verticalScale(20),
-      headerContentPaddingHorizontal: isSmallPhone ? scale(10) : scale(12),
-      titleMarginBottom: isSmallPhone ? verticalScale(3) : verticalScale(6),
-      searchRowGap: isSmallPhone ? scale(8) : scale(12),
-      searchRowMarginTop: isSmallPhone ? verticalScale(4) : verticalScale(8),
-    };
-  }, [width, isTablet]);
+  const heroDimensions = useMemo(() => ({
+    iconSize: scale(64),
+    iconBorderRadius: moderateScale(32),
+    iconBorderWidth: moderateScale(2),
+    iconInnerSize: moderateScale(28),
+    titleFontSize: moderateScale(28),
+    subtitleFontSize: moderateScale(15),
+    subtitleLineHeight: moderateScale(20),
+    heroContentMarginBottom: verticalScale(20),
+    heroIconMarginRight: scale(16),
+    headerContentPaddingTop: verticalScale(20),
+    headerContentPaddingBottom: verticalScale(20),
+    headerContentPaddingHorizontal: scale(12),
+    titleMarginBottom: verticalScale(6),
+    searchRowGap: scale(12),
+    searchRowMarginTop: verticalScale(8),
+  }), []);
 
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('default');
@@ -251,8 +245,7 @@ export default function CategoryDeckListScreen({ route }) {
   const renderFixedHeader = useCallback(() => {
     const config = getCategoryConfig(category, t);
     const headerHeight = Platform.OS === 'ios' ? insets.top + 44 : 56;
-    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
-    const gradientPaddingTop = isSmallPhone ? headerHeight + 24 : headerHeight + 32;
+    const gradientPaddingTop = headerHeight + verticalScale(32);
 
     return (
       <View style={styles.fixedHeaderContainer}>

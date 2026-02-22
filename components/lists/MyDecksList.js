@@ -6,7 +6,6 @@ import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
-import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 
 // Fade efekti - karakter bazlı opacity (MaskedView sorunlarından kaçınır)
 const FadeText = ({ text, style, maxChars = 15 }) => {
@@ -63,54 +62,12 @@ export default function MyDecksList({
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
   
-  // Responsive deck kart boyutları - useMemo ile optimize edilmiş
   const deckCardDimensions = useMemo(() => {
-    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
-    const isSmallScreen = height < RESPONSIVE_CONSTANTS.SMALL_SCREEN_MAX_HEIGHT;
+    const verticalHeight = isTablet ? height * 0.24 : height * 0.28;
+    const horizontalHeight = isTablet ? height * 0.20 : height * 0.23;
     
-    // Vertical card height - referans: verticalScale(240)
-    // Dikdörtgen yapı korunmalı (genişlik/yükseklik oranı)
-    const baseVerticalHeight = verticalScale(240);
-    let verticalHeight;
-    if (isSmallPhone) {
-      // Küçük telefon: Ekran yüksekliğinin %32'si - direkt yüzde bazlı kullan
-      verticalHeight = height * 0.32;
-    } else if (isSmallScreen) {
-      // Küçük ekran yüksekliği: ekran yüksekliğinin %30'u
-      verticalHeight = height * 0.30;
-    } else if (isTablet) {
-      // Tablet: ekran yüksekliğinin %28'i (artırıldı)
-      verticalHeight = height * 0.28;
-    } else {
-      // Normal telefon: scale() ile referans değer, ama ekran yüksekliğinin %26'sını geçmesin
-      const maxHeight = height * 0.26;
-      verticalHeight = Math.min(baseVerticalHeight, maxHeight);
-    }
-    
-    // Horizontal card height - referans: verticalScale(180)
-    // Dikdörtgen yapı korunmalı
-    const baseHorizontalHeight = verticalScale(180);
-    let horizontalHeight;
-    if (isSmallPhone) {
-      // Küçük telefon: Ekran yüksekliğinin %26'sı - direkt yüzde bazlı kullan
-      horizontalHeight = height * 0.26;
-    } else if (isSmallScreen) {
-      // Küçük ekran yüksekliği: ekran yüksekliğinin %24'ü
-      horizontalHeight = height * 0.24;
-    } else if (isTablet) {
-      // Tablet: ekran yüksekliğinin %22'si (artırıldı)
-      horizontalHeight = height * 0.22;
-    } else {
-      // Normal telefon: scale() ile referans değer, ama ekran yüksekliğinin %20'sini geçmesin
-      const maxHeight = height * 0.20;
-      horizontalHeight = Math.min(baseHorizontalHeight, maxHeight);
-    }
-    
-    return {
-      verticalHeight,
-      horizontalHeight,
-    };
-  }, [width, height, isTablet]);
+    return { verticalHeight, horizontalHeight };
+  }, [height, isTablet]);
   
   const DECK_CARD_VERTICAL_HEIGHT = deckCardDimensions.verticalHeight;
   const DECK_CARD_HORIZONTAL_HEIGHT = deckCardDimensions.horizontalHeight;
@@ -134,19 +91,11 @@ export default function MyDecksList({
     };
   }, [isTablet]);
   
-  // Responsive margin ve padding değerleri
-  // Küçük telefonlarda boşlukları artırıyoruz (kareye yakın görünümü önlemek için)
-  const responsiveSpacing = useMemo(() => {
-    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
-    
-    return {
-      // Küçük telefonlarda margin'i artırıyoruz (normal telefonla aynı veya biraz daha fazla)
-      cardMargin: isSmallPhone ? scale(5) : scale(5),
-      // Küçük telefonlarda padding'i artırıyoruz (normal telefonla aynı)
-      listPaddingHorizontal: isSmallPhone ? scale(12) : scale(12),
-      listPaddingVertical: isSmallPhone ? verticalScale(5) : verticalScale(5),
-    };
-  }, [width]);
+  const responsiveSpacing = useMemo(() => ({
+    cardMargin: scale(5),
+    listPaddingHorizontal: scale(12),
+    listPaddingVertical: verticalScale(5),
+  }), []);
 
   // Kategoriye göre renkleri al (Supabase sort_order kullanarak)
   const getCategoryColors = (sortOrder) => {

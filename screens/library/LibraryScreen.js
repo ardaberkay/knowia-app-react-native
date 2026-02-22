@@ -22,7 +22,6 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ProfileAvatarButton from '../../components/layout/ProfileAvatarButton';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
-import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 import { getLanguages } from '../../services/LanguageService';
 
 // Fade efekti - karakter bazlı opacity (MaskedView sorunlarından kaçınır)
@@ -102,11 +101,10 @@ export default function LibraryScreen() {
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
   
-  const screenWidth = Dimensions.get('window').width;
   const horizontalPadding = scale(16) * 2;
   const cardSpacing = scale(12);
   const numColumns = 2;
-  const cardWidth = (screenWidth - horizontalPadding - cardSpacing) / numColumns;
+  const cardWidth = (width - horizontalPadding - cardSpacing) / numColumns;
   const cardAspectRatio = 120 / 168;
   const cardHeight = cardWidth / cardAspectRatio;
   
@@ -116,90 +114,41 @@ export default function LibraryScreen() {
     return isTablet ? '25%' : '48%'; // Tablet: %5, diğerleri: %48
   }, [width, height]);
   
-  // Responsive myDecks card top margin - useMemo ile optimize edilmiş
   const myDecksCardTopMargin = useMemo(() => {
-    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
-    const isSmallScreen = height < RESPONSIVE_CONSTANTS.SMALL_SCREEN_MAX_HEIGHT;
-    const isTablet = getIsTablet();
-    
-    // Tablet için üst boşluğu azalt
-    if (isTablet) {
-      return height * 0.01; // Tablet: ekran yüksekliğinin %4'ü
-    }
-    
-    if (isSmallPhone) {
-      return height * 0.07; // Küçük telefon: ekran yüksekliğinin %7'si
-    } else if (isSmallScreen) {
-      return height * 0.10; // Küçük ekran: ekran yüksekliğinin %10'u
-    } else {
-      return height * 0.08; // Normal ekranlar: ekran yüksekliğinin %8'i
-    }
-  }, [width, height]);
+    if (isTablet) return height * 0.01;
+    return height * 0.08;
+  }, [height, isTablet]);
   
-  // Responsive myDecks search container top margin - useMemo ile optimize edilmiş
   const myDecksSearchContainerTopMargin = useMemo(() => {
-    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
-    const isSmallScreen = height < RESPONSIVE_CONSTANTS.SMALL_SCREEN_MAX_HEIGHT;
-    
-    if (isSmallPhone) {
-      return verticalScale(2); // Küçük telefon: minimal boşluk
-    } else if (isSmallScreen) {
-      return verticalScale(4); // Küçük ekran: az boşluk
-    } else if (isTablet) {
-      return verticalScale(12); // Tablet: orta boşluk
-    } else {
-      return verticalScale(8); // Normal ekranlar: üstten boşluk
-    }
-  }, [width, height, isTablet]);
+    if (isTablet) return verticalScale(12);
+    return verticalScale(8);
+  }, [isTablet]);
   
-  // Responsive favorite slider deck boyutları - useMemo ile optimize edilmiş
   const favoriteSliderDimensions = useMemo(() => {
-    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
-    const isSmallScreen = height < RESPONSIVE_CONSTANTS.SMALL_SCREEN_MAX_HEIGHT;
+    const sliderHeight = isTablet ? height * 0.31 : height * 0.27;
+    const basePadding = isTablet ? scale(20) : scale(16);
     
-    // Slider height - referans: verticalScale(170) - minimal artırıldı
-    let sliderHeight;
-    if (isSmallPhone) {
-      sliderHeight = height * 0.25; // Küçük telefon: ekran yüksekliğinin %25'i (önceki: %24)
-    } else if (isSmallScreen) {
-      sliderHeight = height * 0.23; // Küçük ekran: ekran yüksekliğinin %23'ü (önceki: %22)
-    } else if (isTablet) {
-      sliderHeight = height * 0.31; // Tablet: ekran yüksekliğinin %31'i (önceki: %30)
-    } else {
-      // Normal ve büyük ekranlar için
-      const baseHeight = verticalScale(220); // Önceki: 200
-      const maxHeight = height * 0.29; // Önceki: 0.28
-      sliderHeight = Math.min(baseHeight, maxHeight);
-    }
-    
-    // Padding değerleri
-    const basePadding = isSmallPhone ? scale(12) : (isTablet ? scale(20) : scale(16));
-    
-    // Deck içi element boyutları
     return {
       sliderHeight,
-      fontSize: isSmallPhone ? moderateScale(16) : (isTablet ? moderateScale(22) : moderateScale(20)),
-      dividerMargin: isSmallPhone ? verticalScale(4) : (isTablet ? verticalScale(8) : verticalScale(5)), // Name ve to_name'in divider'a uzaklığı
+      fontSize: isTablet ? moderateScale(22) : moderateScale(20),
+      dividerMargin: isTablet ? verticalScale(8) : verticalScale(5),
       padding: basePadding,
-      // Profile section için azaltılmış padding (left bottom)
-      profileBottomPadding: basePadding * 0.7, // %50 azaltıldı
-      profileLeftPadding: basePadding * 0.7, // %50 azaltıldı
-      // Favorite button için azaltılmış padding (top right)
-      favoriteButtonTopPadding: basePadding * 0.7, // %50 azaltıldı
-      favoriteButtonRightPadding: basePadding * 0.7, // %50 azaltıldı
-      // Badge için azaltılmış padding (right bottom)
-      badgeBottomPadding: basePadding * 0.7, // %50 azaltıldı
-      badgeRightPadding: basePadding * 0.5, // %50 azaltıldı
-      profileAvatarSize: isSmallPhone ? scale(28) : (isTablet ? scale(40) : scale(36)),
-      profileUsernameSize: isSmallPhone ? moderateScale(13) : (isTablet ? moderateScale(17) : moderateScale(16)),
-      badgeIconSize: isSmallPhone ? moderateScale(16) : (isTablet ? moderateScale(22) : moderateScale(20)),
-      badgeTextSize: isSmallPhone ? moderateScale(14) : (isTablet ? moderateScale(20) : moderateScale(18)),
-      favoriteButtonSize: isSmallPhone ? moderateScale(20) : (isTablet ? moderateScale(28) : moderateScale(26)),
-      favoriteButtonPadding: isSmallPhone ? moderateScale(6) : moderateScale(8),
-      categoryIconSize: isSmallPhone ? moderateScale(105, 0.3) : (isTablet ? moderateScale(160, 0.3) : moderateScale(150, 0.3)), // İkon küçültüldü
-      categoryIconLeft: isSmallPhone ? moderateScale(-50, 0.3) : (isTablet ? moderateScale(-75, 0.3) : moderateScale(-70, 0.3)), // İkonun yarısı gözükecek şekilde sola yapışık
+      profileBottomPadding: basePadding * 0.7,
+      profileLeftPadding: basePadding * 0.7,
+      favoriteButtonTopPadding: basePadding * 0.7,
+      favoriteButtonRightPadding: basePadding * 0.7,
+      badgeBottomPadding: basePadding * 0.7,
+      badgeRightPadding: basePadding * 0.5,
+      profileAvatarSize: isTablet ? scale(40) : scale(36),
+      profileUsernameSize: isTablet ? moderateScale(17) : moderateScale(16),
+      badgeIconSize: isTablet ? moderateScale(22) : moderateScale(20),
+      badgeTextSize: isTablet ? moderateScale(20) : moderateScale(18),
+      favoriteButtonSize: isTablet ? moderateScale(28) : moderateScale(26),
+      favoriteButtonPadding: moderateScale(8),
+      categoryIconSize: isTablet ? moderateScale(160, 0.3) : moderateScale(150, 0.3),
+      categoryIconLeft: isTablet ? moderateScale(-75, 0.3) : moderateScale(-70, 0.3),
     };
-  }, [width, height, isTablet]);
+  }, [height, isTablet]);
 
   // Kategoriye göre renkleri al (Supabase sort_order kullanarak)
   const getCategoryColors = (sortOrder) => {

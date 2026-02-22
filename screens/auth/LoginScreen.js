@@ -8,7 +8,6 @@ import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import LanguageSelector from '../../components/modals/LanguageSelector';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
-import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -26,24 +25,10 @@ export default function LoginScreen({ navigation }) {
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
   
-  // Küçük cihazlar ve tablet için responsive paddingTop - useMemo ile optimize edilmiş
   const containerPaddingTop = useMemo(() => {
-    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
-    const isSmallScreen = height < RESPONSIVE_CONSTANTS.SMALL_SCREEN_MAX_HEIGHT;
-    
-    // Tablet için paddingTop'u azalt
-    if (isTablet) {
-      return height * 0.30; // Tablet: %20
-    }
-    // Küçük telefonlarda paddingTop'u azalt
-    if (isSmallPhone) {
-      return height * 0.25; // Küçük telefon: %25
-    } else if (isSmallScreen) {
-      return height * 0.70; // Küçük ekran: %70
-    } else {
-      return height * 0.4; // Normal ekranlar: %40
-    }
-  }, [width, height, isTablet]);
+    if (isTablet) return height * 0.30;
+    return height * 0.35;
+  }, [height, isTablet]);
 
 
   const handleLogin = async () => {

@@ -14,7 +14,7 @@ import { listChapters, getChaptersProgress } from '../../services/ChapterService
 import * as BlockService from '../../services/BlockService';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import ReportModal from '../../components/modals/ReportModal';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import { scale, moderateScale, verticalScale, useWindowDimensions } from '../../lib/scaling';
 import { useFocusEffect } from '@react-navigation/native';
 
 const AnimatedFabContainer = Animated.createAnimatedComponent(View);
@@ -84,8 +84,7 @@ export default function DeckDetailScreen({ route, navigation }) {
   // 120+ karakter genelde 3 satırı aşar (tahmin)
   const [descriptionNeedsExpand, setDescriptionNeedsExpand] = useState(deck?.description?.length > 120);
   const descriptionLayoutDone = useRef(false);
-  const screenWidth = Dimensions.get('window').width;
-  const screenHeight = Dimensions.get('window').height;
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const fabRightPosition = scale(20); // FAB butonunun sağdan mesafesi
   const fabButtonWidth = scale(56);
   const fabGap = scale(12);
@@ -2262,24 +2261,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   gfShareTitle: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: verticalScale(4),
   },
   gfShareStatus: {
-    fontSize: 13,
+    fontSize: moderateScale(13),
     fontWeight: '500',
   },
   gfShareInfoBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    borderTopWidth: 1,
-    gap: 6,
+    paddingVertical: verticalScale(14),
+    borderTopWidth: moderateScale(1),
+    gap: scale(6),
   },
   gfShareInfoText: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     fontWeight: '600',
   },
   // FAB Styles

@@ -3,6 +3,7 @@ import { View, Text, Animated, Easing } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
+import { moderateScale } from '../../lib/scaling';
 
 const CircularProgress = ({ 
   progress = 0, 
@@ -195,7 +196,7 @@ const CircularProgress = ({
           <Animated.Text style={[
             typography.styles.body,
             {
-              fontSize: 40,
+              fontSize: moderateScale(40),
               fontWeight: 'bold',
               color: colors.cardQuestionText || '#333',
               textAlign: 'center',

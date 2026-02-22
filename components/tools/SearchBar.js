@@ -4,33 +4,27 @@ import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
-import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 import { useTranslation } from 'react-i18next';
 
 export default function SearchBar({ value, onChangeText, placeholder, style, variant = 'default' }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
   // useWindowDimensions hook'u - ekran döndürme desteği
-  const { width } = useWindowDimensions();
+  useWindowDimensions();
   const isTablet = getIsTablet();
   
-  // Responsive boyutlar - useMemo ile optimize edilmiş
-  const searchBarDimensions = useMemo(() => {
-    const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
-    
-    return {
-      height: isSmallPhone ? verticalScale(48) : (isTablet ? verticalScale(52) : verticalScale(48)),
-      paddingHorizontal: isSmallPhone ? scale(10) : (isTablet ? scale(14) : scale(10)),
-      paddingVertical: isSmallPhone ? verticalScale(10) : (isTablet ? verticalScale(12) : verticalScale(10)),
-      fontSize: isSmallPhone ? moderateScale(14) : (isTablet ? moderateScale(18) : moderateScale(16)),
-      iconSize: isSmallPhone ? moderateScale(18) : (isTablet ? moderateScale(24) : moderateScale(20)),
-      borderRadius: isSmallPhone ? moderateScale(20) : (isTablet ? moderateScale(28) : moderateScale(24)),
-      borderWidth: isSmallPhone ? moderateScale(0.8) : moderateScale(1),
-      iconMarginRight: isSmallPhone ? scale(4) : scale(6),
-      iconMarginLeft: isSmallPhone ? scale(2) : scale(4),
-      inputPaddingHorizontal: isSmallPhone ? scale(6) : (isTablet ? scale(10) : scale(8)),
-    };
-  }, [width, isTablet]);
+  const searchBarDimensions = useMemo(() => ({
+    height: isTablet ? verticalScale(52) : verticalScale(48),
+    paddingHorizontal: isTablet ? scale(14) : scale(10),
+    paddingVertical: isTablet ? verticalScale(12) : verticalScale(10),
+    fontSize: isTablet ? moderateScale(18) : moderateScale(16),
+    iconSize: isTablet ? moderateScale(24) : moderateScale(20),
+    borderRadius: isTablet ? moderateScale(28) : moderateScale(24),
+    borderWidth: moderateScale(1),
+    iconMarginRight: scale(6),
+    iconMarginLeft: scale(4),
+    inputPaddingHorizontal: isTablet ? scale(10) : scale(8),
+  }), [isTablet]);
   
   const isLight = variant === 'light';
   const borderColor = isLight ? 'rgba(255, 255, 255, 0.3)' : '#4A4A4A';
