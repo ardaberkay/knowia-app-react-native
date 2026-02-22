@@ -508,6 +508,11 @@ const styles = StyleSheet.create({
     paddingVertical: verticalScale(6),
     minHeight: verticalScale(160),
   },
+  headerTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: verticalScale(8),
+  },
   headerContent: {
     paddingVertical: verticalScale(4),
   },

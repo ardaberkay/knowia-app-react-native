@@ -462,6 +462,7 @@ export default function DiscoverScreen() {
                       {
                         padding: heroDimensions.heroGradientPadding,
                         minHeight: heroDimensions.heroGradientMinHeight,
+                        borderRadius: moderateScale(24),
                       }
                     ]}
                   >

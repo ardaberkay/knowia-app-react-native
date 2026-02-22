@@ -725,11 +725,12 @@ export default function LibraryScreen() {
         >
           {/* Header Content */}
           <View style={styles.headerContent}>
-            <View style={styles.headerLeft} />
-            <Text style={[styles.headerTitle, { color: colors.text }]}>
-              {t('tabs.myLibrary', 'Kitaplığım')}
-            </Text>
-            <View style={{ marginRight: -36 }}>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>
+                {t('tabs.myLibrary', 'Kitaplığım')}
+              </Text>
+            </View>
+            <View style={{ position: 'absolute', right: scale(-24), top: scale(8) }}>
               <ProfileAvatarButton />
             </View>
           </View>
@@ -1138,20 +1139,17 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    height: scale(44),
+    height: scale(60),
     marginBottom: verticalScale(12),
   },
   headerLeft: {
-    width: scale(47),
   },
   headerTitle: {
     fontSize: moderateScale(18),
     fontWeight: '700',
     flex: 1,
     textAlign: 'center',
+    marginTop: scale(20),
   },
 
   pillContainer: {
