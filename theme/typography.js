@@ -1,4 +1,4 @@
-import { moderateScale } from 'react-native-size-matters';
+import { moderateScale } from '../lib/scaling';
 
 export const typography = {
   // Font aileleri

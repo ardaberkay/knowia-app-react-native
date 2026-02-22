@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Platform, Modal as RNModal, TouchableWithoutFeedback } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Platform, Modal as RNModal, TouchableWithoutFeedback, Dimensions } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -60,6 +60,7 @@ const FilterModal = ({
 }) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const screenHeight = Dimensions.get('screen').height;
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [tempSort, setTempSort] = useState(currentSort || defaultSort);
   const [tempCategories, setTempCategories] = useState(currentCategories || []);
@@ -155,6 +156,7 @@ const FilterModal = ({
       animationIn="slideInUp"
       animationOut="slideOutDown"
       statusBarTranslucent={true}
+      deviceHeight={screenHeight}
     >
       <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
         <View style={styles.modalHeader}>

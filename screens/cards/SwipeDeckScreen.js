@@ -31,43 +31,23 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const cardDimensions = useMemo(() => {
     const { CARD } = RESPONSIVE_CONSTANTS;
     
-    // Kart genişliği hesaplama - Hibrit yaklaşım
     const getCardWidth = () => {
-      const isSmallPhone = width < CARD.SMALL_PHONE_MAX_WIDTH || width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
-      
-      let scaledWidth;
-      let maxWidth;
-      
       if (isTablet) {
-        // Tablet: scale() ile referans değer, ama ekran genişliğinin %65'ini geçmesin
-        scaledWidth = scale(CARD.REFERENCE_TABLET_MAX_WIDTH);
-        maxWidth = width * CARD.TABLET_WIDTH_PERCENT;
-      } else if (isSmallPhone) {
-        // Küçük telefon: scale() ile referans değer, ama ekran genişliğinin %85'ini geçmesin
-        scaledWidth = scale(CARD.REFERENCE_SMALL_WIDTH);
-        maxWidth = width * CARD.SMALL_PHONE_WIDTH_PERCENT;
-      } else {
-        // Normal telefon: scale() ile referans değer, ama ekran genişliğinin %88'ini geçmesin
-        scaledWidth = scale(CARD.REFERENCE_WIDTH);
-        maxWidth = width * CARD.NORMAL_PHONE_WIDTH_PERCENT;
+        const scaledWidth = scale(CARD.REFERENCE_TABLET_MAX_WIDTH);
+        const maxWidth = width * CARD.TABLET_WIDTH_PERCENT;
+        return Math.min(scaledWidth, maxWidth);
       }
       
-      // İkisinden küçük olanı al (hem dp hem fiziksel boyut kontrolü)
+      const scaledWidth = scale(CARD.REFERENCE_WIDTH);
+      const maxWidth = width * CARD.NORMAL_PHONE_WIDTH_PERCENT;
       return Math.min(scaledWidth, maxWidth);
     };
 
-    // Kart yüksekliği hesaplama
     const calculateCardHeight = (cardWidth) => {
       const idealHeight = cardWidth * CARD.ASPECT_RATIO;
-      const isSmallPhone = width < RESPONSIVE_CONSTANTS.SMALL_PHONE_MAX_WIDTH;
-      
-      let maxHeightPercentage = CARD.NORMAL_PHONE_MAX_HEIGHT_PERCENT;
-      
-      if (isSmallPhone) {
-        maxHeightPercentage = CARD.SMALL_PHONE_MAX_HEIGHT_PERCENT;
-      } else if (height < RESPONSIVE_CONSTANTS.SMALL_SCREEN_MAX_HEIGHT) {
-        maxHeightPercentage = CARD.SMALL_SCREEN_MAX_HEIGHT_PERCENT;
-      }
+      const maxHeightPercentage = height < RESPONSIVE_CONSTANTS.SMALL_SCREEN_MAX_HEIGHT
+        ? CARD.SMALL_SCREEN_MAX_HEIGHT_PERCENT
+        : CARD.NORMAL_PHONE_MAX_HEIGHT_PERCENT;
       
       const maxHeight = height * maxHeightPercentage;
       return Math.min(idealHeight, maxHeight);
@@ -692,7 +672,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
               style={[StyleSheet.absoluteFill, { borderRadius: moderateScale(24) }]}
             />
             {card.cards.image && (
-              <View style={[styles.imageContainer, { backgroundColor: 'transparent', marginTop: verticalScale(32), height: (CARD_HEIGHT * 1.85) / 5 }]}> 
+              <View style={[styles.imageContainer, { backgroundColor: 'transparent', marginTop: verticalScale(32), height: (CARD_HEIGHT * 1.85) / 5 }]}>
                 <Image
                   source={{ uri: card.cards.image }}
                   style={styles.cardImage}

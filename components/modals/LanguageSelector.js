@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import Modal from 'react-native-modal';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -10,6 +10,7 @@ import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 export default function LanguageSelector({ isVisible, onClose, onLanguageChange }) {
   const { colors } = useTheme();
   const { t, i18n } = useTranslation();
+  const screenHeight = Dimensions.get('screen').height;
   const selectedLanguage = i18n.language;
 
   const languages = useMemo(() => [
@@ -40,6 +41,7 @@ export default function LanguageSelector({ isVisible, onClose, onLanguageChange 
       useNativeDriverForBackdrop={true}
       avoidKeyboard={true}
       statusBarTranslucent={true}
+      deviceHeight={screenHeight}
     >
       <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
         <Text style={[typography.styles.h2, { color: colors.text, marginBottom: 16 }]}>

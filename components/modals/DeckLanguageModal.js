@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import Modal from 'react-native-modal';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -18,6 +18,7 @@ export default function DeckLanguageModal({
     const { colors } = useTheme();
     const [error, setError] = useState('');
     const { t } = useTranslation();
+    const screenHeight = Dimensions.get('screen').height;
 
     const getDeckLanguageIcon = (sortOrder) => {
         const icons = {
@@ -67,6 +68,7 @@ export default function DeckLanguageModal({
             animationIn="slideInUp"
             animationOut="slideOutDown"
             statusBarTranslucent
+            deviceHeight={screenHeight}
         >
             <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
                 <View style={styles.headerRow}>

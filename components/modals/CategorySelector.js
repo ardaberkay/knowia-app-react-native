@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import Modal from 'react-native-modal';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -10,6 +10,7 @@ import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 export default function CategorySelector({ isVisible, onClose, categories = [], selectedCategoryId, onSelectCategory }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const screenHeight = Dimensions.get('screen').height;
 
   // Kategori ismini sort_order değerine göre çeviri ile al
   const getCategoryName = (category) => {
@@ -43,6 +44,7 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
       hideModalContentWhileAnimating
       backdropTransitionOutTiming={0}
       statusBarTranslucent={true}
+      deviceHeight={screenHeight}
     >
       <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
         <View style={styles.headerRow}>
@@ -52,7 +54,7 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={{ maxHeight: verticalScale(400), height: verticalScale(400) }} showsVerticalScrollIndicator={false}>
+        <ScrollView style={{ maxHeight: verticalScale(420), height: verticalScale(420) }} showsVerticalScrollIndicator={false}>
           {categories.map((category) => {
             const isSelected = selectedCategoryId === category.id;
             return (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, Dimensions } from 'react-native';
 import Modal from 'react-native-modal';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -31,6 +31,7 @@ export default function ReportModal({
 }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const screenHeight = Dimensions.get('screen').height;
   const [selectedCode, setSelectedCode] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -65,6 +66,7 @@ export default function ReportModal({
       hideModalContentWhileAnimating
       backdropTransitionOutTiming={0}
       statusBarTranslucent
+      deviceHeight={screenHeight}
     >
       <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
         <View style={styles.headerRow}>

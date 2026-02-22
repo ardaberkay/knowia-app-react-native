@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, Platform, Modal as RNModal, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, Platform, Modal as RNModal, TouchableWithoutFeedback, Dimensions } from 'react-native';
 import Modal from 'react-native-modal';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -24,6 +24,7 @@ export default function CsvUploadModal({
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { showSuccess, showError } = useSnackbarHelpers();
+  const screenHeight = Dimensions.get('screen').height;
   const [csvPreview, setCsvPreview] = useState(null);
   const [csvLoading, setCsvLoading] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
@@ -744,6 +745,7 @@ export default function CsvUploadModal({
       animationIn="slideInUp"
       animationOut="slideOutDown"
       statusBarTranslucent={true}
+      deviceHeight={screenHeight}
     >
       <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
         <View style={styles.headerRow}>

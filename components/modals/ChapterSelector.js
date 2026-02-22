@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import Modal from 'react-native-modal';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -18,6 +18,7 @@ export default function ChapterSelector({
 }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const screenHeight = Dimensions.get('screen').height;
 
   return (
     <Modal
@@ -29,6 +30,7 @@ export default function ChapterSelector({
       hideModalContentWhileAnimating
       backdropTransitionOutTiming={0}
       statusBarTranslucent={true}
+      deviceHeight={screenHeight}
     >
       <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
         <View style={styles.headerRow}>
