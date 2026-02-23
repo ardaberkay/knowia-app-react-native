@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../contexts/AuthContext';
+import { OnboardingFinishContext } from '../contexts/OnboardingFinishContext';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
@@ -28,6 +29,8 @@ import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import { scale, moderateScale, verticalScale } from '../lib/scaling';
+import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -113,6 +116,28 @@ export default function AppNavigator() {
   const { colors } = useTheme();
   const { session, loading, isRecoveryMode } = useAuth();
   const { t } = useTranslation();
+  const [hasSeenOnboarding, setHasSeenOnboarding] = React.useState(null);
+
+  React.useEffect(() => {
+    let mounted = true;
+    const check = async () => {
+      try {
+        const v = await AsyncStorage.getItem('hasSeenOnboarding');
+        if (mounted) setHasSeenOnboarding(v === 'true');
+      } catch (e) {
+        if (mounted) setHasSeenOnboarding(false);
+      }
+    };
+    check();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const onFinishOnboarding = React.useCallback(async () => {
+    await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+    setHasSeenOnboarding(true);
+  }, []);
 
   console.log('AppNavigator render:', { session, loading, isRecoveryMode });
 
@@ -121,12 +146,18 @@ export default function AppNavigator() {
     return null; // veya bir loading ekranı
   }
 
+  if (hasSeenOnboarding === null) {
+    return null;
+  }
+
   console.log('Session durumu:', session ? 'Var' : 'Yok', 'Recovery mode:', isRecoveryMode);
 
   // Recovery modundayken session olsa bile auth stack'i göster
   const showAuthStack = !session || isRecoveryMode;
+  const showOnboarding = !session && !isRecoveryMode && hasSeenOnboarding === false;
 
   return (
+    <OnboardingFinishContext.Provider value={showOnboarding ? onFinishOnboarding : null}>
     <Stack.Navigator screenOptions={{ 
       headerShown: false, 
       headerStyle: { backgroundColor: colors.tabBarBackground },
@@ -135,7 +166,11 @@ export default function AppNavigator() {
         fontSize: 18
       }
     }}>
-      {showAuthStack ? (
+      {showOnboarding ? (
+        <>
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+        </>
+      ) : showAuthStack ? (
         <>
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
@@ -212,5 +247,6 @@ export default function AppNavigator() {
         </>
       )}
     </Stack.Navigator>
+    </OnboardingFinishContext.Provider>
   );
 } 

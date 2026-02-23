@@ -569,6 +569,28 @@
     "totalStarts": "Total de Inícios",
     "totalDecks": "Baralho"
   },
+  "onboarding": {
+    "step": "{{current}} / {{total}}",
+    "skip": "Pular",
+    "next": "Próximo",
+    "getStarted": "Começar",
+    "screen1": {
+      "title": "Aprendizado Gamificado e Duradouro",
+      "subtitle": "Deslize os cartões, defina seu ritmo e nunca esqueça graças ao nosso algoritmo."
+    },
+    "screen2": {
+      "title": "Nunca Comece do Zero",
+      "subtitle": "Comece a aprender com baralhos de especialistas ou explore milhares de baralhos da comunidade."
+    },
+    "screen3": {
+      "title": "Crie Seu Próprio Mundo",
+      "subtitle": "Crie seus próprios baralhos — mantenha privado ou compartilhe com o mundo."
+    },
+    "screen4": {
+      "title": "Comece Agora",
+      "subtitle": "Comece seu hábito de aprendizado hoje. Escolha seu primeiro baralho e comece a deslizar."
+    }
+  },
   "languages": {
     "1": "Turco",
     "2": "Inglês",

@@ -12,6 +12,7 @@
     "info": "Info & Support",
     "about": "About Us",
     "feedback": "Send Feedback",
+    "showOnboardingAgain": "Show onboarding again",
     "terms": "Terms of Service",
     "privacy": "Privacy Policy",
     "error": "Error",
@@ -603,6 +604,29 @@
     "newSubtitle": "Discover the newest added decks",
     "totalStarts": "Total Starts",
     "totalDecks": "Deck"
+  },
+  "onboarding": {
+    "step": "{{current}} / {{total}}",
+    "skip": "Skip",
+    "next": "Next",
+    "getStarted": "Get started",
+    "previewTitle": "Introduction",
+    "screen1": {
+      "title": "Gamified, Lasting Learning",
+      "subtitle": "Swipe cards, choose your pace, and never forget thanks to our algorithm."
+    },
+    "screen2": {
+      "title": "Never Start From Scratch",
+      "subtitle": "Start learning instantly with expert decks, or explore thousands of community decks."
+    },
+    "screen3": {
+      "title": "Create Your Own World",
+      "subtitle": "Build your own decks—keep them private or share them with the world."
+    },
+    "screen4": {
+      "title": "Start Now",
+      "subtitle": "Begin your learning habit today. Pick your first deck and start swiping."
+    }
   },
   "languages": {
     "1": "Turkish",

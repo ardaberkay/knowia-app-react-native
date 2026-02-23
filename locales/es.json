@@ -569,6 +569,28 @@
     "totalStarts": "Total de Inicios",
     "totalDecks": "Baraja"
   },
+  "onboarding": {
+    "step": "{{current}} / {{total}}",
+    "skip": "Saltar",
+    "next": "Siguiente",
+    "getStarted": "Empezar",
+    "screen1": {
+      "title": "Aprendizaje Gamificado y Duradero",
+      "subtitle": "Desliza las tarjetas, elige tu ritmo y no olvides nunca gracias a nuestro algoritmo."
+    },
+    "screen2": {
+      "title": "Nunca Empieces de Cero",
+      "subtitle": "Empieza al instante con barajas de expertos o explora miles de barajas de la comunidad."
+    },
+    "screen3": {
+      "title": "Crea Tu Propio Mundo",
+      "subtitle": "Crea tus propias barajas: guárdalas en privado o compártelas con el mundo."
+    },
+    "screen4": {
+      "title": "Empieza Ahora",
+      "subtitle": "Empieza tu hábito de aprendizaje hoy. Elige tu primera baraja y comienza a deslizar."
+    }
+  },
   "languages": {
     "1": "Turco",
     "2": "Inglés",

@@ -569,6 +569,28 @@
     "totalStarts": "Total des Démarrages",
     "totalDecks": "Paquet"
   },
+  "onboarding": {
+    "step": "{{current}} / {{total}}",
+    "skip": "Passer",
+    "next": "Suivant",
+    "getStarted": "Commencer",
+    "screen1": {
+      "title": "Apprentissage Gamifié et Durable",
+      "subtitle": "Faites glisser les cartes, choisissez votre rythme et n'oubliez jamais grâce à notre algorithme."
+    },
+    "screen2": {
+      "title": "Ne Repartez Jamais de Zéro",
+      "subtitle": "Commencez tout de suite avec des paquets d'experts ou explorez des milliers de paquets de la communauté."
+    },
+    "screen3": {
+      "title": "Créez Votre Propre Univers",
+      "subtitle": "Créez vos propres paquets — gardez-les privés ou partagez-les avec le monde."
+    },
+    "screen4": {
+      "title": "Commencez Maintenant",
+      "subtitle": "Lancez votre habitude d'apprentissage dès aujourd'hui. Choisissez votre premier paquet et commencez à faire glisser."
+    }
+  },
   "langues": {
     "1": "Turc",
     "2": "Anglais",

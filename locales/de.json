@@ -571,6 +571,28 @@
     "totalStarts": "Gesamtstarts",
     "totalDecks": "Decks"
   },
+  "onboarding": {
+    "step": "{{current}} / {{total}}",
+    "skip": "Überspringen",
+    "next": "Weiter",
+    "getStarted": "Los geht's",
+    "screen1": {
+      "title": "Spielerisch, nachhaltig lernen",
+      "subtitle": "Wische Karten, bestimme dein Tempo und vergiss dank unseres Algorithmus nie wieder."
+    },
+    "screen2": {
+      "title": "Nie bei Null starten",
+      "subtitle": "Starte sofort mit Experten-Decks oder entdecke tausende Community-Decks."
+    },
+    "screen3": {
+      "title": "Erschaffe deine eigene Welt",
+      "subtitle": "Erstelle deine eigenen Decks – privat behalten oder mit der Welt teilen."
+    },
+    "screen4": {
+      "title": "Jetzt starten",
+      "subtitle": "Beginne deine Lernroutine heute. Wähle dein erstes Deck und leg los."
+    }
+  },
   "languages": {
     "1": "Türkisch",
     "2": "Englisch",

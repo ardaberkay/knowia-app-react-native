@@ -12,6 +12,7 @@
     "info": "Bilgi & Destek",
     "about": "Hakkımızda",
     "feedback": "Geri Bildirim Gönder",
+    "showOnboardingAgain": "Tanıtımı tekrar izle",
     "terms": "Kullanım Koşulları",
     "error": "Hata",
     "errorMessage": "Hata",
@@ -608,6 +609,29 @@
     "newSubtitle": "En yeni eklenen desteleri keşfet",
     "totalStarts": "Toplam Başlatma",
     "totalDecks": "Deste"
+  },
+  "onboarding": {
+    "step": "{{current}} / {{total}}",
+    "skip": "Atla",
+    "next": "İleri",
+    "getStarted": "Başla",
+    "previewTitle": "Tanıtım",
+    "screen1": {
+      "title": "Oyunlaştırılmış, Kalıcı Öğrenme",
+      "subtitle": "Kartları kaydır, öğrenme hızını belirle ve algoritmamız sayesinde asla unutma."
+    },
+    "screen2": {
+      "title": "Asla Sıfırdan Başlama",
+      "subtitle": "Knowia'nın uzman desteleriyle hemen öğrenmeye başla veya topluluğun paylaştığı binlerce desteyi keşfet."
+    },
+    "screen3": {
+      "title": "Kendi Dünyanı Yarat",
+      "subtitle": "Kendi destelerini oluştur, ister kendine sakla ister tüm dünyayla paylaşarak topluluğa katkı sağla."
+    },
+    "screen4": {
+      "title": "Hemen Başla",
+      "subtitle": "Öğrenme alışkanlığını bugün başlat. İlk desteğini seç ve kaydırmaya başla."
+    }
   },
   "languages": {
     "1": "Türkçe",
