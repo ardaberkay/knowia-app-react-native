@@ -204,6 +204,8 @@
     "shareDetailsText": "Wenn dieses Deck mit der Community geteilt wird, können andere Nutzer es ansehen und verwenden. Während die Freigabe aktiv ist, können keine neuen Kapitel oder Karten hinzugefügt oder bestehende Inhalte gelöscht werden. Die Freigabe kann jederzeit deaktiviert werden.",
     "shareUpdated": "Freigabe aktualisiert",
     "shareUpdateError": "Freigabe konnte nicht aktualisiert werden",
+    "shareConfirmMessage": "Nach dem Teilen mit der Community kannst du keine Änderungen mehr an den Kapiteln vornehmen. Bist du sicher?",
+    "shareUnshareConfirmMessage": "Möchtest du dieses Deck wirklich aus der Community entfernen? Andere Nutzer können es dann nicht mehr sehen.",
     "action": "Aktion",
     "learned": "Gelernt",
     "learning": "Lernend",

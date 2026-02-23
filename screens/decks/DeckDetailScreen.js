@@ -675,9 +675,8 @@ export default function DeckDetailScreen({ route, navigation }) {
     if (shareLoading) return;
 
     if (nextValue) {
-      // Switch hemen açılır
+      // Açarken: switch hemen açılır, onay iste
       setIsShared(true);
-
       Alert.alert(
         t('common.warning', 'Uyarı'),
         t(
@@ -688,16 +687,31 @@ export default function DeckDetailScreen({ route, navigation }) {
           {
             text: t('common.no', 'Hayır'),
             style: 'cancel',
-            onPress: () => setIsShared(false), // kullanıcı iptal ederse geri kapat
+            onPress: () => setIsShared(false),
           },
-          { text: t('common.yes', 'Evet'), onPress: () => updateShareSetting(true) }, // API çağrısı sadece
+          { text: t('common.yes', 'Evet'), onPress: () => updateShareSetting(true) },
         ],
         { cancelable: true }
       );
     } else {
-      // Kapatırken direkt hem switch hem API
+      // Kapatırken: switch hemen kapanır, onay iste; Evet derse false yap
       setIsShared(false);
-      updateShareSetting(false);
+      Alert.alert(
+        t('common.warning', 'Uyarı'),
+        t(
+          'deckDetail.shareUnshareConfirmMessage',
+          'Desteyi topluluktan kaldırmak istediğine emin misin? Artık diğer kullanıcılar bu desteyi göremeyecek.'
+        ),
+        [
+          {
+            text: t('common.no', 'Hayır'),
+            style: 'cancel',
+            onPress: () => setIsShared(true), // iptal ederse tekrar aç
+          },
+          { text: t('common.yes', 'Evet'), onPress: () => updateShareSetting(false) },
+        ],
+        { cancelable: true }
+      );
     }
   };
 

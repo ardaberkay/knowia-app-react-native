@@ -205,6 +205,8 @@
     "shareDetailsText": "Lorsque ce deck est partagé avec la communauté, il peut être consulté et utilisé par d'autres utilisateurs. Tant que le partage est actif, vous ne pouvez pas ajouter de nouveaux chapitres ou cartes, ni supprimer le contenu existant. Vous pouvez désactiver le partage à tout moment.",
     "shareUpdated": "Paramètres de partage mis à jour",
     "shareUpdateError": "Impossible de mettre à jour les paramètres de partage",
+    "shareConfirmMessage": "Après avoir partagé ce paquet avec la communauté, vous ne pourrez plus modifier les chapitres. Êtes-vous sûr ?",
+    "shareUnshareConfirmMessage": "Êtes-vous sûr de vouloir retirer ce paquet de la communauté ? Les autres utilisateurs ne pourront plus le voir.",
     "action": "Action",
     "learned": "Appris",
     "learning": "En cours",

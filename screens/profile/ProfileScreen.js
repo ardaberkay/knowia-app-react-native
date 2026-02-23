@@ -8,6 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useProfile } from '../../contexts/ProfileContext';
 import { cacheProfile, getCachedProfile, cacheProfileImage } from '../../services/CacheService';
 import ProfileSkeleton from '../../components/skeleton/ProfileSkeleton';
 import { useTranslation } from 'react-i18next';
@@ -20,10 +21,11 @@ import * as WebBrowser from 'expo-web-browser';
 export default function ProfileScreen() {
   const { colors, isDarkMode, toggleTheme, themePreference, loading: themeLoading } = useTheme();
   const navigation = useNavigation();
+  const { profile: contextProfile } = useProfile();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(contextProfile?.notifications_enabled ?? false);
   const [userId, setUserId] = useState(null);
   const { logout } = useAuth();
   const { t, i18n } = useTranslation();
@@ -113,6 +115,13 @@ export default function ProfileScreen() {
       setLoading(false);
     }
   }, [t]);
+
+  // Context'teki profil yüklendiğinde bildirim değerini senkronize et (ilk açılışta animasyonu önlemek için)
+  useEffect(() => {
+    if (contextProfile != null) {
+      setNotificationsEnabled(!!contextProfile.notifications_enabled);
+    }
+  }, [contextProfile?.notifications_enabled]);
 
   // İlk yükleme - cache kullan
   useEffect(() => {

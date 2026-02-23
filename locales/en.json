@@ -237,6 +237,8 @@
     "shareDetailsText": "When this deck is shared with the community, it can be viewed and used by other users. While sharing is active, you cannot add new chapters or cards, or delete existing content. You can disable sharing at any time.",
     "shareUpdated": "Sharing settings updated",
     "shareUpdateError": "Sharing settings could not be updated",
+    "shareConfirmMessage": "After sharing this deck with the community, you will not be able to make any changes to the chapters. Are you sure?",
+    "shareUnshareConfirmMessage": "Are you sure you want to remove this deck from the community? Other users will no longer be able to see it.",
     "action": "Action",
     "learned": "Learned",
     "learning": "Learning",

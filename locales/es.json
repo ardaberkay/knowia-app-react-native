@@ -205,6 +205,8 @@
     "shareDetailsText": "Cuando este mazo se comparte con la comunidad, puede ser visto y usado por otros usuarios. Mientras la compartición esté activa, no podrás agregar nuevos capítulos o tarjetas, ni eliminar contenido existente. Puedes desactivar el compartir en cualquier momento.",
     "shareUpdated": "Configuración de compartir actualizada",
     "shareUpdateError": "No se pudo actualizar la configuración de compartir",
+    "shareConfirmMessage": "Después de compartir este mazo con la comunidad, no podrás hacer cambios en los capítulos. ¿Estás seguro?",
+    "shareUnshareConfirmMessage": "¿Estás seguro de que quieres quitar este mazo de la comunidad? Los demás usuarios ya no podrán verlo.",
     "action": "Acción",
     "learned": "Aprendido",
     "learning": "Aprendiendo",
