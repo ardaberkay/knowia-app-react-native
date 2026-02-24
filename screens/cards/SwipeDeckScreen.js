@@ -17,6 +17,7 @@ import * as BlockService from '../../services/BlockService';
 import ReportModal from '../../components/modals/ReportModal';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import MathText from '../../components/ui/MathText';
+import SwipeFlipCard from '../../components/layout/SwipeFlipCard';
 
 export default function SwipeDeckScreen({ route, navigation }) {
   const { deck, chapter } = route.params || {};
@@ -79,8 +80,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userId, setUserId] = useState(null);
-  const [flipped, setFlipped] = useState({});
-  const animatedValues = useRef({});
+  const animatedValuesById = useRef({});
+  const flippedByIdRef = useRef({});
   const [leftCount, setLeftCount] = useState(0);
   const [rightCount, setRightCount] = useState(0);
   const [initialLearnedCount, setInitialLearnedCount] = useState(0);
@@ -249,7 +250,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       console.log('learningCards:', learningCards);
       console.log('supabase error:', error);
       setCards((learningCards || []).filter(card => card.cards));
-      setFlipped({});
+      flippedByIdRef.current = {};
       
       // Toplam kart sayısı (seçilen bölüme ait tüm kartlar)
       let allCardsQuery = supabase
@@ -357,10 +358,25 @@ export default function SwipeDeckScreen({ route, navigation }) {
     return () => clearInterval(interval);
   }, []);
 
+  const getAnimatedValueForCardId = useCallback((cardId) => {
+    if (!cardId) return null;
+    if (!animatedValuesById.current[cardId]) {
+      animatedValuesById.current[cardId] = new Animated.Value(0);
+    }
+    return animatedValuesById.current[cardId];
+  }, []);
+
+  const resetFlipForCardId = useCallback((cardId) => {
+    if (!cardId) return;
+    flippedByIdRef.current[cardId] = false;
+    const v = getAnimatedValueForCardId(cardId);
+    if (v) v.setValue(0);
+  }, [getAnimatedValueForCardId]);
+
   const handleSwipe = useCallback(async (cardIndex, direction) => {
-    setFlipped((prev) => ({ ...prev, [cardIndex]: false }));
     if (!cards[cardIndex]) return;
     const card = cards[cardIndex];
+    resetFlipForCardId(card.card_id);
     if (!userId) return;
     setHistory((prev) => [...prev, cardIndex]);
     setHistoryDirections((prev) => [...prev, direction]);
@@ -392,23 +408,24 @@ export default function SwipeDeckScreen({ route, navigation }) {
       setPendingReinserts((prev) => [...prev, { card, insertAt }]);
     }
     setCurrentIndex(cardIndex + 1);
-  }, [cards, userId]);
+  }, [cards, userId, resetFlipForCardId]);
 
-  const handleFlip = (cardIndex) => {
-    setFlipped((prev) => {
-      const newFlipped = { ...prev, [cardIndex]: !prev[cardIndex] };
-      if (!animatedValues.current[cardIndex]) {
-        animatedValues.current[cardIndex] = new Animated.Value(0);
-      }
-      Animated.timing(animatedValues.current[cardIndex], {
-        toValue: newFlipped[cardIndex] ? 1 : 0,
-        duration: 400,
-        useNativeDriver: true,
-        easing: Easing.out(Easing.ease),
-      }).start();
-      return newFlipped;
-    });
-  };
+  const handleFlipById = useCallback((cardId) => {
+    if (!cardId) return;
+    const current = !!flippedByIdRef.current[cardId];
+    const next = !current;
+    flippedByIdRef.current[cardId] = next;
+
+    const v = getAnimatedValueForCardId(cardId);
+    if (!v) return;
+
+    Animated.timing(v, {
+      toValue: next ? 1 : 0,
+      duration: 280,
+      useNativeDriver: true,
+      easing: Easing.out(Easing.cubic),
+    }).start();
+  }, [getAnimatedValueForCardId]);
 
   const handleSkip = async (minutes) => {
     if (!cards[currentIndex]) return;
@@ -498,7 +515,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
     // Önce kartın ön yüzünü göster (2000ms)
     // Sonra flip yap
     autoPlayFlipTimeout.current = setTimeout(() => {
-      handleFlip(currentIndex);
+      const cardId = cards[currentIndex]?.card_id;
+      if (cardId) handleFlipById(cardId);
       // Flip sonrası arka yüzü göster (2000ms), sonra swipe yap
       autoPlayTimeout.current = setTimeout(() => {
         if (swiperRef.current) {
@@ -511,7 +529,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       if (autoPlayTimeout.current) clearTimeout(autoPlayTimeout.current);
       if (autoPlayFlipTimeout.current) clearTimeout(autoPlayFlipTimeout.current);
     };
-  }, [autoPlay, currentIndex, cards.length]);
+  }, [autoPlay, currentIndex, cards, handleFlipById]);
 
   // Auto play durdurucu (kartlar bittiğinde veya ekran değişirse)
   useEffect(() => {
@@ -572,223 +590,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
     fetchCurrentStats();
   }, [cards.length, currentIndex, userId, deck?.id, chapter?.id]);
-
-  const FlipCard = ({ card, cardIndex, currentIndex }) => {
-    // Modern Pill başlık bileşeni (etiket + ikon)
-    const Pill = ({ label, icon, color = colors.buttonColor }) => (
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingVertical: verticalScale(8),
-          paddingHorizontal: scale(14),
-          borderRadius: moderateScale(20),
-          backgroundColor: 'rgba(255, 255, 255, 0.15)',
-          borderWidth: moderateScale(1.5),
-          borderColor: 'rgba(255, 255, 255, 0.3)',
-          marginBottom: verticalScale(12),
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: verticalScale(2) },
-          shadowOpacity: 0.1,
-          shadowRadius: moderateScale(4),
-          elevation: 2,
-        }}
-      >
-        {icon ? <View style={{ marginRight: scale(8) }}>{icon}</View> : null}
-        <Text style={{ color: '#fff', fontWeight: '700', fontSize: moderateScale(14), letterSpacing: 0.5 }}>{label}</Text>
-      </View>
-    );
-
-    // Bölüm ayırıcı bileşeni
-    const SectionDivider = () => (
-      <View style={{
-        width: '60%',
-        height: verticalScale(1),
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        marginVertical: verticalScale(20),
-        alignSelf: 'center',
-      }} />
-    );
-
-
-    // Kategori rengini al
-    const gradientColors = getCategoryColors(categorySortOrder);
-    
-    // Eğer kart yoksa veya stack'teki alttaki kartsa, placeholder göster
-    if (!card || !card.cards || cardIndex > currentIndex) {
-      return (
-        <View style={[styles.card, { width: CARD_WIDTH, height: CARD_HEIGHT, opacity: 0.7 }]}> 
-          <LinearGradient
-            colors={gradientColors}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[StyleSheet.absoluteFill, { borderRadius: moderateScale(24) }]}
-          />
-        </View>
-      );
-    }
-    if (!animatedValues.current[cardIndex]) {
-      animatedValues.current[cardIndex] = new Animated.Value(0);
-    }
-    const frontInterpolate = animatedValues.current[cardIndex].interpolate({
-      inputRange: [0, 1],
-      outputRange: ['0deg', '180deg'],
-    });
-    const backInterpolate = animatedValues.current[cardIndex].interpolate({
-      inputRange: [0, 1],
-      outputRange: ['180deg', '360deg'],
-    });
-    const frontAnimatedStyle = {
-      transform: [{ rotateY: frontInterpolate }],
-      backfaceVisibility: 'hidden',
-      position: 'absolute',
-      width: CARD_WIDTH,
-      height: CARD_HEIGHT,
-    };
-    const backAnimatedStyle = {
-      transform: [{ rotateY: backInterpolate }],
-      backfaceVisibility: 'hidden',
-      position: 'absolute',
-      width: CARD_WIDTH,
-      height: CARD_HEIGHT,
-    };
-    return (
-      <View style={{ width: CARD_WIDTH, height: CARD_HEIGHT, alignSelf: 'center' }}>
-        {/* Kart içeriği (flip alanı) */}
-        <Pressable
-          onPress={() => handleFlip(cardIndex)}
-          style={{ flex: 1 }}
-        >
-          {/* Ön yüz */}
-          <Animated.View style={[styles.card, { width: CARD_WIDTH, height: CARD_HEIGHT, backgroundColor: colors.cardBackground, justifyContent: card.cards.image ? 'flex-start' : 'center' }, frontAnimatedStyle]}>
-            <LinearGradient
-              colors={gradientColors}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[StyleSheet.absoluteFill, { borderRadius: moderateScale(24) }]}
-            />
-            {card.cards.image && (
-              <View style={[styles.imageContainer, { backgroundColor: 'transparent', marginTop: verticalScale(32), height: (CARD_HEIGHT * 1.85) / 5 }]}>
-                <Image
-                  source={{ uri: card.cards.image }}
-                  style={styles.cardImage}
-                />
-              </View>
-            )}
-            
-            <MathText
-              value={card.cards.question}
-              style={[
-                typography.styles.h2,
-                {
-                  color: colors.text,
-                  marginBottom: card.cards.image ? verticalScale(16) : 0,
-                  textAlign: 'center',
-                },
-              ]}
-              forceText
-            />
-          </Animated.View>
-          {/* Arka yüz */}
-          <Animated.View style={[styles.card, { width: CARD_WIDTH, height: CARD_HEIGHT, backgroundColor: colors.cardBackground }, backAnimatedStyle]}>
-            <LinearGradient
-              colors={gradientColors}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[StyleSheet.absoluteFill, { borderRadius: moderateScale(24) }]}
-            />
-            <ScrollView
-              contentContainerStyle={{
-                flexGrow: 1,
-                justifyContent: 'center',
-                paddingHorizontal: scale(24),
-                paddingTop: verticalScale(32),
-                paddingBottom: verticalScale(24),
-              }}
-              showsVerticalScrollIndicator={false}
-            >
-              {/* Answer Section */}
-              <View style={{ alignItems: 'center', marginBottom: verticalScale(24) }}>
-                <Pill
-                  label={t('swipeDeck.answer', 'Answer')}
-                  icon={<Iconify icon="uil:comment-alt-check" size={moderateScale(18)} color="#fff" />}
-                />
-                <MathText
-                  value={card.cards.answer}
-                  forceText
-                  style={[
-                    typography.styles.h2,
-                    {
-                      color: '#fff',
-                      textAlign: 'center',
-                      marginTop: verticalScale(8),
-                      lineHeight: moderateScale(28),
-                      fontWeight: '600',
-                    },
-                  ]}
-                />
-              </View>
-
-              {/* Example Section */}
-              {card.cards.example && (
-                <>
-                  <SectionDivider />
-                  <View style={{ alignItems: 'center', marginBottom: verticalScale(24) }}>
-                    <Pill
-                      label={t('swipeDeck.example', 'Example')}
-                      icon={<Iconify icon="lucide:lightbulb" size={moderateScale(18)} color="#fff" />}
-                    />
-                    <MathText
-                      value={card.cards.example}
-                      forceText
-                      style={[
-                        typography.styles.subtitle,
-                        {
-                          color: 'rgba(255, 255, 255, 0.9)',
-                          textAlign: 'center',
-                          marginTop: verticalScale(8),
-                          lineHeight: moderateScale(22),
-                          fontSize: moderateScale(16),
-                        },
-                      ]}
-                    />
-                  </View>
-                </>
-              )}
-
-              {/* Note Section */}
-              {card.cards.note && (
-                <>
-                  <SectionDivider />
-                  <View style={{ alignItems: 'center', marginBottom: verticalScale(24) }}>
-                    <Pill
-                      label={t('swipeDeck.note', 'Note')}
-                      icon={<Iconify icon="material-symbols-light:stylus-note" size={moderateScale(18)} color="#fff" />}
-                    />
-                    <MathText
-                      value={card.cards.note}
-                      forceText
-                      style={[
-                        typography.styles.subtitle,
-                        {
-                          color: 'rgba(255, 255, 255, 0.85)',
-                          textAlign: 'center',
-                          marginTop: verticalScale(8),
-                          lineHeight: moderateScale(22),
-                          fontSize: moderateScale(15),
-                          fontStyle: 'italic',
-                        },
-                      ]}
-                    />
-                  </View>
-                </>
-              )}
-            </ScrollView>
-          </Animated.View>
-        </Pressable>
-      </View>
-    );
-  };
 
   if (loading) {
     return (
@@ -929,14 +730,27 @@ export default function SwipeDeckScreen({ route, navigation }) {
           ref={swiperRef}
           cards={cards}
           cardIndex={currentIndex}
-          renderCard={(card, i) => (
-            <FlipCard
-              card={card}
-              cardIndex={i}
-              currentIndex={currentIndex}
-              key={card.card_id}
-            />
-          )}
+          renderCard={(card, i) => {
+            const cardId = card?.card_id;
+            const animatedValue = cardId ? getAnimatedValueForCardId(cardId) : null;
+            const gradientColors = getCategoryColors(categorySortOrder);
+            const isPlaceholder = !card || !card.cards || i > currentIndex;
+            return (
+              <SwipeFlipCard
+                key={cardId || `placeholder-${i}`}
+                card={card}
+                cardId={cardId}
+                isPlaceholder={isPlaceholder}
+                cardWidth={CARD_WIDTH}
+                cardHeight={CARD_HEIGHT}
+                gradientColors={gradientColors}
+                cardBackground={colors.cardBackground}
+                textColor={colors.text}
+                animatedValue={animatedValue}
+                onFlip={handleFlipById}
+              />
+            );
+          }}
           onSwipedLeft={(i) => { handleSwipe(i, 'left'); setCurrentIndex(i + 1); }}
           onSwipedRight={(i) => { handleSwipe(i, 'right'); setCurrentIndex(i + 1); }}
           overlayLabels={{
