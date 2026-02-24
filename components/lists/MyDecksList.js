@@ -47,7 +47,6 @@ const FadeText = ({ text, style, maxChars = 15 }) => {
 
 export default function MyDecksList({
   decks,
-  favoriteDecks,
   onToggleFavorite,
   onDeleteDeck,
   onPressDeck,
@@ -227,9 +226,9 @@ export default function MyDecksList({
               activeOpacity={0.7}
             >
               <Iconify
-                icon={favoriteDecks.some(d => d.id === deck.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
+                icon={deck.is_favorite ? 'solar:heart-bold' : 'solar:heart-broken'}
                 size={moderateScale(21)}
-                color={favoriteDecks.some(d => d.id === deck.id) ? '#F98A21' : colors.text}
+                color={deck.is_favorite ? '#F98A21' : colors.text}
               />
             </TouchableOpacity>
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -305,9 +304,9 @@ export default function MyDecksList({
             activeOpacity={0.7}
           >
             <Iconify
-              icon={favoriteDecks.some(d => d.id === row.item.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
+              icon={row.item.is_favorite ? 'solar:heart-bold' : 'solar:heart-broken'}
               size={moderateScale(22)}
-              color={favoriteDecks.some(d => d.id === row.item.id) ? '#F98A21' : colors.text}
+              color={row.item.is_favorite ? '#F98A21' : colors.text}
             />
           </TouchableOpacity>
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>

@@ -169,7 +169,7 @@ export default function DeckEditScreen() {
           style={[
             styles.inputCard,
             {
-              backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+              backgroundColor: colors.cardBackground,
               borderColor: colors.cardBorder,
               borderWidth: 1,
               shadowColor: colors.shadowColor,
@@ -216,7 +216,7 @@ export default function DeckEditScreen() {
           style={[
             styles.inputCard,
             {
-              backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+              backgroundColor: colors.cardBackground,
               borderColor: colors.cardBorder,
               borderWidth: 1,
               shadowColor: colors.shadowColor,
@@ -262,7 +262,7 @@ export default function DeckEditScreen() {
           style={[
             styles.inputCard,
             {
-              backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+              backgroundColor: colors.cardBackground,
               borderColor: colors.cardBorder,
               borderWidth: 1,
               shadowColor: colors.shadowColor,
@@ -315,7 +315,7 @@ export default function DeckEditScreen() {
           style={[
             styles.inputCard,
             {
-              backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+              backgroundColor: colors.cardBackground,
               borderColor: colors.cardBorder,
               borderWidth: 1,
               shadowColor: colors.shadowColor,
@@ -380,7 +380,7 @@ export default function DeckEditScreen() {
           style={[
             styles.inputCard,
             {
-              backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+              backgroundColor: colors.cardBackground,
               borderColor: colors.cardBorder,
               borderWidth: 1,
               shadowColor: colors.shadowColor,

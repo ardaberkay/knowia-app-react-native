@@ -327,12 +327,14 @@ export default function EditProfileScreen({ navigation }) {
       >
           {/* Profile Photo Card */}
           <View style={[styles.inputCard, {
-            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+            backgroundColor: colors.cardBackground,
             shadowColor: colors.shadowColor,
             shadowOffset: colors.shadowOffset,
             shadowOpacity: colors.shadowOpacity,
             shadowRadius: colors.shadowRadius,
             elevation: colors.elevation,
+            borderColor: colors.cardBorder,
+            borderWidth: 1,
           }]}>
             <View style={styles.labelRow}>
               <Iconify icon="mage:image-fill" size={moderateScale(20)} color={colors.buttonColor} style={styles.labelIcon} />
@@ -389,12 +391,14 @@ export default function EditProfileScreen({ navigation }) {
 
           {/* Username Card */}
           <View style={[styles.inputCard, {
-            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+            backgroundColor: colors.cardBackground,
             shadowColor: colors.shadowColor,
             shadowOffset: colors.shadowOffset,
             shadowOpacity: colors.shadowOpacity,
             shadowRadius: colors.shadowRadius,
             elevation: colors.elevation,
+            borderColor: colors.cardBorder,
+            borderWidth: 1,
           }]}>
             <View style={styles.labelRow}>
               <Iconify icon="solar:user-bold" size={moderateScale(20)} color={colors.buttonColor} style={styles.labelIcon} />
@@ -422,12 +426,14 @@ export default function EditProfileScreen({ navigation }) {
 
           {/* Email Card - OAuth kullanıcıda kilitli */}
           <View style={[styles.inputCard, {
-            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+            backgroundColor: colors.cardBackground,
             shadowColor: colors.shadowColor,
             shadowOffset: colors.shadowOffset,
             shadowOpacity: colors.shadowOpacity,
             shadowRadius: colors.shadowRadius,
             elevation: colors.elevation,
+            borderColor: colors.cardBorder,
+            borderWidth: 1,
             opacity: isOAuthUser ? 0.80 : 1,
             position: 'relative',
           }]}>
@@ -462,12 +468,14 @@ export default function EditProfileScreen({ navigation }) {
 
           {/* Current Password Card - OAuth kullanıcıda kilitli */}
           <View style={[styles.inputCard, {
-            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+            backgroundColor: colors.cardBackground,
             shadowColor: colors.shadowColor,
             shadowOffset: colors.shadowOffset,
             shadowOpacity: colors.shadowOpacity,
             shadowRadius: colors.shadowRadius,
             elevation: colors.elevation,
+            borderColor: colors.cardBorder,
+            borderWidth: 1,
             opacity: isOAuthUser ? 0.80 : 1,
             position: 'relative',
           }]}>
@@ -533,12 +541,14 @@ export default function EditProfileScreen({ navigation }) {
 
           {/* Password Card - OAuth kullanıcıda kilitli */}
           <View style={[styles.inputCard, {
-            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+            backgroundColor: colors.cardBackground,
             shadowColor: colors.shadowColor,
             shadowOffset: colors.shadowOffset,
             shadowOpacity: colors.shadowOpacity,
             shadowRadius: colors.shadowRadius,
             elevation: colors.elevation,
+            borderColor: colors.cardBorder,
+            borderWidth: 1,
             opacity: isOAuthUser ? 0.80 : 1,
             position: 'relative',
           }]}>

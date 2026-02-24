@@ -56,6 +56,7 @@ export default function DeckList({
   showPopularityBadge = false,
   loading = false,
   contentPaddingTop = 0,
+  onScrollBeginDrag,
 }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -93,6 +94,9 @@ export default function DeckList({
     };
   }, [isTablet]);
   
+  const isFavorite = (deck) =>
+    deck.is_favorite === true || (Array.isArray(favoriteDecks) && favoriteDecks.includes(deck.id));
+
   const responsiveSpacing = useMemo(() => ({
     cardMargin: scale(5),
     listPaddingHorizontal: scale(12),
@@ -255,9 +259,9 @@ export default function DeckList({
               activeOpacity={0.7}
             >
               <Iconify
-                icon={favoriteDecks.includes(deck.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
+                icon={isFavorite(deck) ? 'solar:heart-bold' : 'solar:heart-broken'}
                 size={moderateScale(21)}
-                color={favoriteDecks.includes(deck.id) ? '#F98A21' : colors.text}
+                color={isFavorite(deck) ? '#F98A21' : colors.text}
               />
             </TouchableOpacity>
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -356,9 +360,9 @@ export default function DeckList({
             activeOpacity={0.7}
           >
             <Iconify
-              icon={favoriteDecks.includes(row.item.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
+              icon={isFavorite(row.item) ? 'solar:heart-bold' : 'solar:heart-broken'}
               size={moderateScale(22)}
-              color={favoriteDecks.includes(row.item.id) ? '#F98A21' : colors.text}
+              color={isFavorite(row.item) ? '#F98A21' : colors.text}
             />
           </TouchableOpacity>
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -391,7 +395,6 @@ export default function DeckList({
 
   return (
     <FlatList
-      key={`decks-${decks.length}`}
       data={rows}
       keyExtractor={(_, idx) => `row_${idx}`}
       contentContainerStyle={{ paddingBottom: '10%', paddingTop: contentPaddingTop }}
@@ -420,6 +423,7 @@ export default function DeckList({
         )
       }
       showsVerticalScrollIndicator={false}
+      onScrollBeginDrag={onScrollBeginDrag}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}

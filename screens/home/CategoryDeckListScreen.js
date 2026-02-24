@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { View, StyleSheet, Text, Platform } from 'react-native';
+import { View, StyleSheet, Text, Platform, Keyboard } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
@@ -338,6 +338,7 @@ export default function CategoryDeckListScreen({ route }) {
           favoriteDecks={favoriteDecks}
           onToggleFavorite={handleToggleFavorite}
           onPressDeck={handleDeckPress}
+          onScrollBeginDrag={() => Keyboard.dismiss()}
           refreshing={refreshing}
           onRefresh={handleRefresh}
           showPopularityBadge={false}

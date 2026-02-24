@@ -61,6 +61,7 @@ export const lightColors = {
 export const darkColors = {
     background: '#1C1C1C',
     buttonColor: '#F98A21',
+    homeCardBackground: '#32323280',
     secondary: '#2F80ED', 
     text: '#FFFFFF',
     subtext: '#E0E0E0',

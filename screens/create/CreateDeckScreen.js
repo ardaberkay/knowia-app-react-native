@@ -154,7 +154,7 @@ export default function CreateScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
           {/* Header Card */}
-          <View style={[styles.headerCard, styles.headerCardContainer, { borderRadius: 28, backgroundColor: colors.cardBackground || colors.cardBackgroundTransparent || (isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)') }]}>
+          <View style={[styles.headerCard, styles.headerCardContainer, { borderRadius: 28, backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, borderWidth: 1 }]}>
             <View style={[styles.headerCardContent, styles.headerContent]}>
               <View style={styles.headerTitleContainer}>
                 <Iconify icon="fluent:tab-add-24-regular" size={moderateScale(26)} color="#F98A21" style={{ marginRight: scale(6) }} />
@@ -192,7 +192,7 @@ export default function CreateScreen() {
             style={[
               styles.inputCard,
               {
-                backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+                backgroundColor: colors.cardBackground,
                 borderColor: colors.cardBorder,
                 borderWidth: 1,
                 shadowColor: colors.shadowColor,
@@ -238,7 +238,7 @@ export default function CreateScreen() {
             style={[
               styles.inputCard,
               {
-                backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+                backgroundColor: colors.cardBackground,
                 borderColor: colors.cardBorder,
                 borderWidth: 1,
                 shadowColor: colors.shadowColor,
@@ -284,7 +284,7 @@ export default function CreateScreen() {
             style={[
               styles.inputCard,
               {
-                backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+                backgroundColor: colors.cardBackground,
                 borderColor: colors.cardBorder,
                 borderWidth: 1,
                 shadowColor: colors.shadowColor,
@@ -337,7 +337,7 @@ export default function CreateScreen() {
             style={[
               styles.inputCard,
               {
-                backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+                backgroundColor: colors.cardBackground,
                 borderColor: colors.cardBorder,
                 borderWidth: 1,
                 shadowColor: colors.shadowColor,
@@ -383,7 +383,7 @@ export default function CreateScreen() {
             style={[
               styles.inputCard,
               {
-                backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+                backgroundColor: colors.cardBackground,
                 borderColor: colors.cardBorder,
                 borderWidth: 1,
                 shadowColor: colors.shadowColor,

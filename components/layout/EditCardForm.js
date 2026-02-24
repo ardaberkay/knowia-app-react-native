@@ -110,7 +110,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
       extraScrollHeight={verticalScale(120)}
     >
           <View style={[styles.inputCard, { 
-            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+            backgroundColor: colors.cardBackground,
             borderColor: colors.cardBorder,
             borderWidth: 1,
             shadowColor: colors.shadowColor,
@@ -145,7 +145,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
             </View>
           </View>
           <View style={[styles.inputCard, { 
-            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+            backgroundColor: colors.cardBackground,
             borderColor: colors.cardBorder,
             borderWidth: 1,
             shadowColor: colors.shadowColor,
@@ -187,7 +187,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
             </View>
           </View>
           <View style={[styles.inputCard, { 
-            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+            backgroundColor: colors.cardBackground,
             borderColor: colors.cardBorder,
             borderWidth: 1,
             shadowColor: colors.shadowColor,
@@ -229,7 +229,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
             </View>
           </View>
           <View style={[styles.inputCard, { 
-            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+            backgroundColor: colors.cardBackground,
             borderColor: colors.cardBorder,
             borderWidth: 1,
             shadowColor: colors.shadowColor,
@@ -271,7 +271,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
             </View>
           </View>
           <View style={[styles.inputCard, { 
-            backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground,
+            backgroundColor: colors.cardBackground,
             borderColor: colors.cardBorder,
             borderWidth: 1,
             shadowColor: colors.shadowColor,

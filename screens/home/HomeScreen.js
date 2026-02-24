@@ -70,21 +70,21 @@ export default function HomeScreen() {
   useAuth();
   const navigation = useNavigation();
   const { colors, isDarkMode } = useTheme();
-  
+
   // useWindowDimensions hook'u - ekran döndürme desteği
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
-  
+
   const emptyDeckCardDimensions = useMemo(() => {
     const { DECK_CARD } = RESPONSIVE_CONSTANTS;
     const scaledWidth = scale(DECK_CARD.REFERENCE_WIDTH);
     const maxWidth = isTablet ? width * 0.20 : width * 0.36;
     const cardWidth = Math.min(scaledWidth, maxWidth);
     const cardHeight = cardWidth * DECK_CARD.ASPECT_RATIO;
-    
+
     return { width: cardWidth, height: cardHeight };
   }, [width, isTablet]);
-  
+
   const [decks, setDecks] = useState({});
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState(null);
@@ -95,11 +95,11 @@ export default function HomeScreen() {
 
   const { t } = useTranslation();
 
-const DECK_CATEGORIES = {
-  inProgressDecks: t('home.inProgressDecks', 'Çalıştığım Desteler'),
-  defaultDecks: t('home.defaultDecks', 'Hazır Desteler'),
-  communityDecks: t('home.communityDecks', 'Topluluk Desteleri'),
-};
+  const DECK_CATEGORIES = {
+    inProgressDecks: t('home.inProgressDecks', 'Çalıştığım Desteler'),
+    defaultDecks: t('home.defaultDecks', 'Hazır Desteler'),
+    communityDecks: t('home.communityDecks', 'Topluluk Desteleri'),
+  };
 
   useEffect(() => {
     loadDecks();
@@ -117,7 +117,7 @@ const DECK_CATEGORIES = {
     try {
       setLoading(true);
       const decksData = {};
-      
+
       // Tüm kategorilerdeki desteleri paralel olarak yükle
       await Promise.all(
         Object.keys(DECK_CATEGORIES).map(async (category) => {
@@ -129,7 +129,7 @@ const DECK_CATEGORIES = {
           }
         })
       );
-      
+
       setDecks(decksData);
       decksLoadedRef.current = true;
     } catch (err) {
@@ -211,7 +211,10 @@ const DECK_CATEGORIES = {
 
   const renderPopularDecksCard = () => {
     return (
-      <View style={[styles.popularDecksCard, { backgroundColor: isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)' }]}>
+      <View style={[styles.popularDecksCard, {
+        backgroundColor: colors.homeCardBackground, borderColor: colors.cardBorder,
+        borderWidth: 1,
+      }]}>
         {/* Başlık - Tam genişlik, kendi satırında */}
         <View style={styles.popularDecksTitleContainer}>
           <Iconify icon="fluent:arrow-trending-sparkle-24-filled" size={moderateScale(26)} color="#F98A21" style={{ marginRight: scale(6) }} />
@@ -219,14 +222,14 @@ const DECK_CATEGORIES = {
             {t('home.popularDecks', 'Popüler Desteler')}
           </Text>
         </View>
-        
+
         {/* Açıklama metni + Buton (sol) ve Görsel (sağ) */}
         <View style={styles.popularDecksContent}>
           <View style={styles.popularDecksTextContainer}>
             <Text style={[typography.styles.caption, { color: colors.muted, marginBottom: verticalScale(12), marginTop: verticalScale(8), lineHeight: moderateScale(20) }]}>
               {t('home.popularDecksSubtitle', 'En popüler ve trend destelerle bilginizi pekiştirin')}
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.exploreButton}
               activeOpacity={0.8}
               onPress={() => {
@@ -290,144 +293,147 @@ const DECK_CATEGORIES = {
     const showEndIcon = (categoryDecks?.length || 0) > 10;
 
     return (
-      <AnimatedPressable 
+      <AnimatedPressable
         onPress={handleSeeAll}
-        style={[styles.glassCard, { backgroundColor: isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)' }]}
+        style={[styles.glassCard, {
+          backgroundColor: colors.homeCardBackground, borderColor: colors.cardBorder,
+          borderWidth: 1,
+        }]}
       >
-          <View style={styles.sectionHeaderGradient}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={styles.sectionHeaderGradient}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Iconify icon={getCategoryIcon(category)} size={moderateScale(26)} color="#F98A21" style={{ marginRight: scale(8), marginTop: moderateScale(1) }} />
-              <Text style={[typography.styles.h2, { color: colors.text }]}>{DECK_CATEGORIES[category]}</Text>
-            </View>
-            <View>
-              <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(20)} color="#007AFF" />
-            </View>
+            <Text style={[typography.styles.h2, { color: colors.text }]}>{DECK_CATEGORIES[category]}</Text>
           </View>
-          {isCategoryLoading ? (
-            <ScrollView 
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.decksContainer}
-              decelerationRate="fast"
-              snapToInterval={emptyDeckCardDimensions.width + scale(10)}
-              snapToAlignment="start"
+          <View>
+            <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(20)} color="#007AFF" />
+          </View>
+        </View>
+        {isCategoryLoading ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.decksContainer}
+            decelerationRate="fast"
+            snapToInterval={emptyDeckCardDimensions.width + scale(10)}
+            snapToAlignment="start"
+          >
+            {[...Array(4)].map((_, i) => (
+              <DeckSkeleton key={i} />
+            ))}
+          </ScrollView>
+        ) : !loading && categoryDecks !== undefined && limitedDecks.length === 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.decksContainer}
+            decelerationRate="fast"
+            snapToInterval={emptyDeckCardDimensions.width + scale(10)}
+            snapToAlignment="start"
+          >
+            <TouchableOpacity
+              onPress={handleEmptyDeckPress}
+              activeOpacity={0.7}
             >
-              {[...Array(4)].map((_, i) => (
-                <DeckSkeleton key={i} />
-              ))}
-            </ScrollView>
-          ) : !loading && categoryDecks !== undefined && limitedDecks.length === 0 ? (
-            <ScrollView 
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.decksContainer}
-              decelerationRate="fast"
-              snapToInterval={emptyDeckCardDimensions.width + scale(10)}
-              snapToAlignment="start"
-            >
-              <TouchableOpacity
-                onPress={handleEmptyDeckPress}
-                activeOpacity={0.7}
-              >
-                <View style={[
-                  styles.emptyDeckCard, 
-                  { 
-                    width: emptyDeckCardDimensions.width,
-                    height: emptyDeckCardDimensions.height,
-                    backgroundColor: isDarkMode ? 'rgba(100, 100, 100, 0.15)' : 'rgba(240, 240, 240, 0.5)',
-                    borderColor: isDarkMode ? 'rgba(150, 150, 150, 0.25)' : 'rgba(200, 200, 200, 0.4)',
-                    shadowColor: isDarkMode ? '#000' : '#000',
-                  }
-                ]}>
-                  <View style={styles.emptyDeckCardContent}>
-                    <View style={[
-                      styles.emptyDeckPlusContainer,
-                      {
-                        backgroundColor: isDarkMode ? 'rgba(150, 150, 150, 0.08)' : 'rgba(200, 200, 200, 0.3)',
-                        borderColor: isDarkMode ? 'rgba(150, 150, 150, 0.2)' : 'rgba(180, 180, 180, 0.4)',
-                      }
-                    ]}>
-                      <Iconify 
-                        icon="ic:round-plus" 
-                        size={moderateScale(42)} 
-                        color={isDarkMode ? 'rgba(150, 150, 150, 0.5)' : 'rgba(140, 140, 140, 0.5)'} 
-                      />
-                    </View>
+              <View style={[
+                styles.emptyDeckCard,
+                {
+                  width: emptyDeckCardDimensions.width,
+                  height: emptyDeckCardDimensions.height,
+                  backgroundColor: colors.background,
+                  borderColor: colors.cardBorder,
+                  shadowColor: colors.shadowColor,
+                }
+              ]}>
+                <View style={[styles.emptyDeckCardContent, { backgroundColor: colors.background }]}>
+                  <View style={[
+                    styles.emptyDeckPlusContainer,
+                    {
+                      backgroundColor: colors.cardBackground,
+                      borderColor: colors.cardBorder,
+                    }
+                  ]}>
+                    <Iconify
+                      icon="ic:round-plus"
+                      size={moderateScale(42)}
+                      color={isDarkMode ? 'rgba(150, 150, 150, 0.5)' : 'rgba(140, 140, 140, 0.5)'}
+                    />
                   </View>
                 </View>
-              </TouchableOpacity>
-            </ScrollView>
-          ) : (
-            <ScrollView 
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.decksContainer}
-              decelerationRate="fast"
-              snapToInterval={emptyDeckCardDimensions.width + scale(10)}
-              snapToAlignment="start"
-            >
-              {limitedDecks.map((deck) => {
-                // is_admin_created kontrolü - tüm kategoriler için geçerli
-                const modifiedDeck = deck.is_admin_created
-                  ? {
-                      ...deck,
-                      profiles: {
-                        ...deck.profiles,
-                        username: 'Knowia',
-                        image_url: null, // logoasil.png kullanılacak
-                      },
+              </View>
+            </TouchableOpacity>
+          </ScrollView>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.decksContainer}
+            decelerationRate="fast"
+            snapToInterval={emptyDeckCardDimensions.width + scale(10)}
+            snapToAlignment="start"
+          >
+            {limitedDecks.map((deck) => {
+              // is_admin_created kontrolü - tüm kategoriler için geçerli
+              const modifiedDeck = deck.is_admin_created
+                ? {
+                  ...deck,
+                  profiles: {
+                    ...deck.profiles,
+                    username: 'Knowia',
+                    image_url: null, // logoasil.png kullanılacak
+                  },
+                }
+                : deck;
+
+              return (
+                <DeckCard
+                  key={`deck-${deck.id}`}
+                  deck={modifiedDeck}
+                  colors={colors}
+                  typography={typography}
+                  onPress={handleDeckPress}
+                  onToggleFavorite={async (deckId) => {
+                    const isFavorite = favoriteDecks.some(fav => fav.id === deckId);
+                    if (isFavorite) {
+                      await handleRemoveFavoriteDeck(deckId);
+                    } else {
+                      await handleAddFavoriteDeck(deckId);
                     }
-                  : deck;
-                
-                return (
-                  <DeckCard
-                    key={`deck-${deck.id}`}
-                    deck={modifiedDeck}
-                    colors={colors}
-                    typography={typography}
-                    onPress={handleDeckPress}
-                    onToggleFavorite={async (deckId) => {
-                      const isFavorite = favoriteDecks.some(fav => fav.id === deckId);
-                      if (isFavorite) {
-                        await handleRemoveFavoriteDeck(deckId);
-                      } else {
-                        await handleAddFavoriteDeck(deckId);
-                      }
-                    }}
-                    isFavorite={favoriteDecks.some(fav => fav.id === deck.id)}
-                  />
-                );
-              })}
-              {showEndIcon && (
-                <View style={[styles.endIconContainer, { height: emptyDeckCardDimensions.height }]}>
-                  <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(35)} color="#F98A21" style={{ marginLeft: scale(2), marginTop: moderateScale(1) }} />
-                </View>
-              )}
-            </ScrollView>
-          )}
+                  }}
+                  isFavorite={favoriteDecks.some(fav => fav.id === deck.id)}
+                />
+              );
+            })}
+            {showEndIcon && (
+              <View style={[styles.endIconContainer, { height: emptyDeckCardDimensions.height }]}>
+                <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(35)} color="#F98A21" style={{ marginLeft: scale(2), marginTop: moderateScale(1) }} />
+              </View>
+            )}
+          </ScrollView>
+        )}
       </AnimatedPressable>
     );
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }] }>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.appbar, borderBottomColor: colors.border }]}>
         <View style={styles.headerContent}>
           <View style={styles.logoContainer}>
-          <Image
-            source={ require('../../assets/home-logo.png')}
-            style={styles.logoImage}
-            resizeMode="contain"
-          />
-          <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(24), letterSpacing: moderateScale(-1) }]}>Knowia</Text>
+            <Image
+              source={require('../../assets/home-logo.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+            <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(24), letterSpacing: moderateScale(-1) }]}>Knowia</Text>
           </View>
           <View style={{ position: 'absolute', right: -24 }}>
             <ProfileAvatarButton />
           </View>
         </View>
       </View>
-      <ScrollView 
-        style={[styles.content, { backgroundColor: colors.background }]} 
+      <ScrollView
+        style={[styles.content, { backgroundColor: colors.background }]}
         contentContainerStyle={styles.scrollContentContainer}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -438,7 +444,7 @@ const DECK_CATEGORIES = {
             colors={[colors.buttonColor]}
           />
         }
-      > 
+      >
         {renderPopularDecksCard()}
         {Object.keys(DECK_CATEGORIES).map((category, index) => (
           <React.Fragment key={`category-${category}`}>
@@ -518,7 +524,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   glassCard: {
-    borderRadius: moderateScale(36),
+    borderRadius: moderateScale(40),
     marginHorizontal: scale(10),
     marginVertical: verticalScale(8),
     paddingHorizontal: scale(20),
@@ -527,12 +533,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   popularDecksCard: {
-    borderRadius: moderateScale(36),
+    borderRadius: moderateScale(44),
     marginHorizontal: scale(10),
     marginVertical: verticalScale(8),
     marginTop: verticalScale(16),
     paddingHorizontal: scale(20),
     paddingVertical: verticalScale(10),
+    minHeight: verticalScale(150),
     overflow: 'hidden',
     paddingBottom: verticalScale(6),
     paddingTop: verticalScale(20),

@@ -202,6 +202,7 @@ export default function LibraryScreen() {
     fetchDecks();
   }, []);
 
+  // Favorilerim sekmesine geçildiğinde veri yoksa (veya henüz gelmediyse) yükle
   useEffect(() => {
     if (activeTab === 'favorites' && !favoritesFetched) {
       fetchFavorites();
@@ -285,6 +286,7 @@ export default function LibraryScreen() {
   const handleAddFavoriteDeck = async (deckId) => {
     const { data: { user } } = await supabase.auth.getUser();
     await supabase.from('favorite_decks').insert({ user_id: user.id, deck_id: deckId });
+    setMyDecks(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: true } : d));
     const decks = await getFavoriteDecks(user.id);
     // is_admin_created kontrolü - tüm kategoriler için geçerli
     const modifiedDecks = (decks || []).map((deck) => {
@@ -305,6 +307,7 @@ export default function LibraryScreen() {
   const handleRemoveFavoriteDeck = async (deckId) => {
     const { data: { user } } = await supabase.auth.getUser();
     await supabase.from('favorite_decks').delete().eq('user_id', user.id).eq('deck_id', deckId);
+    setMyDecks(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: false } : d));
     const decks = await getFavoriteDecks(user.id);
     // is_admin_created kontrolü - tüm kategoriler için geçerli
     const modifiedDecks = (decks || []).map((deck) => {
@@ -628,9 +631,7 @@ export default function LibraryScreen() {
   
     // 4. Favorites filter (Eğer sort 'favorites' ise sadece favorileri gösterir)
     if (myDecksSort === 'favorites') {
-      list = list.filter(d => favoriteDecks.some(favDeck => 
-        (typeof favDeck === 'object' ? favDeck.id : favDeck) === d.id
-      ));
+      list = list.filter(d => d.is_favorite === true);
     }
   
     // 5. Apply sorting: updated_at'e göre (yeni oluşturulanda created_at atanıyor; güncellenince yine en üste çıkar). updated_at yoksa eski kayıt için created_at kullanılır.
@@ -644,8 +645,8 @@ export default function LibraryScreen() {
         break;
       case 'favorites':
         list.sort((a, b) => {
-          const aIsFavorite = favoriteDecks.some(favDeck => (typeof favDeck === 'object' ? favDeck.id : favDeck) === a.id);
-          const bIsFavorite = favoriteDecks.some(favDeck => (typeof favDeck === 'object' ? favDeck.id : favDeck) === b.id);
+          const aIsFavorite = a.is_favorite === true;
+          const bIsFavorite = b.is_favorite === true;
           if (aIsFavorite && !bIsFavorite) return -1;
           if (!aIsFavorite && bIsFavorite) return 1;
           return sortDate(b) - sortDate(a);
@@ -666,8 +667,8 @@ export default function LibraryScreen() {
     }
   
     return list;
-    // Bağımlılık listesi: Bu değişkenlerden biri değiştiğinde kod yeniden çalışır
-  }, [myDecks, myDecksQuery, myDecksSelectedCategories, myDecksSort, favoriteDecks, selectedLanguages]);
+    // Bağımlılık listesi: favoriteDecks artık sadece Favorilerim sekmesi için; Destelerim filtresi deck.is_favorite kullanır
+  }, [myDecks, myDecksQuery, myDecksSelectedCategories, myDecksSort, selectedLanguages]);
 
   // MyDecks Card
   const renderMyDecksCard = () => {
@@ -792,9 +793,8 @@ export default function LibraryScreen() {
           ) : (
             <MyDecksList
               decks={filteredMyDecks}
-              favoriteDecks={favoriteDecks}
               onToggleFavorite={async (deckId) => {
-                if (favoriteDecks.some(d => d.id === deckId)) {
+                if ((filteredMyDecks.find(d => d.id === deckId) || {}).is_favorite) {
                   await handleRemoveFavoriteDeck(deckId);
                 } else {
                   await handleAddFavoriteDeck(deckId);

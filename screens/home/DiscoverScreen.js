@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Platform, Image, Animated } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Platform, Image, Animated, Keyboard } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
@@ -62,7 +62,6 @@ export default function DiscoverScreen() {
   const [search, setSearch] = useState('');
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
-  const [favoriteDecks, setFavoriteDecks] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadedTabs, setLoadedTabs] = useState(new Set());
@@ -77,11 +76,6 @@ export default function DiscoverScreen() {
   const isRefreshingRef = useRef(false);
   const [selectedLanguages, setSelectedLanguages] = useState([]); // Seçili diller
   const [allLanguages, setAllLanguages] = useState([]);
-
-  useEffect(() => {
-    loadFavoriteDecks();
-    // loadDecks() ikinci useEffect'te yapılıyor (ilk mount'ta)
-  }, []);
 
   useEffect(() => {
     const fetchLanguages = async () => {
@@ -147,23 +141,6 @@ export default function DiscoverScreen() {
       });
     }
   }, []);
-
-  const loadFavoriteDecks = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('favorite_decks')
-        .select('deck_id')
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-      setFavoriteDecks(data.map(item => item.deck_id));
-    } catch (error) {
-      console.error('Error loading favorite decks:', error);
-    }
-  };
 
   const loadFreshData = useCallback(async (showLoadingIndicator = true) => {
     try {
@@ -300,7 +277,16 @@ export default function DiscoverScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const isFavorite = favoriteDecks.includes(deckId);
+      const deck = currentDecks.find(d => d.id === deckId);
+      const isFavorite = deck?.is_favorite === true;
+
+      const updateDeckInLists = (nextFav) => {
+        setTrendDecksList(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: nextFav } : d));
+        setFavoriteDecksList(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: nextFav } : d));
+        setStartedDecksList(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: nextFav } : d));
+        setUniqueDecksList(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: nextFav } : d));
+        setNewDecks(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: nextFav } : d));
+      };
 
       if (isFavorite) {
         const { error } = await supabase
@@ -310,14 +296,14 @@ export default function DiscoverScreen() {
           .eq('deck_id', deckId);
 
         if (error) throw error;
-        setFavoriteDecks(prev => prev.filter(id => id !== deckId));
+        updateDeckInLists(false);
       } else {
         const { error } = await supabase
           .from('favorite_decks')
           .insert({ user_id: user.id, deck_id: deckId });
 
         if (error) throw error;
-        setFavoriteDecks(prev => [...prev, deckId]);
+        updateDeckInLists(true);
       }
     } catch (error) {
       console.error('Error toggling favorite:', error);
@@ -328,7 +314,7 @@ export default function DiscoverScreen() {
     setRefreshing(true);
     isRefreshingRef.current = true;
     try {
-      await Promise.all([loadFavoriteDecks(), loadDecks(true)]); // forceRefresh = true
+      await loadDecks(true); // forceRefresh = true; desteler zaten is_favorite ile geliyor
     } catch (error) {
       console.error('Error refreshing:', error);
     } finally {
@@ -652,9 +638,10 @@ export default function DiscoverScreen() {
         ) : (
           <DeckList
             decks={filteredDecks}
-            favoriteDecks={favoriteDecks}
+            favoriteDecks={[]}
             onToggleFavorite={handleToggleFavorite}
             onPressDeck={handleDeckPress}
+            onScrollBeginDrag={() => Keyboard.dismiss()}
             refreshing={refreshing}
             onRefresh={handleRefresh}
             showPopularityBadge={activeTab === 'trend'}
