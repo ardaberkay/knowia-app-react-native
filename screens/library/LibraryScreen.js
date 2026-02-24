@@ -673,7 +673,7 @@ export default function LibraryScreen() {
   // MyDecks Card
   const renderMyDecksCard = () => {
     return (
-      <View style={[styles.myDecksCard, styles.myDecksCardContainer, { backgroundColor: colors.cardBackground || colors.cardBackgroundTransparent || (isDarkMode ? 'rgba(50, 50, 50, 0.5)' : 'rgba(50, 50, 50, 0.1)'), marginTop: myDecksCardTopMargin }]}>
+      <View style={[styles.myDecksCard, styles.myDecksCardContainer, { backgroundColor: colors.cardBackground, marginTop: myDecksCardTopMargin, borderColor: colors.cardBorder, borderWidth: 1 }]}>
         <View style={styles.myDecksContent}>
           <View style={styles.myDecksTextContainer}>
             <View style={styles.myDecksTitleContainer}>
@@ -721,7 +721,7 @@ export default function LibraryScreen() {
       {/* Header + Pill Tabs - Hafif saydam arka plan (BlurView kaldırıldı, geçişte dim sorununu önlemek için) */}
       <View style={[styles.segmentedControlContainer, { top: 0 }]} pointerEvents="box-none">
         <View
-          style={[styles.segmentedControlInner, { paddingTop: insets.top, backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground || (isDarkMode ? 'rgba(50, 50, 50, 0.95)' : 'rgba(50, 50, 50, 0.1)') }]}
+          style={[styles.segmentedControlInner, { paddingTop: insets.top, backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground, borderColor: colors.cardBorder, borderWidth: 1, shadowColor: colors.shadowColor, shadowOpacity: colors.shadowOpacity, shadowRadius: colors.shadowRadius, shadowOffset: colors.shadowOffset, elevation: colors.elevation }]}
           pointerEvents="box-none"
         >
           {/* Header Content */}
@@ -1321,13 +1321,14 @@ const styles = StyleSheet.create({
     // marginTop dinamik olarak uygulanacak
   },
   myDecksCardContainer: {
-    borderRadius: moderateScale(28),
+    borderRadius: moderateScale(36),
     overflow: 'hidden',
     marginHorizontal: scale(10),
     marginVertical: verticalScale(8),
     paddingHorizontal: scale(20),
     paddingVertical: verticalScale(8),
     minHeight: verticalScale(180),
+    paddingBottom: verticalScale(16),
   },
   myDecksContent: {
     flexDirection: 'row',

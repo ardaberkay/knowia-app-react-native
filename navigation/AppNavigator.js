@@ -208,7 +208,7 @@ export default function AppNavigator() {
               headerTintColor: '#fff', // Geri butonu beyaz olsun
             })}
           />
-          <Stack.Screen name="SwipeDeck" component={SwipeDeckScreen} options={{ headerShown: true, title: t('tabs.deckCards', 'Kartları Öğren'), headerTitleAlign: 'center' }} />
+          <Stack.Screen name="SwipeDeck" component={SwipeDeckScreen} options={{ headerShown: true, title: t('tabs.deckCards', 'Kartları Öğren'), headerTitleAlign: 'center', }} />
           <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: t('tabs.profileEdit', 'Profili Düzenle'), headerTitleAlign: 'center' }} />
           <Stack.Screen name="DeckEdit" component={DeckEditScreen} options={{ headerShown: true, title: t('tabs.deckEdit', 'Desteyi Düzenle'), headerTitleAlign: 'center' }} />
           <Stack.Screen name="AddCard" component={AddCardScreen} options={({ navigation }) => ({

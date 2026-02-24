@@ -603,12 +603,9 @@ const styles = StyleSheet.create({
   cardImage: {
     width: '100%',
     height: verticalScale(160),
-    borderRadius: moderateScale(32),
     resizeMode: 'contain',
     backgroundColor: 'transparent',
     alignSelf: 'center',
-    borderWidth: moderateScale(1),
-    borderColor: '#666666',
   },
   cardAnswer: {
     fontSize: moderateScale(15),
@@ -701,7 +698,7 @@ const styles = StyleSheet.create({
     shadowRadius: moderateScale(8),
     elevation: 6,
     borderWidth: moderateScale(1),
-    minHeight: verticalScale(120),
+    minHeight: verticalScale(140),
     justifyContent: 'space-between',
   },
   cardHeader: {

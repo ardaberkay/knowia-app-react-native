@@ -639,18 +639,14 @@ export default function SwipeDeckScreen({ route, navigation }) {
       outputRange: ['180deg', '360deg'],
     });
     const frontAnimatedStyle = {
-      transform: [
-        { rotateY: frontInterpolate },
-      ],
+      transform: [{ rotateY: frontInterpolate }],
       backfaceVisibility: 'hidden',
       position: 'absolute',
       width: CARD_WIDTH,
       height: CARD_HEIGHT,
     };
     const backAnimatedStyle = {
-      transform: [
-        { rotateY: backInterpolate },
-      ],
+      transform: [{ rotateY: backInterpolate }],
       backfaceVisibility: 'hidden',
       position: 'absolute',
       width: CARD_WIDTH,
@@ -680,7 +676,18 @@ export default function SwipeDeckScreen({ route, navigation }) {
               </View>
             )}
             
-            <MathText value={card.cards.question} style={[typography.styles.h2, { color: colors.text, marginBottom: card.cards.image ? verticalScale(16) : 0, textAlign: 'center' }]} forceText />
+            <MathText
+              value={card.cards.question}
+              style={[
+                typography.styles.h2,
+                {
+                  color: colors.text,
+                  marginBottom: card.cards.image ? verticalScale(16) : 0,
+                  textAlign: 'center',
+                },
+              ]}
+              forceText
+            />
           </Animated.View>
           {/* Arka yüz */}
           <Animated.View style={[styles.card, { width: CARD_WIDTH, height: CARD_HEIGHT, backgroundColor: colors.cardBackground }, backAnimatedStyle]}>
@@ -706,16 +713,20 @@ export default function SwipeDeckScreen({ route, navigation }) {
                   label={t('swipeDeck.answer', 'Answer')}
                   icon={<Iconify icon="uil:comment-alt-check" size={moderateScale(18)} color="#fff" />}
                 />
-                <MathText value={card.cards.answer} forceText style={[
-                  typography.styles.h2,
-                  {
-                    color: '#fff',
-                    textAlign: 'center',
-                    marginTop: verticalScale(8),
-                    lineHeight: moderateScale(28),
-                    fontWeight: '600',
-                  }
-                ]} />
+                <MathText
+                  value={card.cards.answer}
+                  forceText
+                  style={[
+                    typography.styles.h2,
+                    {
+                      color: '#fff',
+                      textAlign: 'center',
+                      marginTop: verticalScale(8),
+                      lineHeight: moderateScale(28),
+                      fontWeight: '600',
+                    },
+                  ]}
+                />
               </View>
 
               {/* Example Section */}
@@ -727,16 +738,20 @@ export default function SwipeDeckScreen({ route, navigation }) {
                       label={t('swipeDeck.example', 'Example')}
                       icon={<Iconify icon="lucide:lightbulb" size={moderateScale(18)} color="#fff" />}
                     />
-                    <MathText value={card.cards.example} forceText style={[
-                      typography.styles.subtitle,
-                      {
-                        color: 'rgba(255, 255, 255, 0.9)',
-                        textAlign: 'center',
-                        marginTop: verticalScale(8),
-                        lineHeight: moderateScale(22),
-                        fontSize: moderateScale(16),
-                      }
-                    ]} />
+                    <MathText
+                      value={card.cards.example}
+                      forceText
+                      style={[
+                        typography.styles.subtitle,
+                        {
+                          color: 'rgba(255, 255, 255, 0.9)',
+                          textAlign: 'center',
+                          marginTop: verticalScale(8),
+                          lineHeight: moderateScale(22),
+                          fontSize: moderateScale(16),
+                        },
+                      ]}
+                    />
                   </View>
                 </>
               )}
@@ -750,17 +765,21 @@ export default function SwipeDeckScreen({ route, navigation }) {
                       label={t('swipeDeck.note', 'Note')}
                       icon={<Iconify icon="material-symbols-light:stylus-note" size={moderateScale(18)} color="#fff" />}
                     />
-                    <MathText value={card.cards.note} forceText style={[
-                      typography.styles.subtitle,
-                      {
-                        color: 'rgba(255, 255, 255, 0.85)',
-                        textAlign: 'center',
-                        marginTop: verticalScale(8),
-                        lineHeight: moderateScale(22),
-                        fontSize: moderateScale(15),
-                        fontStyle: 'italic',
-                      }
-                    ]} />
+                    <MathText
+                      value={card.cards.note}
+                      forceText
+                      style={[
+                        typography.styles.subtitle,
+                        {
+                          color: 'rgba(255, 255, 255, 0.85)',
+                          textAlign: 'center',
+                          marginTop: verticalScale(8),
+                          lineHeight: moderateScale(22),
+                          fontSize: moderateScale(15),
+                          fontStyle: 'italic',
+                        },
+                      ]}
+                    />
                   </View>
                 </>
               )}
@@ -1067,8 +1086,7 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'contain',
     borderRadius: moderateScale(24),
-    borderWidth: moderateScale(1),
-    borderColor: '#666666',
+
   },
   counterRow: {
     position: 'absolute',
