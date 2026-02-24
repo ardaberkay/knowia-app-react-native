@@ -428,8 +428,6 @@ export default function DeckList({
           colors={[colors.buttonColor]}
         />
       }
-      refreshing={refreshing}
-      onRefresh={onRefresh}
     />
   );
 }

@@ -8,6 +8,7 @@ import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { OnboardingFinishContext } from '../../contexts/OnboardingFinishContext';
+import { Iconify } from 'react-native-iconify';
 
 const SLIDE_COUNT = 4;
 
@@ -19,6 +20,7 @@ export default function OnboardingScreen({ navigation, route }) {
   const lottieHintRef = useRef(null);
   const [page, setPage] = useState(0);
   const scrollAnim = useRef(new Animated.Value(0)).current;
+  const previewHintAnim = useRef(new Animated.Value(1)).current;
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
 
@@ -104,6 +106,30 @@ export default function OnboardingScreen({ navigation, route }) {
     return () => clearTimeout(t);
   }, [page]);
 
+  // Süre seçenekleri: "ileride tıklanacak" hissi – belirgin pulse + hafif büyüme
+  useEffect(() => {
+    if (page !== 0) return;
+    previewHintAnim.setValue(1);
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(previewHintAnim, {
+          toValue: 0.66,
+          duration: 900,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(previewHintAnim, {
+          toValue: 1,
+          duration: 900,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [page, previewHintAnim]);
+
   const goTo = (nextIndex) => {
     const clamped = Math.max(0, Math.min(SLIDE_COUNT - 1, nextIndex));
     pagerRef.current?.setPage(clamped);
@@ -165,8 +191,24 @@ export default function OnboardingScreen({ navigation, route }) {
               speed={0.95}
               style={{ width: Math.min(width * 0.92, scale(360)), height: cardHeight }}
             />
-            <View style={[styles.previewButtonsRow, { backgroundColor: colors.buttonColor }]}>
-              {[t('swipeDeck.minutes', '15 dk'), t('swipeDeck.hours', '1 sa'), t('swipeDeck.days', '1 gün'), t('swipeDeck.sevenDays', '7 gün')].map((label, i) => (
+            <Animated.View
+              style={[
+                styles.previewButtonsRow,
+                { backgroundColor: colors.buttonColor },
+                {
+                  opacity: previewHintAnim.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }),
+                  transform: [{
+                    scale: previewHintAnim.interpolate({ inputRange: [0, 1], outputRange: [1.04, 1] }),
+                  }],
+                },
+              ]}
+            >
+              {[
+                { label: t('swipeDeck.minutes', '15 dk'), icon: 'material-symbols:repeat-rounded' },
+                { label: t('swipeDeck.hours', '1 sa'), icon: 'mingcute:time-line' },
+                { label: t('swipeDeck.days', '1 gün'), icon: 'solar:calendar-broken' },
+                { label: t('swipeDeck.sevenDays', '7 gün'), icon: 'solar:star-broken' },
+              ].map(({ label, icon }, i) => (
                 <View
                   key={i}
                   style={[
@@ -174,10 +216,11 @@ export default function OnboardingScreen({ navigation, route }) {
                     i < 3 && styles.previewButtonDivider,
                   ]}
                 >
+                  <Iconify icon={icon} size={moderateScale(18)} color={colors.buttonText} style={{ marginRight: scale(4) }} />
                   <Text style={[styles.previewButtonText, { color: colors.buttonText }]}>{label}</Text>
                 </View>
               ))}
-            </View>
+            </Animated.View>
           </View>
         </View>
       );
@@ -306,6 +349,7 @@ const styles = StyleSheet.create({
   page: {
     flex: 1,
     paddingHorizontal: scale(20),
+    paddingTop: verticalScale(50),
     alignItems: 'center',
   },
   pageInner: {
@@ -424,6 +468,7 @@ const styles = StyleSheet.create({
   },
   previewButton: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Platform, Image } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Platform, Image, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
@@ -72,7 +72,7 @@ export default function DiscoverScreen() {
   const [uniqueDecksList, setUniqueDecksList] = useState([]);
   const [newDecks, setNewDecks] = useState([]);
   const heroScrollRef = useRef(null);
-  const isUserScrolling = useRef(false);
+  const scrollX = useRef(new Animated.Value(0)).current;
   const loadDecksTimeoutRef = useRef(null);
   const isRefreshingRef = useRef(false);
   const [selectedLanguages, setSelectedLanguages] = useState([]); // Seçili diller
@@ -140,17 +140,13 @@ export default function DiscoverScreen() {
   }, [timeFilter, activeTab, loadDecks]);
 
   useEffect(() => {
-    if (!isUserScrolling.current && heroScrollRef.current) {
-      const tabKeys = ['trend', 'favorites', 'starts', 'unique', 'new'];
-      const newIndex = tabKeys.indexOf(activeTab);
-      if (newIndex >= 0) {
-        heroScrollRef.current.scrollTo({
-          x: newIndex * HERO_CARD_WIDTH,
-          animated: true,
-        });
-      }
+    if (heroScrollRef.current) {
+      heroScrollRef.current.scrollTo({
+        x: tabKeys.indexOf(activeTab) * HERO_CARD_WIDTH,
+        animated: false,
+      });
     }
-  }, [activeTab, HERO_CARD_WIDTH]);
+  }, []);
 
   const loadFavoriteDecks = async () => {
     try {
@@ -349,25 +345,24 @@ export default function DiscoverScreen() {
 
   const handleSetPage = useCallback((pageIndex) => {
     const tabs = ['trend', 'favorites', 'starts', 'unique', 'new'];
-    const currentIndex = tabs.findIndex(tab => tab === activeTab);
-    if (currentIndex === pageIndex) return;
-    setActiveTab(tabs[pageIndex] || 'trend');
-  }, [activeTab]);
+    if (tabs[pageIndex] && tabs[pageIndex] !== activeTab) {
+      heroScrollRef.current?.scrollTo({
+        x: pageIndex * HERO_CARD_WIDTH,
+        animated: true,
+      });
+      setActiveTab(tabs[pageIndex]);
+    }
+  }, [activeTab, HERO_CARD_WIDTH]);
 
-  const handleHeroScroll = useCallback((event) => {
+  const handleMomentumScrollEnd = useCallback((event) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     const pageIndex = Math.round(offsetX / HERO_CARD_WIDTH);
     const tabKeys = ['trend', 'favorites', 'starts', 'unique', 'new'];
 
     if (pageIndex >= 0 && pageIndex < tabKeys.length) {
-      const newTab = tabKeys[pageIndex];
-      if (newTab !== activeTab) {
-        isUserScrolling.current = true;
-        setActiveTab(newTab);
-        setTimeout(() => { isUserScrolling.current = false; }, 300);
-      }
+      setActiveTab(tabKeys[pageIndex]);
     }
-  }, [activeTab]);
+  }, [HERO_CARD_WIDTH]);
 
   const timeFilters = [
     { key: 'all', label: t('discover.all', 'Tümü'), icon: 'solar:infinity-bold' },
@@ -416,7 +411,6 @@ export default function DiscoverScreen() {
   };
 
   const tabKeys = ['trend', 'favorites', 'starts', 'unique', 'new'];
-  const activeIndex = tabKeys.indexOf(activeTab);
 
   const renderFixedHeader = () => {
     const headerHeight = Platform.OS === 'ios' ? insets.top + 44 : 56;
@@ -432,14 +426,16 @@ export default function DiscoverScreen() {
         }
       ]}>
         <View style={styles.heroCarouselContainer}>
-          <ScrollView
+          <Animated.ScrollView
             ref={heroScrollRef}
             horizontal
-            pagingEnabled
             showsHorizontalScrollIndicator={false}
-            onScroll={handleHeroScroll}
+            onMomentumScrollEnd={handleMomentumScrollEnd}
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+              { useNativeDriver: false }
+            )}
             scrollEventThrottle={16}
-            onMomentumScrollEnd={handleHeroScroll}
             contentContainerStyle={[
               styles.heroCarouselContent,
               { paddingHorizontal: heroDimensions.heroCarouselPaddingHorizontal }
@@ -447,7 +443,6 @@ export default function DiscoverScreen() {
             decelerationRate="fast"
             snapToInterval={HERO_CARD_WIDTH}
             snapToAlignment="start"
-            contentOffset={{ x: activeIndex * HERO_CARD_WIDTH, y: 0 }}
           >
             {tabKeys.map((tabKey) => {
               const config = tabConfigs[tabKey];
@@ -506,7 +501,7 @@ export default function DiscoverScreen() {
                 </View>
               );
             })}
-          </ScrollView>
+          </Animated.ScrollView>
 
           <View style={[
             styles.paginationContainer,
@@ -517,61 +512,115 @@ export default function DiscoverScreen() {
           ]}>
             {tabKeys.map((tabKey, idx) => {
               const config = tabConfigs[tabKey];
-              const isActive = activeTab === tabKey;
+              const inputRange = tabKeys.map((_, i) => i * HERO_CARD_WIDTH);
+
+              const dotWidth = scrollX.interpolate({
+                inputRange,
+                outputRange: tabKeys.map((_, i) =>
+                  i === idx ? heroDimensions.paginationDotActiveWidth : heroDimensions.paginationDotWidth
+                ),
+                extrapolate: 'clamp',
+              });
+
+              const dotColor = scrollX.interpolate({
+                inputRange,
+                outputRange: tabKeys.map((_, i) =>
+                  i === idx ? config.accentColor : colors.border
+                ),
+                extrapolate: 'clamp',
+              });
+
               return (
                 <TouchableOpacity
                   key={tabKey}
                   onPress={() => handleSetPage(idx)}
-                  style={[
-                    styles.paginationDot,
-                    {
-                      backgroundColor: isActive ? config.accentColor : colors.border,
-                      width: isActive ? heroDimensions.paginationDotActiveWidth : heroDimensions.paginationDotWidth,
-                      height: heroDimensions.paginationDotHeight,
-                    }
-                  ]}
-                />
+                  activeOpacity={0.7}
+                >
+                  <Animated.View
+                    style={[
+                      styles.paginationDot,
+                      {
+                        width: dotWidth,
+                        backgroundColor: dotColor,
+                        height: heroDimensions.paginationDotHeight,
+                      }
+                    ]}
+                  />
+                </TouchableOpacity>
               );
             })}
           </View>
         </View>
 
-        {activeTab !== 'new' && (
-          <View style={[
-            styles.timeFilterWrapper,
-            {
-              paddingHorizontal: heroDimensions.timeFilterWrapperPadding,
-              marginBottom: heroDimensions.timeFilterWrapperMarginBottom,
-            }
-          ]}>
-            <View style={[styles.timeFilterSegmentedContainer, { backgroundColor: colors.background }]}>
-              {timeFilters.map((filter) => {
-                const isActive = timeFilter === filter.key;
-                const accentColor = tabConfigs[activeTab]?.accentColor || colors.buttonColor;
+        {(() => {
+          const inputRange = tabKeys.map((_, i) => i * HERO_CARD_WIDTH);
+          const animatedAccentColor = scrollX.interpolate({
+            inputRange,
+            outputRange: tabKeys.map(key => tabConfigs[key]?.accentColor || colors.buttonColor),
+            extrapolate: 'clamp',
+          });
+          const newTabIndex = tabKeys.indexOf('new');
+          const collapseRange = [(newTabIndex - 1) * HERO_CARD_WIDTH, newTabIndex * HERO_CARD_WIDTH];
+          const timeFilterOpacity = scrollX.interpolate({
+            inputRange: collapseRange,
+            outputRange: [1, 0],
+            extrapolate: 'clamp',
+          });
+          const timeFilterMaxHeight = scrollX.interpolate({
+            inputRange: collapseRange,
+            outputRange: [verticalScale(60), 0],
+            extrapolate: 'clamp',
+          });
+          const timeFilterMarginBottom = scrollX.interpolate({
+            inputRange: collapseRange,
+            outputRange: [heroDimensions.timeFilterWrapperMarginBottom, 0],
+            extrapolate: 'clamp',
+          });
 
-                return (
-                  <TouchableOpacity
-                    key={filter.key}
-                    onPress={() => setTimeFilter(filter.key)}
-                    style={[
-                      styles.timeFilterSegment,
-                      isActive && [styles.timeFilterSegmentActive, { backgroundColor: accentColor }],
-                    ]}
-                    activeOpacity={0.7}
-                  >
-                    <Iconify icon={filter.icon} size={moderateScale(16)} color={isActive ? '#fff' : colors.subtext} />
-                    <Text style={[
-                      styles.timeFilterSegmentText,
-                      { color: isActive ? '#fff' : colors.text, fontWeight: isActive ? '700' : '500' }
-                    ]}>
-                      {filter.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        )}
+          return (
+            <Animated.View
+              style={{
+                paddingHorizontal: heroDimensions.timeFilterWrapperPadding,
+                marginBottom: timeFilterMarginBottom,
+                opacity: timeFilterOpacity,
+                maxHeight: timeFilterMaxHeight,
+                overflow: 'hidden',
+              }}
+              pointerEvents={activeTab === 'new' ? 'none' : 'auto'}
+            >
+              <View style={[styles.timeFilterSegmentedContainer, { backgroundColor: colors.background }]}>
+                {timeFilters.map((filter) => {
+                  const isActive = timeFilter === filter.key;
+
+                  return (
+                    <TouchableOpacity
+                      key={filter.key}
+                      onPress={() => setTimeFilter(filter.key)}
+                      style={[styles.timeFilterSegment, { overflow: 'hidden' }]}
+                      activeOpacity={0.7}
+                    >
+                      {isActive && (
+                        <Animated.View
+                          style={[
+                            styles.timeFilterSegmentActiveBg,
+                            { backgroundColor: animatedAccentColor },
+                          ]}
+                        />
+                      )}
+                      <Iconify icon={filter.icon} size={moderateScale(16)} color={isActive ? '#fff' : colors.subtext} />
+                      <Text style={[
+                        styles.timeFilterSegmentText,
+                        { color: isActive ? '#fff' : colors.text, fontWeight: isActive ? '700' : '500' }
+                      ]}>
+                        {filter.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </Animated.View>
+          );
+        })()}
 
         <View style={[
           styles.searchRow,
@@ -666,6 +715,19 @@ const styles = StyleSheet.create({
     gap: scale(4),
   },
   timeFilterSegmentActive: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: verticalScale(4) },
+    shadowOpacity: 0.2,
+    shadowRadius: moderateScale(8),
+    elevation: 4,
+  },
+  timeFilterSegmentActiveBg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: moderateScale(12),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: verticalScale(4) },
     shadowOpacity: 0.2,
