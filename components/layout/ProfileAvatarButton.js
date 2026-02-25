@@ -6,7 +6,7 @@ import { scale, moderateScale } from '../../lib/scaling';
 
 export default function ProfileAvatarButton() {
   const navigation = useNavigation();
-  const { profile } = useProfile(); // loading'i ve theme/colors'ı kullanmamıza gerek kalmadı
+  const { profile } = useProfile();
 
   // Eğer profil henüz yükleniyorsa (null/undefined) veya image_url yoksa doğrudan default resmi kullan
   const imageSource = profile?.image_url 

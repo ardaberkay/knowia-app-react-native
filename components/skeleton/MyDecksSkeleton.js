@@ -28,7 +28,7 @@ const ShimmerOverlay = ({ style, delay = 0, isDarkMode = false, borderRadius = 0
     };
 
     startAnimation();
-  }, []);
+  }, [delay, shimmerAnim]);
 
   const translateX = shimmerAnim.interpolate({
     inputRange: [0, 1],
@@ -85,30 +85,27 @@ const ShimmerBox = ({ children, style, delay = 0, isDarkMode = false, borderRadi
 
 export default function MyDecksSkeleton({ ListHeaderComponent }) {
   const { colors, isDarkMode } = useTheme();
-  
-  // useWindowDimensions hook'u - ekran döndürme desteği
+
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
-  
+
   const deckSkeletonDimensions = useMemo(() => {
     const verticalHeight = isTablet ? height * 0.24 : height * 0.28;
     const horizontalHeight = isTablet ? height * 0.20 : height * 0.23;
-    
+
     return { verticalHeight, horizontalHeight };
   }, [height, isTablet]);
-  
+
   const DECK_SKELETON_VERTICAL_HEIGHT = deckSkeletonDimensions.verticalHeight;
   const DECK_SKELETON_HORIZONTAL_HEIGHT = deckSkeletonDimensions.horizontalHeight;
-  
+
   const responsiveSpacing = useMemo(() => ({
     cardMargin: scale(5),
     listPaddingHorizontal: scale(12),
     listPaddingVertical: verticalScale(5),
   }), []);
-  
-  // Shimmer animasyonu için ekran genişliği
+
   const SCREEN_WIDTH = width;
-  
   const bgColor = isDarkMode ? '#222' : '#ececec';
   const lineColor = isDarkMode ? '#333' : '#ddd';
 
@@ -120,11 +117,12 @@ export default function MyDecksSkeleton({ ListHeaderComponent }) {
     >
       {/* Header Component */}
       {ListHeaderComponent && (typeof ListHeaderComponent === 'function' ? ListHeaderComponent() : ListHeaderComponent)}
-      
-      {/* Skeleton Rows - Double + Single pattern */}
+
+      {/* Skeleton Rows */}
       {[1, 2, 3].map((rowIndex) => (
         <View key={`skeleton_row_${rowIndex}`}>
-          {/* Double Row */}
+
+          {/* --- DOUBLE ROW (İKİLİ KARTLAR) --- */}
           <View style={[skeletonStyles.myDecksList, skeletonStyles.myDeckRow, { paddingHorizontal: responsiveSpacing.listPaddingHorizontal, paddingVertical: responsiveSpacing.listPaddingVertical }]}>
             {[0, 1].map((cardIndex) => (
               <View
@@ -136,77 +134,79 @@ export default function MyDecksSkeleton({ ListHeaderComponent }) {
                 ]}
               >
                 <View style={skeletonStyles.myDeckGradient}>
-                  {/* Favorite Button Skeleton - Top Right */}
-                  <ShimmerBox delay={rowIndex * 100 + cardIndex * 50} isDarkMode={isDarkMode} borderRadius={999} style={{ position: 'absolute', top: verticalScale(10), right: scale(10), zIndex: 10 }} screenWidth={SCREEN_WIDTH}>
-                    <View style={[skeletonStyles.skeletonBox, { width: moderateScale(37), height: moderateScale(37), borderRadius: 999, backgroundColor: lineColor, padding: moderateScale(8) }]} />
-                  </ShimmerBox>
-                  
-                  {/* Badge Section Skeleton - Bottom Left */}
-                  <View style={{ position: 'absolute', bottom: verticalScale(12), left: scale(12) }}>
-                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 20} isDarkMode={isDarkMode} borderRadius={moderateScale(14)} screenWidth={SCREEN_WIDTH}>
-                      <View style={[skeletonStyles.skeletonBox, { width: scale(60), height: verticalScale(28), borderRadius: moderateScale(14), backgroundColor: lineColor, paddingHorizontal: scale(8), paddingVertical: verticalScale(2) }]} />
+
+                  {/* Üst Kısım: Favori Butonu Sağda */}
+                  <View style={skeletonStyles.topRow}>
+                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50} isDarkMode={isDarkMode} borderRadius={999} screenWidth={SCREEN_WIDTH}>
+                      <View style={[skeletonStyles.iconSkeleton, { backgroundColor: lineColor }]} />
                     </ShimmerBox>
                   </View>
-                  
-                  {/* Delete Button Skeleton - Bottom Right */}
-                  <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 40} isDarkMode={isDarkMode} borderRadius={999} style={{ position: 'absolute', bottom: verticalScale(7), right: scale(10) }} screenWidth={SCREEN_WIDTH}>
-                    <View style={[skeletonStyles.skeletonBox, { width: moderateScale(37), height: moderateScale(37), borderRadius: 999, backgroundColor: lineColor, padding: moderateScale(8) }]} />
-                  </ShimmerBox>
-                  
-                  {/* Title Section Skeleton */}
-                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+
+                  {/* Orta Kısım: Başlıklar ve Çizgi */}
+                  <View style={skeletonStyles.centerRow}>
                     <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 60} isDarkMode={isDarkMode} borderRadius={moderateScale(8)} screenWidth={SCREEN_WIDTH}>
-                      <View style={[skeletonStyles.skeletonBox, { width: scale(90), height: moderateScale(16), borderRadius: moderateScale(8), backgroundColor: lineColor }]} />
+                      <View style={[skeletonStyles.titleSkeleton, { backgroundColor: lineColor }]} />
                     </ShimmerBox>
-                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 80} isDarkMode={isDarkMode} borderRadius={moderateScale(1)} screenWidth={SCREEN_WIDTH}>
-                      <View style={[skeletonStyles.skeletonBox, { width: scale(60), height: moderateScale(2), borderRadius: moderateScale(1), backgroundColor: lineColor, marginVertical: verticalScale(8) }]} />
-                    </ShimmerBox>
+
+                    <View style={[skeletonStyles.divider, { backgroundColor: lineColor }]} />
+
                     <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 100} isDarkMode={isDarkMode} borderRadius={moderateScale(8)} screenWidth={SCREEN_WIDTH}>
-                      <View style={[skeletonStyles.skeletonBox, { width: scale(80), height: moderateScale(16), borderRadius: moderateScale(8), backgroundColor: lineColor }]} />
+                      <View style={[skeletonStyles.subtitleSkeleton, { backgroundColor: lineColor }]} />
                     </ShimmerBox>
                   </View>
+
+                  {/* Alt Kısım: Rozet ve Sil Butonu */}
+                  <View style={skeletonStyles.bottomRow}>
+                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 20} isDarkMode={isDarkMode} borderRadius={moderateScale(14)} screenWidth={SCREEN_WIDTH}>
+                      <View style={[skeletonStyles.badgeSkeleton, { backgroundColor: lineColor }]} />
+                    </ShimmerBox>
+
+                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 40} isDarkMode={isDarkMode} borderRadius={999} screenWidth={SCREEN_WIDTH}>
+                      <View style={[skeletonStyles.iconSkeleton, { backgroundColor: lineColor }]} />
+                    </ShimmerBox>
+                  </View>
+
                 </View>
               </View>
             ))}
           </View>
-          {/* Single Row */}
+
+          {/* --- SINGLE ROW (TEKLİ KART) --- */}
           <View style={[skeletonStyles.myDecksList, { paddingHorizontal: responsiveSpacing.listPaddingHorizontal, paddingVertical: responsiveSpacing.listPaddingVertical }]}>
-            <View
-              style={[
-                skeletonStyles.myDeckCardHorizontal,
-                { height: DECK_SKELETON_HORIZONTAL_HEIGHT, backgroundColor: bgColor }
-              ]}
-            >
+            <View style={[skeletonStyles.myDeckCardHorizontal, { height: DECK_SKELETON_HORIZONTAL_HEIGHT, backgroundColor: bgColor }]}>
               <View style={skeletonStyles.myDeckGradient}>
-                {/* Favorite Button Skeleton - Top Right */}
-                <ShimmerBox delay={rowIndex * 100 + 200} isDarkMode={isDarkMode} borderRadius={999} style={{ position: 'absolute', top: verticalScale(8), right: scale(10), zIndex: 10 }} screenWidth={SCREEN_WIDTH}>
-                  <View style={[skeletonStyles.skeletonBox, { width: moderateScale(38), height: moderateScale(38), borderRadius: 999, backgroundColor: lineColor, padding: moderateScale(8) }]} />
-                </ShimmerBox>
-                
-                {/* Badge Section Skeleton - Bottom Left */}
-                <View style={{ position: 'absolute', bottom: verticalScale(12), left: scale(12) }}>
-                  <ShimmerBox delay={rowIndex * 100 + 220} isDarkMode={isDarkMode} borderRadius={moderateScale(14)} screenWidth={SCREEN_WIDTH}>
-                    <View style={[skeletonStyles.skeletonBox, { width: scale(65), height: verticalScale(28), borderRadius: moderateScale(14), backgroundColor: lineColor, paddingHorizontal: scale(8), paddingVertical: verticalScale(2) }]} />
+
+                {/* Üst Kısım: Favori Butonu */}
+                <View style={skeletonStyles.topRow}>
+                  <ShimmerBox delay={rowIndex * 100 + 200} isDarkMode={isDarkMode} borderRadius={999} screenWidth={SCREEN_WIDTH}>
+                    <View style={[skeletonStyles.iconSkeleton, { backgroundColor: lineColor }]} />
                   </ShimmerBox>
                 </View>
-                
-                {/* Delete Button Skeleton - Bottom Right */}
-                <ShimmerBox delay={rowIndex * 100 + 240} isDarkMode={isDarkMode} borderRadius={999} style={{ position: 'absolute', bottom: verticalScale(8), right: scale(10) }} screenWidth={SCREEN_WIDTH}>
-                  <View style={[skeletonStyles.skeletonBox, { width: moderateScale(38), height: moderateScale(38), borderRadius: 999, backgroundColor: lineColor, padding: moderateScale(8) }]} />
-                </ShimmerBox>
-                
-                {/* Title Section Skeleton */}
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+
+                {/* Orta Kısım: Başlıklar ve Çizgi */}
+                <View style={skeletonStyles.centerRow}>
                   <ShimmerBox delay={rowIndex * 100 + 260} isDarkMode={isDarkMode} borderRadius={moderateScale(9)} screenWidth={SCREEN_WIDTH}>
-                    <View style={[skeletonStyles.skeletonBox, { width: scale(140), height: moderateScale(18), borderRadius: moderateScale(9), backgroundColor: lineColor }]} />
+                    <View style={[skeletonStyles.titleSkeletonLarge, { backgroundColor: lineColor }]} />
                   </ShimmerBox>
-                  <ShimmerBox delay={rowIndex * 100 + 280} isDarkMode={isDarkMode} borderRadius={moderateScale(1)} screenWidth={SCREEN_WIDTH}>
-                    <View style={[skeletonStyles.skeletonBox, { width: scale(70), height: moderateScale(2), borderRadius: moderateScale(1), backgroundColor: lineColor, marginVertical: verticalScale(10) }]} />
-                  </ShimmerBox>
+
+                  <View style={[skeletonStyles.dividerLarge, { backgroundColor: lineColor }]} />
+
                   <ShimmerBox delay={rowIndex * 100 + 300} isDarkMode={isDarkMode} borderRadius={moderateScale(9)} screenWidth={SCREEN_WIDTH}>
-                    <View style={[skeletonStyles.skeletonBox, { width: scale(120), height: moderateScale(18), borderRadius: moderateScale(9), backgroundColor: lineColor }]} />
+                    <View style={[skeletonStyles.subtitleSkeletonLarge, { backgroundColor: lineColor }]} />
                   </ShimmerBox>
                 </View>
+
+                {/* Alt Kısım: Rozet ve Sil Butonu */}
+                <View style={skeletonStyles.bottomRow}>
+                  <ShimmerBox delay={rowIndex * 100 + 220} isDarkMode={isDarkMode} borderRadius={moderateScale(14)} screenWidth={SCREEN_WIDTH}>
+                    <View style={[skeletonStyles.badgeSkeletonLarge, { backgroundColor: lineColor }]} />
+                  </ShimmerBox>
+
+                  <ShimmerBox delay={rowIndex * 100 + 240} isDarkMode={isDarkMode} borderRadius={999} screenWidth={SCREEN_WIDTH}>
+                    <View style={[skeletonStyles.iconSkeleton, { backgroundColor: lineColor }]} />
+                  </ShimmerBox>
+                </View>
+
               </View>
             </View>
           </View>
@@ -217,12 +217,7 @@ export default function MyDecksSkeleton({ ListHeaderComponent }) {
 }
 
 const skeletonStyles = StyleSheet.create({
-  skeletonBox: {
-    // Skeleton placeholder için stil
-  },
-  myDecksList: {
-    // paddingHorizontal ve paddingVertical dinamik olarak uygulanacak
-  },
+  myDecksList: {},
   myDeckRow: {
     flexDirection: 'row',
   },
@@ -237,9 +232,76 @@ const skeletonStyles = StyleSheet.create({
   },
   myDeckGradient: {
     flex: 1,
-    borderRadius: moderateScale(18),
-    padding: scale(16),
-    justifyContent: 'center',
+    padding: scale(12),
+    justifyContent: 'space-between',
   },
-});
 
+  // Flex Layout Sınıfları
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    width: '100%',
+  },
+  centerRow: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+  },
+
+  // Ortak Boyutlar
+  iconSkeleton: {
+    width: moderateScale(37),
+    height: moderateScale(37),
+    borderRadius: 999,
+  },
+  badgeSkeleton: {
+    width: scale(60),
+    height: verticalScale(28),
+    borderRadius: moderateScale(14),
+  },
+  badgeSkeletonLarge: {
+    width: scale(65),
+    height: verticalScale(28),
+    borderRadius: moderateScale(14),
+  },
+  titleSkeleton: {
+    width: scale(90),
+    height: moderateScale(16),
+    borderRadius: moderateScale(8),
+  },
+  titleSkeletonLarge: {
+    width: scale(140),
+    height: moderateScale(18),
+    borderRadius: moderateScale(9),
+  },
+  subtitleSkeleton: {
+    width: scale(80),
+    height: moderateScale(16),
+    borderRadius: moderateScale(8),
+  },
+  subtitleSkeletonLarge: {
+    width: scale(120),
+    height: moderateScale(18),
+    borderRadius: moderateScale(9),
+  },
+  divider: {
+    width: scale(60),
+    height: moderateScale(2),
+    borderRadius: moderateScale(1),
+    marginVertical: verticalScale(10),
+    opacity: 0.5,
+  },
+  dividerLarge: {
+    width: scale(70),
+    height: moderateScale(2),
+    borderRadius: moderateScale(1),
+    marginVertical: verticalScale(12),
+    opacity: 0.5,
+  }
+});
