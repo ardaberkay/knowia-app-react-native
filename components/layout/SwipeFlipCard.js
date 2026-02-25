@@ -219,7 +219,7 @@ function SwipeFlipCardImpl({
         
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }} 
-          showsVerticalScrollIndicator={true}
+          showsVerticalScrollIndicator={false}
           nestedScrollEnabled={true} // ÇÖZÜM: Swiper içindeki scroll çakışmasını engeller
           removeClippedSubviews
           style={{ flex: 1, width: '100%' }}
@@ -275,7 +275,7 @@ function SwipeFlipCardImpl({
 
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }} 
-          showsVerticalScrollIndicator={true}
+          showsVerticalScrollIndicator={false}
           nestedScrollEnabled={true} // ÇÖZÜM: Swiper içindeki scroll çakışmasını engeller
           removeClippedSubviews
           style={{ flex: 1, width: '100%' }}

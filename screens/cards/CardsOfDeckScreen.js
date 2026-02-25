@@ -316,27 +316,65 @@ export default function DeckCardsScreen({ route, navigation }) {
     setMoreMenuVisible(false);
   };
 
-  const handleDeleteSelectedCard = async () => {
+  const handleDeleteSelectedCard = () => {
     if (!selectedCard) return;
-    try {
-      const { error } = await supabase
-        .from('cards')
-        .delete()
-        .eq('id', selectedCard.id);
 
-      if (error) {
-        throw error;
-      }
+    Alert.alert(
+      t('cardDetail.warningTitle', 'Uyarı'),
+      t('cardDetail.deleteConfirm', 'Kartı silmek istediğinize emin misiniz?'),
+      [
+        {
+          text: t('common.cancel', 'İptal'),
+          style: 'cancel',
+          onPress: () => setMoreMenuVisible(false)
+        },
+        {
+          text: t('common.delete', 'Sil'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from('cards')
+                .delete()
+                .eq('id', selectedCard.id);
 
-      setCards(cards.filter(c => c.id !== selectedCard.id));
-      setOriginalCards(originalCards.filter(c => c.id !== selectedCard.id));
-      setSelectedCard(null);
-      showSuccess(t('cardDetail.deleteSuccess', 'Kart başarıyla silindi'));
-    } catch (e) {
-      showError(t('cardDetail.deleteError', 'Kart silinemedi'));
-    } finally {
-      setMoreMenuVisible(false);
-    }
+              if (error) throw error;
+
+              // --- EKRANDAN ATMAYI ENGELLEYEN YENİ MANTIK ---
+              
+              // 1. Silinen kartın index'ini bul
+              const currentIndex = cards.findIndex(c => c.id === selectedCard.id);
+              let nextCardToSelect = null;
+
+              // 2. Eğer listede 1'den fazla kart varsa sıradaki kartı belirle
+              if (cards.length > 1) {
+                // Eğer en son kartı siliyorsak bir öncekini göster
+                if (currentIndex === cards.length - 1) {
+                  nextCardToSelect = cards[currentIndex - 1];
+                } 
+                // Aksi halde bir sonrakini göster
+                else {
+                  nextCardToSelect = cards[currentIndex + 1];
+                }
+              }
+
+              // 3. Listeleri güncelle
+              setCards(cards.filter(c => c.id !== selectedCard.id));
+              setOriginalCards(originalCards.filter(c => c.id !== selectedCard.id));
+              
+              // 4. Null yerine sıradaki kartı seç (Böylece bileşen kapanmaz, slider diğer karta geçer)
+              setSelectedCard(nextCardToSelect);
+
+              showSuccess(t('cardDetail.deleteSuccess', 'Kart başarıyla silindi'));
+            } catch (e) {
+              showError(t('cardDetail.deleteError', 'Kart silinemedi'));
+            } finally {
+              setMoreMenuVisible(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const openMoreMenu = () => {

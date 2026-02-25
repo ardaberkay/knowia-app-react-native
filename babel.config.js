@@ -134,6 +134,7 @@ module.exports = function (api) {
           ],
         },
       ],
+      'react-native-reanimated/plugin',
     ].filter(Boolean),
   };
 };
