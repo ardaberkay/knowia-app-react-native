@@ -22,7 +22,7 @@ function SwipeFlipCardImpl({
   const { t } = useTranslation();
 
   // --- OPTİMİZASYON 1: ROTASYON, ŞEFFAFLIK VE Z-INDEX İNTERPOLASYONLARI ---
-  
+
   const frontInterpolate = useMemo(() => {
     if (!animatedValue) return null;
     return animatedValue.interpolate({
@@ -43,7 +43,7 @@ function SwipeFlipCardImpl({
     if (!animatedValue) return 1;
     return animatedValue.interpolate({
       inputRange: [0, 0.5, 0.51, 1],
-      outputRange: [1, 1, 0, 0], 
+      outputRange: [1, 1, 0, 0],
     });
   }, [animatedValue]);
 
@@ -51,7 +51,7 @@ function SwipeFlipCardImpl({
     if (!animatedValue) return 0;
     return animatedValue.interpolate({
       inputRange: [0, 0.49, 0.5, 1],
-      outputRange: [0, 0, 1, 1], 
+      outputRange: [0, 0, 1, 1],
     });
   }, [animatedValue]);
 
@@ -100,7 +100,6 @@ function SwipeFlipCardImpl({
   const containerStyle = useMemo(
     () => ([
       { width: cardWidth, height: cardHeight, alignSelf: 'center' },
-      styles.shadowContainer
     ]),
     [cardWidth, cardHeight]
   );
@@ -203,11 +202,11 @@ function SwipeFlipCardImpl({
       <Animated.View
         style={[
           baseCardStyle,
-          { padding: 0, overflow: 'hidden' }, 
+          { padding: 0, overflow: 'hidden' },
           frontAnimatedStyle,
         ]}
-        renderToHardwareTextureAndroid={true} 
-        shouldRasterizeIOS={true} 
+        renderToHardwareTextureAndroid={true}
+        shouldRasterizeIOS={true}
         rasterizationScale={pixelRatio}
       >
         <LinearGradient
@@ -216,20 +215,20 @@ function SwipeFlipCardImpl({
           end={{ x: 1, y: 1 }}
           style={gradientStyle}
         />
-        
+
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }} 
+          contentContainerStyle={{ flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
           nestedScrollEnabled={true} // ÇÖZÜM: Swiper içindeki scroll çakışmasını engeller
           removeClippedSubviews
           style={{ flex: 1, width: '100%' }}
         >
-          <Pressable 
-            onPress={() => onFlip?.(cardId)} 
-            style={{ 
-              flexGrow: 1, 
-              width: '100%', 
-              padding: scale(24), 
+          <Pressable
+            onPress={() => onFlip?.(cardId)}
+            style={{
+              flexGrow: 1,
+              width: '100%',
+              padding: scale(24),
             }}
           >
             {/* ÇÖZÜM: Uzun metinlerde taşmayı engellemek için içerik ayrı bir View ile ortalandı */}
@@ -256,14 +255,14 @@ function SwipeFlipCardImpl({
       </Animated.View>
 
       {/* --- ARKA YÜZ --- */}
-      <Animated.View 
+      <Animated.View
         style={[
-          baseCardStyle, 
-          { padding: 0, overflow: 'hidden' }, 
+          baseCardStyle,
+          { padding: 0, overflow: 'hidden' },
           backAnimatedStyle
         ]}
-        renderToHardwareTextureAndroid={true} 
-        shouldRasterizeIOS={true} 
+        renderToHardwareTextureAndroid={true}
+        shouldRasterizeIOS={true}
         rasterizationScale={pixelRatio}
       >
         <LinearGradient
@@ -274,14 +273,14 @@ function SwipeFlipCardImpl({
         />
 
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }} 
+          contentContainerStyle={{ flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
           nestedScrollEnabled={true} // ÇÖZÜM: Swiper içindeki scroll çakışmasını engeller
           removeClippedSubviews
           style={{ flex: 1, width: '100%' }}
         >
-          <Pressable 
-            onPress={() => onFlip?.(cardId)} 
+          <Pressable
+            onPress={() => onFlip?.(cardId)}
             style={[backScrollContentStyle, { flexGrow: 1 }]}
           >
             <View style={{ alignItems: 'center', marginBottom: verticalScale(24) }}>
@@ -372,11 +371,11 @@ export default memo(SwipeFlipCardImpl, areEqual);
 
 const styles = StyleSheet.create({
   shadowContainer: {
-    shadowColor: '#000', 
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: verticalScale(4) },
-    shadowOpacity: 0.3, 
+    shadowOpacity: 0.08,
     shadowRadius: moderateScale(8),
-    elevation: 5, 
+    elevation: 2,
     borderRadius: moderateScale(26),
     backgroundColor: 'transparent',
   },

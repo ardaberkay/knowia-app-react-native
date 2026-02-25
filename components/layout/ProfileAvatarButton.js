@@ -1,14 +1,17 @@
 import React from 'react';
-import { TouchableOpacity, Image, ActivityIndicator, StyleSheet } from 'react-native';
+import { TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useTheme } from '../../theme/theme';
 import { useProfile } from '../../contexts/ProfileContext';
 import { scale, moderateScale } from '../../lib/scaling';
 
 export default function ProfileAvatarButton() {
   const navigation = useNavigation();
-  const { colors } = useTheme();
-  const { profile, loading } = useProfile();
+  const { profile } = useProfile(); // loading'i ve theme/colors'ı kullanmamıza gerek kalmadı
+
+  // Eğer profil henüz yükleniyorsa (null/undefined) veya image_url yoksa doğrudan default resmi kullan
+  const imageSource = profile?.image_url 
+    ? { uri: profile.image_url } 
+    : require('../../assets/avatar-default.png');
 
   return (
     <TouchableOpacity
@@ -16,14 +19,10 @@ export default function ProfileAvatarButton() {
       onPress={() => navigation.navigate('Profile')}
       activeOpacity={0.8}
     >
-      {loading ? (
-        <ActivityIndicator size="small" color={colors.buttonColor} />
-      ) : (
-        <Image
-          source={profile?.image_url ? { uri: profile.image_url } : require('../../assets/avatar-default.png')}
-          style={styles.profileAvatar}
-        />
-      )}
+      <Image
+        source={imageSource}
+        style={styles.profileAvatar}
+      />
     </TouchableOpacity>
   );
 }
@@ -47,4 +46,4 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
     backgroundColor: 'transparent',
   },
-}); 
+});
