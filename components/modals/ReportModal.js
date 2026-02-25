@@ -7,21 +7,12 @@ import { useTranslation } from 'react-i18next';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { Iconify } from 'react-native-iconify';
 
-/** Store uyumlu şikayet sebep kodları - reportType'a göre listelenir */
 export const REPORT_REASON_OPTIONS = {
   user: ['harassment', 'spam', 'hate_speech', 'inappropriate', 'impersonation', 'other'],
   deck: ['spam', 'inappropriate', 'hate_speech', 'copyright', 'misleading', 'other'],
   card: ['spam', 'inappropriate', 'hate_speech', 'copyright', 'misleading', 'other'],
 };
 
-/**
- * Özelleştirilebilir şikayet modalı. Kullanıcı / deste / kart şikayeti için kullanılır.
- * @param {boolean} visible
- * @param {() => void} onClose
- * @param {'user'|'deck'|'card'} reportType
- * @param {string[]} alreadyReportedCodes - Bu hedef için daha önce kullanılan reason_code listesi (aynı madde tekrar seçilemez)
- * @param {(reasonCode: string, reasonText?: string) => Promise<void>} onSubmit
- */
 export default function ReportModal({
   visible,
   onClose,
@@ -29,11 +20,14 @@ export default function ReportModal({
   alreadyReportedCodes = [],
   onSubmit,
 }) {
-  const { colors } = useTheme();
+  const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
   const screenHeight = Dimensions.get('screen').height;
   const [selectedCode, setSelectedCode] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  // Marka ikincil rengi (Uyarı/Şikayet hissiyatı için)
+  const secondaryColor = colors.secondary || '#FF3B30';
 
   const options = REPORT_REASON_OPTIONS[reportType] || REPORT_REASON_OPTIONS.deck;
   const alreadySet = new Set(alreadyReportedCodes || []);
@@ -61,51 +55,86 @@ export default function ReportModal({
       isVisible={visible}
       onBackdropPress={onClose}
       onBackButtonPress={onClose}
+      animationIn="slideInUp"
+      animationOut="slideOutDown"
+      animationInTiming={300}
+      animationOutTiming={300}
+      backdropTransitionInTiming={300}
+      backdropTransitionOutTiming={300}
       useNativeDriver
       useNativeDriverForBackdrop
       hideModalContentWhileAnimating
-      backdropTransitionOutTiming={0}
       statusBarTranslucent
       deviceHeight={screenHeight}
     >
       <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+        
+        {/* Header Row */}
         <View style={styles.headerRow}>
           <Text style={[typography.styles.h2, { color: colors.text }]}>{t(titleKey)}</Text>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}>
+          <TouchableOpacity 
+            onPress={onClose} 
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+            style={styles.closeBtnWrapper}
+          >
             <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
           </TouchableOpacity>
         </View>
 
-        <Text style={[typography.styles.body, { color: colors.subtext, marginBottom: verticalScale(12) }]}>
+        <Text style={[styles.hintText, { color: colors.muted }]}>
           {t('moderation.reportReasonHint', 'Lütfen bir sebep seçin. Aynı sebeple tekrar şikayet edemezsiniz.')}
         </Text>
 
         <ScrollView
-          style={styles.scrollContent}
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
           {options.map((code) => {
             const disabled = alreadySet.has(code);
             const isSelected = selectedCode === code;
             const labelKey = `moderation.reason.${code}`;
+
             return (
               <TouchableOpacity
                 key={code}
                 onPress={() => !disabled && setSelectedCode(code)}
                 disabled={disabled}
+                // Dalgalanmayı (Flicker) önlemek için activeOpacity 1 yapıldı
+                activeOpacity={1}
                 style={[
-                  styles.option,
-                  { borderColor: colors.border, backgroundColor: isSelected ? colors.iconBackground || colors.buttonColor + '18' : 'transparent' },
-                  disabled && styles.optionDisabled,
+                  styles.optionCard,
+                  {
+                    backgroundColor: isSelected ? (isDarkMode ? `${secondaryColor}20` : `${secondaryColor}15`) : (isDarkMode ? '#2A2A2A' : '#F5F5F5'),
+                    borderColor: isSelected ? secondaryColor : 'transparent',
+                  },
+                  disabled && styles.optionDisabled
                 ]}
-                activeOpacity={0.7}
               >
-                <View style={[styles.radioOuter, { borderColor: disabled ? colors.border : colors.buttonColor }]}>
-                  {isSelected && <View style={[styles.radioInner, { backgroundColor: colors.buttonColor }]} />}
-                </View>
-                <Text style={[typography.styles.body, { color: disabled ? colors.subtext : colors.text }]}>
+                <Text style={[
+                  styles.optionText,
+                  { 
+                    color: disabled ? colors.muted : (isSelected ? secondaryColor : colors.text),
+                    fontWeight: isSelected ? '700' : '500',
+                    textDecorationLine: disabled ? 'line-through' : 'none' 
+                  }
+                ]}>
                   {t(labelKey, code)}
                 </Text>
+
+                {/* İçi Dolan Yuvarlak (Radio) veya Kilit İkonu */}
+                {!disabled ? (
+                  <View style={[
+                    styles.radioOuter, 
+                    { 
+                      borderColor: isSelected ? secondaryColor : (isDarkMode ? '#555' : '#CCC'),
+                    }
+                  ]}>
+                    {isSelected && <View style={[styles.radioInner, { backgroundColor: secondaryColor }]} />}
+                  </View>
+                ) : (
+                  <Iconify icon="fontisto:locked" size={moderateScale(16)} color={colors.muted} />
+                )}
               </TouchableOpacity>
             );
           })}
@@ -116,12 +145,17 @@ export default function ReportModal({
           disabled={!canSubmit || loading}
           style={[
             styles.submitBtn,
-            { backgroundColor: canSubmit ? colors.buttonColor : colors.border },
+            { backgroundColor: canSubmit ? secondaryColor : (isDarkMode ? '#333' : '#E5E7EB') },
           ]}
           activeOpacity={0.8}
         > 
-            <Text style={[typography.styles.button, { color: '#fff' }]}>{t('moderation.submitReport', 'Gönder')}</Text>
-          
+          {loading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={[styles.submitBtnText, { color: canSubmit ? '#fff' : colors.muted }]}>
+              {t('moderation.submitReport', 'Gönder')}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     </Modal>
@@ -131,49 +165,76 @@ export default function ReportModal({
 const styles = StyleSheet.create({
   modalContainer: {
     borderRadius: moderateScale(32),
-    padding: scale(24),
+    padding: scale(20),
+    paddingBottom: verticalScale(32),
+    maxHeight: '85%',
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: verticalScale(16),
+    marginBottom: verticalScale(12),
+  },
+  closeBtnWrapper: {
+    backgroundColor: 'rgba(150, 150, 150, 0.1)',
+    padding: moderateScale(6),
+    borderRadius: 99,
+  },
+  hintText: {
+    fontSize: moderateScale(14),
+    marginBottom: verticalScale(20),
+    fontFamily: typography.primary?.regular || undefined,
+    lineHeight: verticalScale(20),
+  },
+  scrollView: {
+    maxHeight: verticalScale(420),
   },
   scrollContent: {
-    maxHeight: verticalScale(400),
-    height: verticalScale(400),
+    gap: verticalScale(12),
+    paddingBottom: verticalScale(16),
   },
-  option: {
+  optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: verticalScale(12),
-    paddingHorizontal: scale(6),
-    borderRadius: moderateScale(8),
-    borderWidth: 1,
-    marginBottom: verticalScale(8),
+    justifyContent: 'space-between',
+    paddingVertical: verticalScale(14),
+    paddingHorizontal: scale(16),
+    borderRadius: moderateScale(16),
+    borderWidth: 1.5,
   },
   optionDisabled: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
+  optionText: {
+    fontSize: moderateScale(16),
+    flex: 1,
+  },
+  
+  // Kusursuz Ortalama İçin Matematiksel Olarak Eşitlenmiş Değerler
   radioOuter: {
-    width: moderateScale(20),
-    height: moderateScale(20),
-    borderRadius: moderateScale(10),
-    borderWidth: 2,
-    marginRight: scale(12),
-    justifyContent: 'center',
+    width: moderateScale(24),
+    height: moderateScale(24),
+    borderRadius: moderateScale(12),
+    borderWidth: moderateScale(2),
     alignItems: 'center',
+    justifyContent: 'center',
   },
   radioInner: {
-    width: moderateScale(10),
-    height: moderateScale(10),
-    borderRadius: moderateScale(5),
+    width: moderateScale(12),
+    height: moderateScale(12),
+    borderRadius: moderateScale(6),
   },
+  
   submitBtn: {
-    paddingVertical: verticalScale(14),
-    borderRadius: moderateScale(12),
+    paddingVertical: verticalScale(16),
+    borderRadius: moderateScale(16),
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: verticalScale(48),
+    minHeight: verticalScale(54),
+    marginTop: verticalScale(8),
   },
+  submitBtnText: {
+    fontSize: moderateScale(16),
+    fontWeight: '700',
+  }
 });

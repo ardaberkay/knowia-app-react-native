@@ -1,190 +1,260 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, LayoutAnimation, UIManager, Platform, ScrollView } from 'react-native';
 import Modal from 'react-native-modal';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { Iconify } from 'react-native-iconify';
-import { useState, useEffect } from 'react';
+
+// Android cihazlarda LayoutAnimation'ın çalışması için bu ayar zorunludur
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function DeckLanguageModal({
-    isVisible,
-    onClose,
-    languages = [],
-    selectedLanguage,
-    onSelectLanguage,
+  isVisible,
+  onClose,
+  languages = [],
+  selectedLanguage,
+  onSelectLanguage,
 }) {
-    const { colors } = useTheme();
-    const [error, setError] = useState('');
-    const { t } = useTranslation();
-    const screenHeight = Dimensions.get('screen').height;
+  const { colors, isDarkMode } = useTheme();
+  const [error, setError] = useState('');
+  const { t } = useTranslation();
+  const screenHeight = Dimensions.get('screen').height;
+  
+  // Hata mesajı için animasyon değeri
+  const shakeAnimation = useRef(new Animated.Value(0)).current;
 
-    const getDeckLanguageIcon = (sortOrder) => {
-        const icons = {
-            1: 'twemoji:flag-for-flag-turkey',
-            2: 'twemoji:flag-england',
-            3: 'twemoji:flag-germany',
-            4: 'twemoji:flag-spain',
-            5: 'twemoji:flag-france',
-            6: 'twemoji:flag-portugal',
-            7: 'twemoji:flag-saudi-arabia',
-        };
+  // Marka Rengi Fallback
+  const primaryColor = colors.buttonColor || colors.primary || '#F98A21';
 
-        return icons[sortOrder] || 'twemoji:flag-for-flag-turkey';
+  // Modal kapandığında hatayı temizle
+  useEffect(() => {
+    if (!isVisible) setError('');
+  }, [isVisible]);
+
+  // Hata tetiklendiğinde titreme animasyonu oynat
+  useEffect(() => {
+    if (error) {
+      Animated.sequence([
+        Animated.timing(shakeAnimation, { toValue: 10, duration: 50, useNativeDriver: true }),
+        Animated.timing(shakeAnimation, { toValue: -10, duration: 50, useNativeDriver: true }),
+        Animated.timing(shakeAnimation, { toValue: 10, duration: 50, useNativeDriver: true }),
+        Animated.timing(shakeAnimation, { toValue: 0, duration: 50, useNativeDriver: true })
+      ]).start();
+    }
+  }, [error]);
+
+  const getDeckLanguageIcon = (sortOrder) => {
+    const icons = {
+      1: 'twemoji:flag-for-flag-turkey',
+      2: 'twemoji:flag-england',
+      3: 'twemoji:flag-germany',
+      4: 'twemoji:flag-spain',
+      5: 'twemoji:flag-france',
+      6: 'twemoji:flag-portugal',
+      7: 'twemoji:flag-saudi-arabia',
     };
+    return icons[sortOrder] || 'twemoji:flag-for-flag-turkey';
+  };
 
-    const getDeckLanguageName = (language) => {
-        const translation = t(`languages.${language.sort_order}`, null);
-        return translation;
-    };
+  const getDeckLanguageName = (language) => {
+    return t(`languages.${language.sort_order}`, null);
+  };
 
-    const handleToggle = (languageId) => {
-        const isCurrentlySelected = selectedLanguage.includes(languageId);
-      
-        if (isCurrentlySelected) {
-          // 1. EĞER KALDIRILIYORSA: Hiçbir engel yok, direkt kaldır.
-          setError('');
-          onSelectLanguage(languageId);
-        } else {
-          // 2. EĞER EKLENİYORSA: Mevcut uzunluğu kontrol et.
-          if (selectedLanguage.length >= 2) {
-            setError(t('create.maxLanguage', 'En fazla 2 dil seçebilirsiniz.'));
-          } else {
-            setError('');
-            onSelectLanguage(languageId);
-          }
-        }
-      };
-    return (
-        <Modal
-            isVisible={isVisible}
-            onBackdropPress={onClose}
-            onBackButtonPress={onClose}
-            useNativeDriver
-            useNativeDriverForBackdrop
-            hideModalContentWhileAnimating
-            backdropTransitionOutTiming={0}
-            animationIn="slideInUp"
-            animationOut="slideOutDown"
-            statusBarTranslucent
-            deviceHeight={screenHeight}
-        >
-            <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-                <View style={styles.headerRow}>
-                <Text style={[typography.styles.h2, { color: colors.text}]}>
-                    {t('create.languageHeading', 'İçerik Dili')}
-                </Text>
-                <TouchableOpacity onPress={onClose} hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}>
-                    <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
-                </TouchableOpacity>
-            </View>
-            <View>
-                {languages.map((language) => {
-                    const isChecked = selectedLanguage.includes(language.id);
+  const handleToggle = (languageId) => {
+    const isCurrentlySelected = selectedLanguage.includes(languageId);
 
+    // Boyut değişimini yumuşatmak için LayoutAnimation çağırıyoruz
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 
-                    return (
-                        <TouchableOpacity
-                            key={language.id}
-                            onPress={() => handleToggle(language.id)}
-                            style={styles.optionRow}
-                            activeOpacity={0.8}
-                        >
-                            {/* Checkbox */}
-                            <View style={[styles.checkboxContainer, { backgroundColor: isChecked ? '#007AFF'  + '40' : 'transparent' }]}>
-                            <View
-                                style={[
-                                    styles.checkbox,
-                                    {
-                                        borderColor: colors.primary || '#007AFF',
-                                        backgroundColor: isChecked
-                                            ? colors.primary || '#007AFF'
-                                            : 'transparent',
-                                    },
-                                ]}
-                            >
-                                {isChecked && <Text style={styles.checkmark}>✓</Text>}
-                            </View>
-                            <View style={styles.languageIcon}>
-                                <Iconify icon={getDeckLanguageIcon(language.sort_order)} size={24} />
-                            </View>
-                            {/* Language Name */}
-                            <Text style={[styles.optionText, { color: colors.text }]}>
-                                {getDeckLanguageName(language)}
-                            </Text>
-                            </View>
-                        </TouchableOpacity>
+    if (isCurrentlySelected) {
+      setError('');
+      onSelectLanguage(languageId);
+    } else {
+      if (selectedLanguage.length >= 2) {
+        setError(t('create.maxLanguage', 'En fazla 2 dil seçebilirsiniz.'));
+      } else {
+        setError('');
+        onSelectLanguage(languageId);
+      }
+    }
+  };
 
-                    );
-                })}
-                <View style={styles.errorText}>
-                    {error && (
-                        <View style={styles.errorContainer}>
-                            <Iconify icon="material-symbols:info-outline" size={24} color="red" />
-                            <View>
-                                <Text style={[styles.errorText, { color: 'red' }]}>
-                                    {error}
-                                </Text>
-                            </View>
-                        </View>
-                    )}
-                </View>
-            </View>
+  return (
+    <Modal
+      isVisible={isVisible}
+      onBackdropPress={onClose}
+      onBackButtonPress={onClose}
+      useNativeDriver
+      useNativeDriverForBackdrop
+      hideModalContentWhileAnimating
+      backdropTransitionOutTiming={0}
+      animationIn="slideInUp"
+      animationOut="slideOutDown"
+      statusBarTranslucent
+      deviceHeight={screenHeight}
+    >
+      <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+        
+        {/* Header */}
+        <View style={styles.headerRow}>
+          <Text style={[typography.styles.h2, { color: colors.text }]}>
+            {t('create.languageHeading', 'İçerik Dili')}
+          </Text>
+          <TouchableOpacity 
+            onPress={onClose} 
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+            style={styles.closeButton}
+          >
+            <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
+          </TouchableOpacity>
         </View>
-        </Modal >
-    );
+
+        {/* Bilgilendirme Metni */}
+        <Text style={[styles.infoText, { color: isDarkMode ? '#aaa' : '#666' }]}>
+          {t('create.languageSub', 'Öğrenmek istediğiniz dilleri seçin (Maksimum 2)')}
+        </Text>
+
+        {/* List of Languages (ScrollView içine alındı) */}
+        <ScrollView 
+          style={styles.scrollView} 
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {languages.map((language) => {
+            const isChecked = selectedLanguage.includes(language.id);
+
+            return (
+              <TouchableOpacity
+                key={language.id}
+                onPress={() => handleToggle(language.id)}
+                activeOpacity={0.7}
+                style={[
+                  styles.languageCard,
+                  {
+                    backgroundColor: isChecked ? (isDarkMode ? `${primaryColor}20` : `${primaryColor}15`) : (isDarkMode ? '#2A2A2A' : '#F5F5F5'),
+                    borderColor: isChecked ? primaryColor : 'transparent',
+                  }
+                ]}
+              >
+                <View style={styles.cardLeft}>
+                  <View style={styles.iconWrapper}>
+                    <Iconify icon={getDeckLanguageIcon(language.sort_order)} size={moderateScale(28)} />
+                  </View>
+                  <Text style={[styles.languageName, { color: isChecked ? primaryColor : colors.text, fontWeight: isChecked ? '700' : '500' }]}>
+                    {getDeckLanguageName(language)}
+                  </Text>
+                </View>
+
+                {/* Modern Yuvarlak Radio/Check İkonu */}
+                <View style={[
+                  styles.radioCircle, 
+                  { 
+                    borderColor: isChecked ? primaryColor : (isDarkMode ? '#555' : '#CCC'),
+                    backgroundColor: isChecked ? primaryColor : 'transparent'
+                  }
+                ]}>
+                  {isChecked && <Iconify icon="hugeicons:tick-01" size={moderateScale(20)} color="#FFF" />}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* Animasyonlu Hata Mesajı */}
+        {error ? (
+          <Animated.View style={[styles.errorContainer, { transform: [{ translateX: shakeAnimation }] }]}>
+            <View style={styles.errorIconBg}>
+              <Iconify icon="material-symbols:info-outline" size={moderateScale(20)} color="#FF3B30" />
+            </View>
+            <Text style={styles.errorText}>{error}</Text>
+          </Animated.View>
+        ) : null}
+
+      </View>
+    </Modal>
+  );
 }
 
 const styles = StyleSheet.create({
-    modalContainer: {
-        borderRadius: moderateScale(32),
-        padding: scale(24),
-    },
-    optionRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: verticalScale(12),
-    },
-    checkboxContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: moderateScale(12),
-        borderRadius: moderateScale(12),
-        width: '100%',
-    },
-    checkbox: {
-        width: moderateScale(22),
-        height: moderateScale(22),
-        borderWidth: 2,
-        borderRadius: 4,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: scale(12),
-    },
-    checkmark: {
-        color: '#fff',
-        fontSize: moderateScale(14),
-        fontWeight: 'bold',
-        textAlignVertical: 'center',
-        textAlign: 'center',
-    },
-    optionText: {
-        fontSize: moderateScale(16),
-    },
-    languageIcon: {
-        marginRight: scale(12),
-    },
-    errorContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: scale(8),
-        marginTop: verticalScale(8),
-    },
-    headerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: verticalScale(16),
-      },
+  modalContainer: {
+    borderRadius: moderateScale(32),
+    padding: scale(20),
+    paddingBottom: verticalScale(32),
+    maxHeight: '85%', // Önceki modallarla uyumlu sınır
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: verticalScale(8),
+  },
+  closeButton: {
+    backgroundColor: 'rgba(150, 150, 150, 0.1)',
+    padding: moderateScale(6),
+    borderRadius: 99,
+  },
+  infoText: {
+    fontSize: moderateScale(14),
+    marginBottom: verticalScale(20),
+    fontFamily: typography.primary?.regular || undefined,
+  },
+  scrollView: {
+    maxHeight: verticalScale(420), // Önceki modallarla uyumlu yükseklik
+  },
+  listContainer: {
+    gap: verticalScale(12),
+  },
+  languageCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: verticalScale(14),
+    paddingHorizontal: scale(16),
+    borderRadius: moderateScale(16),
+    borderWidth: 1.5,
+  },
+  cardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconWrapper: {
+    marginRight: scale(14),
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 2,
+  },
+  languageName: {
+    fontSize: moderateScale(16),
+  },
+  radioCircle: {
+    width: moderateScale(24),
+    height: moderateScale(24),
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF3B3015',
+    padding: moderateScale(12),
+    borderRadius: moderateScale(12),
+    marginTop: verticalScale(20),
+  },
+  errorIconBg: {
+    marginRight: scale(8),
+  },
+  errorText: {
+    color: '#FF3B30',
+    fontSize: moderateScale(14),
+    fontWeight: '600',
+    flex: 1,
+  }
 });
