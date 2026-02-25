@@ -1,12 +1,22 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity, Dimensions, Pressable, Animated, Easing, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Animated, Easing, Image } from 'react-native';
+import Reanimated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withSequence,
+  LinearTransition,
+  FadeIn,
+  FadeOut,
+  withTiming,
+  withRepeat,
+} from 'react-native-reanimated';
 import Swiper from 'react-native-deck-swiper';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
-import { getCardsForLearning, ensureUserCardProgress } from '../../services/CardService';
+import { ensureUserCardProgress } from '../../services/CardService';
 import { supabase } from '../../lib/supabase';
 import { Iconify } from 'react-native-iconify';
-import { LinearGradient } from 'expo-linear-gradient';
 import logoasil from '../../assets/logoasil.png';
 import { useTranslation } from 'react-i18next';
 import { addFavoriteCard, removeFavoriteCard, getFavoriteCards } from '../../services/FavoriteService';
@@ -16,29 +26,28 @@ import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 import * as BlockService from '../../services/BlockService';
 import ReportModal from '../../components/modals/ReportModal';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
-import MathText from '../../components/ui/MathText';
 import SwipeFlipCard from '../../components/layout/SwipeFlipCard';
 
 export default function SwipeDeckScreen({ route, navigation }) {
   const { deck, chapter } = route.params || {};
   const { colors } = useTheme();
-  
+
   // useWindowDimensions hook'u - ekran döndürme desteği
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
-  
+
   // Responsive kart boyutları - useMemo ile optimize edilmiş
   // Hibrit yaklaşım: scale() (dp bazlı) + ekran boyutu sınırları (fiziksel boyut kontrolü)
   const cardDimensions = useMemo(() => {
     const { CARD } = RESPONSIVE_CONSTANTS;
-    
+
     const getCardWidth = () => {
       if (isTablet) {
         const scaledWidth = scale(CARD.REFERENCE_TABLET_MAX_WIDTH);
         const maxWidth = width * CARD.TABLET_WIDTH_PERCENT;
         return Math.min(scaledWidth, maxWidth);
       }
-      
+
       const scaledWidth = scale(CARD.REFERENCE_WIDTH);
       const maxWidth = width * CARD.NORMAL_PHONE_WIDTH_PERCENT;
       return Math.min(scaledWidth, maxWidth);
@@ -49,7 +58,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       const maxHeightPercentage = height < RESPONSIVE_CONSTANTS.SMALL_SCREEN_MAX_HEIGHT
         ? CARD.SMALL_SCREEN_MAX_HEIGHT_PERCENT
         : CARD.NORMAL_PHONE_MAX_HEIGHT_PERCENT;
-      
+
       const maxHeight = height * maxHeightPercentage;
       return Math.min(idealHeight, maxHeight);
     };
@@ -147,12 +156,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
   useEffect(() => {
     const currentCard = cards[currentIndex];
     const isCurrentCardFavorite = currentCard ? favoriteIds.has(currentCard.card_id) : false;
-    
+
     navigation.setOptions({
       headerRight: () => {
         if (loading || !currentCard) return null;
         return (
-          <View style={{ flexDirection: 'row', alignItems: 'center'}}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <TouchableOpacity
               onPress={() => toggleFavorite(currentCard.card_id)}
               style={{ marginRight: scale(8) }}
@@ -193,7 +202,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const leftActiveColor = colors.buttonColor; // Tema turuncusu
   const rightInactiveColor = '#6faa72'; // Bir tık daha koyu yeşil
   const rightActiveColor = '#3e8e41'; // Bir tık daha koyu aktif renk
-  
+
 
   useEffect(() => {
     const fetchCards = async () => {
@@ -203,7 +212,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       // Kullanıcıyı al
       const { data: { user } } = await supabase.auth.getUser();
       setUserId(user.id);
-      
+
       // Deck'in kategori bilgisini al
       try {
         const { data: deckData, error: deckError } = await supabase
@@ -211,14 +220,14 @@ export default function SwipeDeckScreen({ route, navigation }) {
           .select('categories(sort_order)')
           .eq('id', deck.id)
           .single();
-        
+
         if (!deckError && deckData?.categories) {
           setCategorySortOrder(deckData.categories.sort_order);
         }
       } catch (e) {
         console.error('Error fetching deck category:', e);
       }
-      
+
       // Mevcut favori kartları yükle ve UI'ı senkronla
       try {
         const favCards = await getFavoriteCards(user.id);
@@ -237,7 +246,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
         .in('status', ['new', 'learning'])
         .lte('next_review', new Date().toISOString())
         .eq('cards.deck_id', deck.id);
-      
+
       // Bölüm filtresi ekle
       if (chapter?.id) {
         learningCardsQuery = learningCardsQuery.eq('cards.chapter_id', chapter.id);
@@ -245,28 +254,28 @@ export default function SwipeDeckScreen({ route, navigation }) {
         // null chapter = atanmamış kartlar
         learningCardsQuery = learningCardsQuery.is('cards.chapter_id', null);
       }
-      
+
       const { data: learningCards, error } = await learningCardsQuery;
       console.log('learningCards:', learningCards);
       console.log('supabase error:', error);
       setCards((learningCards || []).filter(card => card.cards));
       flippedByIdRef.current = {};
-      
+
       // Toplam kart sayısı (seçilen bölüme ait tüm kartlar)
       let allCardsQuery = supabase
         .from('cards')
         .select('id')
         .eq('deck_id', deck.id);
-      
+
       if (chapter?.id) {
         allCardsQuery = allCardsQuery.eq('chapter_id', chapter.id);
       } else if (chapter === null) {
         allCardsQuery = allCardsQuery.is('chapter_id', null);
       }
-      
+
       const { data: allCards, error: allCardsError } = await allCardsQuery;
       setTotalCardCount(allCards ? allCards.length : 0);
-      
+
       // Kalan kart sayısı (status learned olmayanlar, seçilen bölüm için)
       let notLearnedQuery = supabase
         .from('user_card_progress')
@@ -274,16 +283,16 @@ export default function SwipeDeckScreen({ route, navigation }) {
         .eq('user_id', user.id)
         .eq('cards.deck_id', deck.id)
         .neq('status', 'learned');
-      
+
       if (chapter?.id) {
         notLearnedQuery = notLearnedQuery.eq('cards.chapter_id', chapter.id);
       } else if (chapter === null) {
         notLearnedQuery = notLearnedQuery.is('cards.chapter_id', null);
       }
-      
+
       const { data: notLearned, error: notLearnedError } = await notLearnedQuery;
       setRemainingCardCount(notLearned ? notLearned.length : 0);
-      
+
       // Learning kart sayısını al (seçilen bölüm için)
       let learningCardsCountQuery = supabase
         .from('user_card_progress')
@@ -291,16 +300,16 @@ export default function SwipeDeckScreen({ route, navigation }) {
         .eq('user_id', user.id)
         .eq('status', 'learning')
         .eq('cards.deck_id', deck.id);
-      
+
       if (chapter?.id) {
         learningCardsCountQuery = learningCardsCountQuery.eq('cards.chapter_id', chapter.id);
       } else if (chapter === null) {
         learningCardsCountQuery = learningCardsCountQuery.is('cards.chapter_id', null);
       }
-      
+
       const { data: learningCardsExist, error: learningCardsExistError } = await learningCardsCountQuery;
       setTotalLearningCount(learningCardsExist ? learningCardsExist.length : 0);
-      
+
       // Başlangıçta learned olan kartların sayısını al (seçilen bölüm için)
       let learnedCardsQuery = supabase
         .from('user_card_progress')
@@ -308,13 +317,13 @@ export default function SwipeDeckScreen({ route, navigation }) {
         .eq('user_id', user.id)
         .eq('status', 'learned')
         .eq('cards.deck_id', deck.id);
-      
+
       if (chapter?.id) {
         learnedCardsQuery = learnedCardsQuery.eq('cards.chapter_id', chapter.id);
       } else if (chapter === null) {
         learnedCardsQuery = learnedCardsQuery.is('cards.chapter_id', null);
       }
-      
+
       const { data: learnedCards, error: learnedCardsError } = await learnedCardsQuery;
       const filteredLearnedCards = (learnedCards || []).filter(
         c => c.cards && c.cards.deck_id === deck.id
@@ -325,8 +334,55 @@ export default function SwipeDeckScreen({ route, navigation }) {
     fetchCards();
   }, [deck.id, chapter?.id]);
 
+  const leftScale = useSharedValue(1);
+  const rightScale = useSharedValue(1);
+
+  useEffect(() => {
+    if (leftCount > 0) {
+      leftScale.value = withSequence(withSpring(1.05), withSpring(1));
+    }
+  }, [leftCount]);
+
+  useEffect(() => {
+    if (rightCount > 0) {
+      rightScale.value = withSequence(withSpring(1.05), withSpring(1));
+    }
+  }, [rightCount]);
+
+  const animatedLeftBadge = useAnimatedStyle(() => ({ transform: [{ scale: leftScale.value }] }));
+  const animatedRightBadge = useAnimatedStyle(() => ({ transform: [{ scale: rightScale.value }] }));
+
   currentIndexRef.current = currentIndex;
   cardsLengthRef.current = cards.length;
+
+  const currentProgress = totalCardCount > 0
+    ? ((leftCount + initialLearnedCount + rightCount) / totalCardCount) * 100
+    : 0;
+
+  // Reanimated stili
+  const animatedProgressStyle = useAnimatedStyle(() => {
+    return {
+      // currentProgress değiştiğinde genişlik 300ms içinde yumuşakça değişir
+      width: withTiming(`${currentProgress}%`, { duration: 300 }),
+    };
+  });
+
+  const shimmerTranslate = useSharedValue(-1); // -1 (en sol) ile 2 (en sağ) arası
+
+  useEffect(() => {
+    shimmerTranslate.value = withRepeat(
+      withTiming(2, { duration: 2000 }), // 2 saniyede barı boydan boya geçer
+      -1,
+      false
+    );
+  }, []);
+
+  const shimmerStyle = useAnimatedStyle(() => {
+    return {
+      // left değerini barın genişliğine göre (yüzdesel) oranlıyoruz
+      left: `${shimmerTranslate.value * 100}%`,
+    };
+  });
 
   // next_review (2 dk) geçen kartları kuyruğa rastgele ekle
   useEffect(() => {
@@ -511,7 +567,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
       setAutoPlay(false);
       return;
     }
-    
+
+
     // Önce kartın ön yüzünü göster (2000ms)
     // Sonra flip yap
     autoPlayFlipTimeout.current = setTimeout(() => {
@@ -524,7 +581,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
         }
       }, 1600); // arka yüzü gösterme süresi
     }, 1600); // ön yüzü gösterme süresi
-    
+
     return () => {
       if (autoPlayTimeout.current) clearTimeout(autoPlayTimeout.current);
       if (autoPlayFlipTimeout.current) clearTimeout(autoPlayFlipTimeout.current);
@@ -552,13 +609,13 @@ export default function SwipeDeckScreen({ route, navigation }) {
             .eq('user_id', userId)
             .eq('status', 'learned')
             .eq('cards.deck_id', deck.id);
-          
+
           if (chapter?.id) {
             learnedQuery = learnedQuery.eq('cards.chapter_id', chapter.id);
           } else if (chapter === null) {
             learnedQuery = learnedQuery.is('cards.chapter_id', null);
           }
-          
+
           const { data: learnedCards } = await learnedQuery;
           const filteredLearned = (learnedCards || []).filter(c => c.cards && c.cards.deck_id === deck.id);
           setCurrentLearnedCount(filteredLearned.length);
@@ -570,13 +627,13 @@ export default function SwipeDeckScreen({ route, navigation }) {
             .eq('user_id', userId)
             .eq('status', 'learning')
             .eq('cards.deck_id', deck.id);
-          
+
           if (chapter?.id) {
             learningQuery = learningQuery.eq('cards.chapter_id', chapter.id);
           } else if (chapter === null) {
             learningQuery = learningQuery.is('cards.chapter_id', null);
           }
-          
+
           const { data: learningCards } = await learningQuery;
           const filteredLearning = (learningCards || []).filter(
             c => c.cards && c.cards.deck_id === deck.id && c.status === 'learning'
@@ -593,12 +650,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}> 
+      <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
         <View style={styles.loadingContent}>
-          <LottieView 
-            source={require('../../assets/cards.json')} 
-            autoPlay 
-            loop 
+          <LottieView
+            source={require('../../assets/cards.json')}
+            autoPlay
+            loop
             speed={1.5}
             style={styles.loadingAnimation}
           />
@@ -611,24 +668,24 @@ export default function SwipeDeckScreen({ route, navigation }) {
   if (cards.length === 0 || currentIndex >= cards.length) {
     // Kullanıcıya ait güncel sayılar (veritabanından çekilen)
     // Learned: useEffect'ten gelen güncel sayı, yoksa başlangıç + bu oturumda öğrenilenler
-    const learnedCount = currentLearnedCount !== null 
-      ? currentLearnedCount 
+    const learnedCount = currentLearnedCount !== null
+      ? currentLearnedCount
       : (initialLearnedCount + rightCount);
     // Learning: useEffect'ten gelen güncel sayı, yoksa totalLearningCount (fetchCards'tan gelen)
-    const learningCount = currentLearningCount !== null 
-      ? currentLearningCount 
+    const learningCount = currentLearningCount !== null
+      ? currentLearningCount
       : totalLearningCount;
     const progress = learnedCount;
-    
+
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={{ width: '100%', alignItems: 'center', marginTop: verticalScale(60)}}>
+        <View style={{ width: '100%', alignItems: 'center', marginTop: verticalScale(60) }}>
           <Image source={logoasil} style={{ width: scale(260), height: scale(260), resizeMode: 'cover' }} />
-          <Text style={[typography.styles.h2, { color: colors.text, textAlign: 'center', marginTop: verticalScale(16), paddingHorizontal: scale(32) }]}> 
+          <Text style={[typography.styles.h2, { color: colors.text, textAlign: 'center', marginTop: verticalScale(16), paddingHorizontal: scale(32) }]}>
             {progress === totalCardCount ? t('swipeDeck.bravo', "Bravo! Tüm Kartları Tamamladın") : t('swipeDeck.learnTime', "Kalan Kartları Öğrenmeye Vakit Var")}
           </Text>
           <View style={{ width: scale(72), height: verticalScale(1), backgroundColor: colors.orWhite, borderRadius: moderateScale(2), alignSelf: 'center', marginTop: verticalScale(16), marginBottom: verticalScale(32) }} />
-          
+
           {/* İstatistik Kartları */}
           <View style={styles.statsContainer}>
             {/* Learning Kartlar */}
@@ -650,9 +707,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
             </View>
 
             {/* Toplam kaydırma */}
-            
-            <View style={[styles.statCardWide, { backgroundColor: colors.cardBackground, borderColor: colors.border || '#6b7b8c'  }]}>
-              <View style={[styles.statIconContainer, { backgroundColor: 'rgba(107, 123, 140, 0.15)', width: scale(36), height: scale(36), marginBottom: '0'}]}>
+
+            <View style={[styles.statCardWide, { backgroundColor: colors.cardBackground, borderColor: colors.border || '#6b7b8c' }]}>
+              <View style={[styles.statIconContainer, { backgroundColor: 'rgba(107, 123, 140, 0.15)', width: scale(36), height: scale(36), marginBottom: '0' }]}>
                 <Iconify icon="fluent:arrow-repeat-all-48-regular" size={moderateScale(20)} color={colors.text || '#6b7b8c'} />
               </View>
               <Text style={[styles.statLabel, { color: colors.subtext }]}>{t('swipeDeck.totalSwipes', 'Toplam kaydırma')}:</Text>
@@ -666,211 +723,255 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
   return (
     <>
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Sayaçlar */}
-      <View style={styles.counterRow}>
-        <View style={[styles.counterBoxLeft, { backgroundColor: leftHighlight ? leftActiveColor : leftInactiveColor }]}>
-          {leftHighlight ? (
-            <Iconify icon="mingcute:time-fill" size={moderateScale(18)} color="#fff" />
-          ) : (
-            <Text style={styles.counterText} adjustsFontSizeToFit minimumFontScale={0.7}>{leftCount}</Text>
-          )}
-        </View>
-        <View style={[styles.deckProgressBox, { flexDirection: 'row' }]}>
-          {(() => {
-            const uniqueCardIdsUpToNow = new Set(
-              cards.slice(0, currentIndex + 1).map((c) => c?.card_id).filter(Boolean)
-            );
-            const currentCardNumber = uniqueCardIdsUpToNow.size;
-            const allUniqueSeen = currentCardNumber >= totalCardCount;
-            const currentCardIsReinserted = cards[currentIndex] && leftCountedCardIds.current.has(cards[currentIndex].card_id);
-            const hasReinsertToShow =
-              pendingReinserts.length > 0 ||
-              cards.slice(currentIndex + 1).some((c) => c?.card_id && leftCountedCardIds.current.has(c.card_id));
-            const showVaktiGeldi =
-              totalCardCount > 0 && allUniqueSeen && hasReinsertToShow && currentCardIsReinserted;
-            const iconWrapStyle = {
-              borderRadius: moderateScale(10),
-              padding: scale(6),
-              backgroundColor: colors.cardBackground || 'rgba(128,128,128,0.15)',
-              marginRight: scale(10),
-            };
-            if (showVaktiGeldi) {
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        {/* Sayaçlar */}
+        <View style={styles.counterRow}>
+          <Reanimated.View
+            // layout={LinearTransition.springify()} yerine bunu yazıyoruz:
+            layout={LinearTransition.duration(100)}
+            style={[
+              styles.counterBoxLeft,
+              { backgroundColor: leftHighlight ? leftActiveColor : leftInactiveColor },
+              animatedLeftBadge
+            ]}
+          >
+            {leftHighlight ? (
+              <Reanimated.View key="icon-l" entering={FadeIn.duration(50)} exiting={null}>
+                <Iconify icon="mingcute:time-fill" size={moderateScale(18)} color="#fff" />
+              </Reanimated.View>
+            ) : (
+              <Reanimated.View key="text-l" entering={FadeIn.duration(250)} exiting={null}>
+                <Text style={styles.counterText}>{leftCount}</Text>
+              </Reanimated.View>
+            )}
+          </Reanimated.View>
+          <View style={[styles.deckProgressBox, { flexDirection: 'row' }]}>
+            {(() => {
+              const uniqueCardIdsUpToNow = new Set(
+                cards.slice(0, currentIndex + 1).map((c) => c?.card_id).filter(Boolean)
+              );
+              const currentCardNumber = uniqueCardIdsUpToNow.size;
+              const allUniqueSeen = currentCardNumber >= totalCardCount;
+              const currentCardIsReinserted = cards[currentIndex] && leftCountedCardIds.current.has(cards[currentIndex].card_id);
+              const hasReinsertToShow =
+                pendingReinserts.length > 0 ||
+                cards.slice(currentIndex + 1).some((c) => c?.card_id && leftCountedCardIds.current.has(c.card_id));
+              const showVaktiGeldi =
+                totalCardCount > 0 && allUniqueSeen && hasReinsertToShow && currentCardIsReinserted;
+              const iconWrapStyle = {
+                borderRadius: moderateScale(10),
+                padding: scale(6),
+                backgroundColor: colors.cardBackground || 'rgba(128,128,128,0.15)',
+                marginRight: scale(10),
+              };
+              if (showVaktiGeldi) {
+                return (
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={iconWrapStyle}>
+                      <Iconify icon="fluent:arrow-repeat-all-48-regular" size={moderateScale(22)} color={colors.text} />
+                    </View>
+                    <Text style={[styles.deckProgressText, { color: colors.text }]}>{t('swipeDeck.vaktiGeldi', 'Vakti Geldi')}</Text>
+                  </View>
+                );
+              }
               return (
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={iconWrapStyle}>
-                    <Iconify icon="fluent:arrow-repeat-all-48-regular" size={moderateScale(22)} color={colors.text} />
-                  </View>
-                  <Text style={[styles.deckProgressText, { color: colors.text }]}>{t('swipeDeck.vaktiGeldi', 'Vakti Geldi')}</Text>
+                  {currentCardIsReinserted && (
+                    <View style={iconWrapStyle}>
+                      <Iconify icon="fluent:arrow-repeat-all-48-regular" size={moderateScale(18)} color={colors.text} />
+                    </View>
+                  )}
+                  <Text style={[styles.deckProgressText, { color: colors.text }]}>{currentCardNumber}/{totalCardCount-initialLearnedCount}</Text>
                 </View>
               );
-            }
-            return (
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                {currentCardIsReinserted && (
-                  <View style={iconWrapStyle}>
-                    <Iconify icon="fluent:arrow-repeat-all-48-regular" size={moderateScale(18)} color={colors.text} />
-                  </View>
-                )}
-                <Text style={[styles.deckProgressText, { color: colors.text }]}>{currentCardNumber}/{totalCardCount}</Text>
-              </View>
-            );
-          })()}
+            })()}
+          </View>
+          <Reanimated.View
+            layout={LinearTransition.duration(100)}
+            style={[
+              styles.counterBoxRight,
+              { backgroundColor: rightHighlight ? rightActiveColor : rightInactiveColor },
+              animatedRightBadge
+            ]}
+          >
+            {rightHighlight ? (
+              <Reanimated.View key="icon-r" entering={FadeIn.duration(50)} exiting={null}>
+                <Iconify icon="hugeicons:tick-01" size={moderateScale(18)} color="#fff" />
+              </Reanimated.View>
+            ) : (
+              <Reanimated.View key="text-r" entering={FadeIn.duration(250)} exiting={null}>
+                <Text style={styles.counterText}>{rightCount}</Text>
+              </Reanimated.View>
+            )}
+          </Reanimated.View>
         </View>
-        <View style={[styles.counterBoxRight, { backgroundColor: rightHighlight ? rightActiveColor : rightInactiveColor }]}>
-          {rightHighlight ? (
-            <Iconify icon="hugeicons:tick-01" size={moderateScale(18)} color="#fff" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', marginTop: verticalScale(15) }}>
+          <Swiper
+            ref={swiperRef}
+            cards={cards}
+            cardIndex={currentIndex}
+            renderCard={(card, i) => {
+              const cardId = card?.card_id;
+              const animatedValue = cardId ? getAnimatedValueForCardId(cardId) : null;
+              const gradientColors = getCategoryColors(categorySortOrder);
+              const isPlaceholder = !card || !card.cards || i > currentIndex;
+              return (
+                <SwipeFlipCard
+                  key={cardId || `placeholder-${i}`}
+                  card={card}
+                  cardId={cardId}
+                  isPlaceholder={isPlaceholder}
+                  cardWidth={CARD_WIDTH}
+                  cardHeight={CARD_HEIGHT}
+                  gradientColors={gradientColors}
+                  cardBackground={colors.cardBackground}
+                  textColor={colors.text}
+                  animatedValue={animatedValue}
+                  onFlip={handleFlipById}
+                />
+              );
+            }}
+            onSwipedLeft={(i) => { handleSwipe(i, 'left'); setCurrentIndex(i + 1); }}
+            onSwipedRight={(i) => { handleSwipe(i, 'right'); setCurrentIndex(i + 1); }}
+            overlayLabels={{
+              left: {
+                element: (
+                  <View style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    borderWidth: moderateScale(2),
+                    borderColor: '#F98A21',
+                    borderRadius: moderateScale(26),
+                  }} />
+                ),
+                style: {
+                  wrapper: {
+                    flexDirection: 'column',
+                    alignItems: 'flex-end',
+                    justifyContent: 'flex-start',
+                    marginTop: 0,
+                    marginLeft: 0,
+                  }
+                }
+              },
+              right: {
+                element: (
+                  <View style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    borderWidth: moderateScale(2),
+                    borderColor: '#3e8e41',
+                    borderRadius: moderateScale(26),
+                  }} />
+                ),
+                style: {
+                  wrapper: {
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    justifyContent: 'flex-start',
+                    marginTop: 0,
+                    marginLeft: 0,
+                  }
+                }
+              }
+            }}
+            overlayOpacityHorizontalThreshold={60}
+            animateOverlayLabelsOpacity
+            onSwipedTop={(i) => {
+              // Yukarı swipe yapıldığında kartı geri getir
+              if (swiperRef.current) {
+                swiperRef.current.swipeBack();
+              }
+            }}
+            disableTopSwipe={true}
+            disableBottomSwipe={true}
+            stackSize={2}
+            showSecondCard={false}
+            swipeBackCard={true}
+            backgroundColor={colors.background}
+            stackSeparation={verticalScale(18)}
+            stackScale={0.07}
+            cardHorizontalMargin={CARD_HORIZONTAL_MARGIN}
+            containerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+            cardStyle={{ width: CARD_WIDTH, height: CARD_HEIGHT, alignSelf: 'center', justifyContent: 'center' }}
+            stackAnimationFriction={100}
+            stackAnimationTension={100}
+            swipeAnimationDuration={600}
+          />
+        </View>
+        {/* Yatay birleşik butonlar */}
+        <View style={[styles.horizontalButtonRow, { backgroundColor: colors.buttonColor }]}>
+          <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(15)}>
+            <Iconify icon="material-symbols:repeat-rounded" size={moderateScale(20)} color={colors.buttonText} style={{ marginRight: scale(6) }} />
+            <Text style={[styles.horizontalButtonText, { color: colors.buttonText }]}>{t('swipeDeck.minutes', "15 dk")}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(60)}>
+            <Iconify icon="mingcute:time-line" size={moderateScale(20)} color={colors.buttonText} style={{ marginRight: scale(6) }} />
+            <Text style={[styles.horizontalButtonText, { color: colors.buttonText }]}>{t('swipeDeck.hours', "1 sa")}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(24 * 60)}>
+            <Iconify icon="solar:calendar-broken" size={moderateScale(20)} color={colors.buttonText} style={{ marginRight: scale(6) }} />
+            <Text style={[styles.horizontalButtonText, { color: colors.buttonText }]}>{t('swipeDeck.days', "1 gün")}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.horizontalButton} onPress={() => handleSkip(7 * 24 * 60)}>
+            <Iconify icon="solar:star-broken" size={moderateScale(20)} color={colors.buttonText} style={{ marginRight: scale(6) }} />
+            <Text style={[styles.horizontalButtonText, { color: colors.buttonText }]}>{t('swipeDeck.sevenDays', "7 gün")}</Text>
+          </TouchableOpacity>
+        </View>
+        {/* Geri alma butonu */}
+        <TouchableOpacity style={[styles.undoButton, undoDisabled && { opacity: 0.5 }]} onPress={handleUndo} disabled={undoDisabled}>
+          <Iconify icon="lets-icons:refund-back" size={moderateScale(28)} color={colors.orWhite} />
+        </TouchableOpacity>
+        {/* Auto play butonu */}
+        <TouchableOpacity
+          style={styles.autoPlayButton}
+          onPress={() => setAutoPlay((prev) => !prev)}
+        >
+          {autoPlay ? (
+            <Iconify icon="material-symbols:pause-rounded" size={moderateScale(32)} color={colors.orWhite} />
           ) : (
-            <Text style={styles.counterText} adjustsFontSizeToFit minimumFontScale={0.7}>{rightCount}</Text>
+            <Iconify icon="streamline:button-play-solid" size={moderateScale(20)} color={colors.orWhite} />
           )}
+        </TouchableOpacity>
+        {/* Progress Bar (undoButton'un hemen üstünde) */}
+        <View style={[styles.progressBarContainer, { backgroundColor: colors.progressBarSwipe, overflow: 'hidden' }]}>
+          {/* Ana Dolgu Barı */}
+          <Reanimated.View
+            style={[
+              styles.progressBarFill,
+              { backgroundColor: colors.buttonColor },
+              animatedProgressStyle
+            ]}
+          >
+            {/* Parlama Katmanı (Barın içinde hareket eder) */}
+            <Reanimated.View
+              style={[
+                {
+                  position: 'absolute',
+                  top: 0,
+                  bottom: 0,
+                  width: '50%', // Barın yarısı kadar bir parlama alanı
+                  backgroundColor: 'rgba(255, 255, 255, 0.3)', // Hafif beyaz parlama
+                },
+                shimmerStyle
+              ]}
+            />
+          </Reanimated.View>
         </View>
-      </View>
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', marginTop: verticalScale(15) }}>
-        <Swiper
-          ref={swiperRef}
-          cards={cards}
-          cardIndex={currentIndex}
-          renderCard={(card, i) => {
-            const cardId = card?.card_id;
-            const animatedValue = cardId ? getAnimatedValueForCardId(cardId) : null;
-            const gradientColors = getCategoryColors(categorySortOrder);
-            const isPlaceholder = !card || !card.cards || i > currentIndex;
-            return (
-              <SwipeFlipCard
-                key={cardId || `placeholder-${i}`}
-                card={card}
-                cardId={cardId}
-                isPlaceholder={isPlaceholder}
-                cardWidth={CARD_WIDTH}
-                cardHeight={CARD_HEIGHT}
-                gradientColors={gradientColors}
-                cardBackground={colors.cardBackground}
-                textColor={colors.text}
-                animatedValue={animatedValue}
-                onFlip={handleFlipById}
-              />
-            );
-          }}
-          onSwipedLeft={(i) => { handleSwipe(i, 'left'); setCurrentIndex(i + 1); }}
-          onSwipedRight={(i) => { handleSwipe(i, 'right'); setCurrentIndex(i + 1); }}
-          overlayLabels={{
-            left: {
-              element: (
-                <View style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  borderWidth: moderateScale(2),
-                  borderColor: '#F98A21',
-                  borderRadius: moderateScale(26),
-                }} />
-              ),
-              style: {
-                wrapper: {
-                  flexDirection: 'column',
-                  alignItems: 'flex-end',
-                  justifyContent: 'flex-start',
-                  marginTop: 0,
-                  marginLeft: 0,
-                }
-              }
-            },
-            right: {
-              element: (
-                <View style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  borderWidth: moderateScale(2),
-                  borderColor: '#3e8e41',
-                  borderRadius: moderateScale(26),
-                }} />
-              ),
-              style: {
-                wrapper: {
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  justifyContent: 'flex-start',
-                  marginTop: 0,
-                  marginLeft: 0,
-                }
-              }
-            }
-          }}
-          overlayOpacityHorizontalThreshold={60}
-          animateOverlayLabelsOpacity
-          onSwipedTop={(i) => {
-            // Yukarı swipe yapıldığında kartı geri getir
-            if (swiperRef.current) {
-              swiperRef.current.swipeBack();
-            }
-          }}
-          disableTopSwipe={true}
-          disableBottomSwipe={true}
-          stackSize={2}
-          showSecondCard={false}
-          swipeBackCard={true}
-          backgroundColor={colors.background}
-          stackSeparation={verticalScale(18)}
-          stackScale={0.07}
-          cardHorizontalMargin={CARD_HORIZONTAL_MARGIN}
-          containerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
-          cardStyle={{ width: CARD_WIDTH, height: CARD_HEIGHT, alignSelf: 'center', justifyContent: 'center' }}
-          stackAnimationFriction={100}
-          stackAnimationTension={100}
-          swipeAnimationDuration={600}
-        />
-      </View>
-      {/* Yatay birleşik butonlar */}
-      <View style={[styles.horizontalButtonRow, { backgroundColor: colors.buttonColor }]}>
-        <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(15)}>
-          <Iconify icon="material-symbols:repeat-rounded" size={moderateScale(20)} color={colors.buttonText} style={{ marginRight: scale(6) }} />
-          <Text style={[styles.horizontalButtonText, { color: colors.buttonText }]}>{t('swipeDeck.minutes', "15 dk")}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(60)}>
-          <Iconify icon="mingcute:time-line" size={moderateScale(20)} color={colors.buttonText} style={{ marginRight: scale(6) }} />
-          <Text style={[styles.horizontalButtonText, { color: colors.buttonText }]}>{t('swipeDeck.hours', "1 sa")}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(24 * 60)}>
-          <Iconify icon="solar:calendar-broken" size={moderateScale(20)} color={colors.buttonText} style={{ marginRight: scale(6) }} />
-          <Text style={[styles.horizontalButtonText, { color: colors.buttonText }]}>{t('swipeDeck.days', "1 gün")}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.horizontalButton} onPress={() => handleSkip(7 * 24 * 60)}>
-          <Iconify icon="solar:star-broken" size={moderateScale(20)} color={colors.buttonText} style={{ marginRight: scale(6) }} />
-          <Text style={[styles.horizontalButtonText, { color: colors.buttonText }]}>{t('swipeDeck.sevenDays', "7 gün")}</Text>
-        </TouchableOpacity>
-      </View>
-      {/* Geri alma butonu */}
-      <TouchableOpacity style={[styles.undoButton, undoDisabled && { opacity: 0.5 }]} onPress={handleUndo} disabled={undoDisabled}>
-        <Iconify icon="lets-icons:refund-back" size={moderateScale(28)} color={colors.orWhite} />
-      </TouchableOpacity>
-      {/* Auto play butonu */}
-      <TouchableOpacity
-        style={styles.autoPlayButton}
-        onPress={() => setAutoPlay((prev) => !prev)}
-      >
-        {autoPlay ? (
-          <Iconify icon="material-symbols:pause-rounded" size={moderateScale(32)} color={colors.orWhite} />
-        ) : (
-          <Iconify icon="streamline:button-play-solid" size={moderateScale(20)} color={colors.orWhite} />
-        )}
-      </TouchableOpacity>
-      {/* Progress Bar (undoButton'un hemen üstünde) */}
-      <View style={[styles.progressBarContainer, { backgroundColor: colors.progressBarSwipe }]}>
-        <View style={[styles.progressBarFill, { width: totalCardCount > 0 ? `${((leftCount + initialLearnedCount + rightCount) / totalCardCount) * 100}%` : '0%', backgroundColor: colors.buttonColor }]} />
-      </View>
-    </SafeAreaView>
-    <ReportModal
-      visible={reportModalVisible}
-      onClose={() => { setReportModalVisible(false); setReportCardId(null); }}
-      reportType="card"
-      alreadyReportedCodes={reportModalAlreadyCodes}
-      onSubmit={handleReportModalSubmit}
-    />
+      </SafeAreaView>
+      <ReportModal
+        visible={reportModalVisible}
+        onClose={() => { setReportModalVisible(false); setReportCardId(null); }}
+        reportType="card"
+        alreadyReportedCodes={reportModalAlreadyCodes}
+        onSubmit={handleReportModalSubmit}
+      />
     </>
   );
 }
