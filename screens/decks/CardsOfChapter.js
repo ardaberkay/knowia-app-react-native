@@ -46,10 +46,10 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
   const [progressMap, setProgressMap] = useState(new Map());
 
-  
+
   const BAR_HEIGHT = verticalScale(50);
   const MARGIN_TOP = verticalScale(12);
-  
+
   // 2. Sayıları içeriye veriyoruz:
   const animatedBarStyle = useAnimatedStyle(() => {
     return {
@@ -60,7 +60,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
       overflow: 'hidden',
     };
   }, [editMode, BAR_HEIGHT, MARGIN_TOP]);
-  
+
   const selectedCount = selectedCards.size;
 
   // 2. Animasyonun içinde (worklet) sadece bu basit sayıyı kullan:
@@ -713,39 +713,55 @@ export default function ChapterCardsScreen({ route, navigation }) {
               </View>
             </View>
 
-            {/* İstatistikler */}
-            <View style={[styles.statsRow, { marginBottom: verticalScale(10) }]}>
+            {/* İstatistikler Kartı */}
+            <View style={styles.statsCard}>
+
               {/* Total */}
               <View style={styles.statItem}>
-                <Iconify icon="ri:stack-fill" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(6) }} />
+                <View style={styles.iconBox}>
+                  <Iconify icon="ri:stack-fill" size={moderateScale(18)} color={colors.buttonColor} />
+                </View>
                 <Text style={[styles.statText, { color: colors.text }]}>
                   {chapterStats.total}
                 </Text>
               </View>
 
+              <View style={styles.divider} />
+
               {/* New */}
               <View style={styles.statItem}>
-                <Iconify icon="basil:eye-closed-outline" size={moderateScale(22)} color={colors.buttonColor} style={{ marginRight: scale(6) }} />
+                <View style={styles.iconBox}>
+                  <Iconify icon="basil:eye-closed-outline" size={moderateScale(22)} color={colors.buttonColor} />
+                </View>
                 <Text style={[styles.statText, { color: colors.text }]}>
                   {chapterStats.new}
                 </Text>
               </View>
 
+              <View style={styles.divider} />
+
               {/* Learning */}
               <View style={styles.statItem}>
-                <Iconify icon="mdi:fire" size={moderateScale(20)} color={colors.buttonColor} style={{ marginRight: scale(6) }} />
+                <View style={styles.iconBox}>
+                  <Iconify icon="mdi:fire" size={moderateScale(20)} color={colors.buttonColor} />
+                </View>
                 <Text style={[styles.statText, { color: colors.text }]}>
                   {chapterStats.learning}
                 </Text>
               </View>
 
+              <View style={styles.divider} />
+
               {/* Learned */}
               <View style={styles.statItem}>
-                <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(20)} color={colors.buttonColor} style={{ marginRight: scale(6) }} />
+                <View style={styles.iconBox}>
+                  <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(18)} color={colors.buttonColor} />
+                </View>
                 <Text style={[styles.statText, { color: colors.text }]}>
                   {chapterStats.learned}
                 </Text>
               </View>
+
             </View>
 
             {/* Search Row */}
@@ -947,19 +963,40 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: verticalScale(20),
   },
-  statsRow: {
+  statsCard: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(150, 150, 150, 0.08)', // Hem dark hem light modda çalışan çok şık, zarif bir arka plan
+    borderRadius: moderateScale(16),
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: scale(8),
+    marginBottom: verticalScale(4),
   },
   statItem: {
+    flex: 1, // Tüm öğelerin genişliğini kusursuz bir şekilde eşitler
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  iconBox: {
+    width: moderateScale(32),
+    height: moderateScale(32),
+    borderRadius: moderateScale(10), // Hafif kavisli kare (squircle) görünümü
+    backgroundColor: 'rgba(150, 150, 150, 0.12)', // İkonun arkasındaki premium vurgu
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: scale(6),
+  },
   statText: {
-    fontSize: moderateScale(16),
-    fontWeight: '600',
+    fontSize: moderateScale(15),
+    fontWeight: '700', // Sayıların daha okunaklı ve vurgulu olması için kalınlık artırıldı
+    letterSpacing: 0.5,
+  },
+  divider: {
+    width: StyleSheet.hairlineWidth, // Cihazın çizebileceği en ince çizgiyi çizer (Çok profesyonel durur)
+    height: '60%',
+    backgroundColor: 'rgba(150, 150, 150, 0.3)',
   },
   searchRow: {
     flexDirection: 'row',
