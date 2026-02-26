@@ -103,10 +103,10 @@ export default function ChaptersScreen({ route, navigation }) {
             style={{ marginRight: scale(16) }}
             activeOpacity={0.7}
           >
-            <Iconify 
-              icon={editMode ? "mingcute:close-fill" : "lucide:edit"} 
-              size={moderateScale(22)} 
-              color="#FFFFFF" 
+            <Iconify
+              icon={editMode ? "mingcute:close-fill" : "lucide:edit"}
+              size={moderateScale(22)}
+              color="#FFFFFF"
             />
           </TouchableOpacity>
         );
@@ -128,7 +128,7 @@ export default function ChaptersScreen({ route, navigation }) {
       const next = await getNextOrdinal(deck.id);
       const inserted = await createChapter(deck.id, next);
       // Ordinal'e göre sırala, aynı ordinal'de yeni eklenenler altta (created_at ascending)
-      const updatedChapters = [...chapters, inserted].sort((a,b) => {
+      const updatedChapters = [...chapters, inserted].sort((a, b) => {
         if (a.ordinal !== b.ordinal) return a.ordinal - b.ordinal;
         return new Date(a.created_at) - new Date(b.created_at);
       });
@@ -237,19 +237,19 @@ export default function ChaptersScreen({ route, navigation }) {
                 );
               }}
               ListEmptyComponent={
-                  <View style={styles.emptyStateContainer}>
-                    <View style={styles.emptyState}>
-                      <Iconify
-                        icon="streamline-freehand:plugin-jigsaw-puzzle"
-                        size={scale(120)}
-                        color={colors.muted}
-                        style={{ marginBottom: verticalScale(12), opacity: 0.5 }}
-                      />
-                      <Text style={[styles.emptyStateText, typography.styles.body, { color: colors.subtext, opacity: 0.6 }]}>
-                        {t('chapters.noChaptersDesc', 'Bu destede henüz bölüm oluşturulmamış.')}
-                      </Text>
-                    </View>
+                <View style={styles.emptyStateContainer}>
+                  <View style={styles.emptyState}>
+                    <Iconify
+                      icon="streamline-freehand:plugin-jigsaw-puzzle"
+                      size={scale(120)}
+                      color={colors.muted}
+                      style={{ marginBottom: verticalScale(12), opacity: 0.5 }}
+                    />
+                    <Text style={[styles.emptyStateText, typography.styles.body, { color: colors.subtext, opacity: 0.6 }]}>
+                      {t('chapters.noChaptersDesc', 'Bu destede henüz bölüm oluşturulmamış.')}
+                    </Text>
                   </View>
+                </View>
               }
               renderItem={({ item, index }) => {
                 const chapterProgress = progressMap.get(item.id) || { total: 0, learned: 0, learning: 0, progress: 0 };
@@ -296,10 +296,10 @@ export default function ChaptersScreen({ route, navigation }) {
                         )}
                       </View>
                     </View>
-                    
+
                     {/* Divider */}
                     <View style={[styles.chapterDivider, { backgroundColor: colors.border }]} />
-                    
+
                     {/* Progress and Stats Section */}
                     <View style={styles.chapterContent}>
                       <View style={styles.progressContainer}>
@@ -308,12 +308,12 @@ export default function ChaptersScreen({ route, navigation }) {
                           size={scale(78)}
                           strokeWidth={moderateScale(9)}
                           showText={true}
-                          shouldAnimate={false}
+                          shouldAnimate={true} // <--- SORUN BURADA!
                           fullCircle={true}
                           textStyle={{ fontSize: moderateScale(16), fontWeight: '900', color: colors.text }}
                         />
                       </View>
-                      
+
                       <View style={styles.statsContainer}>
                         {/* Learning */}
                         <View style={styles.statRow}>
@@ -322,7 +322,7 @@ export default function ChaptersScreen({ route, navigation }) {
                             {t('chapters.learning', 'Learning')}: {learningCount}
                           </Text>
                         </View>
-                        
+
                         {/* Learned */}
                         <View style={styles.statRow}>
                           <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
@@ -330,7 +330,7 @@ export default function ChaptersScreen({ route, navigation }) {
                             {t('chapters.learned', 'Learned')}: {chapterProgress.learned}
                           </Text>
                         </View>
-                        
+
                         {/* Total */}
                         <View style={styles.statRow}>
                           <Iconify icon="ri:stack-fill" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
@@ -344,7 +344,7 @@ export default function ChaptersScreen({ route, navigation }) {
                 );
               }}
             />
-            
+
           </View>
         )}
         {!loading && isOwner && (

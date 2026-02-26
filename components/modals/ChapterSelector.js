@@ -35,14 +35,15 @@ export default function ChapterSelector({
       <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
         <View style={styles.headerRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={moderateScale(24)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
+            <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={moderateScale(24)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
             <Text style={[typography.styles.h2, { color: colors.text }]}>
               {t('chapterCards.selectChapter', 'Bölüm Seç')}
             </Text>
           </View>
           <TouchableOpacity
             onPress={onClose}
-            hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+            style={styles.closeBtnWrapper}
           >
             <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
           </TouchableOpacity>
@@ -60,6 +61,10 @@ export default function ChapterSelector({
               const isSelected = selectedChapterId === chapter.id;
               const chapterProgress = progressMap?.get(chapter.id) || { total: 0, learned: 0, learning: 0, progress: 0 };
               const learningCount = chapterProgress.learning || 0;
+              console.log("progressMap:", progressMap);
+              console.log("chapter.id:", chapter.id);
+              console.log("chapterProgress:", chapterProgress);
+            
 
               return (
                 <TouchableOpacity
@@ -80,6 +85,7 @@ export default function ChapterSelector({
                   onPress={() => onSelectChapter && onSelectChapter(chapter.id)}
                   activeOpacity={0.8}
                 >
+                  
                   {/* Chapter Header */}
                   <View style={styles.chapterHeader}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -106,7 +112,7 @@ export default function ChapterSelector({
                         size={scale(78)}
                         strokeWidth={moderateScale(9)}
                         showText={true}
-                        shouldAnimate={false}
+                        shouldAnimate={true}
                         fullCircle={true}
                         textStyle={{ fontSize: moderateScale(16), fontWeight: '900', color: colors.text }}
                       />
@@ -157,7 +163,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: verticalScale(16),
+    marginBottom: verticalScale(24),
+  },
+  closeBtnWrapper: {
+    backgroundColor: 'rgba(150, 150, 150, 0.1)',
+    padding: moderateScale(6),
+    borderRadius: 99,
   },
   chapterItem: {
     flexDirection: 'column',

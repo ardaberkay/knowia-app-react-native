@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Alert, Dimensions, ActivityIndicator, Platform, Modal, Image } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, TouchableHighlight, ActivityIndicator, Platform, Modal, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import SearchBar from '../../components/tools/SearchBar';
 import CardDetailView from '../../components/layout/CardDetailView';
 import AddEditCardInlineForm from '../../components/layout/EditCardForm';
-import { listChapters, distributeUnassignedEvenly } from '../../services/ChapterService';
+import { listChapters, distributeUnassignedEvenly, getChaptersProgress } from '../../services/ChapterService';
 import { LinearGradient } from 'expo-linear-gradient';
 import LottieView from 'lottie-react-native';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
@@ -43,6 +43,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const moreMenuRef = useRef(null);
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const [progressMap, setProgressMap] = useState(new Map());
 
   useEffect(() => {
     fetchChapterCards();
@@ -56,14 +57,23 @@ export default function ChapterCardsScreen({ route, navigation }) {
       if (user && deck) {
         setCurrentUserId(user.id);
         setIsOwner(user.id === deck.user_id && !deck.is_shared);
-        // Bölümleri yükle (hem dağıtım hem de aktarım için)
+        
+        // Bölümleri yükle
         const data = await listChapters(deck.id);
         setChapters(data);
+
+        // --- EKLENEN KISIM: Progress verilerini çek ---
+        const chaptersWithUnassigned = [{ id: null }, ...data];
+        // Eğer import etmediysen en yukarıda getChaptersProgress'i import etmeyi unutma!
+        const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, user.id);
+        setProgressMap(progress);
+        // ----------------------------------------------
       }
     } catch (e) {
       // noop
     }
   };
+  
 
   // Navigation header'a edit butonu ekle (sadece atanmamış kartlar için)
   useLayoutEffect(() => {
@@ -452,7 +462,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
     const isSelected = selectedCards.has(card.id);
     
     return (
-      <TouchableOpacity
+      <TouchableHighlight
         style={[
           styles.cardItem,
           {
@@ -473,10 +483,11 @@ export default function ChapterCardsScreen({ route, navigation }) {
             handleCardPress(card);
           }
         }}
-        activeOpacity={0.85}
+        // Tıklama anında opacity düşürmek yerine alttan bu rengi gösterir (titremeyi engeller)
+        underlayColor={colors.cardBackground === '#FFFFFF' ? '#F2F2F2' : '#3C3C3C'}
       >
         <View style={styles.cardContent}>
-          {/* Edit mode'da checkbox */}
+          {/* Edit mode'da checkbox (Burası küçük olduğu için TouchableOpacity kalabilir) */}
           {editMode && (
             <View style={styles.checkboxContainer}>
               <TouchableOpacity
@@ -521,6 +532,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
           <View style={[
             styles.rightSection,
             {
+              // Saydamlık çakışması yapmayacak çünkü artık ana kart saydamlaşmıyor
               backgroundColor: colors.cardBackground ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.1)',
             }
           ]}>
@@ -531,7 +543,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
             />
           </View>
         </View>
-      </TouchableOpacity>
+      </TouchableHighlight>
     );
   };
 
@@ -824,6 +836,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
           }
         }}
         chapters={chapters}
+        progressMap={progressMap} // <--- EKLENMESİ GEREKEN KRİTİK SATIR BURASI
         onSelectChapter={(chapterId) => {
           handleMoveToChapter(chapterId);
         }}
