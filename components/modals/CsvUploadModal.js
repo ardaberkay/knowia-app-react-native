@@ -29,17 +29,17 @@ export default function CsvUploadModal({
   const { t } = useTranslation();
   const { showSuccess, showError } = useSnackbarHelpers();
   const screenHeight = Dimensions.get('screen').height;
-  
+
   // STATELER (Kesinlikle dokunulmadı)
   const [csvPreview, setCsvPreview] = useState(null);
   const [csvLoading, setCsvLoading] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
-  const [imageIds, setImageIds] = useState([]); 
-  const [imageIdMap, setImageIdMap] = useState({}); 
-  const [dropdownOpen, setDropdownOpen] = useState({}); 
-  const [dropdownPos, setDropdownPos] = useState({}); 
-  const dropdownRefs = useRef({}); 
-  const [tableGuideExpanded, setTableGuideExpanded] = useState(false); 
+  const [imageIds, setImageIds] = useState([]);
+  const [imageIdMap, setImageIdMap] = useState({});
+  const [dropdownOpen, setDropdownOpen] = useState({});
+  const [dropdownPos, setDropdownPos] = useState({});
+  const dropdownRefs = useRef({});
+  const [tableGuideExpanded, setTableGuideExpanded] = useState(false);
 
   // --- FONKSİYONEL KISIMLAR (HİÇ DOKUNULMADI) ---
 
@@ -56,7 +56,7 @@ export default function CsvUploadModal({
   const isValidUtf8 = (buffer) => {
     let i = 0;
     while (i < buffer.length) {
-      if (buffer[i] <= 0x7F) { i++; } 
+      if (buffer[i] <= 0x7F) { i++; }
       else if ((buffer[i] & 0xE0) === 0xC0) {
         if (i + 1 >= buffer.length || (buffer[i + 1] & 0xC0) !== 0x80) return false;
         i += 2;
@@ -76,7 +76,7 @@ export default function CsvUploadModal({
     let result = '';
     for (let i = 0; i < buffer.length; i++) {
       const byte = buffer[i];
-      if (win1254Map[byte] !== undefined) { result += win1254Map[byte]; } 
+      if (win1254Map[byte] !== undefined) { result += win1254Map[byte]; }
       else { result += String.fromCharCode(byte); }
     }
     return result;
@@ -166,7 +166,7 @@ export default function CsvUploadModal({
         card[field] = values[valueIndex] || '';
       });
       const validation = validateCard(card, i + 1);
-      if (validation.isValid) { validCards.push(card); } 
+      if (validation.isValid) { validCards.push(card); }
       else { errors.push(...validation.errors); }
     }
     return { validCards, errors, ignoredColumns, totalRows: lines.length - 1 };
@@ -213,7 +213,7 @@ export default function CsvUploadModal({
     try {
       if (isSvgUrl(url)) {
         console.log('SVG dosyası tespit edildi, direkt URL kullanılacak:', url);
-        return null; 
+        return null;
       }
       const downloadResult = await FileSystem.downloadAsync(
         url,
@@ -259,7 +259,7 @@ export default function CsvUploadModal({
         case 'external_url':
           if (isSvgUrl(imageValue.trim())) {
             console.log('SVG dosyası desteklenmiyor, atlanıyor:', imageValue.trim());
-            return null; 
+            return null;
           }
           const downloadedUri = await downloadAndConvertImage(imageValue.trim());
           if (!downloadedUri) {
@@ -371,12 +371,12 @@ export default function CsvUploadModal({
 
         // LayoutAnimation ekleyerek önizleme ekranının yumuşak açılmasını sağladık
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        
+
         setCsvPreview({
           fileName: file.name,
           totalRows: totalRows,
-          validCards: validCards.slice(0, 3), 
-          errors: errors.slice(0, 5), 
+          validCards: validCards.slice(0, 3),
+          errors: errors.slice(0, 5),
           allValidCards: validCards,
           allErrors: errors,
           ignoredColumns: ignoredColumns,
@@ -534,7 +534,7 @@ export default function CsvUploadModal({
       deviceHeight={screenHeight}
     >
       <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-        
+
         <View style={styles.headerRow}>
           <Text style={[typography.styles.h2, { color: colors.text }]}>
             {t('addCard.csvUpload', 'CSV ile Yükle')}
@@ -549,7 +549,7 @@ export default function CsvUploadModal({
         </View>
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          
+
           <Text style={[styles.description, { color: colors.muted }]}>
             {t('addCard.csvUploadDescriptionMain', 'Kartlarınızı Excel veya Google Sheets\'te hazırlayın ve CSV olarak kaydedin. CSV dosyanızı yükleyin ve kartlarınız hazır!')}
           </Text>
@@ -573,7 +573,7 @@ export default function CsvUploadModal({
 
             {tableGuideExpanded && (
               <View style={styles.expandableContent}>
-                
+
                 <View style={[styles.guideCard, { backgroundColor: isDarkMode ? '#2A2A2A' : '#FFFFFF', borderColor: isDarkMode ? '#333' : '#EEE' }]}>
                   <Text style={[styles.guideTitle, { color: colors.text }]}>
                     {t('addCard.tableStructureTitle', 'CSV Formatı')}
@@ -581,15 +581,15 @@ export default function CsvUploadModal({
                   <Text style={[styles.guideText, { color: colors.text }]}>
                     {t('addCard.tableStructure', 'Tablo 2 zorunlu, 3 opsiyonel olmak üzere en fazla 5 sütundan oluşabilir:')}
                   </Text>
-                  
+
                   <View style={[styles.codeBadge, { backgroundColor: isDarkMode ? '#111' : '#F0F0F0', borderColor: isDarkMode ? '#333' : '#E0E0E0' }]}>
                     <Text style={[styles.codeBadgeText, { color: colors.primary || '#ffffff' }]}>
-                       {t('addCard.tableColumnsText', 'soru, cevap, ornek, not, gorsel')}
+                      {t('addCard.tableColumnsText', 'soru, cevap, ornek, not, gorsel')}
                     </Text>
                   </View>
-                  
+
                   <View style={styles.alertInline}>
-                    <Iconify icon="mdi:required" size={moderateScale(22)} color={colors.secondary || '#F39C12'} style={{marginRight: scale(6)}} />
+                    <Iconify icon="mdi:required" size={moderateScale(22)} color={colors.secondary || '#F39C12'} style={{ marginRight: scale(6) }} />
                     <Text style={[styles.alertInlineText, { color: colors.secondary || '#F39C12' }]}>
                       {t('addCard.requiredColumns', 'Soru ve Cevap sütunları zorunludur!')}
                     </Text>
@@ -622,16 +622,28 @@ export default function CsvUploadModal({
             )}
 
             {/* Büyütülmüş Resim Modalı */}
-            <Modal visible={isImageModalVisible} transparent={true} animationType="fade">
-              <View style={styles.fullScreenImageContainer}>
+            <Modal
+              isVisible={isImageModalVisible}
+              style={{ margin: 0 }}
+              backdropOpacity={0.8}
+              animationIn="fadeIn"
+              animationOut="fadeOut"
+              statusBarTranslucent={true}
+              onBackdropPress={() => setImageModalVisible(false)}
+              deviceHeight={screenHeight}
+            >
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+
                 <TouchableOpacity style={styles.fullScreenCloseBtn} onPress={() => setImageModalVisible(false)}>
-                  <Iconify icon="mingcute:close-fill" size={28} color="white" />
+                  <Iconify icon="mingcute:close-fill" size={24} color="white" />
                 </TouchableOpacity>
+
                 <Image
                   source={require('../../assets/examtable.png')}
-                  style={{ width: '100%', height: '70%' }}
+                  style={{ width: '90%', height: '70%' }}
                   resizeMode="contain"
                 />
+
               </View>
             </Modal>
           </View>
@@ -639,7 +651,7 @@ export default function CsvUploadModal({
           {/* ÖNİZLEME (PREVIEW) EKRANI */}
           {csvPreview && (
             <View style={styles.previewSection}>
-              
+
               {/* Dosya Adı Barı */}
               <View style={[styles.fileNameBar, { backgroundColor: isDarkMode ? '#222' : '#F4F6F8' }]}>
                 <Iconify icon="hugeicons:document-validation" size={moderateScale(22)} color={colors.primary || '#007AFF'} />
@@ -654,12 +666,12 @@ export default function CsvUploadModal({
                   <Text style={[styles.statTitle, { color: '#007AFF' }]}>{t('addCard.totalRows', 'Toplam')}</Text>
                   <Text style={[styles.statValue, { color: '#007AFF' }]}>{csvPreview.totalRows}</Text>
                 </View>
-                
+
                 <View style={[styles.statBox, { backgroundColor: isDarkMode ? '#1A3324' : '#E8F5E9' }]}>
                   <Text style={[styles.statTitle, { color: '#27AE60' }]}>{t('addCard.validCards', 'Geçerli')}</Text>
                   <Text style={[styles.statValue, { color: '#27AE60' }]}>{csvPreview.allValidCards.length}</Text>
                 </View>
-                
+
                 <View style={[styles.statBox, { backgroundColor: isDarkMode ? '#3B1E1E' : '#FFEBEE' }]}>
                   <Text style={[styles.statTitle, { color: '#D32F2F' }]}>{t('addCard.invalidCards', 'Hatalı')}</Text>
                   <Text style={[styles.statValue, { color: '#D32F2F' }]}>{csvPreview.allErrors.length}</Text>
@@ -688,7 +700,7 @@ export default function CsvUploadModal({
                   </View>
                   {csvPreview.errors.map((err, idx) => (
                     <Text key={idx} style={styles.alertBoxTextError}>
-                      <Text style={{fontWeight: 'bold'}}>Satır {err.row}: </Text>{err.message}
+                      <Text style={{ fontWeight: 'bold' }}>Satır {err.row}: </Text>{err.message}
                     </Text>
                   ))}
                 </View>
@@ -697,7 +709,7 @@ export default function CsvUploadModal({
               {/* Görsel Eşleştirme Alanı */}
               {csvPreview.hasLocalImageFiles && (
                 <View style={[styles.imageMapSection, { backgroundColor: isDarkMode ? '#222' : '#F9FAFB', borderColor: colors.border }]}>
-                  
+
                   <View style={styles.imageMapHeader}>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.imageMapTitle, { color: colors.text }]}>{t('addCard.selectImages', 'Görselleri Seç ve Eşleştir')}</Text>
@@ -722,14 +734,14 @@ export default function CsvUploadModal({
                     <View style={styles.dropdownsList}>
                       {imageIds.map((imageId, index) => {
                         const selectedImg = imageIdMap[imageId];
-                        
+
                         return (
                           <View key={imageId} style={[styles.dropdownRow, { zIndex: imageIds.length - index }]}>
-                            
+
                             <View style={[styles.badgeContainer, { backgroundColor: isDarkMode ? '#333' : '#E5E7EB' }]}>
                               <Text style={[styles.badgeText, { color: colors.text }]}>{index + 1}</Text>
                             </View>
-                            
+
                             <View style={{ flex: 1, paddingRight: scale(10) }}>
                               <Text style={[styles.imgIdLabel, { color: colors.muted }]} numberOfLines={1}>{imageId}</Text>
                             </View>
@@ -970,18 +982,13 @@ const styles = StyleSheet.create({
     padding: moderateScale(6),
     borderRadius: 99,
   },
-  fullScreenImageContainer: {
-    flex: 1, 
-    backgroundColor: 'rgba(0,0,0,0.95)', 
-    justifyContent: 'center',
-  },
   fullScreenCloseBtn: {
-    position: 'absolute', 
-    top: verticalScale(50), 
-    right: scale(20), 
+    position: 'absolute',
+    top: verticalScale(80),
+    right: scale(24),
     zIndex: 10,
     backgroundColor: 'rgba(255,255,255,0.2)',
-    padding: 8,
+    padding: 6,
     borderRadius: 99,
   },
 
