@@ -79,7 +79,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
       horizontalMargin,
     };
   }, [width, height, isTablet]);
-
+  
+  const swipeX = useRef(new Animated.Value(0)).current;
   const CARD_WIDTH = cardDimensions.width;
   const CARD_HEIGHT = cardDimensions.height;
   const CARD_HORIZONTAL_MARGIN = cardDimensions.horizontalMargin;
@@ -781,7 +782,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
                       <Iconify icon="fluent:arrow-repeat-all-48-regular" size={moderateScale(18)} color={colors.text} />
                     </View>
                   )}
-                  <Text style={[styles.deckProgressText, { color: colors.text }]}>{currentCardNumber}/{totalCardCount-initialLearnedCount}</Text>
+                  <Text style={[styles.deckProgressText, { color: colors.text }]}>{currentCardNumber}/{totalCardCount - initialLearnedCount}</Text>
                 </View>
               );
             })()}
@@ -828,66 +829,34 @@ export default function SwipeDeckScreen({ route, navigation }) {
                   textColor={colors.text}
                   animatedValue={animatedValue}
                   onFlip={handleFlipById}
+                  swipeX={swipeX}
                 />
               );
             }}
-            onSwipedLeft={(i) => { handleSwipe(i, 'left'); setCurrentIndex(i + 1); }}
-            onSwipedRight={(i) => { handleSwipe(i, 'right'); setCurrentIndex(i + 1); }}
-            overlayLabels={{
-              left: {
-                element: (
-                  <View style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    borderWidth: moderateScale(2),
-                    borderColor: '#F98A21',
-                    borderRadius: moderateScale(26),
-                  }} />
-                ),
-                style: {
-                  wrapper: {
-                    flexDirection: 'column',
-                    alignItems: 'flex-end',
-                    justifyContent: 'flex-start',
-                    marginTop: 0,
-                    marginLeft: 0,
-                  }
-                }
-              },
-              right: {
-                element: (
-                  <View style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    borderWidth: moderateScale(2),
-                    borderColor: '#3e8e41',
-                    borderRadius: moderateScale(26),
-                  }} />
-                ),
-                style: {
-                  wrapper: {
-                    flexDirection: 'column',
-                    alignItems: 'flex-start',
-                    justifyContent: 'flex-start',
-                    marginTop: 0,
-                    marginLeft: 0,
-                  }
-                }
-              }
+            onSwiping={(x) => {
+              swipeX.setValue(x);
             }}
-            overlayOpacityHorizontalThreshold={60}
-            animateOverlayLabelsOpacity
+            onSwipedAborted={() => {
+              Animated.spring(swipeX, {
+                toValue: 0,
+                useNativeDriver: true,
+              }).start();
+            }}
+            onSwipedLeft={(i) => { 
+              handleSwipe(i, 'left'); 
+              setCurrentIndex(i + 1); 
+              swipeX.setValue(0);
+            }}
+            onSwipedRight={(i) => { 
+              handleSwipe(i, 'right'); 
+              setCurrentIndex(i + 1); 
+              swipeX.setValue(0);
+            }}
             onSwipedTop={(i) => {
-              // Yukarı swipe yapıldığında kartı geri getir
               if (swiperRef.current) {
                 swiperRef.current.swipeBack();
               }
+              swipeX.setValue(0);
             }}
             disableTopSwipe={true}
             disableBottomSwipe={true}

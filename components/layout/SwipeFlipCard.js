@@ -18,10 +18,27 @@ function SwipeFlipCardImpl({
   textColor,
   animatedValue,
   onFlip,
+  swipeX,
 }) {
   const { t } = useTranslation();
 
-  // --- OPTİMİZASYON 1: ROTASYON, ŞEFFAFLIK VE Z-INDEX İNTERPOLASYONLARI ---
+  const rightBorderOpacity = useMemo(() => {
+    if (!swipeX) return 0;
+    return swipeX.interpolate({
+      inputRange: [0, 15, 100],
+      outputRange: [0, 0, 1],
+      extrapolate: 'clamp',
+    });
+  }, [swipeX]);
+
+  const leftBorderOpacity = useMemo(() => {
+    if (!swipeX) return 0;
+    return swipeX.interpolate({
+      inputRange: [-100, -15, 0],
+      outputRange: [1, 0, 0],
+      extrapolate: 'clamp',
+    });
+  }, [swipeX]);
 
   const frontInterpolate = useMemo(() => {
     if (!animatedValue) return null;
@@ -55,7 +72,6 @@ function SwipeFlipCardImpl({
     });
   }, [animatedValue]);
 
-  // ÇÖZÜM: Hangi yüz görünüyorsa onun dokunmatik önceliğini (zIndex) artırıyoruz
   const frontZIndex = useMemo(() => {
     if (!animatedValue) return 10;
     return animatedValue.interpolate({
@@ -80,7 +96,7 @@ function SwipeFlipCardImpl({
       width: cardWidth,
       height: cardHeight,
       opacity: frontOpacity,
-      zIndex: frontZIndex, // Dokunmaları yakalaması için eklendi
+      zIndex: frontZIndex,
     };
   }, [frontInterpolate, frontOpacity, frontZIndex, cardWidth, cardHeight]);
 
@@ -92,11 +108,10 @@ function SwipeFlipCardImpl({
       width: cardWidth,
       height: cardHeight,
       opacity: backOpacity,
-      zIndex: backZIndex, // Dokunmaları yakalaması için eklendi
+      zIndex: backZIndex,
     };
   }, [backInterpolate, backOpacity, backZIndex, cardWidth, cardHeight]);
 
-  // ÇÖZÜM: Gölgeler animasyonu bozmasın ve zIndex'i engellemesin diye en dış katmana alındı
   const containerStyle = useMemo(
     () => ([
       { width: cardWidth, height: cardHeight, alignSelf: 'center' },
@@ -198,7 +213,6 @@ function SwipeFlipCardImpl({
 
   return (
     <View style={containerStyle}>
-      {/* --- ÖN YÜZ --- */}
       <Animated.View
         style={[
           baseCardStyle,
@@ -219,7 +233,7 @@ function SwipeFlipCardImpl({
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
-          nestedScrollEnabled={true} // ÇÖZÜM: Swiper içindeki scroll çakışmasını engeller
+          nestedScrollEnabled={true}
           removeClippedSubviews
           style={{ flex: 1, width: '100%' }}
         >
@@ -231,7 +245,6 @@ function SwipeFlipCardImpl({
               padding: scale(24),
             }}
           >
-            {/* ÇÖZÜM: Uzun metinlerde taşmayı engellemek için içerik ayrı bir View ile ortalandı */}
             <View style={{ flex: 1, justifyContent: card?.cards?.image ? 'flex-start' : 'center', alignItems: 'center', width: '100%' }}>
               {card?.cards?.image ? (
                 <View
@@ -254,7 +267,6 @@ function SwipeFlipCardImpl({
         </ScrollView>
       </Animated.View>
 
-      {/* --- ARKA YÜZ --- */}
       <Animated.View
         style={[
           baseCardStyle,
@@ -275,7 +287,7 @@ function SwipeFlipCardImpl({
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
-          nestedScrollEnabled={true} // ÇÖZÜM: Swiper içindeki scroll çakışmasını engeller
+          nestedScrollEnabled={true}
           removeClippedSubviews
           style={{ flex: 1, width: '100%' }}
         >
@@ -325,6 +337,34 @@ function SwipeFlipCardImpl({
           </Pressable>
         </ScrollView>
       </Animated.View>
+
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            borderWidth: moderateScale(2),
+            borderColor: '#F98A21',
+            borderRadius: moderateScale(26),
+            opacity: leftBorderOpacity,
+            zIndex: 999,
+          }
+        ]}
+        pointerEvents="none"
+      />
+
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            borderWidth: moderateScale(2),
+            borderColor: '#3e8e41',
+            borderRadius: moderateScale(26),
+            opacity: rightBorderOpacity,
+            zIndex: 999,
+          }
+        ]}
+        pointerEvents="none"
+      />
     </View>
   );
 }
@@ -383,7 +423,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(26),
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden', // İçeriklerin köşelerden taşmasını önler
+    overflow: 'hidden',
   },
   imageContainer: {
     width: '100%',
