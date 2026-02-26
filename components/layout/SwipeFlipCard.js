@@ -219,9 +219,6 @@ function SwipeFlipCardImpl({
           { padding: 0, overflow: 'hidden' },
           frontAnimatedStyle,
         ]}
-        renderToHardwareTextureAndroid={true}
-        shouldRasterizeIOS={true}
-        rasterizationScale={pixelRatio}
       >
         <LinearGradient
           colors={gradientColors}
@@ -236,6 +233,9 @@ function SwipeFlipCardImpl({
           nestedScrollEnabled={true}
           removeClippedSubviews
           style={{ flex: 1, width: '100%' }}
+          renderToHardwareTextureAndroid={true}
+          shouldRasterizeIOS={true}
+          rasterizationScale={pixelRatio}
         >
           <Pressable
             onPress={() => onFlip?.(cardId)}
@@ -273,9 +273,6 @@ function SwipeFlipCardImpl({
           { padding: 0, overflow: 'hidden' },
           backAnimatedStyle
         ]}
-        renderToHardwareTextureAndroid={true}
-        shouldRasterizeIOS={true}
-        rasterizationScale={pixelRatio}
       >
         <LinearGradient
           colors={gradientColors}
@@ -290,6 +287,9 @@ function SwipeFlipCardImpl({
           nestedScrollEnabled={true}
           removeClippedSubviews
           style={{ flex: 1, width: '100%' }}
+          renderToHardwareTextureAndroid={true}
+          shouldRasterizeIOS={true}
+          rasterizationScale={pixelRatio}
         >
           <Pressable
             onPress={() => onFlip?.(cardId)}
@@ -345,6 +345,7 @@ function SwipeFlipCardImpl({
             borderWidth: moderateScale(2),
             borderColor: '#F98A21',
             borderRadius: moderateScale(26),
+            backgroundColor: 'transparent',
             opacity: leftBorderOpacity,
             zIndex: 999,
           }
@@ -359,6 +360,7 @@ function SwipeFlipCardImpl({
             borderWidth: moderateScale(2),
             borderColor: '#3e8e41',
             borderRadius: moderateScale(26),
+            backgroundColor: 'transparent',
             opacity: rightBorderOpacity,
             zIndex: 999,
           }
