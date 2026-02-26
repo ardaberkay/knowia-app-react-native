@@ -16,6 +16,7 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import ChapterSelector from '../../components/modals/ChapterSelector';
 import MathText from '../../components/ui/MathText';
+import Animated, { useAnimatedStyle, withTiming, withSpring } from 'react-native-reanimated';
 
 export default function ChapterCardsScreen({ route, navigation }) {
   const { chapter, deck } = route.params;
@@ -45,6 +46,30 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
   const [progressMap, setProgressMap] = useState(new Map());
 
+  
+  const BAR_HEIGHT = verticalScale(50);
+  const MARGIN_TOP = verticalScale(12);
+  
+  // 2. Sayıları içeriye veriyoruz:
+  const animatedBarStyle = useAnimatedStyle(() => {
+    return {
+      // Artık verticalScale() çağırmıyoruz, hesaplanmış sayıyı (BAR_HEIGHT) kullanıyoruz.
+      height: withTiming(editMode ? BAR_HEIGHT : 0, { duration: 300 }),
+      opacity: withTiming(editMode ? 1 : 0, { duration: 300 }),
+      marginTop: withTiming(editMode ? MARGIN_TOP : 0, { duration: 300 }),
+      overflow: 'hidden',
+    };
+  }, [editMode, BAR_HEIGHT, MARGIN_TOP]);
+  
+  const selectedCount = selectedCards.size;
+
+  // 2. Animasyonun içinde (worklet) sadece bu basit sayıyı kullan:
+  const moveButtonAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: withTiming(selectedCount > 0 ? 1 : 0.4, { duration: 200 }),
+    };
+  }, [selectedCount]);
+
   useEffect(() => {
     fetchChapterCards();
     fetchFavoriteCards();
@@ -57,7 +82,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
       if (user && deck) {
         setCurrentUserId(user.id);
         setIsOwner(user.id === deck.user_id && !deck.is_shared);
-        
+
         // Bölümleri yükle
         const data = await listChapters(deck.id);
         setChapters(data);
@@ -73,12 +98,12 @@ export default function ChapterCardsScreen({ route, navigation }) {
       // noop
     }
   };
-  
+
 
   // Navigation header'a edit butonu ekle (sadece atanmamış kartlar için)
   useLayoutEffect(() => {
     const isOwnerUser = currentUserId && deck?.user_id === currentUserId && !deck?.is_shared;
-    
+
     // Loading bitene kadar header ikonlarını gösterme (normal durum için)
     if (!selectedCard && loading) {
       navigation.setOptions({
@@ -93,7 +118,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
       });
       return;
     }
-    
+
     if (selectedCard) {
       // Edit modunda header'da iconlar gözükmesin
       if (editCardMode) {
@@ -109,7 +134,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
         });
         return;
       }
-      
+
       // Normal kart detay görünümünde favori ve kebab iconları göster
       navigation.setOptions({
         headerShown: true,
@@ -147,7 +172,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
       });
       return;
     }
-    
+
     // Normal durumda header'ı şeffaf yap (appbar görünmesin)
     navigation.setOptions({
       headerShown: true,
@@ -168,10 +193,10 @@ export default function ChapterCardsScreen({ route, navigation }) {
           style={{ marginRight: scale(16) }}
           activeOpacity={0.7}
         >
-          <Iconify 
-            icon={editMode ? "mingcute:close-fill" : "lucide:edit"} 
-            size={moderateScale(22)} 
-            color="#FFFFFF" 
+          <Iconify
+            icon={editMode ? "mingcute:close-fill" : "lucide:edit"}
+            size={moderateScale(22)}
+            color="#FFFFFF"
           />
         </TouchableOpacity>
       ) : () => null,
@@ -205,10 +230,10 @@ export default function ChapterCardsScreen({ route, navigation }) {
         query = query.is('chapter_id', null);
       }
       const { data, error } = await query;
-      
+
       if (error) throw error;
       setCards(data || []);
-      
+
       // Kartları çektikten hemen sonra status'leri de çek
       if (data && data.length > 0) {
         await fetchCardStatusesForCards(data.map(c => c.id));
@@ -236,11 +261,11 @@ export default function ChapterCardsScreen({ route, navigation }) {
             statusMap.set(cardId, 'new');
           });
           setCardStatusMap(statusMap);
-          setChapterStats({ 
-            total: cardIds.length, 
-            learning: 0, 
-            learned: 0, 
-            new: cardIds.length 
+          setChapterStats({
+            total: cardIds.length,
+            learning: 0,
+            learned: 0,
+            new: cardIds.length
           });
         } else {
           setCardStatusMap(new Map());
@@ -248,31 +273,31 @@ export default function ChapterCardsScreen({ route, navigation }) {
         }
         return;
       }
-      
+
       // Kullanıcının bu kartlar için status bilgilerini al
       const { data: progressData, error: progressError } = await supabase
         .from('user_card_progress')
         .select('card_id, status')
         .eq('user_id', user.id)
         .in('card_id', cardIds);
-      
+
       if (progressError) throw progressError;
-      
+
       // Map oluştur: card_id -> status
       const statusMap = new Map();
       (progressData || []).forEach(item => {
         statusMap.set(item.card_id, item.status);
       });
-      
+
       // Progress kaydı olmayan kartlar için 'new' varsay
       cardIds.forEach(cardId => {
         if (!statusMap.has(cardId)) {
           statusMap.set(cardId, 'new');
         }
       });
-      
+
       setCardStatusMap(statusMap);
-      
+
       // İstatistikleri hesapla
       if (cardIds && cardIds.length > 0) {
         const stats = {
@@ -299,11 +324,11 @@ export default function ChapterCardsScreen({ route, navigation }) {
           statusMap.set(cardId, 'new');
         });
         setCardStatusMap(statusMap);
-        setChapterStats({ 
-          total: cardIds.length, 
-          learning: 0, 
-          learned: 0, 
-          new: cardIds.length 
+        setChapterStats({
+          total: cardIds.length,
+          learning: 0,
+          learned: 0,
+          new: cardIds.length
         });
       } else {
         setCardStatusMap(new Map());
@@ -432,11 +457,11 @@ export default function ChapterCardsScreen({ route, navigation }) {
         .from('cards')
         .update({ chapter_id: targetChapterId || null })
         .in('id', cardIds);
-      
+
       if (error) throw error;
-      
+
       showSuccess(t('chapterCards.cardsMoved', '{{count}} kart bölüme taşındı.', { count: selectedCards.size }));
-      
+
       // Seçimleri temizle ve kartları yeniden yükle
       setSelectedCards(new Set());
       setEditMode(false);
@@ -452,7 +477,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const renderCardItem = ({ item: card }) => {
     const status = cardStatusMap.get(card.id) || 'new';
     let statusIcon = 'streamline-freehand:view-eye-off'; // default: new
-    
+
     if (status === 'learning') {
       statusIcon = 'mdi:fire';
     } else if (status === 'learned') {
@@ -460,7 +485,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
     }
 
     const isSelected = selectedCards.has(card.id);
-    
+
     return (
       <TouchableHighlight
         style={[
@@ -501,12 +526,12 @@ export default function ChapterCardsScreen({ route, navigation }) {
                 ]}
               >
                 {isSelected && (
-                  <Iconify icon="mingcute:close-fill" size={18} color="#FFFFFF" />
+                  <Iconify icon="hugeicons:tick-01" size={18} color="#FFFFFF" />
                 )}
               </TouchableOpacity>
             </View>
           )}
-          
+
           {/* Sol bölüm - edit mode'da kısaltılmış genişlik */}
           <View style={[
             styles.leftSection,
@@ -527,7 +552,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
               numberOfLines={1}
             />
           </View>
-          
+
           {/* Sağ bölüm - sabit genişlik, daha koyu renk */}
           <View style={[
             styles.rightSection,
@@ -536,10 +561,10 @@ export default function ChapterCardsScreen({ route, navigation }) {
               backgroundColor: colors.cardBackground ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.1)',
             }
           ]}>
-            <Iconify 
-              icon={statusIcon} 
-              size={scale(50)} 
-              color={'#444444'} 
+            <Iconify
+              icon={statusIcon}
+              size={scale(50)}
+              color={'#444444'}
             />
           </View>
         </View>
@@ -580,9 +605,9 @@ export default function ChapterCardsScreen({ route, navigation }) {
           />
         ) : (
           <>
-            <CardDetailView 
-              card={selectedCard} 
-              cards={cards} 
+            <CardDetailView
+              card={selectedCard}
+              cards={cards}
               onSelectCard={card => {
                 setSelectedCard(card);
                 setEditCardMode(false);
@@ -688,8 +713,8 @@ export default function ChapterCardsScreen({ route, navigation }) {
               </View>
             </View>
 
-             {/* İstatistikler */}
-             <View style={[styles.statsRow, { marginBottom: verticalScale(10) }]}>
+            {/* İstatistikler */}
+            <View style={[styles.statsRow, { marginBottom: verticalScale(10) }]}>
               {/* Total */}
               <View style={styles.statItem}>
                 <Iconify icon="ri:stack-fill" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(6) }} />
@@ -697,7 +722,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
                   {chapterStats.total}
                 </Text>
               </View>
-              
+
               {/* New */}
               <View style={styles.statItem}>
                 <Iconify icon="basil:eye-closed-outline" size={moderateScale(22)} color={colors.buttonColor} style={{ marginRight: scale(6) }} />
@@ -705,7 +730,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
                   {chapterStats.new}
                 </Text>
               </View>
-              
+
               {/* Learning */}
               <View style={styles.statItem}>
                 <Iconify icon="mdi:fire" size={moderateScale(20)} color={colors.buttonColor} style={{ marginRight: scale(6) }} />
@@ -713,7 +738,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
                   {chapterStats.learning}
                 </Text>
               </View>
-              
+
               {/* Learned */}
               <View style={styles.statItem}>
                 <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(20)} color={colors.buttonColor} style={{ marginRight: scale(6) }} />
@@ -734,43 +759,57 @@ export default function ChapterCardsScreen({ route, navigation }) {
             </View>
 
             {/* Edit mode'da seçim butonları */}
-            {editMode && (
-              <View style={[styles.editModeBar, { backgroundColor: 'transparent', marginTop: verticalScale(12) }]}>
+            <Animated.View style={[styles.editModeBar, animatedBarStyle]}>
+              {/* İçeriğin ezilmemesi için sabit bir kapsayıcı (container) */}
+              <View style={styles.editModeContent}>
+
+                {/* Sol Kısım: Tümünü Seç */}
                 <TouchableOpacity
                   onPress={handleSelectAll}
-                  style={styles.editModeButton}
+                  style={styles.actionPillButton}
                   activeOpacity={0.7}
                 >
-                  <Iconify icon={selectedCards.size === filteredCards.length ? "material-symbols:all-out-rounded" : "material-symbols:all-out-outline-rounded"} size={moderateScale(20)} color="#fff" />
-                  <Text style={[styles.editModeButtonText, { color: '#fff' }]}>
-                    {selectedCards.size === filteredCards.length 
+                  <Iconify
+                    icon={selectedCards.size === filteredCards.length ? "material-symbols:all-out-rounded" : "material-symbols:all-out-outline-rounded"}
+                    size={moderateScale(18)}
+                    color="#fff"
+                  />
+                  <Text style={styles.actionPillText}>
+                    {selectedCards.size === filteredCards.length
                       ? t('chapterCards.deselectAll', 'Tümünü Kaldır')
                       : t('chapterCards.selectAll', 'Tümünü Seç')}
                   </Text>
                 </TouchableOpacity>
-                <Text style={[styles.editModeText, { color: '#fff' }]}>
-                  {selectedCards.size} {t('chapterCards.selected', 'seçili')}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => setShowChapterModal(true)}
-                  style={[
-                    styles.moveButton, 
-                    { 
-                      backgroundColor: '#fff',
-                      opacity: selectedCards.size > 0 ? 1 : 0,
-                    }
-                  ]}
-                  activeOpacity={0.7}
-                  disabled={selectedCards.size === 0}
-                  pointerEvents={selectedCards.size > 0 ? 'auto' : 'none'}
-                >
-                  <Iconify icon="ion:chevron-forward" size={moderateScale(20)} color={colors.buttonColor} style={{ marginRight: scale(6) }} />
-                  <Text style={[styles.moveButtonText, { color: colors.buttonColor }]}>
-                    {t('chapterCards.move', 'Taşı')}
+
+                {/* Orta Kısım: Seçili Sayısı */}
+                <View style={styles.badgeContainer}>
+                  <Text style={styles.badgeText}>
+                    {selectedCards.size} {t('chapterCards.selected', 'seçili')}
                   </Text>
-                </TouchableOpacity>
+                </View>
+
+                {/* Sağ Kısım: Taşı Butonu */}
+                <Animated.View style={moveButtonAnimatedStyle}>
+                  <TouchableOpacity
+                    onPress={() => setShowChapterModal(true)}
+                    style={[styles.actionPillButton, styles.moveButtonVariant]}
+                    activeOpacity={0.7}
+                    disabled={selectedCards.size === 0}
+                  >
+                    <Text style={[styles.moveButtonText, { color: colors.buttonColor }]}>
+                      {t('chapterCards.move', 'Taşı')}
+                    </Text>
+                    <Iconify
+                      icon="ion:chevron-forward"
+                      size={moderateScale(16)}
+                      color={colors.buttonColor}
+                      style={{ marginLeft: scale(4) }}
+                    />
+                  </TouchableOpacity>
+                </Animated.View>
+
               </View>
-            )}
+            </Animated.View>
           </View>
         </LinearGradient>
       </View>
@@ -800,30 +839,30 @@ export default function ChapterCardsScreen({ route, navigation }) {
           </View>
         )}
       </View>
-      
+
       {/* Floating Action Button - Atanmamış kartlar için dağıtım butonu */}
       {!chapter?.id && !editMode && currentUserId && deck?.user_id === currentUserId && !deck?.is_shared && (
-          <TouchableOpacity
-            onPress={handleDistribute}
-            disabled={distLoading}
-            activeOpacity={0.85}
-            style={styles.fab}
+        <TouchableOpacity
+          onPress={handleDistribute}
+          disabled={distLoading}
+          activeOpacity={0.85}
+          style={styles.fab}
+        >
+          <LinearGradient
+            colors={['#F98A21', '#FF6B35']}
+            locations={[0, 0.99]}
+            style={styles.fabGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
           >
-            <LinearGradient
-              colors={['#F98A21', '#FF6B35']}
-              locations={[0, 0.99]}
-              style={styles.fabGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              {distLoading ? (
-                <ActivityIndicator size="large" color="#FFFFFF" />
-              ) : (
-                <Iconify icon="fluent:arrow-shuffle-24-filled" size={moderateScale(28)} color="#FFFFFF" />
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
-        )}
+            {distLoading ? (
+              <ActivityIndicator size="large" color="#FFFFFF" />
+            ) : (
+              <Iconify icon="fluent:arrow-shuffle-24-filled" size={moderateScale(28)} color="#FFFFFF" />
+            )}
+          </LinearGradient>
+        </TouchableOpacity>
+      )}
 
       {/* Bölüm Seçim Modal */}
       <ChapterSelector
@@ -836,7 +875,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
           }
         }}
         chapters={chapters}
-        progressMap={progressMap} // <--- EKLENMESİ GEREKEN KRİTİK SATIR BURASI
+        progressMap={progressMap}
         onSelectChapter={(chapterId) => {
           handleMoveToChapter(chapterId);
         }}
@@ -1043,42 +1082,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   editModeBar: {
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)', // Şık bir yarı saydam arka plan (Glassmorphism etkisi)
+    borderRadius: moderateScale(16),
+  },
+  editModeContent: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: scale(18),
-    paddingVertical: verticalScale(12),
-    marginHorizontal: scale(14),
-    marginTop: verticalScale(12),
-    marginBottom: verticalScale(10),
-    minHeight: verticalScale(48),
-    borderRadius: moderateScale(12),
-    borderWidth: moderateScale(1),
-    borderColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: scale(12),
   },
-  editModeButton: {
+  actionPillButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(4),
     paddingVertical: verticalScale(6),
+    paddingHorizontal: scale(10),
+    borderRadius: moderateScale(20), // Tam yuvarlak (hap) görünüm
+    backgroundColor: 'rgba(255, 255, 255, 0.2)', // Butonlar için hafif bir vurgu
   },
-  editModeButtonText: {
-    fontSize: moderateScale(14),
+  actionPillText: {
+    color: '#fff',
+    fontSize: moderateScale(13),
     fontWeight: '600',
+    marginLeft: scale(4),
   },
-  editModeText: {
-    fontSize: moderateScale(14),
-    fontWeight: '500',
-  },
-  moveButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(16),
-    borderRadius: moderateScale(20),
+  moveButtonVariant: {
+    backgroundColor: '#fff', // Taşı butonu ana eylem olduğu için tam beyaz
   },
   moveButtonText: {
-    fontSize: moderateScale(14),
-    fontWeight: '600',
+    color: '#ffffff', // Projenin ana rengi (örneğin mavi/mor)
+    fontSize: moderateScale(13),
+    fontWeight: '700',
   },
+  badgeContainer: {
+    paddingVertical: verticalScale(4),
+    paddingHorizontal: scale(8),
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: moderateScale(12),
+    fontWeight: '500',
+    opacity: 0.9,
+  }
 });

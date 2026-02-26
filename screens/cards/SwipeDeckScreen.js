@@ -700,7 +700,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
             {/* Learned Kartlar */}
             <View style={[styles.statCard, { backgroundColor: colors.cardBackground, borderColor: '#3e8e41' }]}>
               <View style={[styles.statIconContainer, { backgroundColor: 'rgba(62, 142, 65, 0.1)' }]}>
-                <Iconify icon="hugeicons:tick-01" size={moderateScale(24)} color="#3e8e41" />
+                <Iconify icon="streamline:check-solid" size={moderateScale(20)} color="#3e8e41" />
               </View>
               <Text style={[styles.statNumber, { color: colors.text }]}>{learnedCount}</Text>
               <Text style={[styles.statLabel, { color: colors.subtext }]}>{t('swipeDeck.learned', 'Öğrenildi')}</Text>
@@ -796,7 +796,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
           >
             {rightHighlight ? (
               <Reanimated.View key="icon-r" entering={FadeIn.duration(50)} exiting={null}>
-                <Iconify icon="hugeicons:tick-01" size={moderateScale(18)} color="#fff" />
+                <Iconify icon="streamline:check-solid" size={moderateScale(16)} color="#fff" />
               </Reanimated.View>
             ) : (
               <Reanimated.View key="text-r" entering={FadeIn.duration(250)} exiting={null}>

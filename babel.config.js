@@ -130,7 +130,10 @@ module.exports = function (api) {
             'basil:user-block-solid',
             'mingcute:user-hide-fill',
             'fluent:arrow-repeat-all-48-regular',
-            'fontisto:locked'
+            'fontisto:locked',
+            'mdi:required',
+            'fluent:scan-camera-20-regular',
+            'streamline:check-solid'
           ],
         },
       ],

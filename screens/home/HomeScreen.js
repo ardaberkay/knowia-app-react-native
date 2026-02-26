@@ -333,32 +333,31 @@ export default function HomeScreen() {
           >
             <TouchableOpacity
               onPress={handleEmptyDeckPress}
-              activeOpacity={0.7}
-            >
-              <View style={[
+              activeOpacity={0.6}
+              style={[
                 styles.emptyDeckCard,
                 {
                   width: emptyDeckCardDimensions.width,
                   height: emptyDeckCardDimensions.height,
-                  backgroundColor: colors.background,
-                  borderColor: colors.cardBorder,
-                  shadowColor: colors.shadowColor,
+                  backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)', // Çok hafif transparan arka plan
+                  borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)',
                 }
-              ]}>
-                <View style={[styles.emptyDeckCardContent, { backgroundColor: colors.background }]}>
-                  <View style={[
-                    styles.emptyDeckPlusContainer,
-                    {
-                      backgroundColor: colors.cardBackground,
-                      borderColor: colors.cardBorder,
-                    }
-                  ]}>
-                    <Iconify
-                      icon="ic:round-plus"
-                      size={moderateScale(42)}
-                      color={isDarkMode ? 'rgba(150, 150, 150, 0.5)' : 'rgba(140, 140, 140, 0.5)'}
-                    />
-                  </View>
+              ]}
+            >
+              <View style={styles.emptyDeckCardContent}>
+                <View style={[
+                  styles.emptyDeckPlusContainer,
+                  {
+                    backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)', // Border yerine hafif bir dolgu
+                  }
+                ]}>
+                  <Iconify
+                    icon="ic:round-plus"
+                    size={moderateScale(40)}
+                    // İkon rengini temanın ana rengi (primary) yaparsan çok daha "tıklamaya davetkar" durur. 
+                    // Şimdilik senin gri tonunu biraz daha canlandırarak bıraktım:
+                    color={isDarkMode ? 'rgba(200, 200, 200, 0.8)' : 'rgba(100, 100, 100, 0.8)'}
+                  />
                 </View>
               </View>
             </TouchableOpacity>
@@ -598,16 +597,10 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(18),
     marginRight: scale(10),
     marginBottom: verticalScale(8),
-    overflow: 'hidden',
-    borderWidth: moderateScale(1.5),
-    shadowOffset: { width: 0, height: moderateScale(2) },
-    shadowOpacity: 0.08,
-    shadowRadius: moderateScale(8),
-    elevation: 2,
+    borderWidth: moderateScale(2),
   },
   emptyDeckCardContent: {
     flex: 1,
-    padding: moderateScale(8),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -617,6 +610,6 @@ const styles = StyleSheet.create({
     width: scale(64),
     height: scale(64),
     borderRadius: moderateScale(32),
-    borderWidth: moderateScale(1.5),
+    // Kenarlık (borderWidth) yok, sadece arka plan rengi ile ayrışacak
   },
 }); 

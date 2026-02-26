@@ -113,7 +113,8 @@
     "maxLanguage": "You can select up to 2 languages.",
     "language": "Content Language",
     "selectLanguage": "Select Language",
-    "languageHeading": "Content Language"
+    "languageHeading": "Content Language",
+    "languageSub": "Select deck content languages (Max. 2)"
   },
   "common": {
     "error": "An error occurred",
@@ -308,9 +309,9 @@
     "csvUploadDescriptionSecond": "question, answer, example(optional), note(optional), image(optional)",
     "csvUploadDescriptionThird": "Each row represents a card. Empty rows or missing required fields are skipped.",
     "file": "File: ",
-    "totalRows": "Total rows: ",
-    "validCards": "Valid cards: ",
-    "invalidCards": "Invalid cards: ",
+    "totalRows": "Total Rows",
+    "validCards": "Valid Cards",
+    "invalidCards": "Invalid Cards",
     "errors": "Errors (first 5):",
     "errorRow": "Row ",
     "noValidCards": "No valid cards.",
@@ -344,7 +345,10 @@
     "imageId": "Image ID: ",
     "selection": "Selection",
     "selectImage": "Select an image",
-    "imageCount": "Image"
+    "imageCount": "Image",
+    "tableColumnsText": "question, answer, example, note, image",
+    "matchImages": "Match",
+    "chooseImages": "Choice"
   },
   "editProfile": {
     "userName": "User Name",

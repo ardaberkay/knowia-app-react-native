@@ -114,7 +114,8 @@
     "maxLanguage": "En fazla 2 dil seçebilirsiniz.",
     "language": "İçerik Dili",
     "selectLanguage": "Dil Seç",
-    "languageHeading": "İçerik Dili"
+    "languageHeading": "İçerik Dili",
+    "languageSub": "Destenin içerik dillerini seçin (Maksimum 2)"
   },
   "common": {
     "error": "Bir hata oluştu",
@@ -313,9 +314,9 @@
     "csvUploadDescriptionSecond": "soru, cevap, ornek(opsiyonel), not(opsiyonel), gorsel(opsiyonel)",
     "csvUploadDescriptionThird": "Her satır bir kartı temsil eder. Boş satırlar veya eksik zorunlu alanlar atlanır.",
     "file": "Dosya: ",
-    "totalRows": "Toplam satır: ",
-    "validCards": "Geçerli kart: ",
-    "invalidCards": "Geçersiz kart: ",
+    "totalRows": "Toplam Satır",
+    "validCards": "Geçerli Kart",
+    "invalidCards": "Geçersiz Kart",
     "errors": "Hatalar (ilk 5):",
     "errorRow": "Satır ",
     "noValidCards": "Geçerli kart yok.",
@@ -349,7 +350,10 @@
     "imageId": "Görsel ID: ",
     "selection": "Seçim",
     "selectImage": "Görsel seçiniz",
-    "imageCount": "Görsel"
+    "imageCount": "Görsel",
+    "tableColumnsText": "soru, cevap, ornek, not, gorsel",
+    "matchImages": "Eşleştir",
+    "chooseImages": "Seçim"
   },
   "editProfile": {
     "userName": "Kullanıcı Adı",

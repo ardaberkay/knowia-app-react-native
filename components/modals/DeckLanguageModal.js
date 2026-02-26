@@ -64,19 +64,20 @@ export default function DeckLanguageModal({
     return t(`languages.${language.sort_order}`, null);
   };
 
+  
   const handleToggle = (languageId) => {
     const isCurrentlySelected = selectedLanguage.includes(languageId);
 
-    // Boyut değişimini yumuşatmak için LayoutAnimation çağırıyoruz
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-
     if (isCurrentlySelected) {
+      if (error) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setError('');
       onSelectLanguage(languageId);
     } else {
       if (selectedLanguage.length >= 2) {
+        if (!error) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setError(t('create.maxLanguage', 'En fazla 2 dil seçebilirsiniz.'));
       } else {
+        if (error) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setError('');
         onSelectLanguage(languageId);
       }
@@ -115,7 +116,7 @@ export default function DeckLanguageModal({
 
         {/* Bilgilendirme Metni */}
         <Text style={[styles.infoText, { color: isDarkMode ? '#aaa' : '#666' }]}>
-          {t('create.languageSub', 'Öğrenmek istediğiniz dilleri seçin (Maksimum 2)')}
+          {t('create.languageSub', 'Destenin içerik dillerini seçin (Maksimum 2)')}
         </Text>
 
         {/* List of Languages (ScrollView içine alındı) */}

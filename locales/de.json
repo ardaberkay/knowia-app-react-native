@@ -112,7 +112,8 @@
     "maxLanguage": "Maximal 2 Sprachen auswählbar.",
     "language": "Inhaltssprache",
     "selectLanguage": "Sprache wählen",
-    "languageHeading": "Inhaltssprache"
+    "languageHeading": "Inhaltssprache",
+    "languageSub": "Decksprachen wählen (Max. 2)"
   },
   "common": {
     "error": "Ein Fehler ist aufgetreten",
@@ -274,9 +275,9 @@
     "csvUploadDescriptionSecond": "question, answer, example(optional), note(optional), image(optional)",
     "csvUploadDescriptionThird": "Jede Zeile entspricht einer Karte. Leere Zeilen oder fehlende Pflichtfelder werden übersprungen.",
     "file": "Datei: ",
-    "totalRows": "Gesamtzeilen: ",
-    "validCards": "Gültige Karten: ",
-    "invalidCards": "Ungültige Karten: ",
+    "totalRows": "Gesamtzeilen",
+    "validCards": "Gültige",
+    "invalidCards": "Ungültige",
     "errors": "Fehler (erste 5):",
     "errorRow": "Zeile ",
     "noValidCards": "Keine gültigen Karten.",
@@ -310,7 +311,10 @@
     "imageId": "Bild ID: ",
     "selection": "Auswahl",
     "selectImage": "Bild auswählen",
-    "imageCount": "Bild"
+    "imageCount": "Bild",
+    "tableColumnsText": "question, answer, example, note, image",
+    "matchImages": "Match",
+    "chooseImages": "Wahl"
   },
   "editProfile": {
     "userName": "Benutzername",

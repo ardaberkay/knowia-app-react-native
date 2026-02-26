@@ -583,13 +583,13 @@ export default function CsvUploadModal({
                   </Text>
                   
                   <View style={[styles.codeBadge, { backgroundColor: isDarkMode ? '#111' : '#F0F0F0', borderColor: isDarkMode ? '#333' : '#E0E0E0' }]}>
-                    <Text style={[styles.codeBadgeText, { color: colors.primary || '#007AFF' }]}>
-                      soru, cevap, ornek, not, gorsel
+                    <Text style={[styles.codeBadgeText, { color: colors.primary || '#ffffff' }]}>
+                       {t('addCard.tableColumnsText', 'soru, cevap, ornek, not, gorsel')}
                     </Text>
                   </View>
                   
                   <View style={styles.alertInline}>
-                    <Iconify icon="hugeicons:tick-01" size={moderateScale(16)} color={colors.secondary || '#F39C12'} style={{marginRight: scale(6)}} />
+                    <Iconify icon="mdi:required" size={moderateScale(22)} color={colors.secondary || '#F39C12'} style={{marginRight: scale(6)}} />
                     <Text style={[styles.alertInlineText, { color: colors.secondary || '#F39C12' }]}>
                       {t('addCard.requiredColumns', 'Soru ve Cevap sütunları zorunludur!')}
                     </Text>
@@ -615,7 +615,7 @@ export default function CsvUploadModal({
                     resizeMode="contain"
                   />
                   <View style={styles.zoomIconBadge}>
-                    <Iconify icon="hugeicons:tick-01" size={16} color="#FFF" />
+                    <Iconify icon="fluent:scan-camera-20-regular" size={22} color="#FFF" />
                   </View>
                 </TouchableOpacity>
               </View>
@@ -642,7 +642,7 @@ export default function CsvUploadModal({
               
               {/* Dosya Adı Barı */}
               <View style={[styles.fileNameBar, { backgroundColor: isDarkMode ? '#222' : '#F4F6F8' }]}>
-                <Iconify icon="hugeicons:tick-01" size={moderateScale(24)} color={colors.primary || '#007AFF'} />
+                <Iconify icon="hugeicons:document-validation" size={moderateScale(22)} color={colors.primary || '#007AFF'} />
                 <Text style={[styles.fileNameText, { color: colors.text }]} numberOfLines={1}>
                   {csvPreview.fileName}
                 </Text>
@@ -699,7 +699,7 @@ export default function CsvUploadModal({
                 <View style={[styles.imageMapSection, { backgroundColor: isDarkMode ? '#222' : '#F9FAFB', borderColor: colors.border }]}>
                   
                   <View style={styles.imageMapHeader}>
-                    <View>
+                    <View style={{ flex: 1 }}>
                       <Text style={[styles.imageMapTitle, { color: colors.text }]}>{t('addCard.selectImages', 'Görselleri Seç ve Eşleştir')}</Text>
                       <Text style={[styles.imageMapSub, { color: colors.muted }]}>
                         {selectedImages.length > 0
@@ -709,7 +709,7 @@ export default function CsvUploadModal({
                     </View>
                     <TouchableOpacity
                       onPress={handlePickImages}
-                      style={[styles.pickImgBtn, { backgroundColor: colors.primary || '#007AFF' }]}
+                      style={[styles.pickImgBtn, { backgroundColor: colors.primary || '#007AFF', flex: 1 }]}
                       disabled={csvLoading}
                     >
                       <Iconify icon="mage:image-fill" size={moderateScale(18)} color="#FFF" style={{ marginRight: scale(6) }} />
@@ -744,11 +744,11 @@ export default function CsvUploadModal({
                                 <View style={styles.dropdownSelectedInner}>
                                   <Image source={{ uri: selectedImg.uri }} style={styles.dropdownTriggerThumb} />
                                   <Text style={[styles.dropdownTriggerText, { color: colors.text, fontWeight: '600' }]} numberOfLines={1}>
-                                    Seçim {selectedImg.selectionIndex}
+                                    {t('addCard.chooseImages', 'Seçim')} {selectedImg.selectionIndex}
                                   </Text>
                                 </View>
                               ) : (
-                                <Text style={[styles.dropdownTriggerPlaceholder, { color: colors.muted }]}>Eşleştir</Text>
+                                <Text style={[styles.dropdownTriggerPlaceholder, { color: colors.muted }]}>{t('addCard.matchImages', 'Eşleştir')}</Text>
                               )}
                               <Iconify icon="flowbite:caret-down-solid" size={moderateScale(16)} color={colors.text} style={{ marginLeft: scale(6) }} />
                             </TouchableOpacity>
@@ -1229,6 +1229,8 @@ const styles = StyleSheet.create({
     paddingVertical: verticalScale(14),
     paddingHorizontal: scale(8),
     borderRadius: moderateScale(12),
+    borderWidth: 1,
+    borderColor: '#F98A21',
   },
   btnDownloadTemplateText: {
     color: '#F98A21',

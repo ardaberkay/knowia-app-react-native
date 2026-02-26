@@ -112,7 +112,8 @@
     "maxLanguage": "Puedes seleccionar hasta 2 idiomas.",
     "language": "Idioma",
     "selectLanguage": "Seleccionar idioma",
-    "languageHeading": "Idioma del contenido"
+    "languageHeading": "Idioma del contenido",
+    "languageSub": "Elige idiomas del mazo (Máx. 2)"
   },
   "common": {
     "error": "Ocurrió un error",
@@ -272,9 +273,9 @@
     "csvUploadDescriptionSecond": "question, answer, example(optional), note(optional), image(optional)",
     "csvUploadDescriptionThird": "Cada fila representa una tarjeta. Las filas vacías o los campos obligatorios faltantes se omiten.",
     "file": "Archivo: ",
-    "totalRows": "Total de filas: ",
-    "validCards": "Tarjetas válidas: ",
-    "invalidCards": "Tarjetas inválidas: ",
+    "totalRows": "Total",
+    "validCards": "Válidas",
+    "invalidCards": "Inválidas",
     "errors": "Errores (primeros 5):",
     "errorRow": "Fila ",
     "noValidCards": "No hay tarjetas válidas.",
@@ -308,7 +309,10 @@
     "imageId": "ID de imagen: ",
     "selection": "Selección",
     "selectImage": "Selecciona una imagen",
-    "imageCount": "Imagen"
+    "imageCount": "Imagen",
+    "tableColumnsText": "question, answer, example, note, image",
+    "matchImages": "Emparejar",
+    "chooseImages": "Elección"
   },
   "editProfile": {
     "userName": "Nombre de Usuario",
