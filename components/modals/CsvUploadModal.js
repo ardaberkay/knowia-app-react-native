@@ -53,23 +53,6 @@ export default function CsvUploadModal({
     return normalized;
   };
 
-  const isValidUtf8 = (buffer) => {
-    let i = 0;
-    while (i < buffer.length) {
-      if (buffer[i] <= 0x7F) { i++; }
-      else if ((buffer[i] & 0xE0) === 0xC0) {
-        if (i + 1 >= buffer.length || (buffer[i + 1] & 0xC0) !== 0x80) return false;
-        i += 2;
-      } else if ((buffer[i] & 0xF0) === 0xE0) {
-        if (i + 2 >= buffer.length || (buffer[i + 1] & 0xC0) !== 0x80 || (buffer[i + 2] & 0xC0) !== 0x80) return false;
-        i += 3;
-      } else if ((buffer[i] & 0xF8) === 0xF0) {
-        if (i + 3 >= buffer.length || (buffer[i + 1] & 0xC0) !== 0x80 || (buffer[i + 2] & 0xC0) !== 0x80 || (buffer[i + 3] & 0xC0) !== 0x80) return false;
-        i += 4;
-      } else { return false; }
-    }
-    return true;
-  };
 
   const decodeWindows1254 = (buffer) => {
     const win1254Map = { 0xD0: 'Ğ', 0xDD: 'İ', 0xDE: 'Ş', 0xF0: 'ğ', 0xFD: 'ı', 0xFE: 'ş' };
@@ -629,10 +612,14 @@ export default function CsvUploadModal({
               animationIn="fadeIn"
               animationOut="fadeOut"
               statusBarTranslucent={true}
-              onBackdropPress={() => setImageModalVisible(false)}
               deviceHeight={screenHeight}
+              hardwareAccelerated={true}
+              useNativeDriver={true}
+              useNativeDriverForBackdrop={true}
+              hideModalContentWhileAnimating={true}
+              onBackdropPress={() => setImageModalVisible(false)}
             >
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
 
                 <TouchableOpacity style={styles.fullScreenCloseBtn} onPress={() => setImageModalVisible(false)}>
                   <Iconify icon="mingcute:close-fill" size={24} color="white" />
