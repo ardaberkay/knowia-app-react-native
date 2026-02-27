@@ -7,6 +7,7 @@ import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import BadgeText from './BadgeText';
+import { triggerHaptic } from '../../lib/hapticManager';
 
 export default function HowToCreateModal({ isVisible, onClose }) {
   const { colors } = useTheme();
@@ -58,8 +59,11 @@ export default function HowToCreateModal({ isVisible, onClose }) {
       onBackButtonPress={onClose}
       useNativeDriver
       useNativeDriverForBackdrop
-      hideModalContentWhileAnimating
-      backdropTransitionOutTiming={0}
+      backdropTransitionOutTiming={150}
+      animationInTiming={200}
+      animationOutTiming={200}
+      backdropTransitionInTiming={200}
+      hardwareAccelerated={true}
       animationIn="slideInUp"
       animationOut="slideOutDown"
       statusBarTranslucent={true}
@@ -73,7 +77,7 @@ export default function HowToCreateModal({ isVisible, onClose }) {
               {t('howToCreate.title', 'Nasıl Oluşturulur?')}
             </Text>
           </View>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}>
+          <TouchableOpacity onPress={onClose} style={styles.closeButtonIcon} hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}>
             <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
           </TouchableOpacity>
         </View>
@@ -118,7 +122,10 @@ export default function HowToCreateModal({ isVisible, onClose }) {
 
         <TouchableOpacity
           style={[styles.closeButton, { backgroundColor: colors.secondary }]}
-          onPress={onClose}
+          onPress={() => {
+            triggerHaptic('light');
+            onClose();
+          }}
           activeOpacity={0.8}
         >
           <Text style={[styles.closeButtonText, typography.styles.body, { color: '#fff' }]}>
@@ -227,6 +234,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: verticalScale(20),
+  },
+  closeButtonIcon: {
+    backgroundColor: 'rgba(150, 150, 150, 0.1)',
+    padding: moderateScale(6),
+    borderRadius: 99,
   },
   closeButtonText: {
     fontWeight: '600',

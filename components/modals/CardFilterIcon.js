@@ -4,6 +4,7 @@ import Icon from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
+import { triggerHaptic } from '../../lib/hapticManager';
 
 const FilterIcon = ({ style, size, color = "#B0B0B0", value = 'original', onChange, hideFavorites = false }) => {
   const { colors } = useTheme();
@@ -35,6 +36,7 @@ const FilterIcon = ({ style, size, color = "#B0B0B0", value = 'original', onChan
   const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
   const openMenu = () => {
+    triggerHaptic('selection');
     if (buttonRef.current && buttonRef.current.measureInWindow) {
       buttonRef.current.measureInWindow((x, y, width, height) => {
         setDropdownPos({ x, y, width, height });

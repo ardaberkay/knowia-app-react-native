@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { Iconify } from 'react-native-iconify';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import { triggerHaptic } from '../../lib/hapticManager';
 
 const SnackbarContext = createContext(null);
 
@@ -28,6 +29,14 @@ export const SnackbarProvider = ({ children }) => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
+    }
+    // --- BURAYA TİTREŞİM KONTROLÜNÜ EKLİYORUZ ---
+    if (snackbarType === 'success') {
+      triggerHaptic('success'); // Başarılı işlem titreşimi
+    } else if (snackbarType === 'error') {
+      triggerHaptic('error'); // Hata/Uyarı titreşimi
+    } else {
+      triggerHaptic('light'); // Normal bilgi titreşimi
     }
     
     setMessage(text);

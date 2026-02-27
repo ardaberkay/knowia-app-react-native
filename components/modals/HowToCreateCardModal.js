@@ -58,8 +58,11 @@ export default function HowToCreateCardModal({ isVisible, onClose }) {
       onBackButtonPress={onClose}
       useNativeDriver
       useNativeDriverForBackdrop
-      hideModalContentWhileAnimating
-      backdropTransitionOutTiming={0}
+      backdropTransitionOutTiming={150}
+      animationInTiming={200}
+      animationOutTiming={200}
+      backdropTransitionInTiming={200}
+      hardwareAccelerated={true}
       animationIn="slideInUp"
       animationOut="slideOutDown"
       statusBarTranslucent={true}
@@ -73,7 +76,7 @@ export default function HowToCreateCardModal({ isVisible, onClose }) {
               {t('howToCreateCard.title', 'Kart Nasıl Oluşturulur?')}
             </Text>
           </View>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}>
+          <TouchableOpacity onPress={onClose} style={styles.closeButtonIcon} hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}>
             <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
           </TouchableOpacity>
         </View>
@@ -226,6 +229,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: verticalScale(20),
+  },
+  closeButtonIcon: {
+    backgroundColor: 'rgba(150, 150, 150, 0.1)',
+    padding: moderateScale(6),
+    borderRadius: 99,
   },
   closeButtonText: {
     fontWeight: '600',

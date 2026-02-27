@@ -18,6 +18,7 @@ import HowToCreateCardModal from '../../components/modals/HowToCreateCardModal';
 import CsvUploadModal from '../../components/modals/CsvUploadModal';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import BadgeText from '../../components/modals/BadgeText';
+import { triggerHaptic } from '../../lib/hapticManager';
 
 export default function AddCardScreen() {
   const navigation = useNavigation();
@@ -165,7 +166,12 @@ export default function AddCardScreen() {
                 <TouchableOpacity
                   style={[styles.howToCreateButton, { backgroundColor: colors.secondary + '15', borderColor: colors.secondary + '30' }]}
                   activeOpacity={0.7}
-                  onPress={() => setHowToCreateCardModalVisible(true)}
+                  onPress={() => {
+                    triggerHaptic('selection');
+                    requestAnimationFrame(() => {
+                      setHowToCreateCardModalVisible(true);
+                    });
+                  }}
                 >
                   <Iconify icon="material-symbols:info-outline" size={moderateScale(16)} color={colors.secondary} style={{ marginRight: scale(4) }} />
                   <Text style={[typography.styles.caption, { color: colors.secondary, fontWeight: '600', textDecorationLine: 'underline' }]}>

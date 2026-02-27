@@ -92,7 +92,10 @@ const CardListItem = ({
                     backgroundColor: colors.iconBackground,
                   }
                 ]}
-                onPress={onDelete}
+                onPress={() => {
+                  triggerHaptic('heavy');
+                  onDelete();
+                }}
                 activeOpacity={0.7}
               >
                 <Iconify icon="mdi:garbage-can-empty" size={moderateScale(22)} color="#E74C3C" />

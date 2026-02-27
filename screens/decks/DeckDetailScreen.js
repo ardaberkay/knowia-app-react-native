@@ -16,6 +16,7 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import ReportModal from '../../components/modals/ReportModal';
 import { scale, moderateScale, verticalScale, useWindowDimensions } from '../../lib/scaling';
 import { useFocusEffect } from '@react-navigation/native';
+import { triggerHaptic } from '../../lib/hapticManager';
 
 const AnimatedFabContainer = Animated.createAnimatedComponent(View);
 
@@ -673,7 +674,7 @@ export default function DeckDetailScreen({ route, navigation }) {
 
   const handleToggleShare = (nextValue) => {
     if (shareLoading) return;
-
+    triggerHaptic('medium');
     if (nextValue) {
       // Açarken: switch hemen açılır, onay iste
       setIsShared(true);

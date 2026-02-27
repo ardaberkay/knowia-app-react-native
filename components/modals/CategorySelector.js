@@ -42,13 +42,13 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
       onBackButtonPress={onClose}
       animationIn="slideInUp"
       animationOut="slideOutDown"
-      animationInTiming={300}
-      animationOutTiming={300}
-      backdropTransitionInTiming={300}
-      backdropTransitionOutTiming={300}
+      backdropTransitionOutTiming={150}
+      animationInTiming={200}
+      animationOutTiming={200}
+      backdropTransitionInTiming={200}
+      hardwareAccelerated={true}
       useNativeDriver
       useNativeDriverForBackdrop
-      hideModalContentWhileAnimating
       statusBarTranslucent={true}
       deviceHeight={screenHeight}
     >

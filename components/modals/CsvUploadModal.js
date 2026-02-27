@@ -510,7 +510,10 @@ export default function CsvUploadModal({
       useNativeDriver
       useNativeDriverForBackdrop
       hideModalContentWhileAnimating
-      backdropTransitionOutTiming={0}
+      backdropTransitionOutTiming={150}
+      animationInTiming={200}
+      animationOutTiming={200}
+      backdropTransitionInTiming={200}
       animationIn="slideInUp"
       animationOut="slideOutDown"
       statusBarTranslucent={true}

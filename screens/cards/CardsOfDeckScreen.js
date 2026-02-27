@@ -18,6 +18,7 @@ import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { useFocusEffect } from '@react-navigation/native';
 import * as BlockService from '../../services/BlockService';
 import ReportModal from '../../components/modals/ReportModal';
+import { triggerHaptic } from '../../lib/hapticManager';
 
 
 export default function DeckCardsScreen({ route, navigation }) {
@@ -214,6 +215,7 @@ export default function DeckCardsScreen({ route, navigation }) {
       });
     } else {
       const isOwner = currentUserId && deck.user_id === currentUserId && !deck.is_shared;
+  
       navigation.setOptions({
         headerRight: () => {
           if (!isOwner) {
@@ -221,8 +223,21 @@ export default function DeckCardsScreen({ route, navigation }) {
           }
           return (
             <TouchableOpacity
-              onPress={() => navigation.navigate('AddCard', { deck })}
-              style={{ marginRight: scale(8) }}
+              // hitSlop: Butonun görsel boyutunu büyütmeden dokunmatik alanını genişletir. 
+              // (Tıklamayı kaçırma/zor algılama hissini tamamen yok eder)
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+              activeOpacity={0.6} // Tıklama hissiyatını netleştirir
+              style={[styles.addCardIcon, { marginRight: scale(4) }]}
+              onPress={() => {
+                // 1. Arayüz tepkilerini ANINDA ver (Sıfır gecikme)
+                triggerHaptic('selection');
+                
+                // 2. Yeni sayfayı çizmeyi (render) bir sonraki boyama karesine (frame) ertele.
+                // Bu sayede butonun tıklanma animasyonu asla kilitlenmez.
+                requestAnimationFrame(() => {
+                  navigation.navigate('AddCard', { deck });
+                });
+              }}
             >
               <Iconify icon="ic:round-plus" size={moderateScale(28)} color={colors.text} />
             </TouchableOpacity>
@@ -341,7 +356,7 @@ export default function DeckCardsScreen({ route, navigation }) {
               if (error) throw error;
 
               // --- EKRANDAN ATMAYI ENGELLEYEN YENİ MANTIK ---
-              
+
               // 1. Silinen kartın index'ini bul
               const currentIndex = cards.findIndex(c => c.id === selectedCard.id);
               let nextCardToSelect = null;
@@ -351,7 +366,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                 // Eğer en son kartı siliyorsak bir öncekini göster
                 if (currentIndex === cards.length - 1) {
                   nextCardToSelect = cards[currentIndex - 1];
-                } 
+                }
                 // Aksi halde bir sonrakini göster
                 else {
                   nextCardToSelect = cards[currentIndex + 1];
@@ -361,7 +376,7 @@ export default function DeckCardsScreen({ route, navigation }) {
               // 3. Listeleri güncelle
               setCards(cards.filter(c => c.id !== selectedCard.id));
               setOriginalCards(originalCards.filter(c => c.id !== selectedCard.id));
-              
+
               // 4. Null yerine sıradaki kartı seç (Böylece bileşen kapanmaz, slider diğer karta geçer)
               setSelectedCard(nextCardToSelect);
 
@@ -394,200 +409,200 @@ export default function DeckCardsScreen({ route, navigation }) {
   };
   return (
     <>
-    {selectedCard && editMode ? (
-      <AddEditCardInlineForm
-        card={selectedCard}
-        deck={deck}
-        onSave={updatedCard => {
-          setCards(cards.map(c => c.id === updatedCard.id ? updatedCard : c));
-          setOriginalCards(originalCards.map(c => c.id === updatedCard.id ? updatedCard : c));
-          setSelectedCard(updatedCard);
-          setEditMode(false);
-        }}
-        onCancel={() => setEditMode(false)}
-      />
-    ) : selectedCard ? (
-      <>
-        <CardDetailView card={selectedCard} cards={cards} onSelectCard={setSelectedCard} />
-        <Modal
-          visible={moreMenuVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setMoreMenuVisible(false)}
-        >
-          <TouchableOpacity
-            style={{ flex: 1 }}
-            activeOpacity={1}
-            onPress={() => setMoreMenuVisible(false)}
+      {selectedCard && editMode ? (
+        <AddEditCardInlineForm
+          card={selectedCard}
+          deck={deck}
+          onSave={updatedCard => {
+            setCards(cards.map(c => c.id === updatedCard.id ? updatedCard : c));
+            setOriginalCards(originalCards.map(c => c.id === updatedCard.id ? updatedCard : c));
+            setSelectedCard(updatedCard);
+            setEditMode(false);
+          }}
+          onCancel={() => setEditMode(false)}
+        />
+      ) : selectedCard ? (
+        <>
+          <CardDetailView card={selectedCard} cards={cards} onSelectCard={setSelectedCard} />
+          <Modal
+            visible={moreMenuVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setMoreMenuVisible(false)}
           >
-            <View
-              style={{
-                position: 'absolute',
-                right: scale(20),
-                top: Platform.OS === 'android' ? moreMenuPos.y + moreMenuPos.height + verticalScale(4) : moreMenuPos.y + moreMenuPos.height + verticalScale(8),
-                minWidth: scale(160),
-                backgroundColor: colors.cardBackground,
-                borderRadius: moderateScale(14),
-                paddingVertical: verticalScale(8),
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: verticalScale(2) },
-                shadowOpacity: 0.15,
-                shadowRadius: moderateScale(8),
-                elevation: 8,
-                borderWidth: moderateScale(1),
-                borderColor: colors.cardBorder,
-              }}
-            >
-              <TouchableOpacity
-                onPress={handleEditSelectedCard}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingVertical: verticalScale(12),
-                  paddingHorizontal: scale(16),
-                }}
-                activeOpacity={0.7}
-              >
-                <Iconify icon="lucide:edit" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
-                <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
-                  {t('cardDetail.edit', 'Kartı Düzenle')}
-                </Text>
-              </TouchableOpacity>
-              <View style={{ height: verticalScale(1), backgroundColor: colors.border, marginVertical: verticalScale(4) }} />
-              <TouchableOpacity
-                onPress={handleDeleteSelectedCard}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingVertical: verticalScale(12),
-                  paddingHorizontal: scale(16),
-                }}
-                activeOpacity={0.7}
-              >
-                <Iconify icon="mdi:garbage" size={moderateScale(20)} color="#E74C3C" style={{ marginRight: scale(12) }} />
-                <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: moderateScale(16) }]}>
-                  {t('cardDetail.delete', 'Kartı Sil')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </Modal>
-      </>
-    ) : (
-      <>
-      <View style={{ flex: 1, backgroundColor: colors.background }}>
-        {/* Kartlar Listesi veya Detay */}
-        <View style={{ flex: 1, minHeight: 0 }}>
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: scale(200), height: scale(200) }} />
-              <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100), height: scale(100) }} />
-            </View>
-          ) : selectedCard ? (
-            <LinearGradient
-              colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+            <TouchableOpacity
               style={{ flex: 1 }}
+              activeOpacity={1}
+              onPress={() => setMoreMenuVisible(false)}
             >
-              <CardDetailView card={selectedCard} cards={cards} onSelectCard={setSelectedCard} />
-            </LinearGradient>
-          ) : (
-            <FlatList
-              data={filteredCards}
-              keyExtractor={item => item.id?.toString()}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(24) }}
-              ListHeaderComponent={
-                !selectedCard && cards.length > 0 && (
-                  <View style={styles.cardsBlurSearchContainer}>
-                    <SearchBar
-                      value={search}
-                      onChangeText={setSearch}
-                      placeholder={t("common.searchPlaceholder", "Kartlarda ara...")}
-                      style={{ flex: 1 }}
-                    />
-                    <FilterIcon
-                      value={cardSort}
-                      onChange={setCardSort}
-                    />
-                  </View>
-                )
-              }
-              ListEmptyComponent={
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: verticalScale(400), marginTop: verticalScale(-250), pointerEvents: 'none' }}>
-                  <Image
-                    source={require('../../assets/cardbg.png')}
-                    style={{ width: scale(500), height: scale(500), opacity: 0.2 }}
-                    resizeMode="contain"
-                  />
-                  <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, fontSize: moderateScale(16), marginTop: verticalScale(-150) }]}>
-                    {t('cardDetail.addToDeck', 'Desteye bir kart ekle')}
+              <View
+                style={{
+                  position: 'absolute',
+                  right: scale(20),
+                  top: Platform.OS === 'android' ? moreMenuPos.y + moreMenuPos.height + verticalScale(4) : moreMenuPos.y + moreMenuPos.height + verticalScale(8),
+                  minWidth: scale(160),
+                  backgroundColor: colors.cardBackground,
+                  borderRadius: moderateScale(14),
+                  paddingVertical: verticalScale(8),
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: verticalScale(2) },
+                  shadowOpacity: 0.15,
+                  shadowRadius: moderateScale(8),
+                  elevation: 8,
+                  borderWidth: moderateScale(1),
+                  borderColor: colors.cardBorder,
+                }}
+              >
+                <TouchableOpacity
+                  onPress={handleEditSelectedCard}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: verticalScale(12),
+                    paddingHorizontal: scale(16),
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Iconify icon="lucide:edit" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
+                  <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
+                    {t('cardDetail.edit', 'Kartı Düzenle')}
                   </Text>
+                </TouchableOpacity>
+                <View style={{ height: verticalScale(1), backgroundColor: colors.border, marginVertical: verticalScale(4) }} />
+                <TouchableOpacity
+                  onPress={handleDeleteSelectedCard}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: verticalScale(12),
+                    paddingHorizontal: scale(16),
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Iconify icon="mdi:garbage" size={moderateScale(20)} color="#E74C3C" style={{ marginRight: scale(12) }} />
+                  <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: moderateScale(16) }]}>
+                    {t('cardDetail.delete', 'Kartı Sil')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </Modal>
+        </>
+      ) : (
+        <>
+          <View style={{ flex: 1, backgroundColor: colors.background }}>
+            {/* Kartlar Listesi veya Detay */}
+            <View style={{ flex: 1, minHeight: 0 }}>
+              {loading ? (
+                <View style={styles.loadingContainer}>
+                  <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: scale(200), height: scale(200) }} />
+                  <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100), height: scale(100) }} />
                 </View>
-              }
-              renderItem={({ item }) => {
-                const isOwner = currentUserId && (item.deck?.user_id || deck.user_id) === currentUserId;
-                return (
-                  <View style={styles.cardListItem}>
-                    <CardListItem
-                      question={item.question}
-                      answer={item.answer}
-                      onPress={() => {
-                        setEditMode(false);
-                        setSelectedCard(item);
-                      }}
-                      onToggleFavorite={() => handleToggleFavoriteCard(item.id)}
-                      isFavorite={favoriteCards.includes(item.id)}
-                      onDelete={async () => {
-                        Alert.alert(
-                          t('cardDetail.deleteConfirmation', 'Kart Silinsin mi?'),
-                          t('cardDetail.deleteConfirm', 'Kartı silmek istediğinize emin misiniz?'),
-                          [
-                            { text: t('cardDetail.cancel', 'İptal'), style: 'cancel' },
-                            {
-                              text: t('cardDetail.delete', 'Sil'), style: 'destructive', onPress: async () => {
-                                try {
-                                  const { error } = await supabase
-                                    .from('cards')
-                                    .delete()
-                                    .eq('id', item.id);
+              ) : selectedCard ? (
+                <LinearGradient
+                  colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{ flex: 1 }}
+                >
+                  <CardDetailView card={selectedCard} cards={cards} onSelectCard={setSelectedCard} />
+                </LinearGradient>
+              ) : (
+                <FlatList
+                  data={filteredCards}
+                  keyExtractor={item => item.id?.toString()}
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(24) }}
+                  ListHeaderComponent={
+                    !selectedCard && cards.length > 0 && (
+                      <View style={styles.cardsBlurSearchContainer}>
+                        <SearchBar
+                          value={search}
+                          onChangeText={setSearch}
+                          placeholder={t("common.searchPlaceholder", "Kartlarda ara...")}
+                          style={{ flex: 1 }}
+                        />
+                        <FilterIcon
+                          value={cardSort}
+                          onChange={setCardSort}
+                        />
+                      </View>
+                    )
+                  }
+                  ListEmptyComponent={
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: verticalScale(400), marginTop: verticalScale(-250), pointerEvents: 'none' }}>
+                      <Image
+                        source={require('../../assets/cardbg.png')}
+                        style={{ width: scale(500), height: scale(500), opacity: 0.2 }}
+                        resizeMode="contain"
+                      />
+                      <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, fontSize: moderateScale(16), marginTop: verticalScale(-150) }]}>
+                        {t('cardDetail.addToDeck', 'Desteye bir kart ekle')}
+                      </Text>
+                    </View>
+                  }
+                  renderItem={({ item }) => {
+                    const isOwner = currentUserId && (item.deck?.user_id || deck.user_id) === currentUserId;
+                    return (
+                      <View style={styles.cardListItem}>
+                        <CardListItem
+                          question={item.question}
+                          answer={item.answer}
+                          onPress={() => {
+                            setEditMode(false);
+                            setSelectedCard(item);
+                          }}
+                          onToggleFavorite={() => handleToggleFavoriteCard(item.id)}
+                          isFavorite={favoriteCards.includes(item.id)}
+                          onDelete={async () => {
+                            Alert.alert(
+                              t('cardDetail.deleteConfirmation', 'Kart Silinsin mi?'),
+                              t('cardDetail.deleteConfirm', 'Kartı silmek istediğinize emin misiniz?'),
+                              [
+                                { text: t('cardDetail.cancel', 'İptal'), style: 'cancel' },
+                                {
+                                  text: t('cardDetail.delete', 'Sil'), style: 'destructive', onPress: async () => {
+                                    try {
+                                      const { error } = await supabase
+                                        .from('cards')
+                                        .delete()
+                                        .eq('id', item.id);
 
-                                  if (error) {
-                                    throw error;
+                                      if (error) {
+                                        throw error;
+                                      }
+
+                                      setCards(cards.filter(c => c.id !== item.id));
+                                      setOriginalCards(originalCards.filter(c => c.id !== item.id));
+                                      showSuccess(t('cardDetail.deleteSuccess', 'Kart başarıyla silindi'));
+                                    } catch (e) {
+                                      showError(t('cardDetail.deleteError', 'Kart silinemedi'));
+                                    }
                                   }
-
-                                  setCards(cards.filter(c => c.id !== item.id));
-                                  setOriginalCards(originalCards.filter(c => c.id !== item.id));
-                                  showSuccess(t('cardDetail.deleteSuccess', 'Kart başarıyla silindi'));
-                                } catch (e) {
-                                  showError(t('cardDetail.deleteError', 'Kart silinemedi'));
                                 }
-                              }
-                            }
-                          ]
-                        );
-                      }}
-                      canDelete={true}
-                      isOwner={isOwner}
-                    />
-                  </View>
-                );
-              }}
-            />
-          )}
-        </View>
-      </View>
+                              ]
+                            );
+                          }}
+                          canDelete={true}
+                          isOwner={isOwner}
+                        />
+                      </View>
+                    );
+                  }}
+                />
+              )}
+            </View>
+          </View>
 
-      </>
-    )}
-    <ReportModal
-      visible={reportModalVisible}
-      onClose={() => { setReportModalVisible(false); setReportCardId(null); }}
-      reportType="card"
-      alreadyReportedCodes={reportModalAlreadyCodes}
-      onSubmit={handleReportModalSubmit}
-    />
+        </>
+      )}
+      <ReportModal
+        visible={reportModalVisible}
+        onClose={() => { setReportModalVisible(false); setReportCardId(null); }}
+        reportType="card"
+        alreadyReportedCodes={reportModalAlreadyCodes}
+        onSubmit={handleReportModalSubmit}
+      />
     </>
   );
 }
@@ -606,7 +621,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-
+  addCardIcon: {
+    backgroundColor: 'rgba(150, 150, 150, 0.1)',
+    padding: moderateScale(6),
+    borderRadius: 99,
+  },
   cardsBlurSearchContainer: {
     flexDirection: 'row',
     alignItems: 'center',

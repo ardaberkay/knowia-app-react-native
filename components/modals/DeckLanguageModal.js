@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, LayoutAnimation, UIManager, Platform, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, UIManager, Platform, ScrollView } from 'react-native';
 import Modal from 'react-native-modal';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { Iconify } from 'react-native-iconify';
+import { triggerHaptic } from '../../lib/hapticManager';
 
 // Android cihazlarda LayoutAnimation'ın çalışması için bu ayar zorunludur
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -20,24 +21,31 @@ export default function DeckLanguageModal({
   onSelectLanguage,
 }) {
   const { colors, isDarkMode } = useTheme();
-  const [error, setError] = useState('');
   const { t } = useTranslation();
   const screenHeight = Dimensions.get('screen').height;
-  
+
+  // Optimistic UI için yerel state
+  const [localSelected, setLocalSelected] = useState([]);
+  const [error, setError] = useState('');
+
   // Hata mesajı için animasyon değeri
   const shakeAnimation = useRef(new Animated.Value(0)).current;
 
   // Marka Rengi Fallback
   const primaryColor = colors.buttonColor || colors.primary || '#F98A21';
 
-  // Modal kapandığında hatayı temizle
+  // Modal açıldığında, üst bileşenden gelen veriyi yerel state'e kopyala
   useEffect(() => {
-    if (!isVisible) setError('');
+    if (isVisible) {
+      setLocalSelected(selectedLanguage || []);
+      setError('');
+    }
   }, [isVisible]);
 
   // Hata tetiklendiğinde titreme animasyonu oynat
   useEffect(() => {
     if (error) {
+      triggerHaptic('error');
       Animated.sequence([
         Animated.timing(shakeAnimation, { toValue: 10, duration: 50, useNativeDriver: true }),
         Animated.timing(shakeAnimation, { toValue: -10, duration: 50, useNativeDriver: true }),
@@ -45,7 +53,7 @@ export default function DeckLanguageModal({
         Animated.timing(shakeAnimation, { toValue: 0, duration: 50, useNativeDriver: true })
       ]).start();
     }
-  }, [error]);
+  }, [error, shakeAnimation]);
 
   const getDeckLanguageIcon = (sortOrder) => {
     const icons = {
@@ -64,21 +72,24 @@ export default function DeckLanguageModal({
     return t(`languages.${language.sort_order}`, null);
   };
 
-  
   const handleToggle = (languageId) => {
-    const isCurrentlySelected = selectedLanguage.includes(languageId);
+    // Üst bileşen yerine, anında tepki veren yerel state'i kontrol ediyoruz
+    const isCurrentlySelected = localSelected.includes(languageId);
 
     if (isCurrentlySelected) {
-      if (error) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setError('');
+      // Seçimi kaldır: Anında yerel state'i güncelle, sonra parent'a haber ver
+      const newList = localSelected.filter(id => id !== languageId);
+      setLocalSelected(newList);
+      if (error) setError('');
       onSelectLanguage(languageId);
     } else {
-      if (selectedLanguage.length >= 2) {
-        if (!error) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      // Yeni seçim ekle
+      if (localSelected.length >= 2) {
         setError(t('create.maxLanguage', 'En fazla 2 dil seçebilirsiniz.'));
       } else {
-        if (error) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setError('');
+        const newList = [...localSelected, languageId];
+        setLocalSelected(newList);
+        if (error) setError('');
         onSelectLanguage(languageId);
       }
     }
@@ -91,22 +102,25 @@ export default function DeckLanguageModal({
       onBackButtonPress={onClose}
       useNativeDriver
       useNativeDriverForBackdrop
-      hideModalContentWhileAnimating
-      backdropTransitionOutTiming={0}
+      backdropTransitionOutTiming={150}
+      animationInTiming={200}
+      animationOutTiming={200}
+      backdropTransitionInTiming={200}
+      hardwareAccelerated={true}
       animationIn="slideInUp"
       animationOut="slideOutDown"
       statusBarTranslucent
       deviceHeight={screenHeight}
     >
       <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-        
+
         {/* Header */}
         <View style={styles.headerRow}>
           <Text style={[typography.styles.h2, { color: colors.text }]}>
             {t('create.languageHeading', 'İçerik Dili')}
           </Text>
-          <TouchableOpacity 
-            onPress={onClose} 
+          <TouchableOpacity
+            onPress={onClose}
             hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
             style={styles.closeButton}
           >
@@ -119,20 +133,24 @@ export default function DeckLanguageModal({
           {t('create.languageSub', 'Destenin içerik dillerini seçin (Maksimum 2)')}
         </Text>
 
-        {/* List of Languages (ScrollView içine alındı) */}
-        <ScrollView 
-          style={styles.scrollView} 
+        {/* List of Languages */}
+        <ScrollView
+          style={styles.scrollView}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
         >
           {languages.map((language) => {
-            const isChecked = selectedLanguage.includes(language.id);
+            // Artık props'tan gelen 'selectedLanguage' yerine 'localSelected' kullanıyoruz
+            const isChecked = localSelected.includes(language.id);
 
             return (
               <TouchableOpacity
                 key={language.id}
-                onPress={() => handleToggle(language.id)}
-                activeOpacity={0.7}
+                onPress={() => {
+                  triggerHaptic('selection');
+                  handleToggle(language.id);
+                }}
+                activeOpacity={0.8} // Tıklama hissiyatını biraz daha toklaştırdık (0.7 -> 0.8)
                 style={[
                   styles.languageCard,
                   {
@@ -152,13 +170,16 @@ export default function DeckLanguageModal({
 
                 {/* Modern Yuvarlak Radio/Check İkonu */}
                 <View style={[
-                  styles.radioCircle, 
-                  { 
+                  styles.radioCircle,
+                  {
                     borderColor: isChecked ? primaryColor : (isDarkMode ? '#555' : '#CCC'),
                     backgroundColor: isChecked ? primaryColor : 'transparent'
                   }
                 ]}>
-                  {isChecked && <Iconify icon="hugeicons:tick-01" size={moderateScale(20)} color="#FFF" />}
+                  {/* İKON DÜZELTMESİ: Mount/Unmount yerine Opacity kullanıyoruz. Gecikme ve kalıntı ortadan kalkar! */}
+                  <View style={{ opacity: isChecked ? 1 : 0 }}>
+                    <Iconify icon="hugeicons:tick-01" size={moderateScale(20)} color="#FFF" />
+                  </View>
                 </View>
               </TouchableOpacity>
             );
@@ -185,7 +206,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(32),
     padding: scale(20),
     paddingBottom: verticalScale(32),
-    maxHeight: '85%', // Önceki modallarla uyumlu sınır
+    maxHeight: '85%',
   },
   headerRow: {
     flexDirection: 'row',
@@ -204,7 +225,7 @@ const styles = StyleSheet.create({
     fontFamily: typography.primary?.regular || undefined,
   },
   scrollView: {
-    maxHeight: verticalScale(420), // Önceki modallarla uyumlu yükseklik
+    maxHeight: verticalScale(420),
   },
   listContainer: {
     gap: verticalScale(12),

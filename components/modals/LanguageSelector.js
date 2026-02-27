@@ -37,11 +37,11 @@ export default function LanguageSelector({ isVisible, onClose, onLanguageChange 
       onBackdropPress={onClose}
       animationIn="slideInUp"
       animationOut="slideOutDown"
-      animationInTiming={300}
+      backdropTransitionOutTiming={150}
+      animationInTiming={200}
       animationOutTiming={300}
-      backdropTransitionInTiming={300}
-      backdropTransitionOutTiming={300}
-      hideModalContentWhileAnimating={true}
+      backdropTransitionInTiming={200}
+      hardwareAccelerated={true}
       useNativeDriver={true}
       useNativeDriverForBackdrop={true}
       avoidKeyboard={true}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image, unstable_batchedUpdates } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useNavigation } from '@react-navigation/native';
 import { typography } from '../../theme/typography';
@@ -97,17 +97,14 @@ export default function CreateScreen() {
 
   const handleCreate = async () => {
     if (!name.trim()) {
-      triggerHaptic('error');
       showError(t('create.requiredName', 'Deste adı zorunludur.'));
       return;
     }
     if (!selectedCategory) {
-      triggerHaptic('error');
       showError(t('create.requiredCategory', 'Lütfen bir kategori seçin.'));
       return;
     }
     if (!selectedLanguage) {
-      triggerHaptic('error');
       showError(t('create.requiredLanguage', 'Lütfen desteyle ilgili bir dil seçin.'));
       return;
     }
@@ -143,10 +140,8 @@ export default function CreateScreen() {
       }
       if (error) throw error;
       resetForm();
-      triggerHaptic('success');
       navigation.navigate('DeckDetail', { deck: data });
     } catch (e) {
-      triggerHaptic('error');
       showError(e.message || t('create.error', 'Deste oluşturulamadı.'));
     } finally {
       setLoading(false);
@@ -177,8 +172,10 @@ export default function CreateScreen() {
                     style={[styles.howToCreateButton, { backgroundColor: colors.secondary + '15', borderColor: colors.secondary + '30' }]}
                     activeOpacity={0.7}
                     onPress={() => {
-                      setHowToCreateModalVisible(true);
                       triggerHaptic('selection');
+                      requestAnimationFrame(() => {
+                        setHowToCreateModalVisible(true);
+                      });
                     }}
                   >
                     <Iconify icon="material-symbols:info-outline" size={moderateScale(16)} color={colors.secondary} style={{ marginRight: scale(4) }} />
@@ -370,8 +367,10 @@ export default function CreateScreen() {
               style={[styles.categorySelector, { borderColor: '#eee' }]}
               accessibilityLabel={t('createDeck.selectCategoryA11y', 'Kategori seç')}
               onPress={() => {
-                setCategoryModalVisible(true);
                 triggerHaptic('selection');
+                requestAnimationFrame(() => {
+                  setCategoryModalVisible(true);
+                });
               }}
             >
               <View style={styles.categoryRow}>
@@ -422,8 +421,10 @@ export default function CreateScreen() {
               style={[styles.categorySelector, { borderColor: '#eee' }]}
               accessibilityLabel={t('create.selectLanguage', 'Dil Seç')}
               onPress={() => {
-                setDeckLanguageModalVisible(true);
                 triggerHaptic('selection');
+                requestAnimationFrame(() => {
+                setDeckLanguageModalVisible(true);
+                });
               }}
             >
               <View style={styles.categoryRow}>

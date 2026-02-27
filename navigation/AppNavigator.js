@@ -31,6 +31,7 @@ import { Iconify } from 'react-native-iconify';
 import { scale, moderateScale, verticalScale } from '../lib/scaling';
 import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { triggerHaptic } from '../lib/hapticManager';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -217,7 +218,12 @@ export default function AppNavigator() {
             headerTitleAlign: 'center',
             headerRight: () => (
               <TouchableOpacity
-                onPress={() => navigation.setParams({ openCsvModal: true })}
+                onPress={() => {
+                  triggerHaptic('selection');
+                  requestAnimationFrame(() => {
+                    navigation.setParams({ openCsvModal: true });
+                  });
+                }}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
