@@ -14,6 +14,7 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
 import DeckLanguageModal from '../../components/modals/DeckLanguageModal';
 import BadgeText from '../../components/modals/BadgeText';
+import { triggerHaptic } from '../../lib/hapticManager';
 
 export default function CreateScreen() {
   const [name, setName] = useState('');
@@ -96,14 +97,17 @@ export default function CreateScreen() {
 
   const handleCreate = async () => {
     if (!name.trim()) {
+      triggerHaptic('error');
       showError(t('create.requiredName', 'Deste adı zorunludur.'));
       return;
     }
     if (!selectedCategory) {
+      triggerHaptic('error');
       showError(t('create.requiredCategory', 'Lütfen bir kategori seçin.'));
       return;
     }
     if (!selectedLanguage) {
+      triggerHaptic('error');
       showError(t('create.requiredLanguage', 'Lütfen desteyle ilgili bir dil seçin.'));
       return;
     }
@@ -139,8 +143,10 @@ export default function CreateScreen() {
       }
       if (error) throw error;
       resetForm();
+      triggerHaptic('success');
       navigation.navigate('DeckDetail', { deck: data });
     } catch (e) {
+      triggerHaptic('error');
       showError(e.message || t('create.error', 'Deste oluşturulamadı.'));
     } finally {
       setLoading(false);
@@ -170,7 +176,10 @@ export default function CreateScreen() {
                   <TouchableOpacity
                     style={[styles.howToCreateButton, { backgroundColor: colors.secondary + '15', borderColor: colors.secondary + '30' }]}
                     activeOpacity={0.7}
-                    onPress={() => setHowToCreateModalVisible(true)}
+                    onPress={() => {
+                      setHowToCreateModalVisible(true);
+                      triggerHaptic('selection');
+                    }}
                   >
                     <Iconify icon="material-symbols:info-outline" size={moderateScale(16)} color={colors.secondary} style={{ marginRight: scale(4) }} />
                     <Text style={[typography.styles.caption, { color: colors.secondary, fontWeight: '600', textDecorationLine: 'underline' }]}>
@@ -360,7 +369,10 @@ export default function CreateScreen() {
             <TouchableOpacity
               style={[styles.categorySelector, { borderColor: '#eee' }]}
               accessibilityLabel={t('createDeck.selectCategoryA11y', 'Kategori seç')}
-              onPress={() => setCategoryModalVisible(true)}
+              onPress={() => {
+                setCategoryModalVisible(true);
+                triggerHaptic('selection');
+              }}
             >
               <View style={styles.categoryRow}>
                 {selectedCategory && (
@@ -409,7 +421,10 @@ export default function CreateScreen() {
             <TouchableOpacity
               style={[styles.categorySelector, { borderColor: '#eee' }]}
               accessibilityLabel={t('create.selectLanguage', 'Dil Seç')}
-              onPress={() => setDeckLanguageModalVisible(true)}
+              onPress={() => {
+                setDeckLanguageModalVisible(true);
+                triggerHaptic('selection');
+              }}
             >
               <View style={styles.categoryRow}>
                 <Text

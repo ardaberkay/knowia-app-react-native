@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator, Share, Switch, Alert, Linking } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator, Share, Switch, Alert, Linking, Platform } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { getCurrentUserProfile, updateNotificationPreference } from '../../services/ProfileService';
@@ -19,7 +19,6 @@ import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
 import * as WebBrowser from 'expo-web-browser';
 import { getHapticPreference, setHapticPreference, triggerHaptic } from '../../lib/hapticManager';
 
-
 export default function ProfileScreen() {
   const { colors, isDarkMode, toggleTheme, themePreference, loading: themeLoading } = useTheme();
   const navigation = useNavigation();
@@ -36,6 +35,23 @@ export default function ProfileScreen() {
   const isInitialMount = useRef(true);
   const shouldRefreshOnFocus = useRef(false);
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
+  const [localThemeDark, setLocalThemeDark] = useState(themePreference === 'dark');
+
+  useEffect(() => {
+    setLocalThemeDark(themePreference === 'dark');
+  }, [themePreference]);
+
+  const handleThemeToggle = (newValue) => {
+    // 1. İşlemci boşken ANINDA titre (Parmağınla %100 senkron)
+    triggerHaptic('light');
+    // 2. İşlemci boşken ANINDA Switch'i kaydır
+    setLocalThemeDark(newValue);
+
+    // 3. Ağır yükü (Temayı) Switch'in kayma animasyonu bittikten sonraya at!
+    setTimeout(() => {
+      toggleTheme();
+    }, 50);
+  };
 
   //haptic ayarlarını yükle
   useEffect(() => {
@@ -50,10 +66,10 @@ export default function ProfileScreen() {
   const handleToggleHaptics = async (value) => {
     setHapticsEnabled(value);
     await setHapticPreference(value);
-    
+
     // Kullanıcı titreşimi açtığında çalıştığını hissettir
     if (value) {
-      triggerHaptic('success'); 
+      triggerHaptic('success');
     }
   };
 
@@ -285,25 +301,24 @@ export default function ProfileScreen() {
     {
       label: t('profile.night_mode'),
       right: (
-        <TouchableOpacity onPress={toggleTheme} style={{ flexDirection: 'row', alignItems: 'center' }}>
-
-          <View style={{ width: scale(40) }}>
-            <Switch
-              value={themePreference === 'dark'}
-              onValueChange={toggleTheme}
-              trackColor={{ false: '#ccc', true: '#5AA3F0' }}
-              thumbColor={isDarkMode ? colors.secondary : '#f4f3f4'}
-              ios_backgroundColor="#ccc"
-              disabled={themePreference === 'system'}
-            />
-          </View>
-        </TouchableOpacity>
+        <View style={{ width: scale(40) }}>
+          <Switch
+            value={localThemeDark}
+            onValueChange={handleThemeToggle}
+            trackColor={{ false: '#ccc', true: '#5AA3F0' }}
+            thumbColor={localThemeDark ? colors.secondary : '#f4f3f4'} // isDarkMode yerine bunu kullan
+            ios_backgroundColor="#ccc"
+            disabled={themePreference === 'system'}
+          />
+        </View>
       ),
-      onPress: toggleTheme,
     },
     {
       label: t('profile.language'),
-      onPress: () => setLanguageModalVisible(true),
+      onPress: () => {
+        setLanguageModalVisible(true);
+        triggerHaptic('selection');
+      },
       right: (
         <View style={styles.languageRow}>
           <Iconify icon={i18n.language === 'tr' ? 'twemoji:flag-for-flag-turkey' : i18n.language === 'en' ? 'twemoji:flag-england' : i18n.language === 'es' ? 'twemoji:flag-spain' : i18n.language === 'fr' ? 'twemoji:flag-france' : i18n.language === 'pt' ? 'twemoji:flag-portugal' : i18n.language === 'de' ? 'twemoji:flag-germany' : ''} size={moderateScale(20)} />
@@ -314,26 +329,28 @@ export default function ProfileScreen() {
       ),
     },
     {
-      label: t('profile.haptics', 'Titreşim'), 
+      label: t('profile.haptics', 'Titreşim'),
       right: (
         <View style={{ width: scale(40) }}>
           <Switch
             value={hapticsEnabled}
             onValueChange={handleToggleHaptics}
-            trackColor={{ false: '#ccc', true: '#5AA3F0' }} 
+            trackColor={{ false: '#ccc', true: '#5AA3F0' }}
             thumbColor={isDarkMode ? colors.secondary : '#f4f3f4'}
             ios_backgroundColor="#ccc"
           />
         </View>
       ),
-      onPress: () => handleToggleHaptics(!hapticsEnabled), 
     },
     {
       label: t('profile.notifications'),
       right: (
         <Switch
           value={notificationsEnabled}
-          onValueChange={handleToggleNotifications}
+          onValueChange={(newValue) => {
+            triggerHaptic('light');
+            handleToggleNotifications(newValue);
+          }}
           trackColor={{ false: '#ccc', true: '#5AA3F0' }}
           thumbColor={notificationsEnabled ? colors.secondary : '#f4f3f4'}
           ios_backgroundColor="#ccc"
