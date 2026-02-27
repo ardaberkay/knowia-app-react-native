@@ -27,6 +27,7 @@ import * as BlockService from '../../services/BlockService';
 import ReportModal from '../../components/modals/ReportModal';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import SwipeFlipCard from '../../components/layout/SwipeFlipCard';
+import { triggerHaptic } from '../../lib/hapticManager';
 
 export default function SwipeDeckScreen({ route, navigation }) {
   const { deck, chapter } = route.params || {};
@@ -79,7 +80,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       horizontalMargin,
     };
   }, [width, height, isTablet]);
-  
+
   const swipeX = useRef(new Animated.Value(0)).current;
   const CARD_WIDTH = cardDimensions.width;
   const CARD_HEIGHT = cardDimensions.height;
@@ -842,14 +843,16 @@ export default function SwipeDeckScreen({ route, navigation }) {
                 useNativeDriver: true,
               }).start();
             }}
-            onSwipedLeft={(i) => { 
-              handleSwipe(i, 'left'); 
-              setCurrentIndex(i + 1); 
+            onSwipedLeft={(i) => {
+              triggerHaptic('selection');
+              handleSwipe(i, 'left');
+              setCurrentIndex(i + 1);
               swipeX.setValue(0);
             }}
-            onSwipedRight={(i) => { 
-              handleSwipe(i, 'right'); 
-              setCurrentIndex(i + 1); 
+            onSwipedRight={(i) => {
+              triggerHaptic('light');
+              handleSwipe(i, 'right');
+              setCurrentIndex(i + 1);
               swipeX.setValue(0);
             }}
             onSwipedTop={(i) => {

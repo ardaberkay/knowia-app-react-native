@@ -1,14 +1,14 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { TouchableOpacity, View, Image, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
+import { triggerHaptic } from '../../lib/hapticManager'; // Titreşim yöneticimizi ekledik
 
 // Fade efekti için yardımcı bileşen
 const FadeText = ({ text, style, maxWidth = 120, maxChars = 15 }) => {
-  // Karakter sayısına göre fade gösterimi
   const shouldShowFade = text && text.length > maxChars;
   
   if (!shouldShowFade) {
@@ -46,7 +46,8 @@ const FadeText = ({ text, style, maxWidth = 120, maxChars = 15 }) => {
   );
 };
 
-export default function DeckCard({
+// Fonksiyonu React.memo ile sarmak için const yapısına çevirdik
+const DeckCard = ({
   deck,
   colors,
   typography,
@@ -54,11 +55,26 @@ export default function DeckCard({
   onToggleFavorite,
   isFavorite = false,
   showPopularityBadge = false,
-}) {
-  // useWindowDimensions hook'u - ekran döndürme desteği
+}) => {
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
   
+  // --- OPTIMISTIC UI: Lokal State ---
+  const [localFavorite, setLocalFavorite] = useState(isFavorite);
+
+  // Üstten gelen asıl değer değişirse (örn: sayfa yenilenirse) senkronize et
+  useEffect(() => {
+    setLocalFavorite(isFavorite);
+  }, [isFavorite]);
+
+  // Kalp butonuna basılınca çalışacak hızlandırılmış fonksiyon
+  const handleFavoritePress = () => {
+    triggerHaptic('medium'); // İsteğe göre 'selection'
+    setLocalFavorite(!localFavorite); // Anında UI'ı güncelle
+    onToggleFavorite(deck.id); // Arka planda Supabase/DB işlemini yap
+  };
+  // -----------------------------------
+
   const deckCardDimensions = useMemo(() => {
     const { DECK_CARD } = RESPONSIVE_CONSTANTS;
     const scaledWidth = scale(DECK_CARD.REFERENCE_WIDTH);
@@ -72,35 +88,30 @@ export default function DeckCard({
   const DECK_CARD_WIDTH = deckCardDimensions.width;
   const DECK_CARD_HEIGHT = deckCardDimensions.height;
 
-  // Kategoriye göre renkleri al (Supabase sort_order kullanarak)
   const getCategoryColors = (sortOrder) => {
     if (colors.categoryColors && colors.categoryColors[sortOrder]) {
       return colors.categoryColors[sortOrder];
     }
-    // Varsayılan renkler (Tarih kategorisi - sort_order: 4)
     return ['#6F8EAD', '#3F5E78'];
   };
 
-  // Kategori ikonunu sort_order değerine göre al
   const getCategoryIcon = (sortOrder) => {
     const icons = {
-      1: "hugeicons:language-skill", // Dil
-      2: "clarity:atom-solid", // Bilim
-      3: "mdi:math-compass", // Matematik
-      4: "game-icons:tied-scroll", // Tarih
-      5: "arcticons:world-geography-alt", // Coğrafya
-      6: "map:museum", // Sanat ve Kültür
-      7: "ic:outline-self-improvement", // Kişisel Gelişim
-      8: "streamline-ultimate:module-puzzle-2-bold" // Genel Kültür
+      1: "hugeicons:language-skill",
+      2: "clarity:atom-solid",
+      3: "mdi:math-compass",
+      4: "game-icons:tied-scroll",
+      5: "arcticons:world-geography-alt",
+      6: "map:museum",
+      7: "ic:outline-self-improvement",
+      8: "streamline-ultimate:module-puzzle-2-bold"
     };
     return icons[sortOrder] || "material-symbols:category";
   };
 
-
   const gradientColors = getCategoryColors(deck.categories?.sort_order);
   const categoryIcon = getCategoryIcon(deck.categories?.sort_order);
   
-
   return (
     <View style={[styles.deckCardModern, { width: DECK_CARD_WIDTH, height: DECK_CARD_HEIGHT }]}>
       <TouchableOpacity
@@ -115,7 +126,7 @@ export default function DeckCard({
         end={{ x: 1, y: 0 }}
         style={styles.deckCardGradient}
       >
-        {/* Background Category Icon - sadece yarısı görünecek şekilde */}
+        {/* Background Category Icon */}
         <View style={styles.backgroundCategoryIcon}>
           <Iconify
             icon={categoryIcon}
@@ -187,22 +198,24 @@ export default function DeckCard({
             </View>
           </View>
         </View>
+
+        {/* HIZLANDIRILMIŞ FAVORİ BUTONU */}
         <TouchableOpacity
           style={{ position: 'absolute', bottom: verticalScale(8), right: scale(8), backgroundColor: colors.iconBackground, padding: moderateScale(5), borderRadius: 999, zIndex: 10 }}
-          onPress={() => onToggleFavorite(deck.id)}
+          onPress={handleFavoritePress} // YENİ FONKSİYONUMUZA BAĞLADIK
           activeOpacity={0.7}
         >
           <Iconify
-            icon={isFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
+            icon={localFavorite ? 'solar:heart-bold' : 'solar:heart-broken'} // ARTIK LOKAL STATE'İ DİNLİYOR
             size={moderateScale(20)}
-            color={isFavorite ? '#F98A21' : colors.orWhite}
+            color={localFavorite ? '#F98A21' : colors.orWhite} // ARTIK LOKAL STATE'İ DİNLİYOR
           />
         </TouchableOpacity>
       </LinearGradient>
       </TouchableOpacity>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   deckCardModern: {
@@ -320,4 +333,4 @@ const styles = StyleSheet.create({
   },
 });
 
-
+export default React.memo(DeckCard);

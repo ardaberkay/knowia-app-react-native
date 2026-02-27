@@ -17,6 +17,8 @@ import { Iconify } from 'react-native-iconify';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
 import * as WebBrowser from 'expo-web-browser';
+import { getHapticPreference, setHapticPreference, triggerHaptic } from '../../lib/hapticManager';
+
 
 export default function ProfileScreen() {
   const { colors, isDarkMode, toggleTheme, themePreference, loading: themeLoading } = useTheme();
@@ -33,6 +35,27 @@ export default function ProfileScreen() {
   const { showSuccess, showError } = useSnackbarHelpers();
   const isInitialMount = useRef(true);
   const shouldRefreshOnFocus = useRef(false);
+  const [hapticsEnabled, setHapticsEnabled] = useState(true);
+
+  //haptic ayarlarını yükle
+  useEffect(() => {
+    const loadHaptics = async () => {
+      const isEnabled = await getHapticPreference();
+      setHapticsEnabled(isEnabled);
+    };
+    loadHaptics();
+  }, []);
+
+  //haptic ayarlarını değiştir
+  const handleToggleHaptics = async (value) => {
+    setHapticsEnabled(value);
+    await setHapticPreference(value);
+    
+    // Kullanıcı titreşimi açtığında çalıştığını hissettir
+    if (value) {
+      triggerHaptic('success'); 
+    }
+  };
 
   // Profil yükleme fonksiyonu
   const loadProfile = useCallback(async (useCache = true) => {
@@ -289,6 +312,21 @@ export default function ProfileScreen() {
           </Text>
         </View>
       ),
+    },
+    {
+      label: t('profile.haptics', 'Titreşim'), 
+      right: (
+        <View style={{ width: scale(40) }}>
+          <Switch
+            value={hapticsEnabled}
+            onValueChange={handleToggleHaptics}
+            trackColor={{ false: '#ccc', true: '#5AA3F0' }} 
+            thumbColor={isDarkMode ? colors.secondary : '#f4f3f4'}
+            ios_backgroundColor="#ccc"
+          />
+        </View>
+      ),
+      onPress: () => handleToggleHaptics(!hapticsEnabled), 
     },
     {
       label: t('profile.notifications'),

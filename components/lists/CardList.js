@@ -1,24 +1,44 @@
-import React from 'react';
-import { View, TouchableOpacity, StyleSheet, Alert, Pressable } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
 import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import MathText from '../ui/MathText';
+import { triggerHaptic } from '../../lib/hapticManager';
 
-export default function CardListItem({
+// export default function yerine const ile tanımlıyoruz
+const CardListItem = ({
   question,
   answer,
   onPress,
   onToggleFavorite,
-  isFavorite,
+  isFavorite, // Üstten gelen asıl değer
   onDelete,
   canDelete,
   isOwner = true,
-}) {
+}) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
+  
+  // 1. İkonun anında değişmesi için lokal bir state oluşturuyoruz
+  const [localIsFavorite, setLocalIsFavorite] = useState(isFavorite);
+
+  // 2. Eğer üst bileşenden gelen isFavorite değişirse, lokal state'i de eşitle
+  useEffect(() => {
+    setLocalIsFavorite(isFavorite);
+  }, [isFavorite]);
+
+  // 3. Tıklama fonksiyonumuzu güncelliyoruz
+  const handleFavoritePress = () => {
+    triggerHaptic('medium'); 
+    // Anında UI güncellemesi (Kullanıcı hiç beklemez)
+    setLocalIsFavorite(!localIsFavorite); 
+    // Arka planda asıl işlemi başlat
+    onToggleFavorite(); 
+  };
+
   return (
     <TouchableOpacity
       style={[
@@ -53,13 +73,14 @@ export default function CardListItem({
         <View style={{ alignItems: 'center' }}>
           <TouchableOpacity
             style={[styles.iconBtn, { backgroundColor: colors.iconBackground }]}
-            onPress={onToggleFavorite}
             hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
+            onPress={handleFavoritePress} // Yeni fonksiyonumuzu buraya bağladık
           >
             <Iconify
-              icon={isFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
+              // Artık üstten geleni değil, kendi anında değişen state'imizi dinliyor
+              icon={localIsFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
               size={moderateScale(22)}
-              color={isFavorite ? '#F98A21' : '#B0B0B0'}
+              color={localIsFavorite ? '#F98A21' : '#B0B0B0'}
             />
           </TouchableOpacity>
           {canDelete ? (
@@ -85,9 +106,7 @@ export default function CardListItem({
                     opacity: 0.5,
                   }
                 ]}
-                onPress={() => {
-                  // Boş fonksiyon - hiçbir şey yapma
-                }}
+                onPress={() => {}}
                 android_ripple={null}
                 pressRetentionOffset={0}
               >
@@ -99,7 +118,7 @@ export default function CardListItem({
       </View>
     </TouchableOpacity>
   );
-}
+};
 
 const styles = StyleSheet.create({
   cardItem: {
@@ -153,4 +172,4 @@ const styles = StyleSheet.create({
   },
 });
 
-
+export default React.memo(CardListItem);
