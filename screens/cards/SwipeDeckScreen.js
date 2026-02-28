@@ -165,7 +165,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
         return (
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <TouchableOpacity
-              onPress={() => toggleFavorite(currentCard.card_id)}
+              onPress={() => {
+                triggerHaptic('medium');
+                toggleFavorite(currentCard.card_id);
+              }}
               style={{ marginRight: scale(8) }}
               hitSlop={{ top: scale(8), right: scale(8), bottom: scale(8), left: scale(8) }}
             >
@@ -177,7 +180,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
             </TouchableOpacity>
             {!isOwner && (
               <TouchableOpacity
-                onPress={openReportCardModal}
+                onPress={() => {
+                  triggerHaptic('light');
+                  openReportCardModal();
+                }}
                 style={{ paddingHorizontal: scale(6) }}
                 activeOpacity={0.7}
               >

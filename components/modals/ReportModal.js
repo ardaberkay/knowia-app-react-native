@@ -57,13 +57,13 @@ export default function ReportModal({
       onBackButtonPress={onClose}
       animationIn="slideInUp"
       animationOut="slideOutDown"
-      animationInTiming={300}
-      animationOutTiming={300}
-      backdropTransitionInTiming={300}
-      backdropTransitionOutTiming={300}
+      backdropTransitionOutTiming={150}
+      animationInTiming={200}
+      animationOutTiming={200}
+      backdropTransitionInTiming={200}
+      hardwareAccelerated={true}
       useNativeDriver
       useNativeDriverForBackdrop
-      hideModalContentWhileAnimating
       statusBarTranslucent
       deviceHeight={screenHeight}
     >

@@ -90,6 +90,8 @@ export default function DeckDetailScreen({ route, navigation }) {
   const fabButtonWidth = scale(56);
   const fabGap = scale(12);
   const fabTotalWidth = fabButtonWidth + fabGap + fabButtonWidth; // İki buton + gap
+  const moreMenuScaleAnim = useRef(new Animated.Value(0)).current;
+
   const panelMaxWidth = screenWidth - fabRightPosition - fabTotalWidth - scale(20); // Sol padding için 20
   const fabExpandedWidth = fabMenuAnimation.interpolate({
     inputRange: [0, 1],
@@ -113,6 +115,36 @@ export default function DeckDetailScreen({ route, navigation }) {
   const heroAnim = useRef(new Animated.Value(0)).current;
   const statsAnim = useRef(new Animated.Value(0)).current;
   const cardsAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (creatorMenuVisible) {
+      // Menü açıldığında: Anında ve sıçrayarak büyü (Instagram popup'ları gibi)
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 200, // Hız
+        friction: 10, // Sekme payı (az sekip hızlı dursun)
+        useNativeDriver: true, // GPU'yu kullan, asla kasmaz!
+      }).start();
+    } else {
+      // Menü kapandığında: Bekleme yapmadan anında yok ol
+      scaleAnim.setValue(0);
+    }
+  }, [creatorMenuVisible]);
+
+  useEffect(() => {
+    if (moreMenuVisible) {
+      // Menü açıldığında: Anında ve sıçrayarak büyü
+      Animated.spring(moreMenuScaleAnim, {
+        toValue: 1,
+        tension: 200,
+        friction: 10,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      moreMenuScaleAnim.setValue(0);
+    }
+  }, [moreMenuVisible]);
 
   useEffect(() => {
     const loadDecksLanguages = async () => {
@@ -580,72 +612,33 @@ export default function DeckDetailScreen({ route, navigation }) {
     }).start();
   }, [fabMenuOpen]);
 
-  const handleAddFavorite = async () => {
-    setFavLoading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      // Önceden favori mi kontrol et
-      const { data: existing } = await supabase
-        .from('favorite_decks')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('deck_id', deck.id)
-        .single();
-      if (existing) {
-        // Favoriden çıkar
-        await handleRemoveFavorite();
-        return;
-      }
-      const { error } = await supabase
-        .from('favorite_decks')
-        .insert({ user_id: user.id, deck_id: deck.id });
-      if (error) throw error;
-      setIsFavorite(true);
-    } catch (e) {
-      // Alert kaldırıldı
-    } finally {
-      setFavLoading(false);
-    }
-  };
+  const handleToggleFavorite = async () => {
+    // 1. KULLANICIYI BEKLETME: Kalbi anında doldur/boşalt ve titret
+    const previousState = isFavorite;
+    setIsFavorite(!previousState);
+    triggerHaptic('medium'); 
 
-  const handleRemoveFavorite = async () => {
-    setFavLoading(true);
+    // 2. ARKA PLAN: Kullanıcı kalbi değişmiş görürken biz sessizce veritabanını güncelliyoruz
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase
-        .from('favorite_decks')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('deck_id', deck.id);
-      if (error) throw error;
-      setIsFavorite(false);
-    } catch (e) {
-      // Alert kaldırıldı
-    } finally {
-      setFavLoading(false);
-    }
-  };
+      if (!user?.id) return; // Hata fırlatmaya gerek yok, sessizce dur
 
-  const handleToggleFavoriteCard = async (cardId) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (favoriteCards.includes(cardId)) {
-        // Favoriden çıkar
+      if (previousState) {
+        // Önceden favoriydi, demek ki butona basıp ÇIKARDI
         await supabase
-          .from('favorite_cards')
+          .from('favorite_decks')
           .delete()
           .eq('user_id', user.id)
-          .eq('card_id', cardId);
-        setFavoriteCards(favoriteCards.filter(id => id !== cardId));
+          .eq('deck_id', deck.id);
       } else {
-        // Favoriye ekle
+        // Önceden favori değildi, demek ki butona basıp EKLEDİ
         await supabase
-          .from('favorite_cards')
-          .insert({ user_id: user.id, card_id: cardId });
-        setFavoriteCards([...favoriteCards, cardId]);
+          .from('favorite_decks')
+          .insert({ user_id: user.id, deck_id: deck.id });
       }
     } catch (e) {
-      // Alert kaldırıldı
+      // 3. HATA DURUMU: İnternet koptuysa kalbi çaktırmadan eski haline geri çevir (Rollback)
+      setIsFavorite(previousState);
     }
   };
 
@@ -716,10 +709,6 @@ export default function DeckDetailScreen({ route, navigation }) {
     }
   };
 
-
-
-
-
   const handleShowShareDetails = () => {
     Alert.alert(
       t('deckDetail.shareDetails', 'Community Sharing Details'),
@@ -780,14 +769,19 @@ export default function DeckDetailScreen({ route, navigation }) {
 
   const openCreatorMenu = () => {
     if (creatorChipRef.current && creatorChipRef.current.measureInWindow) {
+      // Ölçüm emrini Native'e anında gönderiyoruz
       creatorChipRef.current.measureInWindow((x, y, width, height) => {
-        setCreatorMenuPos({ x, y, width, height });
-        setCreatorMenuVisible(true);
+        // Ölçüm sonucu geldiğinde, UI'ı çizmeyi (render) bir frame erteliyoruz ki takılmasın
+        requestAnimationFrame(() => {
+          setCreatorMenuPos({ x, y, width, height });
+          setCreatorMenuVisible(true);
+        });
       });
     } else {
       setCreatorMenuVisible(true);
     }
   };
+
 
   const openReportUserModal = async () => {
     setCreatorMenuVisible(false);
@@ -882,12 +876,12 @@ export default function DeckDetailScreen({ route, navigation }) {
   React.useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(12), marginRight: scale(8) }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(12), marginRight: scale(4) }}>
           {/* Favori ikonu - Her zaman görünür */}
           <TouchableOpacity
-            onPress={handleAddFavorite}
-            disabled={favLoading}
+            onPress={handleToggleFavorite} // Sadece bunu çağırman yeterli!
             activeOpacity={0.7}
+            hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
           >
             <Iconify
               icon={isFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
@@ -900,7 +894,12 @@ export default function DeckDetailScreen({ route, navigation }) {
           {currentUserId && (
             <TouchableOpacity
               ref={moreMenuRef}
-              onPress={openMoreMenu}
+              onPress={() => {
+                triggerHaptic('selection');
+                requestAnimationFrame(() => {
+                  openMoreMenu();
+                });
+              }}
               activeOpacity={0.7}
             >
               <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={moderateScale(24)} color={colors.text} />
@@ -1119,7 +1118,12 @@ export default function DeckDetailScreen({ route, navigation }) {
               (currentUserId && deck.user_id !== currentUserId && !deck.is_admin_created) ? (
                 <TouchableOpacity
                   ref={creatorChipRef}
-                  onPress={openCreatorMenu}
+                  onPress={
+                    () => {
+                      triggerHaptic('selection');
+                      openCreatorMenu();
+                    }
+                  }
                   activeOpacity={0.8}
                   style={styles.gfCreatorChip}
                 >
@@ -1687,6 +1691,7 @@ export default function DeckDetailScreen({ route, navigation }) {
               style={styles.fabIconWrapper}
               activeOpacity={0.8}
               onPress={() => {
+                triggerHaptic('light');
                 setFabMenuOpen(!fabMenuOpen);
                 if (fabMenuOpen) {
                   setInlineChapterListVisible(false);
@@ -1741,6 +1746,7 @@ export default function DeckDetailScreen({ route, navigation }) {
           }]}
           activeOpacity={0.95}
           onPress={async () => {
+            triggerHaptic('heavy');
             if (!selectedChapter) {
               Alert.alert(
                 t('deckDetail.selectChapter', 'Bölüm Seç'),
@@ -1787,7 +1793,7 @@ export default function DeckDetailScreen({ route, navigation }) {
       <Modal
         visible={moreMenuVisible}
         transparent
-        animationType="fade"
+        animationType="none" // OS'in yavaş animasyonunu kapattık
         onRequestClose={() => setMoreMenuVisible(false)}
       >
         <TouchableOpacity
@@ -1795,7 +1801,7 @@ export default function DeckDetailScreen({ route, navigation }) {
           activeOpacity={1}
           onPress={() => setMoreMenuVisible(false)}
         >
-          <View
+          <Animated.View // View yerine Animated.View
             style={{
               position: 'absolute',
               right: scale(20),
@@ -1811,17 +1817,32 @@ export default function DeckDetailScreen({ route, navigation }) {
               elevation: 8,
               borderWidth: moderateScale(1),
               borderColor: colors.cardBorder,
+
+              // Sihirli Animasyonlar
+              opacity: moreMenuScaleAnim,
+              transform: [
+                {
+                  scale: moreMenuScaleAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.85, 1], // %85'ten 100'e hızlıca büyüyecek
+                  }),
+                },
+              ],
             }}
           >
             {currentUserId && deck.user_id === currentUserId ? (
               <>
+                {/* DÜZENLE BUTONU */}
                 <TouchableOpacity
                   onPress={() => {
-                    setMoreMenuVisible(false);
-                    navigation.navigate('DeckEdit', {
-                      deck,
-                      categoryInfo: categoryInfo || deck.categories || null,
-                      selectedLanguageIds: decksLanguages
+                    triggerHaptic('selection'); // Dokunma hissini ekledik
+                    setMoreMenuVisible(false); // Önce menüyü kapat
+                    requestAnimationFrame(() => { // Geçişi pürüzsüzleştir
+                      navigation.navigate('DeckEdit', {
+                        deck,
+                        categoryInfo: categoryInfo || deck.categories || null,
+                        selectedLanguageIds: decksLanguages
+                      });
                     });
                   }}
                   style={{
@@ -1830,18 +1851,24 @@ export default function DeckDetailScreen({ route, navigation }) {
                     paddingVertical: verticalScale(12),
                     paddingHorizontal: scale(16),
                   }}
-                  activeOpacity={0.7}
+                  activeOpacity={0.6}
                 >
                   <Iconify icon="lucide:edit" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
                   <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
                     {t('deckDetail.edit', 'Desteyi Düzenle')}
                   </Text>
                 </TouchableOpacity>
+
                 <View style={{ height: verticalScale(1), backgroundColor: colors.border, marginVertical: verticalScale(4) }} />
+
+                {/* SİL BUTONU */}
                 <TouchableOpacity
                   onPress={() => {
+                    triggerHaptic('heavy');
                     setMoreMenuVisible(false);
-                    handleDeleteDeck();
+                    requestAnimationFrame(() => {
+                      handleDeleteDeck();
+                    });
                   }}
                   style={{
                     flexDirection: 'row',
@@ -1849,7 +1876,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                     paddingVertical: verticalScale(12),
                     paddingHorizontal: scale(16),
                   }}
-                  activeOpacity={0.7}
+                  activeOpacity={0.6}
                 >
                   <Iconify icon="mdi:garbage" size={moderateScale(20)} color="#E74C3C" style={{ marginRight: scale(12) }} />
                   <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: moderateScale(16) }]}>
@@ -1859,40 +1886,56 @@ export default function DeckDetailScreen({ route, navigation }) {
               </>
             ) : (
               <>
+                {/* ŞİKAYET ET BUTONU (Kapanma hatası düzeltildi) */}
                 <TouchableOpacity
-                  onPress={openReportDeckModal}
+                  onPress={() => {
+                    triggerHaptic('light');
+                    setMoreMenuVisible(false);
+                    requestAnimationFrame(() => {
+                      openReportDeckModal();
+                    });
+                  }}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
                     paddingVertical: verticalScale(12),
                     paddingHorizontal: scale(16),
                   }}
-                  activeOpacity={0.7}
+                  activeOpacity={0.6}
                 >
-                  <Iconify icon="ic:round-report-problem" size={moderateScale(20)} color= '#FED7AA' style={{ marginRight: scale(12) }} />
+                  <Iconify icon="ic:round-report-problem" size={moderateScale(20)} color='#FED7AA' style={{ marginRight: scale(12) }} />
                   <Text style={[typography.styles.body, { color: '#FED7AA', fontSize: moderateScale(16) }]}>
                     {t('moderation.reportDeck')}
                   </Text>
                 </TouchableOpacity>
+
                 <View style={{ height: verticalScale(1), backgroundColor: colors.border, marginVertical: verticalScale(4) }} />
+
+                {/* GİZLE BUTONU (Kapanma hatası düzeltildi) */}
                 <TouchableOpacity
-                  onPress={handleHideDeck}
+                  onPress={() => {
+                    triggerHaptic('heavy');
+                    setMoreMenuVisible(false);
+                    requestAnimationFrame(() => {
+                      handleHideDeck();
+                    });
+                  }}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
                     paddingVertical: verticalScale(12),
                     paddingHorizontal: scale(16),
                   }}
-                  activeOpacity={0.7}
+                  activeOpacity={0.6}
                 >
-                  <Iconify icon="mingcute:user-hide-fill" size={moderateScale(20)} color= '#E74C3C' style={{ marginRight: scale(12) }} />
+                  <Iconify icon="mingcute:user-hide-fill" size={moderateScale(20)} color='#E74C3C' style={{ marginRight: scale(12) }} />
                   <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: moderateScale(16) }]}>
                     {t('moderation.hideDeck')}
                   </Text>
                 </TouchableOpacity>
               </>
             )}
-          </View>
+          </Animated.View>
         </TouchableOpacity>
       </Modal>
 
@@ -1900,7 +1943,7 @@ export default function DeckDetailScreen({ route, navigation }) {
       <Modal
         visible={creatorMenuVisible}
         transparent
-        animationType="fade"
+        animationType="none" // OS'in yavaş animasyonunu İPTAL ET!
         onRequestClose={() => setCreatorMenuVisible(false)}
       >
         <TouchableOpacity
@@ -1908,7 +1951,7 @@ export default function DeckDetailScreen({ route, navigation }) {
           activeOpacity={1}
           onPress={() => setCreatorMenuVisible(false)}
         >
-          <View
+          <Animated.View // View yerine Animated.View kullanıyoruz
             style={{
               position: 'absolute',
               left: creatorMenuPos.x,
@@ -1924,45 +1967,71 @@ export default function DeckDetailScreen({ route, navigation }) {
               elevation: 8,
               borderWidth: moderateScale(1),
               borderColor: colors.cardBorder,
+
+              // SİHİR BURADA: Ölçekleme ve Şeffaflık
+              opacity: scaleAnim, // Başlangıçta 0, anında 1 olacak
+              transform: [
+                {
+                  scale: scaleAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.85, 1], // %85'ten %100'e pırtlayarak büyüyecek
+                  }),
+                },
+              ],
             }}
           >
-            {/* Admin destelerinde kullanıcıyı şikayet/engelle gösterme; sadece deste gizleme/şikayet kebab'tan */}
             {!deck?.is_admin_created && (
               <>
+                {/* ŞİKAYET ET BUTONU */}
                 <TouchableOpacity
-                  onPress={openReportUserModal}
+                  onPress={() => {
+                    triggerHaptic('light');
+                    setCreatorMenuVisible(false); // 1. ÖNCE BU MENÜYÜ KAPAT (Anında tepki)
+                    requestAnimationFrame(() => {
+                      openReportUserModal(); // 2. SONRA DİĞERİNİ AÇ
+                    });
+                  }}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
                     paddingVertical: verticalScale(12),
                     paddingHorizontal: scale(16),
                   }}
-                  activeOpacity={0.7}
+                  activeOpacity={0.6} // Tıklama hissini netleştir
                 >
-                  <Iconify icon="ic:round-report-problem" size={moderateScale(20)} color= '#FED7AA' style={{ marginRight: scale(12) }} />
+                  <Iconify icon="ic:round-report-problem" size={moderateScale(20)} color='#FED7AA' style={{ marginRight: scale(12) }} />
                   <Text style={[typography.styles.body, { color: '#FED7AA', fontSize: moderateScale(16) }]}>
                     {t('moderation.reportUser')}
                   </Text>
                 </TouchableOpacity>
+
                 <View style={{ height: verticalScale(1), backgroundColor: colors.border, marginVertical: verticalScale(4) }} />
+
+                {/* KULLANICIYI ENGELLE BUTONU */}
                 <TouchableOpacity
-                  onPress={handleBlockUser}
+                  onPress={() => {
+                    triggerHaptic('heavy');
+                    setCreatorMenuVisible(false); // 1. ÖNCE BU MENÜYÜ KAPAT
+                    requestAnimationFrame(() => {
+                      handleBlockUser(); // 2. SONRA İŞLEMİ YAP
+                    });
+                  }}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
                     paddingVertical: verticalScale(12),
                     paddingHorizontal: scale(16),
                   }}
-                  activeOpacity={0.7}
+                  activeOpacity={0.6}
                 >
-                  <Iconify icon="basil:user-block-solid" size={moderateScale(22)} color= '#E74C3C' style={{ marginRight: scale(12) }} />
+                  <Iconify icon="basil:user-block-solid" size={moderateScale(22)} color='#E74C3C' style={{ marginRight: scale(12) }} />
                   <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: moderateScale(16) }]}>
                     {t('moderation.blockUser')}
                   </Text>
                 </TouchableOpacity>
               </>
             )}
-          </View>
+          </Animated.View>
         </TouchableOpacity>
       </Modal>
 
