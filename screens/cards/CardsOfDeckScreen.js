@@ -44,6 +44,7 @@ export default function DeckCardsScreen({ route, navigation }) {
   const [reportModalAlreadyCodes, setReportModalAlreadyCodes] = useState([]);
   const [reportCardId, setReportCardId] = useState(null);
   const { t } = useTranslation();
+  
 
   useEffect(() => {
     const fetchUserId = async () => {
@@ -179,11 +180,15 @@ export default function DeckCardsScreen({ route, navigation }) {
     if (selectedCard && !editMode) {
       navigation.setOptions({
         headerRight: () => (
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: scale(8) }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: scale(4) }}>
             <TouchableOpacity
-              onPress={() => handleToggleFavoriteCard(selectedCard.id)}
+              onPress={() => {
+                triggerHaptic('medium');
+                handleToggleFavoriteCard(selectedCard.id);
+              }}
               activeOpacity={0.7}
               style={{ paddingHorizontal: scale(6) }}
+              hitSlop={{ top: scale(15), bottom: scale(15), left: scale(8), right: scale(8) }}
             >
               <Iconify
                 icon={favoriteCards.includes(selectedCard.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
@@ -193,9 +198,15 @@ export default function DeckCardsScreen({ route, navigation }) {
             </TouchableOpacity>
             {!isOwner && (
               <TouchableOpacity
-                onPress={openReportCardModal}
+                onPress={() => {
+                  triggerHaptic('light');
+                  requestAnimationFrame(() => {
+                    openReportCardModal();
+                  });
+                }}
                 activeOpacity={0.7}
                 style={{ paddingHorizontal: scale(6) }}
+                hitSlop={{ top: scale(15), bottom: scale(15), left: scale(8), right: scale(8) }}
               >
                 <Iconify icon="ic:round-report-problem" size={moderateScale(24)} color='#FED7AA' />
               </TouchableOpacity>
@@ -203,9 +214,15 @@ export default function DeckCardsScreen({ route, navigation }) {
             {isOwner && (
               <TouchableOpacity
                 ref={moreMenuRef}
-                onPress={openMoreMenu}
+                onPress={() => {
+                  triggerHaptic('light');
+                  requestAnimationFrame(() => {
+                    openMoreMenu();
+                  });
+                }}
                 activeOpacity={0.7}
                 style={{ paddingHorizontal: scale(6) }}
+                hitSlop={{ top: scale(15), bottom: scale(15), left: scale(8), right: scale(8) }}
               >
                 <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={moderateScale(26)} color={colors.text} />
               </TouchableOpacity>
@@ -215,7 +232,7 @@ export default function DeckCardsScreen({ route, navigation }) {
       });
     } else {
       const isOwner = currentUserId && deck.user_id === currentUserId && !deck.is_shared;
-  
+
       navigation.setOptions({
         headerRight: () => {
           if (!isOwner) {
@@ -231,7 +248,7 @@ export default function DeckCardsScreen({ route, navigation }) {
               onPress={() => {
                 // 1. Arayüz tepkilerini ANINDA ver (Sıfır gecikme)
                 triggerHaptic('selection');
-                
+
                 // 2. Yeni sayfayı çizmeyi (render) bir sonraki boyama karesine (frame) ertele.
                 // Bu sayede butonun tıklanma animasyonu asla kilitlenmez.
                 requestAnimationFrame(() => {

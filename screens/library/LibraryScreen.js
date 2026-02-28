@@ -23,6 +23,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ProfileAvatarButton from '../../components/layout/ProfileAvatarButton';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { getLanguages } from '../../services/LanguageService';
+import { triggerHaptic } from '../../lib/hapticManager';
 
 // Fade efekti - karakter bazlı opacity (MaskedView sorunlarından kaçınır)
 const FadeText = ({ text, style, maxChars = 15 }) => {
@@ -755,12 +756,18 @@ export default function LibraryScreen() {
               ]}
             />
           </View>
-          <TouchableOpacity style={[styles.pillTab, { width: '50%' }]} activeOpacity={0.8} onPress={() => handleSetPage(0)}>
+          <TouchableOpacity style={[styles.pillTab, { width: '50%' }]} activeOpacity={0.8} onPress={() => {
+            triggerHaptic('selection');
+              handleSetPage(0);
+          }}>
             <Text style={[styles.pillLabel, { color: activeTab === 'myDecks' ? colors.text : (colors.border || '#666') }]}>
               {t('library.myDecks', 'Destelerim')}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.pillTab, { width: '50%' }]} activeOpacity={0.8} onPress={() => handleSetPage(1)}>
+          <TouchableOpacity style={[styles.pillTab, { width: '50%' }]} activeOpacity={0.8} onPress={() => {
+            triggerHaptic('selection');
+              handleSetPage(1);
+          }}>
             <Text style={[styles.pillLabel, { color: activeTab === 'favorites' ? colors.text : (colors.border || '#666') }]}>
               {t('library.favorites', 'Favorilerim')}
             </Text>

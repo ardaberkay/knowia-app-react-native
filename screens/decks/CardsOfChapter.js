@@ -17,6 +17,7 @@ import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import ChapterSelector from '../../components/modals/ChapterSelector';
 import MathText from '../../components/ui/MathText';
 import Animated, { useAnimatedStyle, withTiming, withSpring } from 'react-native-reanimated';
+import { triggerHaptic } from '../../lib/hapticManager';
 
 export default function ChapterCardsScreen({ route, navigation }) {
   const { chapter, deck } = route.params;
@@ -145,9 +146,14 @@ export default function ChapterCardsScreen({ route, navigation }) {
         headerTintColor: colors.text,
         headerTitle: '',
         headerRight: () => (
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: scale(8) }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: scale(4) }}>
             <TouchableOpacity
-              onPress={() => handleToggleFavoriteCard(selectedCard.id)}
+              onPress={() => {
+                triggerHaptic('medium');
+                requestAnimationFrame(() => {
+                  handleToggleFavoriteCard(selectedCard.id);
+                });
+              }}
               activeOpacity={0.7}
               style={{ paddingHorizontal: scale(6) }}
             >
@@ -160,7 +166,12 @@ export default function ChapterCardsScreen({ route, navigation }) {
             {isOwnerUser && (
               <TouchableOpacity
                 ref={moreMenuRef}
-                onPress={openCardMenu}
+                onPress={() => {
+                  triggerHaptic('light');
+                  requestAnimationFrame(() => {
+                    openCardMenu();
+                  });
+                }}
                 activeOpacity={0.7}
                 style={{ paddingHorizontal: scale(6) }}
               >
@@ -185,6 +196,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
       headerRight: isOwnerUser ? () => (
         <TouchableOpacity
           onPress={() => {
+            triggerHaptic('light');
             setEditMode(!editMode);
             if (editMode) {
               setSelectedCards(new Set());
@@ -192,6 +204,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
           }}
           style={{ marginRight: scale(16) }}
           activeOpacity={0.7}
+          hitSlop={{ top: scale(15), bottom: scale(15), left: scale(15), right: scale(15) }}
         >
           <Iconify
             icon={editMode ? "mingcute:close-fill" : "lucide:edit"}
@@ -428,6 +441,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
   };
 
   const handleToggleCardSelection = (cardId) => {
+    triggerHaptic('light');
     const newSelected = new Set(selectedCards);
     if (newSelected.has(cardId)) {
       newSelected.delete(cardId);
@@ -516,7 +530,8 @@ export default function ChapterCardsScreen({ route, navigation }) {
           {editMode && (
             <View style={styles.checkboxContainer}>
               <TouchableOpacity
-                onPress={() => handleToggleCardSelection(card.id)}
+                onPress={() => 
+                  handleToggleCardSelection(card.id)}
                 style={[
                   styles.checkbox,
                   {
@@ -807,7 +822,12 @@ export default function ChapterCardsScreen({ route, navigation }) {
                 {/* Sağ Kısım: Taşı Butonu */}
                 <Animated.View style={moveButtonAnimatedStyle}>
                   <TouchableOpacity
-                    onPress={() => setShowChapterModal(true)}
+                    onPress={() => {
+                      triggerHaptic('light');
+                      requestAnimationFrame(() => {
+                        setShowChapterModal(true);
+                      });
+                    }}
                     style={[styles.actionPillButton, styles.moveButtonVariant]}
                     activeOpacity={0.7}
                     disabled={selectedCards.size === 0}
@@ -859,7 +879,12 @@ export default function ChapterCardsScreen({ route, navigation }) {
       {/* Floating Action Button - Atanmamış kartlar için dağıtım butonu */}
       {!chapter?.id && !editMode && currentUserId && deck?.user_id === currentUserId && !deck?.is_shared && (
         <TouchableOpacity
-          onPress={handleDistribute}
+          onPress={() => {
+            triggerHaptic('light');
+            requestAnimationFrame(() => {
+              handleDistribute();
+            });
+          }}
           disabled={distLoading}
           activeOpacity={0.85}
           style={styles.fab}

@@ -7,6 +7,7 @@ import Modal from 'react-native-modal';
 import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import { triggerHaptic } from '../../lib/hapticManager';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -22,7 +23,14 @@ export const FilterModalButton = ({ onPress, variant = 'default' }) => {
         styles.filterIconButton,
         { borderColor: isLight ? 'rgba(255, 255, 255, 0.3)' : colors.border }
       ]}
-      onPress={onPress}
+      onPress={
+        () => {
+          triggerHaptic('light');
+          requestAnimationFrame(() => {
+            onPress();
+          });
+        }}
+      hitSlop={{ top: scale(15), bottom: scale(15), left: scale(15), right: scale(15) }}
       activeOpacity={0.8}
     >
       <Iconify
@@ -160,8 +168,11 @@ const FilterModal = ({
       onBackButtonPress={onClose}
       useNativeDriver
       useNativeDriverForBackdrop
-      hideModalContentWhileAnimating
-      backdropTransitionOutTiming={0}
+      backdropTransitionOutTiming={150}
+      animationInTiming={200}
+      animationOutTiming={200}
+      backdropTransitionInTiming={200}
+      hardwareAccelerated={true}
       animationIn="slideInUp"
       animationOut="slideOutDown"
       statusBarTranslucent={true}
@@ -220,6 +231,7 @@ const FilterModal = ({
                       <TouchableOpacity
                         key={option.key}
                         onPress={() => {
+                          triggerHaptic('light');
                           setTempSort(option.key);
                         }}
                         style={[
@@ -287,7 +299,10 @@ const FilterModal = ({
                   return (
                     <TouchableOpacity
                       key={option.sortOrder}
-                      onPress={() => handleCategoryToggle(option.sortOrder)}
+                      onPress={() => {
+                          triggerHaptic('light');
+                          handleCategoryToggle(option.sortOrder);
+                        }}
                       style={[
                         styles.optionCard,
                         {
@@ -356,7 +371,10 @@ const FilterModal = ({
                   return (
                     <TouchableOpacity
                       key={lang.id}
-                      onPress={() => handleLanguageToggle(lang.id)}
+                      onPress={() => {
+                        triggerHaptic('light');
+                        handleLanguageToggle(lang.id);
+                      }}
                       style={[
                         styles.optionCard,
                         {
@@ -401,7 +419,11 @@ const FilterModal = ({
 
           <TouchableOpacity
             style={styles.applyButton}
-            onPress={handleApply}
+            onPress={
+              () => {
+                triggerHaptic('medium');
+                handleApply();
+              }}
             activeOpacity={0.8}
           >
             <LinearGradient

@@ -3,6 +3,7 @@ import { TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useProfile } from '../../contexts/ProfileContext';
 import { scale, moderateScale } from '../../lib/scaling';
+import { triggerHaptic } from '../../lib/hapticManager';
 
 export default function ProfileAvatarButton() {
   const navigation = useNavigation();
@@ -16,7 +17,10 @@ export default function ProfileAvatarButton() {
   return (
     <TouchableOpacity
       style={styles.profileAvatarButton}
-      onPress={() => navigation.navigate('Profile')}
+      onPress={() => {
+          triggerHaptic('selection');
+            navigation.navigate('Profile');
+        }}
       activeOpacity={0.8}
     >
       <Image

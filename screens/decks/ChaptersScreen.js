@@ -12,6 +12,7 @@ import { supabase } from '../../lib/supabase';
 import LottieView from 'lottie-react-native';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import { triggerHaptic } from '../../lib/hapticManager';
 
 export default function ChaptersScreen({ route, navigation }) {
   const { colors } = useTheme();
@@ -99,9 +100,15 @@ export default function ChaptersScreen({ route, navigation }) {
         }
         return (
           <TouchableOpacity
-            onPress={() => setEditMode(!editMode)}
+            onPress={() => {
+              triggerHaptic('light');
+              requestAnimationFrame(() => {
+                setEditMode(!editMode);
+              });
+            }}
             style={{ marginRight: scale(16) }}
             activeOpacity={0.7}
+            hitSlop={{ top: scale(15), bottom: scale(15), left: scale(15), right: scale(15) }}
           >
             <Iconify
               icon={editMode ? "mingcute:close-fill" : "lucide:edit"}
@@ -285,9 +292,15 @@ export default function ChaptersScreen({ route, navigation }) {
                         </View>
                         {editMode ? (
                           <TouchableOpacity
-                            onPress={() => handleDeleteChapter(item.id)}
+                            onPress={() => {
+                              triggerHaptic('heavy');
+                              requestAnimationFrame(() => {
+                                handleDeleteChapter(item.id);
+                              });
+                            }}
                             style={styles.deleteButton}
                             activeOpacity={0.7}
+                            hitSlop={{ top: scale(15), bottom: scale(15), left: scale(15), right: scale(15) }}
                           >
                             <Iconify icon="mdi:garbage" size={moderateScale(24)} color="#FF4444" />
                           </TouchableOpacity>
@@ -349,7 +362,12 @@ export default function ChaptersScreen({ route, navigation }) {
         )}
         {!loading && isOwner && (
           <TouchableOpacity
-            onPress={handleAddChapter}
+            onPress={() => {
+              triggerHaptic('light');
+              requestAnimationFrame(() => {
+                handleAddChapter();
+              });
+            }}
             activeOpacity={0.85}
             style={styles.fab}
           >
