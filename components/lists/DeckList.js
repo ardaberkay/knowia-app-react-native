@@ -9,13 +9,38 @@ import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet }
 import { triggerHaptic } from '../../lib/hapticManager';
 
 // --- FADE TEXT BİLEŞENİ ---
+// --- ŞEFFAFLIK DÖNÜŞTÜRÜCÜ (Hex -> Rgba) ---
+const applyAlpha = (colorStr, alpha) => {
+  if (!colorStr) return `rgba(255, 255, 255, ${alpha})`;
+  
+  // Eğer renk kodu #FFFFFF gibi HEX formatındaysa
+  if (colorStr.startsWith('#')) {
+    let hex = colorStr.replace('#', '');
+    if (hex.length === 3) hex = hex.split('').map(x => x + x).join('');
+    const r = parseInt(hex.substring(0, 2), 16) || 255;
+    const g = parseInt(hex.substring(2, 4), 16) || 255;
+    const b = parseInt(hex.substring(4, 6), 16) || 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  
+  // Eğer renk kodu zaten rgb formatındaysa
+  if (colorStr.startsWith('rgb')) {
+    const match = colorStr.match(/\d+(\.\d+)?/g);
+    if (match && match.length >= 3) {
+      return `rgba(${match[0]}, ${match[1]}, ${match[2]}, ${alpha})`;
+    }
+  }
+  return colorStr; 
+};
+
+// --- FADE TEXT BİLEŞENİ (BOŞLUK VE KAYBOLMA SORUNU ÇÖZÜLMÜŞ HALİ) ---
 const FadeText = ({ text, style, maxChars = 15 }) => {
   if (!text) return null;
   
   const shouldFade = text.length > maxChars;
   
   if (!shouldFade) {
-    return <Text style={style} numberOfLines={1}>{text}</Text>;
+    return <Text style={style} numberOfLines={1} ellipsizeMode="tail">{text}</Text>;
   }
   
   const fadeLength = 4; 
@@ -27,22 +52,33 @@ const FadeText = ({ text, style, maxChars = 15 }) => {
   const flatStyle = Array.isArray(style) ? Object.assign({}, ...style.filter(Boolean)) : (style || {});
   const isCentered = flatStyle.textAlign === 'center';
   
+  // Temadan gelen ana yazı rengini alıyoruz (Yoksa varsayılan beyaz)
+  const textColor = flatStyle.color || '#FFFFFF';
+  
   return (
-    <View style={{ flexDirection: 'row', overflow: 'hidden', justifyContent: isCentered ? 'center' : 'flex-start', alignSelf: isCentered ? 'center' : 'flex-start' }}>
-      <Text style={style} numberOfLines={1}>{visibleText}</Text>
-      {fadeText.split('').map((char, index) => (
-        <Text 
-          key={index} 
-          style={[style, { opacity: opacities[index] || 0.1 }]}
-        >
-          {char}
-        </Text>
-      ))}
+    <View style={{ 
+      width: '100%',
+      alignItems: isCentered ? 'center' : 'flex-start',
+    }}>
+      {/* İç içe Text: Boşluk ve kopukluk sorununu (kerning) çözer. 
+      */}
+      <Text style={style} numberOfLines={1} ellipsizeMode="clip">
+        {visibleText}
+        {fadeText.split('').map((char, index) => (
+          <Text 
+            key={index} 
+            // Android Opacity Bug'ını aşmak için rengi rgba'ya çevirip uyguluyoruz
+            style={{ color: applyAlpha(textColor, opacities[index] || 0.1) }}
+          >
+            {char}
+          </Text>
+        ))}
+      </Text>
     </View>
   );
 };
 
-// --- YENİ EKLENEN OPTIMISTIC DECK CARD BİLEŞENİ ---
+// --- OPTIMISTIC DECK CARD BİLEŞENİ ---
 const DeckCard = React.memo(({ 
   deck, 
   onPress, 
@@ -56,18 +92,58 @@ const DeckCard = React.memo(({
   iconDimensions,
   isVertical = true
 }) => {
-  // Optimistic UI için lokal state
   const [localFavorite, setLocalFavorite] = useState(isInitiallyFavorite);
 
-  // Üstten gelen asıl favori değeri değişirse (örn: sayfa yenilenirse) senkronize et
   useEffect(() => {
     setLocalFavorite(isInitiallyFavorite);
   }, [isInitiallyFavorite]);
 
   const handleFavoritePress = () => {
-    triggerHaptic('medium'); // İsteğe göre 'selection' da yapabilirsin
-    setLocalFavorite(!localFavorite); // Anında rengi değiştir
-    onToggleFavorite(deck.id); // Arka planda DB işlemini yap
+    triggerHaptic('medium'); 
+    setLocalFavorite(!localFavorite); 
+    onToggleFavorite(deck.id); 
+  };
+
+  // İsim Bölümünü Render Eden Akıllı Fonksiyon
+  const renderDeckText = (text) => {
+    if (!text) return null;
+
+    // 1. Durum: Eğer kart Yatay (Single) ise her halükarda Fade (Uzun limitli) uygula
+    if (!isVertical) {
+      return (
+        <FadeText 
+          text={text} 
+          style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(18), fontWeight: '800', textAlign: 'center' }]}
+          maxChars={30}
+        />
+      );
+    }
+
+    // 2. Durum: Kart Dikey (Double) ise kelimenin yapısına bak
+    const isSingleWord = !text.trim().includes(' '); // İçinde boşluk yoksa tek kelimedir
+
+    if (isSingleWord) {
+      // TEK KELİME: İkiye bölme, tek satırda tut ve Fade uygula
+      return (
+        <FadeText 
+          text={text} 
+          style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(16), fontWeight: '800', textAlign: 'center' }]}
+          maxChars={15} // Dikey kartlar için 15 harf idealdir
+        />
+      );
+    } else {
+      // ÇOKLU KELİME (CÜMLE): 2 satır hakkını ver, sığmazsa tail uygula
+      return (
+        <Text 
+          numberOfLines={2} 
+          ellipsizeMode="tail"
+          textBreakStrategy="simple"
+          style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(16), fontWeight: '800', textAlign: 'center', width: '100%' }]}
+        >
+          {text}
+        </Text>
+      );
+    }
   };
 
   return (
@@ -104,14 +180,16 @@ const DeckCard = React.memo(({
             }
             style={styles.deckProfileAvatar}
           />
-          <FadeText 
-            text={deck.profiles?.username || 'Kullanıcı'} 
-            style={[typography.styles.body, styles.deckProfileUsername]}
-            maxChars={isVertical ? 15 : 16}
-          />
+          <View style={{ flex: 1, marginRight: scale(4) }}>
+            <FadeText 
+              text={deck.profiles?.username || 'Kullanıcı'} 
+              style={[typography.styles.body, styles.deckProfileUsername]}
+              maxChars={isVertical ? 15 : 16}
+            />
+          </View>
         </View>
 
-        {/* Badge Bölümleri (Dikey ve Yatay için farklı yerleşimler) */}
+        {/* Badge Bölümleri */}
         {isVertical ? (
           <View style={{ position: 'absolute', bottom: verticalScale(12), left: scale(12), flexDirection: 'column', alignItems: 'flex-start' }}>
             {showPopularityBadge && deck.popularity_score && deck.popularity_score > 0 ? (
@@ -158,27 +236,15 @@ const DeckCard = React.memo(({
         </TouchableOpacity>
 
         {/* İsim Bölümü */}
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', paddingHorizontal: scale(12) }}>
           {deck.to_name ? (
             <>
-              <FadeText 
-                text={deck.name} 
-                style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(isVertical ? 16 : 18), fontWeight: '800', textAlign: 'center' }]}
-                maxChars={isVertical ? 16 : 20}
-              />
+              {renderDeckText(deck.name)}
               <View style={{ width: scale(isVertical ? 60 : 70), height: moderateScale(2), backgroundColor: colors.divider, borderRadius: moderateScale(1), marginVertical: verticalScale(isVertical ? 8 : 10) }} />
-              <FadeText 
-                text={deck.to_name} 
-                style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(isVertical ? 16 : 18), fontWeight: '800', textAlign: 'center' }]}
-                maxChars={isVertical ? 16 : 20}
-              />
+              {renderDeckText(deck.to_name)}
             </>
           ) : (
-            <FadeText 
-              text={deck.name} 
-              style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(isVertical ? 16 : 18), fontWeight: '800', textAlign: 'center' }]}
-              maxChars={isVertical ? 16 : 20}
-            />
+            renderDeckText(deck.name)
           )}
         </View>
       </LinearGradient>
@@ -252,15 +318,6 @@ const DeckList = ({
     return icons[sortOrder] || "hugeicons:language-skill";
   };
 
-  // FlatList için optimize edilmiş render fonksiyonu
-  const renderListItem = React.useCallback(({ item: row }) => {
-    if (row.type === 'singleVertical') return renderSingleVerticalRow(row);
-    if (row.type === 'single' && rows.length === 1) return renderSingleVerticalRow(row);
-    if (row.type === 'double') return renderDoubleRow(row);
-    return renderSingleRow(row);
-  }, [decks, favoriteDecks, colors]); // Bağımlılıkları ekledik
-
-  // İŞTE EKSİK OLAN O ROWS DEĞİŞKENİ BURADA :)
   const rows = useMemo(() => {
     const builtRows = [];
     let i = 0;
@@ -373,16 +430,23 @@ const DeckList = ({
     </View>
   );
 
+  const renderListItem = React.useCallback(({ item: row }) => {
+    if (row.type === 'singleVertical') return renderSingleVerticalRow(row);
+    if (row.type === 'single' && rows.length === 1) return renderSingleVerticalRow(row);
+    if (row.type === 'double') return renderDoubleRow(row);
+    return renderSingleRow(row);
+  }, [rows, colors, favoriteDecks, decks]);
+
   return (
     <FlatList
       data={rows}
       keyExtractor={(_, idx) => `row_${idx}`}
       contentContainerStyle={{ paddingBottom: '10%', paddingTop: contentPaddingTop }}
       ListHeaderComponent={ListHeaderComponent}
-      removeClippedSubviews={true} // Ekrandan çıkan kartları RAM'den geçici olarak siler (Android'de çok etkilidir)
-      initialNumToRender={6} // İlk açılışta kaç satır çizileceğini belirler (boşuna aşağıları çizmez)
-      maxToRenderPerBatch={4} // Hızlı kaydırırken partiler halinde kaç tane çizeceğini belirler
-      windowSize={5} // Ekranın ne kadar üstünü ve altını hafızada tutacağını belirler (Varsayılan 21'dir, çok yorar. 5 idealdir)
+      removeClippedSubviews={true} 
+      initialNumToRender={6} 
+      maxToRenderPerBatch={4} 
+      windowSize={5} 
       renderItem={renderListItem}
       ListEmptyComponent={(
         <View style={styles.noDecksEmpty}>
@@ -414,10 +478,8 @@ const DeckList = ({
   );
 }
 
-
 const styles = StyleSheet.create({
   deckList: {
-    // paddingHorizontal ve paddingVertical dinamik olarak uygulanacak
   },
   deckRow: {
     flexDirection: 'row',
@@ -464,16 +526,14 @@ const styles = StyleSheet.create({
   },
   backgroundCategoryIcon: {
     position: 'absolute',
-    // left dinamik olarak uygulanacak (categoryIconDimensions)
     width: '100%',
     height: '100%',
     justifyContent: 'center',
-    alignItems: 'flex-start', // Sola hizala (tablet için iconun yarısı gözüksün)
-    zIndex: 0, // En altta kalması için
-    overflow: 'hidden', // Taşan kısmı gizle
+    alignItems: 'flex-start', 
+    zIndex: 0, 
+    overflow: 'hidden', 
   },
   categoryIconStyle: {
-    // Subtle background effect için
     opacity: 0.8,
   },
   deckProfileRow: {

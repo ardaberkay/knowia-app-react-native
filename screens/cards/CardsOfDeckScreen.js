@@ -552,6 +552,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                         source={require('../../assets/cardbg.png')}
                         style={{ width: scale(500), height: scale(500), opacity: 0.2 }}
                         resizeMode="contain"
+                        fadeDuration={0}
                       />
                       <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, fontSize: moderateScale(16), marginTop: verticalScale(-150) }]}>
                         {t('cardDetail.addToDeck', 'Desteye bir kart ekle')}

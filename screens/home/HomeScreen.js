@@ -255,6 +255,7 @@ export default function HomeScreen() {
               source={require('../../assets/item.png')}
               style={styles.popularDecksImage}
               resizeMode="contain"
+              fadeDuration={0}
             />
           </View>
         </View>

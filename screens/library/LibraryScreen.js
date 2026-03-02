@@ -692,6 +692,7 @@ export default function LibraryScreen() {
               source={require('../../assets/mydecks-item.png')}
               style={styles.myDecksImage}
               resizeMode="contain"
+              fadeDuration={0}
             />
           </View>
         </View>
@@ -981,6 +982,7 @@ export default function LibraryScreen() {
                       source={require('../../assets/deckbg.png')}
                       style={{ position: 'absolute', alignSelf: 'center', width: moderateScale(300, 0.3), height: moderateScale(300, 0.3), opacity: 0.2 }}
                       resizeMode="contain"
+                      fadeDuration={0}
                     />
                   </View>
                 )}
@@ -1043,6 +1045,7 @@ export default function LibraryScreen() {
                           source={require('../../assets/cardbg.png')}
                           style={{ width: moderateScale(400, 0.3), height: moderateScale(400, 0.3), opacity: 0.2 }}
                           resizeMode="contain"
+                          fadeDuration={0}
                         />
                       </View>
                     ) : null}

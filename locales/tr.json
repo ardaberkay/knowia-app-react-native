@@ -27,7 +27,8 @@
     "deleteAccountIrreversible": "Hesabınız ve tüm verileriniz kalıcı olarak silinecek. Bu işlem geri alınamaz. Emin misiniz?",
     "deleteAccountConfirm": "Kalıcı Olarak Sil",
     "deleteSuccess": "Hesabınız silindi",
-    "deleteDeactivateError": "İşlem sırasında bir hata oluştu"
+    "deleteDeactivateError": "İşlem sırasında bir hata oluştu",
+    "haptics": "Titreşimler"
   },
   "library": {
     "all": "Tümü",

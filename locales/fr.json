@@ -26,7 +26,8 @@
     "deleteAccountIrreversible": "Votre compte et toutes vos données seront définitivement supprimés. Cette action est irréversible. Êtes vous sûr ?",
     "deleteAccountConfirm": "Supprimer définitivement",
     "deleteSuccess": "Votre compte a été supprimé",
-    "deleteDeactivateError": "Une erreur s'est produite lors de l'opération"
+    "deleteDeactivateError": "Une erreur s'est produite lors de l'opération",
+    "haptics": "Vibrations"
   },
   "library": {
     "all": "Tout",

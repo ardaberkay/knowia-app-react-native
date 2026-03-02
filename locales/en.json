@@ -27,14 +27,15 @@
     "deleteAccountIrreversible": "Your account and all your data will be permanently deleted. This action cannot be undone. Are you sure?",
     "deleteAccountConfirm": "Delete Permanently",
     "deleteSuccess": "Your account has been deleted",
-    "deleteDeactivateError": "An error occurred during the operation"
+    "deleteDeactivateError": "An error occurred during the operation",
+    "haptics": "Vibrations"
   },
   "library": {
     "all": "All",
     "decks": "Decks",
     "cards": "Cards",
     "card": "Card",
-    "myDecks": "My Decks",
+    "myDecks": "Decks",
     "favorites": "Favorites",
     "myDecksHeading": "My Decks",
     "searchPlaceholder": "Search deck/card...",

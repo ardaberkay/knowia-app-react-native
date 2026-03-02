@@ -185,6 +185,7 @@ export default function FavoriteDecks() {
             source={require('../../assets/deckbg.png')}
             style={{ width: scale(300), height: verticalScale(300), opacity: 0.2 }}
             resizeMode="contain"
+            fadeDuration={0}
           />
           <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, textAlign: 'center', fontSize: moderateScale(16), marginTop: verticalScale(-20) }]}>
             {t('library.addFavoriteDeckEmpty', 'Bir deste favorilere ekle')}

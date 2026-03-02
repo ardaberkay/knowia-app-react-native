@@ -113,7 +113,8 @@
     "language": "Idioma",
     "selectLanguage": "Seleccionar idioma",
     "languageHeading": "Idioma del contenido",
-    "languageSub": "Elige idiomas del mazo (Máx. 2)"
+    "languageSub": "Elige idiomas del mazo (Máx. 2)",
+    "haptics": "Vibraciones"
   },
   "common": {
     "error": "Ocurrió un error",

@@ -26,7 +26,8 @@
     "deleteAccountIrreversible": "Dein Konto und alle deine Daten werden dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden. Bist du sicher?",
     "deleteAccountConfirm": "Dauerhaft löschen",
     "deleteSuccess": "Dein Konto wurde gelöscht",
-    "deleteDeactivateError": "Bei der Aktion ist ein Fehler aufgetreten"
+    "deleteDeactivateError": "Bei der Aktion ist ein Fehler aufgetreten",
+    "haptics": "Vibrationen"
   },
   "library": {
     "all": "Alle",

@@ -26,7 +26,8 @@
     "deleteAccountIrreversible": "Sua conta e todos os seus dados serão excluídos permanentemente. Esta ação não pode ser desfeita. Tem certeza?",
     "deleteAccountConfirm": "Excluir permanentemente",
     "deleteSuccess": "Sua conta foi excluída",
-    "deleteDeactivateError": "Ocorreu um erro durante a operação"
+    "deleteDeactivateError": "Ocorreu um erro durante a operação",
+    "haptics": "Vibrações"
   },
   "library": {
     "all": "Tudo",
