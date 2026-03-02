@@ -53,8 +53,28 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
   };
 
   const handleUpdateCard = async () => {
+    const MAX_QUESTION_LENGTH = 400;
+    const MAX_ANSWER_LENGTH = 300;
+    const MAX_EXAMPLE_LENGTH = 200;
+    const MAX_NOTE_LENGTH = 200;
     if (!question.trim() || !answer.trim()) {
       Alert.alert(t('common.error', 'Hata'), t('common.requiredFields', 'Soru ve cevap zorunludur.'));
+      return;
+    }
+    if (question.trim().length > MAX_QUESTION_LENGTH) {
+      Alert.alert(t('common.error', 'Hata'), t('addCard.questionTooLong', `Soru en fazla ${MAX_QUESTION_LENGTH} karakter olabilir.`));
+      return;
+    }
+    if (answer.trim().length > MAX_ANSWER_LENGTH) {
+      Alert.alert(t('common.error', 'Hata'), t('addCard.answerTooLong', `Cevap en fazla ${MAX_ANSWER_LENGTH} karakter olabilir.`));
+      return;
+    }
+    if (example.trim().length > MAX_EXAMPLE_LENGTH) {
+      Alert.alert(t('common.error', 'Hata'), t('addCard.exampleTooLong', `Örnek en fazla ${MAX_EXAMPLE_LENGTH} karakter olabilir.`));
+      return;
+    }
+    if (note.trim().length > MAX_NOTE_LENGTH) {
+      Alert.alert(t('common.error', 'Hata'), t('addCard.noteTooLong', `Not en fazla ${MAX_NOTE_LENGTH} karakter olabilir.`));
       return;
     }
     setLoading(true);

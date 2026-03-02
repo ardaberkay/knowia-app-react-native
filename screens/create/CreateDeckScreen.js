@@ -96,8 +96,18 @@ export default function CreateScreen() {
   };
 
   const handleCreate = async () => {
+    const MAX_NAME_LENGTH = 70; 
+    const MAX_TONAME_LENGTH = 70;
     if (!name.trim()) {
       showError(t('create.requiredName', 'Deste adı zorunludur.'));
+      return;
+    }
+    if (name.trim().length > MAX_NAME_LENGTH) {
+      showError(t('create.nameTooLong', `Deste adı en fazla ${MAX_NAME_LENGTH} karakter olabilir.`));
+      return;
+    }
+    if (toName.trim().length > MAX_TONAME_LENGTH) {
+      showError(t('create.toNameTooLong', `Karşılığı en fazla ${MAX_TONAME_LENGTH} karakter olabilir.`));
       return;
     }
     if (!selectedCategory) {

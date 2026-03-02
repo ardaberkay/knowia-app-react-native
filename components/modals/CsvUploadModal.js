@@ -29,8 +29,6 @@ export default function CsvUploadModal({
   const { t } = useTranslation();
   const { showSuccess, showError } = useSnackbarHelpers();
   const screenHeight = Dimensions.get('screen').height;
-
-  // STATELER (Kesinlikle dokunulmadı)
   const [csvPreview, setCsvPreview] = useState(null);
   const [csvLoading, setCsvLoading] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
@@ -111,6 +109,22 @@ export default function CsvUploadModal({
 
   const validateCard = (card, rowNumber) => {
     const errors = [];
+    const MAX_QUESTION_LENGTH = 400;
+    const MAX_ANSWER_LENGTH = 300;
+    const MAX_EXAMPLE_LENGTH = 200;
+    const MAX_NOTE_LENGTH = 200;
+    if (card.question && card.question.trim().length > MAX_QUESTION_LENGTH) {
+      errors.push({ type: 'QUESTION_TOO_LONG', row: rowNumber, message: t("addCard.questionTooLong", "Soru en fazla 400 karakter olabilir") });
+    }
+    if (card.answer && card.answer.trim().length > MAX_ANSWER_LENGTH) {
+      errors.push({ type: 'ANSWER_TOO_LONG', row: rowNumber, message: t("addCard.answerTooLong", "Cevap en fazla 300 karakter olabilir") });
+    }
+    if (card.example && card.example.trim().length > MAX_EXAMPLE_LENGTH) {
+      errors.push({ type: 'EXAMPLE_TOO_LONG', row: rowNumber, message: t("addCard.exampleTooLong", "Örnek en fazla 200 karakter olabilir") });
+    }
+    if (card.note && card.note.trim().length > MAX_NOTE_LENGTH) {
+      errors.push({ type: 'NOTE_TOO_LONG', row: rowNumber, message: t("addCard.noteTooLong", "Not en fazla 200 karakter olabilir") });
+    }
     if (!card.question || card.question.trim() === '') {
       errors.push({ type: 'EMPTY_QUESTION', row: rowNumber, message: t("addCard.emptyQuestion", "Soru alanı boş olamaz") });
     }
