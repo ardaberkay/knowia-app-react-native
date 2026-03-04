@@ -25,7 +25,8 @@ export const lightColors = {
     inProgressBar: '#d9d9d9',
     headText: '#F0F0F0',
     divider: '#F98A21',
-    inputBorder: '#333333',
+    inputBorder: 'rgba(0, 0, 0, 0.08)',
+    inputBackground: 'rgba(0, 0, 0, 0.03)',
     // Kart renkleri
     cardBackground: '#F4F1EA',
     cardBackgroundTransparent: 'rgba(244, 241, 234, 0.85)',
@@ -88,7 +89,8 @@ export const darkColors = {
     inProgressBar: '#dddddd',
     headText: '#F0F0F0',
     divider: '#F98A21',
-    inputBorder: '#EEEEEE',
+    inputBorder: 'rgba(255, 255, 255, 0.1)',
+    inputBackground: 'rgba(255, 255, 255, 0.03)',
     // Kart renkleri
     cardBackground: '#2C2C2C',
     cardBackgroundTransparent: 'rgba(44, 44, 44, 0.75)',

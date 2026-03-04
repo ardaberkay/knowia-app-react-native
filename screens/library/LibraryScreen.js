@@ -28,26 +28,26 @@ import { triggerHaptic } from '../../lib/hapticManager';
 // Fade efekti - karakter bazlı opacity (MaskedView sorunlarından kaçınır)
 const FadeText = ({ text, style, maxChars = 15 }) => {
   if (!text) return null;
-  
+
   const shouldFade = text.length > maxChars;
-  
+
   if (!shouldFade) {
     return <Text style={style} numberOfLines={1}>{text}</Text>;
   }
-  
+
   // Son 4 karaktere fade uygula
   const fadeLength = 4;
   const visibleLength = maxChars - fadeLength;
   const visibleText = text.substring(0, visibleLength);
   const fadeText = text.substring(visibleLength, maxChars);
-  
+
   // Her fade karakteri için azalan opacity
   const opacities = [0.7, 0.5, 0.3, 0.1];
-  
+
   // Style'dan textAlign kontrolü
   const flatStyle = Array.isArray(style) ? Object.assign({}, ...style.filter(Boolean)) : (style || {});
   const isCentered = flatStyle.textAlign === 'center';
-  
+
   return (
     <View style={{ flexDirection: 'row', overflow: 'hidden', justifyContent: isCentered ? 'center' : 'flex-start', alignSelf: isCentered ? 'center' : 'flex-start' }}>
       <Text style={style} numberOfLines={1}>{visibleText}</Text>
@@ -101,34 +101,34 @@ export default function LibraryScreen() {
   // useWindowDimensions hook'u - ekran döndürme desteği
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
-  
+
   const horizontalPadding = scale(16) * 2;
   const cardSpacing = scale(12);
   const numColumns = 2;
   const cardWidth = (width - horizontalPadding - cardSpacing) / numColumns;
   const cardAspectRatio = 120 / 168;
   const cardHeight = cardWidth / cardAspectRatio;
-  
+
   // Responsive favorites sekmesi ScrollView paddingTop - useMemo ile optimize edilmiş
   const favoritesScrollViewPaddingTop = useMemo(() => {
     const isTablet = getIsTablet();
     return isTablet ? '25%' : '48%'; // Tablet: %5, diğerleri: %48
   }, [width, height]);
-  
+
   const myDecksCardTopMargin = useMemo(() => {
     if (isTablet) return height * 0.01;
     return height * 0.08;
   }, [height, isTablet]);
-  
+
   const myDecksSearchContainerTopMargin = useMemo(() => {
     if (isTablet) return verticalScale(12);
     return verticalScale(8);
   }, [isTablet]);
-  
+
   const favoriteSliderDimensions = useMemo(() => {
     const sliderHeight = isTablet ? height * 0.31 : height * 0.27;
     const basePadding = isTablet ? scale(20) : scale(16);
-    
+
     return {
       sliderHeight,
       fontSize: isTablet ? moderateScale(22) : moderateScale(20),
@@ -231,7 +231,7 @@ export default function LibraryScreen() {
         return deck;
       });
       setFavoriteDecks(modifiedDecks);
-      
+
       // Fetch favorite cards and user progress in parallel
       const [cards, progressResult] = await Promise.all([
         getFavoriteCards(user.id),
@@ -240,7 +240,7 @@ export default function LibraryScreen() {
           .select('card_id, status')
           .eq('user_id', user.id)
       ]);
-      
+
       // Create a map of card statuses
       const statusMap = {};
       if (progressResult.data) {
@@ -248,13 +248,13 @@ export default function LibraryScreen() {
           statusMap[p.card_id] = p.status;
         });
       }
-      
+
       // Merge status into cards (default: 'new' if no progress record)
       const cardsWithProgress = (cards || []).map(card => ({
         ...card,
         status: statusMap[card.id] || 'new'
       }));
-      
+
       setFavoriteCards(cardsWithProgress);
       setFavoriteCardIds(cardsWithProgress.map(card => card.id));
       setFavoritesFetched(true);
@@ -340,15 +340,15 @@ export default function LibraryScreen() {
           onPress: async () => {
             try {
               const { error } = await supabase.from('decks').delete().eq('id', deckId);
-              
+
               if (error) {
                 throw error;
               }
-              
+
               setMyDecks(prev => prev.filter(deck => deck.id !== deckId));
               setFavoriteDecks(prev => prev.filter(deck => deck.id !== deckId));
               setActiveDeckMenuId(null);
-              
+
               showSuccess(t('library.deleteDeckSuccess', 'Deste başarıyla silindi'));
             } catch (e) {
               showError(t('library.deleteDeckError', 'Deste silinemedi'));
@@ -375,17 +375,17 @@ export default function LibraryScreen() {
                 .from('cards')
                 .delete()
                 .eq('id', cardId);
-              
+
               if (error) {
                 throw error;
               }
-              
+
               // Kartı favori kartlar listesinden çıkar
               const updatedCards = favoriteCards.filter(c => c.id !== cardId);
               const updatedCardIds = favoriteCardIds.filter(id => id !== cardId);
               setFavoriteCards(updatedCards);
               setFavoriteCardIds(updatedCardIds);
-              
+
               // Eğer seçili kart silindiyse, modal'ı kapat veya sonraki karta geç
               if (selectedCard && selectedCard.id === cardId) {
                 // Güncellenmiş kart listesini filtrele (silinen kart olmadan)
@@ -403,7 +403,7 @@ export default function LibraryScreen() {
                 } else if (favCardsSort !== 'fav') {
                   remainingCards.sort((a, b) => favAt(b) - favAt(a));
                 }
-                
+
                 if (remainingCards.length > 0) {
                   setSelectedCard(remainingCards[0]);
                 } else {
@@ -411,7 +411,7 @@ export default function LibraryScreen() {
                   setSelectedCard(null);
                 }
               }
-              
+
               showSuccess(t('cardDetail.deleteSuccess', 'Kart başarıyla silindi'));
             } catch (e) {
               showError(t('cardDetail.deleteError', 'Kart silinemedi'));
@@ -426,7 +426,7 @@ export default function LibraryScreen() {
   const handleRemoveFavoriteCard = async (cardId) => {
     const { data: { user } } = await supabase.auth.getUser();
     await supabase.from('favorite_cards').delete().eq('user_id', user.id).eq('card_id', cardId);
-    
+
     // Fetch cards and progress in parallel
     const [cards, progressResult] = await Promise.all([
       getFavoriteCards(user.id),
@@ -435,7 +435,7 @@ export default function LibraryScreen() {
         .select('card_id, status')
         .eq('user_id', user.id)
     ]);
-    
+
     // Create a map of card statuses
     const statusMap = {};
     if (progressResult.data) {
@@ -443,21 +443,21 @@ export default function LibraryScreen() {
         statusMap[p.card_id] = p.status;
       });
     }
-    
+
     // Merge status into cards
     const updatedCards = (cards || []).map(card => ({
       ...card,
       status: statusMap[card.id] || 'new'
     }));
-    
+
     setFavoriteCards(updatedCards);
     setFavoriteCardIds(updatedCards.map(card => card.id));
-    
+
     // Eğer seçili kart favorilerden çıkarıldıysa ve modal açıksa, sonraki karta geç
     if (selectedCard && selectedCard.id === cardId && cardDetailModalVisible) {
       // Mevcut kartın index'ini bul (filtrelenmiş listede)
       const currentIndex = filteredFavoriteCards.findIndex(c => c.id === cardId);
-      
+
       // Güncellenmiş kart listesini filtrele (çıkarılan kart olmadan)
       let remainingCards = updatedCards.slice();
       if (favCardsQuery && favCardsQuery.trim()) {
@@ -473,7 +473,7 @@ export default function LibraryScreen() {
       } else if (favCardsSort !== 'fav') {
         remainingCards.sort((a, b) => favAt(b) - favAt(a));
       }
-      
+
       if (remainingCards.length > 0) {
         // Sonraki karta geç, eğer son kart ise önceki karta geç
         let nextCard;
@@ -496,13 +496,13 @@ export default function LibraryScreen() {
     }
   };
 
-  
+
 
   const handleToggleFavoriteCard = async (cardId) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      
+
       if (favoriteCardIds.includes(cardId)) {
         // Favorilerden çıkar
         await supabase
@@ -510,17 +510,17 @@ export default function LibraryScreen() {
           .delete()
           .eq('user_id', user.id)
           .eq('card_id', cardId);
-        
+
         const updatedFavoriteCards = favoriteCards.filter(c => c.id !== cardId);
         const updatedFavoriteCardIds = favoriteCardIds.filter(id => id !== cardId);
         setFavoriteCardIds(updatedFavoriteCardIds);
         setFavoriteCards(updatedFavoriteCards);
-        
+
         // Eğer seçili kart favorilerden çıkarıldıysa, sonraki karta geç
         if (selectedCard && selectedCard.id === cardId) {
           // Mevcut kartın index'ini bul (filtrelenmiş listede)
           const currentIndex = filteredFavoriteCards.findIndex(c => c.id === cardId);
-          
+
           // Güncellenmiş kart listesini filtrele (çıkarılan kart olmadan)
           let remainingCards = updatedFavoriteCards.slice();
           if (favCardsQuery && favCardsQuery.trim()) {
@@ -536,7 +536,7 @@ export default function LibraryScreen() {
           } else if (favCardsSort !== 'fav') {
             remainingCards.sort((a, b) => favAt(b) - favAt(a));
           }
-          
+
           if (remainingCards.length > 0) {
             // Sonraki karta geç, eğer son kart ise önceki karta geç
             let nextCard;
@@ -569,18 +569,18 @@ export default function LibraryScreen() {
           setFavoriteCards([...favoriteCards, card]);
         }
       }
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const favCardFavoritedAt = (c) => new Date(c.favorited_at || c.created_at || 0).getTime();
   const filteredFavoriteCards = useMemo(() => {
     let list = favoriteCards.slice();
-    
+
     if (favCardsQuery && favCardsQuery.trim()) {
       const q = favCardsQuery.toLowerCase();
       list = list.filter(c => (c.question || '').toLowerCase().includes(q) || (c.answer || '').toLowerCase().includes(q));
     }
-    
+
     if (favCardsSort === 'az') {
       list.sort((a, b) => {
         const cmp = (a.question || '').localeCompare(b.question || '');
@@ -597,23 +597,23 @@ export default function LibraryScreen() {
     } else {
       list.sort((a, b) => favCardFavoritedAt(b) - favCardFavoritedAt(a));
     }
-    
+
     return list;
   }, [favoriteCards, favCardsQuery, favCardsSort]);
 
   const filteredMyDecks = useMemo(() => {
     // Orijinal diziyi bozmamak için kopyalıyoruz
     let list = myDecks.slice();
-  
+
     // 1. Search filter
     if (myDecksQuery && myDecksQuery.trim()) {
       const q = myDecksQuery.toLowerCase();
-      list = list.filter(d => 
-        (d.name || '').toLowerCase().includes(q) || 
+      list = list.filter(d =>
+        (d.name || '').toLowerCase().includes(q) ||
         (d.to_name || '').toLowerCase().includes(q)
       );
     }
-  
+
     // 2. Category filter
     if (myDecksSelectedCategories.length > 0) {
       list = list.filter(d => {
@@ -621,7 +621,7 @@ export default function LibraryScreen() {
         return deckSortOrder != null && myDecksSelectedCategories.includes(deckSortOrder);
       });
     }
-  
+
     // 3. Language filter (İkinci koddan gelen yeni özellik)
     if (typeof selectedLanguages !== 'undefined' && selectedLanguages.length > 0) {
       list = list.filter(d => {
@@ -629,12 +629,12 @@ export default function LibraryScreen() {
         return deckLanguageIds.some(id => selectedLanguages.includes(id));
       });
     }
-  
+
     // 4. Favorites filter (Eğer sort 'favorites' ise sadece favorileri gösterir)
     if (myDecksSort === 'favorites') {
       list = list.filter(d => d.is_favorite === true);
     }
-  
+
     // 5. Apply sorting: updated_at'e göre (yeni oluşturulanda created_at atanıyor; güncellenince yine en üste çıkar). updated_at yoksa eski kayıt için created_at kullanılır.
     const sortDate = (d) => new Date(d.updated_at != null ? d.updated_at : d.created_at || 0).getTime();
     switch (myDecksSort) {
@@ -666,7 +666,7 @@ export default function LibraryScreen() {
         list.sort((a, b) => sortDate(b) - sortDate(a));
         break;
     }
-  
+
     return list;
     // Bağımlılık listesi: favoriteDecks artık sadece Favorilerim sekmesi için; Destelerim filtresi deck.is_favorite kullanır
   }, [myDecks, myDecksQuery, myDecksSelectedCategories, myDecksSort, selectedLanguages]);
@@ -679,7 +679,7 @@ export default function LibraryScreen() {
           <View style={styles.myDecksTextContainer}>
             <View style={styles.myDecksTitleContainer}>
               <Iconify icon="ph:cards-fill" size={moderateScale(26)} color="#F98A21" style={{ marginRight: scale(6) }} />
-              <Text style={[typography.styles.h2, { color: colors.text}]}>
+              <Text style={[typography.styles.h2, { color: colors.text }]}>
                 {t('library.myDecksHeading', 'Destelerim')}
               </Text>
             </View>
@@ -736,43 +736,43 @@ export default function LibraryScreen() {
             style={[styles.pillContainer, { borderColor: colors.pillBorder || '#444444', backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.3)' }]}
             onLayout={(e) => setPillWidth(e.nativeEvent.layout.width)}
           >
-          <View style={styles.pillIndicatorWrapper}>
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                styles.pillIndicator,
-                {
-                  width: (pillWidth > 0 ? (pillWidth - 4) / 2 : 0),
-                  transform: [
-                    {
-                      translateX: tabScroll.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0, (pillWidth > 0 ? (pillWidth - 4) / 2 : 0)],
-                        extrapolate: 'clamp',
-                      })
-                    }
-                  ],
-                  backgroundColor: colors.buttonColor || '#F98A21',
-                }
-              ]}
-            />
-          </View>
-          <TouchableOpacity style={[styles.pillTab, { width: '50%' }]} activeOpacity={0.8} onPress={() => {
-            triggerHaptic('selection');
+            <View style={styles.pillIndicatorWrapper}>
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.pillIndicator,
+                  {
+                    width: (pillWidth > 0 ? (pillWidth - 4) / 2 : 0),
+                    transform: [
+                      {
+                        translateX: tabScroll.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0, (pillWidth > 0 ? (pillWidth - 4) / 2 : 0)],
+                          extrapolate: 'clamp',
+                        })
+                      }
+                    ],
+                    backgroundColor: colors.buttonColor || '#F98A21',
+                  }
+                ]}
+              />
+            </View>
+            <TouchableOpacity style={[styles.pillTab, { width: '50%' }]} activeOpacity={0.8} onPress={() => {
+              triggerHaptic('selection');
               handleSetPage(0);
-          }}>
-            <Text style={[styles.pillLabel, { color: activeTab === 'myDecks' ? '#FFFFFF' : (colors.border || '#666') }]}>
-              {t('library.myDecks', 'Destelerim')}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.pillTab, { width: '50%' }]} activeOpacity={0.8} onPress={() => {
-            triggerHaptic('selection');
+            }}>
+              <Text style={[styles.pillLabel, { color: activeTab === 'myDecks' ? '#FFFFFF' : (colors.border || '#666') }]}>
+                {t('library.myDecks', 'Destelerim')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.pillTab, { width: '50%' }]} activeOpacity={0.8} onPress={() => {
+              triggerHaptic('selection');
               handleSetPage(1);
-          }}>
-            <Text style={[styles.pillLabel, { color: activeTab === 'favorites' ? '#FFFFFF' : (colors.border || '#666') }]}>
-              {t('library.favorites', 'Favorilerim')}
-            </Text>
-          </TouchableOpacity>
+            }}>
+              <Text style={[styles.pillLabel, { color: activeTab === 'favorites' ? '#FFFFFF' : (colors.border || '#666') }]}>
+                {t('library.favorites', 'Favorilerim')}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -854,7 +854,7 @@ export default function LibraryScreen() {
                     <Text style={[styles.seeAllText, { color: colors.secondary }]}>
                       {t('library.all', 'Tümü')}
                     </Text>
-                    <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(15)} color={colors.secondary}/>
+                    <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(15)} color={colors.secondary} />
                   </TouchableOpacity>
                 </View>
 
@@ -896,17 +896,17 @@ export default function LibraryScreen() {
                                 <View style={[styles.deckProfileRow, { position: 'absolute', top: 'auto', bottom: favoriteSliderDimensions.profileBottomPadding, left: favoriteSliderDimensions.profileLeftPadding, zIndex: 10 }]}>
                                   <Image
                                     source={
-                                      deck.is_admin_created 
+                                      deck.is_admin_created
                                         ? require('../../assets/app-icon.png')
-                                        : deck.profiles?.image_url 
-                                          ? { uri: deck.profiles.image_url } 
+                                        : deck.profiles?.image_url
+                                          ? { uri: deck.profiles.image_url }
                                           : require('../../assets/avatar-default.png')
                                     }
                                     style={[styles.deckProfileAvatar, { width: favoriteSliderDimensions.profileAvatarSize, height: favoriteSliderDimensions.profileAvatarSize }]}
                                   />
-                                  <FadeText 
-                                    text={deck.profiles?.username || 'Kullanıcı'} 
-                                    style={[typography.styles.body, styles.deckProfileUsername, { fontSize: favoriteSliderDimensions.profileUsernameSize }]} 
+                                  <FadeText
+                                    text={deck.profiles?.username || 'Kullanıcı'}
+                                    style={[typography.styles.body, styles.deckProfileUsername, { fontSize: favoriteSliderDimensions.profileUsernameSize }]}
                                     maxChars={16}
                                   />
                                 </View>
@@ -928,25 +928,25 @@ export default function LibraryScreen() {
                                   />
                                 </TouchableOpacity>
                                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                                  <View style={[styles.deckHeaderModern, { flexDirection: 'column' }]}> 
+                                  <View style={[styles.deckHeaderModern, { flexDirection: 'column' }]}>
                                     {deck.to_name ? (
                                       <>
-                                        <FadeText 
-                                          text={deck.name} 
-                                          style={[typography.styles.body, { color: colors.headText, fontSize: favoriteSliderDimensions.fontSize, fontWeight: '800', textAlign: 'center' }]} 
+                                        <FadeText
+                                          text={deck.name}
+                                          style={[typography.styles.body, { color: colors.headText, fontSize: favoriteSliderDimensions.fontSize, fontWeight: '800', textAlign: 'center' }]}
                                           maxChars={20}
                                         />
                                         <View style={{ width: scale(70), height: moderateScale(2), backgroundColor: colors.divider, borderRadius: moderateScale(1), marginVertical: favoriteSliderDimensions.dividerMargin, alignSelf: 'center' }} />
-                                        <FadeText 
-                                          text={deck.to_name} 
-                                          style={[typography.styles.body, { color: colors.headText, fontSize: favoriteSliderDimensions.fontSize, fontWeight: '800', textAlign: 'center' }]} 
+                                        <FadeText
+                                          text={deck.to_name}
+                                          style={[typography.styles.body, { color: colors.headText, fontSize: favoriteSliderDimensions.fontSize, fontWeight: '800', textAlign: 'center' }]}
                                           maxChars={20}
                                         />
                                       </>
                                     ) : (
-                                      <FadeText 
-                                        text={deck.name} 
-                                        style={[typography.styles.body, { color: colors.headText, fontSize: favoriteSliderDimensions.fontSize, fontWeight: '800', textAlign: 'center' }]} 
+                                      <FadeText
+                                        text={deck.name}
+                                        style={[typography.styles.body, { color: colors.headText, fontSize: favoriteSliderDimensions.fontSize, fontWeight: '800', textAlign: 'center' }]}
                                         maxChars={20}
                                       />
                                     )}
@@ -988,20 +988,20 @@ export default function LibraryScreen() {
                 )}
 
                 {/* Favorite Cards Section Header + Controls */}
-                <View style={[styles.favoriteHeaderRow, { marginTop: verticalScale(40) }]}> 
+                <View style={[styles.favoriteHeaderRow, { marginTop: verticalScale(40) }]}>
                   <View style={{ flex: 1, flexShrink: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: scale(8) }}>
                     <View style={[styles.iconBackground, { backgroundColor: colors.iconBackground }]}>
                       <Iconify icon="mdi:cards" size={moderateScale(26)} color="#F98A21" />
                     </View>
-                    <Text style={[styles.favoriteHeaderTitle, { color: colors.text }]} numberOfLines={1}> 
+                    <Text style={[styles.favoriteHeaderTitle, { color: colors.text }]} numberOfLines={1}>
                       {t('library.favoriteCardsTitle', 'Favori Kartlarım')}
                     </Text>
                   </View>
                   <TouchableOpacity activeOpacity={0.8} style={[styles.seeAllButton, { borderColor: colors.secondary, backgroundColor: colors.secondary + '30', flexShrink: 0 }]} onPress={() => navigation.navigate('FavoriteCards')}>
-                    <Text style={[styles.seeAllText, { color: colors.secondary }]}> 
+                    <Text style={[styles.seeAllText, { color: colors.secondary }]}>
                       {t('library.all', 'Tümü')}
                     </Text>
-                    <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(15)} color={colors.secondary}  />
+                    <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(15)} color={colors.secondary} />
                   </TouchableOpacity>
                 </View>
                 <View style={{ marginVertical: verticalScale(5) }}>
@@ -1142,7 +1142,7 @@ const styles = StyleSheet.create({
     borderBottomEndRadius: moderateScale(70),
     borderBottomStartRadius: moderateScale(70),
     overflow: 'hidden',
-  
+
   },
   headerContent: {
     height: '100%',
@@ -1177,7 +1177,7 @@ const styles = StyleSheet.create({
     right: moderateScale(2),
     overflow: 'hidden',
     borderRadius: moderateScale(23),
-    
+
   },
   pillIndicator: {
     position: 'absolute',
@@ -1185,7 +1185,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     borderRadius: moderateScale(23),
-    
+
   },
   pillTab: {
     height: '100%',

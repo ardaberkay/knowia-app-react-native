@@ -201,7 +201,7 @@ export default function DeckEditScreen() {
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <TextInput
-              style={[styles.input, typography.styles.body, { color: colors.text, flex: 1, borderColor: colors.inputBorder }]}
+              style={[styles.input, typography.styles.body, { color: colors.text, flex: 1, borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
               placeholder={t('create.nameExam', 'Örn: İngilizce')}
               placeholderTextColor={colors.muted}
               value={name}
@@ -248,7 +248,7 @@ export default function DeckEditScreen() {
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <TextInput
-              style={[styles.input, typography.styles.body, { color: colors.text, flex: 1, borderColor: colors.inputBorder }]}
+              style={[styles.input, typography.styles.body, { color: colors.text, flex: 1, borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
               placeholder={t('create.toNameExam', 'Örn: Türkçe')}
               placeholderTextColor={colors.muted}
               value={toName}
@@ -297,7 +297,7 @@ export default function DeckEditScreen() {
               style={[
                 styles.input,
                 typography.styles.body,
-                { height: verticalScale(120), textAlignVertical: 'top', color: colors.text, paddingRight: scale(40), borderColor: colors.inputBorder },
+                { height: verticalScale(120), textAlignVertical: 'top', color: colors.text, paddingRight: scale(40), borderColor: colors.inputBorder, backgroundColor: colors.inputBackground},
               ]}
               placeholder={t('create.descriptionExam', 'Deste hakkında açıklama...')}
               placeholderTextColor={colors.muted}
@@ -346,7 +346,7 @@ export default function DeckEditScreen() {
             </View>
           </View>
           <TouchableOpacity
-            style={[styles.categorySelector, { borderColor: colors.inputBorder }]}
+            style={[styles.categorySelector, { borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
             accessibilityLabel={t('createDeck.selectCategoryA11y', 'Kategori seç')}
             onPress={() => setCategoryModalVisible(true)}
           >
@@ -414,7 +414,7 @@ export default function DeckEditScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.categorySelector, { borderColor: colors.inputBorder }]}
+            style={[styles.categorySelector, { borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
             accessibilityLabel={t('create.selectLanguage', 'Dil Seç')}
             onPress={() => setDeckLanguageModalVisible(true)}
           >
@@ -521,8 +521,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   input: {
-    borderWidth: moderateScale(0.15),
-    borderRadius: moderateScale(8),
+    borderWidth: moderateScale(1),
+    borderRadius: moderateScale(20),
     padding: scale(12),
     marginBottom: 0,
     fontSize: moderateScale(16),
@@ -541,8 +541,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: moderateScale(0.15),
-    borderRadius: moderateScale(8),
+    borderWidth: moderateScale(1),
+    borderRadius: moderateScale(12),
     padding: scale(12),
   },
   categoryRow: {
