@@ -21,11 +21,11 @@
     "logoutError": "Çıkış yapılırken bir hata oluştu",
     "accountDeleted": "Hesap silindi!",
     "privacy": "Gizlilik Politikası",
-    "deleteAccount": "Hesabı Kalıcı Olarak Sil",
+    "deleteAccount": "Hesabı Sil",
     "deleteAccountTitle": "Hesabı Kalıcı Olarak Sil",
     "deleteAccountMessage": "Hesabınız ve tüm verileriniz kalıcı olarak silinecek. Bu işlem geri alınamaz.",
     "deleteAccountIrreversible": "Hesabınız ve tüm verileriniz kalıcı olarak silinecek. Bu işlem geri alınamaz. Emin misiniz?",
-    "deleteAccountConfirm": "Kalıcı Olarak Sil",
+    "deleteAccountConfirm": "Sil",
     "deleteSuccess": "Hesabınız silindi",
     "deleteDeactivateError": "İşlem sırasında bir hata oluştu",
     "haptics": "Titreşimler"

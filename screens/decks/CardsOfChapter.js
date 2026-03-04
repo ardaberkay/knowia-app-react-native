@@ -209,7 +209,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
           <Iconify
             icon={editMode ? "mingcute:close-fill" : "lucide:edit"}
             size={moderateScale(22)}
-            color="#FFFFFF"
+            color={colors.text}
           />
         </TouchableOpacity>
       ) : () => null,
@@ -523,7 +523,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
           }
         }}
         // Tıklama anında opacity düşürmek yerine alttan bu rengi gösterir (titremeyi engeller)
-        underlayColor={colors.cardBackground === '#FFFFFF' ? '#F2F2F2' : '#3C3C3C'}
+        underlayColor={colors.cardBackground === '#FFFFFF' ? '#F2F2F2' : '#eeeeee'}
       >
         <View style={styles.cardContent}>
           {/* Edit mode'da checkbox (Burası küçük olduğu için TouchableOpacity kalabilir) */}
@@ -803,9 +803,9 @@ export default function ChapterCardsScreen({ route, navigation }) {
                   <Iconify
                     icon={selectedCards.size === filteredCards.length ? "material-symbols:all-out-rounded" : "material-symbols:all-out-outline-rounded"}
                     size={moderateScale(18)}
-                    color="#fff"
+                    color={colors.text}
                   />
-                  <Text style={styles.actionPillText}>
+                  <Text style={[styles.actionPillText, { color: colors.text }]}>
                     {selectedCards.size === filteredCards.length
                       ? t('chapterCards.deselectAll', 'Tümünü Kaldır')
                       : t('chapterCards.selectAll', 'Tümünü Seç')}
@@ -814,7 +814,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
                 {/* Orta Kısım: Seçili Sayısı */}
                 <View style={styles.badgeContainer}>
-                  <Text style={styles.badgeText}>
+                  <Text style={[styles.badgeText, { color: colors.text }]}>
                     {selectedCards.size} {t('chapterCards.selected', 'seçili')}
                   </Text>
                 </View>
@@ -1164,7 +1164,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)', // Butonlar için hafif bir vurgu
   },
   actionPillText: {
-    color: '#fff',
     fontSize: moderateScale(13),
     fontWeight: '600',
     marginLeft: scale(4),
@@ -1182,7 +1181,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(8),
   },
   badgeText: {
-    color: '#fff',
     fontSize: moderateScale(12),
     fontWeight: '500',
     opacity: 0.9,

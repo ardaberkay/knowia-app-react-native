@@ -6,11 +6,10 @@ import { useTranslation } from 'react-i18next';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { triggerHaptic } from '../../lib/hapticManager';
 
-const FilterIcon = ({ style, size, color = "#B0B0B0", value = 'original', onChange, hideFavorites = false }) => {
-  const { colors } = useTheme();
+const FilterIcon = ({ style, size, color, value = 'original', onChange, hideFavorites = false, variant }) => {
+  const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
   
-  // useWindowDimensions hook'u - ekran döndürme desteği
   useWindowDimensions();
   const isTablet = getIsTablet();
   
@@ -34,6 +33,22 @@ const FilterIcon = ({ style, size, color = "#B0B0B0", value = 'original', onChan
   const buttonRef = useRef(null);
   const [visible, setVisible] = useState(false);
   const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
+
+  // === SEARCHBAR VE FILTERMODALBUTTON İLE BİREBİR AYNI MANTIK ===
+  const isLight = variant === 'light';
+
+  const borderColor = isLight ? 'rgba(255, 255, 255, 0.3)' : (isDarkMode ? '#4A4A4A' : 'rgba(0, 0, 0, 0.08)');
+  
+  // Eğer dışarıdan özel bir color prop'u gönderildiyse onu kullan, yoksa standart tema rengini uygula
+  const defaultIconColor = isLight ? '#ffffff' : (isDarkMode ? '#ffffff' : colors.subtext);
+  const resolvedIconColor = color || defaultIconColor;
+
+  const backgroundColor = isLight 
+    ? 'rgba(255, 255, 255, 0.15)' // Cam efekti (renkli alanlar için %15 beyaz)
+    : (isDarkMode 
+        ? 'rgba(255, 255, 255, 0.05)' // Karanlık mod (%5 hafif beyaz dolgu)
+        : 'rgba(0, 0, 0, 0.03)');     // Açık mod (%3 hafif koyu dolgu)
+  // ===============================================================
 
   const openMenu = () => {
     triggerHaptic('selection');
@@ -59,7 +74,8 @@ const FilterIcon = ({ style, size, color = "#B0B0B0", value = 'original', onChan
         style={[
           styles.filterIconButton, 
           { 
-            borderColor: '#4A4A4A',
+            borderColor,
+            backgroundColor, // Dinamik arka plan rengi uygulandı
             height: filterIconDimensions.height,
             paddingHorizontal: filterIconDimensions.paddingHorizontal,
             paddingVertical: filterIconDimensions.paddingVertical,
@@ -71,7 +87,7 @@ const FilterIcon = ({ style, size, color = "#B0B0B0", value = 'original', onChan
         onPress={openMenu}
         activeOpacity={0.8}
       >
-        <Icon icon="lsicon:filter-filled" size={filterIconDimensions.iconSize} color={color} />
+        <Icon icon="lsicon:filter-filled" size={filterIconDimensions.iconSize} color={resolvedIconColor} />
       </TouchableOpacity>
 
       <Modal
@@ -101,21 +117,21 @@ const FilterIcon = ({ style, size, color = "#B0B0B0", value = 'original', onChan
               borderColor: colors.iconBackground,
             }}>
               <TouchableOpacity onPress={() => handleSelect('original')} style={{ paddingVertical: filterIconDimensions.dropdownItemPaddingVertical, paddingHorizontal: filterIconDimensions.dropdownItemPaddingHorizontal, backgroundColor: value === 'original' ? colors.iconBackground : 'transparent', borderRadius: filterIconDimensions.dropdownItemBorderRadius }}>
-                <Text style={{ color: value === 'original' ? '#fff' : colors.text, fontWeight: value === 'original' ? 'bold' : 'normal', fontSize: filterIconDimensions.dropdownFontSize }}>{t('deckDetail.default', 'Varsayılan')}</Text>
+                <Text style={{ color: value === 'original' ? (isDarkMode ? '#ffffff' : '#000000') : colors.text, fontWeight: value === 'original' ? 'bold' : 'normal', fontSize: filterIconDimensions.dropdownFontSize }}>{t('deckDetail.default', 'Varsayılan')}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => handleSelect('az')} style={{ paddingVertical: filterIconDimensions.dropdownItemPaddingVertical, paddingHorizontal: filterIconDimensions.dropdownItemPaddingHorizontal, backgroundColor: value === 'az' ? colors.iconBackground  : 'transparent', borderRadius: filterIconDimensions.dropdownItemBorderRadius }}>
-                <Text style={{ color: value === 'az' ? '#fff' : colors.text, fontWeight: value === 'az' ? 'bold' : 'normal', fontSize: filterIconDimensions.dropdownFontSize }}>A-Z</Text>
+                <Text style={{ color: value === 'az' ? (isDarkMode ? '#ffffff' : '#000000') : colors.text, fontWeight: value === 'az' ? 'bold' : 'normal', fontSize: filterIconDimensions.dropdownFontSize }}>A-Z</Text>
               </TouchableOpacity>
               {!hideFavorites && (
                 <TouchableOpacity onPress={() => handleSelect('fav')} style={{ paddingVertical: filterIconDimensions.dropdownItemPaddingVertical, paddingHorizontal: filterIconDimensions.dropdownItemPaddingHorizontal, backgroundColor: value === 'fav' ? colors.iconBackground : 'transparent', borderRadius: filterIconDimensions.dropdownItemBorderRadius }}>
-                  <Text style={{ color: value === 'fav' ? '#fff' : colors.text, fontWeight: value === 'fav' ? 'bold' : 'normal', fontSize: filterIconDimensions.dropdownFontSize }}>{t('deckDetail.fav', 'Favoriler')}</Text>
+                  <Text style={{ color: value === 'fav' ? (isDarkMode ? '#ffffff' : '#000000') : colors.text, fontWeight: value === 'fav' ? 'bold' : 'normal', fontSize: filterIconDimensions.dropdownFontSize }}>{t('deckDetail.fav', 'Favoriler')}</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity onPress={() => handleSelect('unlearned')} style={{ paddingVertical: filterIconDimensions.dropdownItemPaddingVertical, paddingHorizontal: filterIconDimensions.dropdownItemPaddingHorizontal, backgroundColor: value === 'unlearned' ? colors.iconBackground : 'transparent', borderRadius: filterIconDimensions.dropdownItemBorderRadius }}>
-                <Text style={{ color: value === 'unlearned' ? '#fff' : colors.text, fontWeight: value === 'unlearned' ? 'bold' : 'normal', fontSize: filterIconDimensions.dropdownFontSize }}>{t('deckDetail.inProgress', 'Devam Eden')}</Text>
+                <Text style={{ color: value === 'unlearned' ? (isDarkMode ? '#ffffff' : '#000000') : colors.text, fontWeight: value === 'unlearned' ? 'bold' : 'normal', fontSize: filterIconDimensions.dropdownFontSize }}>{t('deckDetail.inProgress', 'Devam Eden')}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => handleSelect('learned')} style={{ paddingVertical: filterIconDimensions.dropdownItemPaddingVertical, paddingHorizontal: filterIconDimensions.dropdownItemPaddingHorizontal, backgroundColor: value === 'learned' ? colors.iconBackground : 'transparent', borderRadius: filterIconDimensions.dropdownItemBorderRadius }}>
-                <Text style={{ color: value === 'learned' ? '#fff' : colors.text, fontWeight: value === 'learned' ? 'bold' : 'normal', fontSize: filterIconDimensions.dropdownFontSize }}>{t('deckDetail.inLearned', 'Öğrenildi')}</Text>
+                <Text style={{ color: value === 'learned' ? (isDarkMode ? '#ffffff' : '#000000') : colors.text, fontWeight: value === 'learned' ? 'bold' : 'normal', fontSize: filterIconDimensions.dropdownFontSize }}>{t('deckDetail.inLearned', 'Öğrenildi')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -132,8 +148,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fffff',
-    // height, paddingHorizontal, paddingVertical, borderRadius, borderWidth dinamik olarak uygulanacak
     aspectRatio: 1,
   },
 });

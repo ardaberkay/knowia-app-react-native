@@ -13,30 +13,44 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-export const FilterModalButton = ({ onPress, variant = 'default' }) => {
-  const { colors } = useTheme();
+export const FilterModalButton = ({ onPress, variant }) => {
+  const { colors, isDarkMode } = useTheme();
+
+  // Şalterimiz: Eğer variant="light" gönderildiyse beyaz/cam moduna geç
   const isLight = variant === 'light';
+
+  const borderColor = isLight ? 'rgba(255, 255, 255, 0.3)' : (isDarkMode ? '#4A4A4A' : 'rgba(0, 0, 0, 0.08)');
+  const iconColor = isLight ? '#ffffff' : (isDarkMode ? '#ffffff' : colors.subtext);
+
+  // Arama çubuğu ile birebir aynı arka plan dolgu mantığı:
+  const backgroundColor = isLight 
+    ? 'rgba(255, 255, 255, 0.15)' // Cam efekti (renkli alanlar için %15 beyaz)
+    : (isDarkMode 
+        ? 'rgba(255, 255, 255, 0.05)' // Karanlık mod (%5 hafif beyaz dolgu)
+        : 'rgba(0, 0, 0, 0.03)');     // Açık mod (%3 hafif koyu dolgu)
 
   return (
     <TouchableOpacity
       style={[
         styles.filterIconButton,
-        { borderColor: isLight ? 'rgba(255, 255, 255, 0.3)' : colors.border }
+        { 
+          borderColor,
+          backgroundColor // <-- Arka plan rengini buraya ekledik
+        }
       ]}
-      onPress={
-        () => {
-          triggerHaptic('light');
-          requestAnimationFrame(() => {
-            onPress();
-          });
-        }}
+      onPress={() => {
+        triggerHaptic('light');
+        requestAnimationFrame(() => {
+          onPress();
+        });
+      }}
       hitSlop={{ top: scale(15), bottom: scale(15), left: scale(15), right: scale(15) }}
       activeOpacity={0.8}
     >
       <Iconify
         icon="mage:filter"
         size={moderateScale(24)}
-        color={isLight ? '#fff' : colors.subtext}
+        color={iconColor}
       />
     </TouchableOpacity>
   );

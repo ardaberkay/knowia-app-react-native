@@ -113,7 +113,7 @@ export default function ChaptersScreen({ route, navigation }) {
             <Iconify
               icon={editMode ? "mingcute:close-fill" : "lucide:edit"}
               size={moderateScale(22)}
-              color="#FFFFFF"
+              color={colors.text}
             />
           </TouchableOpacity>
         );

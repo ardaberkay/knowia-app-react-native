@@ -231,7 +231,7 @@ export default function CreateScreen() {
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <TextInput
-                style={[styles.input, typography.styles.body, { color: colors.text, flex: 1 }]}
+                style={[styles.input, typography.styles.body, { color: colors.text, flex: 1, borderColor: colors.inputBorder }]}
                 placeholder={t('create.nameExam', 'Örn: İngilizce')}
                 placeholderTextColor={colors.muted}
                 value={name}
@@ -277,7 +277,7 @@ export default function CreateScreen() {
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <TextInput
-                style={[styles.input, typography.styles.body, { color: colors.text, flex: 1 }]}
+                style={[styles.input, typography.styles.body, { color: colors.text, flex: 1, borderColor: colors.inputBorder }]}
                 placeholder={t('create.toNameExam', 'Örn: Türkçe')}
                 placeholderTextColor={colors.muted}
                 value={toName}
@@ -326,7 +326,7 @@ export default function CreateScreen() {
                 style={[
                   styles.input,
                   typography.styles.body,
-                  { height: verticalScale(120), textAlignVertical: 'top', color: colors.text, paddingRight: scale(40) },
+                  { height: verticalScale(120), textAlignVertical: 'top', color: colors.text, paddingRight: scale(40), borderColor: colors.inputBorder },
                 ]}
                 placeholder={t('create.descriptionExam', 'Deste hakkında açıklama...')}
                 placeholderTextColor={colors.muted}
@@ -375,7 +375,7 @@ export default function CreateScreen() {
                 </View>
             </View>
             <TouchableOpacity
-              style={[styles.categorySelector, { borderColor: '#eee' }]}
+              style={[styles.categorySelector, { borderColor: colors.inputBorder }]}
               accessibilityLabel={t('createDeck.selectCategoryA11y', 'Kategori seç')}
               onPress={() => {
                 triggerHaptic('selection');
@@ -429,7 +429,7 @@ export default function CreateScreen() {
             </View>
 
             <TouchableOpacity
-              style={[styles.categorySelector, { borderColor: '#eee' }]}
+              style={[styles.categorySelector, { borderColor: colors.inputBorder }]}
               accessibilityLabel={t('create.selectLanguage', 'Dil Seç')}
               onPress={() => {
                 triggerHaptic('selection');
@@ -604,7 +604,6 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: moderateScale(0.15),
-    borderColor: '#eee',
     borderRadius: moderateScale(8),
     padding: scale(12),
     marginBottom: 0,

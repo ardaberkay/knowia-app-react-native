@@ -189,7 +189,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
                 }
               }}
             >
-              <Iconify icon="material-symbols:arrow-back-ios-new-rounded" size={moderateScale(22)} color={colors.cardQuestionText} />
+              <Iconify icon="material-symbols:arrow-back-ios-new-rounded" size={moderateScale(22)} color={'#FFFFFF'} />
             </TouchableOpacity>
           )}
 
@@ -364,7 +364,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
                 }
               }}
             >
-              <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(22)} color={colors.cardQuestionText} />
+              <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(22)} color={'#FFFFFF'} />
             </TouchableOpacity>
           )}
 

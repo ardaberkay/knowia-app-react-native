@@ -21,11 +21,11 @@
     "inviteMessage": "Find your path to learning in the universe of knowledge — with Knowia. Sign up for free!",
     "logoutError": "An error occurred while logging out",
     "accountDeleted": "Account deleted!",
-    "deleteAccount": "Delete Account Permanently",
+    "deleteAccount": "Delete Account",
     "deleteAccountTitle": "Delete Account Permanently",
     "deleteAccountMessage": "Your account and all your data will be permanently deleted. This action cannot be undone.",
     "deleteAccountIrreversible": "Your account and all your data will be permanently deleted. This action cannot be undone. Are you sure?",
-    "deleteAccountConfirm": "Delete Permanently",
+    "deleteAccountConfirm": "Delete",
     "deleteSuccess": "Your account has been deleted",
     "deleteDeactivateError": "An error occurred during the operation",
     "haptics": "Vibrations"

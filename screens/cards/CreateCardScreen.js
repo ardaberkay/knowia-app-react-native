@@ -264,7 +264,7 @@ export default function AddCardScreen() {
             </View>
             <View style={{ position: 'relative' }}>
               <TextInput
-                style={[styles.input, typography.styles.body, { color: colors.text, paddingRight: question?.length > 0 ? scale(48) : scale(12) }]}
+                style={[styles.input, typography.styles.body, { color: colors.text, paddingRight: question?.length > 0 ? scale(48) : scale(12), borderColor: colors.inputBorder }]}
                 placeholder={t("addCard.questionPlaceholder", "Kartın sorusu")}
                 placeholderTextColor={colors.muted}
                 value={question}
@@ -306,7 +306,7 @@ export default function AddCardScreen() {
             </View>
             <View style={{ position: 'relative' }}>
               <TextInput
-                style={[styles.input, typography.styles.body, { color: colors.text, paddingRight: answer?.length > 0 ? scale(48) : scale(12) }]}
+                style={[styles.input, typography.styles.body, { color: colors.text, paddingRight: answer?.length > 0 ? scale(48) : scale(12), borderColor: colors.inputBorder }]}
                 placeholder={t("addCard.answerPlaceholder", "Kartın cevabı")}
                 placeholderTextColor={colors.muted}
                 value={answer}
@@ -348,7 +348,7 @@ export default function AddCardScreen() {
             </View>
             <View style={{ position: 'relative' }}>
               <TextInput
-                style={[styles.input, typography.styles.body, { color: colors.text, paddingRight: example?.length > 0 ? scale(48) : scale(12) }]}
+                style={[styles.input, typography.styles.body, { color: colors.text, paddingRight: example?.length > 0 ? scale(48) : scale(12), borderColor: colors.inputBorder }]}
                 placeholder={t("addCard.examplePlaceholder", "Örnek cümle")}
                 placeholderTextColor={colors.muted}
                 value={example}
@@ -390,7 +390,7 @@ export default function AddCardScreen() {
             </View>
             <View style={{ position: 'relative' }}>
               <TextInput
-                style={[styles.input, typography.styles.body, { color: colors.text, paddingRight: note?.length > 0 ? scale(48) : scale(12) }]}
+                style={[styles.input, typography.styles.body, { color: colors.text, paddingRight: note?.length > 0 ? scale(48) : scale(12), borderColor: colors.inputBorder }]}
                 placeholder={t("addCard.notePlaceholder", "Not (opsiyonel)")}
                 placeholderTextColor={colors.muted}
                 value={note}
@@ -525,7 +525,6 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: moderateScale(0.15),
-    borderColor: '#eee',
     borderRadius: moderateScale(8),
     padding: scale(12),
     marginBottom: 0,

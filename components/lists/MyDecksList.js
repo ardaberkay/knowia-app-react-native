@@ -165,7 +165,7 @@ const MyDeckCard = React.memo(({
           <Iconify
             icon={localFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
             size={moderateScale(isVertical ? 21 : 22)}
-            color={localFavorite ? '#F98A21' : colors.text}
+            color={localFavorite ? '#F98A21' : colors.headText}
           />
         </TouchableOpacity>
 

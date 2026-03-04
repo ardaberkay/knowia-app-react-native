@@ -186,7 +186,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               </View>
               <View style={{ position: 'relative' }}>
                 <TextInput
-                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: question?.length > 0 ? scale(48) : scale(12)}]}
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: question?.length > 0 ? scale(48) : scale(12), borderColor: colors.inputBorder }]}
                   placeholder={t("cardDetail.questionPlaceholder", "Kartın sorusu")}
                   placeholderTextColor={colors.muted}
                   value={question}
@@ -228,7 +228,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               </View>
               <View style={{ position: 'relative' }}>
                 <TextInput
-                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: answer?.length > 0 ? scale(48) : scale(12)}]}
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: answer?.length > 0 ? scale(48) : scale(12), borderColor: colors.inputBorder }]}
                   placeholder={t("cardDetail.answerPlaceholder", "Kartın cevabı")}
                   placeholderTextColor={colors.muted}
                   value={answer}
@@ -270,7 +270,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               </View>
               <View style={{ position: 'relative' }}>
                 <TextInput
-                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: example?.length > 0 ? scale(48) : scale(12)}]}
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: example?.length > 0 ? scale(48) : scale(12), borderColor: colors.inputBorder }]}
                   placeholder={t("cardDetail.examplePlaceholder", "Örnek cümle (opsiyonel)")}
                   placeholderTextColor={colors.muted}
                   value={example}
@@ -312,7 +312,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               </View>
               <View style={{ position: 'relative' }}>
                 <TextInput
-                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: note?.length > 0 ? scale(48) : scale(12)}]}
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: note?.length > 0 ? scale(48) : scale(12), borderColor: colors.inputBorder }]}
                   placeholder={t("cardDetail.notePlaceholder", "Not (opsiyonel)")}
                   placeholderTextColor={colors.muted}
                   value={note}
@@ -388,7 +388,6 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: moderateScale(0.15),
-    borderColor: '#eee',
     borderRadius: moderateScale(8),
     padding: scale(12),
     marginBottom: 0,

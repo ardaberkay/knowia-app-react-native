@@ -208,7 +208,7 @@ const DeckCard = ({
           <Iconify
             icon={localFavorite ? 'solar:heart-bold' : 'solar:heart-broken'} // ARTIK LOKAL STATE'İ DİNLİYOR
             size={moderateScale(20)}
-            color={localFavorite ? '#F98A21' : colors.orWhite} // ARTIK LOKAL STATE'İ DİNLİYOR
+            color={localFavorite ? '#F98A21' : colors.headText} // ARTIK LOKAL STATE'İ DİNLİYOR
           />
         </TouchableOpacity>
       </LinearGradient>

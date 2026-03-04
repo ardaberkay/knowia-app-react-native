@@ -1,6 +1,7 @@
 export const lightColors = {
     background: '#FFFDF9',
     buttonColor: '#F98A21',
+    homeCardBackground: '#F4F1EA',
     secondary: '#2F80ED',
     text: '#1C1C1C',
     subtext: '#4A4A4A',
@@ -11,9 +12,9 @@ export const lightColors = {
     muted: '#8C8C8C',
     optional: '#F2C94C',
     buttonText: '#FFFFFF',
-    tabBarBackground: '#FFFFFF',
+    tabBarBackground: '#FFFDF9',
     deckGradient: ['#A8C5F0', '#D6E4FA'],
-    appbar: '#ffffff',
+    appbar: '#FFFDF9',
     title: '#000000',
     libraryTab: '#fff8f0',
     blurView: 'rgba(255,255,255,0.85)',
@@ -22,11 +23,12 @@ export const lightColors = {
     orWhite: '#F98A21',
     actionButton: '#fff8f0',
     inProgressBar: '#d9d9d9',
-    headText: '#F98A21',
-    divider: '#FFFFFF',
+    headText: '#F0F0F0',
+    divider: '#F98A21',
+    inputBorder: '#333333',
     // Kart renkleri
-    cardBackground: '#FFF8F0',
-    cardBackgroundTransparent: 'rgba(255, 248, 240, 0.85)',
+    cardBackground: '#F4F1EA',
+    cardBackgroundTransparent: 'rgba(244, 241, 234, 0.85)',
     cardQuestionText: '#1C1C1C',
     cardAnswerText: '#4A4A4A',
     cardDivider: '#F98A21',
@@ -35,6 +37,7 @@ export const lightColors = {
     foldedCorner: '#f9b97a',
     progressBarSwipe: '#ffe0c3',
     cardBorder: '#EEEEEE',
+    pillBorder: '#dddddd',
     shadowColor: "#000",
     shadowOpacity: 0.08,   // Hafif gölge
     shadowRadius: 8,       // Gölge yumuşaklığı
@@ -85,6 +88,7 @@ export const darkColors = {
     inProgressBar: '#dddddd',
     headText: '#F0F0F0',
     divider: '#F98A21',
+    inputBorder: '#EEEEEE',
     // Kart renkleri
     cardBackground: '#2C2C2C',
     cardBackgroundTransparent: 'rgba(44, 44, 44, 0.75)',
@@ -95,6 +99,7 @@ export const darkColors = {
     progressBar: '#4A4A4A',
     foldedCorner: '#F98A21',
     progressBarSwipe: '#FFFFFF',
+    pillBorder: '#333333',
     cardBorder: '#333333',
     shadowColor: "#000",
     shadowOpacity: 0.3,    // Light Mode'a göre biraz daha belirgin

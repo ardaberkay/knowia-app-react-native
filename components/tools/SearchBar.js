@@ -6,10 +6,9 @@ import { typography } from '../../theme/typography';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { useTranslation } from 'react-i18next';
 
-export default function SearchBar({ value, onChangeText, placeholder, style, variant = 'default' }) {
-  const { colors } = useTheme();
+export default function SearchBar({ value, onChangeText, placeholder, style, variant }) {
+  const { colors, isDarkMode } = useTheme(); 
   const { t } = useTranslation();
-  // useWindowDimensions hook'u - ekran döndürme desteği
   useWindowDimensions();
   const isTablet = getIsTablet();
   
@@ -26,13 +25,16 @@ export default function SearchBar({ value, onChangeText, placeholder, style, var
     inputPaddingHorizontal: isTablet ? scale(10) : scale(8),
   }), [isTablet]);
   
+  // Şalterimiz: Eğer variant="light" gönderildiyse beyaz/cam moduna geç
   const isLight = variant === 'light';
-  const borderColor = isLight ? 'rgba(255, 255, 255, 0.3)' : '#4A4A4A';
-  const iconColor = isLight ? '#fff' : '#B0B0B0';
-  const textColor = isLight ? '#fff' : colors.text;
-  const placeholderColor = isLight ? 'rgba(255, 255, 255, 0.7)' : '#A0A0A0';
-  const backgroundColor = isLight ? 'rgba(255, 255, 255, 0.15)' : 'transparent';
 
+  // isLight aktifse senin filtre butonundaki gibi şeffaf beyazlar kullanılıyor.
+  // Değilse, uygulamanın normal temasına (isDarkMode) göre çalışıyor.
+  const borderColor = isLight ? 'rgba(255, 255, 255, 0.3)' : (isDarkMode ? '#4A4A4A' : colors.border);
+  const iconColor = isLight ? '#ffffff' : (isDarkMode ? '#B0B0B0' : colors.subtext);
+  const textColor = isLight ? '#ffffff' : colors.text;
+  const placeholderColor = isLight ? 'rgba(255, 255, 255, 0.7)' : (isDarkMode ? '#A0A0A0' : colors.subtext);
+  const backgroundColor = isLight ? 'rgba(255, 255, 255, 0.15)' : (isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)');
   return (
     <View style={[
       styles.wrapper, 
@@ -50,13 +52,7 @@ export default function SearchBar({ value, onChangeText, placeholder, style, var
         icon="iconamoon:search" 
         size={searchBarDimensions.iconSize} 
         color={iconColor} 
-        style={[
-          styles.icon,
-          {
-            marginRight: searchBarDimensions.iconMarginRight,
-            marginLeft: searchBarDimensions.iconMarginLeft,
-          }
-        ]} 
+        style={[{ marginRight: searchBarDimensions.iconMarginRight, marginLeft: searchBarDimensions.iconMarginLeft }]} 
       />
       <TextInput
         style={[
@@ -69,7 +65,7 @@ export default function SearchBar({ value, onChangeText, placeholder, style, var
             paddingVertical: searchBarDimensions.paddingVertical,
           }
         ]}
-        placeholder={t('common.searchPlaceholder', 'Ara...')}
+        placeholder={placeholder || t('common.searchPlaceholder', 'Ara...')}
         value={value}
         onChangeText={onChangeText}
         placeholderTextColor={placeholderColor}
@@ -79,21 +75,6 @@ export default function SearchBar({ value, onChangeText, placeholder, style, var
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-    // height, paddingHorizontal, borderRadius, borderWidth dinamik olarak uygulanacak
-  },
-  icon: {
-    // marginRight, marginLeft dinamik olarak uygulanacak
-  },
-  input: {
-    flex: 1,
-    backgroundColor: 'transparent',
-    // fontSize, paddingHorizontal, paddingVertical dinamik olarak uygulanacak
-  },
+  wrapper: { flex: 1, flexDirection: 'row', alignItems: 'center' },
+  input: { flex: 1, backgroundColor: 'transparent' },
 });
-
-

@@ -733,7 +733,7 @@ export default function LibraryScreen() {
             </View>
           </View>
           <View
-            style={[styles.pillContainer, { borderColor: colors.cardBordaer || '#444444', backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.3)' }]}
+            style={[styles.pillContainer, { borderColor: colors.pillBorder || '#444444', backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.3)' }]}
             onLayout={(e) => setPillWidth(e.nativeEvent.layout.width)}
           >
           <View style={styles.pillIndicatorWrapper}>
@@ -761,7 +761,7 @@ export default function LibraryScreen() {
             triggerHaptic('selection');
               handleSetPage(0);
           }}>
-            <Text style={[styles.pillLabel, { color: activeTab === 'myDecks' ? colors.text : (colors.border || '#666') }]}>
+            <Text style={[styles.pillLabel, { color: activeTab === 'myDecks' ? '#FFFFFF' : (colors.border || '#666') }]}>
               {t('library.myDecks', 'Destelerim')}
             </Text>
           </TouchableOpacity>
@@ -769,7 +769,7 @@ export default function LibraryScreen() {
             triggerHaptic('selection');
               handleSetPage(1);
           }}>
-            <Text style={[styles.pillLabel, { color: activeTab === 'favorites' ? colors.text : (colors.border || '#666') }]}>
+            <Text style={[styles.pillLabel, { color: activeTab === 'favorites' ? '#FFFFFF' : (colors.border || '#666') }]}>
               {t('library.favorites', 'Favorilerim')}
             </Text>
           </TouchableOpacity>

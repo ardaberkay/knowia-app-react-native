@@ -192,7 +192,7 @@ export default function AppNavigator() {
               headerStyle: {
                 backgroundColor: 'transparent',
               },
-              headerTintColor: '#fff', // Geri butonu beyaz olsun
+              headerTintColor: colors.text, // Geri butonu beyaz olsun
             }}
           />
           <Stack.Screen
@@ -246,7 +246,7 @@ export default function AppNavigator() {
             headerStyle: {
               backgroundColor: 'transparent',
             },
-            headerTintColor: '#fff', // Geri butonu beyaz olsun
+            headerTintColor: colors.text, // Geri butonu beyaz olsun
           }} />
           <Stack.Screen name="FavoriteDecks" component={FavoriteDecks} options={{ headerShown: true, title: t('library.favoriteDecksTitle', 'Favori Desteler'), headerTitleAlign: 'center' }} />
           <Stack.Screen name="FavoriteCards" component={FavoriteCards} options={{ headerShown: true, title: t('library.favoriteCardsTitle', 'Favori Kartlar'), headerTitleAlign: 'center' }} />
