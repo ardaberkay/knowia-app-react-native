@@ -17,8 +17,10 @@ import ReportModal from '../../components/modals/ReportModal';
 import { scale, moderateScale, verticalScale, useWindowDimensions } from '../../lib/scaling';
 import { useFocusEffect } from '@react-navigation/native';
 import { triggerHaptic } from '../../lib/hapticManager';
+import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
 const AnimatedFabContainer = Animated.createAnimatedComponent(View);
+const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 
 export default function DeckDetailScreen({ route, navigation }) {
   const { deck } = route.params;
@@ -116,6 +118,15 @@ export default function DeckDetailScreen({ route, navigation }) {
   const statsAnim = useRef(new Animated.Value(0)).current;
   const cardsAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0)).current;
+
+  const buttonScale = useSharedValue(1);
+  // Animasyon stili
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: buttonScale.value }],
+    };
+  });
+  
 
   useEffect(() => {
     if (creatorMenuVisible) {
@@ -956,7 +967,7 @@ export default function DeckDetailScreen({ route, navigation }) {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: verticalScale(screenHeight * 0.12) }}
+        contentContainerStyle={{ paddingBottom: verticalScale(screenHeight * 0.10) }}
         showsVerticalScrollIndicator={false}
       >
         {/* GRADIENT FLOW DESIGN - Modern & Eye-catching */}
@@ -1739,14 +1750,27 @@ export default function DeckDetailScreen({ route, navigation }) {
           </AnimatedFabContainer>
         </View>
 
-        <TouchableOpacity
-          style={[styles.fabButton, styles.fabButtonRight, {
-            borderColor: 'transparent',
-            overflow: 'hidden',
-          }]}
-          activeOpacity={0.95}
+        <AnimatedPressable
+          style={[
+            styles.fabButton, 
+            styles.fabButtonRight, 
+            animatedStyle, // Animasyon stilimizi bağladık
+            {
+              borderColor: 'transparent',
+              overflow: 'hidden',
+            }
+          ]}
+          // 1. Parmağı bastığında: Tok bir şekilde küçül (0.88)
+          onPressIn={() => {
+            buttonScale.value = withSpring(0.88, { damping: 15, stiffness: 400 });
+          }}
+          // 2. Parmağı çektiğinde: Tatlı bir yaylanma (bounce) ile geri dön
+          onPressOut={() => {
+            buttonScale.value = withSpring(1, { damping: 8, stiffness: 400, mass: 0.8 });
+          }}
           onPress={async () => {
             triggerHaptic('heavy');
+            
             if (!selectedChapter) {
               Alert.alert(
                 t('deckDetail.selectChapter', 'Bölüm Seç'),
@@ -1786,7 +1810,7 @@ export default function DeckDetailScreen({ route, navigation }) {
           >
             <Iconify icon="streamline:button-play-solid" size={moderateScale(22)} color="#fff" />
           </LinearGradient>
-        </TouchableOpacity>
+        </AnimatedPressable>
       </View>
 
       {/* More Menüsü Modal - sahibi: Düzenle/Sil; sahibi değil: Gizle/Şikayet et */}

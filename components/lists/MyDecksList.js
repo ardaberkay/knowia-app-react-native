@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl, Image, Keyboard } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
@@ -399,6 +399,9 @@ const MyDecksList = ({
       initialNumToRender={6} 
       maxToRenderPerBatch={4} 
       windowSize={5} 
+      keyboardDismissMode="on-drag" 
+      keyboardShouldPersistTaps="handled"
+      onScrollBeginDrag={() => Keyboard.dismiss()}
       
       refreshControl={
         <RefreshControl

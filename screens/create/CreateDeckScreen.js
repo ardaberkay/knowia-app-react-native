@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image, unstable_batchedUpdates } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, Keyboard } from 'react-native';
 import { supabase } from '../../lib/supabase';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useNavigation } from '@react-navigation/native';
 import { typography } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
@@ -32,6 +33,28 @@ export default function CreateScreen() {
   const [selectedLanguage, setSelectedLanguage] = useState([]);
   const [isDeckLanguageModalVisible, setDeckLanguageModalVisible] = useState(false);
   const [languages, setLanguages] = useState([]);
+
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    // Klavye açıldığında state'i true yap
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    
+    // Klavye kapandığında state'i false yap
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+
+    // Component unmount olduğunda listener'ları temizle
+    return () => {
+      keyboardDidHideListener.remove();
+      keyboardDidShowListener.remove();
+    };
+  }, []);
 
 
   const selectedLang = languages.filter(l =>
@@ -162,8 +185,14 @@ export default function CreateScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView
+        style={{flex: 1}}
+        contentContainerStyle={[styles.formContainer]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid={true}
+        enableAutomaticScroll={true}
+      >
           {/* Header Card */}
           <View style={[styles.headerCard, styles.headerCardContainer, { borderRadius: 44, backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, borderWidth: 1 }]}>
             <View style={[styles.headerCardContent, styles.headerContent]}>
@@ -457,7 +486,7 @@ export default function CreateScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.buttonRowModern}>
+          <View style={[styles.buttonRowModern, { paddingBottom: isKeyboardVisible ? '10%' : '30%' }]}>
             <UndoButton
               onPress={resetForm}
               disabled={loading}
@@ -468,8 +497,7 @@ export default function CreateScreen() {
               loading={loading}
             />
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAwareScrollView>
 
       <CategorySelector
         isVisible={isCategoryModalVisible}
@@ -516,7 +544,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: scale(16),
     paddingTop: verticalScale(8),
-    paddingBottom: '10%',
   },
   headerCard: {
     width: '100%',
@@ -614,7 +641,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: scale(20),
     marginTop: verticalScale(12),
-    marginBottom: verticalScale(60),
+
   },
 
   optional: {

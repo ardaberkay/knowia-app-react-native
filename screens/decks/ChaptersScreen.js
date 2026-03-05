@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Alert, Pressable } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,6 +13,9 @@ import LottieView from 'lottie-react-native';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { triggerHaptic } from '../../lib/hapticManager';
+import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+
+const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 
 export default function ChaptersScreen({ route, navigation }) {
   const { colors } = useTheme();
@@ -26,6 +29,23 @@ export default function ChaptersScreen({ route, navigation }) {
   const [progressMap, setProgressMap] = useState(new Map());
   const [currentUserId, setCurrentUserId] = useState(null);
   const [editMode, setEditMode] = useState(false);
+  
+// Sadece butonun basılı olup olmadığını takip ediyoruz (0 = boşta, 1 = basılı)
+const isPressed = useSharedValue(0);
+
+const addChapterAnimatedStyle = useAnimatedStyle(() => {
+  // Apple tarzı pürüzsüz yay ayarları (Hafif kütle, yüksek sönümleme)
+  const springConfig = { mass: 0.5, damping: 30, stiffness: 400 };
+
+  return {
+    // Basıldığında %8 küçül (0.92), bırakıldığında 1'e dön
+    transform: [
+      { scale: withSpring(isPressed.value ? 0.92 : 1, springConfig) }
+    ],
+    // Basıldığında hafifçe şeffaflaş (0.85), bırakıldığında tam opak ol (1)
+    opacity: withSpring(isPressed.value ? 0.85 : 1, springConfig),
+  };
+});
 
   // currentUserId'yi erken yükle (header için)
   useEffect(() => {
@@ -360,16 +380,21 @@ export default function ChaptersScreen({ route, navigation }) {
 
           </View>
         )}
-        {!loading && isOwner && (
-          <TouchableOpacity
+{!loading && isOwner && (
+          <AnimatedPressable
+            style={[styles.fab, addChapterAnimatedStyle]} // Modern stili bağladık
+            onPressIn={() => {
+              isPressed.value = 1; // Basıldı animasyonunu tetikle
+            }}
+            onPressOut={() => {
+              isPressed.value = 0; // Bırakıldı animasyonunu tetikle
+            }}
             onPress={() => {
-              triggerHaptic('light');
+              triggerHaptic('light'); // Hafif titreşim (modern hissi çok güçlendirir)
               requestAnimationFrame(() => {
                 handleAddChapter();
               });
             }}
-            activeOpacity={0.85}
-            style={styles.fab}
           >
             <LinearGradient
               colors={['#F98A21', '#FF6B35']}
@@ -380,7 +405,7 @@ export default function ChaptersScreen({ route, navigation }) {
             >
               <Iconify icon="ic:round-plus" size={moderateScale(30)} color="#FFFFFF" />
             </LinearGradient>
-          </TouchableOpacity>
+          </AnimatedPressable>
         )}
       </SafeAreaView>
     </View>

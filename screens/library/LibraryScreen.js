@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, Modal, Alert, ActivityIndicator, Animated, ScrollView, RefreshControl, Image, SafeAreaView, StatusBar } from 'react-native';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, Modal, Alert, Animated, ScrollView, RefreshControl, Image, SafeAreaView, StatusBar, Keyboard } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { typography } from '../../theme/typography';
 import { getDecksByCategory } from '../../services/DeckService';
 import { Iconify } from 'react-native-iconify';
@@ -831,6 +832,9 @@ export default function LibraryScreen() {
               style={{ flex: 1, backgroundColor: colors.background }}
               contentContainerStyle={{ paddingBottom: '12%', paddingTop: favoritesScrollViewPaddingTop, flexGrow: 1, paddingHorizontal: scale(4) }}
               showsVerticalScrollIndicator={false}
+              keyboardDismissMode="on-drag"
+              keyboardShouldPersistTaps="handled"
+              onScrollBeginDrag={() => Keyboard.dismiss()}
               refreshControl={
                 <RefreshControl
                   refreshing={favoritesLoading}

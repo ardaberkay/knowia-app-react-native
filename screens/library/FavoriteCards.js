@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useLayoutEffect } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, BackHandler, Alert } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, BackHandler, Alert, Keyboard } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
@@ -256,6 +256,9 @@ export default function FavoriteCards() {
           keyExtractor={item => item.id?.toString()}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(24) }}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          onScrollBeginDrag={() => Keyboard.dismiss()}
           ListHeaderComponent={
             !selectedCard && cards.length > 0 && (
               <View style={styles.searchContainer}>

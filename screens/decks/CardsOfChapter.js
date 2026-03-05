@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, TouchableHighlight, ActivityIndicator, Platform, Modal, Image } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, TouchableHighlight, ActivityIndicator, Platform, Modal, Image, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -16,8 +16,10 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import ChapterSelector from '../../components/modals/ChapterSelector';
 import MathText from '../../components/ui/MathText';
-import Animated, { useAnimatedStyle, withTiming, withSpring } from 'react-native-reanimated';
+import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring } from 'react-native-reanimated';
 import { triggerHaptic } from '../../lib/hapticManager';
+
+const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 
 export default function ChapterCardsScreen({ route, navigation }) {
   const { chapter, deck } = route.params;
@@ -45,7 +47,24 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const moreMenuRef = useRef(null);
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const [progressMap, setProgressMap] = useState(new Map());
+  const [progressMap, setProgressMap] = useState(new Map());// Karıştırma butonunun basılılık durumu
+  const shufflePressed = useSharedValue(0);
+
+  const shuffleAnimatedStyle = useAnimatedStyle(() => {
+    // Enerjik ama kontrollü bir yay ayarı
+    const springConfig = { mass: 0.6, damping: 12, stiffness: 300 };
+
+    return {
+      transform: [
+        // Basıldığında %10 küçül
+        { scale: withSpring(shufflePressed.value ? 0.9 : 1, springConfig) },
+        // Basıldığında saat yönünün tersine 15 derece dön (karıştırma hissi)
+        { rotate: withSpring(shufflePressed.value ? '-15deg' : '0deg', springConfig) }
+      ],
+      // Basıldığında çok hafif karararak derinlik kat
+      opacity: withSpring(shufflePressed.value ? 0.9 : 1, springConfig),
+    };
+  });
 
 
   const BAR_HEIGHT = verticalScale(50);
@@ -790,7 +809,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
             </View>
 
             {/* Edit mode'da seçim butonları */}
-            <Animated.View style={[styles.editModeBar, animatedBarStyle]}>
+            <Reanimated.View style={[styles.editModeBar, animatedBarStyle]}>
               {/* İçeriğin ezilmemesi için sabit bir kapsayıcı (container) */}
               <View style={styles.editModeContent}>
 
@@ -820,7 +839,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
                 </View>
 
                 {/* Sağ Kısım: Taşı Butonu */}
-                <Animated.View style={moveButtonAnimatedStyle}>
+                <Reanimated.View style={moveButtonAnimatedStyle}>
                   <TouchableOpacity
                     onPress={() => {
                       triggerHaptic('light');
@@ -842,10 +861,10 @@ export default function ChapterCardsScreen({ route, navigation }) {
                       style={{ marginLeft: scale(4) }}
                     />
                   </TouchableOpacity>
-                </Animated.View>
+                </Reanimated.View>
 
               </View>
-            </Animated.View>
+            </Reanimated.View>
           </View>
         </LinearGradient>
       </View>
@@ -878,16 +897,21 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
       {/* Floating Action Button - Atanmamış kartlar için dağıtım butonu */}
       {!chapter?.id && !editMode && currentUserId && deck?.user_id === currentUserId && !deck?.is_shared && (
-        <TouchableOpacity
+        <AnimatedPressable
+          style={[styles.fab, shuffleAnimatedStyle]} // Dönüş ve küçülme stilini verdik
+          disabled={distLoading} // Yüklenirken tıklamayı kapat
+          onPressIn={() => {
+            if (!distLoading) shufflePressed.value = 1; // Yüklenmiyorsa animasyonu başlat
+          }}
+          onPressOut={() => {
+            shufflePressed.value = 0; // Parmağı çekince eski haline döndür
+          }}
           onPress={() => {
             triggerHaptic('light');
             requestAnimationFrame(() => {
               handleDistribute();
             });
           }}
-          disabled={distLoading}
-          activeOpacity={0.85}
-          style={styles.fab}
         >
           <LinearGradient
             colors={['#F98A21', '#FF6B35']}
@@ -902,7 +926,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
               <Iconify icon="fluent:arrow-shuffle-24-filled" size={moderateScale(28)} color="#FFFFFF" />
             )}
           </LinearGradient>
-        </TouchableOpacity>
+        </AnimatedPressable>
       )}
 
       {/* Bölüm Seçim Modal */}

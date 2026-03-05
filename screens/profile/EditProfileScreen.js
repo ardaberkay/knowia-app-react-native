@@ -323,7 +323,7 @@ export default function EditProfileScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
         enableOnAndroid={true}
         enableAutomaticScroll={true}
-        extraScrollHeight={verticalScale(50)}
+        extraScrollHeight={verticalScale(30)}
       >
           {/* Profile Photo Card */}
           <View style={[styles.inputCard, {
