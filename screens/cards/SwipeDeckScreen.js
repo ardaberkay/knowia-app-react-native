@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Animated, Easing, Image } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Animated, Easing, Image, Pressable } from 'react-native';
 import Reanimated, {
   useAnimatedStyle,
   useSharedValue,
@@ -28,6 +28,44 @@ import ReportModal from '../../components/modals/ReportModal';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import SwipeFlipCard from '../../components/layout/SwipeFlipCard';
 import { triggerHaptic } from '../../lib/hapticManager';
+
+// Eğer henüz yoksa AnimatedPressable'ı oluştur (önceki sayfalardaki gibi)
+const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
+
+// --- YENİ MİNİ BİLEŞENİMİZ ---
+const AnimatedTimeButton = ({ onPress, icon, text, buttonStyle, textStyle, iconColor }) => {
+  const isPressed = useSharedValue(0);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    // Easing kullanmıyoruz, sadece duration veriyoruz. 
+    // Reanimated kendi pürüzsüz varsayılan easing'ini kullanacak.
+    const timingConfig = { duration: 150 };
+
+    return {
+      transform: [
+        { scale: withTiming(isPressed.value ? 0.98 : 1, timingConfig) }
+      ],
+      opacity: withTiming(isPressed.value ? 0.75 : 1, timingConfig),
+    };
+  });
+
+  return (
+    <AnimatedPressable
+      style={[buttonStyle, animatedStyle]}
+      onPressIn={() => { isPressed.value = 1; }}
+      onPressOut={() => { isPressed.value = 0; }}
+      onPress={() => {
+        triggerHaptic('light'); 
+        requestAnimationFrame(() => {
+          onPress();
+        });
+      }}
+    >
+      <Iconify icon={icon} size={moderateScale(20)} color={iconColor} style={{ marginRight: scale(6) }} />
+      <Text style={[textStyle, { color: iconColor }]}>{text}</Text>
+    </AnimatedPressable>
+  );
+};
 
 export default function SwipeDeckScreen({ route, navigation }) {
   const { deck, chapter } = route.params || {};
@@ -884,23 +922,45 @@ export default function SwipeDeckScreen({ route, navigation }) {
           />
         </View>
         {/* Yatay birleşik butonlar */}
-        <View style={[styles.horizontalButtonRow, { backgroundColor: colors.buttonColor }]}>
-          <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(15)}>
-            <Iconify icon="material-symbols:repeat-rounded" size={moderateScale(20)} color={colors.buttonText} style={{ marginRight: scale(6) }} />
-            <Text style={[styles.horizontalButtonText, { color: colors.buttonText }]}>{t('swipeDeck.minutes', "15 dk")}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(60)}>
-            <Iconify icon="mingcute:time-line" size={moderateScale(20)} color={colors.buttonText} style={{ marginRight: scale(6) }} />
-            <Text style={[styles.horizontalButtonText, { color: colors.buttonText }]}>{t('swipeDeck.hours', "1 sa")}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]} onPress={() => handleSkip(24 * 60)}>
-            <Iconify icon="solar:calendar-broken" size={moderateScale(20)} color={colors.buttonText} style={{ marginRight: scale(6) }} />
-            <Text style={[styles.horizontalButtonText, { color: colors.buttonText }]}>{t('swipeDeck.days', "1 gün")}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.horizontalButton} onPress={() => handleSkip(7 * 24 * 60)}>
-            <Iconify icon="solar:star-broken" size={moderateScale(20)} color={colors.buttonText} style={{ marginRight: scale(6) }} />
-            <Text style={[styles.horizontalButtonText, { color: colors.buttonText }]}>{t('swipeDeck.sevenDays', "7 gün")}</Text>
-          </TouchableOpacity>
+{/* Yatay birleşik butonlar */}
+<View style={[styles.horizontalButtonRow, { backgroundColor: colors.buttonColor }]}>
+          
+          <AnimatedTimeButton
+            onPress={() => handleSkip(15)}
+            icon="material-symbols:repeat-rounded"
+            text={t('swipeDeck.minutes', "15 dk")}
+            buttonStyle={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]}
+            textStyle={styles.horizontalButtonText}
+            iconColor={colors.buttonText}
+          />
+
+          <AnimatedTimeButton
+            onPress={() => handleSkip(60)}
+            icon="mingcute:time-line"
+            text={t('swipeDeck.hours', "1 sa")}
+            buttonStyle={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]}
+            textStyle={styles.horizontalButtonText}
+            iconColor={colors.buttonText}
+          />
+
+          <AnimatedTimeButton
+            onPress={() => handleSkip(24 * 60)}
+            icon="solar:calendar-broken"
+            text={t('swipeDeck.days', "1 gün")}
+            buttonStyle={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]}
+            textStyle={styles.horizontalButtonText}
+            iconColor={colors.buttonText}
+          />
+
+          <AnimatedTimeButton
+            onPress={() => handleSkip(7 * 24 * 60)}
+            icon="solar:star-broken"
+            text={t('swipeDeck.sevenDays', "7 gün")}
+            buttonStyle={styles.horizontalButton} // Son butonda sağ çizgi yok
+            textStyle={styles.horizontalButtonText}
+            iconColor={colors.buttonText}
+          />
+
         </View>
         {/* Geri alma butonu */}
         <TouchableOpacity style={[styles.undoButton, undoDisabled && { opacity: 0.5 }]} onPress={handleUndo} disabled={undoDisabled}>

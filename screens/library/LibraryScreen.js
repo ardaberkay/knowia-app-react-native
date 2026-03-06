@@ -1068,8 +1068,7 @@ export default function LibraryScreen() {
         transparent={false}
         onRequestClose={() => setCardDetailModalVisible(false)}
       >
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-          <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
           <View style={[styles.modalHeader, { backgroundColor: colors.background }]}>
             <TouchableOpacity
               onPress={() => setCardDetailModalVisible(false)}
@@ -1105,7 +1104,7 @@ export default function LibraryScreen() {
               />
             )}
           </View>
-        </SafeAreaView>
+        </View>
       </Modal>
 
       {/* MyDecks Filter Modal */}
