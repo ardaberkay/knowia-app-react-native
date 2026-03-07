@@ -255,128 +255,126 @@ export default function SwipeDeckScreen({ route, navigation }) {
       setLoading(true);
       setRightCount(0);
       setLeftCount(0);
-      // Kullanıcıyı al
-      const { data: { user } } = await supabase.auth.getUser();
-      setUserId(user.id);
 
-      // Deck'in kategori bilgisini al
       try {
-        const { data: deckData, error: deckError } = await supabase
+        const { data: { user } } = await supabase.auth.getUser();
+        setUserId(user.id);
+        console.log("✅ Adım 1: Kullanıcı alındı");
+
+        // 1. Kategori bilgisini al
+        const { data: deckData } = await supabase
           .from('decks')
           .select('categories(sort_order)')
           .eq('id', deck.id)
           .single();
 
-        if (!deckError && deckData?.categories) {
+        if (deckData?.categories) {
           setCategorySortOrder(deckData.categories.sort_order);
         }
-      } catch (e) {
-        console.error('Error fetching deck category:', e);
-      }
+        console.log("✅ Adım 2: Kategori alındı");
 
-      // Mevcut favori kartları yükle ve UI'ı senkronla
-      try {
+        // 2. Favorileri yükle
         const favCards = await getFavoriteCards(user.id);
         const favSet = new Set((favCards || []).map((c) => c.id));
         setFavoriteIds(favSet);
-      } catch (e) {
-        // sessiz geç
+        console.log("✅ Adım 3: Favoriler yüklendi");
+
+        // 3. Eksik progress kayıtlarını oluştur
+        await ensureUserCardProgress(deck.id, user.id);
+        console.log("✅ Adım 4: Progress kayıtları oluşturuldu (Burası geçildiyse ensureUserCardProgress sağlamdır)");
+
+        // 4. Öğrenilecek Kartları Çek
+        let learningCardsQuery = supabase
+          .from('user_card_progress')
+          .select('card_id, status, next_review, cards!inner(question, image, answer, example, note, chapter_id)')
+          .eq('user_id', user.id)
+          .in('status', ['new', 'learning'])
+          .lte('next_review', new Date().toISOString())
+          .eq('cards.deck_id', deck.id);
+
+        if (chapter?.id) {
+          learningCardsQuery = learningCardsQuery.eq('cards.chapter_id', chapter.id);
+        } else if (chapter === null) {
+          learningCardsQuery = learningCardsQuery.is('cards.chapter_id', null);
+        }
+
+        const { data: learningCards, error } = await learningCardsQuery;
+        if (error) throw new Error(`Öğrenilecek kartları çekerken hata: ${error.message}`);
+        
+        setCards((learningCards || []).filter(card => card.cards));
+        flippedByIdRef.current = {};
+        console.log("✅ Adım 5: Öğrenilecek kartlar çekildi");
+
+        // ==========================================
+        // COUNT İŞLEMLERİ (Syntax Hatası Düzeltildi!)
+        // 'cards!inner(id)' yerine 'id, cards!inner(id)' kullanıldı.
+        // ==========================================
+
+        // Toplam kart sayısı
+        let allCardsQuery = supabase
+          .from('cards')
+          .select('id', { count: 'exact', head: true })
+          .eq('deck_id', deck.id);
+        if (chapter?.id) allCardsQuery = allCardsQuery.eq('chapter_id', chapter.id);
+        else if (chapter === null) allCardsQuery = allCardsQuery.is('chapter_id', null);
+        
+        const { count: totalCardsCount, error: err1 } = await allCardsQuery;
+        if (err1) throw new Error(`Toplam kart sayısında hata: ${err1.message}`);
+        setTotalCardCount(totalCardsCount || 0);
+        console.log("✅ Adım 6: Toplam kart sayısı alındı");
+
+        // Kalan (öğrenilmemiş) kart sayısı
+        let notLearnedQuery = supabase
+          .from('user_card_progress')
+          .select('id, cards!inner(id)', { count: 'exact', head: true }) // DÜZELTİLDİ
+          .eq('user_id', user.id)
+          .eq('cards.deck_id', deck.id)
+          .neq('status', 'learned');
+        if (chapter?.id) notLearnedQuery = notLearnedQuery.eq('cards.chapter_id', chapter.id);
+        else if (chapter === null) notLearnedQuery = notLearnedQuery.is('cards.chapter_id', null);
+
+        const { count: remainingCount, error: err2 } = await notLearnedQuery;
+        if (err2) throw new Error(`Kalan kart sayısında hata: ${err2.message}`);
+        setRemainingCardCount(remainingCount || 0);
+        console.log("✅ Adım 7: Kalan kart sayısı alındı");
+
+        // Learning durumundaki kart sayısı
+        let learningCardsCountQuery = supabase
+          .from('user_card_progress')
+          .select('id, cards!inner(id)', { count: 'exact', head: true }) // DÜZELTİLDİ
+          .eq('user_id', user.id)
+          .eq('status', 'learning')
+          .eq('cards.deck_id', deck.id);
+        if (chapter?.id) learningCardsCountQuery = learningCardsCountQuery.eq('cards.chapter_id', chapter.id);
+        else if (chapter === null) learningCardsCountQuery = learningCardsCountQuery.is('cards.chapter_id', null);
+
+        const { count: learningCount, error: err3 } = await learningCardsCountQuery;
+        if (err3) throw new Error(`Learning kart sayısında hata: ${err3.message}`);
+        setTotalLearningCount(learningCount || 0);
+        console.log("✅ Adım 8: Learning kart sayısı alındı");
+
+        // Başlangıçta learned olan kart sayısı
+        let learnedCardsQuery = supabase
+          .from('user_card_progress')
+          .select('id, cards!inner(id)', { count: 'exact', head: true }) // DÜZELTİLDİ
+          .eq('user_id', user.id)
+          .eq('status', 'learned')
+          .eq('cards.deck_id', deck.id);
+        if (chapter?.id) learnedCardsQuery = learnedCardsQuery.eq('cards.chapter_id', chapter.id);
+        else if (chapter === null) learnedCardsQuery = learnedCardsQuery.is('cards.chapter_id', null);
+
+        const { count: learnedCount, error: err4 } = await learnedCardsQuery;
+        if (err4) throw new Error(`Learned kart sayısında hata: ${err4.message}`);
+        setInitialLearnedCount(learnedCount || 0);
+        console.log("✅ Adım 9: Tüm işlemler başarıyla bitti!");
+
+      } catch (error) {
+        console.error("🔥 Swipe sayfasında veri çekme hatası:", error.message);
+      } finally {
+        setLoading(false);
       }
-      // Eksik user_card_progress kayıtlarını oluştur
-      await ensureUserCardProgress(deck.id, user.id);
-      // Kartları user_card_progress üzerinden çek (status: 'new' veya 'learning')
-      let learningCardsQuery = supabase
-        .from('user_card_progress')
-        .select('card_id, status, next_review, cards(question, image, answer, example, note, chapter_id)')
-        .eq('user_id', user.id)
-        .in('status', ['new', 'learning'])
-        .lte('next_review', new Date().toISOString())
-        .eq('cards.deck_id', deck.id);
-
-      // Bölüm filtresi ekle
-      if (chapter?.id) {
-        learningCardsQuery = learningCardsQuery.eq('cards.chapter_id', chapter.id);
-      } else if (chapter === null) {
-        // null chapter = atanmamış kartlar
-        learningCardsQuery = learningCardsQuery.is('cards.chapter_id', null);
-      }
-
-      const { data: learningCards, error } = await learningCardsQuery;
-      console.log('learningCards:', learningCards);
-      console.log('supabase error:', error);
-      setCards((learningCards || []).filter(card => card.cards));
-      flippedByIdRef.current = {};
-
-      // Toplam kart sayısı (seçilen bölüme ait tüm kartlar)
-      let allCardsQuery = supabase
-        .from('cards')
-        .select('id')
-        .eq('deck_id', deck.id);
-
-      if (chapter?.id) {
-        allCardsQuery = allCardsQuery.eq('chapter_id', chapter.id);
-      } else if (chapter === null) {
-        allCardsQuery = allCardsQuery.is('chapter_id', null);
-      }
-
-      const { data: allCards, error: allCardsError } = await allCardsQuery;
-      setTotalCardCount(allCards ? allCards.length : 0);
-
-      // Kalan kart sayısı (status learned olmayanlar, seçilen bölüm için)
-      let notLearnedQuery = supabase
-        .from('user_card_progress')
-        .select('card_id, cards(deck_id, chapter_id)')
-        .eq('user_id', user.id)
-        .eq('cards.deck_id', deck.id)
-        .neq('status', 'learned');
-
-      if (chapter?.id) {
-        notLearnedQuery = notLearnedQuery.eq('cards.chapter_id', chapter.id);
-      } else if (chapter === null) {
-        notLearnedQuery = notLearnedQuery.is('cards.chapter_id', null);
-      }
-
-      const { data: notLearned, error: notLearnedError } = await notLearnedQuery;
-      setRemainingCardCount(notLearned ? notLearned.length : 0);
-
-      // Learning kart sayısını al (seçilen bölüm için)
-      let learningCardsCountQuery = supabase
-        .from('user_card_progress')
-        .select('card_id, status, cards(deck_id, chapter_id)')
-        .eq('user_id', user.id)
-        .eq('status', 'learning')
-        .eq('cards.deck_id', deck.id);
-
-      if (chapter?.id) {
-        learningCardsCountQuery = learningCardsCountQuery.eq('cards.chapter_id', chapter.id);
-      } else if (chapter === null) {
-        learningCardsCountQuery = learningCardsCountQuery.is('cards.chapter_id', null);
-      }
-
-      const { data: learningCardsExist, error: learningCardsExistError } = await learningCardsCountQuery;
-      setTotalLearningCount(learningCardsExist ? learningCardsExist.length : 0);
-
-      // Başlangıçta learned olan kartların sayısını al (seçilen bölüm için)
-      let learnedCardsQuery = supabase
-        .from('user_card_progress')
-        .select('card_id, cards(deck_id, chapter_id)')
-        .eq('user_id', user.id)
-        .eq('status', 'learned')
-        .eq('cards.deck_id', deck.id);
-
-      if (chapter?.id) {
-        learnedCardsQuery = learnedCardsQuery.eq('cards.chapter_id', chapter.id);
-      } else if (chapter === null) {
-        learnedCardsQuery = learnedCardsQuery.is('cards.chapter_id', null);
-      }
-
-      const { data: learnedCards, error: learnedCardsError } = await learnedCardsQuery;
-      const filteredLearnedCards = (learnedCards || []).filter(
-        c => c.cards && c.cards.deck_id === deck.id
-      );
-      setInitialLearnedCount(filteredLearnedCards.length);
-      setLoading(false);
     };
+
     fetchCards();
   }, [deck.id, chapter?.id]);
 

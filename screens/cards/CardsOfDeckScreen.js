@@ -4,7 +4,6 @@ import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import LottieView from 'lottie-react-native';
-
 import { supabase } from '../../lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import AddEditCardInlineForm from '../../components/layout/EditCardForm';
@@ -19,6 +18,41 @@ import { useFocusEffect } from '@react-navigation/native';
 import * as BlockService from '../../services/BlockService';
 import ReportModal from '../../components/modals/ReportModal';
 import { triggerHaptic } from '../../lib/hapticManager';
+
+// DeckCardsScreen.js (Ana fonksiyonun DIŞINA yazılacak)
+
+const MemoizedDeckCard = React.memo(({
+  item,
+  isFavorite,
+  isOwner,
+  onPress,
+  onToggleFavorite,
+  onDelete
+}) => {
+  return (
+    <View style={styles.cardListItem}>
+      <CardListItem
+        question={item.question}
+        answer={item.answer}
+        isFavorite={isFavorite}
+        isOwner={isOwner}
+        canDelete={true}
+        onPress={() => onPress(item)}
+        onToggleFavorite={() => onToggleFavorite(item.id)}
+        onDelete={() => onDelete(item)}
+      />
+    </View>
+  );
+}, (prevProps, nextProps) => {
+  // Sadece bu 5 değer değişirse kart kendini yenilesin:
+  return (
+    prevProps.item.id === nextProps.item.id &&
+    prevProps.item.question === nextProps.item.question &&
+    prevProps.item.answer === nextProps.item.answer &&
+    prevProps.isFavorite === nextProps.isFavorite &&
+    prevProps.isOwner === nextProps.isOwner
+  );
+});
 
 
 export default function DeckCardsScreen({ route, navigation }) {
@@ -44,7 +78,7 @@ export default function DeckCardsScreen({ route, navigation }) {
   const [reportModalAlreadyCodes, setReportModalAlreadyCodes] = useState([]);
   const [reportCardId, setReportCardId] = useState(null);
   const { t } = useTranslation();
-  
+
 
   useEffect(() => {
     const fetchUserId = async () => {
@@ -59,9 +93,14 @@ export default function DeckCardsScreen({ route, navigation }) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Fetch cards, favorite cards, and user progress in parallel
-      const [cardsResult, favoritesResult, progressResult] = await Promise.all([
-        supabase
+      // 1. ADIM: Tüm kartları sayfalama ile çek (1000 limitini aş)
+      let allCards = [];
+      let from = 0;
+      const step = 1000;
+      let hasMoreCards = true;
+
+      while (hasMoreCards) {
+        const { data: cardsData, error: cardsError } = await supabase
           .from('cards')
           .select(`
               id, question, answer, image, example, note, created_at,
@@ -70,40 +109,89 @@ export default function DeckCardsScreen({ route, navigation }) {
               )
             `)
           .eq('deck_id', deck.id)
-          .order('created_at', { ascending: false }),
-        user ? supabase
-          .from('favorite_cards')
-          .select('card_id')
-          .eq('user_id', user.id) : Promise.resolve({ data: [], error: null }),
-        user ? supabase
-          .from('user_card_progress')
-          .select('card_id, status')
-          .eq('user_id', user.id) : Promise.resolve({ data: [], error: null })
-      ]);
+          .order('created_at', { ascending: false })
+          .range(from, from + step - 1); // Sayfalama eklendi
 
-      if (cardsResult.error) throw cardsResult.error;
+        if (cardsError) throw cardsError;
 
-      // Create a map of card statuses
-      const statusMap = {};
-      if (progressResult.data) {
-        progressResult.data.forEach(p => {
-          statusMap[p.card_id] = p.status;
+        if (cardsData && cardsData.length > 0) {
+          allCards.push(...cardsData);
+        }
+
+        if (!cardsData || cardsData.length < step) {
+          hasMoreCards = false;
+        } else {
+          from += step;
+        }
+      }
+
+      // 2. ADIM: Sadece bu destedeki kartların ID'lerini al
+      let statusMap = {};
+      let favoriteCardIds = new Set(); // Hızlı arama için Set kullanıyoruz
+
+      if (user && allCards.length > 0) {
+        const cardIds = allCards.map(c => c.id);
+        const CHUNK_SIZE = 200;
+        const chunks = [];
+
+        for (let i = 0; i < cardIds.length; i += CHUNK_SIZE) {
+          chunks.push(cardIds.slice(i, i + CHUNK_SIZE));
+        }
+
+        // Progress ve Favorileri PARALEL ve CHUNK (200'lük paketler) halinde çek
+        const [progressResults, favoritesResults] = await Promise.all([
+          // Tüm Progress chunk'ları
+          Promise.all(
+            chunks.map(chunk =>
+              supabase
+                .from('user_card_progress')
+                .select('card_id, status')
+                .eq('user_id', user.id)
+                .in('card_id', chunk)
+            )
+          ),
+          // Tüm Favorite chunk'ları
+          Promise.all(
+            chunks.map(chunk =>
+              supabase
+                .from('favorite_cards')
+                .select('card_id')
+                .eq('user_id', user.id)
+                .in('card_id', chunk)
+            )
+          )
+        ]);
+
+        // Gelen Progress verilerini Map'e yaz
+        progressResults.forEach(res => {
+          if (res.error) throw res.error;
+          (res.data || []).forEach(p => {
+            statusMap[p.card_id] = p.status;
+          });
+        });
+
+        // Gelen Favori verilerini Set'e yaz
+        favoritesResults.forEach(res => {
+          if (res.error) throw res.error;
+          (res.data || []).forEach(f => {
+            favoriteCardIds.add(f.card_id);
+          });
         });
       }
 
-      // Merge status into cards (default: 'new' if no progress record)
-      const cardsWithProgress = (cardsResult.data || []).map(card => ({
+      // 3. ADIM: Kartlar ile status'leri birleştir (Eğer status yoksa 'new' ata)
+      const cardsWithProgress = allCards.map(card => ({
         ...card,
         status: statusMap[card.id] || 'new'
       }));
 
       setCards(cardsWithProgress);
       setOriginalCards(cardsWithProgress);
+      setFavoriteCards(Array.from(favoriteCardIds)); // Set'i tekrar Diziye çevir
       dataFetchedRef.current = true;
-
-      if (favoritesResult.error) throw favoritesResult.error;
-      setFavoriteCards((favoritesResult.data || []).map(f => f.card_id));
+      console.log('cardsWithProgress', cardsWithProgress.length);
     } catch (e) {
+      console.error("Error fetching deck cards:", e);
       setCards([]);
       setOriginalCards([]);
       setFavoriteCards([]);
@@ -420,10 +508,60 @@ export default function DeckCardsScreen({ route, navigation }) {
     }
   };
 
+  const ITEM_HEIGHT = verticalScale(110) + verticalScale(12); 
+
+  const getItemLayout = useCallback((data, index) => ({
+    length: ITEM_HEIGHT,
+    offset: ITEM_HEIGHT * index,
+    index,
+  }), [ITEM_HEIGHT]);
+
   const handleBackFromDetail = () => {
     setSelectedCard(null);
     setMoreMenuVisible(false);
   };
+  const handleListItemPress = useCallback((item) => {
+    setEditMode(false);
+    setSelectedCard(item);
+  }, []);
+
+  const handleListItemDelete = useCallback((item) => {
+    Alert.alert(
+      t('cardDetail.deleteConfirmation', 'Kart Silinsin mi?'),
+      t('cardDetail.deleteConfirm', 'Kartı silmek istediğinize emin misiniz?'),
+      [
+        { text: t('cardDetail.cancel', 'İptal'), style: 'cancel' },
+        {
+          text: t('cardDetail.delete', 'Sil'), style: 'destructive', onPress: async () => {
+            try {
+              const { error } = await supabase.from('cards').delete().eq('id', item.id);
+              if (error) throw error;
+
+              setCards(prevCards => prevCards.filter(c => c.id !== item.id));
+              setOriginalCards(prevOriginal => prevOriginal.filter(c => c.id !== item.id));
+              showSuccess(t('cardDetail.deleteSuccess', 'Kart başarıyla silindi'));
+            } catch (e) {
+              showError(t('cardDetail.deleteError', 'Kart silinemedi'));
+            }
+          }
+        }
+      ]
+    );
+  }, [t, showSuccess, showError]);
+
+  const renderCardItem = useCallback(({ item }) => {
+    const isOwner = currentUserId && (item.deck?.user_id || deck.user_id) === currentUserId;
+    return (
+      <MemoizedDeckCard
+        item={item}
+        isFavorite={favoriteCards.includes(item.id)}
+        isOwner={isOwner}
+        onPress={handleListItemPress}
+        onToggleFavorite={handleToggleFavoriteCard}
+        onDelete={handleListItemDelete}
+      />
+    );
+  }, [currentUserId, deck?.user_id, favoriteCards, handleListItemPress, handleToggleFavoriteCard, handleListItemDelete]);
   return (
     <>
       {selectedCard && editMode ? (
@@ -559,54 +697,15 @@ export default function DeckCardsScreen({ route, navigation }) {
                       </Text>
                     </View>
                   }
-                  renderItem={({ item }) => {
-                    const isOwner = currentUserId && (item.deck?.user_id || deck.user_id) === currentUserId;
-                    return (
-                      <View style={styles.cardListItem}>
-                        <CardListItem
-                          question={item.question}
-                          answer={item.answer}
-                          onPress={() => {
-                            setEditMode(false);
-                            setSelectedCard(item);
-                          }}
-                          onToggleFavorite={() => handleToggleFavoriteCard(item.id)}
-                          isFavorite={favoriteCards.includes(item.id)}
-                          onDelete={async () => {
-                            Alert.alert(
-                              t('cardDetail.deleteConfirmation', 'Kart Silinsin mi?'),
-                              t('cardDetail.deleteConfirm', 'Kartı silmek istediğinize emin misiniz?'),
-                              [
-                                { text: t('cardDetail.cancel', 'İptal'), style: 'cancel' },
-                                {
-                                  text: t('cardDetail.delete', 'Sil'), style: 'destructive', onPress: async () => {
-                                    try {
-                                      const { error } = await supabase
-                                        .from('cards')
-                                        .delete()
-                                        .eq('id', item.id);
-
-                                      if (error) {
-                                        throw error;
-                                      }
-
-                                      setCards(cards.filter(c => c.id !== item.id));
-                                      setOriginalCards(originalCards.filter(c => c.id !== item.id));
-                                      showSuccess(t('cardDetail.deleteSuccess', 'Kart başarıyla silindi'));
-                                    } catch (e) {
-                                      showError(t('cardDetail.deleteError', 'Kart silinemedi'));
-                                    }
-                                  }
-                                }
-                              ]
-                            );
-                          }}
-                          canDelete={true}
-                          isOwner={isOwner}
-                        />
-                      </View>
-                    );
-                  }}
+                  renderItem={renderCardItem}
+                  getItemLayout={getItemLayout}
+                  
+                  // TATLI NOKTA (DENGELİ) AYARLAR:
+                  removeClippedSubviews={true}
+                  initialNumToRender={8}          // İlk açılışta ekranı dolduracak kadarını anında çiz
+                  maxToRenderPerBatch={8}         // Kaydırırken 8'er 8'er çiz (Ne çok az ne çok fazla)
+                  windowSize={11}                 // 5 ekran boyu üstte, 5 ekran boyu altta kartı hazır beklet (Beyaz boşluğu önler)
+                  updateCellsBatchingPeriod={50}
                 />
               )}
             </View>

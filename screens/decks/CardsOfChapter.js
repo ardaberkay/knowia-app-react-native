@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, memo } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, TouchableHighlight, ActivityIndicator, Platform, Modal, Image, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
@@ -20,6 +20,112 @@ import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring } 
 import { triggerHaptic } from '../../lib/hapticManager';
 
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
+
+const MemoizedCardItem = memo(({ 
+  card, 
+  status, 
+  isSelected, 
+  editMode, 
+  colors, 
+  onToggle, 
+  onPress 
+}) => {
+  let statusIcon = 'streamline-freehand:view-eye-off'; // default: new
+
+  if (status === 'learning') {
+    statusIcon = 'mdi:fire';
+  } else if (status === 'learned') {
+    statusIcon = 'dashicons:welcome-learn-more';
+  }
+
+  return (
+    <TouchableHighlight
+      style={[
+        styles.cardItem,
+        {
+          backgroundColor: colors.cardBackground,
+          borderColor: editMode && isSelected ? colors.buttonColor : colors.cardBorder,
+          borderWidth: editMode && isSelected ? 2 : 1,
+          shadowColor: colors.shadowColor,
+          shadowOffset: colors.shadowOffset,
+          shadowOpacity: colors.shadowOpacity,
+          shadowRadius: colors.shadowRadius,
+          elevation: colors.elevation,
+        },
+      ]}
+      onPress={() => {
+        if (editMode) {
+          onToggle(card.id);
+        } else {
+          onPress(card);
+        }
+      }}
+      underlayColor={colors.cardBackground === '#FFFFFF' ? '#F2F2F2' : '#eeeeee'}
+    >
+      <View style={styles.cardContent}>
+        {editMode && (
+          <View style={styles.checkboxContainer}>
+            <TouchableOpacity
+              onPress={() => onToggle(card.id)}
+              style={[
+                styles.checkbox,
+                {
+                  backgroundColor: isSelected ? colors.buttonColor : 'transparent',
+                  borderColor: colors.buttonColor,
+                }
+              ]}
+            >
+              {isSelected && (
+                <Iconify icon="hugeicons:tick-01" size={18} color="#FFFFFF" />
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={[
+          styles.leftSection,
+          {
+            borderRightColor: colors.cardBorder,
+            flex: editMode ? 2 : 3,
+          }
+        ]}>
+          <MathText
+            value={card.question}
+            style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]}
+            numberOfLines={1}
+          />
+          <View style={[styles.divider, { backgroundColor: colors.cardDivider }]} />
+          <MathText
+            value={card.answer}
+            style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]}
+            numberOfLines={1}
+          />
+        </View>
+
+        <View style={[
+          styles.rightSection,
+          {
+            backgroundColor: colors.cardBackground ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.1)',
+          }
+        ]}>
+          <Iconify
+            icon={statusIcon}
+            size={scale(50)}
+            color={'#444444'}
+          />
+        </View>
+      </View>
+    </TouchableHighlight>
+  );
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.status === nextProps.status &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.editMode === nextProps.editMode &&
+    prevProps.card.id === nextProps.card.id &&
+    prevProps.colors === nextProps.colors
+  );
+});
 
 export default function ChapterCardsScreen({ route, navigation }) {
   const { chapter, deck } = route.params;
@@ -47,33 +153,25 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const moreMenuRef = useRef(null);
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const [progressMap, setProgressMap] = useState(new Map());// Karıştırma butonunun basılılık durumu
+  const [progressMap, setProgressMap] = useState(new Map());
   const shufflePressed = useSharedValue(0);
 
   const shuffleAnimatedStyle = useAnimatedStyle(() => {
-    // Enerjik ama kontrollü bir yay ayarı
     const springConfig = { mass: 0.6, damping: 12, stiffness: 300 };
-
     return {
       transform: [
-        // Basıldığında %10 küçül
         { scale: withSpring(shufflePressed.value ? 0.9 : 1, springConfig) },
-        // Basıldığında saat yönünün tersine 15 derece dön (karıştırma hissi)
         { rotate: withSpring(shufflePressed.value ? '-15deg' : '0deg', springConfig) }
       ],
-      // Basıldığında çok hafif karararak derinlik kat
       opacity: withSpring(shufflePressed.value ? 0.9 : 1, springConfig),
     };
   });
 
-
   const BAR_HEIGHT = verticalScale(50);
   const MARGIN_TOP = verticalScale(12);
 
-  // 2. Sayıları içeriye veriyoruz:
   const animatedBarStyle = useAnimatedStyle(() => {
     return {
-      // Artık verticalScale() çağırmıyoruz, hesaplanmış sayıyı (BAR_HEIGHT) kullanıyoruz.
       height: withTiming(editMode ? BAR_HEIGHT : 0, { duration: 300 }),
       opacity: withTiming(editMode ? 1 : 0, { duration: 300 }),
       marginTop: withTiming(editMode ? MARGIN_TOP : 0, { duration: 300 }),
@@ -83,7 +181,6 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
   const selectedCount = selectedCards.size;
 
-  // 2. Animasyonun içinde (worklet) sadece bu basit sayıyı kullan:
   const moveButtonAnimatedStyle = useAnimatedStyle(() => {
     return {
       opacity: withTiming(selectedCount > 0 ? 1 : 0.4, { duration: 200 }),
@@ -103,35 +200,26 @@ export default function ChapterCardsScreen({ route, navigation }) {
         setCurrentUserId(user.id);
         setIsOwner(user.id === deck.user_id && !deck.is_shared);
 
-        // Bölümleri yükle
         const data = await listChapters(deck.id);
         setChapters(data);
 
-        // --- EKLENEN KISIM: Progress verilerini çek ---
         const chaptersWithUnassigned = [{ id: null }, ...data];
-        // Eğer import etmediysen en yukarıda getChaptersProgress'i import etmeyi unutma!
         const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, user.id);
         setProgressMap(progress);
-        // ----------------------------------------------
       }
     } catch (e) {
       // noop
     }
   };
 
-
-  // Navigation header'a edit butonu ekle (sadece atanmamış kartlar için)
   useLayoutEffect(() => {
     const isOwnerUser = currentUserId && deck?.user_id === currentUserId && !deck?.is_shared;
 
-    // Loading bitene kadar header ikonlarını gösterme (normal durum için)
     if (!selectedCard && loading) {
       navigation.setOptions({
         headerShown: true,
         headerTransparent: true,
-        headerStyle: {
-          backgroundColor: 'transparent',
-        },
+        headerStyle: { backgroundColor: 'transparent' },
         headerTintColor: '#fff',
         headerTitle: '',
         headerRight: () => null,
@@ -140,14 +228,11 @@ export default function ChapterCardsScreen({ route, navigation }) {
     }
 
     if (selectedCard) {
-      // Edit modunda header'da iconlar gözükmesin
       if (editCardMode) {
         navigation.setOptions({
           headerShown: true,
           headerTransparent: false,
-          headerStyle: {
-            backgroundColor: colors.background,
-          },
+          headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
           headerTitle: '',
           headerRight: () => null,
@@ -155,13 +240,10 @@ export default function ChapterCardsScreen({ route, navigation }) {
         return;
       }
 
-      // Normal kart detay görünümünde favori ve kebab iconları göster
       navigation.setOptions({
         headerShown: true,
         headerTransparent: false,
-        headerStyle: {
-          backgroundColor: colors.background,
-        },
+        headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.text,
         headerTitle: '',
         headerRight: () => (
@@ -203,13 +285,10 @@ export default function ChapterCardsScreen({ route, navigation }) {
       return;
     }
 
-    // Normal durumda header'ı şeffaf yap (appbar görünmesin)
     navigation.setOptions({
       headerShown: true,
       headerTransparent: true,
-      headerStyle: {
-        backgroundColor: 'transparent',
-      },
+      headerStyle: { backgroundColor: 'transparent' },
       headerTintColor: '#fff',
       headerTitle: '',
       headerRight: isOwnerUser ? () => (
@@ -251,24 +330,43 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const fetchChapterCards = async () => {
     try {
       setLoading(true);
-      let query = supabase
-        .from('cards')
-        .select('id, question, answer, image, example, note, created_at, deck:decks(id, categories(sort_order))')
-        .eq('deck_id', deck.id)
-        .order('created_at', { ascending: false });
-      if (chapter?.id) {
-        query = query.eq('chapter_id', chapter.id);
-      } else {
-        query = query.is('chapter_id', null);
+      let allFetchedCards = [];
+      let from = 0;
+      const step = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        let query = supabase
+          .from('cards')
+          .select('id, question, answer, image, example, note, created_at, deck:decks(id, categories(sort_order))')
+          .eq('deck_id', deck.id)
+          .order('created_at', { ascending: false })
+          .range(from, from + step - 1);
+
+        if (chapter?.id) {
+          query = query.eq('chapter_id', chapter.id);
+        } else {
+          query = query.is('chapter_id', null);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allFetchedCards.push(...data);
+        }
+
+        if (!data || data.length < step) {
+          hasMore = false;
+        } else {
+          from += step;
+        }
       }
-      const { data, error } = await query;
 
-      if (error) throw error;
-      setCards(data || []);
+      setCards(allFetchedCards);
 
-      // Kartları çektikten hemen sonra status'leri de çek
-      if (data && data.length > 0) {
-        await fetchCardStatusesForCards(data.map(c => c.id));
+      if (allFetchedCards.length > 0) {
+        await fetchCardStatusesForCards(allFetchedCards.map(c => c.id));
       } else {
         setCardStatusMap(new Map());
         setChapterStats({ total: 0, learning: 0, learned: 0, new: 0 });
@@ -286,19 +384,13 @@ export default function ChapterCardsScreen({ route, navigation }) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !cardIds || cardIds.length === 0) {
-        // Progress kaydı olmayan kartlar için 'new' varsay
         const statusMap = new Map();
         if (cardIds && cardIds.length > 0) {
           cardIds.forEach(cardId => {
             statusMap.set(cardId, 'new');
           });
           setCardStatusMap(statusMap);
-          setChapterStats({
-            total: cardIds.length,
-            learning: 0,
-            learned: 0,
-            new: cardIds.length
-          });
+          setChapterStats({ total: cardIds.length, learning: 0, learned: 0, new: cardIds.length });
         } else {
           setCardStatusMap(new Map());
           setChapterStats({ total: 0, learning: 0, learned: 0, new: 0 });
@@ -306,22 +398,33 @@ export default function ChapterCardsScreen({ route, navigation }) {
         return;
       }
 
-      // Kullanıcının bu kartlar için status bilgilerini al
-      const { data: progressData, error: progressError } = await supabase
-        .from('user_card_progress')
-        .select('card_id, status')
-        .eq('user_id', user.id)
-        .in('card_id', cardIds);
+      const CHUNK_SIZE = 200;
+      const chunks = [];
+      for (let i = 0; i < cardIds.length; i += CHUNK_SIZE) {
+        chunks.push(cardIds.slice(i, i + CHUNK_SIZE));
+      }
 
-      if (progressError) throw progressError;
+      const results = await Promise.all(
+        chunks.map(chunk =>
+          supabase
+            .from('user_card_progress')
+            .select('card_id, status')
+            .eq('user_id', user.id)
+            .in('card_id', chunk)
+        )
+      );
 
-      // Map oluştur: card_id -> status
+      let progressData = [];
+      for (const res of results) {
+        if (res.error) throw res.error;
+        progressData.push(...(res.data || []));
+      }
+
       const statusMap = new Map();
-      (progressData || []).forEach(item => {
+      progressData.forEach(item => {
         statusMap.set(item.card_id, item.status);
       });
 
-      // Progress kaydı olmayan kartlar için 'new' varsay
       cardIds.forEach(cardId => {
         if (!statusMap.has(cardId)) {
           statusMap.set(cardId, 'new');
@@ -330,14 +433,8 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
       setCardStatusMap(statusMap);
 
-      // İstatistikleri hesapla
       if (cardIds && cardIds.length > 0) {
-        const stats = {
-          total: cardIds.length,
-          learning: 0,
-          learned: 0,
-          new: 0,
-        };
+        const stats = { total: cardIds.length, learning: 0, learned: 0, new: 0 };
         statusMap.forEach((status) => {
           if (status === 'learning') stats.learning++;
           else if (status === 'learned') stats.learned++;
@@ -349,19 +446,13 @@ export default function ChapterCardsScreen({ route, navigation }) {
       }
     } catch (error) {
       console.error('Error fetching card statuses:', error);
-      // Hata durumunda da tüm kartları 'new' olarak işaretle
       if (cardIds && cardIds.length > 0) {
         const statusMap = new Map();
         cardIds.forEach(cardId => {
           statusMap.set(cardId, 'new');
         });
         setCardStatusMap(statusMap);
-        setChapterStats({
-          total: cardIds.length,
-          learning: 0,
-          learned: 0,
-          new: cardIds.length
-        });
+        setChapterStats({ total: cardIds.length, learning: 0, learned: 0, new: cardIds.length });
       } else {
         setCardStatusMap(new Map());
         setChapterStats({ total: 0, learning: 0, learned: 0, new: 0 });
@@ -387,23 +478,13 @@ export default function ChapterCardsScreen({ route, navigation }) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (favoriteCards.includes(cardId)) {
-        // Favoriden çıkar
-        await supabase
-          .from('favorite_cards')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('card_id', cardId);
+        await supabase.from('favorite_cards').delete().eq('user_id', user.id).eq('card_id', cardId);
         setFavoriteCards(favoriteCards.filter(id => id !== cardId));
       } else {
-        // Favoriye ekle
-        await supabase
-          .from('favorite_cards')
-          .insert({ user_id: user.id, card_id: cardId });
+        await supabase.from('favorite_cards').insert({ user_id: user.id, card_id: cardId });
         setFavoriteCards([...favoriteCards, cardId]);
       }
-    } catch (e) {
-      // Alert kaldırıldı
-    }
+    } catch (e) {}
   };
 
   const handleEditSelectedCard = () => {
@@ -450,7 +531,6 @@ export default function ChapterCardsScreen({ route, navigation }) {
     try {
       await distributeUnassignedEvenly(deck.id, chapters.map(c => c.id));
       showSuccess(t('chapters.distributed', 'Atanmamış kartlar bölümlere dağıtıldı.'));
-      // Kartları yeniden yükle
       await fetchChapterCards();
     } catch (e) {
       showError(e.message || t('chapters.distributeError', 'Dağıtım yapılamadı.'));
@@ -495,7 +575,6 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
       showSuccess(t('chapterCards.cardsMoved', '{{count}} kart bölüme taşındı.', { count: selectedCards.size }));
 
-      // Seçimleri temizle ve kartları yeniden yükle
       setSelectedCards(new Set());
       setEditMode(false);
       setShowChapterModal(false);
@@ -507,104 +586,21 @@ export default function ChapterCardsScreen({ route, navigation }) {
     }
   };
 
-  const renderCardItem = ({ item: card }) => {
-    const status = cardStatusMap.get(card.id) || 'new';
-    let statusIcon = 'streamline-freehand:view-eye-off'; // default: new
-
-    if (status === 'learning') {
-      statusIcon = 'mdi:fire';
-    } else if (status === 'learned') {
-      statusIcon = 'dashicons:welcome-learn-more';
-    }
-
-    const isSelected = selectedCards.has(card.id);
-
+  // 👇 2. ADIM: İŞTE O DEVASA FONKSİYONUN YENİ, KISACIK HALİ 👇
+  const renderCardItem = useCallback(({ item: card }) => {
     return (
-      <TouchableHighlight
-        style={[
-          styles.cardItem,
-          {
-            backgroundColor: colors.cardBackground,
-            borderColor: editMode && isSelected ? colors.buttonColor : colors.cardBorder,
-            borderWidth: editMode && isSelected ? 2 : 1,
-            shadowColor: colors.shadowColor,
-            shadowOffset: colors.shadowOffset,
-            shadowOpacity: colors.shadowOpacity,
-            shadowRadius: colors.shadowRadius,
-            elevation: colors.elevation,
-          },
-        ]}
-        onPress={() => {
-          if (editMode) {
-            handleToggleCardSelection(card.id);
-          } else {
-            handleCardPress(card);
-          }
-        }}
-        // Tıklama anında opacity düşürmek yerine alttan bu rengi gösterir (titremeyi engeller)
-        underlayColor={colors.cardBackground === '#FFFFFF' ? '#F2F2F2' : '#eeeeee'}
-      >
-        <View style={styles.cardContent}>
-          {/* Edit mode'da checkbox (Burası küçük olduğu için TouchableOpacity kalabilir) */}
-          {editMode && (
-            <View style={styles.checkboxContainer}>
-              <TouchableOpacity
-                onPress={() => 
-                  handleToggleCardSelection(card.id)}
-                style={[
-                  styles.checkbox,
-                  {
-                    backgroundColor: isSelected ? colors.buttonColor : 'transparent',
-                    borderColor: colors.buttonColor,
-                  }
-                ]}
-              >
-                {isSelected && (
-                  <Iconify icon="hugeicons:tick-01" size={18} color="#FFFFFF" />
-                )}
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Sol bölüm - edit mode'da kısaltılmış genişlik */}
-          <View style={[
-            styles.leftSection,
-            {
-              borderRightColor: colors.cardBorder,
-              flex: editMode ? 2 : 3,
-            }
-          ]}>
-            <MathText
-              value={card.question}
-              style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]}
-              numberOfLines={1}
-            />
-            <View style={[styles.divider, { backgroundColor: colors.cardDivider }]} />
-            <MathText
-              value={card.answer}
-              style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]}
-              numberOfLines={1}
-            />
-          </View>
-
-          {/* Sağ bölüm - sabit genişlik, daha koyu renk */}
-          <View style={[
-            styles.rightSection,
-            {
-              // Saydamlık çakışması yapmayacak çünkü artık ana kart saydamlaşmıyor
-              backgroundColor: colors.cardBackground ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.1)',
-            }
-          ]}>
-            <Iconify
-              icon={statusIcon}
-              size={scale(50)}
-              color={'#444444'}
-            />
-          </View>
-        </View>
-      </TouchableHighlight>
+      <MemoizedCardItem
+        card={card}
+        status={cardStatusMap.get(card.id) || 'new'}
+        isSelected={selectedCards.has(card.id)}
+        editMode={editMode}
+        colors={colors}
+        onToggle={handleToggleCardSelection}
+        onPress={handleCardPress}
+      />
     );
-  };
+  }, [cardStatusMap, selectedCards, editMode, colors, handleToggleCardSelection, handleCardPress]);
+  // 👆 2. ADIM BİTTİ 👆
 
   if (loading) {
     return (
@@ -890,6 +886,10 @@ export default function ChapterCardsScreen({ route, navigation }) {
               keyExtractor={(item) => item.id.toString()}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={[styles.cardsList, { paddingBottom: verticalScale(100), paddingTop: verticalScale(20) }]}
+              removeClippedSubviews={true}
+              initialNumToRender={10}
+              maxToRenderPerBatch={10}
+              windowSize={11}
             />
           </View>
         )}

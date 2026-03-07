@@ -116,40 +116,46 @@ export async function reorderChapterOrdinals(deckId) {
  */
 export async function getChapterProgress(chapterId, deckId, userId) {
   try {
-    // Get total cards in this chapter
+    // 1. Toplam kart sayısını bulalım (Sadece sayıyı alır, veriyi indirmez - Limite takılmaz)
     let cardsQuery = supabase
       .from('cards')
-      .select('id')
+      .select('*', { count: 'exact', head: true })
       .eq('deck_id', deckId);
-    
+
     if (chapterId) {
       cardsQuery = cardsQuery.eq('chapter_id', chapterId);
     } else {
       cardsQuery = cardsQuery.is('chapter_id', null);
     }
-    
-    const { data: cards, error: cardsError } = await cardsQuery;
+
+    const { count: total, error: cardsError } = await cardsQuery;
     if (cardsError) throw cardsError;
-    
-    const total = cards?.length || 0;
-    if (total === 0) {
+
+    if (!total || total === 0) {
       return { total: 0, learned: 0, progress: 0 };
     }
-    
-    // Get learned cards count
-    const cardIds = cards.map(c => c.id);
-    const { data: progressData, error: progressError } = await supabase
+
+    // 2. Sadece "learned" olanların SAYISINI count ile alalım (Veriyi indirmeyiz, limite takılmaz)
+    let progressQuery = supabase
       .from('user_card_progress')
-      .select('card_id')
+      .select('cards!inner(chapter_id, deck_id)', { count: 'exact', head: true })
       .eq('user_id', userId)
-      .in('card_id', cardIds)
-      .eq('status', 'learned');
-    
+      .eq('status', 'learned')
+      .eq('cards.deck_id', deckId);
+
+    if (chapterId) {
+      progressQuery = progressQuery.eq('cards.chapter_id', chapterId);
+    } else {
+      progressQuery = progressQuery.is('cards.chapter_id', null);
+    }
+
+    const { count: learned, error: progressError } = await progressQuery;
     if (progressError) throw progressError;
-    const learned = progressData?.length || 0;
-    const progress = total > 0 ? learned / total : 0;
-    
-    return { total, learned, progress };
+
+    const learnedCount = learned || 0;
+    const progress = total > 0 ? learnedCount / total : 0;
+
+    return { total, learned: learnedCount, progress };
   } catch (error) {
     console.error('Error getting chapter progress:', error);
     return { total: 0, learned: 0, progress: 0 };
@@ -157,89 +163,112 @@ export async function getChapterProgress(chapterId, deckId, userId) {
 }
 
 /**
- * Get progress for multiple chapters at once
- * @param {Array<{id: string|null}>} chapters - Array of chapters (id can be null for unassigned)
+ * Get progress for multiple chapters at once (Supports infinite cards via Pagination)
+ * @param {Array<{id: string|null}>} chapters - Array of chapters
  * @param {string} deckId - Deck ID
  * @param {string} userId - User ID
  * @returns {Promise<Map<string, {total: number, learned: number, progress: number}>>}
  */
 export async function getChaptersProgress(chapters, deckId, userId) {
   const progressMap = new Map();
-  
-  // Get all card IDs for this deck grouped by chapter
-  const { data: allCards, error: cardsError } = await supabase
-    .from('cards')
-    .select('id, chapter_id')
-    .eq('deck_id', deckId);
-  
-  if (cardsError) {
-    console.error('Error fetching cards:', cardsError);
-    return progressMap;
-  }
-  
-  // Group cards by chapter_id
-  const cardsByChapter = new Map();
-  chapters.forEach(ch => {
-    const key = ch.id || 'unassigned';
-    cardsByChapter.set(key, []);
-  });
-  
-  (allCards || []).forEach(card => {
-    const key = card.chapter_id || 'unassigned';
-    if (cardsByChapter.has(key)) {
-      cardsByChapter.get(key).push(card.id);
+
+  try {
+    // 1. ADIM: Tüm kartları 1000'erlik paketler halinde çek (Sayfalama)
+    let allCards = [];
+    let from = 0;
+    const step = 1000;
+    let hasMoreCards = true;
+
+    while (hasMoreCards) {
+      const { data: cardsData, error: cardsError } = await supabase
+        .from('cards')
+        .select('id, chapter_id')
+        .eq('deck_id', deckId)
+        .range(from, from + step - 1);
+
+      if (cardsError) throw cardsError;
+
+      if (cardsData && cardsData.length > 0) {
+        allCards.push(...cardsData);
+      }
+
+      // Gelen veri 1000'den azsa döngüyü kır
+      if (!cardsData || cardsData.length < step) {
+        hasMoreCards = false;
+      } else {
+        from += step;
+      }
     }
-  });
-  
-  // Get all card IDs
-  const allCardIds = (allCards || []).map(c => c.id);
-  if (allCardIds.length === 0) {
+
+    // Her chapter'daki toplam kart sayısını hesapla
+    const chapterTotals = new Map();
+    allCards.forEach(card => {
+      const key = card.chapter_id || 'unassigned';
+      chapterTotals.set(key, (chapterTotals.get(key) || 0) + 1);
+    });
+
+    // 2. ADIM: Progress durumlarını da sayfalama ile çek (.in kullanmadan, Join ile)
+    let allProgressData = [];
+    let progressFrom = 0;
+    let hasMoreProgress = true;
+
+    while (hasMoreProgress) {
+      const { data: progressData, error: progressError } = await supabase
+        .from('user_card_progress')
+        .select('status, cards!inner(chapter_id, deck_id)')
+        .eq('user_id', userId)
+        .in('status', ['learned', 'learning'])
+        .eq('cards.deck_id', deckId)
+        .range(progressFrom, progressFrom + step - 1);
+
+      if (progressError) throw progressError;
+
+      if (progressData && progressData.length > 0) {
+        allProgressData.push(...progressData);
+      }
+
+      if (!progressData || progressData.length < step) {
+        hasMoreProgress = false;
+      } else {
+        progressFrom += step;
+      }
+    }
+
+    // Progress datalarını chapter_id ve status'e göre grupla
+    const chapterStats = new Map();
+    allProgressData.forEach(p => {
+      const chapterId = (Array.isArray(p.cards) ? p.cards[0].chapter_id : p.cards.chapter_id) || 'unassigned';
+      
+      if (!chapterStats.has(chapterId)) {
+        chapterStats.set(chapterId, { learned: 0, learning: 0 });
+      }
+      
+      const stats = chapterStats.get(chapterId);
+      if (p.status === 'learned') stats.learned += 1;
+      if (p.status === 'learning') stats.learning += 1;
+    });
+
+    // 3. İstenen her chapter için map'i oluştur ve eksik statüleri tamamla
+    chapters.forEach(ch => {
+      const key = ch.id || 'unassigned';
+      const total = chapterTotals.get(key) || 0;
+      
+      const stats = chapterStats.get(key) || { learned: 0, learning: 0 };
+      const learned = stats.learned;
+      const learning = stats.learning;
+      const newCount = total - learned - learning; 
+      
+      const progress = total > 0 ? learned / total : 0;
+      
+      progressMap.set(key, { total, learned, learning, new: newCount, progress });
+    });
+
+    return progressMap;
+  } catch (error) {
+    console.error('Error fetching chapters progress:', error);
     chapters.forEach(ch => {
       progressMap.set(ch.id || 'unassigned', { total: 0, learned: 0, learning: 0, new: 0, progress: 0 });
     });
     return progressMap;
   }
-  
-  // Get learned cards for all chapters at once
-  const { data: learnedData, error: learnedError } = await supabase
-    .from('user_card_progress')
-    .select('card_id')
-    .eq('user_id', userId)
-    .in('card_id', allCardIds)
-    .eq('status', 'learned');
-  
-  // Get learning cards (only status = 'learning', excluding 'new' and 'learned')
-  const { data: learningData, error: learningError } = await supabase
-    .from('user_card_progress')
-    .select('card_id')
-    .eq('user_id', userId)
-    .in('card_id', allCardIds)
-    .eq('status', 'learning');
-  
-  if (learnedError || learningError) {
-    console.error('Error fetching progress:', learnedError || learningError);
-    chapters.forEach(ch => {
-      progressMap.set(ch.id || 'unassigned', { total: 0, learned: 0, learning: 0, new: 0, progress: 0 });
-    });
-    return progressMap;
-  }
-  
-  const learnedCardIds = new Set((learnedData || []).map(p => p.card_id));
-  const learningCardIds = new Set((learningData || []).map(p => p.card_id));
-  
-  // Calculate progress for each chapter
-  chapters.forEach(ch => {
-    const key = ch.id || 'unassigned';
-    const cardIds = cardsByChapter.get(key) || [];
-    const total = cardIds.length;
-    const learned = cardIds.filter(id => learnedCardIds.has(id)).length;
-    const learning = cardIds.filter(id => learningCardIds.has(id)).length;
-    const newCount = total - learned - learning; // New = total - learned - learning
-    const progress = total > 0 ? learned / total : 0;
-    progressMap.set(key, { total, learned, learning, new: newCount, progress });
-  });
-  
-  return progressMap;
 }
-
-

@@ -294,24 +294,30 @@ export default function DeckDetailScreen({ route, navigation }) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Bu destedeki toplam kart sayısını çek
-      const { data: totalCards, error: totalError } = await supabase
+      // 1. ADIM: Sadece toplam sayıyı (count) al, datayı indirme!
+      const { count: total, error: totalError } = await supabase
         .from('cards')
-        .select('id')
+        .select('*', { count: 'exact', head: true }) // head: true veriyi indirmez, sadece sayıyı döner
         .eq('deck_id', deck.id);
 
       if (totalError) throw totalError;
-      const total = totalCards ? totalCards.length : 0;
+      
+      // Eğer destede kart yoksa boşuna devam etme
+      if (!total || total === 0) {
+        setProgress(0);
+        setLearnedCardsCount(0);
+        setDeckStats({ total: 0, learned: 0, learning: 0, new: 0 });
+        if (showLoading) setProgressLoading(false);
+        return;
+      }
 
-      // Bu destedeki kart ID'lerini al
-      const cardIds = totalCards.map(card => card.id);
-
-      // Kullanıcının bu destedeki tüm progress bilgilerini çek
+      // 2. ADIM: .in() kullanmak yerine tabloları Join yap
+      // Bu sorgu, 'cards' tablosundaki 'deck_id' üzerinden filtreleme yapar
       const { data: progressData, error } = await supabase
         .from('user_card_progress')
-        .select('card_id, status')
+        .select('card_id, status, cards!inner(deck_id)')
         .eq('user_id', user.id)
-        .in('card_id', cardIds);
+        .eq('cards.deck_id', deck.id);
 
       if (error) throw error;
 
@@ -321,12 +327,14 @@ export default function DeckDetailScreen({ route, navigation }) {
       const newCount = total - learned - learning;
 
       const calculatedProgress = total > 0 ? learned / total : 0;
+      
       setProgress(calculatedProgress);
       setLearnedCardsCount(learned);
+      
       const stats = { total, learned, learning, new: newCount };
       setDeckStats(stats);
 
-      // Progress'i cache'le (gelecek kullanımlar için)
+      // Cacheleme işlemleri...
       try {
         const storageKey = `deck_progress_${deck.id}_${user.id}`;
         await AsyncStorage.setItem(storageKey, JSON.stringify({
@@ -339,7 +347,6 @@ export default function DeckDetailScreen({ route, navigation }) {
         console.error('Error caching progress:', cacheError);
       }
 
-      // Progress değeri geldiğinde loading'i hemen false yap (progress hemen gösterilsin)
       if (showLoading) {
         setProgressLoading(false);
       }

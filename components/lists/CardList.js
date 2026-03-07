@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Pressable, Text } from 'react-native';
 import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -7,6 +7,22 @@ import { useTranslation } from 'react-i18next';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import MathText from '../ui/MathText';
 import { triggerHaptic } from '../../lib/hapticManager';
+
+const SmartText = ({ value, style, numberOfLines }) => {
+  if (!value) return null;
+
+  // ÇOK HIZLI KONTROL: İçinde ters eğik çizgi, üs veya alt simge var mı?
+  // (Regex kullanmıyoruz çünkü includes() string işlemlerinde ışık hızındadır)
+  const hasMath = value.includes('\\') || value.includes('^') || value.includes('_');
+
+  if (hasMath) {
+    // Matematik varsa senin o efsanevi, ağır fabrikaya (MathText) gönder
+    return <MathText value={value} style={style} numberOfLines={numberOfLines} forceText={true} />;
+  }
+  
+  // Sadece düz metinse fabrikaya sokma, dümdüz Text olarak bas geç! (0 Maliyet)
+  return <Text style={style} numberOfLines={numberOfLines}>{value}</Text>;
+};
 
 // export default function yerine const ile tanımlıyoruz
 const CardListItem = ({
@@ -58,13 +74,13 @@ const CardListItem = ({
     >
       <View style={styles.topRow}>
         <View style={styles.textCol}>
-          <MathText
+          <SmartText
             value={question}
             style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]}
             numberOfLines={1}
           />
           <View style={[styles.divider, { backgroundColor: colors.cardDivider }]} />
-          <MathText
+          <SmartText
             value={answer}
             style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]}
             numberOfLines={1}
