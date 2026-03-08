@@ -18,6 +18,7 @@ export const CACHE_DURATIONS = {
   DECK_LIST: 4 * 60 * 60 * 1000,            // 4 saat (pull-to-refresh bypass)
   DECK_DETAIL: 4 * 60 * 60 * 1000,          // 4 saat (mutation: kendi destesinde düzenleme)
   CARDS_CONTENT: 4 * 60 * 60 * 1000,        // 4 saat (mutation: kendi destesinde CRUD)
+  CARD_DETAIL: 4 * 60 * 60 * 1000,          // 4 saat (mutation: kart düzenleme/silme)
   CHAPTERS: 4 * 60 * 60 * 1000,             // 4 saat (mutation: chapter CRUD)
 
   // Kullanıcıya özel

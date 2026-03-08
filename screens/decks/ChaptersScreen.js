@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useLayoutEffect } from 'react';
+import React, { useEffect, useState, useLayoutEffect, useCallback, memo } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Alert, Pressable } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -16,6 +16,96 @@ import { triggerHaptic } from '../../lib/hapticManager';
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
+
+const MemoizedChapterItem = memo(({ item, progressMap, editMode, colors, onPress, onDelete, t }) => {
+  const chapterProgress = progressMap.get(item.id) || { total: 0, learned: 0, learning: 0, progress: 0 };
+  const learningCount = chapterProgress.learning || 0;
+  return (
+    <TouchableOpacity
+      onPress={() => !editMode && onPress(item)}
+      activeOpacity={0.8}
+      style={[
+        styles.chapterItem,
+        {
+          backgroundColor: colors.cardBackground,
+          borderColor: editMode ? colors.buttonColor : colors.cardBorder,
+          borderWidth: 1,
+          shadowColor: colors.shadowColor,
+          shadowOffset: colors.shadowOffset,
+          shadowOpacity: colors.shadowOpacity,
+          shadowRadius: colors.shadowRadius,
+          elevation: colors.elevation,
+        },
+      ]}
+    >
+      <View style={styles.chapterHeader}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={moderateScale(22)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
+            <Text style={[typography.styles.body, styles.chapterTitle, { color: colors.text }]}>{t('chapters.chapter', 'Bölüm')} {item.ordinal}</Text>
+          </View>
+          {editMode ? (
+            <TouchableOpacity
+              onPress={() => {
+                triggerHaptic('heavy');
+                requestAnimationFrame(() => onDelete(item.id));
+              }}
+              style={styles.deleteButton}
+              activeOpacity={0.7}
+              hitSlop={{ top: scale(15), bottom: scale(15), left: scale(15), right: scale(15) }}
+            >
+              <Iconify icon="mdi:garbage" size={moderateScale(24)} color="#FF4444" />
+            </TouchableOpacity>
+          ) : (
+            <Iconify icon="ion:chevron-forward" size={moderateScale(26)} color={colors.buttonColor} />
+          )}
+        </View>
+      </View>
+      <View style={[styles.chapterDivider, { backgroundColor: colors.border }]} />
+      <View style={styles.chapterContent}>
+        <View style={styles.progressContainer}>
+          <CircularProgress
+            progress={chapterProgress?.progress || 0}
+            size={scale(78)}
+            strokeWidth={moderateScale(9)}
+            showText={true}
+            shouldAnimate={true}
+            fullCircle={true}
+            textStyle={{ fontSize: moderateScale(16), fontWeight: '900', color: colors.text }}
+          />
+        </View>
+        <View style={styles.statsContainer}>
+          <View style={styles.statRow}>
+            <Iconify icon="mdi:fire" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
+            <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
+              {t('chapters.learning', 'Learning')}: {learningCount}
+            </Text>
+          </View>
+          <View style={styles.statRow}>
+            <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
+            <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
+              {t('chapters.learned', 'Learned')}: {chapterProgress.learned}
+            </Text>
+          </View>
+          <View style={styles.statRow}>
+            <Iconify icon="ri:stack-fill" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
+            <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
+              {t('chapters.total', 'Total')}: {chapterProgress.total}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.item.id === nextProps.item.id &&
+    prevProps.item.ordinal === nextProps.item.ordinal &&
+    prevProps.editMode === nextProps.editMode &&
+    prevProps.colors === nextProps.colors &&
+    prevProps.progressMap === nextProps.progressMap
+  );
+});
 
 export default function ChaptersScreen({ route, navigation }) {
   const { colors } = useTheme();
@@ -168,7 +258,7 @@ const addChapterAnimatedStyle = useAnimatedStyle(() => {
     }
   };
 
-  const handleDeleteChapter = async (chapterId) => {
+  const handleDeleteChapter = useCallback(async (chapterId) => {
     Alert.alert(
       t('chapters.deleteTitle', 'Bölümü Sil'),
       t('chapters.deleteMessage', 'Bu bölümü silmek istediğinize emin misiniz? Bölümdeki kartlar atanmamış kartlara taşınacak.'),
@@ -202,7 +292,76 @@ const addChapterAnimatedStyle = useAnimatedStyle(() => {
         },
       ]
     );
-  };
+  }, [deck?.id, currentUserId, t, showSuccess, showError]);
+
+  const handleChapterPress = useCallback((item) => {
+    navigation.navigate('ChapterCards', { chapter: { id: item.id, name: `${t('chapters.chapter', 'Bölüm')} ${item.ordinal}` }, deck });
+  }, [navigation, deck, t]);
+
+  const renderChapterItem = useCallback(({ item }) => (
+    <MemoizedChapterItem
+      item={item}
+      progressMap={progressMap}
+      editMode={editMode}
+      colors={colors}
+      onPress={handleChapterPress}
+      onDelete={handleDeleteChapter}
+      t={t}
+    />
+  ), [progressMap, editMode, colors, handleChapterPress, handleDeleteChapter, t]);
+
+  const listHeader = useCallback(() => {
+    const unassignedProgress = progressMap.get('unassigned') || { total: 0 };
+    const unassignedCount = unassignedProgress.total || 0;
+    return (
+      <View>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('ChapterCards', { chapter: { id: null, name: t('chapters.unassigned', 'Atanmamış') }, deck })}
+          activeOpacity={0.8}
+          style={[
+            styles.chapterItem,
+            {
+              backgroundColor: colors.cardBackground,
+              borderColor: colors.cardBorder,
+              shadowColor: colors.shadowColor,
+              shadowOffset: colors.shadowOffset,
+              shadowOpacity: colors.shadowOpacity,
+              shadowRadius: colors.shadowRadius,
+              elevation: colors.elevation,
+            },
+          ]}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Iconify icon="ic:round-assignment-late" size={moderateScale(20)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
+              <Text style={[typography.styles.body, { color: colors.text }]}>{t('chapters.unassigned', 'Atanmamış')}</Text>
+            </View>
+            {unassignedCount > 0 && (
+              <View style={[styles.countBadge, { backgroundColor: colors.buttonColor }]}>
+                <Text style={[styles.countBadgeText, { color: '#FFFFFF' }]}>{unassignedCount}</Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+      </View>
+    );
+  }, [progressMap, navigation, deck, colors, t]);
+
+  const listEmpty = useCallback(() => (
+    <View style={styles.emptyStateContainer}>
+      <View style={styles.emptyState}>
+        <Iconify
+          icon="streamline-freehand:plugin-jigsaw-puzzle"
+          size={scale(120)}
+          color={colors.muted}
+          style={{ marginBottom: verticalScale(12), opacity: 0.5 }}
+        />
+        <Text style={[styles.emptyStateText, typography.styles.body, { color: colors.subtext, opacity: 0.6 }]}>
+          {t('chapters.noChaptersDesc', 'Bu destede henüz bölüm oluşturulmamış.')}
+        </Text>
+      </View>
+    </View>
+  ), [colors, t]);
 
   // Yükleniyor ekranı
   const renderLoading = () => (
@@ -224,155 +383,13 @@ const addChapterAnimatedStyle = useAnimatedStyle(() => {
               keyExtractor={(item) => item.id}
               contentContainerStyle={chapters.length === 0 ? { padding: scale(16), flexGrow: 1 } : { padding: scale(16), paddingBottom: '22%' }}
               showsVerticalScrollIndicator={false}
-              ListHeaderComponent={() => {
-                const unassignedProgress = progressMap.get('unassigned') || { total: 0 };
-                const unassignedCount = unassignedProgress.total || 0;
-                return (
-                  <View>
-                    <TouchableOpacity
-                      onPress={() => navigation.navigate('ChapterCards', { chapter: { id: null, name: t('chapters.unassigned', 'Atanmamış') }, deck })}
-                      activeOpacity={0.8}
-                      style={[
-                        styles.chapterItem,
-                        {
-                          backgroundColor: colors.cardBackground,
-                          borderColor: colors.cardBorder,
-                          shadowColor: colors.shadowColor,
-                          shadowOffset: colors.shadowOffset,
-                          shadowOpacity: colors.shadowOpacity,
-                          shadowRadius: colors.shadowRadius,
-                          elevation: colors.elevation,
-                        },
-                      ]}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Iconify icon="ic:round-assignment-late" size={moderateScale(20)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
-                          <Text style={[typography.styles.body, { color: colors.text }]}>{t('chapters.unassigned', 'Atanmamış')}</Text>
-                        </View>
-                        {unassignedCount > 0 && (
-                          <View style={[styles.countBadge, { backgroundColor: colors.buttonColor }]}>
-                            <Text style={[styles.countBadgeText, { color: '#FFFFFF' }]}>{unassignedCount}</Text>
-                          </View>
-                        )}
-                      </View>
-                    </TouchableOpacity>
-                  </View>
-                );
-              }}
-              ListEmptyComponent={
-                <View style={styles.emptyStateContainer}>
-                  <View style={styles.emptyState}>
-                    <Iconify
-                      icon="streamline-freehand:plugin-jigsaw-puzzle"
-                      size={scale(120)}
-                      color={colors.muted}
-                      style={{ marginBottom: verticalScale(12), opacity: 0.5 }}
-                    />
-                    <Text style={[styles.emptyStateText, typography.styles.body, { color: colors.subtext, opacity: 0.6 }]}>
-                      {t('chapters.noChaptersDesc', 'Bu destede henüz bölüm oluşturulmamış.')}
-                    </Text>
-                  </View>
-                </View>
-              }
-              renderItem={({ item, index }) => {
-                const chapterProgress = progressMap.get(item.id) || { total: 0, learned: 0, learning: 0, progress: 0 };
-                const learningCount = chapterProgress.learning || 0;
-                return (
-                  <TouchableOpacity
-                    onPress={() => {
-                      if (!editMode) {
-                        navigation.navigate('ChapterCards', { chapter: { id: item.id, name: `${t('chapters.chapter', 'Bölüm')} ${item.ordinal}` }, deck });
-                      }
-                    }}
-                    activeOpacity={0.8}
-                    style={[
-                      styles.chapterItem,
-                      {
-                        backgroundColor: colors.cardBackground,
-                        borderColor: editMode ? colors.buttonColor : colors.cardBorder,
-                        borderWidth: 1,
-                        shadowColor: colors.shadowColor,
-                        shadowOffset: colors.shadowOffset,
-                        shadowOpacity: colors.shadowOpacity,
-                        shadowRadius: colors.shadowRadius,
-                        elevation: colors.elevation,
-                      },
-                    ]}
-                  >
-                    {/* Chapter Header */}
-                    <View style={styles.chapterHeader}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={moderateScale(22)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
-                          <Text style={[typography.styles.body, styles.chapterTitle, { color: colors.text }]}>{t('chapters.chapter', 'Bölüm')} {item.ordinal}</Text>
-                        </View>
-                        {editMode ? (
-                          <TouchableOpacity
-                            onPress={() => {
-                              triggerHaptic('heavy');
-                              requestAnimationFrame(() => {
-                                handleDeleteChapter(item.id);
-                              });
-                            }}
-                            style={styles.deleteButton}
-                            activeOpacity={0.7}
-                            hitSlop={{ top: scale(15), bottom: scale(15), left: scale(15), right: scale(15) }}
-                          >
-                            <Iconify icon="mdi:garbage" size={moderateScale(24)} color="#FF4444" />
-                          </TouchableOpacity>
-                        ) : (
-                          <Iconify icon="ion:chevron-forward" size={moderateScale(26)} color={colors.buttonColor} />
-                        )}
-                      </View>
-                    </View>
-
-                    {/* Divider */}
-                    <View style={[styles.chapterDivider, { backgroundColor: colors.border }]} />
-
-                    {/* Progress and Stats Section */}
-                    <View style={styles.chapterContent}>
-                      <View style={styles.progressContainer}>
-                        <CircularProgress
-                          progress={chapterProgress?.progress || 0}
-                          size={scale(78)}
-                          strokeWidth={moderateScale(9)}
-                          showText={true}
-                          shouldAnimate={true} // <--- SORUN BURADA!
-                          fullCircle={true}
-                          textStyle={{ fontSize: moderateScale(16), fontWeight: '900', color: colors.text }}
-                        />
-                      </View>
-
-                      <View style={styles.statsContainer}>
-                        {/* Learning */}
-                        <View style={styles.statRow}>
-                          <Iconify icon="mdi:fire" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
-                          <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
-                            {t('chapters.learning', 'Learning')}: {learningCount}
-                          </Text>
-                        </View>
-
-                        {/* Learned */}
-                        <View style={styles.statRow}>
-                          <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
-                          <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
-                            {t('chapters.learned', 'Learned')}: {chapterProgress.learned}
-                          </Text>
-                        </View>
-
-                        {/* Total */}
-                        <View style={styles.statRow}>
-                          <Iconify icon="ri:stack-fill" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
-                          <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
-                            {t('chapters.total', 'Total')}: {chapterProgress.total}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                );
-              }}
+              removeClippedSubviews={true}
+              initialNumToRender={8}
+              maxToRenderPerBatch={6}
+              windowSize={7}
+              ListHeaderComponent={listHeader}
+              ListEmptyComponent={listEmpty}
+              renderItem={renderChapterItem}
             />
 
           </View>

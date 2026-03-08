@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useLayoutEffect } from 'react';
+import React, { useEffect, useMemo, useState, useLayoutEffect, useRef, useCallback, memo } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, BackHandler, Alert, Keyboard } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import { getFavoriteCards, addFavoriteCard, removeFavoriteCard } from '../../services/FavoriteService';
-import { deleteCard } from '../../services/CardService';
+import { deleteCard, getCardDetail } from '../../services/CardService';
 import SearchBar from '../../components/tools/SearchBar';
 import FilterIcon from '../../components/modals/CardFilterIcon';
 import CardListItem from '../../components/lists/CardList';
@@ -17,6 +17,27 @@ import { StyleSheet } from 'react-native';
 import { Iconify } from 'react-native-iconify';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+
+const MemoizedFavCardItem = memo(({ item, isFavorite, isOwner, onPress, onToggleFavorite, onDelete }) => (
+  <View style={{ paddingHorizontal: scale(12), paddingVertical: 0 }}>
+    <CardListItem
+      question={item.question}
+      answer={item.answer}
+      isFavorite={isFavorite}
+      onPress={() => onPress(item)}
+      onToggleFavorite={() => onToggleFavorite(item.id)}
+      canDelete={true}
+      onDelete={() => onDelete(item.id)}
+      isOwner={isOwner}
+    />
+  </View>
+), (prevProps, nextProps) => (
+  prevProps.item.id === nextProps.item.id &&
+  prevProps.item.question === nextProps.item.question &&
+  prevProps.item.answer === nextProps.item.answer &&
+  prevProps.isFavorite === nextProps.isFavorite &&
+  prevProps.isOwner === nextProps.isOwner
+));
 
 export default function FavoriteCards() {
   const navigation = useNavigation();
@@ -33,6 +54,7 @@ export default function FavoriteCards() {
   const [selectedCard, setSelectedCard] = useState(null);
   const [favoriteCards, setFavoriteCards] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const latestDetailFetchRef = useRef(null);
 
   const fetchFavorites = async () => {
     setLoading(true);
@@ -133,23 +155,48 @@ export default function FavoriteCards() {
     return list;
   }, [cards, query, sort]);
 
-  const handleToggleFavoriteCard = async (cardId) => {
+  const fetchAndSetCardDetail = useCallback(async (card) => {
+    if (!card) {
+      setSelectedCard(null);
+      return;
+    }
+    const cardId = card.id;
+    latestDetailFetchRef.current = cardId;
+    setSelectedCard(card);
     try {
-      if (!userId) return;
-      
-      if (favoriteCards.includes(cardId)) {
-        await removeFavoriteCard(userId, cardId);
-        setFavoriteCards(favoriteCards.filter(id => id !== cardId));
-        setCards(cards.filter(c => c.id !== cardId));
-        if (selectedCard && selectedCard.id === cardId) {
-          setSelectedCard(null);
-        }
-      } else {
-        await addFavoriteCard(userId, cardId);
-        setFavoriteCards([...favoriteCards, cardId]);
+      const detail = await getCardDetail(cardId);
+      if (latestDetailFetchRef.current === cardId && detail) {
+        setSelectedCard(prev => prev?.id === cardId ? { ...prev, ...detail } : prev);
       }
-    } catch (e) {}
-  };
+    } catch (e) {
+      // keep lightweight data
+    }
+  }, []);
+
+  const handleToggleFavoriteCard = useCallback(async (cardId) => {
+    if (!userId) return;
+    const wasFavorite = favoriteCards.includes(cardId);
+
+    if (wasFavorite) {
+      setFavoriteCards(prev => prev.filter(id => id !== cardId));
+      setCards(prev => prev.filter(c => c.id !== cardId));
+      if (selectedCard && selectedCard.id === cardId) {
+        setSelectedCard(null);
+      }
+    } else {
+      setFavoriteCards(prev => [...prev, cardId]);
+    }
+
+    try {
+      wasFavorite ? await removeFavoriteCard(userId, cardId) : await addFavoriteCard(userId, cardId);
+    } catch (e) {
+      if (wasFavorite) {
+        fetchFavorites();
+      } else {
+        setFavoriteCards(prev => prev.filter(id => id !== cardId));
+      }
+    }
+  }, [userId, favoriteCards, selectedCard]);
 
   const handleDeleteCard = async (cardId) => {
     Alert.alert(
@@ -182,6 +229,51 @@ export default function FavoriteCards() {
     );
   };
 
+
+  const renderFavCardItem = useCallback(({ item }) => {
+    const isOwner = currentUserId && item.deck?.user_id && item.deck.user_id === currentUserId;
+    return (
+      <MemoizedFavCardItem
+        item={item}
+        isFavorite={favoriteCards.includes(item.id)}
+        isOwner={isOwner}
+        onPress={fetchAndSetCardDetail}
+        onToggleFavorite={handleToggleFavoriteCard}
+        onDelete={handleDeleteCard}
+      />
+    );
+  }, [currentUserId, favoriteCards, fetchAndSetCardDetail, handleToggleFavoriteCard, handleDeleteCard]);
+
+  const favListHeader = useMemo(() => (
+    !selectedCard && cards.length > 0 ? (
+      <View style={styles.searchContainer}>
+        <SearchBar
+          value={query}
+          onChangeText={setQuery}
+          placeholder={t('common.searchPlaceholder', 'Favori kartlarda ara...')}
+          style={{ flex: 1 }}
+        />
+        <FilterIcon
+          value={sort}
+          onChange={setSort}
+          hideFavorites={true}
+        />
+      </View>
+    ) : null
+  ), [selectedCard, cards.length, query, sort, t]);
+
+  const favListEmpty = useMemo(() => (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: verticalScale(400), marginTop: verticalScale(-250), pointerEvents: 'none' }}>
+      <Image
+        source={require('../../assets/cardbg.png')}
+        style={{ width: scale(500), height: scale(500), opacity: 0.2 }}
+        resizeMode="contain"
+      />
+      <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, fontSize: moderateScale(16), marginTop: verticalScale(-150) }]}>
+        {t('cardDetail.addToDeck', 'Desteye bir kart ekle')}
+      </Text>
+    </View>
+  ), [colors.text, t]);
 
   // Header'ı ayarla - selectedCard durumuna göre
   useLayoutEffect(() => {
@@ -225,7 +317,7 @@ export default function FavoriteCards() {
           <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100), height: verticalScale(100) }} />
         </View>
       ) : selectedCard ? (
-        <CardDetailView card={selectedCard} cards={filteredCards} onSelectCard={setSelectedCard} />
+        <CardDetailView card={selectedCard} cards={filteredCards} onSelectCard={fetchAndSetCardDetail} />
       ) : cards.length === 0 ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: verticalScale(-250)}}>
           <Image
@@ -247,54 +339,13 @@ export default function FavoriteCards() {
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
           onScrollBeginDrag={() => Keyboard.dismiss()}
-          ListHeaderComponent={
-            !selectedCard && cards.length > 0 && (
-              <View style={styles.searchContainer}>
-                <SearchBar
-                  value={query}
-                  onChangeText={setQuery}
-                  placeholder={t('common.searchPlaceholder', 'Favori kartlarda ara...')}
-                  style={{ flex: 1 }}
-                />
-                <FilterIcon
-                  value={sort}
-                  onChange={setSort}
-                  hideFavorites={true}
-                />
-              </View>
-            )
-          }
-          ListEmptyComponent={
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: verticalScale(400), marginTop: verticalScale(-250), pointerEvents: 'none' }}>
-              <Image
-                source={require('../../assets/cardbg.png')}
-                style={{ width: scale(500), height: scale(500), opacity: 0.2 }}
-                resizeMode="contain"
-              />
-              <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, fontSize: moderateScale(16), marginTop: verticalScale(-150) }]}>
-                {t('cardDetail.addToDeck', 'Desteye bir kart ekle')}
-              </Text>
-            </View>
-          }
-          renderItem={({ item }) => {
-            const isOwner = currentUserId && item.deck?.user_id && item.deck.user_id === currentUserId;
-            return (
-              <View style={styles.cardListItem}>
-                <CardListItem
-                  question={item.question}
-                  answer={item.answer}
-                  isFavorite={favoriteCards.includes(item.id)}
-                  onPress={() => {
-                    setSelectedCard(item);
-                  }}
-                  onToggleFavorite={() => handleToggleFavoriteCard(item.id)}
-                  canDelete={true}
-                  onDelete={() => handleDeleteCard(item.id)}
-                  isOwner={isOwner}
-                />
-              </View>
-            );
-          }}
+          removeClippedSubviews={true}
+          initialNumToRender={10}
+          maxToRenderPerBatch={8}
+          windowSize={9}
+          ListHeaderComponent={favListHeader}
+          ListEmptyComponent={favListEmpty}
+          renderItem={renderFavCardItem}
         />
       )}
     </View>

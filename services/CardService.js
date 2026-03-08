@@ -1,5 +1,72 @@
 import { supabase } from '../lib/supabase';
-import { invalidateCache } from './CacheService';
+import { invalidateCache, cacheData, getCachedData, CACHE_DURATIONS } from './CacheService';
+
+const PAGE_SIZE = 50;
+
+export const getCardsByDeck = async (deckId, page = 0, pageSize = PAGE_SIZE, sortBy = 'original') => {
+  const from = page * pageSize;
+  let query = supabase
+    .from('cards')
+    .select('id, question, answer, created_at')
+    .eq('deck_id', deckId);
+
+  if (sortBy === 'az') {
+    query = query.order('question', { ascending: true });
+  } else {
+    query = query.order('created_at', { ascending: false });
+  }
+
+  const { data, error } = await query.range(from, from + pageSize - 1);
+  if (error) throw error;
+  return data || [];
+};
+
+export const getCardsByChapter = async (deckId, chapterId, page = 0, pageSize = PAGE_SIZE) => {
+  const from = page * pageSize;
+  let query = supabase
+    .from('cards')
+    .select('id, question, answer, created_at')
+    .eq('deck_id', deckId)
+    .order('created_at', { ascending: false })
+    .range(from, from + pageSize - 1);
+  if (chapterId) {
+    query = query.eq('chapter_id', chapterId);
+  } else {
+    query = query.is('chapter_id', null);
+  }
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+};
+
+export const getChapterProgressCounts = async (userId, deckId, chapterId) => {
+  const isUnassigned = !chapterId;
+  let totalQ = supabase.from('cards').select('id', { count: 'exact', head: true }).eq('deck_id', deckId);
+  if (isUnassigned) totalQ = totalQ.is('chapter_id', null);
+  else totalQ = totalQ.eq('chapter_id', chapterId);
+
+  let learnedQ = supabase.from('user_card_progress')
+    .select('id, cards!inner(id)', { count: 'exact', head: true })
+    .eq('user_id', userId).eq('status', 'learned').eq('cards.deck_id', deckId);
+  if (isUnassigned) learnedQ = learnedQ.is('cards.chapter_id', null);
+  else learnedQ = learnedQ.eq('cards.chapter_id', chapterId);
+
+  let learningQ = supabase.from('user_card_progress')
+    .select('id, cards!inner(id)', { count: 'exact', head: true })
+    .eq('user_id', userId).eq('status', 'learning').eq('cards.deck_id', deckId);
+  if (isUnassigned) learningQ = learningQ.is('cards.chapter_id', null);
+  else learningQ = learningQ.eq('cards.chapter_id', chapterId);
+
+  const [totalR, learnedR, learningR] = await Promise.all([totalQ, learnedQ, learningQ]);
+  if (totalR.error) throw totalR.error;
+  if (learnedR.error) throw learnedR.error;
+  if (learningR.error) throw learningR.error;
+
+  const total = totalR.count || 0;
+  const learned = learnedR.count || 0;
+  const learning = learningR.count || 0;
+  return { total, learned, learning, new: total - learned - learning };
+};
 
 export const ensureUserCardProgress = async (_deckId, _userId) => {
   // Artık 'new' status'unda progress satırı oluşturmuyoruz.
@@ -64,13 +131,19 @@ export const deleteCard = async (cardId) => {
   await invalidateCache(`card_detail_${cardId}`);
 };
 
-export const getCardDetail = async (cardId) => {
+export const getCardDetail = async (cardId, forceRefresh = false) => {
+  const cacheKey = `card_detail_${cardId}`;
+  if (!forceRefresh) {
+    const cached = await getCachedData(cacheKey, CACHE_DURATIONS.CARD_DETAIL);
+    if (cached && !cached.isStale) return cached.data;
+  }
   const { data, error } = await supabase
     .from('cards')
     .select('id, question, answer, image, example, note, created_at')
     .eq('id', cardId)
     .single();
   if (error) throw error;
+  if (data) await cacheData(cacheKey, data);
   return data;
 };
 
@@ -100,6 +173,27 @@ export const upsertCardProgress = async (userId, cardId, status, nextReview) => 
       status,
       next_review: nextReview,
     }, { onConflict: 'user_id,card_id' });
+  if (error) throw error;
+};
+
+export const getCardsToLearn = async (deckId, userId, chapterId = null, unassignedOnly = false, limit = 30, offset = 0) => {
+  const { data, error } = await supabase.rpc('get_cards_to_learn', {
+    p_deck_id: deckId,
+    p_user_id: userId,
+    p_chapter_id: chapterId,
+    p_unassigned_only: unassignedOnly,
+    p_limit: limit,
+    p_offset: offset,
+  });
+  if (error) throw error;
+  return data || [];
+};
+
+export const batchUpsertProgress = async (progressItems) => {
+  if (!progressItems || progressItems.length === 0) return;
+  const { error } = await supabase
+    .from('user_card_progress')
+    .upsert(progressItems, { onConflict: 'user_id,card_id' });
   if (error) throw error;
 };
 

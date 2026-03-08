@@ -36,7 +36,7 @@ export const getFavoriteCards = async (userId) => {
       card_id,
       created_at,
       cards(
-        id, question, answer, image, example, note, created_at,
+        id, question, answer, created_at,
         deck:decks(
           id, 
           name,
@@ -94,6 +94,23 @@ export const getFavoriteDeckIds = async (userId, forceRefresh = false) => {
   if (error) throw error;
   const ids = (data || []).map(f => f.deck_id);
   await cacheData(`fav_deck_ids_${userId}`, ids);
+  return ids;
+};
+
+// Kullanıcının tüm favori card ID listesini getir (4 saat cache)
+export const getFavoriteCardIds = async (userId, forceRefresh = false) => {
+  if (!userId) return [];
+  if (!forceRefresh) {
+    const cached = await getCachedData(`fav_card_ids_${userId}`, CACHE_DURATIONS.FAVORITES_CARD_IDS);
+    if (cached && !cached.isStale) return cached.data;
+  }
+  const { data, error } = await supabase
+    .from('favorite_cards')
+    .select('card_id')
+    .eq('user_id', userId);
+  if (error) throw error;
+  const ids = (data || []).map(f => f.card_id);
+  await cacheData(`fav_card_ids_${userId}`, ids);
   return ids;
 };
 

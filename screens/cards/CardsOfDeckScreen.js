@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, BackHandler, Alert, Dimensions, Animated, Easing, ActivityIndicator, Modal, Image } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import LottieView from 'lottie-react-native';
-import { supabase } from '../../lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import AddEditCardInlineForm from '../../components/layout/EditCardForm';
 import { useTranslation } from 'react-i18next';
@@ -17,8 +16,8 @@ import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import * as BlockService from '../../services/BlockService';
-import { deleteCard } from '../../services/CardService';
-import { addFavoriteCard, removeFavoriteCard } from '../../services/FavoriteService';
+import { deleteCard, getCardsByDeck, getUserCardProgressForCards, getCardDetail } from '../../services/CardService';
+import { addFavoriteCard, removeFavoriteCard, getFavoriteCardIdsForCards } from '../../services/FavoriteService';
 import ReportModal from '../../components/modals/ReportModal';
 import { triggerHaptic } from '../../lib/hapticManager';
 
@@ -64,17 +63,22 @@ export default function DeckCardsScreen({ route, navigation }) {
   const { showSuccess, showError } = useSnackbarHelpers();
   const [cards, setCards] = useState([]);
   const [search, setSearch] = useState('');
-  const [filteredCards, setFilteredCards] = useState([]);
   const [favoriteCards, setFavoriteCards] = useState([]);
   const [cardSort, setCardSort] = useState('original');
-  const [originalCards, setOriginalCards] = useState([]);
   const [selectedCard, setSelectedCard] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const PAGE_SIZE = 50;
   const spinValue = useRef(new Animated.Value(0)).current;
   const moreMenuRef = useRef(null);
   const dataFetchedRef = useRef(false);
+  const latestDetailFetchRef = useRef(null);
+  const serverSortRef = useRef('original');
+  const favoriteCardsRef = useRef(new Set());
   const [moreMenuVisible, setMoreMenuVisible] = useState(false);
   const [moreMenuPos, setMoreMenuPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [reportModalVisible, setReportModalVisible] = useState(false);
@@ -88,95 +92,94 @@ export default function DeckCardsScreen({ route, navigation }) {
     setCurrentUserId(userId || null);
   }, [userId]);
 
-  const fetchData = useCallback(async (silent = false) => {
+  useEffect(() => {
+    favoriteCardsRef.current = new Set(favoriteCards);
+  }, [favoriteCards]);
+
+  const fetchData = useCallback(async (silent = false, sortOverride) => {
+    const sort = sortOverride || serverSortRef.current;
     if (!silent) setLoading(true);
     try {
-      // 1. ADIM: Tüm kartları sayfalama ile çek (1000 limitini aş)
-      let allCards = [];
-      let from = 0;
-      const step = 1000;
-      let hasMoreCards = true;
+      const cardsData = await getCardsByDeck(deck.id, 0, PAGE_SIZE, sort);
 
-      while (hasMoreCards) {
-        const { data: cardsData, error: cardsError } = await supabase
-          .from('cards')
-          .select('id, question, answer, image, example, note, created_at')
-          .eq('deck_id', deck.id)
-          .order('created_at', { ascending: false })
-          .range(from, from + step - 1); // Sayfalama eklendi
-
-        if (cardsError) throw cardsError;
-
-        if (cardsData && cardsData.length > 0) {
-          allCards.push(...cardsData);
-        }
-
-        if (!cardsData || cardsData.length < step) {
-          hasMoreCards = false;
-        } else {
-          from += step;
-        }
-      }
-
-      // 2. ADIM: Sadece bu destedeki kartların ID'lerini al
       let statusMap = {};
-      let favoriteCardIds = new Set(); // Hızlı arama için Set kullanıyoruz
+      let favoriteCardIds = new Set();
 
-      if (userId && allCards.length > 0) {
-        const cardIds = allCards.map(c => c.id);
-        const CHUNK_SIZE = 200; // Daha küçük chunk = daha hafif istek, 502 riski azalır
-        const chunks = [];
-        for (let i = 0; i < cardIds.length; i += CHUNK_SIZE) {
-          chunks.push(cardIds.slice(i, i + CHUNK_SIZE));
-        }
-
-        // Progress chunk'ları sırayla çek (aynı anda hepsini atmayarak 502/gateway timeout önlenir)
-        for (const chunk of chunks) {
-          const res = await supabase
-            .from('user_card_progress')
-            .select('card_id, status')
-            .eq('user_id', userId)
-            .in('card_id', chunk);
-          if (res.error) throw res.error;
-          (res.data || []).forEach(p => { statusMap[p.card_id] = p.status; });
-        }
-
-        // Favori chunk'ları sırayla çek
-        for (const chunk of chunks) {
-          const res = await supabase
-            .from('favorite_cards')
-            .select('card_id')
-            .eq('user_id', userId)
-            .in('card_id', chunk);
-          if (res.error) throw res.error;
-          (res.data || []).forEach(f => { favoriteCardIds.add(f.card_id); });
-        }
+      if (userId && cardsData.length > 0) {
+        const cardIds = cardsData.map(c => c.id);
+        const [progressMap, favSet] = await Promise.all([
+          getUserCardProgressForCards(userId, cardIds),
+          getFavoriteCardIdsForCards(userId, cardIds),
+        ]);
+        statusMap = progressMap;
+        favoriteCardIds = favSet;
       }
 
-      // 3. ADIM: Kartlar ile status'leri birleştir (Eğer status yoksa 'new' ata)
-      const cardsWithProgress = allCards.map(card => ({
+      const cardsWithProgress = cardsData.map(card => ({
         ...card,
         status: statusMap[card.id] || 'new'
       }));
 
+      serverSortRef.current = sort;
       setCards(cardsWithProgress);
-      setOriginalCards(cardsWithProgress);
-      setFavoriteCards(Array.from(favoriteCardIds)); // Set'i tekrar Diziye çevir
+      setFavoriteCards(Array.from(favoriteCardIds));
+      setPage(0);
+      setHasMore(cardsData.length >= PAGE_SIZE);
       dataFetchedRef.current = true;
-      console.log('cardsWithProgress', cardsWithProgress.length);
     } catch (e) {
       console.error("Error fetching deck cards:", e);
       setCards([]);
-      setOriginalCards([]);
       setFavoriteCards([]);
     } finally {
       if (!silent) setLoading(false);
     }
   }, [deck.id, userId]);
 
+  const loadMore = useCallback(async () => {
+    if (!hasMore || loadingMore || loading) return;
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const cardsData = await getCardsByDeck(deck.id, nextPage, PAGE_SIZE, serverSortRef.current);
+      if (cardsData.length === 0) {
+        setHasMore(false);
+        return;
+      }
+
+      let statusMap = {};
+      let newFavIds = new Set();
+
+      if (userId && cardsData.length > 0) {
+        const cardIds = cardsData.map(c => c.id);
+        const [progressMap, favSet] = await Promise.all([
+          getUserCardProgressForCards(userId, cardIds),
+          getFavoriteCardIdsForCards(userId, cardIds),
+        ]);
+        statusMap = progressMap;
+        newFavIds = favSet;
+      }
+
+      const newCards = cardsData.map(card => ({
+        ...card,
+        status: statusMap[card.id] || 'new'
+      }));
+
+      setCards(prev => [...prev, ...newCards]);
+      setFavoriteCards(prev => [...new Set([...prev, ...Array.from(newFavIds)])]);
+      setPage(nextPage);
+      setHasMore(cardsData.length >= PAGE_SIZE);
+    } catch (e) {
+      console.error("Error loading more cards:", e);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [hasMore, loadingMore, loading, page, deck.id, userId]);
+
   useEffect(() => {
     dataFetchedRef.current = false;
-    fetchData();
+    serverSortRef.current = 'original';
+    setCardSort('original');
+    fetchData(false, 'original');
   }, [deck.id, fetchData]);
 
   useFocusEffect(
@@ -187,22 +190,33 @@ export default function DeckCardsScreen({ route, navigation }) {
     }, [fetchData])
   );
 
-  useEffect(() => {
-    if (!search.trim()) {
-      setFilteredCards(cards);
-    } else {
+  const filteredCards = useMemo(() => {
+    let list = cards;
+
+    if (cardSort === 'fav') {
+      list = list.filter(card => favoriteCards.includes(card.id));
+    } else if (cardSort === 'unlearned') {
+      list = list.filter(card => card.status !== 'learned');
+    } else if (cardSort === 'learned') {
+      list = list.filter(card => card.status === 'learned');
+    }
+
+    if (search.trim()) {
       const s = search.trim().toLowerCase();
-      setFilteredCards(
-        cards.filter(
-          c => (c.question && c.question.toLowerCase().includes(s)) || (c.answer && c.answer.toLowerCase().includes(s))
-        )
+      list = list.filter(c =>
+        (c.question && c.question.toLowerCase().includes(s)) ||
+        (c.answer && c.answer.toLowerCase().includes(s))
       );
     }
-  }, [search, cards]);
+    return list;
+  }, [cards, search, cardSort, favoriteCards]);
 
-  useEffect(() => {
-    setFilteredCards(sortCards(cardSort, cards));
-  }, [cardSort, cards, originalCards, favoriteCards]);
+  const handleSortChange = useCallback((newSort) => {
+    setCardSort(newSort);
+    if ((newSort === 'original' || newSort === 'az') && serverSortRef.current !== newSort) {
+      fetchData(false, newSort);
+    }
+  }, [fetchData]);
 
   useEffect(() => {
     const onBackPress = () => {
@@ -342,21 +356,6 @@ export default function DeckCardsScreen({ route, navigation }) {
     }
   }, [loading]);
 
-  const sortCards = (type, cardsList) => {
-    if (type === 'az') {
-      return [...cardsList].sort((a, b) => (a.question || '').localeCompare(b.question || '', 'tr'));
-    } else if (type === 'fav') {
-      return [...cardsList].filter(card => favoriteCards.includes(card.id));
-    } else if (type === 'unlearned') {
-      return [...cardsList].filter(card => card.status !== 'learned');
-    }
-    else if (type === 'learned') {
-      return [...cardsList].filter(card => card.status === 'learned');
-    } else {
-      return [...originalCards];
-    }
-  };
-
   const openReportCardModal = useCallback(async () => {
     if (!currentUserId || !selectedCard) return;
     try {
@@ -385,17 +384,16 @@ export default function DeckCardsScreen({ route, navigation }) {
     }
   }, [currentUserId, reportCardId, t, showSuccess, showError]);
 
-  const handleToggleFavoriteCard = async (cardId) => {
+  const handleToggleFavoriteCard = useCallback(async (cardId) => {
+    if (!userId) return;
+    const wasFavorite = favoriteCardsRef.current.has(cardId);
+    setFavoriteCards(prev => wasFavorite ? prev.filter(id => id !== cardId) : [...prev, cardId]);
     try {
-      if (favoriteCards.includes(cardId)) {
-        await removeFavoriteCard(userId, cardId);
-        setFavoriteCards(favoriteCards.filter(id => id !== cardId));
-      } else {
-        await addFavoriteCard(userId, cardId);
-        setFavoriteCards([...favoriteCards, cardId]);
-      }
-    } catch (e) { }
-  };
+      wasFavorite ? await removeFavoriteCard(userId, cardId) : await addFavoriteCard(userId, cardId);
+    } catch (e) {
+      setFavoriteCards(prev => wasFavorite ? [...prev, cardId] : prev.filter(id => id !== cardId));
+    }
+  }, [userId]);
 
   const handleEditSelectedCard = () => {
     if (!selectedCard) return;
@@ -442,10 +440,9 @@ export default function DeckCardsScreen({ route, navigation }) {
 
               // 3. Listeleri güncelle
               setCards(cards.filter(c => c.id !== selectedCard.id));
-              setOriginalCards(originalCards.filter(c => c.id !== selectedCard.id));
 
               // 4. Null yerine sıradaki kartı seç (Böylece bileşen kapanmaz, slider diğer karta geçer)
-              setSelectedCard(nextCardToSelect);
+              fetchAndSetCardDetail(nextCardToSelect);
 
               showSuccess(t('cardDetail.deleteSuccess', 'Kart başarıyla silindi'));
             } catch (e) {
@@ -470,22 +467,33 @@ export default function DeckCardsScreen({ route, navigation }) {
     }
   };
 
-  const ITEM_HEIGHT = verticalScale(110) + verticalScale(12); 
-
-  const getItemLayout = useCallback((data, index) => ({
-    length: ITEM_HEIGHT,
-    offset: ITEM_HEIGHT * index,
-    index,
-  }), [ITEM_HEIGHT]);
+  const fetchAndSetCardDetail = useCallback(async (card) => {
+    if (!card) {
+      setSelectedCard(null);
+      return;
+    }
+    const cardId = card.id;
+    latestDetailFetchRef.current = cardId;
+    setSelectedCard(card);
+    try {
+      const detail = await getCardDetail(cardId);
+      if (latestDetailFetchRef.current === cardId && detail) {
+        setSelectedCard(prev => prev?.id === cardId ? { ...prev, ...detail } : prev);
+      }
+    } catch (e) {
+      // keep lightweight data
+    }
+  }, []);
 
   const handleBackFromDetail = () => {
     setSelectedCard(null);
     setMoreMenuVisible(false);
+    latestDetailFetchRef.current = null;
   };
   const handleListItemPress = useCallback((item) => {
     setEditMode(false);
-    setSelectedCard(item);
-  }, []);
+    fetchAndSetCardDetail(item);
+  }, [fetchAndSetCardDetail]);
 
   const handleListItemDelete = useCallback((item) => {
     Alert.alert(
@@ -499,7 +507,6 @@ export default function DeckCardsScreen({ route, navigation }) {
               await deleteCard(item.id);
 
               setCards(prevCards => prevCards.filter(c => c.id !== item.id));
-              setOriginalCards(prevOriginal => prevOriginal.filter(c => c.id !== item.id));
               showSuccess(t('cardDetail.deleteSuccess', 'Kart başarıyla silindi'));
             } catch (e) {
               showError(t('cardDetail.deleteError', 'Kart silinemedi'));
@@ -515,14 +522,14 @@ export default function DeckCardsScreen({ route, navigation }) {
     return (
       <MemoizedDeckCard
         item={item}
-        isFavorite={favoriteCards.includes(item.id)}
+        isFavorite={favoriteCardsRef.current.has(item.id)}
         isOwner={isOwner}
         onPress={handleListItemPress}
         onToggleFavorite={handleToggleFavoriteCard}
         onDelete={handleListItemDelete}
       />
     );
-  }, [currentUserId, deck?.user_id, favoriteCards, handleListItemPress, handleToggleFavoriteCard, handleListItemDelete]);
+  }, [currentUserId, deck?.user_id, handleListItemPress, handleToggleFavoriteCard, handleListItemDelete]);
   return (
     <>
       {selectedCard && editMode ? (
@@ -531,7 +538,6 @@ export default function DeckCardsScreen({ route, navigation }) {
           deck={deck}
           onSave={updatedCard => {
             setCards(cards.map(c => c.id === updatedCard.id ? updatedCard : c));
-            setOriginalCards(originalCards.map(c => c.id === updatedCard.id ? updatedCard : c));
             setSelectedCard(updatedCard);
             setEditMode(false);
           }}
@@ -539,7 +545,7 @@ export default function DeckCardsScreen({ route, navigation }) {
         />
       ) : selectedCard ? (
         <>
-          <CardDetailView card={selectedCard} cards={cards} onSelectCard={setSelectedCard} />
+          <CardDetailView card={selectedCard} cards={cards} onSelectCard={fetchAndSetCardDetail} />
           <Modal
             visible={moreMenuVisible}
             transparent
@@ -621,7 +627,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                   end={{ x: 1, y: 1 }}
                   style={{ flex: 1 }}
                 >
-                  <CardDetailView card={selectedCard} cards={cards} onSelectCard={setSelectedCard} />
+                  <CardDetailView card={selectedCard} cards={cards} onSelectCard={fetchAndSetCardDetail} />
                 </LinearGradient>
               ) : (
                 <FlatList
@@ -640,7 +646,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                         />
                         <FilterIcon
                           value={cardSort}
-                          onChange={setCardSort}
+                          onChange={handleSortChange}
                         />
                       </View>
                     )
@@ -659,13 +665,18 @@ export default function DeckCardsScreen({ route, navigation }) {
                     </View>
                   }
                   renderItem={renderCardItem}
-                  getItemLayout={getItemLayout}
-                  
-                  // TATLI NOKTA (DENGELİ) AYARLAR:
+                  extraData={favoriteCards}
+                  onEndReached={loadMore}
+                  onEndReachedThreshold={0.5}
+                  ListFooterComponent={loadingMore ? (
+                    <View style={{ paddingVertical: verticalScale(16), alignItems: 'center' }}>
+                      <ActivityIndicator size="small" color={colors.text} />
+                    </View>
+                  ) : null}
                   removeClippedSubviews={true}
-                  initialNumToRender={8}          // İlk açılışta ekranı dolduracak kadarını anında çiz
-                  maxToRenderPerBatch={8}         // Kaydırırken 8'er 8'er çiz (Ne çok az ne çok fazla)
-                  windowSize={11}                 // 5 ekran boyu üstte, 5 ekran boyu altta kartı hazır beklet (Beyaz boşluğu önler)
+                  initialNumToRender={8}
+                  maxToRenderPerBatch={8}
+                  windowSize={11}
                   updateCellsBatchingPeriod={50}
                 />
               )}

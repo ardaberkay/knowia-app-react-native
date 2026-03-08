@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState, useEffect } from 'react';
+import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, FlatList, Dimensions, TouchableOpacity, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/theme';
@@ -148,6 +148,76 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
     return { frontInterpolate, backInterpolate };
   };
 
+  const getCardItemLayout = useCallback((data, index) => ({
+    length: screenWidth, offset: screenWidth * index, index,
+  }), [screenWidth]);
+
+  const handleScrollEnd = useCallback((evt) => {
+    const offsetX = evt?.nativeEvent?.contentOffset?.x || 0;
+    const index = Math.round(offsetX / screenWidth);
+    const next = cards[index];
+    if (next && onSelectCard) onSelectCard(next);
+  }, [screenWidth, cards, onSelectCard]);
+
+  const renderCardSliderItem = useCallback(({ item }) => {
+    const cardId = item?.id || `card-${item?.name || 'unknown'}`;
+    const { frontInterpolate, backInterpolate } = getFlipInterpolation(cardId);
+    const categorySortOrder = item?.deck?.categories?.sort_order;
+    const gradientColors = getCategoryColors(categorySortOrder);
+    const categoryIcon = getCategoryIcon(categorySortOrder);
+
+    return (
+      <View style={{ width: screenWidth, paddingHorizontal: scale(18), marginVertical: verticalScale(27), justifyContent: 'center', alignItems: 'center' }}>
+        <Animated.View
+          style={[
+            styles.sliderItem,
+            {
+              shadowOpacity: 0,
+              elevation: 0,
+              transform: [{ rotateY: frontInterpolate }],
+            },
+          ]}
+        >
+          <LinearGradient
+            colors={gradientColors}
+            start={{ x: 0, y: 1 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.sliderItemGradient}
+          >
+            <View style={styles.backgroundCategoryIcon}>
+              <Iconify icon={categoryIcon} size={scale(200)} color="rgba(0, 0, 0, 0.1)" style={styles.categoryIconStyle} />
+            </View>
+            <TouchableOpacity activeOpacity={0.9} onPress={() => flipCard(cardId)} style={styles.cardTouchable}>
+              <Animated.View style={[styles.quarterCircleContainer, { opacity: flipAnimations.current[cardId]?.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0, 0], extrapolate: 'clamp' }) || 1 }]}>
+                <View style={[styles.quarterCircle, { backgroundColor: colors.buttonColor }]}>
+                  <Iconify icon="uil:comment-alt-question" size={moderateScale(26)} color="rgba(255, 255, 255, 0.9)" />
+                </View>
+              </Animated.View>
+              <Animated.View style={[styles.flipIconContainer, { opacity: flipAnimations.current[cardId]?.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0, 0], extrapolate: 'clamp' }) || 1 }]}>
+                <Iconify icon="fluent:card-ui-portrait-flip-24-regular" size={24} color="rgba(255, 255, 255, 0.9)" />
+              </Animated.View>
+              <Animated.View style={[styles.quarterCircleContainer, { opacity: flipAnimations.current[cardId]?.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 0, 1], extrapolate: 'clamp' }) || 0 }]}>
+                <View style={[styles.quarterCircle, { backgroundColor: colors.buttonColor, transform: [{ rotateY: '180deg' }] }]}>
+                  <Iconify icon="uil:comment-alt-check" size={moderateScale(26)} color="rgba(255, 255, 255, 0.9)" />
+                </View>
+              </Animated.View>
+              <Animated.View style={[styles.cardFace, { transform: [{ rotateY: frontInterpolate }], backfaceVisibility: 'hidden' }]}>
+                <View style={styles.cardContent}>
+                  <MathText value={item?.question || item?.name || item?.title || t('cardDetail.unnamed', 'İsimsiz Kart')} style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText }]} numberOfLines={3} />
+                </View>
+              </Animated.View>
+              <Animated.View style={[styles.cardFace, { transform: [{ rotateY: backInterpolate }], backfaceVisibility: 'hidden' }]}>
+                <View style={styles.cardContent}>
+                  <MathText value={item?.answer || t('cardDetail.noAnswer', 'Cevap yok')} style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText, transform: [{ scaleX: -1 }] }]} numberOfLines={4} />
+                </View>
+              </Animated.View>
+            </TouchableOpacity>
+          </LinearGradient>
+        </Animated.View>
+      </View>
+    );
+  }, [screenWidth, colors, flippedCards, t]);
+
   if (!card) return null;
 
   return (
@@ -201,155 +271,13 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             initialScrollIndex={currentIndex}
-            getItemLayout={(data, index) => ({ length: screenWidth, offset: screenWidth * index, index })}
-            renderItem={({ item }) => {
-              const cardId = item?.id || `card-${item?.name || 'unknown'}`;
-              const { frontInterpolate, backInterpolate } = getFlipInterpolation(cardId);
-              const isFlipped = flippedCards[cardId];
-              
-              // Kartın destesinden kategori bilgisini al
-              const categorySortOrder = item?.deck?.categories?.sort_order;
-              const gradientColors = getCategoryColors(categorySortOrder);
-              const categoryIcon = getCategoryIcon(categorySortOrder);
-
-              return (
-                <View style={{ width: screenWidth, paddingHorizontal: scale(18), marginVertical: verticalScale(27), justifyContent: 'center', alignItems: 'center' }}>
-                  <Animated.View
-                    style={[
-                      styles.sliderItem,
-                      {
-                        shadowOpacity: 0,
-                        elevation: 0,
-                        transform: [{ rotateY: frontInterpolate }],
-                      },
-                    ]}
-                  >
-                    <LinearGradient
-                      colors={gradientColors}
-                      start={{ x: 0, y: 1 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.sliderItemGradient}
-                    >
-                      {/* Background Category Icon */}
-                      <View style={styles.backgroundCategoryIcon}>
-                        <Iconify
-                          icon={categoryIcon}
-                          size={scale(200)}
-                          color="rgba(0, 0, 0, 0.1)"
-                          style={styles.categoryIconStyle}
-                        />
-                      </View>
-                      
-                      <TouchableOpacity
-                        activeOpacity={0.9}
-                        onPress={() => flipCard(cardId)}
-                        style={styles.cardTouchable}
-                      >
-                        {/* Soru İkonu - Ön Yüz */}
-                        <Animated.View 
-                          style={[
-                            styles.quarterCircleContainer,
-                            {
-                              opacity: flipAnimations.current[cardId]?.interpolate({
-                                inputRange: [0, 0.5, 1],
-                                outputRange: [1, 0, 0],
-                                extrapolate: 'clamp',
-                              }) || 1,
-                            }
-                          ]}
-                        >
-                          <View style={[styles.quarterCircle, { backgroundColor: colors.buttonColor }]}>
-                            <Iconify icon="uil:comment-alt-question" size={moderateScale(26)} color="rgba(255, 255, 255, 0.9)" />
-                          </View>
-                        </Animated.View>
-
-                        {/* Flip İkonu - Sağ Üst Köşe */}
-                        <Animated.View 
-                          style={[
-                            styles.flipIconContainer,
-                            {
-                              opacity: flipAnimations.current[cardId]?.interpolate({
-                                inputRange: [0, 0.5, 1],
-                                outputRange: [1, 0, 0],
-                                extrapolate: 'clamp',
-                              }) || 1,
-                            }
-                          ]}
-                        >
-                          <Iconify icon="fluent:card-ui-portrait-flip-24-regular" size={24} color="rgba(255, 255, 255, 0.9)" />
-                        </Animated.View>
-
-                        {/* Cevap İkonu - Arka Yüz */}
-                        <Animated.View 
-                          style={[
-                            styles.quarterCircleContainer,
-                            {
-                              opacity: flipAnimations.current[cardId]?.interpolate({
-                                inputRange: [0, 0.5, 1],
-                                outputRange: [0, 0, 1],
-                                extrapolate: 'clamp',
-                              }) || 0,
-                            }
-                          ]}
-                        >
-                          <View style={[styles.quarterCircle, { backgroundColor: colors.buttonColor, transform: [{ rotateY: '180deg' }] }]}>
-                            <Iconify icon="uil:comment-alt-check" size={moderateScale(26)} color="rgba(255, 255, 255, 0.9)" />
-                          </View>
-                        </Animated.View>
-
-                        {/* Ön yüz */}
-                        <Animated.View
-                          style={[
-                            styles.cardFace,
-                            {
-                              transform: [{ rotateY: frontInterpolate }],
-                              backfaceVisibility: 'hidden',
-                            },
-                          ]}
-                        >
-                          <View style={styles.cardContent}>
-                            <MathText
-                              value={item?.question || item?.name || item?.title || t('cardDetail.unnamed', 'İsimsiz Kart')}
-                              style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText }]}
-                              numberOfLines={3}
-                            />
-                          </View>
-                        </Animated.View>
-
-                        {/* Arka yüz */}
-                        <Animated.View
-                          style={[
-                            styles.cardFace,
-                            {
-                              transform: [{ rotateY: backInterpolate }],
-                              backfaceVisibility: 'hidden',
-                            },
-                          ]}
-                        >
-                          <View style={styles.cardContent}>
-                            <MathText
-                              value={item?.answer || t('cardDetail.noAnswer', 'Cevap yok')}
-                              style={[
-                                typography.styles.body,
-                                styles.sliderItemTitle,
-                                { color: colors.headText, transform: [{ scaleX: -1 }] },
-                              ]}
-                              numberOfLines={4}
-                            />
-                          </View>
-                        </Animated.View>
-                      </TouchableOpacity>
-                    </LinearGradient>
-                  </Animated.View>
-                </View>
-              );
-            }}
-            onMomentumScrollEnd={evt => {
-              const offsetX = evt?.nativeEvent?.contentOffset?.x || 0;
-              const index = Math.round(offsetX / screenWidth);
-              const next = cards[index];
-              if (next && onSelectCard) onSelectCard(next);
-            }}
+            getItemLayout={getCardItemLayout}
+            renderItem={renderCardSliderItem}
+            onMomentumScrollEnd={handleScrollEnd}
+            removeClippedSubviews={true}
+            initialNumToRender={3}
+            maxToRenderPerBatch={3}
+            windowSize={5}
           />
 
           {/* Sağ Ok Butonu */}

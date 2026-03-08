@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, memo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, memo, useMemo } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, TouchableHighlight, ActivityIndicator, Platform, Modal, Image, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
@@ -11,8 +11,8 @@ import SearchBar from '../../components/tools/SearchBar';
 import CardDetailView from '../../components/layout/CardDetailView';
 import AddEditCardInlineForm from '../../components/layout/EditCardForm';
 import { listChapters, distributeUnassignedEvenly, getChaptersProgress } from '../../services/ChapterService';
-import { deleteCard } from '../../services/CardService';
-import { addFavoriteCard, removeFavoriteCard } from '../../services/FavoriteService';
+import { deleteCard, getCardsByChapter, getUserCardProgressForCards, getChapterProgressCounts, getCardDetail } from '../../services/CardService';
+import { addFavoriteCard, removeFavoriteCard, getFavoriteCardIdsForCards } from '../../services/FavoriteService';
 import { LinearGradient } from 'expo-linear-gradient';
 import LottieView from 'lottie-react-native';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
@@ -139,7 +139,6 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [favoriteCards, setFavoriteCards] = useState([]);
   const [search, setSearch] = useState('');
-  const [filteredCards, setFilteredCards] = useState([]);
   const [cardStatusMap, setCardStatusMap] = useState(new Map());
   const [chapterStats, setChapterStats] = useState({ total: 0, learning: 0, learned: 0, new: 0 });
   const [selectedCard, setSelectedCard] = useState(null);
@@ -158,7 +157,12 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const moreMenuRef = useRef(null);
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const latestDetailFetchRef = useRef(null);
   const [progressMap, setProgressMap] = useState(new Map());
+  const [pageNum, setPageNum] = useState(0);
+  const [hasMoreCards, setHasMoreCards] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const PAGE_SIZE = 50;
   const shufflePressed = useSharedValue(0);
 
   const shuffleAnimatedStyle = useAnimatedStyle(() => {
@@ -194,7 +198,6 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
   useEffect(() => {
     fetchChapterCards();
-    fetchFavoriteCards();
     checkOwnerAndLoadChapters();
   }, [chapter.id, deck?.id, userId]);
 
@@ -318,180 +321,104 @@ export default function ChapterCardsScreen({ route, navigation }) {
     });
   }, [loading, navigation, chapter?.id, currentUserId, deck?.user_id, deck?.is_shared, editMode, selectedCard, editCardMode, favoriteCards, colors.text, colors.background, openCardMenu]);
 
-  useEffect(() => {
-    if (!search.trim()) {
-      setFilteredCards(cards);
-    } else {
-      const s = search.trim().toLowerCase();
-      setFilteredCards(
-        cards.filter(
-          c => (c.question && c.question.toLowerCase().includes(s)) || (c.answer && c.answer.toLowerCase().includes(s))
-        )
-      );
-    }
-  }, [search, cards]);
+  const filteredCards = useMemo(() => {
+    if (!search.trim()) return cards;
+    const s = search.trim().toLowerCase();
+    return cards.filter(c =>
+      (c.question && c.question.toLowerCase().includes(s)) ||
+      (c.answer && c.answer.toLowerCase().includes(s))
+    );
+  }, [cards, search]);
 
   const fetchChapterCards = async () => {
     try {
       setLoading(true);
-      let allFetchedCards = [];
-      let from = 0;
-      const step = 1000;
-      let hasMore = true;
+      const chapterId = chapter?.id || null;
 
-      while (hasMore) {
-        let query = supabase
-          .from('cards')
-          .select('id, question, answer, image, example, note, created_at')
-          .eq('deck_id', deck.id)
-          .order('created_at', { ascending: false })
-          .range(from, from + step - 1);
+      const [cardsData, stats] = await Promise.all([
+        getCardsByChapter(deck.id, chapterId, 0, PAGE_SIZE),
+        userId ? getChapterProgressCounts(userId, deck.id, chapterId) : Promise.resolve({ total: 0, learning: 0, learned: 0, new: 0 }),
+      ]);
 
-        if (chapter?.id) {
-          query = query.eq('chapter_id', chapter.id);
-        } else {
-          query = query.is('chapter_id', null);
-        }
+      setChapterStats(stats);
+      setCards(cardsData);
+      setPageNum(0);
+      setHasMoreCards(cardsData.length >= PAGE_SIZE);
 
-        const { data, error } = await query;
-        if (error) throw error;
-
-        if (data && data.length > 0) {
-          allFetchedCards.push(...data);
-        }
-
-        if (!data || data.length < step) {
-          hasMore = false;
-        } else {
-          from += step;
-        }
-      }
-
-      setCards(allFetchedCards);
-
-      if (allFetchedCards.length > 0) {
-        await fetchCardStatusesForCards(allFetchedCards.map(c => c.id));
+      if (cardsData.length > 0 && userId) {
+        const cardIds = cardsData.map(c => c.id);
+        const [progressMap, favSet] = await Promise.all([
+          getUserCardProgressForCards(userId, cardIds),
+          getFavoriteCardIdsForCards(userId, cardIds),
+        ]);
+        const statusMap = new Map();
+        cardIds.forEach(id => { statusMap.set(id, progressMap[id] || 'new'); });
+        setCardStatusMap(statusMap);
+        setFavoriteCards(Array.from(favSet));
       } else {
-        setCardStatusMap(new Map());
-        setChapterStats({ total: 0, learning: 0, learned: 0, new: 0 });
+        const statusMap = new Map();
+        cardsData.forEach(c => statusMap.set(c.id, 'new'));
+        setCardStatusMap(statusMap);
+        setFavoriteCards([]);
       }
     } catch (error) {
       console.error('Error fetching chapter cards:', error);
       setCards([]);
       setCardStatusMap(new Map());
+      setChapterStats({ total: 0, learning: 0, learned: 0, new: 0 });
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchCardStatusesForCards = async (cardIds) => {
+  const loadMoreChapterCards = async () => {
+    if (!hasMoreCards || loadingMore || loading) return;
+    setLoadingMore(true);
     try {
-      if (!userId || !cardIds || cardIds.length === 0) {
-        const statusMap = new Map();
-        if (cardIds && cardIds.length > 0) {
-          cardIds.forEach(cardId => {
-            statusMap.set(cardId, 'new');
-          });
-          setCardStatusMap(statusMap);
-          setChapterStats({ total: cardIds.length, learning: 0, learned: 0, new: cardIds.length });
-        } else {
-          setCardStatusMap(new Map());
-          setChapterStats({ total: 0, learning: 0, learned: 0, new: 0 });
-        }
+      const nextPage = pageNum + 1;
+      const chapterId = chapter?.id || null;
+      const cardsData = await getCardsByChapter(deck.id, chapterId, nextPage, PAGE_SIZE);
+      if (cardsData.length === 0) {
+        setHasMoreCards(false);
         return;
       }
 
-      const CHUNK_SIZE = 200;
-      const chunks = [];
-      for (let i = 0; i < cardIds.length; i += CHUNK_SIZE) {
-        chunks.push(cardIds.slice(i, i + CHUNK_SIZE));
-      }
-
-      const results = await Promise.all(
-        chunks.map(chunk =>
-          supabase
-            .from('user_card_progress')
-            .select('card_id, status')
-            .eq('user_id', userId)
-            .in('card_id', chunk)
-        )
-      );
-
-      let progressData = [];
-      for (const res of results) {
-        if (res.error) throw res.error;
-        progressData.push(...(res.data || []));
-      }
-
-      const statusMap = new Map();
-      progressData.forEach(item => {
-        statusMap.set(item.card_id, item.status);
-      });
-
-      cardIds.forEach(cardId => {
-        if (!statusMap.has(cardId)) {
-          statusMap.set(cardId, 'new');
-        }
-      });
-
-      setCardStatusMap(statusMap);
-
-      if (cardIds && cardIds.length > 0) {
-        const stats = { total: cardIds.length, learning: 0, learned: 0, new: 0 };
-        statusMap.forEach((status) => {
-          if (status === 'learning') stats.learning++;
-          else if (status === 'learned') stats.learned++;
-          else stats.new++;
-        });
-        setChapterStats(stats);
+      if (userId && cardsData.length > 0) {
+        const cardIds = cardsData.map(c => c.id);
+        const [progressMap, favSet] = await Promise.all([
+          getUserCardProgressForCards(userId, cardIds),
+          getFavoriteCardIdsForCards(userId, cardIds),
+        ]);
+        const newStatusMap = new Map(cardStatusMap);
+        cardIds.forEach(id => { newStatusMap.set(id, progressMap[id] || 'new'); });
+        setCardStatusMap(newStatusMap);
+        setFavoriteCards(prev => [...new Set([...prev, ...Array.from(favSet)])]);
       } else {
-        setChapterStats({ total: 0, learning: 0, learned: 0, new: 0 });
+        const newStatusMap = new Map(cardStatusMap);
+        cardsData.forEach(c => newStatusMap.set(c.id, 'new'));
+        setCardStatusMap(newStatusMap);
       }
-    } catch (error) {
-      console.error('Error fetching card statuses:', error);
-      if (cardIds && cardIds.length > 0) {
-        const statusMap = new Map();
-        cardIds.forEach(cardId => {
-          statusMap.set(cardId, 'new');
-        });
-        setCardStatusMap(statusMap);
-        setChapterStats({ total: cardIds.length, learning: 0, learned: 0, new: cardIds.length });
-      } else {
-        setCardStatusMap(new Map());
-        setChapterStats({ total: 0, learning: 0, learned: 0, new: 0 });
-      }
-    }
-  };
 
-  const fetchFavoriteCards = async () => {
-    try {
-      if (!userId) {
-        setFavoriteCards([]);
-        return;
-      }
-      const { data, error } = await supabase
-        .from('favorite_cards')
-        .select('card_id')
-        .eq('user_id', userId);
-      if (error) throw error;
-      setFavoriteCards((data || []).map(f => f.card_id));
+      setCards(prev => [...prev, ...cardsData]);
+      setPageNum(nextPage);
+      setHasMoreCards(cardsData.length >= PAGE_SIZE);
     } catch (e) {
-      setFavoriteCards([]);
+      console.error('Error loading more chapter cards:', e);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
-  const handleToggleFavoriteCard = async (cardId) => {
+  const handleToggleFavoriteCard = useCallback(async (cardId) => {
+    if (!userId) return;
+    const wasFavorite = favoriteCards.includes(cardId);
+    setFavoriteCards(prev => wasFavorite ? prev.filter(id => id !== cardId) : [...prev, cardId]);
     try {
-      if (!userId) return;
-      if (favoriteCards.includes(cardId)) {
-        await removeFavoriteCard(userId, cardId);
-        setFavoriteCards(favoriteCards.filter(id => id !== cardId));
-      } else {
-        await addFavoriteCard(userId, cardId);
-        setFavoriteCards([...favoriteCards, cardId]);
-      }
-    } catch (e) {}
-  };
+      wasFavorite ? await removeFavoriteCard(userId, cardId) : await addFavoriteCard(userId, cardId);
+    } catch (e) {
+      setFavoriteCards(prev => wasFavorite ? [...prev, cardId] : prev.filter(id => id !== cardId));
+    }
+  }, [userId, favoriteCards]);
 
   const handleEditSelectedCard = () => {
     if (!selectedCard) return;
@@ -523,9 +450,23 @@ export default function ChapterCardsScreen({ route, navigation }) {
     }
   };
 
-  const handleCardPress = (card) => {
+  const fetchAndSetCardDetail = useCallback(async (card) => {
+    if (!card) {
+      setSelectedCard(null);
+      return;
+    }
+    const cardId = card.id;
+    latestDetailFetchRef.current = cardId;
     setSelectedCard(card);
-  };
+    try {
+      const detail = await getCardDetail(cardId);
+      if (latestDetailFetchRef.current === cardId && detail) {
+        setSelectedCard(prev => prev?.id === cardId ? { ...prev, ...detail } : prev);
+      }
+    } catch (e) {
+      // keep lightweight data
+    }
+  }, []);
 
   const handleDistribute = async () => {
     if (!deck?.id) return;
@@ -592,7 +533,17 @@ export default function ChapterCardsScreen({ route, navigation }) {
     }
   };
 
-  // 👇 2. ADIM: İŞTE O DEVASA FONKSİYONUN YENİ, KISACIK HALİ 👇
+  const CARD_ITEM_HEIGHT = verticalScale(110) + verticalScale(12);
+  const getItemLayout = useCallback((data, index) => ({
+    length: CARD_ITEM_HEIGHT,
+    offset: CARD_ITEM_HEIGHT * index,
+    index,
+  }), [CARD_ITEM_HEIGHT]);
+
+  const handleCardPress = useCallback((card) => {
+    fetchAndSetCardDetail(card);
+  }, [fetchAndSetCardDetail]);
+
   const renderCardItem = useCallback(({ item: card }) => {
     return (
       <MemoizedCardItem
@@ -606,7 +557,6 @@ export default function ChapterCardsScreen({ route, navigation }) {
       />
     );
   }, [cardStatusMap, selectedCards, editMode, colors, handleToggleCardSelection, handleCardPress]);
-  // 👆 2. ADIM BİTTİ 👆
 
   if (loading) {
     return (
@@ -645,7 +595,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
               card={selectedCard}
               cards={cards}
               onSelectCard={card => {
-                setSelectedCard(card);
+                fetchAndSetCardDetail(card);
                 setEditCardMode(false);
               }}
               showCreatedAt={true}
@@ -890,8 +840,16 @@ export default function ChapterCardsScreen({ route, navigation }) {
               data={filteredCards}
               renderItem={renderCardItem}
               keyExtractor={(item) => item.id.toString()}
+              getItemLayout={getItemLayout}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={[styles.cardsList, { paddingBottom: verticalScale(100), paddingTop: verticalScale(20) }]}
+              onEndReached={loadMoreChapterCards}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={loadingMore ? (
+                <View style={{ paddingVertical: verticalScale(16), alignItems: 'center' }}>
+                  <ActivityIndicator size="small" color={colors.text} />
+                </View>
+              ) : null}
               removeClippedSubviews={true}
               initialNumToRender={10}
               maxToRenderPerBatch={10}

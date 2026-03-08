@@ -274,48 +274,36 @@ export default function LibraryScreen() {
   // Favorilerim sekmesindeki birleşik render kaldırıldı
 
   // Favori deste ekleme/çıkarma fonksiyonları
-  const handleAddFavoriteDeck = async (deckId) => {
+  const handleAddFavoriteDeck = useCallback(async (deckId) => {
     if (!userId) return;
-    await addFavoriteDeck(userId, deckId);
     setMyDecks(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: true } : d));
-    const decks = await getFavoriteDecks(userId);
-    // is_admin_created kontrolü - tüm kategoriler için geçerli
-    const modifiedDecks = (decks || []).map((deck) => {
-      if (deck.is_admin_created) {
-        return {
-          ...deck,
-          profiles: {
-            ...deck.profiles,
-            username: 'Knowia',
-            image_url: null, // app-icon.png kullanılacak
-          },
-        };
-      }
-      return deck;
-    });
-    setFavoriteDecks(modifiedDecks);
-  };
-  const handleRemoveFavoriteDeck = async (deckId) => {
+    const deckToAdd = myDecks.find(d => d.id === deckId);
+    if (deckToAdd) {
+      const modified = deckToAdd.is_admin_created
+        ? { ...deckToAdd, is_favorite: true, favorited_at: new Date().toISOString(), profiles: { ...deckToAdd.profiles, username: 'Knowia', image_url: null } }
+        : { ...deckToAdd, is_favorite: true, favorited_at: new Date().toISOString() };
+      setFavoriteDecks(prev => [modified, ...prev]);
+    }
+    try {
+      await addFavoriteDeck(userId, deckId);
+    } catch (e) {
+      setMyDecks(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: false } : d));
+      if (deckToAdd) setFavoriteDecks(prev => prev.filter(d => d.id !== deckId));
+    }
+  }, [userId, myDecks]);
+
+  const handleRemoveFavoriteDeck = useCallback(async (deckId) => {
     if (!userId) return;
-    await removeFavoriteDeck(userId, deckId);
     setMyDecks(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: false } : d));
-    const decks = await getFavoriteDecks(userId);
-    // is_admin_created kontrolü - tüm kategoriler için geçerli
-    const modifiedDecks = (decks || []).map((deck) => {
-      if (deck.is_admin_created) {
-        return {
-          ...deck,
-          profiles: {
-            ...deck.profiles,
-            username: 'Knowia',
-            image_url: null, // app-icon.png kullanılacak
-          },
-        };
-      }
-      return deck;
-    });
-    setFavoriteDecks(modifiedDecks);
-  };
+    const removedDeck = favoriteDecks.find(d => d.id === deckId);
+    setFavoriteDecks(prev => prev.filter(d => d.id !== deckId));
+    try {
+      await removeFavoriteDeck(userId, deckId);
+    } catch (e) {
+      setMyDecks(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: true } : d));
+      if (removedDeck) setFavoriteDecks(prev => [removedDeck, ...prev]);
+    }
+  }, [userId, favoriteDecks]);
 
   // Deste silme fonksiyonu
   const handleDeleteDeck = (deckId) => {
@@ -402,28 +390,16 @@ export default function LibraryScreen() {
   };
 
   // Favori kartlar ve kart işlemleri kaldırıldı
-  const handleRemoveFavoriteCard = async (cardId) => {
+  const handleRemoveFavoriteCard = useCallback(async (cardId) => {
     if (!userId) return;
-    await removeFavoriteCard(userId, cardId);
-
-    const cards = await getFavoriteCards(userId);
-    const cardIds = (cards || []).map(c => c.id);
-    const statusMap = await getUserCardProgressForCards(userId, cardIds);
-
-    const updatedCards = (cards || []).map(card => ({
-      ...card,
-      status: statusMap[card.id] || 'new'
-    }));
-
+    const removedCard = favoriteCards.find(c => c.id === cardId);
+    const updatedCards = favoriteCards.filter(c => c.id !== cardId);
+    const updatedIds = favoriteCardIds.filter(id => id !== cardId);
     setFavoriteCards(updatedCards);
-    setFavoriteCardIds(updatedCards.map(card => card.id));
+    setFavoriteCardIds(updatedIds);
 
-    // Eğer seçili kart favorilerden çıkarıldıysa ve modal açıksa, sonraki karta geç
     if (selectedCard && selectedCard.id === cardId && cardDetailModalVisible) {
-      // Mevcut kartın index'ini bul (filtrelenmiş listede)
       const currentIndex = filteredFavoriteCards.findIndex(c => c.id === cardId);
-
-      // Güncellenmiş kart listesini filtrele (çıkarılan kart olmadan)
       let remainingCards = updatedCards.slice();
       if (favCardsQuery && favCardsQuery.trim()) {
         const q = favCardsQuery.toLowerCase();
@@ -440,95 +416,84 @@ export default function LibraryScreen() {
       }
 
       if (remainingCards.length > 0) {
-        // Sonraki karta geç, eğer son kart ise önceki karta geç
         let nextCard;
-        if (currentIndex >= 0 && currentIndex < remainingCards.length) {
-          // Aynı index'teki karta geç (eğer varsa)
-          nextCard = remainingCards[currentIndex];
-        } else if (currentIndex >= remainingCards.length) {
-          // Son karta geç
-          nextCard = remainingCards[remainingCards.length - 1];
-        } else {
-          // İlk karta geç
-          nextCard = remainingCards[0];
-        }
+        if (currentIndex >= 0 && currentIndex < remainingCards.length) nextCard = remainingCards[currentIndex];
+        else if (currentIndex >= remainingCards.length) nextCard = remainingCards[remainingCards.length - 1];
+        else nextCard = remainingCards[0];
         setSelectedCard(nextCard);
       } else {
-        // Hiç kart kalmadıysa modal'ı kapat
         setCardDetailModalVisible(false);
         setSelectedCard(null);
       }
     }
-  };
 
-
-
-  const handleToggleFavoriteCard = async (cardId) => {
     try {
-      if (!userId) return;
+      await removeFavoriteCard(userId, cardId);
+    } catch (e) {
+      if (removedCard) {
+        setFavoriteCards(prev => [...prev, removedCard]);
+        setFavoriteCardIds(prev => [...prev, cardId]);
+      }
+    }
+  }, [userId, favoriteCards, favoriteCardIds, selectedCard, cardDetailModalVisible, filteredFavoriteCards, favCardsQuery, favCardsSort]);
 
-      if (favoriteCardIds.includes(cardId)) {
-        // Favorilerden çıkar
-        await removeFavoriteCard(userId, cardId);
 
-        const updatedFavoriteCards = favoriteCards.filter(c => c.id !== cardId);
-        const updatedFavoriteCardIds = favoriteCardIds.filter(id => id !== cardId);
-        setFavoriteCardIds(updatedFavoriteCardIds);
-        setFavoriteCards(updatedFavoriteCards);
 
-        // Eğer seçili kart favorilerden çıkarıldıysa, sonraki karta geç
-        if (selectedCard && selectedCard.id === cardId) {
-          // Mevcut kartın index'ini bul (filtrelenmiş listede)
-          const currentIndex = filteredFavoriteCards.findIndex(c => c.id === cardId);
+  const handleToggleFavoriteCard = useCallback(async (cardId) => {
+    if (!userId) return;
+    const wasFavorite = favoriteCardIds.includes(cardId);
 
-          // Güncellenmiş kart listesini filtrele (çıkarılan kart olmadan)
-          let remainingCards = updatedFavoriteCards.slice();
-          if (favCardsQuery && favCardsQuery.trim()) {
-            const q = favCardsQuery.toLowerCase();
-            remainingCards = remainingCards.filter(c => (c.question || '').toLowerCase().includes(q) || (c.answer || '').toLowerCase().includes(q));
-          }
-          const favAt = (c) => new Date(c.favorited_at || c.created_at || 0).getTime();
-          if (favCardsSort === 'az') {
-            remainingCards.sort((a, b) => (a.question || '').localeCompare(b.question || '') || favAt(b) - favAt(a));
-          } else if (favCardsSort === 'unlearned') {
-            remainingCards = remainingCards.filter(c => c.status !== 'learned');
-            remainingCards.sort((a, b) => favAt(b) - favAt(a));
-          } else if (favCardsSort !== 'fav') {
-            remainingCards.sort((a, b) => favAt(b) - favAt(a));
-          }
+    if (wasFavorite) {
+      const updatedCards = favoriteCards.filter(c => c.id !== cardId);
+      const updatedIds = favoriteCardIds.filter(id => id !== cardId);
+      setFavoriteCardIds(updatedIds);
+      setFavoriteCards(updatedCards);
 
-          if (remainingCards.length > 0) {
-            // Sonraki karta geç, eğer son kart ise önceki karta geç
-            let nextCard;
-            if (currentIndex >= 0 && currentIndex < remainingCards.length) {
-              // Aynı index'teki karta geç (eğer varsa)
-              nextCard = remainingCards[currentIndex];
-            } else if (currentIndex >= remainingCards.length) {
-              // Son karta geç
-              nextCard = remainingCards[remainingCards.length - 1];
-            } else {
-              // İlk karta geç
-              nextCard = remainingCards[0];
-            }
-            setSelectedCard(nextCard);
-          } else {
-            // Hiç kart kalmadıysa modal'ı kapat
-            setCardDetailModalVisible(false);
-            setSelectedCard(null);
-          }
+      if (selectedCard && selectedCard.id === cardId) {
+        const currentIndex = filteredFavoriteCards.findIndex(c => c.id === cardId);
+        let remainingCards = updatedCards.slice();
+        if (favCardsQuery && favCardsQuery.trim()) {
+          const q = favCardsQuery.toLowerCase();
+          remainingCards = remainingCards.filter(c => (c.question || '').toLowerCase().includes(q) || (c.answer || '').toLowerCase().includes(q));
         }
-      } else {
-        // Favorilere ekle
-        await addFavoriteCard(userId, cardId);
-        setFavoriteCardIds([...favoriteCardIds, cardId]);
-        // Kartı favori kartlar listesine de ekle (eğer gerekirse)
-        const card = filteredFavoriteCards.find(c => c.id === cardId);
-        if (card) {
-          setFavoriteCards([...favoriteCards, card]);
+        const favAt = (c) => new Date(c.favorited_at || c.created_at || 0).getTime();
+        if (favCardsSort === 'az') {
+          remainingCards.sort((a, b) => (a.question || '').localeCompare(b.question || '') || favAt(b) - favAt(a));
+        } else if (favCardsSort === 'unlearned') {
+          remainingCards = remainingCards.filter(c => c.status !== 'learned');
+          remainingCards.sort((a, b) => favAt(b) - favAt(a));
+        } else if (favCardsSort !== 'fav') {
+          remainingCards.sort((a, b) => favAt(b) - favAt(a));
+        }
+
+        if (remainingCards.length > 0) {
+          let nextCard;
+          if (currentIndex >= 0 && currentIndex < remainingCards.length) nextCard = remainingCards[currentIndex];
+          else if (currentIndex >= remainingCards.length) nextCard = remainingCards[remainingCards.length - 1];
+          else nextCard = remainingCards[0];
+          setSelectedCard(nextCard);
+        } else {
+          setCardDetailModalVisible(false);
+          setSelectedCard(null);
         }
       }
-    } catch (e) { }
-  };
+    } else {
+      setFavoriteCardIds(prev => [...prev, cardId]);
+      const card = filteredFavoriteCards.find(c => c.id === cardId);
+      if (card) setFavoriteCards(prev => [...prev, card]);
+    }
+
+    try {
+      wasFavorite ? await removeFavoriteCard(userId, cardId) : await addFavoriteCard(userId, cardId);
+    } catch (e) {
+      if (wasFavorite) {
+        fetchFavorites(true);
+      } else {
+        setFavoriteCardIds(prev => prev.filter(id => id !== cardId));
+        setFavoriteCards(prev => prev.filter(c => c.id !== cardId));
+      }
+    }
+  }, [userId, favoriteCardIds, favoriteCards, selectedCard, filteredFavoriteCards, favCardsQuery, favCardsSort]);
 
   const favCardFavoritedAt = (c) => new Date(c.favorited_at || c.created_at || 0).getTime();
   const filteredFavoriteCards = useMemo(() => {
@@ -982,35 +947,43 @@ export default function LibraryScreen() {
                   </View>
                   {/* Favorite Cards List */}
                   <View style={{ marginTop: verticalScale(14), paddingHorizontal: scale(4), pointerEvents: filteredFavoriteCards.length > 0 ? 'auto' : 'none' }}>
-                    {filteredFavoriteCards.map((card) => {
-                      const isOwner = userId && card.deck?.user_id && card.deck.user_id === userId;
-                      return (
-                        <CardListItem
-                          key={String(card.id)}
-                          question={card.question}
-                          answer={card.answer}
-                          isFavorite={true}
-                          onPress={() => {
-                            setSelectedCard(card);
-                            setCardDetailModalVisible(true);
-                          }}
-                          onToggleFavorite={() => handleRemoveFavoriteCard(card.id)}
-                          canDelete={true}
-                          onDelete={() => handleDeleteCard(card.id)}
-                          isOwner={isOwner}
-                        />
-                      );
-                    })}
-                    {filteredFavoriteCards.length === 0 ? (
-                      <View style={styles.favoriteCardsEmpty}>
-                        <Image
-                          source={require('../../assets/cardbg.png')}
-                          style={{ width: moderateScale(400, 0.3), height: moderateScale(400, 0.3), opacity: 0.2 }}
-                          resizeMode="contain"
-                          fadeDuration={0}
-                        />
-                      </View>
-                    ) : null}
+                    <FlatList
+                      data={filteredFavoriteCards}
+                      keyExtractor={item => String(item.id)}
+                      scrollEnabled={false}
+                      removeClippedSubviews={true}
+                      initialNumToRender={10}
+                      maxToRenderPerBatch={8}
+                      windowSize={5}
+                      renderItem={({ item: card }) => {
+                        const isOwner = userId && card.deck?.user_id && card.deck.user_id === userId;
+                        return (
+                          <CardListItem
+                            question={card.question}
+                            answer={card.answer}
+                            isFavorite={true}
+                            onPress={() => {
+                              setSelectedCard(card);
+                              setCardDetailModalVisible(true);
+                            }}
+                            onToggleFavorite={() => handleRemoveFavoriteCard(card.id)}
+                            canDelete={true}
+                            onDelete={() => handleDeleteCard(card.id)}
+                            isOwner={isOwner}
+                          />
+                        );
+                      }}
+                      ListEmptyComponent={
+                        <View style={styles.favoriteCardsEmpty}>
+                          <Image
+                            source={require('../../assets/cardbg.png')}
+                            style={{ width: moderateScale(400, 0.3), height: moderateScale(400, 0.3), opacity: 0.2 }}
+                            resizeMode="contain"
+                            fadeDuration={0}
+                          />
+                        </View>
+                      }
+                    />
                   </View>
                 </View>
               </View>
