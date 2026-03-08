@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Touch
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
+import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +11,8 @@ import SearchBar from '../../components/tools/SearchBar';
 import CardDetailView from '../../components/layout/CardDetailView';
 import AddEditCardInlineForm from '../../components/layout/EditCardForm';
 import { listChapters, distributeUnassignedEvenly, getChaptersProgress } from '../../services/ChapterService';
+import { deleteCard } from '../../services/CardService';
+import { addFavoriteCard, removeFavoriteCard } from '../../services/FavoriteService';
 import { LinearGradient } from 'expo-linear-gradient';
 import LottieView from 'lottie-react-native';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
@@ -130,6 +133,8 @@ const MemoizedCardItem = memo(({
 export default function ChapterCardsScreen({ route, navigation }) {
   const { chapter, deck } = route.params;
   const { colors } = useTheme();
+  const { session } = useAuth();
+  const userId = session?.user?.id;
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [favoriteCards, setFavoriteCards] = useState([]);
@@ -191,20 +196,19 @@ export default function ChapterCardsScreen({ route, navigation }) {
     fetchChapterCards();
     fetchFavoriteCards();
     checkOwnerAndLoadChapters();
-  }, [chapter.id, deck?.id]);
+  }, [chapter.id, deck?.id, userId]);
 
   const checkOwnerAndLoadChapters = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user && deck) {
-        setCurrentUserId(user.id);
-        setIsOwner(user.id === deck.user_id && !deck.is_shared);
+      if (userId && deck) {
+        setCurrentUserId(userId);
+        setIsOwner(userId === deck.user_id && !deck.is_shared);
 
         const data = await listChapters(deck.id);
         setChapters(data);
 
         const chaptersWithUnassigned = [{ id: null }, ...data];
-        const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, user.id);
+        const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, userId);
         setProgressMap(progress);
       }
     } catch (e) {
@@ -338,7 +342,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
       while (hasMore) {
         let query = supabase
           .from('cards')
-          .select('id, question, answer, image, example, note, created_at, deck:decks(id, categories(sort_order))')
+          .select('id, question, answer, image, example, note, created_at')
           .eq('deck_id', deck.id)
           .order('created_at', { ascending: false })
           .range(from, from + step - 1);
@@ -382,8 +386,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
   const fetchCardStatusesForCards = async (cardIds) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || !cardIds || cardIds.length === 0) {
+      if (!userId || !cardIds || cardIds.length === 0) {
         const statusMap = new Map();
         if (cardIds && cardIds.length > 0) {
           cardIds.forEach(cardId => {
@@ -409,7 +412,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
           supabase
             .from('user_card_progress')
             .select('card_id, status')
-            .eq('user_id', user.id)
+            .eq('user_id', userId)
             .in('card_id', chunk)
         )
       );
@@ -462,11 +465,14 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
   const fetchFavoriteCards = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      if (!userId) {
+        setFavoriteCards([]);
+        return;
+      }
       const { data, error } = await supabase
         .from('favorite_cards')
         .select('card_id')
-        .eq('user_id', user.id);
+        .eq('user_id', userId);
       if (error) throw error;
       setFavoriteCards((data || []).map(f => f.card_id));
     } catch (e) {
@@ -476,12 +482,12 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
   const handleToggleFavoriteCard = async (cardId) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      if (!userId) return;
       if (favoriteCards.includes(cardId)) {
-        await supabase.from('favorite_cards').delete().eq('user_id', user.id).eq('card_id', cardId);
+        await removeFavoriteCard(userId, cardId);
         setFavoriteCards(favoriteCards.filter(id => id !== cardId));
       } else {
-        await supabase.from('favorite_cards').insert({ user_id: user.id, card_id: cardId });
+        await addFavoriteCard(userId, cardId);
         setFavoriteCards([...favoriteCards, cardId]);
       }
     } catch (e) {}
@@ -496,7 +502,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const handleDeleteSelectedCard = async () => {
     if (!selectedCard) return;
     try {
-      await supabase.from('cards').delete().eq('id', selectedCard.id);
+      await deleteCard(selectedCard.id);
       setSelectedCard(null);
       setEditCardMode(false);
       await fetchChapterCards();

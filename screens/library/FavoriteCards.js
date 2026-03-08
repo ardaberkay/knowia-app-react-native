@@ -2,9 +2,11 @@ import React, { useEffect, useMemo, useState, useLayoutEffect } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, BackHandler, Alert, Keyboard } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
+import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
-import { getFavoriteCards } from '../../services/FavoriteService';
+import { getFavoriteCards, addFavoriteCard, removeFavoriteCard } from '../../services/FavoriteService';
+import { deleteCard } from '../../services/CardService';
 import SearchBar from '../../components/tools/SearchBar';
 import FilterIcon from '../../components/modals/CardFilterIcon';
 import CardListItem from '../../components/lists/CardList';
@@ -21,6 +23,8 @@ export default function FavoriteCards() {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { showSuccess, showError } = useSnackbarHelpers();
+  const { session } = useAuth();
+  const userId = session?.user?.id;
 
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,22 +37,21 @@ export default function FavoriteCards() {
   const fetchFavorites = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      if (!userId) {
         setCards([]);
         setFavoriteCards([]);
         setCurrentUserId(null);
         return;
       }
-      setCurrentUserId(user.id);
+      setCurrentUserId(userId);
       
       // Fetch favorite cards and user progress in parallel
       const [res, progressResult] = await Promise.all([
-        getFavoriteCards(user.id),
+        getFavoriteCards(userId),
         supabase
           .from('user_card_progress')
           .select('card_id, status')
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
       ]);
       
       // Create a map of card statuses
@@ -75,7 +78,7 @@ export default function FavoriteCards() {
 
   useEffect(() => {
     fetchFavorites();
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     const onBackPress = () => {
@@ -132,25 +135,17 @@ export default function FavoriteCards() {
 
   const handleToggleFavoriteCard = async (cardId) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
       
       if (favoriteCards.includes(cardId)) {
-        await supabase
-          .from('favorite_cards')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('card_id', cardId);
+        await removeFavoriteCard(userId, cardId);
         setFavoriteCards(favoriteCards.filter(id => id !== cardId));
         setCards(cards.filter(c => c.id !== cardId));
-        // Eğer seçili kart favorilerden çıkarıldıysa, seçimi temizle
         if (selectedCard && selectedCard.id === cardId) {
           setSelectedCard(null);
         }
       } else {
-        await supabase
-          .from('favorite_cards')
-          .insert({ user_id: user.id, card_id: cardId });
+        await addFavoriteCard(userId, cardId);
         setFavoriteCards([...favoriteCards, cardId]);
       }
     } catch (e) {}
@@ -167,14 +162,7 @@ export default function FavoriteCards() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const { error } = await supabase
-                .from('cards')
-                .delete()
-                .eq('id', cardId);
-              
-              if (error) {
-                throw error;
-              }
+              await deleteCard(cardId);
               
               // Kartı listeden çıkar
               setCards(cards.filter(c => c.id !== cardId));

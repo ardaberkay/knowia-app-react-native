@@ -116,10 +116,9 @@ export async function reorderChapterOrdinals(deckId) {
  */
 export async function getChapterProgress(chapterId, deckId, userId) {
   try {
-    // 1. Toplam kart sayısını bulalım (Sadece sayıyı alır, veriyi indirmez - Limite takılmaz)
     let cardsQuery = supabase
       .from('cards')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('deck_id', deckId);
 
     if (chapterId) {
@@ -132,136 +131,104 @@ export async function getChapterProgress(chapterId, deckId, userId) {
     if (cardsError) throw cardsError;
 
     if (!total || total === 0) {
-      return { total: 0, learned: 0, progress: 0 };
+      return { total: 0, learned: 0, learning: 0, new: 0, progress: 0 };
     }
 
-    // 2. Sadece "learned" olanların SAYISINI count ile alalım (Veriyi indirmeyiz, limite takılmaz)
-    let progressQuery = supabase
+    let learnedQuery = supabase
       .from('user_card_progress')
-      .select('cards!inner(chapter_id, deck_id)', { count: 'exact', head: true })
+      .select('id, cards!inner(id)', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('status', 'learned')
       .eq('cards.deck_id', deckId);
 
+    let learningQuery = supabase
+      .from('user_card_progress')
+      .select('id, cards!inner(id)', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'learning')
+      .eq('cards.deck_id', deckId);
+
     if (chapterId) {
-      progressQuery = progressQuery.eq('cards.chapter_id', chapterId);
+      learnedQuery = learnedQuery.eq('cards.chapter_id', chapterId);
+      learningQuery = learningQuery.eq('cards.chapter_id', chapterId);
     } else {
-      progressQuery = progressQuery.is('cards.chapter_id', null);
+      learnedQuery = learnedQuery.is('cards.chapter_id', null);
+      learningQuery = learningQuery.is('cards.chapter_id', null);
     }
 
-    const { count: learned, error: progressError } = await progressQuery;
-    if (progressError) throw progressError;
+    const [learnedResult, learningResult] = await Promise.all([learnedQuery, learningQuery]);
+    if (learnedResult.error) throw learnedResult.error;
+    if (learningResult.error) throw learningResult.error;
 
-    const learnedCount = learned || 0;
-    const progress = total > 0 ? learnedCount / total : 0;
+    const learned = learnedResult.count || 0;
+    const learning = learningResult.count || 0;
+    const progress = total > 0 ? learned / total : 0;
 
-    return { total, learned: learnedCount, progress };
+    return { total, learned, learning, new: total - learned - learning, progress };
   } catch (error) {
     console.error('Error getting chapter progress:', error);
-    return { total: 0, learned: 0, progress: 0 };
+    return { total: 0, learned: 0, learning: 0, new: 0, progress: 0 };
   }
 }
 
 /**
- * Get progress for multiple chapters at once (Supports infinite cards via Pagination)
- * @param {Array<{id: string|null}>} chapters - Array of chapters
- * @param {string} deckId - Deck ID
- * @param {string} userId - User ID
- * @returns {Promise<Map<string, {total: number, learned: number, progress: number}>>}
+ * Get progress for multiple chapters at once using count+head:true (0 rows downloaded).
+ * Each chapter gets 3 parallel count queries (total, learned, learning).
+ * All chapters run in parallel via Promise.all.
  */
 export async function getChaptersProgress(chapters, deckId, userId) {
   const progressMap = new Map();
 
   try {
-    // 1. ADIM: Tüm kartları 1000'erlik paketler halinde çek (Sayfalama)
-    let allCards = [];
-    let from = 0;
-    const step = 1000;
-    let hasMoreCards = true;
+    const chapterPromises = chapters.map(async (ch) => {
+      const chapterId = ch.id;
+      const key = chapterId || 'unassigned';
 
-    while (hasMoreCards) {
-      const { data: cardsData, error: cardsError } = await supabase
+      let totalQuery = supabase
         .from('cards')
-        .select('id, chapter_id')
-        .eq('deck_id', deckId)
-        .range(from, from + step - 1);
+        .select('id', { count: 'exact', head: true })
+        .eq('deck_id', deckId);
 
-      if (cardsError) throw cardsError;
-
-      if (cardsData && cardsData.length > 0) {
-        allCards.push(...cardsData);
-      }
-
-      // Gelen veri 1000'den azsa döngüyü kır
-      if (!cardsData || cardsData.length < step) {
-        hasMoreCards = false;
-      } else {
-        from += step;
-      }
-    }
-
-    // Her chapter'daki toplam kart sayısını hesapla
-    const chapterTotals = new Map();
-    allCards.forEach(card => {
-      const key = card.chapter_id || 'unassigned';
-      chapterTotals.set(key, (chapterTotals.get(key) || 0) + 1);
-    });
-
-    // 2. ADIM: Progress durumlarını da sayfalama ile çek (.in kullanmadan, Join ile)
-    let allProgressData = [];
-    let progressFrom = 0;
-    let hasMoreProgress = true;
-
-    while (hasMoreProgress) {
-      const { data: progressData, error: progressError } = await supabase
+      let learnedQuery = supabase
         .from('user_card_progress')
-        .select('status, cards!inner(chapter_id, deck_id)')
+        .select('id, cards!inner(id)', { count: 'exact', head: true })
         .eq('user_id', userId)
-        .in('status', ['learned', 'learning'])
-        .eq('cards.deck_id', deckId)
-        .range(progressFrom, progressFrom + step - 1);
+        .eq('status', 'learned')
+        .eq('cards.deck_id', deckId);
 
-      if (progressError) throw progressError;
+      let learningQuery = supabase
+        .from('user_card_progress')
+        .select('id, cards!inner(id)', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('status', 'learning')
+        .eq('cards.deck_id', deckId);
 
-      if (progressData && progressData.length > 0) {
-        allProgressData.push(...progressData);
-      }
-
-      if (!progressData || progressData.length < step) {
-        hasMoreProgress = false;
+      if (chapterId) {
+        totalQuery = totalQuery.eq('chapter_id', chapterId);
+        learnedQuery = learnedQuery.eq('cards.chapter_id', chapterId);
+        learningQuery = learningQuery.eq('cards.chapter_id', chapterId);
       } else {
-        progressFrom += step;
+        totalQuery = totalQuery.is('chapter_id', null);
+        learnedQuery = learnedQuery.is('cards.chapter_id', null);
+        learningQuery = learningQuery.is('cards.chapter_id', null);
       }
-    }
 
-    // Progress datalarını chapter_id ve status'e göre grupla
-    const chapterStats = new Map();
-    allProgressData.forEach(p => {
-      const chapterId = (Array.isArray(p.cards) ? p.cards[0].chapter_id : p.cards.chapter_id) || 'unassigned';
-      
-      if (!chapterStats.has(chapterId)) {
-        chapterStats.set(chapterId, { learned: 0, learning: 0 });
-      }
-      
-      const stats = chapterStats.get(chapterId);
-      if (p.status === 'learned') stats.learned += 1;
-      if (p.status === 'learning') stats.learning += 1;
-    });
+      const [totalRes, learnedRes, learningRes] = await Promise.all([
+        totalQuery, learnedQuery, learningQuery,
+      ]);
 
-    // 3. İstenen her chapter için map'i oluştur ve eksik statüleri tamamla
-    chapters.forEach(ch => {
-      const key = ch.id || 'unassigned';
-      const total = chapterTotals.get(key) || 0;
-      
-      const stats = chapterStats.get(key) || { learned: 0, learning: 0 };
-      const learned = stats.learned;
-      const learning = stats.learning;
-      const newCount = total - learned - learning; 
-      
+      const total = totalRes.count || 0;
+      const learned = learnedRes.count || 0;
+      const learning = learningRes.count || 0;
       const progress = total > 0 ? learned / total : 0;
-      
-      progressMap.set(key, { total, learned, learning, new: newCount, progress });
+
+      return { key, total, learned, learning, new: total - learned - learning, progress };
     });
+
+    const results = await Promise.all(chapterPromises);
+    results.forEach(r => progressMap.set(r.key, {
+      total: r.total, learned: r.learned, learning: r.learning, new: r.new, progress: r.progress,
+    }));
 
     return progressMap;
   } catch (error) {

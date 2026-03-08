@@ -1,114 +1,140 @@
 import { supabase } from '../lib/supabase';
+import { invalidateCache } from './CacheService';
 
-export const ensureUserCardProgress = async (deckId, userId) => {
-  console.log('ensureUserCardProgress başlıyor', deckId, userId);
-
-  // 1. ADIM: Destedeki tüm kartların ID'lerini sayfalama ile çek (1000 limitini aş)
-  let allCardIds = [];
-  let from = 0;
-  const step = 1000;
-  let hasMoreCards = true;
-
-  while (hasMoreCards) {
-    const { data: cardsChunk, error: cardsError } = await supabase
-      .from('cards')
-      .select('id')
-      .eq('deck_id', deckId)
-      .range(from, from + step - 1);
-
-    if (cardsError) throw cardsError;
-
-    if (cardsChunk && cardsChunk.length > 0) {
-      allCardIds.push(...cardsChunk.map(c => c.id));
-    }
-
-    if (!cardsChunk || cardsChunk.length < step) {
-      hasMoreCards = false;
-    } else {
-      from += step;
-    }
-  }
-
-  if (allCardIds.length === 0) {
-    console.log('Kart yok, fonksiyon bitiyor');
-    return;
-  }
-
-  // 2. ADIM: Kullanıcının bu destedeki mevcut progress kayıtlarını sayfalama ile çek
-  // DİKKAT: .in() KULLANMIYORUZ! (Bad Request Hatasını çözen sihir burası)
-  let existingCardIds = new Set(); // Hızlı karşılaştırma için Set
-  let progFrom = 0;
-  let hasMoreProgress = true;
-
-  while (hasMoreProgress) {
-    const { data: progChunk, error: progError } = await supabase
-      .from('user_card_progress')
-      .select('card_id, cards!inner(deck_id)') // cards!inner şart!
-      .eq('user_id', userId)
-      .eq('cards.deck_id', deckId)
-      .range(progFrom, progFrom + step - 1);
-
-    if (progError) throw progError;
-
-    if (progChunk && progChunk.length > 0) {
-      progChunk.forEach(p => existingCardIds.add(p.card_id));
-    }
-
-    if (!progChunk || progChunk.length < step) {
-      hasMoreProgress = false;
-    } else {
-      progFrom += step;
-    }
-  }
-
-  // 3. ADIM: Eksik olan kartları tespit et
-  const missingCardIds = allCardIds.filter(id => !existingCardIds.has(id));
-
-  // 4. ADIM: Eksik olanları 500'erlik PAKETLER halinde Insert yap
-  // 3000 kartı aynı anda yazarsan veritabanı kilitlenir.
-  if (missingCardIds.length > 0) {
-    console.log(`${missingCardIds.length} adet eksik kayıt oluşturuluyor...`);
-    
-    const CHUNK_SIZE = 500;
-    for (let i = 0; i < missingCardIds.length; i += CHUNK_SIZE) {
-      const chunk = missingCardIds.slice(i, i + CHUNK_SIZE);
-      const inserts = chunk.map(card_id => ({
-        user_id: userId,
-        card_id,
-        status: 'new',
-        next_review: new Date().toISOString(),
-        created_at: new Date().toISOString()
-      }));
-
-      const { error: insertError } = await supabase
-        .from('user_card_progress')
-        .insert(inserts);
-
-      if (insertError) {
-         console.error('Insert chunk hatası:', insertError);
-         throw insertError;
-      }
-    }
-    console.log('Eksik kayıtlar başarıyla 500\'lük paketler halinde eklendi.');
-  } else {
-    console.log('Eksik kayıt yok, insert yapılmadı');
-  }
-  
-  console.log('ensureUserCardProgress bitti');
+export const ensureUserCardProgress = async (_deckId, _userId) => {
+  // Artık 'new' status'unda progress satırı oluşturmuyoruz.
+  // Öğrenilecek kartlar = progress kaydı olmayan + (status 'learning' ve next_review <= now).
+  // Progress kaydı, kullanıcı ilk swipe/skip yaptığında insert ediliyor.
 };
 
 export const getCardsForLearning = async (deckId, userId) => {
-  // Bu fonksiyonda da cards!inner eksikti, onu da düzelttik!
   const { data, error } = await supabase
     .from('user_card_progress')
     .select('card_id, status, next_review, cards!inner(question, answer, image, example, note)')
     .eq('user_id', userId)
-    .neq('status', 'learned') // 'is_learned' boolean'ı yerine 'status' kullanıyoruz
+    .neq('status', 'learned')
     .lte('next_review', new Date().toISOString())
     .eq('cards.deck_id', deckId);
 
   if (error) throw error;
-
-  // Kartları frontend'de shuffle et
   return data.sort(() => Math.random() - 0.5);
+};
+
+export const createCard = async (deckId, cardData) => {
+  const { data, error } = await supabase
+    .from('cards')
+    .insert({
+      deck_id: deckId,
+      question: cardData.question,
+      answer: cardData.answer,
+      example: cardData.example || null,
+      note: cardData.note || null,
+      image: cardData.image || null,
+    })
+    .select();
+  if (error) throw error;
+  await invalidateCache(`cards_deck_${deckId}`);
+  return data?.[0] || null;
+};
+
+export const updateCard = async (cardId, cardData) => {
+  const { data, error } = await supabase
+    .from('cards')
+    .update({
+      question: cardData.question,
+      answer: cardData.answer,
+      example: cardData.example || null,
+      note: cardData.note || null,
+      image: cardData.image || null,
+    })
+    .eq('id', cardId)
+    .select();
+  if (error) throw error;
+  const card = data?.[0] || null;
+  if (card) await invalidateCache(`card_detail_${cardId}`);
+  return card;
+};
+
+export const deleteCard = async (cardId) => {
+  const { error } = await supabase
+    .from('cards')
+    .delete()
+    .eq('id', cardId);
+  if (error) throw error;
+  await invalidateCache(`card_detail_${cardId}`);
+};
+
+export const getCardDetail = async (cardId) => {
+  const { data, error } = await supabase
+    .from('cards')
+    .select('id, question, answer, image, example, note, created_at')
+    .eq('id', cardId)
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+export const getUserCardProgressForCards = async (userId, cardIds) => {
+  if (!userId || !cardIds || cardIds.length === 0) return {};
+  const CHUNK_SIZE = 200;
+  const statusMap = {};
+  for (let i = 0; i < cardIds.length; i += CHUNK_SIZE) {
+    const chunk = cardIds.slice(i, i + CHUNK_SIZE);
+    const { data, error } = await supabase
+      .from('user_card_progress')
+      .select('card_id, status')
+      .eq('user_id', userId)
+      .in('card_id', chunk);
+    if (error) throw error;
+    (data || []).forEach(p => { statusMap[p.card_id] = p.status; });
+  }
+  return statusMap;
+};
+
+export const upsertCardProgress = async (userId, cardId, status, nextReview) => {
+  const { error } = await supabase
+    .from('user_card_progress')
+    .upsert({
+      user_id: userId,
+      card_id: cardId,
+      status,
+      next_review: nextReview,
+    }, { onConflict: 'user_id,card_id' });
+  if (error) throw error;
+};
+
+export const getDeckProgressCounts = async (userId, deckId) => {
+  const [totalResult, learnedResult, learningResult] = await Promise.all([
+    supabase
+      .from('cards')
+      .select('id', { count: 'exact', head: true })
+      .eq('deck_id', deckId),
+    supabase
+      .from('user_card_progress')
+      .select('id, cards!inner(id)', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'learned')
+      .eq('cards.deck_id', deckId),
+    supabase
+      .from('user_card_progress')
+      .select('id, cards!inner(id)', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'learning')
+      .eq('cards.deck_id', deckId),
+  ]);
+
+  if (totalResult.error) throw totalResult.error;
+  if (learnedResult.error) throw learnedResult.error;
+  if (learningResult.error) throw learningResult.error;
+
+  const total = totalResult.count || 0;
+  const learned = learnedResult.count || 0;
+  const learning = learningResult.count || 0;
+
+  return {
+    total,
+    learned,
+    learning,
+    new: total - learned - learning,
+  };
 };

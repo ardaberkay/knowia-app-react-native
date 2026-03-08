@@ -1,10 +1,28 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Cache süreleri (milisaniye)
-const CACHE_DURATIONS = {
-  PROFILE: 30 * 60 * 1000, // 30 dakika
-  PROFILE_IMAGE: 7 * 24 * 60 * 60 * 1000, // 7 gün (görseller daha az değişir)
-  DISCOVER_DECKS: 5 * 60 * 1000, // 5 dakika (trend verileri için)
+export const CACHE_DURATIONS = {
+  // Referans veriler
+  LANGUAGES: 7 * 24 * 60 * 60 * 1000,       // 1 hafta
+  CATEGORIES: 7 * 24 * 60 * 60 * 1000,      // 1 hafta
+
+  // Profil
+  PROFILE: 7 * 24 * 60 * 60 * 1000,         // 1 hafta (mutation: EditProfile çıkışında)
+  PROFILE_IMAGE: 7 * 24 * 60 * 60 * 1000,   // 1 hafta
+
+  // Engel/Gizli
+  BLOCKED_HIDDEN: 24 * 60 * 60 * 1000,      // 24 saat (mutation: engel/gizle aksiyonunda)
+
+  // Paylaşılan içerik
+  DISCOVER: 4 * 60 * 60 * 1000,             // 4 saat (pull-to-refresh bypass)
+  DECK_LIST: 4 * 60 * 60 * 1000,            // 4 saat (pull-to-refresh bypass)
+  DECK_DETAIL: 4 * 60 * 60 * 1000,          // 4 saat (mutation: kendi destesinde düzenleme)
+  CARDS_CONTENT: 4 * 60 * 60 * 1000,        // 4 saat (mutation: kendi destesinde CRUD)
+  CHAPTERS: 4 * 60 * 60 * 1000,             // 4 saat (mutation: chapter CRUD)
+
+  // Kullanıcıya özel
+  FAVORITES_DECK_IDS: 4 * 60 * 60 * 1000,   // 4 saat (mutation: favori toggle)
+  FAVORITES_CARD_IDS: 4 * 60 * 60 * 1000,   // 4 saat (mutation: favori toggle)
 };
 
 /**
@@ -189,5 +207,66 @@ export const clearDiscoverDecksCache = async (tab, timeFilter) => {
     await AsyncStorage.removeItem(cacheKey);
   } catch (error) {
     console.error('Error clearing discover decks cache:', error);
+  }
+};
+
+// ─── Genel Cache Helper'ları ───
+
+export const cacheData = async (key, data) => {
+  try {
+    await AsyncStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
+  } catch (error) {
+    console.error('Error caching data:', error);
+  }
+};
+
+export const getCachedData = async (key, ttl) => {
+  try {
+    const cached = await AsyncStorage.getItem(key);
+    if (!cached) return null;
+    const { data, timestamp } = JSON.parse(cached);
+    const age = Date.now() - timestamp;
+    if (age < ttl) return { data, isStale: false };
+    if (age < ttl * 2) return { data, isStale: true };
+    await AsyncStorage.removeItem(key);
+    return null;
+  } catch (error) {
+    console.error('Error getting cached data:', error);
+    return null;
+  }
+};
+
+export const invalidateCache = async (keyPrefix) => {
+  try {
+    const allKeys = await AsyncStorage.getAllKeys();
+    const matching = allKeys.filter(k => k.startsWith(keyPrefix));
+    if (matching.length > 0) await AsyncStorage.multiRemove(matching);
+  } catch (error) {
+    console.error('Error invalidating cache:', error);
+  }
+};
+
+export const cleanupStaleCache = async () => {
+  try {
+    const allKeys = await AsyncStorage.getAllKeys();
+    const cacheKeys = allKeys.filter(k =>
+      k.startsWith('cards_') || k.startsWith('deck_') || k.startsWith('discover_') ||
+      k.startsWith('chapters_') || k.startsWith('fav_') || k.startsWith('blocked_') ||
+      k.startsWith('progress_') || k.startsWith('languages_') || k.startsWith('categories_')
+    );
+    const TWO_WEEKS = 14 * 24 * 60 * 60 * 1000;
+    const keysToRemove = [];
+    for (const key of cacheKeys) {
+      const raw = await AsyncStorage.getItem(key);
+      if (raw) {
+        try {
+          const { timestamp } = JSON.parse(raw);
+          if (Date.now() - timestamp > TWO_WEEKS) keysToRemove.push(key);
+        } catch { keysToRemove.push(key); }
+      }
+    }
+    if (keysToRemove.length > 0) await AsyncStorage.multiRemove(keysToRemove);
+  } catch (error) {
+    console.error('Error cleaning up stale cache:', error);
   }
 };

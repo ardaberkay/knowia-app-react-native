@@ -14,9 +14,11 @@ export function ProfileProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async () => {
+    const uid = session?.user?.id;
+    if (!uid) { setProfile(null); setLoading(false); return null; }
     try {
       setLoading(true);
-      const data = await getCurrentUserProfile();
+      const data = await getCurrentUserProfile(uid);
       setProfile(data);
       return data;
     } catch {
@@ -25,7 +27,7 @@ export function ProfileProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [session?.user?.id]);
 
   useEffect(() => {
     if (session?.user) {

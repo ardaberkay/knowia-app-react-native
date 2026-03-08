@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator, Share, Switch, Alert, Linking, Platform } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
-import { getCurrentUserProfile, updateNotificationPreference } from '../../services/ProfileService';
+import { getCurrentUserProfile, updateNotificationPreference, clearPushToken } from '../../services/ProfileService';
 import { registerForPushNotificationsAsync } from '../../services/NotificationService';
 import { useNavigation } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
@@ -28,7 +28,8 @@ export default function ProfileScreen() {
   const [error, setError] = useState(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(contextProfile?.notifications_enabled ?? false);
   const [userId, setUserId] = useState(null);
-  const { logout } = useAuth();
+  const { session, logout } = useAuth();
+  const authUserId = session?.user?.id;
   const { t, i18n } = useTranslation();
   const [isLanguageModalVisible, setLanguageModalVisible] = useState(false);
   const { showSuccess, showError } = useSnackbarHelpers();
@@ -79,16 +80,14 @@ export default function ProfileScreen() {
       setLoading(true);
       setError(null);
 
-      // Önce kullanıcı ID'sini al
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.id) {
+      if (!authUserId) {
         setError(t('profile.errorMessageProfile'));
         return;
       }
 
       // Cache kullanılacaksa önce cache'den yükle
       if (useCache) {
-        const cachedProfile = await getCachedProfile(user.id);
+        const cachedProfile = await getCachedProfile(authUserId);
         if (cachedProfile) {
           setProfile(cachedProfile);
           setUserId(cachedProfile.id);
@@ -105,14 +104,14 @@ export default function ProfileScreen() {
 
           // Arka planda güncel veriyi çek ve cache'le
           try {
-            const freshProfile = await getCurrentUserProfile();
+            const freshProfile = await getCurrentUserProfile(authUserId);
             setProfile(freshProfile);
             setUserId(freshProfile.id);
-            await cacheProfile(user.id, freshProfile);
+            await cacheProfile(authUserId, freshProfile);
 
             // Profil görselini de cache'le
             if (freshProfile?.image_url) {
-              await cacheProfileImage(user.id, freshProfile.image_url);
+              await cacheProfileImage(authUserId, freshProfile.image_url);
             }
 
             // Bildirim durumunu güncelle
@@ -131,14 +130,14 @@ export default function ProfileScreen() {
       }
 
       // Cache yoksa veya cache kullanılmayacaksa API'den çek
-      const profile = await getCurrentUserProfile();
+      const profile = await getCurrentUserProfile(authUserId);
       setProfile(profile);
       setUserId(profile.id);
 
       // Cache'le
-      await cacheProfile(user.id, profile);
+      await cacheProfile(authUserId, profile);
       if (profile?.image_url) {
-        await cacheProfileImage(user.id, profile.image_url);
+        await cacheProfileImage(authUserId, profile.image_url);
       }
 
       const { status } = await Notifications.getPermissionsAsync();
@@ -153,7 +152,7 @@ export default function ProfileScreen() {
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, authUserId]);
 
   // Context'teki profil yüklendiğinde bildirim değerini senkronize et (ilk açılışta animasyonu önlemek için)
   useEffect(() => {
@@ -204,14 +203,14 @@ export default function ProfileScreen() {
       const { status } = await Notifications.requestPermissionsAsync();
       if (status === 'granted') {
         setNotificationsEnabled(true);
-        await updateNotificationPreference(true);
-        const uid = userId || (await supabase.auth.getUser()).data?.user?.id;
+        await updateNotificationPreference(authUserId, true);
+        const uid = userId || authUserId;
         if (uid) {
           await registerForPushNotificationsAsync(uid);
         }
       } else {
         setNotificationsEnabled(false);
-        await updateNotificationPreference(false);
+        await updateNotificationPreference(authUserId, false);
         Alert.alert(
           t('profile.notifications'),
           t('notifications.openSettingsHint', 'Bildirimleri açmak için Ayarlar\'a gidin.'),
@@ -223,13 +222,9 @@ export default function ProfileScreen() {
       }
     } else {
       setNotificationsEnabled(false);
-      await updateNotificationPreference(false);
-      // Token'ı Supabase'den sil
+      await updateNotificationPreference(authUserId, false);
       if (userId) {
-        await supabase
-          .from('profiles')
-          .update({ expo_push_token: null })
-          .eq('id', userId);
+        await clearPushToken(userId);
       }
     }
   };

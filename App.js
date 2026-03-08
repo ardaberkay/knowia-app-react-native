@@ -18,6 +18,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { supabase } from './lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import './lib/i18n';
+import { cleanupStaleCache } from './services/CacheService';
 
 // Splash screen'i otomatik gizlemeyi engelle
 SplashScreen.preventAutoHideAsync();
@@ -42,6 +43,7 @@ function AppContent() {
 
   useEffect(() => {
     WebBrowser.maybeCompleteAuthSession();
+    cleanupStaleCache();
   }, []);
 
   useEffect(() => {

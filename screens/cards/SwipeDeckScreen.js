@@ -16,6 +16,7 @@ import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { ensureUserCardProgress } from '../../services/CardService';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import { Iconify } from 'react-native-iconify';
 import logoasil from '../../assets/logoasil.png';
 import { useTranslation } from 'react-i18next';
@@ -70,6 +71,8 @@ const AnimatedTimeButton = ({ onPress, icon, text, buttonStyle, textStyle, iconC
 export default function SwipeDeckScreen({ route, navigation }) {
   const { deck, chapter } = route.params || {};
   const { colors } = useTheme();
+  const { session } = useAuth();
+  const authUserId = session?.user?.id;
 
   // useWindowDimensions hook'u - ekran döndürme desteği
   const { width, height } = useWindowDimensions();
@@ -257,8 +260,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       setLeftCount(0);
 
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUserId(user.id);
+        setUserId(authUserId);
         console.log("✅ Adım 1: Kullanıcı alındı");
 
         // 1. Kategori bilgisini al
@@ -274,34 +276,63 @@ export default function SwipeDeckScreen({ route, navigation }) {
         console.log("✅ Adım 2: Kategori alındı");
 
         // 2. Favorileri yükle
-        const favCards = await getFavoriteCards(user.id);
+        const favCards = await getFavoriteCards(authUserId);
         const favSet = new Set((favCards || []).map((c) => c.id));
         setFavoriteIds(favSet);
         console.log("✅ Adım 3: Favoriler yüklendi");
 
-        // 3. Eksik progress kayıtlarını oluştur
-        await ensureUserCardProgress(deck.id, user.id);
-        console.log("✅ Adım 4: Progress kayıtları oluşturuldu (Burası geçildiyse ensureUserCardProgress sağlamdır)");
+        // 3. Progress artık önceden oluşturulmuyor; öğrenilecek kartlar = progress yok + (learning ve next_review <= now)
+        await ensureUserCardProgress(deck.id, authUserId);
+        console.log("✅ Adım 4: ensureUserCardProgress (no-op)");
 
-        // 4. Öğrenilecek Kartları Çek
-        let learningCardsQuery = supabase
-          .from('user_card_progress')
-          .select('card_id, status, next_review, cards!inner(question, image, answer, example, note, chapter_id)')
-          .eq('user_id', user.id)
-          .in('status', ['new', 'learning'])
-          .lte('next_review', new Date().toISOString())
-          .eq('cards.deck_id', deck.id);
-
-        if (chapter?.id) {
-          learningCardsQuery = learningCardsQuery.eq('cards.chapter_id', chapter.id);
-        } else if (chapter === null) {
-          learningCardsQuery = learningCardsQuery.is('cards.chapter_id', null);
+        // 4. Öğrenilecek Kartları Çek: tüm kartlar + progress; filtre: progress yok VEYA (learning ve zamanı gelmiş)
+        const step = 1000;
+        let allCards = [];
+        let from = 0;
+        while (true) {
+          let cardsQuery = supabase.from('cards').select('id, question, answer, image, example, note, chapter_id').eq('deck_id', deck.id).range(from, from + step - 1);
+          if (chapter?.id) cardsQuery = cardsQuery.eq('chapter_id', chapter.id);
+          else if (chapter === null) cardsQuery = cardsQuery.is('chapter_id', null);
+          const { data: cardsChunk, error: cardsErr } = await cardsQuery;
+          if (cardsErr) throw new Error(`Kartlar çekilirken hata: ${cardsErr.message}`);
+          if (cardsChunk?.length) allCards = allCards.concat(cardsChunk);
+          if (!cardsChunk || cardsChunk.length < step) break;
+          from += step;
         }
 
-        const { data: learningCards, error } = await learningCardsQuery;
-        if (error) throw new Error(`Öğrenilecek kartları çekerken hata: ${error.message}`);
-        
-        setCards((learningCards || []).filter(card => card.cards));
+        let progressList = [];
+        let progFrom = 0;
+        while (true) {
+          let progQuery = supabase
+            .from('user_card_progress')
+            .select('card_id, status, next_review, cards!inner(deck_id, chapter_id)')
+            .eq('user_id', authUserId)
+            .eq('cards.deck_id', deck.id)
+            .range(progFrom, progFrom + step - 1);
+          if (chapter?.id) progQuery = progQuery.eq('cards.chapter_id', chapter.id);
+          else if (chapter === null) progQuery = progQuery.is('cards.chapter_id', null);
+          const { data: progChunk, error: progErr } = await progQuery;
+          if (progErr) throw new Error(`Progress çekilirken hata: ${progErr.message}`);
+          if (progChunk?.length) progressList = progressList.concat(progChunk);
+          if (!progChunk || progChunk.length < step) break;
+          progFrom += step;
+        }
+
+        const progressByCardId = {};
+        progressList.forEach(p => { progressByCardId[p.card_id] = { status: p.status, next_review: p.next_review }; });
+        const now = new Date();
+        const toLearn = allCards.filter(card => {
+          const p = progressByCardId[card.id];
+          return !p || (p.status !== 'learned' && new Date(p.next_review) <= now);
+        });
+        const learningCards = toLearn.map(card => ({
+          card_id: card.id,
+          status: progressByCardId[card.id]?.status || 'new',
+          next_review: progressByCardId[card.id]?.next_review || new Date().toISOString(),
+          cards: card
+        }));
+
+        setCards(learningCards.sort(() => Math.random() - 0.5));
         flippedByIdRef.current = {};
         console.log("✅ Adım 5: Öğrenilecek kartlar çekildi");
 
@@ -323,26 +354,11 @@ export default function SwipeDeckScreen({ route, navigation }) {
         setTotalCardCount(totalCardsCount || 0);
         console.log("✅ Adım 6: Toplam kart sayısı alındı");
 
-        // Kalan (öğrenilmemiş) kart sayısı
-        let notLearnedQuery = supabase
-          .from('user_card_progress')
-          .select('id, cards!inner(id)', { count: 'exact', head: true }) // DÜZELTİLDİ
-          .eq('user_id', user.id)
-          .eq('cards.deck_id', deck.id)
-          .neq('status', 'learned');
-        if (chapter?.id) notLearnedQuery = notLearnedQuery.eq('cards.chapter_id', chapter.id);
-        else if (chapter === null) notLearnedQuery = notLearnedQuery.is('cards.chapter_id', null);
-
-        const { count: remainingCount, error: err2 } = await notLearnedQuery;
-        if (err2) throw new Error(`Kalan kart sayısında hata: ${err2.message}`);
-        setRemainingCardCount(remainingCount || 0);
-        console.log("✅ Adım 7: Kalan kart sayısı alındı");
-
         // Learning durumundaki kart sayısı
         let learningCardsCountQuery = supabase
           .from('user_card_progress')
           .select('id, cards!inner(id)', { count: 'exact', head: true }) // DÜZELTİLDİ
-          .eq('user_id', user.id)
+          .eq('user_id', authUserId)
           .eq('status', 'learning')
           .eq('cards.deck_id', deck.id);
         if (chapter?.id) learningCardsCountQuery = learningCardsCountQuery.eq('cards.chapter_id', chapter.id);
@@ -351,13 +367,13 @@ export default function SwipeDeckScreen({ route, navigation }) {
         const { count: learningCount, error: err3 } = await learningCardsCountQuery;
         if (err3) throw new Error(`Learning kart sayısında hata: ${err3.message}`);
         setTotalLearningCount(learningCount || 0);
-        console.log("✅ Adım 8: Learning kart sayısı alındı");
+        console.log("✅ Adım 7: Learning kart sayısı alındı");
 
         // Başlangıçta learned olan kart sayısı
         let learnedCardsQuery = supabase
           .from('user_card_progress')
           .select('id, cards!inner(id)', { count: 'exact', head: true }) // DÜZELTİLDİ
-          .eq('user_id', user.id)
+          .eq('user_id', authUserId)
           .eq('status', 'learned')
           .eq('cards.deck_id', deck.id);
         if (chapter?.id) learnedCardsQuery = learnedCardsQuery.eq('cards.chapter_id', chapter.id);
@@ -366,7 +382,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
         const { count: learnedCount, error: err4 } = await learnedCardsQuery;
         if (err4) throw new Error(`Learned kart sayısında hata: ${err4.message}`);
         setInitialLearnedCount(learnedCount || 0);
-        console.log("✅ Adım 9: Tüm işlemler başarıyla bitti!");
+        // Kalan = toplam - learned (progress satırı olmayan kartlar artık ayrıca yazılmıyor)
+        setRemainingCardCount((totalCardsCount || 0) - (learnedCount || 0));
+        console.log("✅ Adım 8: Tüm işlemler başarıyla bitti!");
 
       } catch (error) {
         console.error("🔥 Swipe sayfasında veri çekme hatası:", error.message);
@@ -485,12 +503,23 @@ export default function SwipeDeckScreen({ route, navigation }) {
       setRightCount((prev) => prev + 1);
       setRightHighlight(true);
       setTimeout(() => setRightHighlight(false), 400);
-      // Öğrendim (artık tekrar gösterilmesin)
-      await supabase
+      // Öğrendim: kayıt varsa update, yoksa insert (progress artık önceden oluşturulmuyor)
+      const now = new Date().toISOString();
+      const { data: updated } = await supabase
         .from('user_card_progress')
-        .update({ status: 'learned' })
+        .update({ status: 'learned', next_review: now })
         .eq('user_id', userId)
-        .eq('card_id', card.card_id);
+        .eq('card_id', card.card_id)
+        .select();
+      if (!updated?.length) {
+        await supabase.from('user_card_progress').insert({
+          user_id: userId,
+          card_id: card.card_id,
+          status: 'learned',
+          next_review: now,
+          created_at: now
+        });
+      }
     } else if (direction === 'left') {
       historyLeftCardIds.current.push(card.card_id);
       if (!leftCountedCardIds.current.has(card.card_id)) {
@@ -500,11 +529,23 @@ export default function SwipeDeckScreen({ route, navigation }) {
       setLeftHighlight(true);
       setTimeout(() => setLeftHighlight(false), 400);
       const insertAt = Date.now() + 2 * 60 * 1000;
-      await supabase
+      const nextReview = new Date(insertAt).toISOString();
+      const now = new Date().toISOString();
+      const { data: updated } = await supabase
         .from('user_card_progress')
-        .update({ status: 'learning', next_review: new Date(insertAt) })
+        .update({ status: 'learning', next_review: nextReview })
         .eq('user_id', userId)
-        .eq('card_id', card.card_id);
+        .eq('card_id', card.card_id)
+        .select();
+      if (!updated?.length) {
+        await supabase.from('user_card_progress').insert({
+          user_id: userId,
+          card_id: card.card_id,
+          status: 'learning',
+          next_review: nextReview,
+          created_at: now
+        });
+      }
       setPendingReinserts((prev) => [...prev, { card, insertAt }]);
     }
     setCurrentIndex(cardIndex + 1);
@@ -533,11 +574,23 @@ export default function SwipeDeckScreen({ route, navigation }) {
     if (!userId) return;
     setTotalSwipeCount((prev) => prev + 1);
     const nextReview = new Date(Date.now() + minutes * 60 * 1000);
-    await supabase
+    const nextReviewIso = nextReview.toISOString();
+    const now = new Date().toISOString();
+    const { data: updated } = await supabase
       .from('user_card_progress')
-      .update({ status: 'learning', next_review: nextReview })
+      .update({ status: 'learning', next_review: nextReviewIso })
       .eq('user_id', userId)
-      .eq('card_id', card.card_id);
+      .eq('card_id', card.card_id)
+      .select();
+    if (!updated?.length) {
+      await supabase.from('user_card_progress').insert({
+        user_id: userId,
+        card_id: card.card_id,
+        status: 'learning',
+        next_review: nextReviewIso,
+        created_at: now
+      });
+    }
     setHistory((prev) => [...prev, currentIndex]);
     setHistoryDirections((prev) => [...prev, 'left']);
     if (swiperRef.current) {

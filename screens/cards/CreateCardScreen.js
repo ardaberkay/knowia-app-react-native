@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Platform, Image } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
+import { createCard } from '../../services/CardService';
+import { uploadCardImage } from '../../services/StorageService';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { typography } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
@@ -21,6 +23,8 @@ import BadgeText from '../../components/modals/BadgeText';
 import { triggerHaptic } from '../../lib/hapticManager';
 
 export default function AddCardScreen() {
+  const { session } = useAuth();
+  const userId = session?.user?.id;
   const navigation = useNavigation();
   const route = useRoute();
   const { deck } = route.params;
@@ -107,34 +111,18 @@ export default function AddCardScreen() {
     let imageUrl = '';
     try {
       if (imageChanged && image) {
-        // Fotoğrafı yükle
-        const user = (await supabase.auth.getUser()).data.user;
         const base64 = await FileSystem.readAsStringAsync(image, { encoding: FileSystem.EncodingType.Base64 });
-        const filePath = `card_${deck.id}_${user.id}_${Date.now()}.webp`;
         const buffer = Buffer.from(base64, 'base64');
-        const { data, error: uploadError } = await supabase
-          .storage
-          .from('images')
-          .upload(filePath, buffer, { contentType: 'image/webp', upsert: true });
-        if (uploadError) throw uploadError;
-        // Public URL al
-        const { data: urlData } = supabase.storage.from('images').getPublicUrl(filePath);
-        imageUrl = urlData.publicUrl;
+        imageUrl = await uploadCardImage(deck.id, userId, buffer);
       }
-      // Kartı ekle
-      const { data, error } = await supabase
-        .from('cards')
-        .insert({
-          deck_id: deck.id,
-          question: question.trim(),
-          answer: answer.trim(),
-          example: example.trim() || null,
-          note: note.trim() || null,
-          image: imageUrl || null,
-        })
-        .select();
-      if (error) throw error;
-      handleCardSaved(data[0]);
+      const newCard = await createCard(deck.id, {
+        question: question.trim(),
+        answer: answer.trim(),
+        example: example.trim() || null,
+        note: note.trim() || null,
+        image: imageUrl || null,
+      });
+      handleCardSaved(newCard);
     } catch (e) {
       showError(e.message || t('common.addCardError', 'Kart eklenemedi.'));
     } finally {

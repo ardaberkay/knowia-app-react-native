@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Platform, SafeAreaView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { supabase } from '../../lib/supabase';
+import { getCategories } from '../../services/CategoryService';
+import { getLanguages } from '../../services/LanguageService';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { typography } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
@@ -41,11 +43,12 @@ export default function DeckEditScreen() {
 
   React.useEffect(() => {
     const loadLanguages = async () => {
-      const { data, error } = await supabase
-        .from('languages')
-        .select('*');
-      console.log('LANGUAGES:', data, error);
-      setLanguages(data || []);
+      try {
+        const data = await getLanguages();
+        setLanguages(data);
+      } catch (e) {
+        console.error('Error loading languages:', e);
+      }
     };
     loadLanguages();
   }, []);
@@ -75,14 +78,10 @@ export default function DeckEditScreen() {
   React.useEffect(() => {
     const loadCategories = async () => {
       try {
-        const { data, error } = await supabase
-          .from('categories')
-          .select('id, name, sort_order')
-          .order('sort_order', { ascending: true });
-        if (error) throw error;
-        setCategories(data || []);
+        const data = await getCategories();
+        setCategories(data);
       } catch (e) {
-        console.error('Kategoriler yüklenemedi:', e);
+        console.error('Error loading categories:', e);
       }
     };
     loadCategories();

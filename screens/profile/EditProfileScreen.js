@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ActivityInd
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
-import { getCurrentUserProfile } from '../../services/ProfileService';
+import { getCurrentUserProfile, updateProfile } from '../../services/ProfileService';
+import { uploadAvatar, removeAvatar } from '../../services/StorageService';
 import { useProfile } from '../../contexts/ProfileContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -117,19 +118,14 @@ export default function EditProfileScreen({ navigation }) {
   // Fotoğrafı kaldır
   const handleRemovePhoto = async () => {
     try {
-      console.log('Kaldırılacak dosya:', imageFilePath);
       if (imageFilePath) {
-        const { data, error } = await supabase.storage.from('avatars').remove([imageFilePath]);
-        console.log('Silme sonucu (removePhoto):', data, error);
-        if (error) {
-          showError(t('common.imageRemoveError') + ': ' + error.message);
-        }
+        await removeAvatar(imageFilePath);
       }
       setImageUrl('');
       setImageChanged(true);
       setImageFilePath(null);
     } catch (err) {
-      showError(t('common.imageRemoveError'));
+      showError(t('common.imageRemoveError') + ': ' + err.message);
     }
   };
 
@@ -193,46 +189,28 @@ export default function EditProfileScreen({ navigation }) {
     try {
       // 1. Fotoğraf değiştiyse önce eski fotoğrafı sil
       if (imageChanged && imageFilePath) {
-        console.log('Silinecek dosya (handleSave):', imageFilePath);
-        const { data, error } = await supabase.storage.from('avatars').remove([imageFilePath]);
-        console.log('Silme sonucu (handleSave):', data, error);
-        if (error) {
-          showError(t('common.imageRemoveError') + ': ' + error.message);
-        }
+        await removeAvatar(imageFilePath);
       }
       // 2. Fotoğraf değiştiyse yeni fotoğrafı yükle
       if (imageChanged && imageUrl) {
-        const userId = profile.id;
-        // Dosyayı base64 olarak oku
         const base64 = await FileSystem.readAsStringAsync(imageUrl, { encoding: FileSystem.EncodingType.Base64 });
-        const filePath = `user_${userId}_${Date.now()}.webp`;
         const buffer = Buffer.from(base64, 'base64');
-        const { data, error: uploadError } = await supabase
-          .storage
-          .from('avatars')
-          .upload(filePath, buffer, { contentType: 'image/webp', upsert: true });
-        if (uploadError) throw uploadError;
-        newImageFilePath = filePath;
-        // Public URL al
-        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
-        newImageUrl = urlData.publicUrl;
+        const result = await uploadAvatar(profile.id, buffer);
+        newImageFilePath = result.filePath;
+        newImageUrl = result.publicUrl;
       }
       // Fotoğraf kaldırıldıysa profil tablosunda image_url alanını boşalt
       if (imageChanged && !imageUrl) {
         newImageUrl = '';
       }
       // 3. Profil tablosunu güncelle
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ username, image_url: newImageUrl })
-        .eq('id', profile.id);
-      if (updateError) throw updateError;
+      await updateProfile(profile.id, { username, imageUrl: newImageUrl });
       
       // 4. Cache'i güncelle - eski cache'i temizle ve yeni veriyi cache'le
       await clearUserCache(profile.id);
       
       // Güncellenmiş profil bilgilerini al ve cache'le
-      const updatedProfile = await getCurrentUserProfile();
+      const updatedProfile = await getCurrentUserProfile(profile.id);
       await cacheProfile(profile.id, updatedProfile);
       if (newImageUrl) {
         await cacheProfileImage(profile.id, newImageUrl);

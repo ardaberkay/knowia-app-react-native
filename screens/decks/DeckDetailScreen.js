@@ -11,6 +11,9 @@ import { useTranslation } from 'react-i18next';
 import CircularProgress from '../../components/ui/CircularProgress';
 import { useAuth } from '../../contexts/AuthContext';
 import { listChapters, getChaptersProgress } from '../../services/ChapterService';
+import { deleteDeck, updateDeckShare, insertDeckStats } from '../../services/DeckService';
+import { getDeckProgressCounts } from '../../services/CardService';
+import { addFavoriteDeck, removeFavoriteDeck } from '../../services/FavoriteService';
 import * as BlockService from '../../services/BlockService';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import ReportModal from '../../components/modals/ReportModal';
@@ -26,6 +29,7 @@ export default function DeckDetailScreen({ route, navigation }) {
   const { deck } = route.params;
   const { colors } = useTheme();
   const { session } = useAuth();
+  const userId = session?.user?.id;
   // Favori durumunu route.params'dan al (eğer varsa), yoksa false
   const [isFavorite, setIsFavorite] = useState(deck?.is_favorite || false);
   const [favLoading, setFavLoading] = useState(false);
@@ -161,7 +165,7 @@ export default function DeckDetailScreen({ route, navigation }) {
     const loadDecksLanguages = async () => {
       const { data, error } = await supabase
         .from('decks_languages')
-        .select('*')
+        .select('language_id')
         .eq('deck_id', deck.id);
 
       if (error) {
@@ -292,54 +296,19 @@ export default function DeckDetailScreen({ route, navigation }) {
       setProgressLoading(true);
     }
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const stats = await getDeckProgressCounts(userId, deck.id);
 
-      // 1. ADIM: Sadece toplam sayıyı (count) al, datayı indirme!
-      const { count: total, error: totalError } = await supabase
-        .from('cards')
-        .select('*', { count: 'exact', head: true }) // head: true veriyi indirmez, sadece sayıyı döner
-        .eq('deck_id', deck.id);
-
-      if (totalError) throw totalError;
-      
-      // Eğer destede kart yoksa boşuna devam etme
-      if (!total || total === 0) {
-        setProgress(0);
-        setLearnedCardsCount(0);
-        setDeckStats({ total: 0, learned: 0, learning: 0, new: 0 });
-        if (showLoading) setProgressLoading(false);
-        return;
-      }
-
-      // 2. ADIM: .in() kullanmak yerine tabloları Join yap
-      // Bu sorgu, 'cards' tablosundaki 'deck_id' üzerinden filtreleme yapar
-      const { data: progressData, error } = await supabase
-        .from('user_card_progress')
-        .select('card_id, status, cards!inner(deck_id)')
-        .eq('user_id', user.id)
-        .eq('cards.deck_id', deck.id);
-
-      if (error) throw error;
-
-      // Status'lere göre sayıları hesapla
-      const learned = (progressData || []).filter(p => p.status === 'learned').length;
-      const learning = (progressData || []).filter(p => p.status === 'learning').length;
-      const newCount = total - learned - learning;
-
-      const calculatedProgress = total > 0 ? learned / total : 0;
+      const calculatedProgress = stats.total > 0 ? stats.learned / stats.total : 0;
       
       setProgress(calculatedProgress);
-      setLearnedCardsCount(learned);
-      
-      const stats = { total, learned, learning, new: newCount };
+      setLearnedCardsCount(stats.learned);
       setDeckStats(stats);
 
-      // Cacheleme işlemleri...
       try {
-        const storageKey = `deck_progress_${deck.id}_${user.id}`;
+        const storageKey = `deck_progress_${deck.id}_${userId}`;
         await AsyncStorage.setItem(storageKey, JSON.stringify({
           progress: calculatedProgress,
-          learned,
+          learned: stats.learned,
           stats,
           timestamp: Date.now()
         }));
@@ -411,19 +380,17 @@ export default function DeckDetailScreen({ route, navigation }) {
 
       // Deck verisini ve favori durumunu paralel olarak güncelle
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-
         // Deck verisini ve favori durumunu paralel çek
         const [deckResult, favoriteResult] = await Promise.all([
           supabase
             .from('decks')
-            .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)')
+            .select('id, name, description, card_count, user_id, category_id, is_shared, is_admin_created, shared_at, updated_at, created_at, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)')
             .eq('id', deck.id)
             .single(),
-          user ? supabase
+          userId ? supabase
             .from('favorite_decks')
             .select('id')
-            .eq('user_id', user.id)
+            .eq('user_id', userId)
             .eq('deck_id', deck.id)
             .single() : Promise.resolve({ data: null, error: null })
         ]);
@@ -497,11 +464,10 @@ export default function DeckDetailScreen({ route, navigation }) {
   useEffect(() => {
     const fetchFavoriteCards = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
         const { data, error } = await supabase
           .from('favorite_cards')
           .select('card_id')
-          .eq('user_id', user.id);
+          .eq('user_id', userId);
         if (error) throw error;
         setFavoriteCards((data || []).map(f => f.card_id));
       } catch (e) {
@@ -638,21 +604,14 @@ export default function DeckDetailScreen({ route, navigation }) {
 
     // 2. ARKA PLAN: Kullanıcı kalbi değişmiş görürken biz sessizce veritabanını güncelliyoruz
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.id) return; // Hata fırlatmaya gerek yok, sessizce dur
+      if (!userId) return;
 
       if (previousState) {
         // Önceden favoriydi, demek ki butona basıp ÇIKARDI
-        await supabase
-          .from('favorite_decks')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('deck_id', deck.id);
+        await removeFavoriteDeck(userId, deck.id);
       } else {
         // Önceden favori değildi, demek ki butona basıp EKLEDİ
-        await supabase
-          .from('favorite_decks')
-          .insert({ user_id: user.id, deck_id: deck.id });
+        await addFavoriteDeck(userId, deck.id);
       }
     } catch (e) {
       // 3. HATA DURUMU: İnternet koptuysa kalbi çaktırmadan eski haline geri çevir (Rollback)
@@ -664,14 +623,7 @@ export default function DeckDetailScreen({ route, navigation }) {
     if (shareLoading) return;
     setShareLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase
-        .from('decks')
-        .update({ is_shared: newValue, updated_at: new Date().toISOString() })
-        .eq('id', deck.id)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+      await updateDeckShare(deck.id, userId, newValue);
 
       setIsShared(newValue);
       deck.is_shared = newValue;
@@ -746,14 +698,7 @@ export default function DeckDetailScreen({ route, navigation }) {
           style: 'destructive',
           onPress: async () => {
             try {
-              const { data: { user } } = await supabase.auth.getUser();
-              const { error } = await supabase
-                .from('decks')
-                .delete()
-                .eq('id', deck.id)
-                .eq('user_id', user.id);
-
-              if (error) throw error;
+              await deleteDeck(deck.id);
 
               Alert.alert(
                 t('common.success', 'Başarılı'),
@@ -804,10 +749,9 @@ export default function DeckDetailScreen({ route, navigation }) {
   const openReportUserModal = async () => {
     setCreatorMenuVisible(false);
     if (!deck?.user_id) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user?.id) { showError(t('common.error')); return; }
+    if (!userId) { showError(t('common.error')); return; }
     try {
-      const codes = await BlockService.getMyReportReasonCodesForTarget(user.id, 'user', deck.user_id);
+      const codes = await BlockService.getMyReportReasonCodesForTarget(userId, 'user', deck.user_id);
       setReportModalAlreadyCodes(codes);
       setReportModalType('user');
       setReportModalTargetId(deck.user_id);
@@ -829,9 +773,8 @@ export default function DeckDetailScreen({ route, navigation }) {
           text: t('common.ok'),
           onPress: async () => {
             try {
-              const { data: { user } } = await supabase.auth.getUser();
-              if (!user?.id) { showError(t('common.error')); return; }
-              await BlockService.blockUser(user.id, deck.user_id);
+              if (!userId) { showError(t('common.error')); return; }
+              await BlockService.blockUser(userId, deck.user_id);
               showSuccess(t('moderation.blocked'));
               navigation.goBack();
             } catch (err) {
@@ -847,9 +790,8 @@ export default function DeckDetailScreen({ route, navigation }) {
     setMoreMenuVisible(false);
     if (!deck?.id) return;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.id) { showError(t('common.error')); return; }
-      await BlockService.hideDeck(user.id, deck.id);
+      if (!userId) { showError(t('common.error')); return; }
+      await BlockService.hideDeck(userId, deck.id);
       showSuccess(t('moderation.deckHidden'));
       navigation.goBack();
     } catch (e) {
@@ -860,10 +802,9 @@ export default function DeckDetailScreen({ route, navigation }) {
   const openReportDeckModal = async () => {
     setMoreMenuVisible(false);
     if (!deck?.id) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user?.id) { showError(t('common.error')); return; }
+    if (!userId) { showError(t('common.error')); return; }
     try {
-      const codes = await BlockService.getMyReportReasonCodesForTarget(user.id, 'deck', deck.id);
+      const codes = await BlockService.getMyReportReasonCodesForTarget(userId, 'deck', deck.id);
       setReportModalAlreadyCodes(codes);
       setReportModalType('deck');
       setReportModalTargetId(deck.id);
@@ -874,13 +815,12 @@ export default function DeckDetailScreen({ route, navigation }) {
   };
 
   const handleReportModalSubmit = async (reasonCode, reasonText) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user?.id || !reportModalTargetId) return;
+    if (!userId || !reportModalTargetId) return;
     try {
       if (reportModalType === 'user') {
-        await BlockService.reportUser(user.id, reportModalTargetId, reasonCode, reasonText);
+        await BlockService.reportUser(userId, reportModalTargetId, reasonCode, reasonText);
       } else if (reportModalType === 'deck') {
-        await BlockService.reportDeck(user.id, reportModalTargetId, reasonCode, reasonText);
+        await BlockService.reportDeck(userId, reportModalTargetId, reasonCode, reasonText);
       }
       showSuccess(t('moderation.reportReceived'));
     } catch (e) {
@@ -1788,15 +1728,8 @@ export default function DeckDetailScreen({ route, navigation }) {
 
             // Deck başlatma kaydı oluştur (decks_stats tablosuna)
             try {
-              const { data: { user } } = await supabase.auth.getUser();
-              if (user?.id) {
-                await supabase
-                  .from('decks_stats')
-                  .insert({
-                    deck_id: deck.id,
-                    user_id: user.id,
-                    started_at: new Date().toISOString()
-                  });
+              if (userId) {
+                await insertDeckStats(deck.id, userId);
               }
             } catch (error) {
               // Hata olsa bile devam et (kritik değil)

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, Keyboard } from 'react-native';
 import { supabase } from '../../lib/supabase';
+import { getCategories } from '../../services/CategoryService';
+import { getLanguages } from '../../services/LanguageService';
+import { useAuth } from '../../contexts/AuthContext';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useNavigation } from '@react-navigation/native';
 import { typography } from '../../theme/typography';
@@ -18,6 +21,8 @@ import BadgeText from '../../components/modals/BadgeText';
 import { triggerHaptic } from '../../lib/hapticManager';
 
 export default function CreateScreen() {
+  const { session } = useAuth();
+  const userId = session?.user?.id;
   const [name, setName] = useState('');
   const [toName, setToName] = useState('');
   const [description, setDescription] = useState('');
@@ -63,12 +68,12 @@ export default function CreateScreen() {
 
   React.useEffect(() => {
     const loadLanguages = async () => {
-      const { data, error } = await supabase
-        .from('languages')
-        .select('*');
-
-      console.log('LANGUAGES:', data, error);
-      setLanguages(data || []);
+      try {
+        const data = await getLanguages();
+        setLanguages(data);
+      } catch (e) {
+        console.error('Error loading languages:', e);
+      }
     };
     loadLanguages();
   }, []);
@@ -97,14 +102,10 @@ export default function CreateScreen() {
   React.useEffect(() => {
     const loadCategories = async () => {
       try {
-        const { data, error } = await supabase
-          .from('categories')
-          .select('id, name, sort_order')
-          .order('sort_order', { ascending: true });
-        if (error) throw error;
-        setCategories(data || []);
+        const data = await getCategories();
+        setCategories(data);
       } catch (e) {
-        console.error('Kategoriler yüklenemedi:', e);
+        console.error('Error loading categories:', e);
       }
     };
     loadCategories();
@@ -143,11 +144,10 @@ export default function CreateScreen() {
     }
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
       const { data, error } = await supabase
         .from('decks')
         .insert({
-          user_id: user.id,
+          user_id: userId,
           name: name.trim(),
           to_name: toName.trim() || null,
           description: description.trim() || null,
@@ -157,7 +157,7 @@ export default function CreateScreen() {
           card_count: 0,
           is_started: false,
         })
-        .select('*, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)')
+        .select('id, name, description, card_count, user_id, category_id, is_shared, is_admin_created, updated_at, created_at, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)')
         .single();
 
       if (selectedLanguage.length > 0) {

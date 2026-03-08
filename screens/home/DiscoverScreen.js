@@ -7,9 +7,10 @@ import { useTranslation } from 'react-i18next';
 import SearchBar from '../../components/tools/SearchBar';
 import DeckList from '../../components/lists/DeckList';
 import DiscoverDecksSkeleton from '../../components/skeleton/DiscoverDecksSkeleton';
-import { supabase } from '../../lib/supabase';
-import { getPopularDecks, getNewDecks, getMostFavoritedDecks, getMostStartedDecks, getMostUniqueStartedDecks } from '../../services/DeckService';
-import { cacheDiscoverDecks, getCachedDiscoverDecks } from '../../services/CacheService';
+import { useAuth } from '../../contexts/AuthContext';
+import { getDiscoverDecks } from '../../services/DeckService';
+import { addFavoriteDeck, removeFavoriteDeck } from '../../services/FavoriteService';
+import { getLanguages } from '../../services/LanguageService';
 import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,6 +21,8 @@ export default function DiscoverScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const { session } = useAuth();
+  const userId = session?.user?.id;
   const insets = useSafeAreaInsets();
 
   // useWindowDimensions hook'u - ekran döndürme desteği
@@ -65,11 +68,7 @@ export default function DiscoverScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadedTabs, setLoadedTabs] = useState(new Set());
-  const [trendDecksList, setTrendDecksList] = useState([]);
-  const [favoriteDecksList, setFavoriteDecksList] = useState([]);
-  const [startedDecksList, setStartedDecksList] = useState([]);
-  const [uniqueDecksList, setUniqueDecksList] = useState([]);
-  const [newDecks, setNewDecks] = useState([]);
+  const [decksMap, setDecksMap] = useState({ trend: [], favorites: [], starts: [], unique: [], new: [] });
   const heroScrollRef = useRef(null);
   const scrollX = useRef(new Animated.Value(0)).current;
   const loadDecksTimeoutRef = useRef(null);
@@ -78,14 +77,7 @@ export default function DiscoverScreen() {
   const [allLanguages, setAllLanguages] = useState([]);
 
   useEffect(() => {
-    const fetchLanguages = async () => {
-      const { data } = await supabase
-        .from('languages')
-        .select('*')
-        .order('sort_order', { ascending: true });
-      if (data) setAllLanguages(data);
-    };
-    fetchLanguages();
+    getLanguages().then(data => setAllLanguages(data || []));
   }, []);
 
   const previousTimeFilterRef = useRef(timeFilter);
@@ -142,95 +134,34 @@ export default function DiscoverScreen() {
     }
   }, []);
 
-  const loadFreshData = useCallback(async (showLoadingIndicator = true) => {
+  const loadFreshData = useCallback(async (showLoadingIndicator = true, forceRefresh = false) => {
     try {
       if (showLoadingIndicator) {
         setLoading(true);
       }
 
-      let decks = [];
-
-      if (activeTab === 'trend') {
-        decks = await getPopularDecks(100, timeFilter);
-        setTrendDecksList(decks || []);
-      } else if (activeTab === 'favorites') {
-        decks = await getMostFavoritedDecks(100, timeFilter);
-        setFavoriteDecksList(decks || []);
-      } else if (activeTab === 'starts') {
-        decks = await getMostStartedDecks(100, timeFilter);
-        setStartedDecksList(decks || []);
-      } else if (activeTab === 'unique') {
-        decks = await getMostUniqueStartedDecks(100, timeFilter);
-        setUniqueDecksList(decks || []);
-      } else {
-        decks = await getNewDecks(100);
-        setNewDecks(decks || []);
-      }
-
-      // Veriyi cache'le
-      await cacheDiscoverDecks(activeTab, timeFilter, decks || []);
+      const decks = await getDiscoverDecks(userId, activeTab, timeFilter, 100, forceRefresh);
+      setDecksMap(prev => ({ ...prev, [activeTab]: decks || [] }));
     } catch (error) {
       console.error('Error loading decks:', error);
-      if (activeTab === 'trend') setTrendDecksList([]);
-      else if (activeTab === 'favorites') setFavoriteDecksList([]);
-      else if (activeTab === 'starts') setStartedDecksList([]);
-      else if (activeTab === 'unique') setUniqueDecksList([]);
-      else setNewDecks([]);
+      setDecksMap(prev => ({ ...prev, [activeTab]: [] }));
     } finally {
       setLoading(false);
       setLoadedTabs(prev => new Set([...prev, activeTab]));
     }
-  }, [activeTab, timeFilter]);
+  }, [activeTab, timeFilter, userId]);
 
   const loadDecks = useCallback(async (forceRefresh = false) => {
-    // Debouncing: Eğer zaten bir yükleme varsa iptal et
     if (loadDecksTimeoutRef.current) {
       clearTimeout(loadDecksTimeoutRef.current);
       loadDecksTimeoutRef.current = null;
     }
-
-    // Cache'den hemen veriyi yükle (stale-while-revalidate)
-    const cachedData = await getCachedDiscoverDecks(activeTab, timeFilter);
-
-    // Eğer cache varsa ve force refresh değilse, hemen göster
-    if (cachedData && !forceRefresh && cachedData.data && cachedData.data.length > 0) {
-      // Cache'den veriyi hemen göster
-      if (activeTab === 'trend') {
-        setTrendDecksList(cachedData.data);
-      } else if (activeTab === 'favorites') {
-        setFavoriteDecksList(cachedData.data);
-      } else if (activeTab === 'starts') {
-        setStartedDecksList(cachedData.data);
-      } else if (activeTab === 'unique') {
-        setUniqueDecksList(cachedData.data);
-      } else {
-        setNewDecks(cachedData.data);
-      }
-
-      // Cache'den veri geldiğinde loading'i false yap
-      setLoading(false);
-      setLoadedTabs(prev => new Set([...prev, activeTab]));
-
-      // Eğer cache stale ise, arka planda fresh data yükle (loading gösterme)
-      if (cachedData.isStale) {
-        loadFreshData(false); // showLoadingIndicator = false
-      }
-    } else {
-      // Cache yoksa veya force refresh ise, normal yükleme yap
-      await loadFreshData(true); // showLoadingIndicator = true
-    }
-  }, [activeTab, timeFilter, loadFreshData]);
+    await loadFreshData(!forceRefresh, forceRefresh);
+  }, [loadFreshData]);
 
   const currentDecks = useMemo(() => {
-    switch (activeTab) {
-      case 'trend': return trendDecksList;
-      case 'favorites': return favoriteDecksList;
-      case 'starts': return startedDecksList;
-      case 'unique': return uniqueDecksList;
-      case 'new': return newDecks;
-      default: return [];
-    }
-  }, [activeTab, trendDecksList, favoriteDecksList, startedDecksList, uniqueDecksList, newDecks]);
+    return decksMap[activeTab] || [];
+  }, [activeTab, decksMap]);
 
   const filteredDecks = useMemo(() => {
     const filtered = currentDecks.filter(deck => {
@@ -274,35 +205,26 @@ export default function DiscoverScreen() {
 
   const handleToggleFavorite = async (deckId) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
 
       const deck = currentDecks.find(d => d.id === deckId);
       const isFavorite = deck?.is_favorite === true;
 
       const updateDeckInLists = (nextFav) => {
-        setTrendDecksList(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: nextFav } : d));
-        setFavoriteDecksList(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: nextFav } : d));
-        setStartedDecksList(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: nextFav } : d));
-        setUniqueDecksList(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: nextFav } : d));
-        setNewDecks(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: nextFav } : d));
+        setDecksMap(prev => {
+          const updated = {};
+          for (const key of Object.keys(prev)) {
+            updated[key] = prev[key].map(d => d.id === deckId ? { ...d, is_favorite: nextFav } : d);
+          }
+          return updated;
+        });
       };
 
       if (isFavorite) {
-        const { error } = await supabase
-          .from('favorite_decks')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('deck_id', deckId);
-
-        if (error) throw error;
+        await removeFavoriteDeck(userId, deckId);
         updateDeckInLists(false);
       } else {
-        const { error } = await supabase
-          .from('favorite_decks')
-          .insert({ user_id: user.id, deck_id: deckId });
-
-        if (error) throw error;
+        await addFavoriteDeck(userId, deckId);
         updateDeckInLists(true);
       }
     } catch (error) {

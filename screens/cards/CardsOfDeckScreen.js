@@ -15,7 +15,10 @@ import CardDetailView from '../../components/layout/CardDetailView';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { useFocusEffect } from '@react-navigation/native';
+import { useAuth } from '../../contexts/AuthContext';
 import * as BlockService from '../../services/BlockService';
+import { deleteCard } from '../../services/CardService';
+import { addFavoriteCard, removeFavoriteCard } from '../../services/FavoriteService';
 import ReportModal from '../../components/modals/ReportModal';
 import { triggerHaptic } from '../../lib/hapticManager';
 
@@ -78,21 +81,16 @@ export default function DeckCardsScreen({ route, navigation }) {
   const [reportModalAlreadyCodes, setReportModalAlreadyCodes] = useState([]);
   const [reportCardId, setReportCardId] = useState(null);
   const { t } = useTranslation();
-
+  const { session } = useAuth();
+  const userId = session?.user?.id;
 
   useEffect(() => {
-    const fetchUserId = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setCurrentUserId(user?.id || null);
-    };
-    fetchUserId();
-  }, []);
+    setCurrentUserId(userId || null);
+  }, [userId]);
 
   const fetchData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
       // 1. ADIM: Tüm kartları sayfalama ile çek (1000 limitini aş)
       let allCards = [];
       let from = 0;
@@ -102,12 +100,7 @@ export default function DeckCardsScreen({ route, navigation }) {
       while (hasMoreCards) {
         const { data: cardsData, error: cardsError } = await supabase
           .from('cards')
-          .select(`
-              id, question, answer, image, example, note, created_at,
-              deck:decks(
-                id, name, user_id, categories:categories(id, name, sort_order)
-              )
-            `)
+          .select('id, question, answer, image, example, note, created_at')
           .eq('deck_id', deck.id)
           .order('created_at', { ascending: false })
           .range(from, from + step - 1); // Sayfalama eklendi
@@ -129,54 +122,35 @@ export default function DeckCardsScreen({ route, navigation }) {
       let statusMap = {};
       let favoriteCardIds = new Set(); // Hızlı arama için Set kullanıyoruz
 
-      if (user && allCards.length > 0) {
+      if (userId && allCards.length > 0) {
         const cardIds = allCards.map(c => c.id);
-        const CHUNK_SIZE = 200;
+        const CHUNK_SIZE = 200; // Daha küçük chunk = daha hafif istek, 502 riski azalır
         const chunks = [];
-
         for (let i = 0; i < cardIds.length; i += CHUNK_SIZE) {
           chunks.push(cardIds.slice(i, i + CHUNK_SIZE));
         }
 
-        // Progress ve Favorileri PARALEL ve CHUNK (200'lük paketler) halinde çek
-        const [progressResults, favoritesResults] = await Promise.all([
-          // Tüm Progress chunk'ları
-          Promise.all(
-            chunks.map(chunk =>
-              supabase
-                .from('user_card_progress')
-                .select('card_id, status')
-                .eq('user_id', user.id)
-                .in('card_id', chunk)
-            )
-          ),
-          // Tüm Favorite chunk'ları
-          Promise.all(
-            chunks.map(chunk =>
-              supabase
-                .from('favorite_cards')
-                .select('card_id')
-                .eq('user_id', user.id)
-                .in('card_id', chunk)
-            )
-          )
-        ]);
-
-        // Gelen Progress verilerini Map'e yaz
-        progressResults.forEach(res => {
+        // Progress chunk'ları sırayla çek (aynı anda hepsini atmayarak 502/gateway timeout önlenir)
+        for (const chunk of chunks) {
+          const res = await supabase
+            .from('user_card_progress')
+            .select('card_id, status')
+            .eq('user_id', userId)
+            .in('card_id', chunk);
           if (res.error) throw res.error;
-          (res.data || []).forEach(p => {
-            statusMap[p.card_id] = p.status;
-          });
-        });
+          (res.data || []).forEach(p => { statusMap[p.card_id] = p.status; });
+        }
 
-        // Gelen Favori verilerini Set'e yaz
-        favoritesResults.forEach(res => {
+        // Favori chunk'ları sırayla çek
+        for (const chunk of chunks) {
+          const res = await supabase
+            .from('favorite_cards')
+            .select('card_id')
+            .eq('user_id', userId)
+            .in('card_id', chunk);
           if (res.error) throw res.error;
-          (res.data || []).forEach(f => {
-            favoriteCardIds.add(f.card_id);
-          });
-        });
+          (res.data || []).forEach(f => { favoriteCardIds.add(f.card_id); });
+        }
       }
 
       // 3. ADIM: Kartlar ile status'leri birleştir (Eğer status yoksa 'new' ata)
@@ -198,7 +172,7 @@ export default function DeckCardsScreen({ route, navigation }) {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [deck.id]);
+  }, [deck.id, userId]);
 
   useEffect(() => {
     dataFetchedRef.current = false;
@@ -413,18 +387,11 @@ export default function DeckCardsScreen({ route, navigation }) {
 
   const handleToggleFavoriteCard = async (cardId) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
       if (favoriteCards.includes(cardId)) {
-        await supabase
-          .from('favorite_cards')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('card_id', cardId);
+        await removeFavoriteCard(userId, cardId);
         setFavoriteCards(favoriteCards.filter(id => id !== cardId));
       } else {
-        await supabase
-          .from('favorite_cards')
-          .insert({ user_id: user.id, card_id: cardId });
+        await addFavoriteCard(userId, cardId);
         setFavoriteCards([...favoriteCards, cardId]);
       }
     } catch (e) { }
@@ -453,12 +420,7 @@ export default function DeckCardsScreen({ route, navigation }) {
           style: 'destructive',
           onPress: async () => {
             try {
-              const { error } = await supabase
-                .from('cards')
-                .delete()
-                .eq('id', selectedCard.id);
-
-              if (error) throw error;
+              await deleteCard(selectedCard.id);
 
               // --- EKRANDAN ATMAYI ENGELLEYEN YENİ MANTIK ---
 
@@ -534,8 +496,7 @@ export default function DeckCardsScreen({ route, navigation }) {
         {
           text: t('cardDetail.delete', 'Sil'), style: 'destructive', onPress: async () => {
             try {
-              const { error } = await supabase.from('cards').delete().eq('id', item.id);
-              if (error) throw error;
+              await deleteCard(item.id);
 
               setCards(prevCards => prevCards.filter(c => c.id !== item.id));
               setOriginalCards(prevOriginal => prevOriginal.filter(c => c.id !== item.id));
@@ -550,7 +511,7 @@ export default function DeckCardsScreen({ route, navigation }) {
   }, [t, showSuccess, showError]);
 
   const renderCardItem = useCallback(({ item }) => {
-    const isOwner = currentUserId && (item.deck?.user_id || deck.user_id) === currentUserId;
+    const isOwner = currentUserId && deck.user_id === currentUserId;
     return (
       <MemoizedDeckCard
         item={item}

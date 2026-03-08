@@ -13,6 +13,8 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Buffer } from 'buffer';
 import { supabase } from '../../lib/supabase';
+import { uploadCardImage } from '../../services/StorageService';
+import { useAuth } from '../../contexts/AuthContext';
 import { useSnackbarHelpers } from '../ui/Snackbar';
 
 // Android cihazlarda LayoutAnimation'ın çalışması için bu ayar zorunludur
@@ -27,6 +29,8 @@ export default function CsvUploadModal({
 }) {
   const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
+  const { session } = useAuth();
+  const userId = session?.user?.id;
   const { showSuccess, showError } = useSnackbarHelpers();
   const screenHeight = Dimensions.get('screen').height;
   const [csvPreview, setCsvPreview] = useState(null);
@@ -231,15 +235,10 @@ export default function CsvUploadModal({
 
   const uploadImageToSupabase = async (imageUri) => {
     try {
-      const user = (await supabase.auth.getUser()).data.user;
-      if (!user) throw new Error('Kullanıcı bulunamadı');
+      if (!userId) throw new Error('Kullanıcı bulunamadı');
       const base64 = await FileSystem.readAsStringAsync(imageUri, { encoding: FileSystem.EncodingType.Base64 });
-      const filePath = `card_${deck.id}_${user.id}_${Date.now()}.webp`;
       const buffer = Buffer.from(base64, 'base64');
-      const { error: uploadError } = await supabase.storage.from('images').upload(filePath, buffer, { contentType: 'image/webp', upsert: true });
-      if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from('images').getPublicUrl(filePath);
-      return urlData.publicUrl;
+      return await uploadCardImage(deck.id, userId, buffer);
     } catch (error) {
       console.error('Supabase yükleme hatası:', error);
       return null;

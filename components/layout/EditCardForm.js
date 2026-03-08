@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { supabase } from '../../lib/supabase';
+import { updateCard } from '../../services/CardService';
+import { uploadCardImage } from '../../services/StorageService';
 import { typography } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
 import * as ImagePicker from 'expo-image-picker';
@@ -9,6 +10,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import { Buffer } from 'buffer';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../contexts/AuthContext';
 import { Iconify } from 'react-native-iconify';
 import CreateButton from '../tools/CreateButton';
 import UndoButton from '../tools/UndoButton';
@@ -17,6 +19,8 @@ import BadgeText from '../modals/BadgeText';
 
 export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) {
   const { colors } = useTheme();
+  const { session } = useAuth();
+  const userId = session?.user?.id;
   const [question, setQuestion] = useState(card?.question || '');
   const [answer, setAnswer] = useState(card?.answer || '');
   const [example, setExample] = useState(card?.example || '');
@@ -82,37 +86,21 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
     try {
       if (imageChanged) {
         if (image) {
-          // Fotoğrafı yükle
-          const user = (await supabase.auth.getUser()).data.user;
           const base64 = await FileSystem.readAsStringAsync(image, { encoding: FileSystem.EncodingType.Base64 });
-          const filePath = `card_${deck.id}_${user.id}_${Date.now()}.webp`;
           const buffer = Buffer.from(base64, 'base64');
-          const { data, error: uploadError } = await supabase
-            .storage
-            .from('images')
-            .upload(filePath, buffer, { contentType: 'image/webp', upsert: true });
-          if (uploadError) throw uploadError;
-          // Public URL al
-          const { data: urlData } = supabase.storage.from('images').getPublicUrl(filePath);
-          imageUrl = urlData.publicUrl;
+          imageUrl = await uploadCardImage(deck.id, userId, buffer);
         } else {
           imageUrl = null;
         }
       }
-      // Kartı güncelle
-      const { data, error } = await supabase
-        .from('cards')
-        .update({
-          question: question.trim(),
-          answer: answer.trim(),
-          example: example.trim() || null,
-          note: note.trim() || null,
-          image: imageUrl || null,
-        })
-        .eq('id', card.id)
-        .select();
-      if (error) throw error;
-      onSave(data[0]);
+      const updatedCard = await updateCard(card.id, {
+        question: question.trim(),
+        answer: answer.trim(),
+        example: example.trim() || null,
+        note: note.trim() || null,
+        image: imageUrl || null,
+      });
+      onSave(updatedCard);
     } catch (e) {
       Alert.alert(t('common.error', 'Hata'), e.message || t('common.cardNotSaved', 'Kart güncellenemedi.'));
     } finally {

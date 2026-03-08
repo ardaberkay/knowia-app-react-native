@@ -2,9 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Image, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
+import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { supabase } from '../../lib/supabase';
-import { getFavoriteDecks } from '../../services/FavoriteService';
+import { getFavoriteDecks, addFavoriteDeck, removeFavoriteDeck } from '../../services/FavoriteService';
 import SearchBar from '../../components/tools/SearchBar';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
 import DeckList from '../../components/lists/DeckList';
@@ -18,6 +18,8 @@ export default function FavoriteDecks() {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const { session } = useAuth();
+  const userId = session?.user?.id;
 
   const [favoriteDecks, setFavoriteDecks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,12 +33,11 @@ export default function FavoriteDecks() {
   const fetchFavorites = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      if (!userId) {
         setFavoriteDecks([]);
         return;
       }
-      const decks = await getFavoriteDecks(user.id);
+      const decks = await getFavoriteDecks(userId);
       // is_admin_created kontrolü - tüm kategoriler için geçerli
       const modifiedDecks = (decks || []).map((deck) => {
         if (deck.is_admin_created) {
@@ -63,7 +64,7 @@ export default function FavoriteDecks() {
 
   useEffect(() => {
     fetchFavorites();
-  }, []);
+  }, [userId]);
 
   const filteredDecks = useMemo(() => {
     let list = favoriteDecks.slice();
@@ -122,10 +123,9 @@ export default function FavoriteDecks() {
   }, [favoriteDecks, query, sort, selectedCategories, selectedLanguages]);
 
   const handleAddFavoriteDeck = async (deckId) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    await supabase.from('favorite_decks').insert({ user_id: user.id, deck_id: deckId });
-    const decks = await getFavoriteDecks(user.id);
+    if (!userId) return;
+    await addFavoriteDeck(userId, deckId);
+    const decks = await getFavoriteDecks(userId);
     // is_admin_created kontrolü - tüm kategoriler için geçerli
     const modifiedDecks = (decks || []).map((deck) => {
       if (deck.is_admin_created) {
@@ -144,10 +144,9 @@ export default function FavoriteDecks() {
   };
 
   const handleRemoveFavoriteDeck = async (deckId) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    await supabase.from('favorite_decks').delete().eq('user_id', user.id).eq('deck_id', deckId);
-    const decks = await getFavoriteDecks(user.id);
+    if (!userId) return;
+    await removeFavoriteDeck(userId, deckId);
+    const decks = await getFavoriteDecks(userId);
     // is_admin_created kontrolü - tüm kategoriler için geçerli
     const modifiedDecks = (decks || []).map((deck) => {
       if (deck.is_admin_created) {

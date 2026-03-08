@@ -8,7 +8,7 @@ import { Iconify } from 'react-native-iconify';
 import { listChapters, distributeUnassignedEvenly, getNextOrdinal, createChapter, getChaptersProgress, deleteChapter, reorderChapterOrdinals } from '../../services/ChapterService';
 import CreateButton from '../../components/tools/CreateButton';
 import CircularProgress from '../../components/ui/CircularProgress';
-import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import LottieView from 'lottie-react-native';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
@@ -20,6 +20,8 @@ const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 export default function ChaptersScreen({ route, navigation }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const { session } = useAuth();
+  const userId = session?.user?.id;
   const { deck } = route.params || {};
   const { showSuccess, showError } = useSnackbarHelpers();
   const [chapters, setChapters] = useState([]);
@@ -49,31 +51,26 @@ const addChapterAnimatedStyle = useAnimatedStyle(() => {
 
   // currentUserId'yi erken yükle (header için)
   useEffect(() => {
-    const fetchUserId = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setCurrentUserId(user?.id || null);
-      // Owner can edit only if deck is not shared (treat undefined as not shared)
-      if (deck?.user_id) {
-        setIsOwner(user?.id === deck.user_id && !deck.is_shared);
-      }
-    };
-    fetchUserId();
-  }, [deck?.user_id, deck?.is_shared]);
+    setCurrentUserId(userId || null);
+    // Owner can edit only if deck is not shared (treat undefined as not shared)
+    if (deck?.user_id) {
+      setIsOwner(userId === deck.user_id && !deck.is_shared);
+    }
+  }, [userId, deck?.user_id, deck?.is_shared]);
 
   useEffect(() => {
     let mounted = true;
     async function load() {
       if (!deck?.id) { setLoading(false); return; }
       try {
-        const { data: { user } } = await supabase.auth.getUser();
         if (!mounted) return;
         const data = await listChapters(deck.id);
         if (mounted) {
           setChapters(data);
           // Load progress for all chapters
-          if (user?.id) {
+          if (userId) {
             const chaptersWithUnassigned = [{ id: null }, ...data];
-            const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, user.id);
+            const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, userId);
             if (mounted) setProgressMap(progress);
           }
         }
@@ -85,7 +82,7 @@ const addChapterAnimatedStyle = useAnimatedStyle(() => {
     }
     load();
     return () => { mounted = false; };
-  }, [deck?.id]);
+  }, [deck?.id, userId]);
 
   // Refresh progress when screen comes into focus
   useEffect(() => {

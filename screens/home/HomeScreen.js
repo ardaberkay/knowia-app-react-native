@@ -2,15 +2,14 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Dimensions, ActivityIndicator, Image, RefreshControl, Pressable, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
-import { getDecksByCategory, getPopularDecks } from '../../services/DeckService';
+import { getDecksByCategory } from '../../services/DeckService';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
 import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
-import { supabase } from '../../lib/supabase';
-import { getFavoriteDecks } from '../../services/FavoriteService';
+import { getFavoriteDecks, addFavoriteDeck, removeFavoriteDeck } from '../../services/FavoriteService';
 import { updateLastActiveAt, updateNotificationPreference } from '../../services/ProfileService';
 import { registerForPushNotificationsAsync } from '../../services/NotificationService';
 import * as Notifications from 'expo-notifications';
@@ -67,7 +66,8 @@ const AnimatedPressable = ({ onPress, children, style }) => {
 };
 
 export default function HomeScreen() {
-  useAuth();
+  const { session } = useAuth();
+  const userId = session?.user?.id;
   const navigation = useNavigation();
   const { colors, isDarkMode } = useTheme();
 
@@ -103,14 +103,10 @@ export default function HomeScreen() {
 
   useEffect(() => {
     loadDecks();
-    supabase.auth.getUser().then(({ data: { user } }) => setCurrentUserId(user?.id));
-    // Favori desteleri de çek
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (user?.id) {
-        const decks = await getFavoriteDecks(user.id);
-        setFavoriteDecks(decks || []);
-      }
-    });
+    setCurrentUserId(userId);
+    if (userId) {
+      getFavoriteDecks(userId).then(decks => setFavoriteDecks(decks || []));
+    }
   }, []);
 
   const loadDecks = async () => {
@@ -122,7 +118,7 @@ export default function HomeScreen() {
       await Promise.all(
         Object.keys(DECK_CATEGORIES).map(async (category) => {
           try {
-            decksData[category] = await getDecksByCategory(category);
+            decksData[category] = await getDecksByCategory(userId, category);
           } catch (err) {
             console.error(`Error loading ${category}:`, err);
             decksData[category] = [];
@@ -141,35 +137,34 @@ export default function HomeScreen() {
 
   const loadInProgressDecks = useCallback(async () => {
     try {
-      const data = await getDecksByCategory('inProgressDecks');
+      const data = await getDecksByCategory(userId, 'inProgressDecks');
       setDecks(prev => ({ ...prev, inProgressDecks: data || [] }));
     } catch (err) {
       console.error('Error loading inProgressDecks:', err);
       setDecks(prev => ({ ...prev, inProgressDecks: [] }));
     }
-  }, []);
+  }, [userId]);
 
   useFocusEffect(
     useCallback(() => {
       if (decksLoadedRef.current) {
         loadInProgressDecks();
       }
+      if (!userId) return;
       (async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user?.id) return;
-        await updateLastActiveAt(user.id);
+        await updateLastActiveAt(userId);
         if (notificationSetupDoneRef.current) return;
         notificationSetupDoneRef.current = true;
         const { status } = await Notifications.getPermissionsAsync();
         if (status === 'granted') {
-          await registerForPushNotificationsAsync(user.id);
-          await updateNotificationPreference(true);
+          await registerForPushNotificationsAsync(userId);
+          await updateNotificationPreference(userId, true);
         } else {
-          const token = await registerForPushNotificationsAsync(user.id);
-          if (token) await updateNotificationPreference(true);
+          const token = await registerForPushNotificationsAsync(userId);
+          if (token) await updateNotificationPreference(userId, true);
         }
       })();
-    }, [loadInProgressDecks])
+    }, [loadInProgressDecks, userId])
   );
 
   const onRefresh = async () => {
@@ -177,13 +172,7 @@ export default function HomeScreen() {
       setRefreshing(true);
       await Promise.all([
         loadDecks(),
-        (async () => {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user?.id) {
-            const decks = await getFavoriteDecks(user.id);
-            setFavoriteDecks(decks || []);
-          }
-        })(),
+        userId ? getFavoriteDecks(userId).then(decks => setFavoriteDecks(decks || [])) : Promise.resolve(),
       ]);
     } finally {
       setRefreshing(false);
@@ -195,16 +184,16 @@ export default function HomeScreen() {
   };
 
   const handleAddFavoriteDeck = async (deckId) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    await supabase.from('favorite_decks').insert({ user_id: user.id, deck_id: deckId });
-    const decks = await getFavoriteDecks(user.id);
+    if (!userId) return;
+    await addFavoriteDeck(userId, deckId);
+    const decks = await getFavoriteDecks(userId);
     setFavoriteDecks(decks || []);
   };
 
   const handleRemoveFavoriteDeck = async (deckId) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    await supabase.from('favorite_decks').delete().eq('user_id', user.id).eq('deck_id', deckId);
-    const decks = await getFavoriteDecks(user.id);
+    if (!userId) return;
+    await removeFavoriteDeck(userId, deckId);
+    const decks = await getFavoriteDecks(userId);
     setFavoriteDecks(decks || []);
   };
 

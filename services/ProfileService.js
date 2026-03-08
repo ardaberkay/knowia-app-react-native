@@ -1,17 +1,13 @@
 import { supabase } from '../lib/supabase';
+import { invalidateCache } from './CacheService';
 
-// Aktif kullanıcının profilini getirir
-export async function getCurrentUserProfile() {
-  // Önce oturumdaki kullanıcıyı al
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError) throw userError;
-  if (!user) throw new Error('Kullanıcı oturumu bulunamadı');
+export async function getCurrentUserProfile(userId) {
+  if (!userId) throw new Error('Kullanıcı oturumu bulunamadı');
 
-  // profiles tablosundan verileri çek
   const { data, error } = await supabase
     .from('profiles')
     .select('id, username, created_at, email, updated_at, image_url, notifications_enabled')
-    .eq('id', user.id)
+    .eq('id', userId)
     .single();
 
   if (error) throw error;
@@ -37,27 +33,25 @@ export async function updateLastActiveAt(userId) {
  * Kullanıcının bildirim tercihlerini günceller.
  * @param {boolean} enabled - Bildirimler açık mı kapalı mı
  */
-export async function updateNotificationPreference(enabled) {
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) return;
+export async function updateNotificationPreference(userId, enabled) {
+  if (!userId) return;
   await supabase
     .from('profiles')
     .update({ notifications_enabled: enabled })
-    .eq('id', user.id);
+    .eq('id', userId);
 }
 
 /**
  * Kullanıcının tema tercih bilgisini getirir.
  * @returns {Promise<'system'|'dark'|'light'>}
  */
-export async function getThemePreference() {
+export async function getThemePreference(userId) {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) return 'system';
+    if (!userId) return 'system';
     const { data, error } = await supabase
       .from('profiles')
       .select('theme_preference')
-      .eq('id', user.id)
+      .eq('id', userId)
       .single();
     if (error) return 'system';
     return data?.theme_preference || 'system';
@@ -70,15 +64,34 @@ export async function getThemePreference() {
  * Kullanıcının tema tercih bilgisini günceller.
  * @param {'system'|'dark'|'light'} preference
  */
-export async function updateThemePreference(preference) {
+export async function updateThemePreference(userId, preference) {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) return;
+    if (!userId) return;
     await supabase
       .from('profiles')
       .update({ theme_preference: preference })
-      .eq('id', user.id);
+      .eq('id', userId);
   } catch (e) {
     // Sessizce geç
   }
-} 
+}
+
+export async function updateProfile(userId, { username, imageUrl }) {
+  if (!userId) throw new Error('userId gerekli');
+  const { error } = await supabase
+    .from('profiles')
+    .update({ username, image_url: imageUrl })
+    .eq('id', userId);
+  if (error) throw error;
+  await invalidateCache(`profile_${userId}`);
+  await invalidateCache(`profile_image_${userId}`);
+}
+
+export async function clearPushToken(userId) {
+  if (!userId) return;
+  const { error } = await supabase
+    .from('profiles')
+    .update({ expo_push_token: null })
+    .eq('id', userId);
+  if (error) console.error('Push token temizlenemedi:', error.message);
+}

@@ -7,8 +7,9 @@ import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import SearchBar from '../../components/tools/SearchBar';
 import DeckList from '../../components/lists/DeckList';
-import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import { getDecksByCategory } from '../../services/DeckService';
+import { addFavoriteDeck, removeFavoriteDeck, getFavoriteDeckIds } from '../../services/FavoriteService';
 import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
 import { getCategoryConfig } from '../../components/ui/CategoryHeroHeader';
@@ -21,6 +22,8 @@ export default function CategoryDeckListScreen({ route }) {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const { session } = useAuth();
+  const userId = session?.user?.id;
   const insets = useSafeAreaInsets();
   // useWindowDimensions hook'u - ekran döndürme desteği
   const { width, height } = useWindowDimensions();
@@ -82,18 +85,10 @@ export default function CategoryDeckListScreen({ route }) {
 
   const loadFavoriteDecks = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
 
-      const { data, error } = await supabase
-        .from('favorite_decks')
-        .select('deck_id')
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
-      const favoriteDeckIds = data.map(item => item.deck_id);
-      setFavoriteDecks(favoriteDeckIds);
+      const ids = await getFavoriteDeckIds(userId);
+      setFavoriteDecks(ids);
     } catch (error) {
       console.error('Error loading favorite decks:', error);
     }
@@ -104,7 +99,7 @@ export default function CategoryDeckListScreen({ route }) {
 
     try {
       setLoading(true);
-      const loadedDecks = await getDecksByCategory(category);
+      const loadedDecks = await getDecksByCategory(userId, category);
       setDecks(loadedDecks || []);
     } catch (error) {
       console.error('Error loading decks:', error);
@@ -197,26 +192,15 @@ export default function CategoryDeckListScreen({ route }) {
 
   const handleToggleFavorite = async (deckId) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
 
       const isFavorite = favoriteDecks.includes(deckId);
 
       if (isFavorite) {
-        const { error } = await supabase
-          .from('favorite_decks')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('deck_id', deckId);
-
-        if (error) throw error;
+        await removeFavoriteDeck(userId, deckId);
         setFavoriteDecks(prev => prev.filter(id => id !== deckId));
       } else {
-        const { error } = await supabase
-          .from('favorite_decks')
-          .insert({ user_id: user.id, deck_id: deckId });
-
-        if (error) throw error;
+        await addFavoriteDeck(userId, deckId);
         setFavoriteDecks(prev => [...prev, deckId]);
       }
     } catch (error) {

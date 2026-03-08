@@ -1,9 +1,8 @@
 import { supabase } from '../lib/supabase';
+import { cacheData, getCachedData, invalidateCache, CACHE_DURATIONS } from './CacheService';
 
 /**
  * Engellenen kullanıcı ID'lerini döndürür (blocker_id = userId).
- * @param {string} userId - profiles.id (auth.uid())
- * @returns {Promise<Set<string>>}
  */
 export const getBlockedUserIds = async (userId) => {
   if (!userId) return new Set();
@@ -17,8 +16,6 @@ export const getBlockedUserIds = async (userId) => {
 
 /**
  * Gizlenen deste ID'lerini döndürür.
- * @param {string} userId - profiles.id
- * @returns {Promise<Set<string>>}
  */
 export const getHiddenDeckIds = async (userId) => {
   if (!userId) return new Set();
@@ -31,21 +28,29 @@ export const getHiddenDeckIds = async (userId) => {
 };
 
 /**
- * Kullanıcı engelle.
- * @param {string} blockerId - Engelleyen (profiles.id)
- * @param {string} blockedId - Engellenen (profiles.id)
+ * Blocked + Hidden ID'lerini cache'li getir (24 saat TTL).
  */
+export const getCachedBlockedAndHidden = async (userId) => {
+  if (!userId) return [new Set(), new Set()];
+  const cacheKey = `blocked_hidden_${userId}`;
+  const cached = await getCachedData(cacheKey, CACHE_DURATIONS.BLOCKED_HIDDEN);
+  if (cached && !cached.isStale) {
+    return [new Set(cached.data.blocked), new Set(cached.data.hidden)];
+  }
+  const [blocked, hidden] = await Promise.all([getBlockedUserIds(userId), getHiddenDeckIds(userId)]);
+  await cacheData(cacheKey, { blocked: [...blocked], hidden: [...hidden] });
+  return [blocked, hidden];
+};
+
 export const blockUser = async (blockerId, blockedId) => {
   if (!blockerId || !blockedId) return;
   const { error } = await supabase
     .from('blocked_users')
     .insert({ blocker_id: blockerId, blocked_id: blockedId });
   if (error) throw error;
+  await invalidateCache(`blocked_hidden_${blockerId}`);
 };
 
-/**
- * Engeli kaldır.
- */
 export const unblockUser = async (blockerId, blockedId) => {
   if (!blockerId || !blockedId) return;
   const { error } = await supabase
@@ -54,24 +59,18 @@ export const unblockUser = async (blockerId, blockedId) => {
     .eq('blocker_id', blockerId)
     .eq('blocked_id', blockedId);
   if (error) throw error;
+  await invalidateCache(`blocked_hidden_${blockerId}`);
 };
 
-/**
- * Desteyi gizle (bu kullanıcıya artık listede gösterme).
- * @param {string} userId - profiles.id
- * @param {string} deckId - decks.id
- */
 export const hideDeck = async (userId, deckId) => {
   if (!userId || !deckId) return;
   const { error } = await supabase
     .from('user_hidden_decks')
     .insert({ user_id: userId, deck_id: deckId });
   if (error) throw error;
+  await invalidateCache(`blocked_hidden_${userId}`);
 };
 
-/**
- * Desteyi tekrar göster (gizlemeyi kaldır).
- */
 export const unhideDeck = async (userId, deckId) => {
   if (!userId || !deckId) return;
   const { error } = await supabase
@@ -80,6 +79,7 @@ export const unhideDeck = async (userId, deckId) => {
     .eq('user_id', userId)
     .eq('deck_id', deckId);
   if (error) throw error;
+  await invalidateCache(`blocked_hidden_${userId}`);
 };
 
 /**
@@ -158,3 +158,7 @@ export const reportCard = async (reporterId, cardId, reasonCode, reasonText) => 
   });
   if (error) throw error;
 };
+
+export function filterDecksByBlockAndHide(decks, blockedIds, hiddenIds) {
+  return decks.filter((d) => !blockedIds.has(d.user_id) && !hiddenIds.has(d.id));
+}

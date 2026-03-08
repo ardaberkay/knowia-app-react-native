@@ -2,12 +2,14 @@ import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, Modal, Alert, Animated, ScrollView, RefreshControl, Image, SafeAreaView, StatusBar, Keyboard } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
+import { useAuth } from '../../contexts/AuthContext';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { typography } from '../../theme/typography';
-import { getDecksByCategory } from '../../services/DeckService';
+import { getDecksByCategory, deleteDeck } from '../../services/DeckService';
+import { deleteCard, getUserCardProgressForCards } from '../../services/CardService';
 import { Iconify } from 'react-native-iconify';
-import { getFavoriteDecks, getFavoriteCards } from '../../services/FavoriteService';
-import { supabase } from '../../lib/supabase';
+import { getFavoriteDecks, getFavoriteCards, addFavoriteDeck, removeFavoriteDeck, addFavoriteCard, removeFavoriteCard } from '../../services/FavoriteService';
+
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import PagerView from 'react-native-pager-view';
@@ -66,6 +68,8 @@ const FadeText = ({ text, style, maxChars = 15 }) => {
 
 export default function LibraryScreen() {
   const { colors, isDarkMode } = useTheme();
+  const { session } = useAuth();
+  const userId = session?.user?.id;
   const navigation = useNavigation();
   const { showSuccess, showError } = useSnackbarHelpers();
   const insets = useSafeAreaInsets();
@@ -76,7 +80,6 @@ export default function LibraryScreen() {
   const [loading, setLoading] = useState(true);
   const [favoritesFetched, setFavoritesFetched] = useState(false);
   const [activeDeckMenuId, setActiveDeckMenuId] = useState(null);
-  const [currentUserId, setCurrentUserId] = useState(null);
   const { t } = useTranslation();
   const pagerRef = useRef(null);
   const tabScroll = useRef(new Animated.Value(0)).current; // 0 -> MyDecks, 1 -> Favorites
@@ -190,10 +193,15 @@ export default function LibraryScreen() {
   };
 
   useEffect(() => {
+    if (!userId) {
+      setMyDecks([]);
+      setLoading(false);
+      return;
+    }
     const fetchDecks = async () => {
       setLoading(true);
       try {
-        const decks = await getDecksByCategory('myDecks');
+        const decks = await getDecksByCategory(userId, 'myDecks');
         setMyDecks(decks || []);
       } catch (e) {
         setMyDecks([]);
@@ -202,21 +210,20 @@ export default function LibraryScreen() {
       }
     };
     fetchDecks();
-  }, []);
+  }, [userId]);
 
   // Favorilerim sekmesine geçildiğinde veri yoksa (veya henüz gelmediyse) yükle
   useEffect(() => {
-    if (activeTab === 'favorites' && !favoritesFetched) {
+    if (activeTab === 'favorites' && !favoritesFetched && userId) {
       fetchFavorites();
     }
-  }, [activeTab, favoritesFetched]);
+  }, [activeTab, favoritesFetched, userId]);
 
   const fetchFavorites = async (silent = false) => {
+    if (!userId) return;
     if (!silent) setFavoritesLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      setCurrentUserId(user?.id); // currentUserId'yi burada da set et
-      const decks = await getFavoriteDecks(user.id);
+      const decks = await getFavoriteDecks(userId);
       // is_admin_created kontrolü - tüm kategoriler için geçerli
       const modifiedDecks = (decks || []).map((deck) => {
         if (deck.is_admin_created) {
@@ -233,24 +240,10 @@ export default function LibraryScreen() {
       });
       setFavoriteDecks(modifiedDecks);
 
-      // Fetch favorite cards and user progress in parallel
-      const [cards, progressResult] = await Promise.all([
-        getFavoriteCards(user.id),
-        supabase
-          .from('user_card_progress')
-          .select('card_id, status')
-          .eq('user_id', user.id)
-      ]);
+      const cards = await getFavoriteCards(userId);
+      const cardIds = (cards || []).map(c => c.id);
+      const statusMap = await getUserCardProgressForCards(userId, cardIds);
 
-      // Create a map of card statuses
-      const statusMap = {};
-      if (progressResult.data) {
-        progressResult.data.forEach(p => {
-          statusMap[p.card_id] = p.status;
-        });
-      }
-
-      // Merge status into cards (default: 'new' if no progress record)
       const cardsWithProgress = (cards || []).map(card => ({
         ...card,
         status: statusMap[card.id] || 'new'
@@ -276,20 +269,16 @@ export default function LibraryScreen() {
     }, [favoritesFetched])
   );
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => setCurrentUserId(user?.id));
-  }, []);
-
   // Favoriler sekmesindeki birleşik liste kaldırıldı
 
   // Favorilerim sekmesindeki birleşik render kaldırıldı
 
   // Favori deste ekleme/çıkarma fonksiyonları
   const handleAddFavoriteDeck = async (deckId) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    await supabase.from('favorite_decks').insert({ user_id: user.id, deck_id: deckId });
+    if (!userId) return;
+    await addFavoriteDeck(userId, deckId);
     setMyDecks(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: true } : d));
-    const decks = await getFavoriteDecks(user.id);
+    const decks = await getFavoriteDecks(userId);
     // is_admin_created kontrolü - tüm kategoriler için geçerli
     const modifiedDecks = (decks || []).map((deck) => {
       if (deck.is_admin_created) {
@@ -307,10 +296,10 @@ export default function LibraryScreen() {
     setFavoriteDecks(modifiedDecks);
   };
   const handleRemoveFavoriteDeck = async (deckId) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    await supabase.from('favorite_decks').delete().eq('user_id', user.id).eq('deck_id', deckId);
+    if (!userId) return;
+    await removeFavoriteDeck(userId, deckId);
     setMyDecks(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: false } : d));
-    const decks = await getFavoriteDecks(user.id);
+    const decks = await getFavoriteDecks(userId);
     // is_admin_created kontrolü - tüm kategoriler için geçerli
     const modifiedDecks = (decks || []).map((deck) => {
       if (deck.is_admin_created) {
@@ -340,11 +329,7 @@ export default function LibraryScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const { error } = await supabase.from('decks').delete().eq('id', deckId);
-
-              if (error) {
-                throw error;
-              }
+              await deleteDeck(deckId);
 
               setMyDecks(prev => prev.filter(deck => deck.id !== deckId));
               setFavoriteDecks(prev => prev.filter(deck => deck.id !== deckId));
@@ -372,14 +357,7 @@ export default function LibraryScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const { error } = await supabase
-                .from('cards')
-                .delete()
-                .eq('id', cardId);
-
-              if (error) {
-                throw error;
-              }
+              await deleteCard(cardId);
 
               // Kartı favori kartlar listesinden çıkar
               const updatedCards = favoriteCards.filter(c => c.id !== cardId);
@@ -425,27 +403,13 @@ export default function LibraryScreen() {
 
   // Favori kartlar ve kart işlemleri kaldırıldı
   const handleRemoveFavoriteCard = async (cardId) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    await supabase.from('favorite_cards').delete().eq('user_id', user.id).eq('card_id', cardId);
+    if (!userId) return;
+    await removeFavoriteCard(userId, cardId);
 
-    // Fetch cards and progress in parallel
-    const [cards, progressResult] = await Promise.all([
-      getFavoriteCards(user.id),
-      supabase
-        .from('user_card_progress')
-        .select('card_id, status')
-        .eq('user_id', user.id)
-    ]);
+    const cards = await getFavoriteCards(userId);
+    const cardIds = (cards || []).map(c => c.id);
+    const statusMap = await getUserCardProgressForCards(userId, cardIds);
 
-    // Create a map of card statuses
-    const statusMap = {};
-    if (progressResult.data) {
-      progressResult.data.forEach(p => {
-        statusMap[p.card_id] = p.status;
-      });
-    }
-
-    // Merge status into cards
     const updatedCards = (cards || []).map(card => ({
       ...card,
       status: statusMap[card.id] || 'new'
@@ -501,16 +465,11 @@ export default function LibraryScreen() {
 
   const handleToggleFavoriteCard = async (cardId) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
 
       if (favoriteCardIds.includes(cardId)) {
         // Favorilerden çıkar
-        await supabase
-          .from('favorite_cards')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('card_id', cardId);
+        await removeFavoriteCard(userId, cardId);
 
         const updatedFavoriteCards = favoriteCards.filter(c => c.id !== cardId);
         const updatedFavoriteCardIds = favoriteCardIds.filter(id => id !== cardId);
@@ -560,9 +519,7 @@ export default function LibraryScreen() {
         }
       } else {
         // Favorilere ekle
-        await supabase
-          .from('favorite_cards')
-          .insert({ user_id: user.id, card_id: cardId });
+        await addFavoriteCard(userId, cardId);
         setFavoriteCardIds([...favoriteCardIds, cardId]);
         // Kartı favori kartlar listesine de ekle (eğer gerekirse)
         const card = filteredFavoriteCards.find(c => c.id === cardId);
@@ -814,8 +771,9 @@ export default function LibraryScreen() {
               ListHeaderComponent={renderMyDecksCard}
               refreshing={loading}
               onRefresh={() => {
+                if (!userId) return;
                 setLoading(true);
-                getDecksByCategory('myDecks').then(decks => {
+                getDecksByCategory(userId, 'myDecks').then(decks => {
                   setMyDecks(decks || []);
                   setLoading(false);
                 });
@@ -1025,7 +983,7 @@ export default function LibraryScreen() {
                   {/* Favorite Cards List */}
                   <View style={{ marginTop: verticalScale(14), paddingHorizontal: scale(4), pointerEvents: filteredFavoriteCards.length > 0 ? 'auto' : 'none' }}>
                     {filteredFavoriteCards.map((card) => {
-                      const isOwner = currentUserId && card.deck?.user_id && card.deck.user_id === currentUserId;
+                      const isOwner = userId && card.deck?.user_id && card.deck.user_id === userId;
                       return (
                         <CardListItem
                           key={String(card.id)}
