@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useLayoutEffect, useCallback, memo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Alert, Pressable } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Alert, Pressable, RefreshControl } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -121,8 +121,9 @@ export default function ChaptersScreen({ route, navigation }) {
   const [progressMap, setProgressMap] = useState(new Map());
   const [currentUserId, setCurrentUserId] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  
-// Sadece butonun basılı olup olmadığını takip ediyoruz (0 = boşta, 1 = basılı)
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Sadece butonun basılı olup olmadığını takip ediyoruz (0 = boşta, 1 = basılı)
 const isPressed = useSharedValue(0);
 
 const addChapterAnimatedStyle = useAnimatedStyle(() => {
@@ -188,6 +189,22 @@ const addChapterAnimatedStyle = useAnimatedStyle(() => {
     });
     return unsubscribe;
   }, [navigation, deck?.id, currentUserId, chapters]);
+
+  const onRefresh = useCallback(async () => {
+    if (!deck?.id) return;
+    setRefreshing(true);
+    try {
+      const data = await listChapters(deck.id, true);
+      setChapters(data);
+      if (userId) {
+        const chaptersWithUnassigned = [{ id: null }, ...data];
+        const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, userId);
+        setProgressMap(progress);
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }, [deck?.id, userId]);
 
   // Navigation header'a edit butonu ekle
   useLayoutEffect(() => {
@@ -272,7 +289,7 @@ const addChapterAnimatedStyle = useAnimatedStyle(() => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteChapter(chapterId);
+              await deleteChapter(chapterId, deck.id);
               // Ordinal'leri yeniden düzenle (1, 2, 3, ... şeklinde)
               await reorderChapterOrdinals(deck.id);
               // Bölümleri yeniden yükle (ordinal'ler güncellenmiş olacak)
@@ -387,6 +404,9 @@ const addChapterAnimatedStyle = useAnimatedStyle(() => {
               initialNumToRender={8}
               maxToRenderPerBatch={6}
               windowSize={7}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
               ListHeaderComponent={listHeader}
               ListEmptyComponent={listEmpty}
               renderItem={renderChapterItem}

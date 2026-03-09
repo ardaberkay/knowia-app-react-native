@@ -24,6 +24,9 @@ export const CACHE_DURATIONS = {
   // Kullanıcıya özel
   FAVORITES_DECK_IDS: 4 * 60 * 60 * 1000,   // 4 saat (mutation: favori toggle)
   FAVORITES_CARD_IDS: 4 * 60 * 60 * 1000,   // 4 saat (mutation: favori toggle)
+
+  // Destelerim listesi (mutation: yeni deste, düzenleme, silme, paylaşım)
+  MY_DECKS: 7 * 24 * 60 * 60 * 1000,       // 1 hafta
 };
 
 /**
@@ -174,7 +177,7 @@ export const getCachedDiscoverDecks = async (tab, timeFilter) => {
       const cacheAge = Date.now() - (cacheData.timestamp || 0);
       
       // Cache süresi dolmamışsa (stale data bile kabul edilebilir)
-      if (cacheAge < CACHE_DURATIONS.DISCOVER_DECKS) {
+      if (cacheAge < CACHE_DURATIONS.DISCOVER) {
         return {
           data: cacheData.data,
           timestamp: cacheData.timestamp,
@@ -253,7 +256,8 @@ export const cleanupStaleCache = async () => {
     const cacheKeys = allKeys.filter(k =>
       k.startsWith('cards_') || k.startsWith('deck_') || k.startsWith('discover_') ||
       k.startsWith('chapters_') || k.startsWith('fav_') || k.startsWith('blocked_') ||
-      k.startsWith('progress_') || k.startsWith('languages_') || k.startsWith('categories_')
+      k.startsWith('progress_') || k.startsWith('languages_') || k.startsWith('categories_') ||
+      k.startsWith('mydecks_')
     );
     const TWO_WEEKS = 14 * 24 * 60 * 60 * 1000;
     const keysToRemove = [];

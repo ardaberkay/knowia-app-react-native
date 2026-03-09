@@ -3,7 +3,16 @@ import { invalidateCache, cacheData, getCachedData, CACHE_DURATIONS } from './Ca
 
 const PAGE_SIZE = 50;
 
-export const getCardsByDeck = async (deckId, page = 0, pageSize = PAGE_SIZE, sortBy = 'original') => {
+/**
+ * Destedeki kartları sayfalı ve isteğe bağlı cache ile döndürür.
+ * forceRefresh true ise cache bypass edilir (pull-to-refresh için).
+ */
+export const getCardsByDeck = async (deckId, page = 0, pageSize = PAGE_SIZE, sortBy = 'original', forceRefresh = false) => {
+  const cacheKey = `cards_deck_${deckId}_p${page}_${sortBy}`;
+  if (!forceRefresh) {
+    const cached = await getCachedData(cacheKey, CACHE_DURATIONS.CARDS_CONTENT);
+    if (cached && !cached.isStale) return cached.data;
+  }
   const from = page * pageSize;
   let query = supabase
     .from('cards')
@@ -18,7 +27,40 @@ export const getCardsByDeck = async (deckId, page = 0, pageSize = PAGE_SIZE, sor
 
   const { data, error } = await query.range(from, from + pageSize - 1);
   if (error) throw error;
+  const result = data || [];
+  if (result.length > 0) await cacheData(cacheKey, result);
+  return result;
+};
+
+/**
+ * Bir destedeki tüm kartları (liste + detay alanlarıyla) döndürür.
+ * DeckDetailScreen gibi ekranlarda tek seferde tüm kartları göstermek için kullanılır.
+ * @param {string} deckId - Deste id
+ * @returns {Promise<Array>} Kart listesi (id, question, answer, image, example, note, created_at)
+ */
+export const getAllCardsForDeck = async (deckId) => {
+  const { data, error } = await supabase
+    .from('cards')
+    .select('id, question, answer, image, example, note, created_at')
+    .eq('deck_id', deckId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
   return data || [];
+};
+
+/**
+ * Belirtilen kartların chapter_id değerini günceller (bölüme taşıma).
+ * @param {string[]} cardIds - Güncellenecek kart id'leri
+ * @param {string|null} targetChapterId - Hedef bölüm id (null = atanmamış)
+ */
+export const updateCardsChapter = async (cardIds, targetChapterId) => {
+  if (!cardIds || cardIds.length === 0) return;
+  const { error } = await supabase
+    .from('cards')
+    .update({ chapter_id: targetChapterId || null })
+    .in('id', cardIds);
+  if (error) throw error;
+  // Deck bazlı kart listesi cache'ini invalidate etmek için deckId gerekir; çağıran ekran gerekirse invalidate eder.
 };
 
 export const getCardsByChapter = async (deckId, chapterId, page = 0, pageSize = PAGE_SIZE) => {
@@ -118,17 +160,24 @@ export const updateCard = async (cardId, cardData) => {
     .select();
   if (error) throw error;
   const card = data?.[0] || null;
-  if (card) await invalidateCache(`card_detail_${cardId}`);
+  if (card) {
+    await invalidateCache(`card_detail_${cardId}`);
+    if (card.deck_id) await invalidateCache(`cards_deck_${card.deck_id}`);
+  }
   return card;
 };
 
-export const deleteCard = async (cardId) => {
+/**
+ * Kartı siler. deckId verilirse ilgili deste kart listesi cache'i de temizlenir (mutation invalidation).
+ */
+export const deleteCard = async (cardId, deckId = null) => {
   const { error } = await supabase
     .from('cards')
     .delete()
     .eq('id', cardId);
   if (error) throw error;
   await invalidateCache(`card_detail_${cardId}`);
+  if (deckId) await invalidateCache(`cards_deck_${deckId}`);
 };
 
 export const getCardDetail = async (cardId, forceRefresh = false) => {

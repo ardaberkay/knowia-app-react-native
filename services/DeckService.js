@@ -1,11 +1,19 @@
 import { supabase } from '../lib/supabase';
-import { getBlockedUserIds, getHiddenDeckIds, getCachedBlockedAndHidden, filterDecksByBlockAndHide } from './BlockService';
+import { getCachedBlockedAndHidden, filterDecksByBlockAndHide } from './BlockService';
 import { invalidateCache, cacheData, getCachedData, CACHE_DURATIONS } from './CacheService';
 import { getFavoriteDeckIds } from './FavoriteService';
 
-const DECK_LIST_SELECT = 'id, name, description, card_count, user_id, category_id, is_shared, is_admin_created, shared_at, updated_at, created_at, profiles:profiles(username, image_url), categories:categories(id, name, sort_order), decks_languages(language_id)';
+const DECK_LIST_SELECT = 'id, name, to_name, description, card_count, user_id, category_id, is_shared, is_admin_created, shared_at, updated_at, created_at, profiles:profiles(username, image_url), categories:categories(id, name, sort_order), decks_languages(language_id)';
 
-export const getDecksByCategory = async (userId, category) => {
+// Oluşturma/güncelleme sonrası dönüş için kullanılan select (tekil deck).
+const DECK_SELECT_SINGLE = 'id, name, to_name, description, card_count, user_id, category_id, is_shared, is_admin_created, shared_at, updated_at, created_at, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)';
+
+export const getDecksByCategory = async (userId, category, forceRefresh = false) => {
+  if (category === 'myDecks' && userId && !forceRefresh) {
+    const cached = await getCachedData(`mydecks_${userId}`, CACHE_DURATIONS.MY_DECKS);
+    if (cached && !cached.isStale) return cached.data;
+  }
+
   if (category === 'inProgressDecks') {
     if (!userId) {
       return [];
@@ -44,7 +52,7 @@ export const getDecksByCategory = async (userId, category) => {
     }
 
     let resultData = data || [];
-    const [blockedIds, hiddenIds] = await Promise.all([getBlockedUserIds(userId), getHiddenDeckIds(userId)]);
+    const [blockedIds, hiddenIds] = await getCachedBlockedAndHidden(userId);
     resultData = filterDecksByBlockAndHide(resultData, blockedIds, hiddenIds);
 
     // En son çalışılan en üstte sırala
@@ -115,7 +123,7 @@ export const getDecksByCategory = async (userId, category) => {
 
   let resultData = data || [];
   if ((category === 'communityDecks' || category === 'defaultDecks') && userId) {
-    const [blockedIds, hiddenIds] = await Promise.all([getBlockedUserIds(userId), getHiddenDeckIds(userId)]);
+    const [blockedIds, hiddenIds] = await getCachedBlockedAndHidden(userId);
     resultData = filterDecksByBlockAndHide(resultData, blockedIds, hiddenIds);
   }
 
@@ -147,6 +155,10 @@ export const getDecksByCategory = async (userId, category) => {
     });
   }
 
+  if (category === 'myDecks' && userId) {
+    await cacheData(`mydecks_${userId}`, resultData);
+  }
+
   return resultData;
 };
 
@@ -169,13 +181,22 @@ export const getDecks = async () => {
   return data || [];
 };
 
-export const getDeckById = async (deckId) => {
+/**
+ * Tekil deste detayını döndürür. 4 saat cache (mutation: düzenleme/silme/paylaşımda invalidate).
+ */
+export const getDeckById = async (deckId, forceRefresh = false) => {
+  const cacheKey = `deck_detail_${deckId}`;
+  if (!forceRefresh) {
+    const cached = await getCachedData(cacheKey, CACHE_DURATIONS.DECK_DETAIL);
+    if (cached && !cached.isStale) return cached.data;
+  }
   const { data, error } = await supabase
     .from('decks')
     .select(DECK_LIST_SELECT)
     .eq('id', deckId)
     .single();
   if (error) throw error;
+  if (data) await cacheData(cacheKey, data);
   return data;
 };
 
@@ -187,6 +208,7 @@ export const deleteDeck = async (deckId) => {
   if (error) throw error;
   await invalidateCache(`deck_detail_${deckId}`);
   await invalidateCache(`cards_deck_${deckId}`);
+  await invalidateCache('mydecks_');
 };
 
 export const updateDeckShare = async (deckId, userId, isShared) => {
@@ -197,6 +219,7 @@ export const updateDeckShare = async (deckId, userId, isShared) => {
     .eq('user_id', userId);
   if (error) throw error;
   await invalidateCache(`deck_detail_${deckId}`);
+  await invalidateCache(`mydecks_${userId}`);
 };
 
 export const insertDeckStats = async (deckId, userId) => {
@@ -208,6 +231,101 @@ export const insertDeckStats = async (deckId, userId) => {
       started_at: new Date().toISOString(),
     });
   if (error) throw error;
+};
+
+/**
+ * Yeni deste oluşturur. decks insert + decks_languages insert yapar.
+ * @param {string} userId - Oluşturan kullanıcı id
+ * @param {Object} payload - name, to_name?, description?, category_id, languageIds (uuid[])
+ * @returns {Promise<Object>} Oluşturulan deck (profiles, categories ile)
+ */
+export const createDeck = async (userId, payload) => {
+  const { name, to_name, description, category_id, languageIds = [] } = payload;
+  const { data, error } = await supabase
+    .from('decks')
+    .insert({
+      user_id: userId,
+      name: (name || '').trim(),
+      to_name: (to_name || '').trim() || null,
+      description: (description || '').trim() || null,
+      category_id: category_id || null,
+      is_shared: false,
+      is_admin_created: false,
+      card_count: 0,
+      is_started: false,
+    })
+    .select(DECK_SELECT_SINGLE)
+    .single();
+  if (error) throw error;
+
+  if (languageIds.length > 0) {
+    const relations = languageIds.map((languageId) => ({
+      deck_id: data.id,
+      language_id: languageId,
+    }));
+    const { error: deckLangError } = await supabase
+      .from('decks_languages')
+      .insert(relations);
+    if (deckLangError) throw deckLangError;
+  }
+
+  await invalidateCache(`mydecks_${userId}`);
+  return data;
+};
+
+/**
+ * Deste bilgilerini ve dil ilişkilerini günceller. decks update + decks_languages delete + insert.
+ * @param {string} deckId - Deste id
+ * @param {string} userId - Deste sahibi kullanıcı id (yetki/cache için)
+ * @param {Object} payload - name, to_name?, description?, category_id, languageIds (uuid[])
+ */
+export const updateDeck = async (deckId, userId, payload) => {
+  const { name, to_name, description, category_id, languageIds = [] } = payload;
+  const { error } = await supabase
+    .from('decks')
+    .update({
+      name: (name || '').trim(),
+      to_name: (to_name || '').trim() || null,
+      description: (description || '').trim() || null,
+      category_id: category_id || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', deckId);
+  if (error) throw error;
+
+  const { error: deleteError } = await supabase
+    .from('decks_languages')
+    .delete()
+    .eq('deck_id', deckId);
+  if (deleteError) throw deleteError;
+
+  if (languageIds.length > 0) {
+    const relations = languageIds.map((languageId) => ({
+      deck_id: deckId,
+      language_id: languageId,
+    }));
+    const { error: deckLangError } = await supabase
+      .from('decks_languages')
+      .insert(relations);
+    if (deckLangError) throw deckLangError;
+  }
+
+  await invalidateCache(`deck_detail_${deckId}`);
+  await invalidateCache(`mydecks_${userId}`);
+};
+
+/**
+ * Bir desteye ait dil id listesini döndürür (decks_languages tablosundan).
+ * @param {string} deckId - Deste id
+ * @returns {Promise<string[]>} language_id listesi
+ */
+export const getDeckLanguages = async (deckId) => {
+  const { data, error } = await supabase
+    .from('decks_languages')
+    .select('language_id')
+    .eq('deck_id', deckId);
+  if (error) throw error;
+  return (data || []).map((row) => row.language_id);
 };
 
 const TAB_TO_SORT_BY = {

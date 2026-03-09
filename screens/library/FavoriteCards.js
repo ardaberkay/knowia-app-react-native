@@ -1,12 +1,11 @@
 import React, { useEffect, useMemo, useState, useLayoutEffect, useRef, useCallback, memo } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, BackHandler, Alert, Keyboard } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, BackHandler, Alert, Keyboard, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { supabase } from '../../lib/supabase';
 import { getFavoriteCards, addFavoriteCard, removeFavoriteCard } from '../../services/FavoriteService';
-import { deleteCard, getCardDetail } from '../../services/CardService';
+import { deleteCard, getCardDetail, getUserCardProgressForCards } from '../../services/CardService';
 import SearchBar from '../../components/tools/SearchBar';
 import FilterIcon from '../../components/modals/CardFilterIcon';
 import CardListItem from '../../components/lists/CardList';
@@ -55,9 +54,10 @@ export default function FavoriteCards() {
   const [favoriteCards, setFavoriteCards] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
   const latestDetailFetchRef = useRef(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchFavorites = async () => {
-    setLoading(true);
+  const fetchFavorites = async (skipLoading = false) => {
+    if (!skipLoading) setLoading(true);
     try {
       if (!userId) {
         setCards([]);
@@ -67,36 +67,29 @@ export default function FavoriteCards() {
       }
       setCurrentUserId(userId);
       
-      // Fetch favorite cards and user progress in parallel
-      const [res, progressResult] = await Promise.all([
-        getFavoriteCards(userId),
-        supabase
-          .from('user_card_progress')
-          .select('card_id, status')
-          .eq('user_id', userId)
-      ]);
-      
-      // Create a map of card statuses
-      const statusMap = {};
-      if (progressResult.data) {
-        progressResult.data.forEach(p => {
-          statusMap[p.card_id] = p.status;
-        });
-      }
-      
-      // Merge status into cards (default: 'new' if no progress record)
+      // Favori kartları çek; ardından bu kartların progress bilgisini servisten al
+      const res = await getFavoriteCards(userId);
+      const cardIds = (res || []).map(c => c.id);
+      const statusMap = cardIds.length > 0
+        ? await getUserCardProgressForCards(userId, cardIds)
+        : {};
       const cardsWithProgress = (res || []).map(card => ({
         ...card,
-        status: statusMap[card.id] || 'new'
+        status: statusMap[card.id] || 'new',
       }));
       
       setCards(cardsWithProgress);
-      // Favori kartların ID'lerini tut
       setFavoriteCards(cardsWithProgress.map(card => card.id));
     } finally {
-      setLoading(false);
+      if (!skipLoading) setLoading(false);
     }
   };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchFavorites(true);
+    setRefreshing(false);
+  }, [userId]);
 
   useEffect(() => {
     fetchFavorites();
@@ -339,6 +332,9 @@ export default function FavoriteCards() {
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
           onScrollBeginDrag={() => Keyboard.dismiss()}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
           removeClippedSubviews={true}
           initialNumToRender={10}
           maxToRenderPerBatch={8}

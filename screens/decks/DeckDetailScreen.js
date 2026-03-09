@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, Modal, Pressable, Image, Switch, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, Modal, Pressable, Image, Switch, Animated, Dimensions, RefreshControl } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Alert } from 'react-native';
-import { supabase } from '../../lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
+import { getDeckById, getDeckLanguages } from '../../services/DeckService';
+import { getAllCardsForDeck } from '../../services/CardService';
+import { getFavoriteDeckIds, getFavoriteCardIds } from '../../services/FavoriteService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
@@ -91,6 +93,7 @@ export default function DeckDetailScreen({ route, navigation }) {
   // 120+ karakter genelde 3 satırı aşar (tahmin)
   const [descriptionNeedsExpand, setDescriptionNeedsExpand] = useState(deck?.description?.length > 120);
   const descriptionLayoutDone = useRef(false);
+  const [refreshing, setRefreshing] = useState(false);
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const fabRightPosition = scale(20); // FAB butonunun sağdan mesafesi
   const fabButtonWidth = scale(56);
@@ -163,20 +166,11 @@ export default function DeckDetailScreen({ route, navigation }) {
 
   useEffect(() => {
     const loadDecksLanguages = async () => {
-      const { data, error } = await supabase
-        .from('decks_languages')
-        .select('language_id')
-        .eq('deck_id', deck.id);
-
-      if (error) {
-        console.error('SUPABASE HATASI:', error);
-        return;
-      }
-
-      if (data) {
-        const ids = data.map(l => l.language_id);
-        console.log('VERİTABANINDAN GELEN IDLER:', ids); // Burayı kontrol et!
+      try {
+        const ids = await getDeckLanguages(deck.id);
         setDecksLanguages(ids);
+      } catch (e) {
+        console.error('Deste dilleri yüklenemedi:', e);
       }
     };
     loadDecksLanguages();
@@ -333,16 +327,10 @@ export default function DeckDetailScreen({ route, navigation }) {
     if (deck?.is_favorite !== undefined) {
       setIsFavorite(deck.is_favorite);
     } else if (deck?.id && session?.user?.id) {
-      // Eğer route.params'da is_favorite yoksa, fallback olarak çek
       const fetchFavoriteStatus = async () => {
         try {
-          const { data, error } = await supabase
-            .from('favorite_decks')
-            .select('id')
-            .eq('user_id', session.user.id)
-            .eq('deck_id', deck.id)
-            .single();
-          setIsFavorite(!!data);
+          const favIds = await getFavoriteDeckIds(session.user.id);
+          setIsFavorite(favIds.includes(deck.id));
         } catch (e) {
           setIsFavorite(false);
         }
@@ -378,49 +366,23 @@ export default function DeckDetailScreen({ route, navigation }) {
         }
       }
 
-      // Deck verisini ve favori durumunu paralel olarak güncelle
+      // Deck verisini ve favori durumunu servislerden güncelle
       try {
-        // Deck verisini ve favori durumunu paralel çek
-        const [deckResult, favoriteResult] = await Promise.all([
-          supabase
-            .from('decks')
-            .select('id, name, description, card_count, user_id, category_id, is_shared, is_admin_created, shared_at, updated_at, created_at, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)')
-            .eq('id', deck.id)
-            .single(),
-          userId ? supabase
-            .from('favorite_decks')
-            .select('id')
-            .eq('user_id', userId)
-            .eq('deck_id', deck.id)
-            .single() : Promise.resolve({ data: null, error: null })
+        const [deckData, favIds] = await Promise.all([
+          getDeckById(deck.id),
+          userId ? getFavoriteDeckIds(userId) : Promise.resolve([]),
         ]);
-
-        if (deckResult.error) throw deckResult.error;
-
-        // Deck verisini güncelle
-        if (deckResult.data) {
-          // is_admin_created kontrolü - tüm kategoriler için geçerli
-          if (deckResult.data.is_admin_created) {
-            deckResult.data.profiles = {
-              ...deckResult.data.profiles,
-              username: 'Knowia',
-              image_url: null, // app-icon.png kullanılacak
-            };
+        const isFav = userId ? favIds.includes(deck.id) : false;
+        if (deckData) {
+          if (deckData.is_admin_created && deckData.profiles) {
+            deckData.profiles = { ...deckData.profiles, username: 'Knowia', image_url: null };
           }
-          // Favori durumunu deck objesine ekle
-          deckResult.data.is_favorite = !!favoriteResult.data;
-          // Route params'ı güncelle
-          route.params.deck = deckResult.data;
-          // Category info'yu güncelle
-          setCategoryInfo(deckResult.data.categories);
-          // is_shared değerini güncelle
-          setIsShared(deckResult.data.is_shared || false);
-          // Favori durumunu güncelle
-          setIsFavorite(!!favoriteResult.data);
-        } else {
-          // Favori durumunu güncelle (deck verisi yoksa bile)
-          setIsFavorite(!!favoriteResult.data);
+          deckData.is_favorite = isFav;
+          route.params.deck = deckData;
+          setCategoryInfo(deckData.categories);
+          setIsShared(deckData.is_shared || false);
         }
+        setIsFavorite(isFav);
       } catch (e) {
         console.error('Deck verisi güncellenemedi:', e);
       }
@@ -429,17 +391,54 @@ export default function DeckDetailScreen({ route, navigation }) {
     return unsubscribe;
   }, [navigation, deck.id, currentUserId, chapters]);
 
+  const onRefresh = useCallback(async () => {
+    if (!deck?.id) return;
+    setRefreshing(true);
+    try {
+      const uid = session?.user?.id;
+      const [deckData, favDeckIds, cardsData, favCardIds, langIds] = await Promise.all([
+        getDeckById(deck.id, true),
+        uid ? getFavoriteDeckIds(uid, true) : Promise.resolve([]),
+        getAllCardsForDeck(deck.id),
+        uid ? getFavoriteCardIds(uid, true) : Promise.resolve([]),
+        getDeckLanguages(deck.id),
+      ]);
+      if (deckData) {
+        if (deckData.is_admin_created && deckData.profiles) {
+          deckData.profiles = { ...deckData.profiles, username: 'Knowia', image_url: null };
+        }
+        deckData.is_favorite = uid ? favDeckIds.includes(deck.id) : false;
+        route.params.deck = deckData;
+        setCategoryInfo(deckData.categories);
+        setIsShared(deckData.is_shared || false);
+        setIsFavorite(!!(uid && favDeckIds.includes(deck.id)));
+      }
+      setCards(cardsData);
+      setOriginalCards(cardsData);
+      setFavoriteCards(favCardIds);
+      setDecksLanguages(langIds);
+      await fetchProgressFromAPI(false);
+      if (uid && chapters.length > 0) {
+        try {
+          const progress = await getChaptersProgress(chapters, deck.id, uid);
+          setChapterProgressMap(progress);
+        } catch (e) {
+          console.error('Error fetching chapter progress:', e);
+        }
+      }
+    } catch (e) {
+      console.error('DeckDetail refresh error:', e);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [deck?.id, session?.user?.id, chapters]);
+
   useEffect(() => {
     const fetchCards = async () => {
       try {
-        const { data, error } = await supabase
-          .from('cards')
-          .select('id, question, answer, image, example, note, created_at')
-          .eq('deck_id', deck.id)
-          .order('created_at', { ascending: false });
-        if (error) throw error;
-        setCards(data || []);
-        setOriginalCards(data || []);
+        const data = await getAllCardsForDeck(deck.id);
+        setCards(data);
+        setOriginalCards(data);
       } catch (e) {
         setCards([]);
         setOriginalCards([]);
@@ -463,19 +462,19 @@ export default function DeckDetailScreen({ route, navigation }) {
 
   useEffect(() => {
     const fetchFavoriteCards = async () => {
+      if (!userId) {
+        setFavoriteCards([]);
+        return;
+      }
       try {
-        const { data, error } = await supabase
-          .from('favorite_cards')
-          .select('card_id')
-          .eq('user_id', userId);
-        if (error) throw error;
-        setFavoriteCards((data || []).map(f => f.card_id));
+        const ids = await getFavoriteCardIds(userId);
+        setFavoriteCards(ids);
       } catch (e) {
         setFavoriteCards([]);
       }
     };
     fetchFavoriteCards();
-  }, [deck.id]);
+  }, [deck.id, userId]);
 
   useEffect(() => {
     setFilteredCards(sortCards(cardSort, cards));
@@ -916,6 +915,9 @@ export default function DeckDetailScreen({ route, navigation }) {
       <ScrollView
         contentContainerStyle={{ paddingBottom: verticalScale(screenHeight * 0.10) }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {/* GRADIENT FLOW DESIGN - Modern & Eye-catching */}
 

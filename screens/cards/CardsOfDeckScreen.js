@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, BackHandler, Alert, Dimensions, Animated, Easing, ActivityIndicator, Modal, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, BackHandler, Alert, Dimensions, Animated, Easing, ActivityIndicator, Modal, Image, RefreshControl } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
@@ -72,6 +72,7 @@ export default function DeckCardsScreen({ route, navigation }) {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const PAGE_SIZE = 50;
   const spinValue = useRef(new Animated.Value(0)).current;
   const moreMenuRef = useRef(null);
@@ -96,11 +97,11 @@ export default function DeckCardsScreen({ route, navigation }) {
     favoriteCardsRef.current = new Set(favoriteCards);
   }, [favoriteCards]);
 
-  const fetchData = useCallback(async (silent = false, sortOverride) => {
+  const fetchData = useCallback(async (silent = false, sortOverride, forceRefresh = false) => {
     const sort = sortOverride || serverSortRef.current;
     if (!silent) setLoading(true);
     try {
-      const cardsData = await getCardsByDeck(deck.id, 0, PAGE_SIZE, sort);
+      const cardsData = await getCardsByDeck(deck.id, 0, PAGE_SIZE, sort, forceRefresh);
 
       let statusMap = {};
       let favoriteCardIds = new Set();
@@ -134,6 +135,12 @@ export default function DeckCardsScreen({ route, navigation }) {
       if (!silent) setLoading(false);
     }
   }, [deck.id, userId]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchData(false, null, true);
+    setRefreshing(false);
+  }, [fetchData]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || loadingMore || loading) return;
@@ -635,6 +642,9 @@ export default function DeckCardsScreen({ route, navigation }) {
                   keyExtractor={item => item.id?.toString()}
                   showsVerticalScrollIndicator={false}
                   contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(24) }}
+                  refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                  }
                   ListHeaderComponent={
                     !selectedCard && cards.length > 0 && (
                       <View style={styles.cardsBlurSearchContainer}>

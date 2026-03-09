@@ -14,8 +14,8 @@ import Reanimated, {
 import Swiper from 'react-native-deck-swiper';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
-import { getCardsToLearn, batchUpsertProgress } from '../../services/CardService';
-import { supabase } from '../../lib/supabase';
+import { getCardsToLearn, batchUpsertProgress, getChapterProgressCounts } from '../../services/CardService';
+import { getDeckById } from '../../services/DeckService';
 import { invalidateCache } from '../../services/CacheService';
 import { useAuth } from '../../contexts/AuthContext';
 import { Iconify } from 'react-native-iconify';
@@ -278,14 +278,14 @@ export default function SwipeDeckScreen({ route, navigation }) {
         const chapterId = chapter?.id || null;
         const unassignedOnly = chapter === null;
 
-        const [categoryResult, favCards, rpcCards] = await Promise.all([
-          supabase.from('decks').select('categories(sort_order)').eq('id', deck.id).single(),
+        const [deckData, favCards, rpcCards] = await Promise.all([
+          getDeckById(deck.id),
           getFavoriteCards(authUserId),
           getCardsToLearn(deck.id, authUserId, chapterId, unassignedOnly, BATCH_SIZE, 0),
         ]);
 
-        if (categoryResult.data?.categories) {
-          setCategorySortOrder(categoryResult.data.categories.sort_order);
+        if (deckData?.categories?.sort_order != null) {
+          setCategorySortOrder(deckData.categories.sort_order);
         }
 
         const favSet = new Set((favCards || []).map((c) => c.id));
@@ -310,33 +310,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
         seenCardIdsRef.current = new Set(learningCards.map(c => c.card_id));
         flippedByIdRef.current = {};
 
-        let totalQuery = supabase.from('cards').select('id', { count: 'exact', head: true }).eq('deck_id', deck.id);
-        if (chapter?.id) totalQuery = totalQuery.eq('chapter_id', chapter.id);
-        else if (chapter === null) totalQuery = totalQuery.is('chapter_id', null);
-
-        let learningCountQuery = supabase.from('user_card_progress')
-          .select('id, cards!inner(id)', { count: 'exact', head: true })
-          .eq('user_id', authUserId).eq('status', 'learning').eq('cards.deck_id', deck.id);
-        if (chapter?.id) learningCountQuery = learningCountQuery.eq('cards.chapter_id', chapter.id);
-        else if (chapter === null) learningCountQuery = learningCountQuery.is('cards.chapter_id', null);
-
-        let learnedCountQuery = supabase.from('user_card_progress')
-          .select('id, cards!inner(id)', { count: 'exact', head: true })
-          .eq('user_id', authUserId).eq('status', 'learned').eq('cards.deck_id', deck.id);
-        if (chapter?.id) learnedCountQuery = learnedCountQuery.eq('cards.chapter_id', chapter.id);
-        else if (chapter === null) learnedCountQuery = learnedCountQuery.is('cards.chapter_id', null);
-
-        const [totalResult, learningResult, learnedResult] = await Promise.all([
-          totalQuery, learningCountQuery, learnedCountQuery,
-        ]);
-
-        if (totalResult.error) throw totalResult.error;
-        if (learningResult.error) throw learningResult.error;
-        if (learnedResult.error) throw learnedResult.error;
-
-        const totalCardsCount = totalResult.count || 0;
-        const learningCount = learningResult.count || 0;
-        const learnedCount = learnedResult.count || 0;
+        const progressCounts = await getChapterProgressCounts(authUserId, deck.id, chapter?.id ?? null);
+        const totalCardsCount = progressCounts.total;
+        const learningCount = progressCounts.learning;
+        const learnedCount = progressCounts.learned;
 
         setTotalCardCount(totalCardsCount);
         setTotalLearningCount(learningCount);
@@ -352,6 +329,16 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
     fetchCards();
   }, [deck.id, chapter?.id]);
+
+  // SwipeDeck'ten çıkıldığında progress cache'lerini invalidate et (DeckDetail/Chapters güncel sayı görsün)
+  useEffect(() => {
+    return () => {
+      if (deck?.id && authUserId) {
+        invalidateCache(`progress_deck_${deck.id}_${authUserId}`);
+        invalidateCache(`progress_chapters_${deck.id}_${authUserId}`);
+      }
+    };
+  }, [deck?.id, authUserId]);
 
   useEffect(() => {
     if (loading || currentIndex === 0) return;

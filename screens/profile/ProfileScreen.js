@@ -290,6 +290,7 @@ export default function ProfileScreen() {
       }
     },
     { label: t('profile.invite'), onPress: handleInviteFriends },
+    { label: t('profile.blockedSection', 'Engellenenler'), onPress: () => navigation.navigate('Blocked') },
   ], [t, navigation, handleInviteFriends]);
 
   const appSettingsItems = useMemo(() => [

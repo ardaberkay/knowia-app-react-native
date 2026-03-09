@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, Keyboard } from 'react-native';
-import { supabase } from '../../lib/supabase';
 import { getCategories } from '../../services/CategoryService';
+import { createDeck } from '../../services/DeckService';
 import { getLanguages } from '../../services/LanguageService';
 import { useAuth } from '../../contexts/AuthContext';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -144,34 +144,13 @@ export default function CreateScreen() {
     }
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('decks')
-        .insert({
-          user_id: userId,
-          name: name.trim(),
-          to_name: toName.trim() || null,
-          description: description.trim() || null,
-          category_id: selectedCategory,
-          is_shared: false,
-          is_admin_created: false,
-          card_count: 0,
-          is_started: false,
-        })
-        .select('id, name, description, card_count, user_id, category_id, is_shared, is_admin_created, updated_at, created_at, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)')
-        .single();
-
-      if (selectedLanguage.length > 0) {
-        const relations = selectedLanguage.map((languageId) => ({
-          deck_id: data.id,
-          language_id: languageId,
-        }));
-        const { error: deckLangError } = await supabase
-          .from('decks_languages')
-          .insert(relations);
-
-        if (deckLangError) throw deckLangError;
-      }
-      if (error) throw error;
+      const data = await createDeck(userId, {
+        name: name.trim(),
+        to_name: toName.trim() || null,
+        description: description.trim() || null,
+        category_id: selectedCategory,
+        languageIds: selectedLanguage,
+      });
       resetForm();
       navigation.navigate('DeckDetail', { deck: data });
     } catch (e) {

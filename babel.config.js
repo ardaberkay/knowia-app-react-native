@@ -133,7 +133,9 @@ module.exports = function (api) {
             'fontisto:locked',
             'mdi:required',
             'fluent:scan-camera-20-regular',
-            'streamline:check-solid'
+            'streamline:check-solid',
+            'fluent:eye-lines-24-filled',
+            'gridicons:block'
           ],
         },
       ],

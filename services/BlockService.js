@@ -28,6 +28,58 @@ export const getHiddenDeckIds = async (userId) => {
 };
 
 /**
+ * Engellenen kullanıcıları profil bilgisiyle döndürür (liste ekranları için).
+ * @param {string} userId - blocker_id (oturum açan kullanıcı)
+ * @returns {Promise<Array<{ id: string, username: string, image_url: string | null }>>}
+ */
+export const getBlockedUsers = async (userId) => {
+  if (!userId) return [];
+  const { data: rows, error } = await supabase
+    .from('blocked_users')
+    .select('blocked_id')
+    .eq('blocker_id', userId);
+  if (error) throw error;
+  if (!rows?.length) return [];
+  const ids = rows.map((r) => r.blocked_id);
+  const { data: profiles, error: profError } = await supabase
+    .from('profiles')
+    .select('id, username, image_url')
+    .in('id', ids);
+  if (profError) throw profError;
+  return profiles || [];
+};
+
+/**
+ * Gizlenen desteleri deck bilgisiyle döndürür (liste ekranları için).
+ * @param {string} userId - user_id
+ * @returns {Promise<Array>} Deck objeleri (id, name, description, card_count, image_url, profiles, categories)
+ */
+export const getHiddenDecks = async (userId) => {
+  if (!userId) return [];
+  const { data: rows, error } = await supabase
+    .from('user_hidden_decks')
+    .select(`
+      deck_id,
+      decks (
+        id, name, to_name, description, card_count, user_id,
+        profiles (username, image_url),
+        categories (id, name, sort_order)
+      )
+    `)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  if (!rows?.length) return [];
+  const deckList = [];
+  for (const r of rows) {
+    const raw = r.decks ?? r.deck;
+    const d = Array.isArray(raw) ? raw[0] : raw;
+    if (d && typeof d === 'object' && !Array.isArray(d)) deckList.push({ ...d });
+  }
+  return deckList;
+};
+
+/**
  * Blocked + Hidden ID'lerini cache'li getir (24 saat TTL).
  */
 export const getCachedBlockedAndHidden = async (userId) => {

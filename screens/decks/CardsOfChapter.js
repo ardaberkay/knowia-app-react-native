@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, memo, useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, TouchableHighlight, ActivityIndicator, Platform, Modal, Image, Pressable } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, TouchableHighlight, ActivityIndicator, Platform, Modal, Image, Pressable, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
+import { updateCardsChapter } from '../../services/CardService';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import SearchBar from '../../components/tools/SearchBar';
@@ -160,6 +160,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const latestDetailFetchRef = useRef(null);
   const [progressMap, setProgressMap] = useState(new Map());
   const [pageNum, setPageNum] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const [hasMoreCards, setHasMoreCards] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const PAGE_SIZE = 50;
@@ -371,6 +372,22 @@ export default function ChapterCardsScreen({ route, navigation }) {
     }
   };
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      if (userId && deck?.id) {
+        const data = await listChapters(deck.id, true);
+        setChapters(data);
+        const chaptersWithUnassigned = [{ id: null }, ...data];
+        const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, userId);
+        setProgressMap(progress);
+      }
+      await fetchChapterCards();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [deck?.id, userId]);
+
   const loadMoreChapterCards = async () => {
     if (!hasMoreCards || loadingMore || loading) return;
     setLoadingMore(true);
@@ -513,12 +530,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
     setMoveLoading(true);
     try {
       const cardIds = Array.from(selectedCards);
-      const { error } = await supabase
-        .from('cards')
-        .update({ chapter_id: targetChapterId || null })
-        .in('id', cardIds);
-
-      if (error) throw error;
+      await updateCardsChapter(cardIds, targetChapterId);
 
       showSuccess(t('chapterCards.cardsMoved', '{{count}} kart bölüme taşındı.', { count: selectedCards.size }));
 
@@ -843,6 +855,9 @@ export default function ChapterCardsScreen({ route, navigation }) {
               getItemLayout={getItemLayout}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={[styles.cardsList, { paddingBottom: verticalScale(100), paddingTop: verticalScale(20) }]}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
               onEndReached={loadMoreChapterCards}
               onEndReachedThreshold={0.5}
               ListFooterComponent={loadingMore ? (

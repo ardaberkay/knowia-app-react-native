@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Platform, SafeAreaView } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { supabase } from '../../lib/supabase';
 import { getCategories } from '../../services/CategoryService';
+import { updateDeck } from '../../services/DeckService';
 import { getLanguages } from '../../services/LanguageService';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { typography } from '../../theme/typography';
@@ -120,39 +120,13 @@ export default function DeckEditScreen() {
     }
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('decks')
-        .update({
-          name: name.trim(),
-          to_name: toName.trim() || null,
-          description: description.trim() || null,
-          category_id: selectedCategory,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', deck.id);
-      if (error) throw error;
-      // önce eski dilleri sil
-      const { error: deleteError } = await supabase
-        .from('decks_languages')
-        .delete()
-        .eq('deck_id', deck.id);
-
-      if (deleteError) throw deleteError;
-
-      // sonra yenileri ekle
-      if (selectedLanguage.length > 0) {
-        const relations = selectedLanguage.map((languageId) => ({
-          deck_id: deck.id,
-          language_id: languageId,
-        }));
-
-        const { error: deckLangError } = await supabase
-          .from('decks_languages')
-          .insert(relations);
-
-        if (deckLangError) throw deckLangError;
-      }
-
+      await updateDeck(deck.id, deck.user_id, {
+        name: name.trim(),
+        to_name: toName.trim() || null,
+        description: description.trim() || null,
+        category_id: selectedCategory,
+        languageIds: selectedLanguage,
+      });
       showSuccess(t("common.successDeckMessage", "Deste güncellendi."));
       setTimeout(() => {
         navigation.navigate('DeckDetail', { deck: { ...deck, name: name.trim(), to_name: toName.trim() || null, description: description.trim() || null, category_id: selectedCategory } });

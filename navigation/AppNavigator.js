@@ -16,6 +16,7 @@ import React from 'react';
 import { useTheme } from '../theme/theme';
 import SwipeDeckScreen from '../screens/cards/SwipeDeckScreen';
 import EditProfileScreen from '../screens/profile/EditProfileScreen';
+import BlockedScreen from '../screens/profile/BlockedScreen';
 import ProfileAvatarButton from '../components/layout/ProfileAvatarButton';
 import DeckEditScreen from '../screens/decks/EditDeckScreen';
 import CustomTabBar from '../components/ui/CustomTabBar';
@@ -211,6 +212,7 @@ export default function AppNavigator() {
           />
           <Stack.Screen name="SwipeDeck" component={SwipeDeckScreen} options={{ headerShown: true, title: t('tabs.deckCards', 'Öğren'), headerTitleAlign: 'center', }} />
           <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: t('tabs.profileEdit', 'Profili Düzenle'), headerTitleAlign: 'center' }} />
+          <Stack.Screen name="Blocked" component={BlockedScreen} options={{ headerShown: true, title: t('profile.blockedSection', 'Engellenenler'), headerTitleAlign: 'center' }} />
           <Stack.Screen name="DeckEdit" component={DeckEditScreen} options={{ headerShown: true, title: t('tabs.deckEdit', 'Desteyi Düzenle'), headerTitleAlign: 'center' }} />
           <Stack.Screen name="AddCard" component={AddCardScreen} options={({ navigation }) => ({
             headerShown: true,

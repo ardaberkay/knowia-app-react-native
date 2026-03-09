@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { getBlockedUserIds, getHiddenDeckIds, filterDecksByBlockAndHide } from './BlockService';
+import { getCachedBlockedAndHidden, filterDecksByBlockAndHide } from './BlockService';
 import { cacheData, getCachedData, invalidateCache, CACHE_DURATIONS } from './CacheService';
 
 // Favori Desteleri Getir (ilişkili deck verisiyle birlikte). Engel/gizle filtresi uygulanır.
@@ -21,7 +21,7 @@ export const getFavoriteDecks = async (userId) => {
   }));
 
   if (userId) {
-    const [blockedIds, hiddenIds] = await Promise.all([getBlockedUserIds(userId), getHiddenDeckIds(userId)]);
+    const [blockedIds, hiddenIds] = await getCachedBlockedAndHidden(userId);
     decks = filterDecksByBlockAndHide(decks, blockedIds, hiddenIds);
   }
 

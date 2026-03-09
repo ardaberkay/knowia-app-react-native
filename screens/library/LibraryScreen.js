@@ -738,7 +738,7 @@ export default function LibraryScreen() {
               onRefresh={() => {
                 if (!userId) return;
                 setLoading(true);
-                getDecksByCategory(userId, 'myDecks').then(decks => {
+                getDecksByCategory(userId, 'myDecks', true).then(decks => {
                   setMyDecks(decks || []);
                   setLoading(false);
                 });

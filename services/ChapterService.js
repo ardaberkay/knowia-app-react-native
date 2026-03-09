@@ -1,18 +1,28 @@
 import { supabase } from '../lib/supabase';
+import { cacheData, getCachedData, invalidateCache, CACHE_DURATIONS } from './CacheService';
 
 /**
- * List chapters for a deck ordered by ordinal then created_at (newest at bottom)
+ * List chapters for a deck ordered by ordinal then created_at (newest at bottom).
+ * 4 saat cache (mutation: chapter ekle/sil sonrası invalidate).
  * @param {string} deckId
+ * @param {boolean} forceRefresh - true ise cache bypass
  */
-export async function listChapters(deckId) {
+export async function listChapters(deckId, forceRefresh = false) {
+  const cacheKey = `chapters_${deckId}`;
+  if (!forceRefresh) {
+    const cached = await getCachedData(cacheKey, CACHE_DURATIONS.CHAPTERS);
+    if (cached && !cached.isStale) return cached.data;
+  }
   const { data, error } = await supabase
     .from('chapters')
     .select('id, ordinal, created_at')
     .eq('deck_id', deckId)
     .order('ordinal', { ascending: true })
-    .order('created_at', { ascending: true }); // Yeni eklenenler altta olacak (ascending = eski önce, yeni sonra)
+    .order('created_at', { ascending: true });
   if (error) throw error;
-  return data || [];
+  const result = data || [];
+  await cacheData(cacheKey, result);
+  return result;
 }
 
 /**
@@ -27,6 +37,7 @@ export async function createChapter(deckId, ordinal) {
     .select('id, ordinal, created_at')
     .single();
   if (error) throw error;
+  await invalidateCache(`chapters_${deckId}`);
   return data;
 }
 
@@ -61,13 +72,18 @@ export async function distributeUnassignedEvenly(deckId, chapterIds) {
   return true;
 }
 
-/** Delete a chapter by id */
-export async function deleteChapter(chapterId) {
+/**
+ * Delete a chapter by id.
+ * @param {string} chapterId
+ * @param {string} [deckId] - Varsa bu destenin chapters cache'i invalidate edilir
+ */
+export async function deleteChapter(chapterId, deckId = null) {
   const { error } = await supabase
     .from('chapters')
     .delete()
     .eq('id', chapterId);
   if (error) throw error;
+  if (deckId) await invalidateCache(`chapters_${deckId}`);
   return true;
 }
 
@@ -103,7 +119,7 @@ export async function reorderChapterOrdinals(deckId) {
     
     if (error) throw error;
   }
-  
+  await invalidateCache(`chapters_${deckId}`);
   return true;
 }
 
