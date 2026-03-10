@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { triggerHaptic } from '../../lib/hapticManager';
 
-const FilterIcon = ({ style, size, color, value = 'original', onChange, hideFavorites = false, variant }) => {
+const FilterIcon = ({ style, size, color, value = 'original', onChange, hideFavorites = false, hideAz = false, variant }) => {
   const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
   
@@ -119,9 +119,11 @@ const FilterIcon = ({ style, size, color, value = 'original', onChange, hideFavo
               <TouchableOpacity onPress={() => handleSelect('original')} style={{ paddingVertical: filterIconDimensions.dropdownItemPaddingVertical, paddingHorizontal: filterIconDimensions.dropdownItemPaddingHorizontal, backgroundColor: value === 'original' ? colors.iconBackground : 'transparent', borderRadius: filterIconDimensions.dropdownItemBorderRadius }}>
                 <Text style={{ color: value === 'original' ? (isDarkMode ? '#ffffff' : '#000000') : colors.text, fontWeight: value === 'original' ? 'bold' : 'normal', fontSize: filterIconDimensions.dropdownFontSize }}>{t('deckDetail.default', 'Varsayılan')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleSelect('az')} style={{ paddingVertical: filterIconDimensions.dropdownItemPaddingVertical, paddingHorizontal: filterIconDimensions.dropdownItemPaddingHorizontal, backgroundColor: value === 'az' ? colors.iconBackground  : 'transparent', borderRadius: filterIconDimensions.dropdownItemBorderRadius }}>
-                <Text style={{ color: value === 'az' ? (isDarkMode ? '#ffffff' : '#000000') : colors.text, fontWeight: value === 'az' ? 'bold' : 'normal', fontSize: filterIconDimensions.dropdownFontSize }}>A-Z</Text>
-              </TouchableOpacity>
+              {!hideAz && (
+                <TouchableOpacity onPress={() => handleSelect('az')} style={{ paddingVertical: filterIconDimensions.dropdownItemPaddingVertical, paddingHorizontal: filterIconDimensions.dropdownItemPaddingHorizontal, backgroundColor: value === 'az' ? colors.iconBackground : 'transparent', borderRadius: filterIconDimensions.dropdownItemBorderRadius }}>
+                  <Text style={{ color: value === 'az' ? (isDarkMode ? '#ffffff' : '#000000') : colors.text, fontWeight: value === 'az' ? 'bold' : 'normal', fontSize: filterIconDimensions.dropdownFontSize }}>A-Z</Text>
+                </TouchableOpacity>
+              )}
               {!hideFavorites && (
                 <TouchableOpacity onPress={() => handleSelect('fav')} style={{ paddingVertical: filterIconDimensions.dropdownItemPaddingVertical, paddingHorizontal: filterIconDimensions.dropdownItemPaddingHorizontal, backgroundColor: value === 'fav' ? colors.iconBackground : 'transparent', borderRadius: filterIconDimensions.dropdownItemBorderRadius }}>
                   <Text style={{ color: value === 'fav' ? (isDarkMode ? '#ffffff' : '#000000') : colors.text, fontWeight: value === 'fav' ? 'bold' : 'normal', fontSize: filterIconDimensions.dropdownFontSize }}>{t('deckDetail.fav', 'Favoriler')}</Text>

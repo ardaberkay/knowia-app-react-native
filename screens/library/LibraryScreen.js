@@ -243,8 +243,9 @@ export default function LibraryScreen() {
   }, [activeTab, favoritesFetched, userId]);
 
   const FAVORITE_CARDS_PAGE_SIZE = 50;
-  const fetchFavorites = async (silent = false, forceRefresh = false) => {
+  const fetchFavorites = async (silent = false, forceRefresh = false, sortOverride = null) => {
     if (!userId) return;
+    const currentSort = sortOverride ?? favCardsSort;
     if (!silent) setFavoritesLoading(true);
     try {
       const decks = await getFavoriteDecks(userId, {
@@ -268,7 +269,9 @@ export default function LibraryScreen() {
       });
       setFavoriteDecks(modifiedDecks);
 
-      const cards = await getFavoriteCards(userId, 0, FAVORITE_CARDS_PAGE_SIZE, forceRefresh);
+      const sortBy = ['original', 'az'].includes(currentSort) ? currentSort : 'original';
+      const filter = ['learned', 'unlearned'].includes(currentSort) ? currentSort : null;
+      const cards = await getFavoriteCards(userId, 0, FAVORITE_CARDS_PAGE_SIZE, forceRefresh, sortBy, filter);
       const cardIds = (cards || []).map(c => c.id);
       const statusMap = await getUserCardProgressForCards(userId, cardIds);
 
@@ -523,7 +526,6 @@ export default function LibraryScreen() {
     }
   }, [userId, favoriteCardIds, favoriteCards, selectedCard, filteredFavoriteCards, favCardsQuery, favCardsSort]);
 
-  const favCardFavoritedAt = (c) => new Date(c.favorited_at || c.created_at || 0).getTime();
   const filteredFavoriteCards = useMemo(() => {
     let list = favoriteCards.slice();
 
@@ -532,25 +534,8 @@ export default function LibraryScreen() {
       list = list.filter(c => (c.question || '').toLowerCase().includes(q) || (c.answer || '').toLowerCase().includes(q));
     }
 
-    if (favCardsSort === 'az') {
-      list.sort((a, b) => {
-        const cmp = (a.question || '').localeCompare(b.question || '');
-        return cmp !== 0 ? cmp : favCardFavoritedAt(b) - favCardFavoritedAt(a);
-      });
-    } else if (favCardsSort === 'fav') {
-      // Favori kartlar; API sırası (en son favorilenen en üstte) korunur
-    } else if (favCardsSort === 'unlearned') {
-      list = list.filter(c => c.status !== 'learned');
-      list.sort((a, b) => favCardFavoritedAt(b) - favCardFavoritedAt(a));
-    } else if (favCardsSort === 'learned') {
-      list = list.filter(c => c.status === 'learned');
-      list.sort((a, b) => favCardFavoritedAt(b) - favCardFavoritedAt(a));
-    } else {
-      list.sort((a, b) => favCardFavoritedAt(b) - favCardFavoritedAt(a));
-    }
-
     return list;
-  }, [favoriteCards, favCardsQuery, favCardsSort]);
+  }, [favoriteCards, favCardsQuery]);
 
   const filteredMyDecks = useMemo(() => {
     // Orijinal diziyi bozmamak için kopyalıyoruz
@@ -987,8 +972,12 @@ export default function LibraryScreen() {
                     />
                     <FilterIcon
                       value={favCardsSort}
-                      onChange={setFavCardsSort}
+                      onChange={(newSort) => {
+                        setFavCardsSort(newSort);
+                        fetchFavorites(false, true, newSort);
+                      }}
                       hideFavorites={true}
+                      hideAz={true}
                     />
                   </View>
                   {/* Favorite Cards List */}

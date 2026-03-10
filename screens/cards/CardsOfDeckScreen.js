@@ -18,6 +18,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import * as BlockService from '../../services/BlockService';
 import { deleteCard, getCardsByDeck, getUserCardProgressForCards, getCardDetail } from '../../services/CardService';
 import { addFavoriteCard, removeFavoriteCard, getFavoriteCardIdsForCards } from '../../services/FavoriteService';
+import { invalidateCache } from '../../services/CacheService';
 import ReportModal from '../../components/modals/ReportModal';
 import { triggerHaptic } from '../../lib/hapticManager';
 
@@ -76,9 +77,11 @@ export default function DeckCardsScreen({ route, navigation }) {
   const PAGE_SIZE = 50;
   const spinValue = useRef(new Animated.Value(0)).current;
   const moreMenuRef = useRef(null);
+  const flatListRef = useRef(null);
   const dataFetchedRef = useRef(false);
   const latestDetailFetchRef = useRef(null);
   const serverSortRef = useRef('original');
+  const serverFilterRef = useRef(null);
   const favoriteCardsRef = useRef(new Set());
   const [moreMenuVisible, setMoreMenuVisible] = useState(false);
   const [moreMenuPos, setMoreMenuPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
@@ -88,6 +91,7 @@ export default function DeckCardsScreen({ route, navigation }) {
   const { t } = useTranslation();
   const { session } = useAuth();
   const userId = session?.user?.id;
+  const showFullScreenLoading = loading && cards.length === 0 && !selectedCard;
 
   useEffect(() => {
     setCurrentUserId(userId || null);
@@ -97,11 +101,22 @@ export default function DeckCardsScreen({ route, navigation }) {
     favoriteCardsRef.current = new Set(favoriteCards);
   }, [favoriteCards]);
 
-  const fetchData = useCallback(async (silent = false, sortOverride, forceRefresh = false) => {
-    const sort = sortOverride || serverSortRef.current;
+  const fetchData = useCallback(async (silent = false, options = {}) => {
+    const {
+      sort: sortOverride,
+      filter: filterOverride,
+      forceRefresh = false,
+    } = options || {};
+
+    const requestedSort = ['original', 'az'].includes(sortOverride) ? sortOverride : serverSortRef.current;
+    const nextFilter = (filterOverride === null)
+      ? null
+      : (['fav', 'unlearned', 'learned'].includes(filterOverride) ? filterOverride : serverFilterRef.current);
+    const nextSort = nextFilter ? 'original' : requestedSort;
+
     if (!silent) setLoading(true);
     try {
-      const cardsData = await getCardsByDeck(deck.id, 0, PAGE_SIZE, sort, forceRefresh);
+      const cardsData = await getCardsByDeck(deck.id, 0, PAGE_SIZE, nextSort, forceRefresh, userId, nextFilter || undefined);
 
       let statusMap = {};
       let favoriteCardIds = new Set();
@@ -118,10 +133,11 @@ export default function DeckCardsScreen({ route, navigation }) {
 
       const cardsWithProgress = cardsData.map(card => ({
         ...card,
-        status: statusMap[card.id] || 'new'
+        status: statusMap[card.id] || (nextFilter === 'learned' ? 'learned' : 'new')
       }));
 
-      serverSortRef.current = sort;
+      serverSortRef.current = nextSort;
+      serverFilterRef.current = nextFilter;
       setCards(cardsWithProgress);
       setFavoriteCards(Array.from(favoriteCardIds));
       setPage(0);
@@ -138,7 +154,7 @@ export default function DeckCardsScreen({ route, navigation }) {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchData(false, null, true);
+    await fetchData(false, { forceRefresh: true });
     setRefreshing(false);
   }, [fetchData]);
 
@@ -147,7 +163,7 @@ export default function DeckCardsScreen({ route, navigation }) {
     setLoadingMore(true);
     try {
       const nextPage = page + 1;
-      const cardsData = await getCardsByDeck(deck.id, nextPage, PAGE_SIZE, serverSortRef.current);
+      const cardsData = await getCardsByDeck(deck.id, nextPage, PAGE_SIZE, serverSortRef.current, false, userId, serverFilterRef.current || undefined);
       if (cardsData.length === 0) {
         setHasMore(false);
         return;
@@ -185,8 +201,9 @@ export default function DeckCardsScreen({ route, navigation }) {
   useEffect(() => {
     dataFetchedRef.current = false;
     serverSortRef.current = 'original';
+    serverFilterRef.current = null;
     setCardSort('original');
-    fetchData(false, 'original');
+    fetchData(false, { sort: 'original', filter: null });
   }, [deck.id, fetchData]);
 
   useFocusEffect(
@@ -199,15 +216,6 @@ export default function DeckCardsScreen({ route, navigation }) {
 
   const filteredCards = useMemo(() => {
     let list = cards;
-
-    if (cardSort === 'fav') {
-      list = list.filter(card => favoriteCards.includes(card.id));
-    } else if (cardSort === 'unlearned') {
-      list = list.filter(card => card.status !== 'learned');
-    } else if (cardSort === 'learned') {
-      list = list.filter(card => card.status === 'learned');
-    }
-
     if (search.trim()) {
       const s = search.trim().toLowerCase();
       list = list.filter(c =>
@@ -216,12 +224,25 @@ export default function DeckCardsScreen({ route, navigation }) {
       );
     }
     return list;
-  }, [cards, search, cardSort, favoriteCards]);
+  }, [cards, search]);
 
   const handleSortChange = useCallback((newSort) => {
     setCardSort(newSort);
-    if ((newSort === 'original' || newSort === 'az') && serverSortRef.current !== newSort) {
-      fetchData(false, newSort);
+    if (flatListRef.current) {
+      flatListRef.current.scrollToOffset({ offset: 0, animated: false });
+    }
+    const isFilter = ['fav', 'unlearned', 'learned'].includes(newSort);
+    const isSort = ['original', 'az'].includes(newSort);
+
+    const nextFilter = isFilter ? newSort : null;
+    const nextSort = isFilter ? 'original' : (isSort ? newSort : serverSortRef.current);
+
+    const filterChanged = serverFilterRef.current !== nextFilter;
+    const sortChanged = serverSortRef.current !== nextSort;
+
+    if (filterChanged || sortChanged) {
+      // Filtre/sıralama geçişleri sessiz olsun (ikon kaybolmasın, loader çıkmasın)
+      fetchData(true, { sort: nextSort, filter: nextFilter });
     }
   }, [fetchData]);
 
@@ -252,7 +273,7 @@ export default function DeckCardsScreen({ route, navigation }) {
   // Header'ı ayarla - selectedCard durumuna göre
   useLayoutEffect(() => {
     // Loading bitene kadar header ikonlarını gösterme
-    if (loading) {
+    if (showFullScreenLoading) {
       navigation.setOptions({
         headerRight: () => null,
       });
@@ -345,7 +366,7 @@ export default function DeckCardsScreen({ route, navigation }) {
         },
       });
     }
-  }, [loading, selectedCard, editMode, colors.text, navigation, deck, favoriteCards, currentUserId, handleToggleFavoriteCard, openMoreMenu, openReportCardModal]);
+  }, [showFullScreenLoading, selectedCard, editMode, colors.text, navigation, deck, favoriteCards, currentUserId, handleToggleFavoriteCard, openMoreMenu, openReportCardModal]);
 
   useEffect(() => {
     if (loading) {
@@ -397,10 +418,22 @@ export default function DeckCardsScreen({ route, navigation }) {
     setFavoriteCards(prev => wasFavorite ? prev.filter(id => id !== cardId) : [...prev, cardId]);
     try {
       wasFavorite ? await removeFavoriteCard(userId, cardId) : await addFavoriteCard(userId, cardId);
+      // Bu ekranda favoriler/unfavorite sonrası "fav" filtresi ve cache tutarlılığı için deck card cache'ini temizle.
+      await invalidateCache(`cards_deck_${deck.id}`);
+
+      // Favoriler filtresindeyken unfavorite olduysa kartı listeden düşür.
+      if (serverFilterRef.current === 'fav' && wasFavorite) {
+        setCards(prev => prev.filter(c => c.id !== cardId));
+      }
+
+      // Favoriler filtresindeyken favorite eklediyse, sıralama en yeni favori üstte olacak şekilde server'dan tazele.
+      if (serverFilterRef.current === 'fav' && !wasFavorite) {
+        fetchData(true, { sort: 'original', filter: 'fav', forceRefresh: true });
+      }
     } catch (e) {
       setFavoriteCards(prev => wasFavorite ? [...prev, cardId] : prev.filter(id => id !== cardId));
     }
-  }, [userId]);
+  }, [userId, deck.id, fetchData]);
 
   const handleEditSelectedCard = () => {
     if (!selectedCard) return;
@@ -622,7 +655,7 @@ export default function DeckCardsScreen({ route, navigation }) {
           <View style={{ flex: 1, backgroundColor: colors.background }}>
             {/* Kartlar Listesi veya Detay */}
             <View style={{ flex: 1, minHeight: 0 }}>
-              {loading ? (
+              {showFullScreenLoading ? (
                 <View style={styles.loadingContainer}>
                   <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: scale(200), height: scale(200) }} />
                   <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100), height: scale(100) }} />
@@ -638,6 +671,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                 </LinearGradient>
               ) : (
                 <FlatList
+                  ref={flatListRef}
                   data={filteredCards}
                   keyExtractor={item => item.id?.toString()}
                   showsVerticalScrollIndicator={false}
@@ -646,7 +680,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
                   }
                   ListHeaderComponent={
-                    !selectedCard && cards.length > 0 && (
+                    !selectedCard && (
                       <View style={styles.cardsBlurSearchContainer}>
                         <SearchBar
                           value={search}
@@ -662,27 +696,27 @@ export default function DeckCardsScreen({ route, navigation }) {
                     )
                   }
                   ListEmptyComponent={
-                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: verticalScale(400), marginTop: verticalScale(-250), pointerEvents: 'none' }}>
+                    <View style={styles.noDecksEmpty} pointerEvents="none">
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="none">
                       <Image
                         source={require('../../assets/cardbg.png')}
-                        style={{ width: scale(500), height: scale(500), opacity: 0.2 }}
+                        style={{ position: 'absolute', alignSelf: 'center', width: moderateScale(500, 0.3), height: moderateScale(500, 0.3), opacity: 0.2 }}
                         resizeMode="contain"
-                        fadeDuration={0}
+                        pointerEvents="none"
                       />
-                      <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, fontSize: moderateScale(16), marginTop: verticalScale(-150) }]}>
+                    </View>
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="none">
+                      <Text style={[typography.styles.body, { color: colors.border, textAlign: 'center', fontSize: moderateScale(16), marginTop: verticalScale(20) }]}>
                         {t('cardDetail.addToDeck', 'Desteye bir kart ekle')}
                       </Text>
                     </View>
+                  </View>
                   }
                   renderItem={renderCardItem}
                   extraData={favoriteCards}
                   onEndReached={loadMore}
                   onEndReachedThreshold={0.5}
-                  ListFooterComponent={loadingMore ? (
-                    <View style={{ paddingVertical: verticalScale(16), alignItems: 'center' }}>
-                      <ActivityIndicator size="small" color={colors.text} />
-                    </View>
-                  ) : null}
+                  ListFooterComponent={null}
                   removeClippedSubviews={true}
                   initialNumToRender={8}
                   maxToRenderPerBatch={8}
@@ -738,6 +772,17 @@ const styles = StyleSheet.create({
   cardListItem: {
     paddingHorizontal: scale(12),
     paddingVertical: 0,
+  },
+  noDecksEmpty: {
+    height: verticalScale(200),
+    borderRadius: moderateScale(18),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: scale(16),
+    backgroundColor: 'transparent',
+    flexDirection: 'column',
+    gap: verticalScale(10),
+    marginTop: verticalScale(150),
   },
 });
 

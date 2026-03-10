@@ -6,28 +6,91 @@ const PAGE_SIZE = 50;
 /**
  * Destedeki kartları sayfalı ve isteğe bağlı cache ile döndürür.
  * forceRefresh true ise cache bypass edilir (pull-to-refresh için).
+ * @param {string} deckId - Deste id
+ * @param {number} page - Sayfa (0 tabanlı)
+ * @param {number} pageSize - Sayfa boyutu
+ * @param {string} sortBy - 'original' | 'az'
+ * @param {boolean} forceRefresh - Cache bypass
+ * @param {string} [userId] - Filtre için gerekli (learned/unlearned/fav)
+ * @param {string} [filter] - 'learned' | 'unlearned' | 'fav' - Tüm liste üzerinde sunucu tarafı filtre
  */
-export const getCardsByDeck = async (deckId, page = 0, pageSize = PAGE_SIZE, sortBy = 'original', forceRefresh = false) => {
-  const cacheKey = `cards_deck_${deckId}_p${page}_${sortBy}`;
+export const getCardsByDeck = async (deckId, page = 0, pageSize = PAGE_SIZE, sortBy = 'original', forceRefresh = false, userId = null, filter = null) => {
+  const cacheKey = `cards_deck_${deckId}_p${page}_${sortBy}_${filter || 'all'}`;
   if (!forceRefresh) {
     const cached = await getCachedData(cacheKey, CACHE_DURATIONS.CARDS_CONTENT);
     if (cached && !cached.isStale) return cached.data;
   }
   const from = page * pageSize;
-  let query = supabase
-    .from('cards')
-    .select('id, question, answer, created_at')
-    .eq('deck_id', deckId);
 
-  if (sortBy === 'az') {
-    query = query.order('question', { ascending: true });
+  let result = [];
+
+  if (filter === 'learned' && userId) {
+    let query = supabase
+      .from('user_card_progress')
+      .select('card_id, status, cards!inner(id, question, answer, created_at, deck_id)')
+      .eq('user_id', userId)
+      .eq('status', 'learned')
+      .eq('cards.deck_id', deckId);
+    query = query.order('card_id', { ascending: true });
+    const { data, error } = await query.range(from, from + pageSize - 1);
+    if (error) throw error;
+    result = (data || []).map((row) => ({ ...row.cards }));
+  } else if (filter === 'fav' && userId) {
+    let favQuery = supabase
+      .from('favorite_cards')
+      .select('card_id, created_at, cards!inner(id, question, answer, created_at, deck_id)')
+      .eq('user_id', userId)
+      .eq('cards.deck_id', deckId);
+    favQuery = favQuery.order('created_at', { ascending: false });
+    const { data, error } = await favQuery.range(from, from + pageSize - 1);
+    if (error) throw error;
+    result = (data || []).map((row) => {
+      const { deck_id, ...card } = row.cards;
+      return card;
+    });
+  } else if (filter === 'unlearned' && userId) {
+    const { data: learnedRows } = await supabase
+      .from('user_card_progress')
+      .select('card_id, cards!inner(deck_id)')
+      .eq('user_id', userId)
+      .eq('status', 'learned')
+      .eq('cards.deck_id', deckId);
+    const learnedIds = (learnedRows || []).map((r) => r.card_id);
+    if (learnedIds.length > 0) {
+      let unlearnedQuery = supabase
+        .from('cards')
+        .select('id, question, answer, created_at')
+        .eq('deck_id', deckId)
+        .not('id', 'in', `(${learnedIds.map((id) => `"${id}"`).join(',')})`);
+      unlearnedQuery = sortBy === 'az' ? unlearnedQuery.order('question', { ascending: true }) : unlearnedQuery.order('created_at', { ascending: false });
+      const { data, error } = await unlearnedQuery.range(from, from + pageSize - 1);
+      if (error) throw error;
+      result = data || [];
+    } else {
+      let unlearnedQuery = supabase
+        .from('cards')
+        .select('id, question, answer, created_at')
+        .eq('deck_id', deckId);
+      unlearnedQuery = sortBy === 'az' ? unlearnedQuery.order('question', { ascending: true }) : unlearnedQuery.order('created_at', { ascending: false });
+      const { data, error } = await unlearnedQuery.range(from, from + pageSize - 1);
+      if (error) throw error;
+      result = data || [];
+    }
   } else {
-    query = query.order('created_at', { ascending: false });
+    let query = supabase
+      .from('cards')
+      .select('id, question, answer, created_at')
+      .eq('deck_id', deckId);
+    if (sortBy === 'az') {
+      query = query.order('question', { ascending: true });
+    } else {
+      query = query.order('created_at', { ascending: false });
+    }
+    const { data, error } = await query.range(from, from + pageSize - 1);
+    if (error) throw error;
+    result = data || [];
   }
 
-  const { data, error } = await query.range(from, from + pageSize - 1);
-  if (error) throw error;
-  const result = data || [];
   if (result.length > 0) await cacheData(cacheKey, result);
   return result;
 };

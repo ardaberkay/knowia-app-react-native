@@ -220,7 +220,6 @@ export default function FavoriteDecks() {
           }}
           onPressDeck={(deck) => navigation.navigate('DeckDetail', { deck })}
           ListHeaderComponent={(
-            favoriteDecks.length > 0 ? (
             <View style={{ backgroundColor: colors.background, marginVertical: verticalScale(8) }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(10), width: '95%', alignSelf: 'center' }}>
                 <SearchBar
@@ -232,7 +231,6 @@ export default function FavoriteDecks() {
                 <FilterModalButton onPress={() => setFilterModalVisible(true)} />
               </View>
             </View>
-          ) : null
           )}
           refreshing={loading}
           onRefresh={() => fetchFavorites(true)}
@@ -248,6 +246,7 @@ export default function FavoriteDecks() {
         onApply={handleApplyFilters}
         showSortOptions={true}
         hideFavorites={true}
+        hideAz={true}
         languages={allLanguages}
         currentLanguages={selectedLanguages}
       />

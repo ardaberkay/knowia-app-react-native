@@ -59,23 +59,27 @@ export default function FavoriteCards() {
   const [currentUserId, setCurrentUserId] = useState(null);
   const latestDetailFetchRef = useRef(null);
   const favoriteCardsRef = useRef(new Set());
+  const flatListRef = useRef(null);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     favoriteCardsRef.current = new Set(favoriteCards);
   }, [favoriteCards]);
 
-  const fetchData = useCallback(async (silent = false, forceRefresh = false) => {
+  const fetchData = useCallback(async (silent = false, forceRefresh = false, sortOverride = null) => {
     if (!userId) {
       setCards([]);
       setFavoriteCards([]);
       setCurrentUserId(null);
       return;
     }
+    const currentSort = sortOverride ?? sort;
+    const sortBy = ['original', 'az'].includes(currentSort) ? currentSort : 'original';
+    const filter = ['learned', 'unlearned'].includes(currentSort) ? currentSort : null;
     if (!silent) setLoading(true);
     setCurrentUserId(userId);
     try {
-      const cardsData = await getFavoriteCards(userId, 0, PAGE_SIZE, forceRefresh);
+      const cardsData = await getFavoriteCards(userId, 0, PAGE_SIZE, forceRefresh, sortBy, filter);
       const cardIds = (cardsData || []).map(c => c.id);
       const statusMap = cardIds.length > 0
         ? await getUserCardProgressForCards(userId, cardIds)
@@ -94,14 +98,16 @@ export default function FavoriteCards() {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [userId]);
+  }, [userId, sort]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || loadingMore || loading || !userId) return;
     setLoadingMore(true);
     try {
       const nextPage = page + 1;
-      const cardsData = await getFavoriteCards(userId, nextPage, PAGE_SIZE);
+      const sortBy = ['original', 'az'].includes(sort) ? sort : 'original';
+      const filter = ['learned', 'unlearned'].includes(sort) ? sort : null;
+      const cardsData = await getFavoriteCards(userId, nextPage, PAGE_SIZE, false, sortBy, filter);
       if (!cardsData || cardsData.length === 0) {
         setHasMore(false);
         return;
@@ -159,34 +165,14 @@ export default function FavoriteCards() {
     return unsubscribe;
   }, [navigation, selectedCard]);
 
-  const favoritedAt = (c) => new Date(c.favorited_at || c.created_at || 0).getTime();
   const filteredCards = useMemo(() => {
     let list = cards.slice();
-    
     if (query && query.trim()) {
       const q = query.toLowerCase();
       list = list.filter(c => (c.question || '').toLowerCase().includes(q) || (c.answer || '').toLowerCase().includes(q));
     }
-    
-    if (sort === 'az') {
-      list.sort((a, b) => {
-        const cmp = (a.question || '').localeCompare(b.question || '');
-        return cmp !== 0 ? cmp : favoritedAt(b) - favoritedAt(a);
-      });
-    } else if (sort === 'fav') {
-      // already favorites; keep API order (en son favorilenen en üstte)
-    } else if (sort === 'unlearned') {
-      list = list.filter(c => c.status !== 'learned');
-      list.sort((a, b) => favoritedAt(b) - favoritedAt(a));
-    } else if (sort === 'learned') {
-      list = list.filter(c => c.status === 'learned');
-      list.sort((a, b) => favoritedAt(b) - favoritedAt(a));
-    } else {
-      list.sort((a, b) => favoritedAt(b) - favoritedAt(a));
-    }
-    
     return list;
-  }, [cards, query, sort]);
+  }, [cards, query]);
 
   const fetchAndSetCardDetail = useCallback(async (card) => {
     if (!card) {
@@ -274,7 +260,7 @@ export default function FavoriteCards() {
   }, [currentUserId, fetchAndSetCardDetail, handleToggleFavoriteCard, handleDeleteCard]);
 
   const favListHeader = useMemo(() => (
-    !selectedCard && cards.length > 0 ? (
+    !selectedCard ? (
       <View style={styles.searchContainer}>
         <SearchBar
           value={query}
@@ -284,12 +270,19 @@ export default function FavoriteCards() {
         />
         <FilterIcon
           value={sort}
-          onChange={setSort}
+          onChange={(newSort) => {
+            setSort(newSort);
+            if (flatListRef.current) {
+              flatListRef.current.scrollToOffset({ offset: 0, animated: false });
+            }
+            fetchData(false, false, newSort);
+          }}
           hideFavorites={true}
+          hideAz={true}
         />
       </View>
     ) : null
-  ), [selectedCard, cards.length, query, sort, t]);
+  ), [selectedCard, query, sort, t, fetchData]);
 
   const favListEmpty = useMemo(() => (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: verticalScale(400), marginTop: verticalScale(-250), pointerEvents: 'none' }}>
@@ -347,20 +340,9 @@ export default function FavoriteCards() {
         </View>
       ) : selectedCard ? (
         <CardDetailView card={selectedCard} cards={filteredCards} onSelectCard={fetchAndSetCardDetail} />
-      ) : cards.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: verticalScale(-250)}}>
-          <Image
-            source={require('../../assets/cardbg.png')}
-            style={{ width: scale(500), height: verticalScale(500), opacity: 0.2 }}
-            resizeMode="contain"
-            fadeDuration={0}
-          />
-          <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, fontSize: moderateScale(16), marginTop: verticalScale(-150) }]}>
-            {t('library.addFavoriteCardEmpty', 'Bir kart favorilere ekle')}
-          </Text>
-        </View>
       ) : (
         <FlatList
+          ref={flatListRef}
           data={filteredCards}
           keyExtractor={item => item.id?.toString()}
           showsVerticalScrollIndicator={false}

@@ -85,6 +85,7 @@ const FilterModal = ({
   sortOptions: customSortOptions,
   defaultSort = 'default',
   hideFavorites = false,
+  hideAz = false,
 }) => {
   const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
@@ -158,6 +159,9 @@ const FilterModal = ({
   let sortOptions = customSortOptions || defaultSortOptions;
   if (hideFavorites) {
     sortOptions = sortOptions.filter(opt => opt.key !== 'favorites');
+  }
+  if (hideAz) {
+    sortOptions = sortOptions.filter(opt => opt.key !== 'az');
   }
   const selectedSortLabel = sortOptions.find(opt => opt.key === tempSort)?.label || sortOptions[0].label;
   const categoryOptions = getCategoryOptions(t);

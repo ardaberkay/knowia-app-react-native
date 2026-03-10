@@ -41,34 +41,108 @@ export const getFavoriteDecks = async (userId, options = {}) => {
 };
 
 // Favori Kartları Getir (sayfalı, cache destekli). Sıra: en son favorilenen en üstte (favorite_cards.created_at desc).
-export const getFavoriteCards = async (userId, page = 0, pageSize = FAVORITE_CARDS_PAGE_SIZE, forceRefresh = false) => {
-  const cacheKey = `fav_cards_${userId}_p${page}`;
+// filter: 'learned' | 'unlearned' | null - Tüm favori kartlar üzerinde sunucu tarafı filtre
+// sortBy: 'original' | 'az'
+export const getFavoriteCards = async (userId, page = 0, pageSize = FAVORITE_CARDS_PAGE_SIZE, forceRefresh = false, sortBy = 'original', filter = null) => {
+  const cacheKey = `fav_cards_${userId}_p${page}_${sortBy}_${filter || 'all'}`;
   if (!forceRefresh) {
     const cached = await getCachedData(cacheKey, CACHE_DURATIONS.FAVORITES_CARDS_CONTENT);
     if (cached && !cached.isStale) return cached.data;
   }
   const from = page * pageSize;
-  const { data, error } = await supabase
-    .from('favorite_cards')
-    .select(`
-      card_id,
-      created_at,
-      cards(
-        id, question, answer, created_at,
-        deck:decks(
-          id, 
-          name,
-          user_id,
-          categories:categories(id, name, sort_order)
-        )
-      )
-    `)
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .range(from, from + pageSize - 1);
 
-  if (error) throw error;
-  const result = (data || []).map(item => ({ ...item.cards, favorited_at: item.created_at }));
+  let result = [];
+
+  if (sortBy === 'az') {
+    let favIds = await getFavoriteCardIds(userId, forceRefresh);
+    if (filter === 'learned' || filter === 'unlearned') {
+      const { data: learnedRows } = await supabase
+        .from('user_card_progress')
+        .select('card_id')
+        .eq('user_id', userId)
+        .eq('status', 'learned');
+      const learnedSet = new Set((learnedRows || []).map((r) => r.card_id));
+      if (filter === 'learned') {
+        favIds = favIds.filter((id) => learnedSet.has(id));
+      } else {
+        favIds = favIds.filter((id) => !learnedSet.has(id));
+      }
+    }
+    if (favIds.length === 0) return [];
+    const { data: cardsData, error } = await supabase
+      .from('cards')
+      .select('id, question, answer, created_at, deck:decks(id, name, user_id, categories:categories(id, name, sort_order))')
+      .in('id', favIds)
+      .order('question', { ascending: true })
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    const cards = cardsData || [];
+    if (cards.length === 0) return [];
+    const cardIds = cards.map((c) => c.id);
+    const { data: favRows } = await supabase
+      .from('favorite_cards')
+      .select('card_id, created_at')
+      .eq('user_id', userId)
+      .in('card_id', cardIds);
+    const favoritedAtMap = {};
+    (favRows || []).forEach((row) => { favoritedAtMap[row.card_id] = row.created_at; });
+    result = cards.map((c) => ({ ...c, favorited_at: favoritedAtMap[c.id] || c.created_at }));
+  } else if (filter === 'learned' || filter === 'unlearned') {
+    const { data: learnedRows } = await supabase
+      .from('user_card_progress')
+      .select('card_id')
+      .eq('user_id', userId)
+      .eq('status', 'learned');
+    const learnedIds = (learnedRows || []).map((r) => r.card_id);
+
+    let query = supabase
+      .from('favorite_cards')
+      .select(`
+        card_id,
+        created_at,
+        cards(
+          id, question, answer, created_at,
+          deck:decks(
+            id, name, user_id,
+            categories:categories(id, name, sort_order)
+          )
+        )
+      `)
+      .eq('user_id', userId);
+
+    if (filter === 'learned' && learnedIds.length > 0) {
+      query = query.in('card_id', learnedIds);
+    } else if (filter === 'learned' && learnedIds.length === 0) {
+      return [];
+    } else if (filter === 'unlearned' && learnedIds.length > 0) {
+      query = query.not('card_id', 'in', `(${learnedIds.map((id) => `"${id}"`).join(',')})`);
+    }
+
+    query = query.order('created_at', { ascending: false });
+    const { data, error } = await query.range(from, from + pageSize - 1);
+    if (error) throw error;
+    result = (data || []).map((item) => ({ ...item.cards, favorited_at: item.created_at }));
+  } else {
+    let query = supabase
+      .from('favorite_cards')
+      .select(`
+        card_id,
+        created_at,
+        cards(
+          id, question, answer, created_at,
+          deck:decks(
+            id, name, user_id,
+            categories:categories(id, name, sort_order)
+          )
+        )
+      `)
+      .eq('user_id', userId);
+    query = query.order('created_at', { ascending: false });
+    const { data, error } = await query.range(from, from + pageSize - 1);
+    if (error) throw error;
+    result = (data || []).map((item) => ({ ...item.cards, favorited_at: item.created_at }));
+  }
+
   if (result.length > 0) await cacheData(cacheKey, result);
   return result;
 };
