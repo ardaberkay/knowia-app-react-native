@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useLayoutEffect, useRef, useCallback, memo } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, BackHandler, Alert, Keyboard, RefreshControl } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, BackHandler, Alert, Keyboard, RefreshControl, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
 import { useAuth } from '../../contexts/AuthContext';
@@ -46,54 +46,94 @@ export default function FavoriteCards() {
   const { session } = useAuth();
   const userId = session?.user?.id;
 
+  const PAGE_SIZE = 50;
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('original');
   const [selectedCard, setSelectedCard] = useState(null);
   const [favoriteCards, setFavoriteCards] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
   const latestDetailFetchRef = useRef(null);
+  const favoriteCardsRef = useRef(new Set());
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchFavorites = async (skipLoading = false) => {
-    if (!skipLoading) setLoading(true);
+  useEffect(() => {
+    favoriteCardsRef.current = new Set(favoriteCards);
+  }, [favoriteCards]);
+
+  const fetchData = useCallback(async (silent = false, forceRefresh = false) => {
+    if (!userId) {
+      setCards([]);
+      setFavoriteCards([]);
+      setCurrentUserId(null);
+      return;
+    }
+    if (!silent) setLoading(true);
+    setCurrentUserId(userId);
     try {
-      if (!userId) {
-        setCards([]);
-        setFavoriteCards([]);
-        setCurrentUserId(null);
-        return;
-      }
-      setCurrentUserId(userId);
-      
-      // Favori kartları çek; ardından bu kartların progress bilgisini servisten al
-      const res = await getFavoriteCards(userId);
-      const cardIds = (res || []).map(c => c.id);
+      const cardsData = await getFavoriteCards(userId, 0, PAGE_SIZE, forceRefresh);
+      const cardIds = (cardsData || []).map(c => c.id);
       const statusMap = cardIds.length > 0
         ? await getUserCardProgressForCards(userId, cardIds)
         : {};
-      const cardsWithProgress = (res || []).map(card => ({
+      const cardsWithProgress = (cardsData || []).map(card => ({
         ...card,
         status: statusMap[card.id] || 'new',
       }));
-      
       setCards(cardsWithProgress);
       setFavoriteCards(cardsWithProgress.map(card => card.id));
+      setPage(0);
+      setHasMore((cardsData || []).length >= PAGE_SIZE);
+    } catch (e) {
+      setCards([]);
+      setFavoriteCards([]);
     } finally {
-      if (!skipLoading) setLoading(false);
+      if (!silent) setLoading(false);
     }
-  };
+  }, [userId]);
+
+  const loadMore = useCallback(async () => {
+    if (!hasMore || loadingMore || loading || !userId) return;
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const cardsData = await getFavoriteCards(userId, nextPage, PAGE_SIZE);
+      if (!cardsData || cardsData.length === 0) {
+        setHasMore(false);
+        return;
+      }
+      const cardIds = cardsData.map(c => c.id);
+      const statusMap = cardIds.length > 0
+        ? await getUserCardProgressForCards(userId, cardIds)
+        : {};
+      const newCards = cardsData.map(card => ({
+        ...card,
+        status: statusMap[card.id] || 'new',
+      }));
+      setCards(prev => [...prev, ...newCards]);
+      setFavoriteCards(prev => [...new Set([...prev, ...newCards.map(c => c.id)])]);
+      setPage(nextPage);
+      setHasMore(cardsData.length >= PAGE_SIZE);
+    } catch (e) {
+      setHasMore(false);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [hasMore, loadingMore, loading, page, userId]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchFavorites(true);
+    await fetchData(true, true);
     setRefreshing(false);
-  }, [userId]);
+  }, [fetchData]);
 
   useEffect(() => {
-    fetchFavorites();
-  }, [userId]);
+    fetchData(false);
+  }, [userId, fetchData]);
 
   useEffect(() => {
     const onBackPress = () => {
@@ -184,12 +224,12 @@ export default function FavoriteCards() {
       wasFavorite ? await removeFavoriteCard(userId, cardId) : await addFavoriteCard(userId, cardId);
     } catch (e) {
       if (wasFavorite) {
-        fetchFavorites();
+        fetchData(false, true);
       } else {
         setFavoriteCards(prev => prev.filter(id => id !== cardId));
       }
     }
-  }, [userId, favoriteCards, selectedCard]);
+  }, [userId, favoriteCards, selectedCard, fetchData]);
 
   const handleDeleteCard = async (cardId) => {
     Alert.alert(
@@ -203,15 +243,11 @@ export default function FavoriteCards() {
           onPress: async () => {
             try {
               await deleteCard(cardId);
-              
-              // Kartı listeden çıkar
-              setCards(cards.filter(c => c.id !== cardId));
-              setFavoriteCards(favoriteCards.filter(id => id !== cardId));
-              // Eğer seçili kart silindiyse, seçimi temizle
+              setCards(prev => prev.filter(c => c.id !== cardId));
+              setFavoriteCards(prev => prev.filter(id => id !== cardId));
               if (selectedCard && selectedCard.id === cardId) {
                 setSelectedCard(null);
               }
-              
               showSuccess(t('cardDetail.deleteSuccess', 'Kart başarıyla silindi'));
             } catch (e) {
               showError(t('cardDetail.deleteError', 'Kart silinemedi'));
@@ -228,14 +264,14 @@ export default function FavoriteCards() {
     return (
       <MemoizedFavCardItem
         item={item}
-        isFavorite={favoriteCards.includes(item.id)}
+        isFavorite={favoriteCardsRef.current.has(item.id)}
         isOwner={isOwner}
         onPress={fetchAndSetCardDetail}
         onToggleFavorite={handleToggleFavoriteCard}
         onDelete={handleDeleteCard}
       />
     );
-  }, [currentUserId, favoriteCards, fetchAndSetCardDetail, handleToggleFavoriteCard, handleDeleteCard]);
+  }, [currentUserId, fetchAndSetCardDetail, handleToggleFavoriteCard, handleDeleteCard]);
 
   const favListHeader = useMemo(() => (
     !selectedCard && cards.length > 0 ? (
@@ -335,13 +371,22 @@ export default function FavoriteCards() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
-          removeClippedSubviews={true}
-          initialNumToRender={10}
-          maxToRenderPerBatch={8}
-          windowSize={9}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
           ListHeaderComponent={favListHeader}
           ListEmptyComponent={favListEmpty}
           renderItem={renderFavCardItem}
+          extraData={favoriteCards}
+          ListFooterComponent={loadingMore ? (
+            <View style={{ paddingVertical: verticalScale(16), alignItems: 'center' }}>
+              <ActivityIndicator size="small" color={colors.text} />
+            </View>
+          ) : null}
+          removeClippedSubviews={true}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={11}
+          updateCellsBatchingPeriod={50}
         />
       )}
     </View>

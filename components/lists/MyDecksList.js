@@ -204,6 +204,7 @@ const MyDecksList = ({
   ListHeaderComponent,
   refreshing = false,
   onRefresh,
+  onEndReached,
 }) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -402,7 +403,8 @@ const MyDecksList = ({
       keyboardDismissMode="on-drag" 
       keyboardShouldPersistTaps="handled"
       onScrollBeginDrag={() => Keyboard.dismiss()}
-      
+      onEndReached={onEndReached}
+      onEndReachedThreshold={onEndReached ? 0.5 : undefined}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}

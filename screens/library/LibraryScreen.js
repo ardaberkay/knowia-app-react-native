@@ -98,6 +98,11 @@ export default function LibraryScreen() {
   const [allLanguages, setAllLanguages] = useState([]);
   const [selectedLanguages, setSelectedLanguages] = useState([]);
 
+  // MyDecks sayfalama durumu
+  const [myDecksPage, setMyDecksPage] = useState(0);
+  const [myDecksHasMore, setMyDecksHasMore] = useState(true);
+  const [myDecksLoadingMore, setMyDecksLoadingMore] = useState(false);
+
   useEffect(() => {
     getLanguages().then(setAllLanguages);
   }, []);
@@ -181,6 +186,9 @@ export default function LibraryScreen() {
 
   // Search and filter removed
 
+  const MY_DECKS_PAGE_SIZE = 50;
+  const FAVORITE_DECKS_PAGE_SIZE = 50;
+
   const handleSetPage = (pageIndex) => {
     if (pagerRef.current && typeof pagerRef.current.setPage === 'function') {
       pagerRef.current.setPage(pageIndex);
@@ -192,25 +200,40 @@ export default function LibraryScreen() {
     setActiveTab(pageIndex === 0 ? 'myDecks' : 'favorites');
   };
 
-  useEffect(() => {
-    if (!userId) {
-      setMyDecks([]);
-      setLoading(false);
-      return;
-    }
-    const fetchDecks = async () => {
+  const fetchMyDecks = useCallback(
+    async (forceRefresh = false) => {
+      if (!userId) {
+        setMyDecks([]);
+        setLoading(false);
+        setMyDecksPage(0);
+        setMyDecksHasMore(false);
+        return;
+      }
+
       setLoading(true);
       try {
-        const decks = await getDecksByCategory(userId, 'myDecks');
-        setMyDecks(decks || []);
+        const decks = await getDecksByCategory(userId, 'myDecks', {
+          page: 0,
+          limit: MY_DECKS_PAGE_SIZE,
+          forceRefresh,
+        });
+        const safeDecks = decks || [];
+        setMyDecks(safeDecks);
+        setMyDecksPage(0);
+        setMyDecksHasMore(safeDecks.length >= MY_DECKS_PAGE_SIZE);
       } catch (e) {
         setMyDecks([]);
+        setMyDecksHasMore(false);
       } finally {
         setLoading(false);
       }
-    };
-    fetchDecks();
-  }, [userId]);
+    },
+    [userId]
+  );
+
+  useEffect(() => {
+    fetchMyDecks(false);
+  }, [fetchMyDecks]);
 
   // Favorilerim sekmesine geçildiğinde veri yoksa (veya henüz gelmediyse) yükle
   useEffect(() => {
@@ -219,11 +242,16 @@ export default function LibraryScreen() {
     }
   }, [activeTab, favoritesFetched, userId]);
 
-  const fetchFavorites = async (silent = false) => {
+  const FAVORITE_CARDS_PAGE_SIZE = 50;
+  const fetchFavorites = async (silent = false, forceRefresh = false) => {
     if (!userId) return;
     if (!silent) setFavoritesLoading(true);
     try {
-      const decks = await getFavoriteDecks(userId);
+      const decks = await getFavoriteDecks(userId, {
+        page: 0,
+        limit: FAVORITE_DECKS_PAGE_SIZE,
+        forceRefresh,
+      });
       // is_admin_created kontrolü - tüm kategoriler için geçerli
       const modifiedDecks = (decks || []).map((deck) => {
         if (deck.is_admin_created) {
@@ -240,7 +268,7 @@ export default function LibraryScreen() {
       });
       setFavoriteDecks(modifiedDecks);
 
-      const cards = await getFavoriteCards(userId);
+      const cards = await getFavoriteCards(userId, 0, FAVORITE_CARDS_PAGE_SIZE, forceRefresh);
       const cardIds = (cards || []).map(c => c.id);
       const statusMap = await getUserCardProgressForCards(userId, cardIds);
 
@@ -735,14 +763,32 @@ export default function LibraryScreen() {
               onPressDeck={(deck) => navigation.navigate('DeckDetail', { deck })}
               ListHeaderComponent={renderMyDecksCard}
               refreshing={loading}
-              onRefresh={() => {
-                if (!userId) return;
-                setLoading(true);
-                getDecksByCategory(userId, 'myDecks', true).then(decks => {
-                  setMyDecks(decks || []);
-                  setLoading(false);
-                });
-              }}
+              onRefresh={() => fetchMyDecks(true)}
+              onEndReached={myDecksHasMore ? async () => {
+                if (!userId || myDecksLoadingMore || !myDecksHasMore) return;
+                setMyDecksLoadingMore(true);
+                try {
+                  const nextPage = myDecksPage + 1;
+                  const decks = await getDecksByCategory(userId, 'myDecks', {
+                    page: nextPage,
+                    limit: MY_DECKS_PAGE_SIZE,
+                  });
+                  const safeDecks = decks || [];
+                  if (safeDecks.length === 0) {
+                    setMyDecksHasMore(false);
+                  } else {
+                    setMyDecks(prev => [...prev, ...safeDecks]);
+                    setMyDecksPage(nextPage);
+                    if (safeDecks.length < MY_DECKS_PAGE_SIZE) {
+                      setMyDecksHasMore(false);
+                    }
+                  }
+                } catch {
+                  setMyDecksHasMore(false);
+                } finally {
+                  setMyDecksLoadingMore(false);
+                }
+              } : undefined}
             />
           )}
         </View>
@@ -761,7 +807,7 @@ export default function LibraryScreen() {
               refreshControl={
                 <RefreshControl
                   refreshing={favoritesLoading}
-                  onRefresh={fetchFavorites}
+                  onRefresh={() => fetchFavorites(false, true)}
                   tintColor={colors.buttonColor}
                   colors={[colors.buttonColor]}
                 />
@@ -796,7 +842,7 @@ export default function LibraryScreen() {
                       {favoriteDecks
                         .slice()
                         .sort((a, b) => new Date(b.favorited_at || b.created_at) - new Date(a.favorited_at || a.created_at))
-                        .slice(0, 5)
+                        .slice(0, 10)
                         .map(deck => (
                           <View key={'fav_slide_' + deck.id} style={styles.favoriteSlideItem}>
                             <TouchableOpacity
@@ -894,7 +940,7 @@ export default function LibraryScreen() {
                       {favoriteDecks
                         .slice()
                         .sort((a, b) => new Date(b.favorited_at || b.created_at) - new Date(a.favorited_at || a.created_at))
-                        .slice(0, 5)
+                        .slice(0, 10)
                         .map((_, i) => (
                           <View
                             key={'fav_dot_' + i}

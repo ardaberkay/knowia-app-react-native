@@ -118,7 +118,8 @@ export default function HomeScreen() {
       await Promise.all(
         Object.keys(DECK_CATEGORIES).map(async (category) => {
           try {
-            decksData[category] = await getDecksByCategory(userId, category);
+            // Anasayfada performans için her kategoriden yalnızca son 10 deste getir
+            decksData[category] = await getDecksByCategory(userId, category, { limit: 10 });
           } catch (err) {
             console.error(`Error loading ${category}:`, err);
             decksData[category] = [];
@@ -137,7 +138,8 @@ export default function HomeScreen() {
 
   const loadInProgressDecks = useCallback(async () => {
     try {
-      const data = await getDecksByCategory(userId, 'inProgressDecks');
+      // Çalıştığım Desteler için de anasayfada yalnızca son 10 kayıt yeterli
+      const data = await getDecksByCategory(userId, 'inProgressDecks', { limit: 10 });
       setDecks(prev => ({ ...prev, inProgressDecks: data || [] }));
     } catch (err) {
       console.error('Error loading inProgressDecks:', err);

@@ -21,7 +21,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Iconify } from 'react-native-iconify';
 import logoasil from '../../assets/logoasil.png';
 import { useTranslation } from 'react-i18next';
-import { addFavoriteCard, removeFavoriteCard, getFavoriteCards } from '../../services/FavoriteService';
+import { addFavoriteCard, removeFavoriteCard, getFavoriteCardIds } from '../../services/FavoriteService';
 import LottieView from 'lottie-react-native';
 import { scale, moderateScale, verticalScale, getIsTablet, useWindowDimensions } from '../../lib/scaling';
 import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
@@ -275,12 +275,18 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
       try {
         setUserId(authUserId);
-        const chapterId = chapter?.id || null;
+        // Swipe modunda:
+        // - chapter === undefined -> Tüm kartlar (chapter filtresi yok)
+        // - chapter === null      -> Sadece atanmamış kartlar
+        // - chapter.id            -> Belirli bölüm
+        const chapterId = typeof chapter === 'undefined'
+          ? null // getCardsToLearn için "tümü" senaryosunda chapter_id parametresi null gidiyor
+          : (chapter === null ? null : chapter.id);
         const unassignedOnly = chapter === null;
 
-        const [deckData, favCards, rpcCards] = await Promise.all([
+        const [deckData, favCardIds, rpcCards] = await Promise.all([
           getDeckById(deck.id),
-          getFavoriteCards(authUserId),
+          getFavoriteCardIds(authUserId),
           getCardsToLearn(deck.id, authUserId, chapterId, unassignedOnly, BATCH_SIZE, 0),
         ]);
 
@@ -288,8 +294,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
           setCategorySortOrder(deckData.categories.sort_order);
         }
 
-        const favSet = new Set((favCards || []).map((c) => c.id));
-        setFavoriteIds(favSet);
+        setFavoriteIds(new Set(favCardIds || []));
 
         const learningCards = rpcCards.map(card => ({
           card_id: card.card_id,
@@ -310,7 +315,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
         seenCardIdsRef.current = new Set(learningCards.map(c => c.card_id));
         flippedByIdRef.current = {};
 
-        const progressCounts = await getChapterProgressCounts(authUserId, deck.id, chapter?.id ?? null);
+        const statsChapterId =
+          typeof chapter === 'undefined'
+            ? undefined
+            : (chapter === null ? null : chapter.id);
+
+        const progressCounts = await getChapterProgressCounts(authUserId, deck.id, statsChapterId);
         const totalCardsCount = progressCounts.total;
         const learningCount = progressCounts.learning;
         const learnedCount = progressCounts.learned;
@@ -704,27 +714,14 @@ export default function SwipeDeckScreen({ route, navigation }) {
         try {
           await flushProgress();
 
-          let learnedQuery = supabase
-            .from('user_card_progress')
-            .select('id, cards!inner(id)', { count: 'exact', head: true })
-            .eq('user_id', userId)
-            .eq('status', 'learned')
-            .eq('cards.deck_id', deck.id);
-          if (chapter?.id) learnedQuery = learnedQuery.eq('cards.chapter_id', chapter.id);
-          else if (chapter === null) learnedQuery = learnedQuery.is('cards.chapter_id', null);
+          const statsChapterId =
+            typeof chapter === 'undefined'
+              ? undefined
+              : (chapter === null ? null : chapter.id);
+          const { learned, learning } = await getChapterProgressCounts(userId, deck.id, statsChapterId);
 
-          let learningQuery = supabase
-            .from('user_card_progress')
-            .select('id, cards!inner(id)', { count: 'exact', head: true })
-            .eq('user_id', userId)
-            .eq('status', 'learning')
-            .eq('cards.deck_id', deck.id);
-          if (chapter?.id) learningQuery = learningQuery.eq('cards.chapter_id', chapter.id);
-          else if (chapter === null) learningQuery = learningQuery.is('cards.chapter_id', null);
-
-          const [learnedResult, learningResult] = await Promise.all([learnedQuery, learningQuery]);
-          setCurrentLearnedCount(learnedResult.count || 0);
-          setCurrentLearningCount(learningResult.count || 0);
+          setCurrentLearnedCount(learned || 0);
+          setCurrentLearningCount(learning || 0);
         } catch (error) {
           console.error('Error fetching current stats:', error);
         }

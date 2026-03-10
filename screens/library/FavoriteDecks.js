@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef,  } from 'react';
 import { View, Image, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
@@ -30,31 +30,70 @@ export default function FavoriteDecks() {
   const [selectedLanguages, setSelectedLanguages] = useState([]);
   const [allLanguages, setAllLanguages] = useState([]);
 
-  const fetchFavorites = async () => {
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const PAGE_SIZE = 50;
+
+  const mapAdminDecks = (decks) =>
+    (decks || []).map((deck) => {
+      if (deck.is_admin_created) {
+        return {
+          ...deck,
+          profiles: {
+            ...deck.profiles,
+            username: 'Knowia',
+            image_url: null, // app-icon.png kullanılacak
+          },
+        };
+      }
+      return deck;
+    });
+
+  const fetchFavorites = async (forceRefresh = false) => {
     setLoading(true);
     try {
       if (!userId) {
         setFavoriteDecks([]);
+        setPage(0);
+        setHasMore(false);
         return;
       }
-      const decks = await getFavoriteDecks(userId);
-      // is_admin_created kontrolü - tüm kategoriler için geçerli
-      const modifiedDecks = (decks || []).map((deck) => {
-        if (deck.is_admin_created) {
-          return {
-            ...deck,
-            profiles: {
-              ...deck.profiles,
-              username: 'Knowia',
-              image_url: null, // app-icon.png kullanılacak
-            },
-          };
-        }
-        return deck;
+      const decks = await getFavoriteDecks(userId, {
+        page: 0,
+        limit: PAGE_SIZE,
+        forceRefresh,
       });
+      const modifiedDecks = mapAdminDecks(decks);
       setFavoriteDecks(modifiedDecks);
+      setPage(0);
+      setHasMore(modifiedDecks.length >= PAGE_SIZE);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMoreFavorites = async () => {
+    if (!userId || loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const decks = await getFavoriteDecks(userId, {
+        page: nextPage,
+        limit: PAGE_SIZE,
+      });
+      const modifiedDecks = mapAdminDecks(decks);
+      if (modifiedDecks.length === 0) {
+        setHasMore(false);
+        return;
+      }
+      setFavoriteDecks(prev => [...prev, ...modifiedDecks]);
+      setPage(nextPage);
+      if (modifiedDecks.length < PAGE_SIZE) {
+        setHasMore(false);
+      }
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -63,7 +102,7 @@ export default function FavoriteDecks() {
   }, []);
 
   useEffect(() => {
-    fetchFavorites();
+    fetchFavorites(false);
   }, [userId]);
 
   const filteredDecks = useMemo(() => {
@@ -125,43 +164,21 @@ export default function FavoriteDecks() {
   const handleAddFavoriteDeck = async (deckId) => {
     if (!userId) return;
     await addFavoriteDeck(userId, deckId);
-    const decks = await getFavoriteDecks(userId);
-    // is_admin_created kontrolü - tüm kategoriler için geçerli
-    const modifiedDecks = (decks || []).map((deck) => {
-      if (deck.is_admin_created) {
-        return {
-          ...deck,
-          profiles: {
-            ...deck.profiles,
-            username: 'Knowia',
-            image_url: null, // app-icon.png kullanılacak
-          },
-        };
-      }
-      return deck;
-    });
+    const decks = await getFavoriteDecks(userId, { page: 0, limit: PAGE_SIZE, forceRefresh: true });
+    const modifiedDecks = mapAdminDecks(decks);
     setFavoriteDecks(modifiedDecks);
+    setPage(0);
+    setHasMore(modifiedDecks.length >= PAGE_SIZE);
   };
 
   const handleRemoveFavoriteDeck = async (deckId) => {
     if (!userId) return;
     await removeFavoriteDeck(userId, deckId);
-    const decks = await getFavoriteDecks(userId);
-    // is_admin_created kontrolü - tüm kategoriler için geçerli
-    const modifiedDecks = (decks || []).map((deck) => {
-      if (deck.is_admin_created) {
-        return {
-          ...deck,
-          profiles: {
-            ...deck.profiles,
-            username: 'Knowia',
-            image_url: null, // app-icon.png kullanılacak
-          },
-        };
-      }
-      return deck;
-    });
+    const decks = await getFavoriteDecks(userId, { page: 0, limit: PAGE_SIZE, forceRefresh: true });
+    const modifiedDecks = mapAdminDecks(decks);
     setFavoriteDecks(modifiedDecks);
+    setPage(0);
+    setHasMore(modifiedDecks.length >= PAGE_SIZE);
   };
 
   const handleApplyFilters = (newSort, newCategories, newLanguages) => {
@@ -218,7 +235,8 @@ export default function FavoriteDecks() {
           ) : null
           )}
           refreshing={loading}
-          onRefresh={fetchFavorites}
+          onRefresh={() => fetchFavorites(true)}
+          onEndReached={hasMore ? loadMoreFavorites : undefined}
         />
       )}
 

@@ -133,7 +133,7 @@ export default function DeckDetailScreen({ route, navigation }) {
       transform: [{ scale: buttonScale.value }],
     };
   });
-  
+
 
   useEffect(() => {
     if (creatorMenuVisible) {
@@ -293,7 +293,7 @@ export default function DeckDetailScreen({ route, navigation }) {
       const stats = await getDeckProgressCounts(userId, deck.id);
 
       const calculatedProgress = stats.total > 0 ? stats.learned / stats.total : 0;
-      
+
       setProgress(calculatedProgress);
       setLearnedCardsCount(stats.learned);
       setDeckStats(stats);
@@ -599,7 +599,7 @@ export default function DeckDetailScreen({ route, navigation }) {
     // 1. KULLANICIYI BEKLETME: Kalbi anında doldur/boşalt ve titret
     const previousState = isFavorite;
     setIsFavorite(!previousState);
-    triggerHaptic('medium'); 
+    triggerHaptic('medium');
 
     // 2. ARKA PLAN: Kullanıcı kalbi değişmiş görürken biz sessizce veritabanını güncelliyoruz
     try {
@@ -1140,7 +1140,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                 progress={progress}
                 size={scale(170)}
                 strokeWidth={moderateScale(17)}
-                showText={!progressLoading || progress > 0}
+                showText={true}
                 shouldAnimate={!progressLoading}
                 fullCircle={true}
               />
@@ -1701,8 +1701,8 @@ export default function DeckDetailScreen({ route, navigation }) {
 
         <AnimatedPressable
           style={[
-            styles.fabButton, 
-            styles.fabButtonRight, 
+            styles.fabButton,
+            styles.fabButtonRight,
             animatedStyle, // Animasyon stilimizi bağladık
             {
               borderColor: 'transparent',
@@ -1719,7 +1719,7 @@ export default function DeckDetailScreen({ route, navigation }) {
           }}
           onPress={async () => {
             triggerHaptic('heavy');
-            
+
             if (!selectedChapter) {
               Alert.alert(
                 t('deckDetail.selectChapter', 'Bölüm Seç'),

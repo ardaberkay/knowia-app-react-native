@@ -14,32 +14,9 @@ import { moderateScale } from '../../lib/scaling';
 const { Svg, Circle, Defs, LinearGradient, Stop } = SvgLib;
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-// İZOLE SAYACI: JS Thread'i boğmaz, takılma yapmaz, garantili çalışır.
-const ProgressText = ({ progress, duration, colors, textStyle }) => {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    let startTime = Date.now();
-    
-    // JS Thread'i 60fps ile boğmak yerine ~30fps ile güncelliyoruz (çok daha akıcı hissettirir)
-    const timer = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      let currentProgress = elapsed / duration;
-
-      if (currentProgress >= 1) {
-        currentProgress = 1;
-        clearInterval(timer);
-      }
-
-      // Reanimated'in Easing.out(Easing.cubic) formülünün birebir aynısı
-      // Bu sayede çember yavaşladığında metin de aynı hızda yavaşlar, senkron kopmaz
-      const easeOut = 1 - Math.pow(1 - currentProgress, 3);
-      setCount(Math.round(easeOut * progress * 100));
-      
-    }, 30); // 30ms'de bir tık (Kasma yapması teknik olarak imkansız)
-
-    return () => clearInterval(timer);
-  }, [progress, duration]);
+// Progress yüzdesini her zaman anlık değer üzerinden gösterir
+const ProgressText = ({ progress, colors, textStyle }) => {
+  const percent = Math.round(progress * 100);
 
   return (
     <Text
@@ -54,7 +31,7 @@ const ProgressText = ({ progress, duration, colors, textStyle }) => {
         textStyle
       ]}
     >
-      {count}%
+      {percent}%
     </Text>
   );
 };
@@ -153,7 +130,6 @@ const CircularProgress = ({
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
           <ProgressText 
             progress={shouldAnimate ? normalizedProgress : progress} 
-            duration={ANIMATION_DURATION}
             colors={colors}
             textStyle={textStyle}
           />

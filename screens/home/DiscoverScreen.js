@@ -100,15 +100,20 @@ export default function DiscoverScreen() {
         });
       }
 
-      // Debouncing: Hızlı geçişlerde gereksiz çağrıları önle
       if (loadDecksTimeoutRef.current) {
         clearTimeout(loadDecksTimeoutRef.current);
       }
 
-      loadDecksTimeoutRef.current = setTimeout(() => {
+      if (isInitialMount.current) {
+        // İlk açılışta debounce yok, hemen yükle
         loadDecks();
-        loadDecksTimeoutRef.current = null;
-      }, 150); // 150ms debounce
+      } else {
+        // Tab/filtre değişiminde debounce: hızlı geçişlerde gereksiz çağrıları önle
+        loadDecksTimeoutRef.current = setTimeout(() => {
+          loadDecks();
+          loadDecksTimeoutRef.current = null;
+        }, 150);
+      }
 
       isInitialMount.current = false;
     }
@@ -156,8 +161,11 @@ export default function DiscoverScreen() {
       clearTimeout(loadDecksTimeoutRef.current);
       loadDecksTimeoutRef.current = null;
     }
-    await loadFreshData(!forceRefresh, forceRefresh);
-  }, [loadFreshData]);
+    // Bu tab için zaten veri varsa skeleton gösterme, arka planda güncelle
+    const hasDataForTab = loadedTabs.has(activeTab) && (decksMap[activeTab]?.length ?? 0) > 0;
+    const showLoading = forceRefresh ? true : !hasDataForTab;
+    await loadFreshData(showLoading, forceRefresh);
+  }, [loadFreshData, activeTab, loadedTabs, decksMap]);
 
   const currentDecks = useMemo(() => {
     return decksMap[activeTab] || [];
@@ -555,7 +563,7 @@ export default function DiscoverScreen() {
       {renderFixedHeader()}
 
       <View style={[styles.listContainer, { backgroundColor: colors.background }]}>
-        {loading || !loadedTabs.has(activeTab) ? (
+        {!loadedTabs.has(activeTab) ? (
           <DiscoverDecksSkeleton />
         ) : (
           <DeckList

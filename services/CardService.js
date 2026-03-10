@@ -82,22 +82,46 @@ export const getCardsByChapter = async (deckId, chapterId, page = 0, pageSize = 
 };
 
 export const getChapterProgressCounts = async (userId, deckId, chapterId) => {
-  const isUnassigned = !chapterId;
-  let totalQ = supabase.from('cards').select('id', { count: 'exact', head: true }).eq('deck_id', deckId);
-  if (isUnassigned) totalQ = totalQ.is('chapter_id', null);
-  else totalQ = totalQ.eq('chapter_id', chapterId);
+  // chapterId anlamları:
+  // - undefined  -> Tüm kartlar (chapter filtresi yok)
+  // - null       -> Sadece atanmamış kartlar (chapter_id IS NULL)
+  // - string/id  -> Belirli bölüm (chapter_id = chapterId)
+  const isAll = typeof chapterId === 'undefined';
+  const isUnassigned = chapterId === null;
 
-  let learnedQ = supabase.from('user_card_progress')
-    .select('id, cards!inner(id)', { count: 'exact', head: true })
-    .eq('user_id', userId).eq('status', 'learned').eq('cards.deck_id', deckId);
-  if (isUnassigned) learnedQ = learnedQ.is('cards.chapter_id', null);
-  else learnedQ = learnedQ.eq('cards.chapter_id', chapterId);
+  let totalQ = supabase
+    .from('cards')
+    .select('id', { count: 'exact', head: true })
+    .eq('deck_id', deckId);
 
-  let learningQ = supabase.from('user_card_progress')
+  if (!isAll) {
+    if (isUnassigned) totalQ = totalQ.is('chapter_id', null);
+    else totalQ = totalQ.eq('chapter_id', chapterId);
+  }
+
+  let learnedQ = supabase
+    .from('user_card_progress')
     .select('id, cards!inner(id)', { count: 'exact', head: true })
-    .eq('user_id', userId).eq('status', 'learning').eq('cards.deck_id', deckId);
-  if (isUnassigned) learningQ = learningQ.is('cards.chapter_id', null);
-  else learningQ = learningQ.eq('cards.chapter_id', chapterId);
+    .eq('user_id', userId)
+    .eq('status', 'learned')
+    .eq('cards.deck_id', deckId);
+
+  if (!isAll) {
+    if (isUnassigned) learnedQ = learnedQ.is('cards.chapter_id', null);
+    else learnedQ = learnedQ.eq('cards.chapter_id', chapterId);
+  }
+
+  let learningQ = supabase
+    .from('user_card_progress')
+    .select('id, cards!inner(id)', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('status', 'learning')
+    .eq('cards.deck_id', deckId);
+
+  if (!isAll) {
+    if (isUnassigned) learningQ = learningQ.is('cards.chapter_id', null);
+    else learningQ = learningQ.eq('cards.chapter_id', chapterId);
+  }
 
   const [totalR, learnedR, learningR] = await Promise.all([totalQ, learnedQ, learningQ]);
   if (totalR.error) throw totalR.error;

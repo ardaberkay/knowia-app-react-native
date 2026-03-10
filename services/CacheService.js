@@ -24,6 +24,7 @@ export const CACHE_DURATIONS = {
   // Kullanıcıya özel
   FAVORITES_DECK_IDS: 4 * 60 * 60 * 1000,   // 4 saat (mutation: favori toggle)
   FAVORITES_CARD_IDS: 4 * 60 * 60 * 1000,   // 4 saat (mutation: favori toggle)
+  FAVORITES_CARDS_CONTENT: 4 * 60 * 60 * 1000, // 4 saat (favori kart listesi sayfalı)
 
   // Destelerim listesi (mutation: yeni deste, düzenleme, silme, paylaşım)
   MY_DECKS: 7 * 24 * 60 * 60 * 1000,       // 1 hafta

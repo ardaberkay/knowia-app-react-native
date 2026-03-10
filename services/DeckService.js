@@ -8,7 +8,20 @@ const DECK_LIST_SELECT = 'id, name, to_name, description, card_count, user_id, c
 // Oluşturma/güncelleme sonrası dönüş için kullanılan select (tekil deck).
 const DECK_SELECT_SINGLE = 'id, name, to_name, description, card_count, user_id, category_id, is_shared, is_admin_created, shared_at, updated_at, created_at, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)';
 
-export const getDecksByCategory = async (userId, category, forceRefresh = false) => {
+export const getDecksByCategory = async (userId, category, options = false) => {
+  // options hem eski boolean forceRefresh çağrılarını hem de yeni { forceRefresh, page, limit } yapısını destekler
+  let forceRefresh = false;
+  let page = 0;
+  let limit;
+
+  if (typeof options === 'boolean') {
+    forceRefresh = options;
+  } else if (options && typeof options === 'object') {
+    forceRefresh = options.forceRefresh ?? false;
+    page = options.page ?? 0;
+    limit = options.limit;
+  }
+
   if (category === 'myDecks' && userId && !forceRefresh) {
     const cached = await getCachedData(`mydecks_${userId}`, CACHE_DURATIONS.MY_DECKS);
     if (cached && !cached.isStale) return cached.data;
@@ -86,6 +99,13 @@ export const getDecksByCategory = async (userId, category, forceRefresh = false)
       });
     }
 
+    // inProgressDecks için sayfalama: slice ile uygula
+    if (typeof limit === 'number' && limit > 0) {
+      const start = page * limit;
+      const end = start + limit;
+      resultData = resultData.slice(start, end);
+    }
+
     return resultData;
   }
 
@@ -112,6 +132,12 @@ export const getDecksByCategory = async (userId, category, forceRefresh = false)
         .eq('is_admin_created', false)
         .order('shared_at', { ascending: false });
       break;
+  }
+
+  // Sayfalama: limit belirtilmişse Supabase range kullan
+  if (typeof limit === 'number' && limit > 0) {
+    const from = page * limit;
+    query = query.range(from, from + limit - 1);
   }
 
   const { data, error } = await query;

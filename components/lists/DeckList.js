@@ -265,6 +265,7 @@ const DeckList = ({
   loading = false,
   contentPaddingTop = 0,
   onScrollBeginDrag,
+  onEndReached,
 }) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -466,6 +467,8 @@ const DeckList = ({
       )}
       showsVerticalScrollIndicator={false}
       onScrollBeginDrag={onScrollBeginDrag}
+      onEndReached={onEndReached}
+      onEndReachedThreshold={onEndReached ? 0.5 : undefined}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}

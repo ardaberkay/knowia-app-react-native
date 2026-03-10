@@ -2,14 +2,26 @@ import { supabase } from '../lib/supabase';
 import { getCachedBlockedAndHidden, filterDecksByBlockAndHide } from './BlockService';
 import { cacheData, getCachedData, invalidateCache, CACHE_DURATIONS } from './CacheService';
 
+const FAVORITE_CARDS_PAGE_SIZE = 50;
+
 // Favori Desteleri Getir (ilişkili deck verisiyle birlikte). Engel/gizle filtresi uygulanır.
 // Sıra: en son favorilenen en üstte (favorite_decks.created_at desc).
-export const getFavoriteDecks = async (userId) => {
-  const { data, error } = await supabase
+// options: { page?: number, limit?: number } - limit verilirse Supabase range ile sayfalama yapılır.
+export const getFavoriteDecks = async (userId, options = {}) => {
+  const { page = 0, limit } = options || {};
+
+  let query = supabase
     .from('favorite_decks')
     .select('deck_id, created_at, decks(id, name, description, card_count, user_id, category_id, is_shared, is_admin_created, updated_at, created_at, profiles:profiles(username, image_url), categories:categories(id, name, sort_order), decks_languages(language_id))')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
+
+  if (typeof limit === 'number' && limit > 0) {
+    const from = page * limit;
+    query = query.range(from, from + limit - 1);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw error;
 
@@ -28,8 +40,14 @@ export const getFavoriteDecks = async (userId) => {
   return decks;
 };
 
-// Favori Kartları Getir (ilişkili card verisiyle birlikte). Sıra: en son favorilenen en üstte (favorite_cards.created_at desc).
-export const getFavoriteCards = async (userId) => {
+// Favori Kartları Getir (sayfalı, cache destekli). Sıra: en son favorilenen en üstte (favorite_cards.created_at desc).
+export const getFavoriteCards = async (userId, page = 0, pageSize = FAVORITE_CARDS_PAGE_SIZE, forceRefresh = false) => {
+  const cacheKey = `fav_cards_${userId}_p${page}`;
+  if (!forceRefresh) {
+    const cached = await getCachedData(cacheKey, CACHE_DURATIONS.FAVORITES_CARDS_CONTENT);
+    if (cached && !cached.isStale) return cached.data;
+  }
+  const from = page * pageSize;
   const { data, error } = await supabase
     .from('favorite_cards')
     .select(`
@@ -46,10 +64,13 @@ export const getFavoriteCards = async (userId) => {
       )
     `)
     .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .range(from, from + pageSize - 1);
 
   if (error) throw error;
-  return (data || []).map(item => ({ ...item.cards, favorited_at: item.created_at }));
+  const result = (data || []).map(item => ({ ...item.cards, favorited_at: item.created_at }));
+  if (result.length > 0) await cacheData(cacheKey, result);
+  return result;
 };
 
 // Favori Kart Ekle
@@ -57,6 +78,7 @@ export const addFavoriteCard = async (userId, cardId) => {
   const { error } = await supabase.from('favorite_cards').insert({ user_id: userId, card_id: cardId });
   if (error) throw error;
   await invalidateCache(`fav_card_ids_${userId}`);
+  await invalidateCache(`fav_cards_${userId}`);
 };
 
 // Favori Kart Çıkar
@@ -64,6 +86,7 @@ export const removeFavoriteCard = async (userId, cardId) => {
   const { error } = await supabase.from('favorite_cards').delete().eq('user_id', userId).eq('card_id', cardId);
   if (error) throw error;
   await invalidateCache(`fav_card_ids_${userId}`);
+  await invalidateCache(`fav_cards_${userId}`);
 };
 
 // Favori Deste Ekle

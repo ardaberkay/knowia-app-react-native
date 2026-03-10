@@ -57,6 +57,10 @@ export default function CategoryDeckListScreen({ route }) {
   const [loading, setLoading] = useState(false);
   const [decks, setDecks] = useState(initialDecks || []);
   const [allLanguages, setAllLanguages] = useState([]);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const PAGE_SIZE = 50;
 
   useEffect(() => {
     getLanguages().then(setAllLanguages);
@@ -99,13 +103,41 @@ export default function CategoryDeckListScreen({ route }) {
 
     try {
       setLoading(true);
-      const loadedDecks = await getDecksByCategory(userId, category);
-      setDecks(loadedDecks || []);
+      const loadedDecks = await getDecksByCategory(userId, category, { page: 0, limit: PAGE_SIZE });
+      const safeDecks = loadedDecks || [];
+      setDecks(safeDecks);
+      setPage(0);
+      setHasMore(safeDecks.length >= PAGE_SIZE);
     } catch (error) {
       console.error('Error loading decks:', error);
       setDecks([]);
+      setHasMore(false);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMoreDecks = async () => {
+    if (!category || loadingMore || loading || !hasMore) return;
+    try {
+      setLoadingMore(true);
+      const nextPage = page + 1;
+      const loadedDecks = await getDecksByCategory(userId, category, { page: nextPage, limit: PAGE_SIZE });
+      const safeDecks = loadedDecks || [];
+      if (safeDecks.length === 0) {
+        setHasMore(false);
+        return;
+      }
+      setDecks(prev => [...prev, ...safeDecks]);
+      setPage(nextPage);
+      if (safeDecks.length < PAGE_SIZE) {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('Error loading more decks:', error);
+      setHasMore(false);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -323,6 +355,7 @@ export default function CategoryDeckListScreen({ route }) {
           onToggleFavorite={handleToggleFavorite}
           onPressDeck={handleDeckPress}
           onScrollBeginDrag={() => Keyboard.dismiss()}
+          onEndReached={loadMoreDecks}
           refreshing={refreshing}
           onRefresh={handleRefresh}
           showPopularityBadge={false}
