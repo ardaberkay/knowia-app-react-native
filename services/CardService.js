@@ -3,6 +3,80 @@ import { invalidateCache, cacheData, getCachedData, CACHE_DURATIONS } from './Ca
 
 const PAGE_SIZE = 50;
 
+const filterReportedCardsForUser = async (cards, userId) => {
+  if (!userId || !cards || cards.length === 0) return cards;
+
+  const cardIds = cards.map((c) => c.id);
+  const { data: reports, error } = await supabase
+    .from('reports')
+    .select('target_id')
+    .eq('reporter_id', userId)
+    .eq('report_type', 'card')
+    .in('target_id', cardIds);
+
+  if (error) throw error;
+
+  const hiddenIds = new Set((reports || []).map((r) => r.target_id));
+  if (hiddenIds.size === 0) return cards;
+
+  return cards.filter((c) => !hiddenIds.has(c.id));
+};
+
+const filterReportedLearningRowsForUser = async (rows, userId) => {
+  if (!userId || !rows || rows.length === 0) return rows;
+
+  const cardIds = rows.map((r) => r.card_id);
+  const { data: reports, error } = await supabase
+    .from('reports')
+    .select('target_id')
+    .eq('reporter_id', userId)
+    .eq('report_type', 'card')
+    .in('target_id', cardIds);
+
+  if (error) throw error;
+
+  const hiddenIds = new Set((reports || []).map((r) => r.target_id));
+  if (hiddenIds.size === 0) return rows;
+
+  return rows.filter((r) => !hiddenIds.has(r.card_id));
+};
+
+const buildNotInList = (ids) => `(${ids.map((id) => `"${id}"`).join(',')})`;
+
+const getHiddenCardIdsForScope = async (userId, deckId, chapterId, isAll, isUnassigned) => {
+  if (!userId) return [];
+
+  const { data: reports, error: reportsError } = await supabase
+    .from('reports')
+    .select('target_id')
+    .eq('reporter_id', userId)
+    .eq('report_type', 'card');
+
+  if (reportsError) throw reportsError;
+
+  const targetIds = (reports || []).map((r) => r.target_id);
+  if (targetIds.length === 0) return [];
+
+  let cardsQuery = supabase
+    .from('cards')
+    .select('id')
+    .eq('deck_id', deckId)
+    .in('id', targetIds);
+
+  if (!isAll) {
+    if (isUnassigned) {
+      cardsQuery = cardsQuery.is('chapter_id', null);
+    } else if (chapterId) {
+      cardsQuery = cardsQuery.eq('chapter_id', chapterId);
+    }
+  }
+
+  const { data: cardsData, error: cardsError } = await cardsQuery;
+  if (cardsError) throw cardsError;
+
+  return (cardsData || []).map((c) => c.id);
+};
+
 /**
  * Destedeki kartları sayfalı ve isteğe bağlı cache ile döndürür.
  * forceRefresh true ise cache bypass edilir (pull-to-refresh için).
@@ -91,6 +165,10 @@ export const getCardsByDeck = async (deckId, page = 0, pageSize = PAGE_SIZE, sor
     result = data || [];
   }
 
+  if (userId) {
+    result = await filterReportedCardsForUser(result, userId);
+  }
+
   if (result.length > 0) await cacheData(cacheKey, result);
   return result;
 };
@@ -101,14 +179,16 @@ export const getCardsByDeck = async (deckId, page = 0, pageSize = PAGE_SIZE, sor
  * @param {string} deckId - Deste id
  * @returns {Promise<Array>} Kart listesi (id, question, answer, image, example, note, created_at)
  */
-export const getAllCardsForDeck = async (deckId) => {
+export const getAllCardsForDeck = async (deckId, userId = null) => {
   const { data, error } = await supabase
     .from('cards')
     .select('id, question, answer, image, example, note, created_at')
     .eq('deck_id', deckId)
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return data || [];
+  const cards = data || [];
+  if (!userId) return cards;
+  return filterReportedCardsForUser(cards, userId);
 };
 
 /**
@@ -126,7 +206,7 @@ export const updateCardsChapter = async (cardIds, targetChapterId) => {
   // Deck bazlı kart listesi cache'ini invalidate etmek için deckId gerekir; çağıran ekran gerekirse invalidate eder.
 };
 
-export const getCardsByChapter = async (deckId, chapterId, page = 0, pageSize = PAGE_SIZE) => {
+export const getCardsByChapter = async (deckId, chapterId, page = 0, pageSize = PAGE_SIZE, userId = null) => {
   const from = page * pageSize;
   let query = supabase
     .from('cards')
@@ -141,7 +221,9 @@ export const getCardsByChapter = async (deckId, chapterId, page = 0, pageSize = 
   }
   const { data, error } = await query;
   if (error) throw error;
-  return data || [];
+  const cards = data || [];
+  if (!userId) return cards;
+  return filterReportedCardsForUser(cards, userId);
 };
 
 export const getChapterProgressCounts = async (userId, deckId, chapterId) => {
@@ -184,6 +266,14 @@ export const getChapterProgressCounts = async (userId, deckId, chapterId) => {
   if (!isAll) {
     if (isUnassigned) learningQ = learningQ.is('cards.chapter_id', null);
     else learningQ = learningQ.eq('cards.chapter_id', chapterId);
+  }
+
+  const hiddenIds = await getHiddenCardIdsForScope(userId, deckId, chapterId, isAll, isUnassigned);
+  if (hiddenIds.length > 0) {
+    const notIn = buildNotInList(hiddenIds);
+    totalQ = totalQ.not('id', 'in', notIn);
+    learnedQ = learnedQ.not('cards.id', 'in', notIn);
+    learningQ = learningQ.not('cards.id', 'in', notIn);
   }
 
   const [totalR, learnedR, learningR] = await Promise.all([totalQ, learnedQ, learningQ]);
@@ -322,7 +412,11 @@ export const getCardsToLearn = async (deckId, userId, chapterId = null, unassign
     p_offset: offset,
   });
   if (error) throw error;
-  return data || [];
+  let rows = data || [];
+  if (userId) {
+    rows = await filterReportedLearningRowsForUser(rows, userId);
+  }
+  return rows;
 };
 
 export const batchUpsertProgress = async (progressItems) => {
@@ -334,23 +428,37 @@ export const batchUpsertProgress = async (progressItems) => {
 };
 
 export const getDeckProgressCounts = async (userId, deckId) => {
+  let totalQ = supabase
+    .from('cards')
+    .select('id', { count: 'exact', head: true })
+    .eq('deck_id', deckId);
+
+  let learnedQ = supabase
+    .from('user_card_progress')
+    .select('id, cards!inner(id)', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('status', 'learned')
+    .eq('cards.deck_id', deckId);
+
+  let learningQ = supabase
+    .from('user_card_progress')
+    .select('id, cards!inner(id)', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('status', 'learning')
+    .eq('cards.deck_id', deckId);
+
+  const hiddenIds = await getHiddenCardIdsForScope(userId, deckId, undefined, true, false);
+  if (hiddenIds.length > 0) {
+    const notIn = buildNotInList(hiddenIds);
+    totalQ = totalQ.not('id', 'in', notIn);
+    learnedQ = learnedQ.not('cards.id', 'in', notIn);
+    learningQ = learningQ.not('cards.id', 'in', notIn);
+  }
+
   const [totalResult, learnedResult, learningResult] = await Promise.all([
-    supabase
-      .from('cards')
-      .select('id', { count: 'exact', head: true })
-      .eq('deck_id', deckId),
-    supabase
-      .from('user_card_progress')
-      .select('id, cards!inner(id)', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('status', 'learned')
-      .eq('cards.deck_id', deckId),
-    supabase
-      .from('user_card_progress')
-      .select('id, cards!inner(id)', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('status', 'learning')
-      .eq('cards.deck_id', deckId),
+    totalQ,
+    learnedQ,
+    learningQ,
   ]);
 
   if (totalResult.error) throw totalResult.error;

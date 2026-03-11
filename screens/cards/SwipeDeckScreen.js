@@ -522,6 +522,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       const chapterId = chapter?.id || null;
       const unassignedOnly = chapter === null;
       const moreCards = await getCardsToLearn(deck.id, userId, chapterId, unassignedOnly, BATCH_SIZE, 0);
+
       const newCards = moreCards
         .filter(c => !seenCardIdsRef.current.has(c.card_id))
         .map(card => ({

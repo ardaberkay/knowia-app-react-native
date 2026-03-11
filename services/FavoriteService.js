@@ -4,6 +4,25 @@ import { cacheData, getCachedData, invalidateCache, CACHE_DURATIONS } from './Ca
 
 const FAVORITE_CARDS_PAGE_SIZE = 50;
 
+const filterReportedFavoriteCardsForUser = async (cards, userId) => {
+  if (!userId || !cards || cards.length === 0) return cards;
+
+  const cardIds = cards.map((c) => c.id);
+  const { data: reports, error } = await supabase
+    .from('reports')
+    .select('target_id')
+    .eq('reporter_id', userId)
+    .eq('report_type', 'card')
+    .in('target_id', cardIds);
+
+  if (error) throw error;
+
+  const hiddenIds = new Set((reports || []).map((r) => r.target_id));
+  if (hiddenIds.size === 0) return cards;
+
+  return cards.filter((c) => !hiddenIds.has(c.id));
+};
+
 // Favori Desteleri Getir (ilişkili deck verisiyle birlikte). Engel/gizle filtresi uygulanır.
 // Sıra: en son favorilenen en üstte (favorite_decks.created_at desc).
 // options: { page?: number, limit?: number } - limit verilirse Supabase range ile sayfalama yapılır.
@@ -141,6 +160,10 @@ export const getFavoriteCards = async (userId, page = 0, pageSize = FAVORITE_CAR
     const { data, error } = await query.range(from, from + pageSize - 1);
     if (error) throw error;
     result = (data || []).map((item) => ({ ...item.cards, favorited_at: item.created_at }));
+  }
+
+  if (userId) {
+    result = await filterReportedFavoriteCardsForUser(result, userId);
   }
 
   if (result.length > 0) await cacheData(cacheKey, result);

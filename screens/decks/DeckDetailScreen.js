@@ -395,11 +395,11 @@ export default function DeckDetailScreen({ route, navigation }) {
     if (!deck?.id) return;
     setRefreshing(true);
     try {
-      const uid = session?.user?.id;
+      const uid = userId;
       const [deckData, favDeckIds, cardsData, favCardIds, langIds] = await Promise.all([
         getDeckById(deck.id, true),
         uid ? getFavoriteDeckIds(uid, true) : Promise.resolve([]),
-        getAllCardsForDeck(deck.id),
+        getAllCardsForDeck(deck.id, uid || null),
         uid ? getFavoriteCardIds(uid, true) : Promise.resolve([]),
         getDeckLanguages(deck.id),
       ]);
@@ -431,12 +431,12 @@ export default function DeckDetailScreen({ route, navigation }) {
     } finally {
       setRefreshing(false);
     }
-  }, [deck?.id, session?.user?.id, chapters]);
+  }, [deck?.id, userId, chapters]);
 
   useEffect(() => {
     const fetchCards = async () => {
       try {
-        const data = await getAllCardsForDeck(deck.id);
+        const data = await getAllCardsForDeck(deck.id, userId || null);
         setCards(data);
         setOriginalCards(data);
       } catch (e) {
@@ -445,7 +445,7 @@ export default function DeckDetailScreen({ route, navigation }) {
       }
     };
     fetchCards();
-  }, [deck.id]);
+  }, [deck.id, userId]);
 
   useEffect(() => {
     if (!search.trim()) {

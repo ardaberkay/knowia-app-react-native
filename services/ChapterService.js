@@ -1,6 +1,42 @@
 import { supabase } from '../lib/supabase';
 import { cacheData, getCachedData, invalidateCache, CACHE_DURATIONS } from './CacheService';
 
+const buildNotInList = (ids) => `(${ids.map((id) => `"${id}"`).join(',')})`;
+
+const getHiddenCardIdsForChapter = async (userId, deckId, chapterId) => {
+  if (!userId) return [];
+
+  const { data: reports, error: reportsError } = await supabase
+    .from('reports')
+    .select('target_id')
+    .eq('reporter_id', userId)
+    .eq('report_type', 'card');
+
+  if (reportsError) throw reportsError;
+
+  const targetIds = (reports || []).map((r) => r.target_id);
+  if (targetIds.length === 0) return [];
+
+  let cardsQuery = supabase
+    .from('cards')
+    .select('id')
+    .eq('deck_id', deckId)
+    .in('id', targetIds);
+
+  if (typeof chapterId !== 'undefined') {
+    if (chapterId === null) {
+      cardsQuery = cardsQuery.is('chapter_id', null);
+    } else {
+      cardsQuery = cardsQuery.eq('chapter_id', chapterId);
+    }
+  }
+
+  const { data: cardsData, error: cardsError } = await cardsQuery;
+  if (cardsError) throw cardsError;
+
+  return (cardsData || []).map((c) => c.id);
+};
+
 /**
  * List chapters for a deck ordered by ordinal then created_at (newest at bottom).
  * 4 saat cache (mutation: chapter ekle/sil sonrası invalidate).
@@ -227,6 +263,14 @@ export async function getChaptersProgress(chapters, deckId, userId) {
         totalQuery = totalQuery.is('chapter_id', null);
         learnedQuery = learnedQuery.is('cards.chapter_id', null);
         learningQuery = learningQuery.is('cards.chapter_id', null);
+      }
+
+      const hiddenIds = await getHiddenCardIdsForChapter(userId, deckId, chapterId);
+      if (hiddenIds.length > 0) {
+        const notIn = buildNotInList(hiddenIds);
+        totalQuery = totalQuery.not('id', 'in', notIn);
+        learnedQuery = learnedQuery.not('cards.id', 'in', notIn);
+        learningQuery = learningQuery.not('cards.id', 'in', notIn);
       }
 
       const [totalRes, learnedRes, learningRes] = await Promise.all([

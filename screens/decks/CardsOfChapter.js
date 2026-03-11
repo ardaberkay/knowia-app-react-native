@@ -337,7 +337,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
       const chapterId = chapter?.id || null;
 
       const [cardsData, stats] = await Promise.all([
-        getCardsByChapter(deck.id, chapterId, 0, PAGE_SIZE),
+        getCardsByChapter(deck.id, chapterId, 0, PAGE_SIZE, userId || null),
         userId ? getChapterProgressCounts(userId, deck.id, chapterId) : Promise.resolve({ total: 0, learning: 0, learned: 0, new: 0 }),
       ]);
 
@@ -394,7 +394,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
     try {
       const nextPage = pageNum + 1;
       const chapterId = chapter?.id || null;
-      const cardsData = await getCardsByChapter(deck.id, chapterId, nextPage, PAGE_SIZE);
+      const cardsData = await getCardsByChapter(deck.id, chapterId, nextPage, PAGE_SIZE, userId || null);
       if (cardsData.length === 0) {
         setHasMoreCards(false);
         return;
