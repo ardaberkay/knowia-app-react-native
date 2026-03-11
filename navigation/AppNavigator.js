@@ -238,17 +238,12 @@ export default function AppNavigator() {
               </TouchableOpacity>
             ),
           })} />
-          <Stack.Screen name="DeckCards" component={DeckCardsScreen} options={{ headerShown: true, title: t('tabs.cards', 'Kartlar'), headerTitleAlign: 'center' }} />
+          <Stack.Screen name="DeckCards" component={DeckCardsScreen} options={{ headerShown: true, title: t('tabs.cards', 'Kartlar'), headerTitleAlign: 'center'}} />
           <Stack.Screen name="Chapters" component={ChaptersScreen} options={{ headerShown: true, title: t('tabs.chapters', 'Bölümler'), headerTitleAlign: 'center' }} />
           <Stack.Screen name="ChapterCards" component={ChapterCardsScreen} options={{
             headerShown: true,
             title: '',
             headerTitleAlign: 'center',
-            headerTransparent: true,
-            headerStyle: {
-              backgroundColor: 'transparent',
-            },
-            headerTintColor: colors.text, // Geri butonu beyaz olsun
           }} />
           <Stack.Screen name="FavoriteDecks" component={FavoriteDecks} options={{ headerShown: true, title: t('library.favoriteDecksTitle', 'Favori Desteler'), headerTitleAlign: 'center' }} />
           <Stack.Screen name="FavoriteCards" component={FavoriteCards} options={{ headerShown: true, title: t('library.favoriteCardsTitle', 'Favori Kartlar'), headerTitleAlign: 'center' }} />

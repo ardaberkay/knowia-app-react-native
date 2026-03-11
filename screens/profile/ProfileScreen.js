@@ -190,7 +190,7 @@ export default function ProfileScreen() {
   const handleInviteFriends = useCallback(async () => {
     try {
       await Share.share({
-        message: t('profile.inviteMessage', 'Bilgi evreninde öğrenme yolunu Knowia ile bul! Ücretsiz kaydol:') + 'https://seninuygulaman.com/davet',
+        message: t('profile.inviteMessage', 'Bilgi evreninde öğrenme yolunu Knowia ile bul! Ücretsiz kaydol:') + 'https://knowia.online/download',
       });
     } catch (error) {
       // Paylaşım iptal edildiyse veya hata olursa sessiz geç

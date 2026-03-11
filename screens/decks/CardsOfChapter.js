@@ -228,7 +228,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
         headerShown: true,
         headerTransparent: true,
         headerStyle: { backgroundColor: 'transparent' },
-        headerTintColor: '#fff',
+        headerTintColor: colors.text,
         headerTitle: '',
         headerRight: () => null,
       });
@@ -297,7 +297,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
       headerShown: true,
       headerTransparent: true,
       headerStyle: { backgroundColor: 'transparent' },
-      headerTintColor: '#fff',
+      headerTintColor: colors.text,
       headerTitle: '',
       headerRight: isOwnerUser ? () => (
         <TouchableOpacity
