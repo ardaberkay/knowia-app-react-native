@@ -268,7 +268,10 @@
     "chaptersCount": "chapters",
     "sharedStatus": "Everyone can see",
     "notSharedStatus": "Only you",
-    "moreInfo": "More info"
+    "moreInfo": "More info",
+    "selectChapterCtaShort": "Select a chapter",
+    "selectChapterTitle": "Select Chapter",
+    "selectChapterMessage": "Please select a chapter first."
   },
   "cardDetail": {
     "question": "Question",

@@ -269,7 +269,10 @@
     "chaptersCount": "bölüm",
     "sharedStatus": "Herkes görebilir",
     "notSharedStatus": "Sadece sen",
-    "moreInfo": "Daha fazla bilgi"
+    "moreInfo": "Daha fazla bilgi",
+    "selectChapterCtaShort": "Bir bölüm seç",
+    "selectChapterTitle": "Bölüm Seç",
+    "selectChapterMessage": "Lütfen önce bir bölüm seçin."
   },
   "cardDetail": {
     "question": "Soru",

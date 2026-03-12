@@ -24,14 +24,14 @@ import { triggerHaptic } from '../../lib/hapticManager';
 
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 
-const MemoizedCardItem = memo(({ 
-  card, 
-  status, 
-  isSelected, 
-  editMode, 
-  colors, 
-  onToggle, 
-  onPress 
+const MemoizedCardItem = memo(({
+  card,
+  status,
+  isSelected,
+  editMode,
+  colors,
+  onToggle,
+  onPress
 }) => {
   let statusIcon = 'streamline-freehand:view-eye-off'; // default: new
 
@@ -63,8 +63,8 @@ const MemoizedCardItem = memo(({
           onPress(card);
         }
       }}
-      underlayColor={colors.cardBackground === '#FFFFFF' ? '#F2F2F2' : '#eeeeee'}
-    >
+      underlayColor={colors.cardBackground === '#F4F1EA' ? '#EBE7DD' : '#383838'}
+      >
       <View style={styles.cardContent}>
         {editMode && (
           <View style={styles.checkboxContainer}>
@@ -503,16 +503,19 @@ export default function ChapterCardsScreen({ route, navigation }) {
     }
   };
 
-  const handleToggleCardSelection = (cardId) => {
+  const handleToggleCardSelection = useCallback((cardId) => {
     triggerHaptic('light');
-    const newSelected = new Set(selectedCards);
-    if (newSelected.has(cardId)) {
-      newSelected.delete(cardId);
-    } else {
-      newSelected.add(cardId);
-    }
-    setSelectedCards(newSelected);
-  };
+    setSelectedCards((prevSelected) => {
+      // Mevcut Set'in kopyasını al (Immutable yapı)
+      const newSelected = new Set(prevSelected);
+      if (newSelected.has(cardId)) {
+        newSelected.delete(cardId);
+      } else {
+        newSelected.add(cardId);
+      }
+      return newSelected; // Yeni Set referansı state'e atanır
+    });
+  }, []); // Bağımlılık dizisi boş, çünkü set-state fonksiyonu kullanıyoruz
 
   const handleSelectAll = () => {
     if (selectedCards.size === filteredCards.length) {

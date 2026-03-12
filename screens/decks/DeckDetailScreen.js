@@ -87,7 +87,7 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [decksLanguages, setDecksLanguages] = useState([]);
   // "Aksiyon" özel bölümü - tüm kartları gösterir
   const ACTION_CHAPTER = { id: 'action', name: 'Aksiyon', ordinal: null };
-  const [selectedChapter, setSelectedChapter] = useState(ACTION_CHAPTER);
+  const [selectedChapter, setSelectedChapter] = useState(null);
   const [inlineChapterListVisible, setInlineChapterListVisible] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   // 120+ karakter genelde 3 satırı aşar (tahmin)
@@ -205,6 +205,23 @@ export default function DeckDetailScreen({ route, navigation }) {
       setInlineChapterListVisible(false);
     }
   }, [fabMenuOpen, inlineChapterListVisible]);
+
+  // Swipe ekranına gidip geri dönünce FAB state'i takılı kalmasın
+  useEffect(() => {
+    const onBlur = navigation.addListener('blur', () => {
+      setFabMenuOpen(false);
+      setInlineChapterListVisible(false);
+    });
+
+    const onFocus = navigation.addListener('focus', () => {
+      setInlineChapterListVisible(false);
+    });
+
+    return () => {
+      onBlur?.();
+      onFocus?.();
+    };
+  }, [navigation]);
 
   // Initial deck verisi için is_admin_created kontrolü
   useEffect(() => {
@@ -515,12 +532,12 @@ export default function DeckDetailScreen({ route, navigation }) {
         }
       }
 
-      // Eğer kayıtlı chapter bulunamazsa veya yoksa, default olarak ACTION_CHAPTER seç
-      setSelectedChapter(ACTION_CHAPTER);
+      // Eğer kayıtlı chapter bulunamazsa veya yoksa: hiçbir seçim yapma (kullanıcı seçsin)
+      setSelectedChapter(null);
     } catch (e) {
       console.error('Error loading last selected chapter:', e);
-      // Hata durumunda default olarak ACTION_CHAPTER seç
-      setSelectedChapter(ACTION_CHAPTER);
+      // Hata durumunda da seçim yapma
+      setSelectedChapter(null);
     }
   };
 
@@ -528,7 +545,11 @@ export default function DeckDetailScreen({ route, navigation }) {
   const saveLastSelectedChapter = async (chapter) => {
     try {
       const storageKey = `last_selected_chapter_${deck.id}`;
-      const chapterId = chapter?.id || 'action';
+      const chapterId = chapter?.id;
+      if (!chapterId) {
+        await AsyncStorage.removeItem(storageKey);
+        return;
+      }
       await AsyncStorage.setItem(storageKey, chapterId);
     } catch (e) {
       console.error('Error saving last selected chapter:', e);
@@ -566,7 +587,7 @@ export default function DeckDetailScreen({ route, navigation }) {
     } catch (e) {
       console.error('Error fetching chapters:', e);
       setChapters([]);
-      setSelectedChapter(ACTION_CHAPTER);
+      setSelectedChapter(null);
     }
   }, [deck?.id, currentUserId]);
 
@@ -1307,6 +1328,15 @@ export default function DeckDetailScreen({ route, navigation }) {
         )}
       </ScrollView>
 
+      {/* FAB Menü Overlay - Dışarı tıklandığında kapat (FAB'ın ARKASINDA durmalı) */}
+      {fabMenuOpen && (
+        <TouchableOpacity
+          style={styles.fabMenuOverlay}
+          activeOpacity={1}
+          onPress={() => setFabMenuOpen(false)}
+        />
+      )}
+
       {/* Floating Action Buttons */}
       <View style={[styles.fabContainer, { backgroundColor: 'transparent' }]}>
         <View style={styles.fabLeftColumn}>
@@ -1366,14 +1396,15 @@ export default function DeckDetailScreen({ route, navigation }) {
                       >
                         {t('deckDetail.action', 'Aksiyon')}
                       </Text>
-                    </View>
-                    <View style={styles.fabChapterItemStats}>
+                      <View style={{ width: scale(12), height: scale(2), marginHorizontal: scale(8), backgroundColor: 'rgba(255,255,255,0.7)' }} />
                       <View style={styles.fabChapterStatRow}>
-                        <Iconify icon="ri:stack-fill" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
-                        <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
+                        <Iconify icon="ri:stack-fill" size={moderateScale(14)} color="rgba(255,255,255,0.9)" style={{ marginRight: scale(4) }} />
+                        <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.9)' }]}>
                           {deckStats.total}
                         </Text>
                       </View>
+                    </View>
+                    <View style={styles.fabChapterItemStats}>
                       <View style={styles.fabChapterStatRow}>
                         <Iconify icon="basil:eye-closed-outline" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
                         <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
@@ -1450,14 +1481,15 @@ export default function DeckDetailScreen({ route, navigation }) {
                           >
                             {`${t('chapters.chapter', 'Bölüm')} ${chapter.ordinal}`}
                           </Text>
-                        </View>
-                        <View style={styles.fabChapterItemStats}>
+                          <View style={{ width: scale(12), height: scale(2), marginHorizontal: scale(8), backgroundColor: 'rgba(255,255,255,0.7)' }} />
                           <View style={styles.fabChapterStatRow}>
-                            <Iconify icon="ri:stack-fill" size={14} color="rgba(255,255,255,0.7)" style={{ marginRight: 4 }} />
-                            <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
+                            <Iconify icon="ri:stack-fill" size={14} color="rgba(255,255,255,0.9)" style={{ marginRight: 4 }} />
+                            <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.9)' }]}>
                               {chapterProgress.total}
                             </Text>
                           </View>
+                        </View>
+                        <View style={styles.fabChapterItemStats}>
                           <View style={styles.fabChapterStatRow}>
                             <Iconify icon="basil:eye-closed-outline" size={14} color="rgba(255,255,255,0.7)" style={{ marginRight: 4 }} />
                             <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
@@ -1544,14 +1576,15 @@ export default function DeckDetailScreen({ route, navigation }) {
                           >
                             {t('deckDetail.action', 'Aksiyon')}
                           </Text>
-                        </View>
-                        <View style={styles.fabChapterItemStats}>
+                          <View style={{ width: scale(12), height: scale(2), marginHorizontal: scale(8), backgroundColor: 'rgba(255,255,255,0.7)' }} />
                           <View style={styles.fabChapterStatRow}>
-                            <Iconify icon="ri:stack-fill" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
-                            <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
+                            <Iconify icon="ri:stack-fill" size={moderateScale(14)} color="rgba(255,255,255,0.9)" style={{ marginRight: scale(4) }} />
+                            <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.9)' }]}>
                               {deckStats.total}
                             </Text>
                           </View>
+                        </View>
+                        <View style={styles.fabChapterItemStats}>
                           <View style={styles.fabChapterStatRow}>
                             <Iconify icon="basil:eye-closed-outline" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
                             <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
@@ -1577,7 +1610,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                     const chapterProgress = chapterProgressMap.get(selectedChapter.id) || { total: 0, learned: 0, learning: 0, new: 0 };
                     return (
                       <View style={styles.fabChapterInfoRow}>
-                        <View style={styles.fabChapterItemBadge}>
+                        <View style={[styles.fabChapterItemBadge, { marginLeft: scale(6) }]}>
                           <CircularProgress
                             progress={chapterProgress.total > 0 ? chapterProgress.learned / chapterProgress.total : 0}
                             size={36}
@@ -1606,15 +1639,16 @@ export default function DeckDetailScreen({ route, navigation }) {
                               numberOfLines={1}
                             >
                               {`${t('chapters.chapter', 'Bölüm')} ${selectedChapter.ordinal}`}
-                            </Text>
-                          </View>
-                          <View style={styles.fabChapterItemStats}>
+                            </Text> 
+                            <View style={{ width: scale(12), height: scale(2), marginHorizontal: scale(8), backgroundColor: 'rgba(255,255,255,0.7)' }} />
                             <View style={styles.fabChapterStatRow}>
-                              <Iconify icon="ri:stack-fill" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
-                              <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
+                              <Iconify icon="ri:stack-fill" size={moderateScale(14)} color="rgba(255,255,255,0.9)" style={{ marginRight: scale(4) }} />
+                              <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.9)' }]}>
                                 {chapterProgress.total}
                               </Text>
                             </View>
+                          </View>
+                          <View style={styles.fabChapterItemStats}>
                             <View style={styles.fabChapterStatRow}>
                               <Iconify icon="basil:eye-closed-outline" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
                               <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
@@ -1639,9 +1673,26 @@ export default function DeckDetailScreen({ route, navigation }) {
                     );
                   })() : (
                     <View style={styles.fabChapterInfoRow}>
-                      <Text style={[styles.fabChapterInfoTitle, { color: '#fff' }]}>
-                        {t('deckDetail.unassignedShort', 'Seçilmedi')}
-                      </Text>
+                      <View style={styles.fabChapterItemBadge}>
+                        <Iconify
+                          icon="streamline-flex:module-puzzle-2"
+                          size={moderateScale(28)}
+                          color="#fff"
+                        />
+                      </View>
+                      <View style={styles.fabChapterItemContent}>
+                        <View style={styles.fabChapterItemTitleRow}>
+                          <Text
+                            style={[
+                              styles.fabChapterItemVerticalText,
+                              { color: '#fff', fontWeight: '700' },
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {t('deckDetail.selectChapterCtaShort', 'Bir bölüm seç')+ "!"}
+                          </Text>
+                        </View>
+                      </View>
                     </View>
                   )}
                 </View>
@@ -1670,7 +1721,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                     size={moderateScale(22)}
                     color="#fff"
                   />
-                ) : (
+                ) : selectedChapter?.id ? (
                   <View style={{
                     backgroundColor: 'rgba(255, 255, 255, 0.15)',
                     borderRadius: moderateScale(99),
@@ -1693,6 +1744,12 @@ export default function DeckDetailScreen({ route, navigation }) {
                       {selectedChapter?.ordinal ?? '-'}
                     </Text>
                   </View>
+                ) : (
+                  <Iconify
+                    icon="streamline-flex:module-puzzle-2"
+                    size={moderateScale(28)}
+                    color="#fff"
+                  />
                 )}
               </Animated.View>
             </TouchableOpacity>
@@ -1720,9 +1777,9 @@ export default function DeckDetailScreen({ route, navigation }) {
           onPress={async () => {
             triggerHaptic('heavy');
 
-            if (!selectedChapter) {
+            if (!selectedChapter?.id) {
               Alert.alert(
-                t('deckDetail.selectChapter', 'Bölüm Seç'),
+                t('deckDetail.selectChapterTitle', 'Bölüm Seç'),
                 t('deckDetail.selectChapterMessage', 'Lütfen önce bir bölüm seçin.')
               );
               return;
@@ -2009,15 +2066,6 @@ export default function DeckDetailScreen({ route, navigation }) {
         onSubmit={handleReportModalSubmit}
       />
 
-      {/* FAB Menü Overlay - Dışarı tıklandığında kapat */}
-      {fabMenuOpen && (
-        <TouchableOpacity
-          style={styles.fabMenuOverlay}
-          activeOpacity={1}
-          onPress={() => setFabMenuOpen(false)}
-        />
-      )}
-
     </View>
   );
 }
@@ -2212,6 +2260,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     letterSpacing: -0.5,
     lineHeight: verticalScale(24),
+    paddingTop: verticalScale(4),
   },
   gfTotalBadgeLabel: {
     fontSize: moderateScale(10),
@@ -2466,7 +2515,7 @@ const styles = StyleSheet.create({
   },
   fabChapterItemStats: {
     flexDirection: 'row',
-    gap: scale(12),
+    gap: scale(20),
     alignItems: 'center',
   },
   fabChapterStatRow: {

@@ -714,7 +714,7 @@ export default function CsvUploadModal({
                 <View style={[styles.imageMapSection, { backgroundColor: isDarkMode ? '#222' : '#F9FAFB', borderColor: colors.border }]}>
 
                   <View style={styles.imageMapHeader}>
-                    <View style={{ flex: 1 }}>
+                    <View style={{ flex: 2 }}>
                       <Text style={[styles.imageMapTitle, { color: colors.text }]}>{t('addCard.selectImages', 'Görselleri Seç ve Eşleştir')}</Text>
                       <Text style={[styles.imageMapSub, { color: colors.muted }]}>
                         {selectedImages.length > 0
@@ -1100,8 +1100,9 @@ const styles = StyleSheet.create({
   pickImgBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(12),
+    paddingHorizontal: scale(20),
     borderRadius: moderateScale(8),
   },
   pickImgBtnText: {

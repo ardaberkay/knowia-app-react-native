@@ -232,7 +232,10 @@
     "chaptersCount": "Kapitel",
     "sharedStatus": "Für alle sichtbar",
     "notSharedStatus": "Nur für dich",
-    "moreInfo": "Mehr Infos"
+    "moreInfo": "Mehr Infos",
+    "selectChapterCtaShort": "Kapitel auswählen",
+    "selectChapterTitle": "Kapitel auswählen",
+    "selectChapterMessage": "Bitte wähle zuerst ein Kapitel aus."
   },
   "cardDetail": {
     "question": "Frage",
