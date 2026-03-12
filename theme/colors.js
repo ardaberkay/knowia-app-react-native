@@ -75,6 +75,7 @@ export const darkColors = {
     error: '#EB5757',
     optional: '#F2C94C',
     muted: '#BDBDBD',
+    orWhite: '#FFFFFF',
     buttonText: '#FFFFFF',
     tabBarBackground: '#1C1C1C',
     deckGradient: ['#2A3C57', '#1F2D42'],

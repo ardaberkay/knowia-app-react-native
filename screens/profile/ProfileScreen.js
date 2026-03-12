@@ -332,7 +332,7 @@ export default function ProfileScreen() {
             value={hapticsEnabled}
             onValueChange={handleToggleHaptics}
             trackColor={{ false: '#ccc', true: '#5AA3F0' }}
-            thumbColor={isDarkMode ? colors.secondary : '#f4f3f4'}
+            thumbColor={hapticsEnabled ? colors.secondary : '#f4f3f4'}
             ios_backgroundColor="#ccc"
           />
         </View>
@@ -444,6 +444,10 @@ export default function ProfileScreen() {
             <Text style={[typography.styles.body, { color: colors.error || '#ff5252' }, styles.deleteAccountText]}>{t('profile.deleteAccount')}</Text>
           </TouchableOpacity>
         </View>
+        <View style={styles.footerContainer}>
+          <Text style={styles.appNameText}>Knowia v1.0.0</Text>
+          <Text style={styles.companyText}>© 2026 BB Nova</Text>
+        </View>
       </ScrollView>
       {/* Dil seçici component */}
       <LanguageSelector
@@ -528,5 +532,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: scale(8),
+  },
+  footerContainer: {
+    marginBottom: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  appNameText: {
+    fontSize: 14,
+    color: '#888888', // Silik gri bir renk
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  companyText: {
+    fontSize: 12,
+    color: '#AAAAAA', // Biraz daha küçük ve açık gri
   },
 }); 

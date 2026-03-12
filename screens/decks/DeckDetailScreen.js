@@ -30,6 +30,7 @@ const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 export default function DeckDetailScreen({ route, navigation }) {
   const { deck } = route.params;
   const { colors } = useTheme();
+  const isDarkMode = colors.background === '#1C1C1C';
   const { session } = useAuth();
   const userId = session?.user?.id;
   // Favori durumunu route.params'dan al (eğer varsa), yoksa false
@@ -1362,11 +1363,11 @@ export default function DeckDetailScreen({ route, navigation }) {
                     styles.fabChapterItemVertical,
                     {
                       backgroundColor: selectedChapter?.id === 'action'
-                        ? colors.cardBackground
+                        ? (isDarkMode ? colors.cardBackground : 'rgba(0,0,0,0.35)')
                         : 'rgba(255,255,255,0.15)',
                       borderColor: selectedChapter?.id === 'action'
-                        ? colors.cardBackground
-                        : 'rgba(255,255,255,0.35)',
+                        ? (isDarkMode ? colors.cardBackground : 'rgba(0,0,0,0.5)')
+                        : 'rgba(255,255,255,0.1)',
                     },
                   ]}
                   activeOpacity={0.7}
@@ -1438,10 +1439,10 @@ export default function DeckDetailScreen({ route, navigation }) {
                         styles.fabChapterItemVertical,
                         {
                           backgroundColor: isSelected
-                            ? colors.cardBackground
+                            ? (isDarkMode ? colors.cardBackground : 'rgba(0,0,0,0.35)')
                             : 'rgba(255,255,255,0.15)',
                           borderColor: isSelected
-                            ? colors.cardBackground
+                            ? (isDarkMode ? colors.cardBackground : 'rgba(0,0,0,0.5)')
                             : 'rgba(255,255,255,0.35)',
                         },
                       ]}

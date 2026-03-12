@@ -152,7 +152,7 @@ export default function AddCardScreen() {
         keyboardShouldPersistTaps="handled"
         enableOnAndroid={true}
         enableAutomaticScroll={true}
-        extraScrollHeight={verticalScale(120)}
+        extraScrollHeight={verticalScale(30)}
       >
         {/* Header Card */}
         <View style={[styles.headerCard, styles.headerCardContainer, { borderRadius: moderateScale(44), backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, borderWidth: 1 }]}>
