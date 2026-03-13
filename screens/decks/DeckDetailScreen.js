@@ -1060,7 +1060,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                   onTextLayout={(e) => {
                     if (!descriptionLayoutDone.current) {
                       descriptionLayoutDone.current = true;
-                      setDescriptionNeedsExpand(e.nativeEvent.lines.length > 3);
+                      setDescriptionNeedsExpand(e.nativeEvent.lines.length > 2);
                     }
                   }}
                 >

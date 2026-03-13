@@ -732,7 +732,7 @@ export default function CsvUploadModal({
               {csvPreview.errors.length > 0 && (
                 <View style={styles.alertBoxError}>
                   <View style={styles.errorHeaderRow}>
-                    <Iconify icon="mdi:alert-circle" size={moderateScale(20)} color="#D32F2F" style={{ marginRight: scale(8) }} />
+                    <Iconify icon="material-symbols:info-outline" size={moderateScale(20)} color="#D32F2F" style={{ marginRight: scale(8) }} />
                     <Text style={styles.alertBoxTitleError}>{t('addCard.errors', 'Hatalar (İlk 5)')}</Text>
                   </View>
                   {csvPreview.errors.map((err, idx) => (
