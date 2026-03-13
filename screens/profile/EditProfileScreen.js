@@ -61,7 +61,15 @@ export default function EditProfileScreen({ navigation }) {
     (async () => {
       try {
         setLoading(true);
-        const data = await getCurrentUserProfile();
+
+        // Session veya user id yoksa işlemi durdur
+        if (!session?.user?.id) {
+          throw new Error(t('common.sessionNotFound') || 'Oturum bulunamadı');
+        }
+
+        // userId'yi parametre olarak gönderiyoruz
+        const data = await getCurrentUserProfile(session.user.id);
+
         setProfile(data);
         setUsername(data.username || '');
         setImageUrl(data.image_url || '');
@@ -78,7 +86,7 @@ export default function EditProfileScreen({ navigation }) {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [session]); // session değiştiğinde useEffect'in tetiklenmesi için dependency array'e ekledik
 
   // Storage public url'den dosya yolunu çıkar
   function getStoragePathFromUrl(url) {
@@ -133,38 +141,38 @@ export default function EditProfileScreen({ navigation }) {
   const handleSave = async () => {
     setSaving(true);
     setError(null);
-    
+
     // Username validasyonu
     if (username.length < 3 || username.length > 16) {
       setError(t('common.usernameLengthError'));
       setSaving(false);
       return;
     }
-    
+
     // Email validasyonu
     if (email && !isValidEmail(email)) {
       setError(t('editProfile.invalidEmail'));
       setSaving(false);
       return;
     }
-    
+
     // Email veya şifre değişikliği varsa mevcut şifre kontrolü
     const emailChanged = email !== initialState.email && email !== '';
     const passwordChanged = password !== '';
-    
+
     if ((emailChanged || passwordChanged) && !currentPassword) {
       setError(t('editProfile.currentPasswordRequired'));
       setSaving(false);
       return;
     }
-    
+
     // Şifre eşleşme kontrolü
     if (password && password !== passwordConfirm) {
       setError(t('common.passwordMatchError'));
       setSaving(false);
       return;
     }
-    
+
     // Email veya şifre değişikliği varsa mevcut şifreyi doğrula
     if ((emailChanged || passwordChanged) && currentPassword) {
       try {
@@ -172,7 +180,7 @@ export default function EditProfileScreen({ navigation }) {
           email: initialState.email, // eski email
           password: currentPassword // kullanıcının girdiği mevcut şifre
         });
-        
+
         if (verifyError) {
           setError(t('editProfile.invalidCurrentPassword'));
           setSaving(false);
@@ -205,25 +213,25 @@ export default function EditProfileScreen({ navigation }) {
       }
       // 3. Profil tablosunu güncelle
       await updateProfile(profile.id, { username, imageUrl: newImageUrl });
-      
+
       // 4. Cache'i güncelle - eski cache'i temizle ve yeni veriyi cache'le
       await clearUserCache(profile.id);
-      
+
       // Güncellenmiş profil bilgilerini al ve cache'le
       const updatedProfile = await getCurrentUserProfile(profile.id);
       await cacheProfile(profile.id, updatedProfile);
       if (newImageUrl) {
         await cacheProfileImage(profile.id, newImageUrl);
       }
-      
+
       // 5. E-posta değiştiyse güncelle
       if (emailChanged) {
         const { error: emailError } = await supabase.auth.updateUser({ email });
         if (emailError) {
           // Email zaten kullanılıyor mu kontrol et
-          if (emailError.message.includes('already registered') || 
-              emailError.message.includes('already exists') ||
-              emailError.message.includes('User already registered')) {
+          if (emailError.message.includes('already registered') ||
+            emailError.message.includes('already exists') ||
+            emailError.message.includes('User already registered')) {
             setError(t('editProfile.emailAlreadyExists'));
           } else {
             setError(emailError.message);
@@ -231,7 +239,7 @@ export default function EditProfileScreen({ navigation }) {
           setSaving(false);
           return;
         }
-        
+
         // Email değişikliği başarılı - Alert göster
         Alert.alert(
           t('editProfile.emailChangeTitle'),
@@ -239,7 +247,7 @@ export default function EditProfileScreen({ navigation }) {
           [{ text: t('common.ok') }]
         );
       }
-      
+
       // 6. Şifre değiştiyse güncelle
       if (passwordChanged) {
         const { error: passError } = await supabase.auth.updateUser({ password });
@@ -250,7 +258,7 @@ export default function EditProfileScreen({ navigation }) {
         }
         // Şifre değişikliği başarılı - Snackbar zaten var
       }
-      
+
       // Email değişikliği yoksa normal başarı mesajı göster
       if (!emailChanged) {
         showSuccess(t('common.profileUpdated'));
@@ -285,9 +293,9 @@ export default function EditProfileScreen({ navigation }) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-      <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: moderateScale(200, 0.3), height: moderateScale(200, 0.3) }} />
-      <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: moderateScale(100, 0.3), height: moderateScale(100, 0.3) }} />
-    </View>
+        <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: moderateScale(200, 0.3), height: moderateScale(200, 0.3) }} />
+        <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: moderateScale(100, 0.3), height: moderateScale(100, 0.3) }} />
+      </View>
     );
   }
 
@@ -303,332 +311,332 @@ export default function EditProfileScreen({ navigation }) {
         enableAutomaticScroll={true}
         extraScrollHeight={verticalScale(30)}
       >
-          {/* Profile Photo Card */}
-          <View style={[styles.inputCard, {
-            backgroundColor: colors.cardBackground,
-            shadowColor: colors.shadowColor,
-            shadowOffset: colors.shadowOffset,
-            shadowOpacity: colors.shadowOpacity,
-            shadowRadius: colors.shadowRadius,
-            elevation: colors.elevation,
-            borderColor: colors.cardBorder,
-            borderWidth: 1,
-          }]}>
-            <View style={styles.labelRow}>
-              <Iconify icon="mage:image-fill" size={moderateScale(20)} color={colors.buttonColor} style={styles.labelIcon} />
-              <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
-                {t('editProfile.profilePhoto')}
-              </Text>
-            </View>
-            <View style={styles.profilePhotoContainer}>
-              <View style={styles.avatarContainer}>
-                <Image 
-                  source={imageUrl ? { uri: imageUrl } : require('../../assets/avatar-default.png')} 
-                  style={[styles.avatarLarge, { borderColor: colors.border }]} 
-                />
-                <TouchableOpacity 
-                  style={[styles.cameraButton, { backgroundColor: colors.buttonColor }]}
-                  onPress={handlePickImage}
-                  activeOpacity={0.8}
-                >
-                  <Iconify icon="mage:image-fill" size={moderateScale(18)} color="#fff" />
-                </TouchableOpacity>
-              </View>
-              <View style={styles.photoButtonRow}>
-                <TouchableOpacity 
-                  style={[styles.photoActionButton, { 
-                    backgroundColor: colors.cardButtonBackground || colors.blurView,
-                    borderColor: colors.buttonColor,
-                  }]} 
-                  onPress={handlePickImage}
-                  activeOpacity={0.7}
-                >
-                  <Iconify icon="lucide:edit" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(6) }} />
-                  <Text style={[typography.styles.button, { color: colors.buttonColor, fontSize: moderateScale(14) }]}>
-                    {t('editProfile.changePhoto')}
-                  </Text>
-                </TouchableOpacity>
-                {imageUrl && (
-                  <TouchableOpacity 
-                    style={[styles.photoActionButton, { 
-                      backgroundColor: colors.cardButtonBackground || colors.blurView,
-                      borderColor: colors.error,
-                    }]} 
-                    onPress={handleRemovePhoto}
-                    activeOpacity={0.7}
-                  >
-                    <Iconify icon="mdi:garbage-can-empty" size={moderateScale(18)} color={colors.error} style={{ marginRight: scale(6) }} />
-                    <Text style={[typography.styles.button, { color: colors.error, fontSize: moderateScale(14) }]}>
-                      {t('editProfile.removePhoto')}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          </View>
-
-          {/* Username Card */}
-          <View style={[styles.inputCard, {
-            backgroundColor: colors.cardBackground,
-            shadowColor: colors.shadowColor,
-            shadowOffset: colors.shadowOffset,
-            shadowOpacity: colors.shadowOpacity,
-            shadowRadius: colors.shadowRadius,
-            elevation: colors.elevation,
-            borderColor: colors.cardBorder,
-            borderWidth: 1,
-          }]}>
-            <View style={styles.labelRow}>
-              <Iconify icon="solar:user-bold" size={moderateScale(20)} color={colors.buttonColor} style={styles.labelIcon} />
-              <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
-                {t('editProfile.userName')}
-              </Text>
-            </View>
-            <TextInput
-              style={[styles.input, typography.styles.body, { 
-                color: colors.text, 
-                borderColor: colors.border, 
-                backgroundColor: colors.blurView || colors.cardButtonBackground,
-              }]}
-              placeholder={t('editProfile.userNamePlaceholder')}
-              placeholderTextColor={colors.muted}
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-              maxLength={16}
-            />
-            <Text style={[typography.styles.caption, { color: colors.muted, marginTop: verticalScale(4) }]}>
-              {t('editProfile.usernameHint')}
+        {/* Profile Photo Card */}
+        <View style={[styles.inputCard, {
+          backgroundColor: colors.cardBackground,
+          shadowColor: colors.shadowColor,
+          shadowOffset: colors.shadowOffset,
+          shadowOpacity: colors.shadowOpacity,
+          shadowRadius: colors.shadowRadius,
+          elevation: colors.elevation,
+          borderColor: colors.cardBorder,
+          borderWidth: 1,
+        }]}>
+          <View style={styles.labelRow}>
+            <Iconify icon="mage:image-fill" size={moderateScale(20)} color={colors.buttonColor} style={styles.labelIcon} />
+            <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
+              {t('editProfile.profilePhoto')}
             </Text>
           </View>
-
-          {/* Email Card - OAuth kullanıcıda kilitli */}
-          <View style={[styles.inputCard, {
-            backgroundColor: colors.cardBackground,
-            shadowColor: colors.shadowColor,
-            shadowOffset: colors.shadowOffset,
-            shadowOpacity: colors.shadowOpacity,
-            shadowRadius: colors.shadowRadius,
-            elevation: colors.elevation,
-            borderColor: colors.cardBorder,
-            borderWidth: 1,
-            opacity: isOAuthUser ? 0.80 : 1,
-            position: 'relative',
-          }]}>
-            {isOAuthUser && (
-              <View style={{ position: 'absolute', top: verticalScale(16), right: scale(20), zIndex: 10 }}>
-                <Iconify icon="fontisto:locked" size={moderateScale(22)} color={colors.muted} />
-              </View>
-            )}
-            <View style={styles.labelRow}>
-              <Iconify icon="tabler:mail-filled" size={moderateScale(20)} color={colors.buttonColor} style={styles.labelIcon} />
-              <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
-                {t('editProfile.email')}
-              </Text>
+          <View style={styles.profilePhotoContainer}>
+            <View style={styles.avatarContainer}>
+              <Image
+                source={imageUrl ? { uri: imageUrl } : require('../../assets/avatar-default.png')}
+                style={[styles.avatarLarge, { borderColor: colors.border }]}
+              />
+              <TouchableOpacity
+                style={[styles.cameraButton, { backgroundColor: colors.buttonColor }]}
+                onPress={handlePickImage}
+                activeOpacity={0.8}
+              >
+                <Iconify icon="mage:image-fill" size={moderateScale(18)} color="#fff" />
+              </TouchableOpacity>
             </View>
+            <View style={styles.photoButtonRow}>
+              <TouchableOpacity
+                style={[styles.photoActionButton, {
+                  backgroundColor: colors.cardButtonBackground || colors.blurView,
+                  borderColor: colors.buttonColor,
+                }]}
+                onPress={handlePickImage}
+                activeOpacity={0.7}
+              >
+                <Iconify icon="lucide:edit" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(6) }} />
+                <Text style={[typography.styles.button, { color: colors.buttonColor, fontSize: moderateScale(14) }]}>
+                  {t('editProfile.changePhoto')}
+                </Text>
+              </TouchableOpacity>
+              {imageUrl && (
+                <TouchableOpacity
+                  style={[styles.photoActionButton, {
+                    backgroundColor: colors.cardButtonBackground || colors.blurView,
+                    borderColor: colors.error,
+                  }]}
+                  onPress={handleRemovePhoto}
+                  activeOpacity={0.7}
+                >
+                  <Iconify icon="mdi:garbage-can-empty" size={moderateScale(18)} color={colors.error} style={{ marginRight: scale(6) }} />
+                  <Text style={[typography.styles.button, { color: colors.error, fontSize: moderateScale(14) }]}>
+                    {t('editProfile.removePhoto')}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </View>
+
+        {/* Username Card */}
+        <View style={[styles.inputCard, {
+          backgroundColor: colors.cardBackground,
+          shadowColor: colors.shadowColor,
+          shadowOffset: colors.shadowOffset,
+          shadowOpacity: colors.shadowOpacity,
+          shadowRadius: colors.shadowRadius,
+          elevation: colors.elevation,
+          borderColor: colors.cardBorder,
+          borderWidth: 1,
+        }]}>
+          <View style={styles.labelRow}>
+            <Iconify icon="solar:user-bold" size={moderateScale(20)} color={colors.buttonColor} style={styles.labelIcon} />
+            <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
+              {t('editProfile.userName')}
+            </Text>
+          </View>
+          <TextInput
+            style={[styles.input, typography.styles.body, {
+              color: colors.text,
+              borderColor: colors.border,
+              backgroundColor: colors.blurView || colors.cardButtonBackground,
+            }]}
+            placeholder={t('editProfile.userNamePlaceholder')}
+            placeholderTextColor={colors.muted}
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+            maxLength={16}
+          />
+          <Text style={[typography.styles.caption, { color: colors.muted, marginTop: verticalScale(4) }]}>
+            {t('editProfile.usernameHint')}
+          </Text>
+        </View>
+
+        {/* Email Card - OAuth kullanıcıda kilitli */}
+        <View style={[styles.inputCard, {
+          backgroundColor: colors.cardBackground,
+          shadowColor: colors.shadowColor,
+          shadowOffset: colors.shadowOffset,
+          shadowOpacity: colors.shadowOpacity,
+          shadowRadius: colors.shadowRadius,
+          elevation: colors.elevation,
+          borderColor: colors.cardBorder,
+          borderWidth: 1,
+          opacity: isOAuthUser ? 0.80 : 1,
+          position: 'relative',
+        }]}>
+          {isOAuthUser && (
+            <View style={{ position: 'absolute', top: verticalScale(16), right: scale(20), zIndex: 10 }}>
+              <Iconify icon="fontisto:locked" size={moderateScale(22)} color={colors.muted} />
+            </View>
+          )}
+          <View style={styles.labelRow}>
+            <Iconify icon="tabler:mail-filled" size={moderateScale(20)} color={colors.buttonColor} style={styles.labelIcon} />
+            <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
+              {t('editProfile.email')}
+            </Text>
+          </View>
+          <TextInput
+            style={[styles.input, typography.styles.body, {
+              color: colors.text,
+              borderColor: colors.border,
+              backgroundColor: colors.blurView || colors.cardButtonBackground,
+            }]}
+            placeholder={t('editProfile.emailPlaceholder')}
+            placeholderTextColor={colors.muted}
+            value={email}
+            onChangeText={setEmail}
+            editable={!isOAuthUser}
+            pointerEvents={isOAuthUser ? 'none' : 'auto'}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            autoComplete="email"
+          />
+        </View>
+
+        {/* Current Password Card - OAuth kullanıcıda kilitli */}
+        <View style={[styles.inputCard, {
+          backgroundColor: colors.cardBackground,
+          shadowColor: colors.shadowColor,
+          shadowOffset: colors.shadowOffset,
+          shadowOpacity: colors.shadowOpacity,
+          shadowRadius: colors.shadowRadius,
+          elevation: colors.elevation,
+          borderColor: colors.cardBorder,
+          borderWidth: 1,
+          opacity: isOAuthUser ? 0.80 : 1,
+          position: 'relative',
+        }]}>
+          {isOAuthUser && (
+            <View style={{ position: 'absolute', top: verticalScale(16), right: scale(20), zIndex: 10 }}>
+              <Iconify icon="fontisto:locked" size={moderateScale(22)} color={colors.muted} />
+            </View>
+          )}
+          <View style={styles.labelRow}>
+            <Iconify icon="carbon:password" size={moderateScale(20)} color={colors.buttonColor} style={styles.labelIcon} />
+            <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
+              {t('editProfile.currentPassword')}
+            </Text>
+          </View>
+          <View style={styles.passwordInputContainer}>
             <TextInput
-              style={[styles.input, typography.styles.body, { 
-                color: colors.text, 
-                borderColor: colors.border, 
+              style={[styles.input, styles.passwordInput, typography.styles.body, {
+                color: colors.text,
+                borderColor: colors.border,
                 backgroundColor: colors.blurView || colors.cardButtonBackground,
               }]}
-              placeholder={t('editProfile.emailPlaceholder')}
+              placeholder={t('editProfile.currentPasswordPlaceholder')}
               placeholderTextColor={colors.muted}
-              value={email}
-              onChangeText={setEmail}
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
               editable={!isOAuthUser}
               pointerEvents={isOAuthUser ? 'none' : 'auto'}
               autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
+              secureTextEntry={!showCurrentPassword}
+              autoComplete="password"
             />
-          </View>
-
-          {/* Current Password Card - OAuth kullanıcıda kilitli */}
-          <View style={[styles.inputCard, {
-            backgroundColor: colors.cardBackground,
-            shadowColor: colors.shadowColor,
-            shadowOffset: colors.shadowOffset,
-            shadowOpacity: colors.shadowOpacity,
-            shadowRadius: colors.shadowRadius,
-            elevation: colors.elevation,
-            borderColor: colors.cardBorder,
-            borderWidth: 1,
-            opacity: isOAuthUser ? 0.80 : 1,
-            position: 'relative',
-          }]}>
-            {isOAuthUser && (
-              <View style={{ position: 'absolute', top: verticalScale(16), right: scale(20), zIndex: 10 }}>
-                <Iconify icon="fontisto:locked" size={moderateScale(22)} color={colors.muted} />
-              </View>
-            )}
-            <View style={styles.labelRow}>
-              <Iconify icon="carbon:password" size={moderateScale(20)} color={colors.buttonColor} style={styles.labelIcon} />
-              <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
-                {t('editProfile.currentPassword')}
-              </Text>
-            </View>
-            <View style={styles.passwordInputContainer}>
-              <TextInput
-                style={[styles.input, styles.passwordInput, typography.styles.body, { 
-                  color: colors.text, 
-                  borderColor: colors.border, 
-                  backgroundColor: colors.blurView || colors.cardButtonBackground,
-                }]}
-                placeholder={t('editProfile.currentPasswordPlaceholder')}
-                placeholderTextColor={colors.muted}
-                value={currentPassword}
-                onChangeText={setCurrentPassword}
-                editable={!isOAuthUser}
-                pointerEvents={isOAuthUser ? 'none' : 'auto'}
-                autoCapitalize="none"
-                secureTextEntry={!showCurrentPassword}
-                autoComplete="password"
+            <TouchableOpacity
+              style={styles.eyeButton}
+              onPress={() => setShowCurrentPassword(!showCurrentPassword)}
+              hitSlop={{ top: scale(10), bottom: scale(10), left: scale(10), right: scale(10) }}
+              disabled={isOAuthUser}
+            >
+              <Iconify
+                icon={showCurrentPassword ? "oi:eye" : "system-uicons:eye-no"}
+                size={moderateScale(20)}
+                color={colors.muted}
               />
-              <TouchableOpacity
-                style={styles.eyeButton}
-                onPress={() => setShowCurrentPassword(!showCurrentPassword)}
-                hitSlop={{ top: scale(10), bottom: scale(10), left: scale(10), right: scale(10) }}
-                disabled={isOAuthUser}
-              >
-                <Iconify 
-                  icon={showCurrentPassword ? "oi:eye" : "system-uicons:eye-no"} 
-                  size={moderateScale(20)} 
-                  color={colors.muted} 
-                />
-              </TouchableOpacity>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: verticalScale(4) }}>
-              <View style={{
-                width: moderateScale(20),
-                height: moderateScale(20),
-                borderRadius: moderateScale(99),
-                borderWidth: moderateScale(1),
-                borderColor: colors.muted,
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginRight: scale(6),
-              }}>
-                <Iconify icon="mdi:information-variant" size={moderateScale(14)} color={colors.muted} />
-              </View>
-              <Text style={[typography.styles.caption, { color: colors.muted, flex: 1 }]}>
-                {t('editProfile.currentPasswordNote')}
-              </Text>
-            </View>
+            </TouchableOpacity>
           </View>
-
-          {/* Password Card - OAuth kullanıcıda kilitli */}
-          <View style={[styles.inputCard, {
-            backgroundColor: colors.cardBackground,
-            shadowColor: colors.shadowColor,
-            shadowOffset: colors.shadowOffset,
-            shadowOpacity: colors.shadowOpacity,
-            shadowRadius: colors.shadowRadius,
-            elevation: colors.elevation,
-            borderColor: colors.cardBorder,
-            borderWidth: 1,
-            opacity: isOAuthUser ? 0.80 : 1,
-            position: 'relative',
-          }]}>
-            {isOAuthUser && (
-              <View style={{ position: 'absolute', top: verticalScale(16), right: scale(20), zIndex: 10 }}>
-                <Iconify icon="fontisto:locked" size={moderateScale(22)} color={colors.muted} />
-              </View>
-            )}
-            <View style={styles.labelRow}>
-              <Iconify icon="carbon:password" size={moderateScale(20)} color={colors.buttonColor} style={styles.labelIcon} />
-              <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
-                {t('editProfile.newPassword')}
-              </Text>
-              <Text style={[typography.styles.caption, { color: colors.muted, marginLeft: scale(6) }]}>
-                ({t('editProfile.optional')})
-              </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: verticalScale(4) }}>
+            <View style={{
+              width: moderateScale(20),
+              height: moderateScale(20),
+              borderRadius: moderateScale(99),
+              borderWidth: moderateScale(1),
+              borderColor: colors.muted,
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginRight: scale(6),
+            }}>
+              <Iconify icon="mdi:information-variant" size={moderateScale(14)} color={colors.muted} />
             </View>
-            <View style={styles.passwordInputContainer}>
-              <TextInput
-                style={[styles.input, styles.passwordInput, typography.styles.body, { 
-                  color: colors.text, 
-                  borderColor: colors.border, 
-                  backgroundColor: colors.blurView || colors.cardButtonBackground,
-                }]}
-                placeholder={t('editProfile.newPasswordPlaceholder')}
-                placeholderTextColor={colors.muted}
-                value={password}
-                onChangeText={setPassword}
-                editable={!isOAuthUser}
-                pointerEvents={isOAuthUser ? 'none' : 'auto'}
-                autoCapitalize="none"
-                secureTextEntry={!showPassword}
-                autoComplete="password-new"
-              />
-              <TouchableOpacity
-                style={styles.eyeButton}
-                onPress={() => setShowPassword(!showPassword)}
-                hitSlop={{ top: scale(10), bottom: scale(10), left: scale(10), right: scale(10) }}
-                disabled={isOAuthUser}
-              >
-                <Iconify 
-                  icon={showPassword ? "oi:eye" : "system-uicons:eye-no"} 
-                  size={moderateScale(20)} 
-                  color={colors.muted} 
-                />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.passwordInputContainer}>
-              <TextInput
-                style={[styles.input, styles.passwordInput, typography.styles.body, { 
-                  color: colors.text, 
-                  borderColor: colors.border, 
-                  backgroundColor: colors.blurView || colors.cardButtonBackground,
-                }]}
-                placeholder={t('editProfile.confirmPasswordPlaceholder')}
-                placeholderTextColor={colors.muted}
-                value={passwordConfirm}
-                onChangeText={setPasswordConfirm}
-                editable={!isOAuthUser}
-                pointerEvents={isOAuthUser ? 'none' : 'auto'}
-                autoCapitalize="none"
-                secureTextEntry={!showPasswordConfirm}
-                autoComplete="password-new"
-              />
-              <TouchableOpacity
-                style={styles.eyeButton}
-                onPress={() => setShowPasswordConfirm(!showPasswordConfirm)}
-                hitSlop={{ top: scale(10), bottom: scale(10), left: scale(10), right: scale(10) }}
-                disabled={isOAuthUser}
-              >
-                <Iconify 
-                  icon={showPasswordConfirm ? "oi:eye" : "system-uicons:eye-no"} 
-                  size={moderateScale(20)} 
-                  color={colors.muted} 
-                />
-              </TouchableOpacity>
-            </View>
+            <Text style={[typography.styles.caption, { color: colors.muted, flex: 1 }]}>
+              {t('editProfile.currentPasswordNote')}
+            </Text>
           </View>
+        </View>
 
-          {/* Error Message */}
-          {error && (
-            <View style={[styles.errorCard, { backgroundColor: colors.error + '15', borderColor: colors.error }]}>
-              <Iconify icon="mdi:information-variant" size={moderateScale(20)} color={colors.error} style={{ marginRight: scale(8) }} />
-              <Text style={[typography.styles.caption, { color: colors.error, flex: 1 }]}>{error}</Text>
+        {/* Password Card - OAuth kullanıcıda kilitli */}
+        <View style={[styles.inputCard, {
+          backgroundColor: colors.cardBackground,
+          shadowColor: colors.shadowColor,
+          shadowOffset: colors.shadowOffset,
+          shadowOpacity: colors.shadowOpacity,
+          shadowRadius: colors.shadowRadius,
+          elevation: colors.elevation,
+          borderColor: colors.cardBorder,
+          borderWidth: 1,
+          opacity: isOAuthUser ? 0.80 : 1,
+          position: 'relative',
+        }]}>
+          {isOAuthUser && (
+            <View style={{ position: 'absolute', top: verticalScale(16), right: scale(20), zIndex: 10 }}>
+              <Iconify icon="fontisto:locked" size={moderateScale(22)} color={colors.muted} />
             </View>
           )}
-
-          {/* Action Buttons */}
-          <View style={styles.buttonRowModern}>
-            <UndoButton
-              onPress={handleCancel}
-              disabled={saving}
-              text={t('editProfile.undo')}
-            />
-            <CreateButton
-              onPress={handleSave}
-              disabled={saving}
-              loading={saving}
-              text={saving ? t('editProfile.saving') : t('editProfile.save')}
-            />
+          <View style={styles.labelRow}>
+            <Iconify icon="carbon:password" size={moderateScale(20)} color={colors.buttonColor} style={styles.labelIcon} />
+            <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
+              {t('editProfile.newPassword')}
+            </Text>
+            <Text style={[typography.styles.caption, { color: colors.muted, marginLeft: scale(6) }]}>
+              ({t('editProfile.optional')})
+            </Text>
           </View>
-        </KeyboardAwareScrollView>
+          <View style={styles.passwordInputContainer}>
+            <TextInput
+              style={[styles.input, styles.passwordInput, typography.styles.body, {
+                color: colors.text,
+                borderColor: colors.border,
+                backgroundColor: colors.blurView || colors.cardButtonBackground,
+              }]}
+              placeholder={t('editProfile.newPasswordPlaceholder')}
+              placeholderTextColor={colors.muted}
+              value={password}
+              onChangeText={setPassword}
+              editable={!isOAuthUser}
+              pointerEvents={isOAuthUser ? 'none' : 'auto'}
+              autoCapitalize="none"
+              secureTextEntry={!showPassword}
+              autoComplete="password-new"
+            />
+            <TouchableOpacity
+              style={styles.eyeButton}
+              onPress={() => setShowPassword(!showPassword)}
+              hitSlop={{ top: scale(10), bottom: scale(10), left: scale(10), right: scale(10) }}
+              disabled={isOAuthUser}
+            >
+              <Iconify
+                icon={showPassword ? "oi:eye" : "system-uicons:eye-no"}
+                size={moderateScale(20)}
+                color={colors.muted}
+              />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.passwordInputContainer}>
+            <TextInput
+              style={[styles.input, styles.passwordInput, typography.styles.body, {
+                color: colors.text,
+                borderColor: colors.border,
+                backgroundColor: colors.blurView || colors.cardButtonBackground,
+              }]}
+              placeholder={t('editProfile.confirmPasswordPlaceholder')}
+              placeholderTextColor={colors.muted}
+              value={passwordConfirm}
+              onChangeText={setPasswordConfirm}
+              editable={!isOAuthUser}
+              pointerEvents={isOAuthUser ? 'none' : 'auto'}
+              autoCapitalize="none"
+              secureTextEntry={!showPasswordConfirm}
+              autoComplete="password-new"
+            />
+            <TouchableOpacity
+              style={styles.eyeButton}
+              onPress={() => setShowPasswordConfirm(!showPasswordConfirm)}
+              hitSlop={{ top: scale(10), bottom: scale(10), left: scale(10), right: scale(10) }}
+              disabled={isOAuthUser}
+            >
+              <Iconify
+                icon={showPasswordConfirm ? "oi:eye" : "system-uicons:eye-no"}
+                size={moderateScale(20)}
+                color={colors.muted}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Error Message */}
+        {error && (
+          <View style={[styles.errorCard, { backgroundColor: colors.error + '15', borderColor: colors.error }]}>
+            <Iconify icon="mdi:information-variant" size={moderateScale(20)} color={colors.error} style={{ marginRight: scale(8) }} />
+            <Text style={[typography.styles.caption, { color: colors.error, flex: 1 }]}>{error}</Text>
+          </View>
+        )}
+
+        {/* Action Buttons */}
+        <View style={styles.buttonRowModern}>
+          <UndoButton
+            onPress={handleCancel}
+            disabled={saving}
+            text={t('editProfile.undo')}
+          />
+          <CreateButton
+            onPress={handleSave}
+            disabled={saving}
+            loading={saving}
+            text={saving ? t('editProfile.saving') : t('editProfile.save')}
+          />
+        </View>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

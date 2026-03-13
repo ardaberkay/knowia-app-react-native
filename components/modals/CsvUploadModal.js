@@ -144,11 +144,39 @@ export default function CsvUploadModal({
   const parseCSV = (csvContent) => {
     const lines = csvContent.split(/\r?\n/).filter(line => line.trim());
     if (lines.length < 2) return { validCards: [], errors: [], ignoredColumns: [] };
-    const rawHeaders = lines[0].split(',').map(h => h.trim());
+
+    // 🌟 YENİ: Virgülleri doğru ayıran, metin içi virgülleri yoksayan yardımcı fonksiyon
+    const parseCsvLine = (line) => {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"' && line[i + 1] === '"') {
+          // Çift tırnak escape edilmişse
+          current += '"';
+          i++;
+        } else if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current);
+      return result.map(v => v.trim().replace(/^"|"$/g, '').replace(/\r$/, ''));
+    };
+
+    // 🌟 DÜZELTME: split(',') yerine yeni fonksiyonumuzu kullanıyoruz
+    const rawHeaders = parseCsvLine(lines[0]);
     const headers = rawHeaders.map(h => h.toLowerCase());
     console.log('CSV Headers Debug:', { rawHeaders, headers });
+
     const { columnMap, ignoredColumns } = processHeaders(headers);
     console.log('CSV ColumnMap Debug:', { columnMap, ignoredColumns });
+
     if (columnMap.question === undefined || columnMap.answer === undefined) {
       return {
         validCards: [],
@@ -157,19 +185,25 @@ export default function CsvUploadModal({
         totalRows: lines.length - 1
       };
     }
+
     const validCards = [];
     const errors = [];
+
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, '').replace(/\r$/, ''));
+      // 🌟 DÜZELTME: Satırları da yeni fonksiyonla okuyoruz
+      const values = parseCsvLine(lines[i]);
       const card = {};
+
       Object.keys(columnMap).forEach(field => {
         const valueIndex = columnMap[field];
         card[field] = values[valueIndex] || '';
       });
+
       const validation = validateCard(card, i + 1);
       if (validation.isValid) { validCards.push(card); }
       else { errors.push(...validation.errors); }
     }
+
     return { validCards, errors, ignoredColumns, totalRows: lines.length - 1 };
   };
 
