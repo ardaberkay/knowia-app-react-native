@@ -252,6 +252,7 @@ function AppContent() {
 }
 
 export default function App() {
+
   return (
     <GestureHandlerRootView style={styles.gestureRoot}>
       <SafeAreaProvider>

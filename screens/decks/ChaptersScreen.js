@@ -251,7 +251,7 @@ const addChapterAnimatedStyle = useAnimatedStyle(() => {
       showError(t('chapters.onlyOwner', 'Sadece deste sahibi bölüm ekleyebilir.'));
       return;
     }
-    if (chapters.length >= 30) {
+    if (chapters.length >= 40) {
       showError(t('chapters.limitReached', 'Maksimum 30 bölüm oluşturabilirsin.'));
       return;
     }

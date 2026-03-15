@@ -523,7 +523,7 @@
     "deleted": "Chapter deleted.",
     "deleteError": "Chapter could not be deleted.",
     "onlyOwner": "Only deck owner can add chapters.",
-    "limitReached": "You can create a maximum of 30 chapters.",
+    "limitReached": "You can create a maximum of 40 chapters.",
     "createError": "Chapter could not be added."
   },
   "chapterCards": {

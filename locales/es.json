@@ -498,7 +498,7 @@
     "deleted": "Capítulo eliminado.",
     "deleteError": "No se pudo eliminar el capítulo.",
     "onlyOwner": "Solo el propietario de la baraja puede agregar capítulos.",
-    "limitReached": "Puedes crear un máximo de 30 capítulos.",
+    "limitReached": "Puedes crear un máximo de 40 capítulos.",
     "createError": "No se pudo agregar el capítulo."
   },
   "chapterCards": {

@@ -487,7 +487,7 @@
     "deleted": "Kapitel gelöscht.",
     "deleteError": "Kapitel konnte nicht gelöscht werden.",
     "onlyOwner": "Nur der Deck Besitzer kann Kapitel hinzufügen.",
-    "limitReached": "Du kannst maximal 30 Kapitel erstellen.",
+    "limitReached": "Du kannst maximal 40 Kapitel erstellen.",
     "createError": "Kapitel konnte nicht hinzugefügt werden."
   },
   "chapterCards": {

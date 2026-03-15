@@ -498,7 +498,7 @@
     "deleted": "Chapitre supprimé.",
     "deleteError": "Le chapitre n'a pas pu être supprimé.",
     "onlyOwner": "Seul le propriétaire du paquet peut ajouter des chapitres.",
-    "limitReached": "Vous pouvez créer un maximum de 30 chapitres.",
+    "limitReached": "Vous pouvez créer un maximum de 40 chapitres.",
     "createError": "Le chapitre n'a pas pu être ajouté."
   },
   "chapterCards": {
