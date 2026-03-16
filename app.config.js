@@ -19,6 +19,10 @@ export default {
       bundleIdentifier: "com.arda.knowia"
     },
     android: {
+      compileSdkVersion: 35,
+      targetSdkVersion: 35,
+      enableProguardInReleaseBuilds: true,
+      
       adaptiveIcon: {
         foregroundImage: "./assets/android_logo.png",
         backgroundColor: "#FF8D1A"
