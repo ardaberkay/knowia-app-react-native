@@ -398,6 +398,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    marginHorizontal: scale(12),
     // marginBottom dinamik olarak uygulanacak
   },
   heroIconContainer: {

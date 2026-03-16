@@ -365,6 +365,7 @@ const TAB_TO_SORT_BY = {
 const transformRpcDeck = (d) => ({
   id: d.id,
   name: d.name,
+  to_name: d.to_name,
   description: d.description,
   card_count: d.card_count,
   user_id: d.user_id,
@@ -380,7 +381,7 @@ const transformRpcDeck = (d) => ({
   favorite_count: d.favorite_count,
 });
 
-export const getDiscoverDecks = async (userId, tab = 'trend', timeFilter = 'all', limit = 100, forceRefresh = false) => {
+export const getDiscoverDecks = async (userId, tab = 'trend', timeFilter = 'all', limit = 50, forceRefresh = false) => {
   const sortBy = TAB_TO_SORT_BY[tab] || 'popular';
   const cacheKey = `discover_${tab}_${timeFilter}`;
 
