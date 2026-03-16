@@ -4,8 +4,11 @@ import { Alert, Linking } from 'react-native';
 import { supabase } from '../lib/supabase';
 import i18n from '../lib/i18n';
 
-const projectId = require('../app.json')?.expo?.extra?.eas?.projectId ?? null;
+// Hata veren her yerde bunu kullanabilirsin:
+import Constants from 'expo-constants';
 
+const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+const version = Constants.expoConfig?.version;
 
 /**
  * Kullanıcıdan push bildirim izni alır ve Expo push token'ı Supabase'deki profiles tablosuna kaydeder.
