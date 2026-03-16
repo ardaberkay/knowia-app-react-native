@@ -841,7 +841,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
         {cards.length === 0 ? (
           <View style={styles.emptyState}>
             <Image
-              source={require('../../assets/cardbg.png')}
+              source={require('../../assets/cardbg.webp')}
               style={{ width: scale(500), height: scale(500), opacity: 0.2 }}
               resizeMode="contain"
             />

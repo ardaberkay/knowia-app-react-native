@@ -367,7 +367,7 @@ const MyDecksList = ({
   const renderEmptyComponent = () => (
     <View style={styles.emptyContainer}>
       <Image
-        source={require('../../assets/deckbg.png')}
+        source={require('../../assets/deckbg.webp')}
         style={styles.emptyImage}
         resizeMode="contain"
         fadeDuration={0}

@@ -1113,7 +1113,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                     source={
                       deck.profiles?.image_url
                         ? { uri: deck.profiles.image_url }
-                        : require('../../assets/avatar_default.png')
+                        : require('../../assets/avatar_default.webp')
                     }
                     style={styles.gfCreatorAvatar}
                   />
@@ -1130,7 +1130,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                         ? require('../../assets/app_icon.png')
                         : deck.profiles?.image_url
                           ? { uri: deck.profiles.image_url }
-                          : require('../../assets/avatar_default.png')
+                          : require('../../assets/avatar_default.webp')
                     }
                     style={styles.gfCreatorAvatar}
                   />

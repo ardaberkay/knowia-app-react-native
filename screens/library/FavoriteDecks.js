@@ -198,7 +198,7 @@ export default function FavoriteDecks() {
       ) : filteredDecks.length < 0 ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: verticalScale(-150)}}>
           <Image
-            source={require('../../assets/deckbg.png')}
+            source={require('../../assets/deckbg.webp')}
             style={{ width: scale(300), height: verticalScale(300), opacity: 0.2 }}
             resizeMode="contain"
             fadeDuration={0}

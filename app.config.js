@@ -47,7 +47,7 @@ export default {
       ]
     },
     web: {
-      favicon: "./assets/logoasil.png"
+      favicon: "./assets/app_icon.png"
     },
     plugins: [
       "expo-font",

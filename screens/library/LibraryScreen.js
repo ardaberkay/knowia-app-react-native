@@ -625,7 +625,7 @@ export default function LibraryScreen() {
           </View>
           <View style={styles.myDecksImageContainer}>
             <Image
-              source={require('../../assets/mydecks_item.png')}
+              source={require('../../assets/mydecks_item.webp')}
               style={styles.myDecksImage}
               resizeMode="contain"
               fadeDuration={0}
@@ -858,7 +858,7 @@ export default function LibraryScreen() {
                                         ? require('../../assets/app_icon.png')
                                         : deck.profiles?.image_url
                                           ? { uri: deck.profiles.image_url }
-                                          : require('../../assets/avatar_default.png')
+                                          : require('../../assets/avatar_default.webp')
                                     }
                                     style={[styles.deckProfileAvatar, { width: favoriteSliderDimensions.profileAvatarSize, height: favoriteSliderDimensions.profileAvatarSize }]}
                                   />
@@ -937,7 +937,7 @@ export default function LibraryScreen() {
                 ) : (
                   <View style={[styles.favoriteSliderEmpty, { pointerEvents: 'box-none' }]}>
                     <Image
-                      source={require('../../assets/deckbg.png')}
+                      source={require('../../assets/deckbg.webp')}
                       style={{ position: 'absolute', alignSelf: 'center', width: moderateScale(300, 0.3), height: moderateScale(300, 0.3), opacity: 0.2 }}
                       resizeMode="contain"
                       fadeDuration={0}
@@ -1011,7 +1011,7 @@ export default function LibraryScreen() {
                       ListEmptyComponent={
                         <View style={styles.favoriteCardsEmpty}>
                           <Image
-                            source={require('../../assets/cardbg.png')}
+                            source={require('../../assets/cardbg.webp')}
                             style={{ width: moderateScale(400, 0.3), height: moderateScale(400, 0.3), opacity: 0.2 }}
                             resizeMode="contain"
                             fadeDuration={0}

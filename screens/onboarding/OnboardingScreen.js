@@ -60,7 +60,7 @@ export default function OnboardingScreen({ navigation, route }) {
           "Knowia'nın uzman desteleriyle hemen öğrenmeye başla veya topluluğun paylaştığı binlerce desteyi keşfet."
         ),
         type: 'image',
-        source: require('../../assets/on_boarding.png'),
+        source: require('../../assets/on_boarding.webp'),
       },
       {
         key: 'create',
@@ -70,7 +70,7 @@ export default function OnboardingScreen({ navigation, route }) {
           'Kendi destelerini oluştur, ister kendine sakla ister tüm dünyayla paylaşarak topluluğa katkı sağla.'
         ),
         type: 'image',
-        source: require('../../assets/shared.png'),
+        source: require('../../assets/shared.webp'),
       },
       {
         key: 'start',
@@ -80,7 +80,7 @@ export default function OnboardingScreen({ navigation, route }) {
           'Öğrenme alışkanlığını bugün başlat. İlk desteğini seç ve kaydırmaya başla.'
         ),
         type: 'image',
-        source: require('../../assets/hats_amico.png'),
+        source: require('../../assets/hats_amico.webp'),
       },
     ],
     [t]

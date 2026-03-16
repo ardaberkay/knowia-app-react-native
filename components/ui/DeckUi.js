@@ -143,7 +143,7 @@ const DeckCard = ({
                   ? require('../../assets/app_icon.png')
                   : deck.profiles?.image_url 
                     ? { uri: deck.profiles.image_url } 
-                    : require('../../assets/avatar_default.png')
+                    : require('../../assets/avatar_default.webp')
               }
               style={styles.deckProfileAvatar}
             />

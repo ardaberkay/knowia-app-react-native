@@ -176,7 +176,7 @@ const DeckCard = React.memo(({
                 ? require('../../assets/app_icon.png')
                 : deck.profiles?.image_url 
                   ? { uri: deck.profiles.image_url } 
-                  : require('../../assets/avatar_default.png')
+                  : require('../../assets/avatar_default.webp')
             }
             style={styles.deckProfileAvatar}
           />
@@ -453,7 +453,7 @@ const DeckList = ({
         <View style={styles.noDecksEmpty}>
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <Image
-              source={require('../../assets/deckbg.png')}
+              source={require('../../assets/deckbg.webp')}
               style={{ position: 'absolute', alignSelf: 'center', width: moderateScale(300, 0.3), height: moderateScale(300, 0.3), opacity: 0.2 }}
               resizeMode="contain"
             />

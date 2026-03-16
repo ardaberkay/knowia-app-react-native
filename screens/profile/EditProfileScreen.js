@@ -331,7 +331,7 @@ export default function EditProfileScreen({ navigation }) {
           <View style={styles.profilePhotoContainer}>
             <View style={styles.avatarContainer}>
               <Image
-                source={imageUrl ? { uri: imageUrl } : require('../../assets/avatar_default.png')}
+                source={imageUrl ? { uri: imageUrl } : require('../../assets/avatar_default.webp')}
                 style={[styles.avatarLarge, { borderColor: colors.border }]}
               />
               <TouchableOpacity

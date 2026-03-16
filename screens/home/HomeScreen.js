@@ -243,7 +243,7 @@ export default function HomeScreen() {
           </View>
           <View style={styles.popularDecksImageContainer}>
             <Image
-              source={require('../../assets/item.png')}
+              source={require('../../assets/item.webp')}
               style={styles.popularDecksImage}
               resizeMode="contain"
               fadeDuration={0}

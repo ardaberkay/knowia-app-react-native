@@ -699,7 +699,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                     <View style={styles.noDecksEmpty} pointerEvents="none">
                     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="none">
                       <Image
-                        source={require('../../assets/cardbg.png')}
+                        source={require('../../assets/cardbg.webp')}
                         style={{ position: 'absolute', alignSelf: 'center', width: moderateScale(500, 0.3), height: moderateScale(500, 0.3), opacity: 0.2 }}
                         resizeMode="contain"
                         pointerEvents="none"

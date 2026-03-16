@@ -19,7 +19,7 @@ import { getDeckById } from '../../services/DeckService';
 import { invalidateCache } from '../../services/CacheService';
 import { useAuth } from '../../contexts/AuthContext';
 import { Iconify } from 'react-native-iconify';
-import logoasil from '../../assets/logoasil.png';
+import home_logo from '../../assets/home_logo.png';
 import { useTranslation } from 'react-i18next';
 import { addFavoriteCard, removeFavoriteCard, getFavoriteCardIds } from '../../services/FavoriteService';
 import LottieView from 'lottie-react-native';
@@ -764,7 +764,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={{ width: '100%', alignItems: 'center', marginTop: verticalScale(60) }}>
-          <Image source={logoasil} style={{ width: scale(260), height: scale(260), resizeMode: 'cover' }} />
+          <Image source={home_logo} style={{ width: scale(260), height: scale(260), resizeMode: 'cover' }} />
           <Text style={[typography.styles.h2, { color: colors.text, textAlign: 'center', marginTop: verticalScale(16), paddingHorizontal: scale(32) }]}>
             {progress === totalCardCount ? t('swipeDeck.bravo', "Bravo! Tüm Kartları Tamamladın") : t('swipeDeck.learnTime', "Kalan Kartları Öğrenmeye Vakit Var")}
           </Text>

@@ -186,7 +186,7 @@ export default function AddCardScreen() {
               </View>
               <View style={styles.headerImageContainer}>
                 <Image
-                  source={require('../../assets/create_card_item.png')}
+                  source={require('../../assets/create_card_item.webp')}
                   style={styles.headerImage}
                   resizeMode="contain"
                   fadeDuration={0}
