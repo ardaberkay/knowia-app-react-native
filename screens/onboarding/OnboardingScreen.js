@@ -60,7 +60,7 @@ export default function OnboardingScreen({ navigation, route }) {
           "Knowia'nın uzman desteleriyle hemen öğrenmeye başla veya topluluğun paylaştığı binlerce desteyi keşfet."
         ),
         type: 'image',
-        source: require('../../assets/onboarding.png'),
+        source: require('../../assets/on_boarding.png'),
       },
       {
         key: 'create',
