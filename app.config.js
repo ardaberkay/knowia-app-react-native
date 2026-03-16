@@ -5,7 +5,7 @@ export default {
     version: "1.0.0",
     owner: "imati",
     orientation: "portrait",
-    icon: "./assets/app-icon.png",
+    icon: "./assets/app_icon.png",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     scheme: "knowia",
@@ -20,7 +20,7 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/android-logo.png",
+        foregroundImage: "./assets/android_logo.png",
         backgroundColor: "#FF8D1A"
       },
       edgeToEdgeEnabled: true,

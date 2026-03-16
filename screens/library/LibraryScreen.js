@@ -261,7 +261,7 @@ export default function LibraryScreen() {
             profiles: {
               ...deck.profiles,
               username: 'Knowia',
-              image_url: null, // app-icon.png kullanılacak
+              image_url: null, // app_icon.png kullanılacak
             },
           };
         }
@@ -625,7 +625,7 @@ export default function LibraryScreen() {
           </View>
           <View style={styles.myDecksImageContainer}>
             <Image
-              source={require('../../assets/mydecks-item.png')}
+              source={require('../../assets/mydecks_item.png')}
               style={styles.myDecksImage}
               resizeMode="contain"
               fadeDuration={0}
@@ -855,10 +855,10 @@ export default function LibraryScreen() {
                                   <Image
                                     source={
                                       deck.is_admin_created
-                                        ? require('../../assets/app-icon.png')
+                                        ? require('../../assets/app_icon.png')
                                         : deck.profiles?.image_url
                                           ? { uri: deck.profiles.image_url }
-                                          : require('../../assets/avatar-default.png')
+                                          : require('../../assets/avatar_default.png')
                                     }
                                     style={[styles.deckProfileAvatar, { width: favoriteSliderDimensions.profileAvatarSize, height: favoriteSliderDimensions.profileAvatarSize }]}
                                   />

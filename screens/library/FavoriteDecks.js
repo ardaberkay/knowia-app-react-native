@@ -43,7 +43,7 @@ export default function FavoriteDecks() {
           profiles: {
             ...deck.profiles,
             username: 'Knowia',
-            image_url: null, // app-icon.png kullanılacak
+            image_url: null, // app_icon.png kullanılacak
           },
         };
       }

@@ -230,7 +230,7 @@ export default function DeckDetailScreen({ route, navigation }) {
       deck.profiles = {
         ...deck.profiles,
         username: 'Knowia',
-        image_url: null, // app-icon.png kullanılacak
+        image_url: null, // app_icon.png kullanılacak
       };
       route.params.deck = deck;
     }
@@ -1113,7 +1113,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                     source={
                       deck.profiles?.image_url
                         ? { uri: deck.profiles.image_url }
-                        : require('../../assets/avatar-default.png')
+                        : require('../../assets/avatar_default.png')
                     }
                     style={styles.gfCreatorAvatar}
                   />
@@ -1127,10 +1127,10 @@ export default function DeckDetailScreen({ route, navigation }) {
                   <Image
                     source={
                       deck.is_admin_created
-                        ? require('../../assets/app-icon.png')
+                        ? require('../../assets/app_icon.png')
                         : deck.profiles?.image_url
                           ? { uri: deck.profiles.image_url }
-                          : require('../../assets/avatar-default.png')
+                          : require('../../assets/avatar_default.png')
                     }
                     style={styles.gfCreatorAvatar}
                   />

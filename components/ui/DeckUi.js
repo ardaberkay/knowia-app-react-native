@@ -140,10 +140,10 @@ const DeckCard = ({
             <Image
               source={
                 deck.is_admin_created 
-                  ? require('../../assets/app-icon.png')
+                  ? require('../../assets/app_icon.png')
                   : deck.profiles?.image_url 
                     ? { uri: deck.profiles.image_url } 
-                    : require('../../assets/avatar-default.png')
+                    : require('../../assets/avatar_default.png')
               }
               style={styles.deckProfileAvatar}
             />

@@ -155,7 +155,7 @@ export default function BlockedScreen() {
             {blockedUsers.map((user) => (
               <View key={user.id} style={[styles.row, { borderBottomColor: colors.border + '99' }]}>
                 <Image
-                  source={user.image_url ? { uri: user.image_url } : require('../../assets/avatar-default.png')}
+                  source={user.image_url ? { uri: user.image_url } : require('../../assets/avatar_default.png')}
                   style={styles.avatar}
                 />
                 <Text style={[typography.styles.body, { color: colors.text }, styles.label]} numberOfLines={1}>

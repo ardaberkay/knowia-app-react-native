@@ -204,7 +204,7 @@ export default function CreateScreen() {
                 </View>
                 <View style={styles.headerImageContainer}>
                   <Image
-                    source={require('../../assets/create-deck-item.png')}
+                    source={require('../../assets/create_deck_item.png')}
                     style={styles.headerImage}
                     resizeMode="contain"
                     fadeDuration={0}

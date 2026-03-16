@@ -418,7 +418,7 @@ export default function ProfileScreen() {
             <Image source={
               profile.image_url
                 ? { uri: profile.image_url }
-                : require('../../assets/avatar-default.png')
+                : require('../../assets/avatar_default.png')
             } style={styles.avatar} />
             <View style={styles.userInfo}>
               <Text style={[typography.styles.h2, { color: colors.text }, styles.name]}>{profile.username}</Text>

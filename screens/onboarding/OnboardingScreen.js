@@ -80,7 +80,7 @@ export default function OnboardingScreen({ navigation, route }) {
           'Öğrenme alışkanlığını bugün başlat. İlk desteğini seç ve kaydırmaya başla.'
         ),
         type: 'image',
-        source: require('../../assets/graduation hats-amico.png'),
+        source: require('../../assets/hats_amico.png'),
       },
     ],
     [t]
@@ -96,7 +96,7 @@ export default function OnboardingScreen({ navigation, route }) {
     return verticalScale(380);
   }, [isTablet]);
 
-  // Lottie senkronu: aynı anda başlat, döngü sürelerini eşitle (swipeCard ~100/60s, swipeHint 59/30s → aynı süre için hızlar)
+  // Lottie senkronu: aynı anda başlat, döngü sürelerini eşitle (swipecard ~100/60s, swipehint 59/30s → aynı süre için hızlar)
   useEffect(() => {
     if (page !== 0) return;
     const t = setTimeout(() => {
@@ -186,7 +186,7 @@ export default function OnboardingScreen({ navigation, route }) {
           <View style={styles.lottieSlideColumn}>
             <LottieView
               ref={lottieCardRef}
-              source={require('../../assets/swipeCard.json')}
+              source={require('../../assets/swipecard.json')}
               loop
               speed={0.95}
               style={{ width: Math.min(width * 0.92, scale(360)), height: cardHeight }}

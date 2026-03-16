@@ -34,7 +34,7 @@ export default function ProfileAvatarButton() {
   // Eğer profil henüz yükleniyorsa (null/undefined) veya image_url yoksa doğrudan default resmi kullan
   const imageSource = profile?.image_url 
     ? { uri: profile.image_url } 
-    : require('../../assets/avatar-default.png');
+    : require('../../assets/avatar_default.png');
 
   return (
     <AnimatedPressable
