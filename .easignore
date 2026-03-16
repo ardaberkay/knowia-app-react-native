@@ -1,0 +1,7 @@
+# Gereksiz build dosyalarını EAS'den gizle
+node_modules/
+android/build/
+android/.gradle/
+ios/build/
+ios/Pods/
+.expo/
