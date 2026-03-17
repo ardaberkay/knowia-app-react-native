@@ -19,8 +19,6 @@ export default {
       bundleIdentifier: "com.arda.knowia"
     },
     android: {
-      compileSdkVersion: 35,
-      targetSdkVersion: 35,
       enableProguardInReleaseBuilds: true,
       adaptiveIcon: {
         foregroundImage: "./assets/android_logo.png",
@@ -28,7 +26,6 @@ export default {
       },
       edgeToEdgeEnabled: true,
       package: "com.arda.knowia",
-      // İŞTE SİHİRLİ SATIR BURASI:
       googleServicesFile: process.env.GOOGLE_SERVICES_JSON || "./google-services.json",
       permissions: [
         "android.permission.DETECT_SCREEN_CAPTURE"
@@ -57,7 +54,17 @@ export default {
       "expo-localization",
       "expo-dev-client",
       "expo-notifications",
-      "./plugins/withAndroidKeyboardMode"
+      "./plugins/withAndroidKeyboardMode",
+      [
+        "expo-build-properties",
+        {
+          android: {
+            compileSdkVersion: 35,
+            targetSdkVersion: 35,
+            buildToolsVersion: "35.0.0"
+          }
+        }
+      ]
     ],
     extra: {
       eas: {
