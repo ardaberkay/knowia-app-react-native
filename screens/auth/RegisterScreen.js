@@ -1,0 +1,262 @@
+import { useState, useMemo, useCallback } from 'react';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ImageBackground } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import * as WebBrowser from 'expo-web-browser';
+import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../theme/theme';
+import { typography } from '../../theme/typography';
+import { useTranslation } from 'react-i18next';
+import { Iconify } from 'react-native-iconify';
+import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
+
+const REGISTER_LINKS = {
+  privacy: 'https://www.knowia.online/policy',
+  terms: 'https://www.knowia.online/terms',
+};
+
+export default function RegisterScreen({ navigation }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const { register } = useAuth();
+  const { colors } = useTheme();
+  const { t } = useTranslation();
+  
+  // useWindowDimensions hook'u - ekran döndürme desteği
+  const { width, height } = useWindowDimensions();
+  const isTablet = getIsTablet();
+  
+  const containerPaddingTop = useMemo(() => {
+    if (isTablet) return height * 0.15;
+    return height * 0.27;
+  }, [height, isTablet]);
+
+  const openLink = useCallback(async (url) => {
+    try {
+      await WebBrowser.openBrowserAsync(url, {
+        toolbarColor: colors.buttonColor,
+        enableBarCollapsing: true,
+      });
+    } catch (err) {
+      Alert.alert(t('register.error', 'Hata'), t('register.linkError', 'Link açılamadı'));
+    }
+  }, [colors.buttonColor, t]);
+
+  const handleRegister = async () => {
+    if (loading) return;
+    if (password !== confirmPassword) {
+      Alert.alert(t('register.error', 'Hata'), t('register.passwordMatchError', 'Şifreler eşleşmiyor'));
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { error } = await register(email, password);
+      if (error) throw error;
+      
+      Alert.alert(
+        t('register.success', 'Başarılı'),
+        t('register.successMessage', 'Kayıt işlemi tamamlandı. Lütfen e-posta adresinizi doğrulayın.'),
+        [{ text: t('register.ok', 'Tamam'), onPress: () => navigation.navigate('Login') }]
+      );
+    } catch (error) {
+      Alert.alert('Hata', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <ImageBackground
+      source={require('../../assets/bgtwo.png')}
+      style={styles.backgroundImage}
+      resizeMode="cover"
+    >
+      <KeyboardAwareScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.container, { paddingTop: containerPaddingTop }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid={true}
+        enableAutomaticScroll={true}
+        extraScrollHeight={verticalScale(50)}
+      >
+        <View style={styles.form}>
+          <View style={styles.inputContainer}>
+            <View style={{justifyContent: 'center', alignItems: 'center', width: scale(25), height: verticalScale(22)}}>
+              <Iconify icon="tabler:mail-filled" size={moderateScale(22)} color={colors.muted} />
+            </View>
+            <TextInput
+              style={[styles.input, typography.styles.body]}
+              placeholder={t('register.emailPlaceholder', 'Email')}
+              placeholderTextColor={colors.muted}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+          </View>
+          <View style={styles.inputContainer}>
+            <View style={{justifyContent: 'center', alignItems: 'center', width: scale(25), height: verticalScale(22)}}>
+              <Iconify icon="carbon:password" size={moderateScale(22)} color={colors.muted} />
+            </View>
+            <TextInput
+              style={[styles.input, typography.styles.body]}
+              placeholder={t('register.passwordPlaceholder', 'Şifre')}
+              placeholderTextColor={colors.muted}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword(prev => !prev)}
+              style={{justifyContent: 'center', alignItems: 'center', width: scale(28), height: verticalScale(22)}}
+              disabled={loading}
+            >
+              <Iconify icon={showPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={moderateScale(22)} color={colors.muted} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.inputContainer}>
+            <View style={{justifyContent: 'center', alignItems: 'center', width: scale(25), height: verticalScale(22)}}>
+              <Iconify icon="carbon:password" size={moderateScale(22)} color={colors.muted} />
+            </View>
+            <TextInput
+              style={[styles.input, typography.styles.body]}
+              placeholder={t('register.confirmPasswordPlaceholder', 'Şifre Tekrar')}
+              placeholderTextColor={colors.muted}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={!showConfirmPassword}
+            />
+            <TouchableOpacity
+              onPress={() => setShowConfirmPassword(prev => !prev)}
+              style={{justifyContent: 'center', alignItems: 'center', width: scale(28), height: verticalScale(22)}}
+              disabled={loading}
+            >
+              <Iconify icon={showConfirmPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={moderateScale(22)} color={colors.muted} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.policyLinksRow}>
+            <TouchableOpacity onPress={() => openLink(REGISTER_LINKS.privacy)} activeOpacity={0.7}>
+              <Text style={[typography.styles.caption, styles.policyLink, { color: colors.secondary }]}>
+                {t('profile.privacy', 'Gizlilik Politikası')}
+              </Text>
+            </TouchableOpacity>
+            <Text style={[typography.styles.caption, styles.policyText, { color: colors.text }]}>
+              {t('register.and', ' ve ')}
+            </Text>
+            <TouchableOpacity onPress={() => openLink(REGISTER_LINKS.terms)} activeOpacity={0.7}>
+              <Text style={[typography.styles.caption, styles.policyLink, { color: colors.secondary }]}>
+                {t('profile.terms', 'Kullanım Koşulları')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={[typography.styles.caption, styles.policyAgreeText, { color: colors.text }]}>
+            {t('register.agreeByRegistering', 'Kayıt olarak kabul etmiş olursunuz.')}
+          </Text>
+          <TouchableOpacity 
+            style={[styles.button, { backgroundColor: colors.buttonColor, borderWidth: moderateScale(1), borderColor: 'rgba(0, 0, 0, 0.1)' }, loading && styles.buttonDisabled]}
+            onPress={handleRegister}
+            disabled={loading}
+          >
+            <Text style={[styles.buttonText, typography.styles.button, { color: colors.buttonText }]}>
+              {loading ? t('register.registering', 'Kayıt yapılıyor...') : t('register.register', 'Kayıt Ol')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.linkButton, { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: moderateScale(8), paddingHorizontal: scale(12), paddingVertical: verticalScale(8) }]}
+            onPress={() => navigation.navigate('Login')}
+          >
+            <Text style={[styles.linkText, typography.styles.link, { color: colors.secondary }]}>
+              {t('register.didUAcc', 'Zaten hesabınız var mı?')} {' '}
+              <Text style={typography.styles.linkBold}>{t('register.login', 'Giriş yapın')}</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAwareScrollView>
+    </ImageBackground>
+  );
+}
+
+const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+  },
+  container: {
+    flexGrow: 1,
+    padding: scale(20),
+    justifyContent: 'center',
+    // paddingTop dinamik olarak uygulanacak
+  },
+  title: {
+    textAlign: 'center',
+    marginBottom: verticalScale(10),
+  },
+  subtitle: {
+    textAlign: 'center',
+    marginBottom: verticalScale(30),
+  },
+  form: {
+    gap: verticalScale(15),
+  },
+  policyLinksRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 0,
+    paddingHorizontal: scale(8),
+  },
+  policyText: {
+    marginRight: 0,
+  },
+  policyLink: {
+    textDecorationLine: 'underline',
+  },
+  policyAgreeText: {
+    textAlign: 'center',
+    paddingHorizontal: scale(12),
+    marginTop: verticalScale(-6),
+  },
+  input: {
+    flex: 1,
+    paddingVertical: verticalScale(12),
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: moderateScale(1),
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(6),
+    borderRadius: moderateScale(10),
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    gap: scale(8),
+  },
+  button: {
+    padding: moderateScale(15),
+    borderRadius: moderateScale(10),
+    alignItems: 'center',
+  },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
+  buttonText: {
+    // fontSize ve fontFamily artık typography'den geliyor
+  },
+  linkButton: {
+
+    alignItems: 'center',
+  },
+  linkText: {
+    // fontSize ve fontFamily artık typography'den geliyor
+  },
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+}); 

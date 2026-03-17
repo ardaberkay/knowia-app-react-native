@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "158481249201",
+    "project_id": "knowia-e9cbf",
+    "storage_bucket": "knowia-e9cbf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:158481249201:android:bcc5d74e1cca99641e8390",
+        "android_client_info": {
+          "package_name": "com.arda.knowia"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjO3-eErYOUTLNfrDl1nW0DWeulMHbaVg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

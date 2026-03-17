@@ -1,0 +1,430 @@
+import React, { useState } from 'react';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { updateCard } from '../../services/CardService';
+import { uploadCardImage } from '../../services/StorageService';
+import { typography } from '../../theme/typography';
+import { useTheme } from '../../theme/theme';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+import * as FileSystem from 'expo-file-system';
+import { Buffer } from 'buffer';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../contexts/AuthContext';
+import { Iconify } from 'react-native-iconify';
+import CreateButton from '../tools/CreateButton';
+import UndoButton from '../tools/UndoButton';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import BadgeText from '../modals/BadgeText';
+
+export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) {
+  const { colors } = useTheme();
+  const { session } = useAuth();
+  const userId = session?.user?.id;
+  const [question, setQuestion] = useState(card?.question || '');
+  const [answer, setAnswer] = useState(card?.answer || '');
+  const [example, setExample] = useState(card?.example || '');
+  const [note, setNote] = useState(card?.note || '');
+  const [image, setImage] = useState(card?.image || '');
+  const [imageChanged, setImageChanged] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
+
+  const handlePickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 1,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const manipResult = await ImageManipulator.manipulateAsync(
+          result.assets[0].uri,
+          [{ resize: { width: 512 } }],
+          { compress: 0.7, format: 'jpeg' }
+        );
+        setImage(manipResult.uri);
+        setImageChanged(true);
+      }
+    } catch (err) {
+      Alert.alert(t('common.error', 'Hata'), t('common.imageNotSelected', 'Fotoğraf seçilemedi.'));
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImage('');
+    setImageChanged(true);
+  };
+
+  const handleUpdateCard = async () => {
+    const MAX_QUESTION_LENGTH = 400;
+    const MAX_ANSWER_LENGTH = 300;
+    const MAX_EXAMPLE_LENGTH = 200;
+    const MAX_NOTE_LENGTH = 200;
+    if (!question.trim() || !answer.trim()) {
+      Alert.alert(t('common.error', 'Hata'), t('common.requiredFields', 'Soru ve cevap zorunludur.'));
+      return;
+    }
+    if (question.trim().length > MAX_QUESTION_LENGTH) {
+      Alert.alert(t('common.error', 'Hata'), t('addCard.questionTooLong', `Soru en fazla ${MAX_QUESTION_LENGTH} karakter olabilir.`));
+      return;
+    }
+    if (answer.trim().length > MAX_ANSWER_LENGTH) {
+      Alert.alert(t('common.error', 'Hata'), t('addCard.answerTooLong', `Cevap en fazla ${MAX_ANSWER_LENGTH} karakter olabilir.`));
+      return;
+    }
+    if (example.trim().length > MAX_EXAMPLE_LENGTH) {
+      Alert.alert(t('common.error', 'Hata'), t('addCard.exampleTooLong', `Örnek en fazla ${MAX_EXAMPLE_LENGTH} karakter olabilir.`));
+      return;
+    }
+    if (note.trim().length > MAX_NOTE_LENGTH) {
+      Alert.alert(t('common.error', 'Hata'), t('addCard.noteTooLong', `Not en fazla ${MAX_NOTE_LENGTH} karakter olabilir.`));
+      return;
+    }
+    setLoading(true);
+    let imageUrl = card?.image || '';
+    try {
+      if (imageChanged) {
+        if (image) {
+          const base64 = await FileSystem.readAsStringAsync(image, { encoding: FileSystem.EncodingType.Base64 });
+          const buffer = Buffer.from(base64, 'base64');
+          imageUrl = await uploadCardImage(deck.id, userId, buffer);
+        } else {
+          imageUrl = null;
+        }
+      }
+      const updatedCard = await updateCard(card.id, {
+        question: question.trim(),
+        answer: answer.trim(),
+        example: example.trim() || null,
+        note: note.trim() || null,
+        image: imageUrl || null,
+      });
+      onSave(updatedCard);
+    } catch (e) {
+      Alert.alert(t('common.error', 'Hata'), e.message || t('common.cardNotSaved', 'Kart güncellenemedi.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <KeyboardAwareScrollView
+      contentContainerStyle={[styles.formContainer, { backgroundColor: colors.background }]}
+      style={{ flex: 1 }}
+      keyboardShouldPersistTaps="handled"
+      enableOnAndroid={true}
+      enableAutomaticScroll={true}
+      extraScrollHeight={verticalScale(120)}
+    >
+          <View style={[styles.inputCard, { 
+            backgroundColor: colors.cardBackground,
+            borderColor: colors.cardBorder,
+            borderWidth: 1,
+            shadowColor: colors.shadowColor,
+            shadowOffset: colors.shadowOffset,
+            shadowOpacity: colors.shadowOpacity,
+            shadowRadius: colors.shadowRadius,
+            elevation: colors.elevation,
+          }]}>
+            <View style={{ flex: 1 }}>
+              <View style={styles.labelRow}>
+                <View style={styles.labelTextContainer}>
+                  <Iconify icon="mage:image-fill" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+                  <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.image", "Kart Görseli")}</Text>
+                </View>
+                <View>
+                  <BadgeText required={false} />
+                </View>
+              </View>
+            {image ? (
+              <View style={{ alignItems: 'center', marginBottom: verticalScale(8) }}>
+                <Image source={{ uri: image }} style={styles.cardImage} />
+                <TouchableOpacity onPress={handleRemoveImage} style={styles.removeImageButton}>
+                  <Text style={styles.removeImageButtonText}>{t("cardDetail.removeImage", "Görseli Kaldır")}</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity onPress={handlePickImage} style={styles.addImageButton}>
+                <Iconify icon="ic:round-plus" size={moderateScale(24)} color="#F98A21" />
+                <Text style={styles.addImageButtonText}>{t("cardDetail.addImage", "Fotoğraf Ekle")}</Text>
+              </TouchableOpacity>
+            )}
+            </View>
+          </View>
+          <View style={[styles.inputCard, { 
+            backgroundColor: colors.cardBackground,
+            borderColor: colors.cardBorder,
+            borderWidth: 1,
+            shadowColor: colors.shadowColor,
+            shadowOffset: colors.shadowOffset,
+            shadowOpacity: colors.shadowOpacity,
+            shadowRadius: colors.shadowRadius,
+            elevation: colors.elevation,
+          }]}>
+            <View style={{ flex: 1 }}>
+              <View style={styles.labelRow}>
+                <View style={styles.labelTextContainer}>
+                <Iconify icon="uil:comment-alt-question" size={moderateScale(24)} color="#F98A21" />
+                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.question", "Soru")}</Text>
+                </View>
+                <View>
+                  <BadgeText required={true} />
+                </View>
+              </View>
+              <View style={{ position: 'relative' }}>
+                <TextInput
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: question?.length > 0 ? scale(48) : scale(12), borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
+                  placeholder={t("cardDetail.questionPlaceholder", "Kartın sorusu")}
+                  placeholderTextColor={colors.muted}
+                  value={question}
+                  onChangeText={setQuestion}
+                  multiline
+                />
+                {question?.length > 0 ? (
+                  <TouchableOpacity
+                    onPress={() => setQuestion('')}
+                    accessibilityLabel={t('common.clear', 'Temizle')}
+                    hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
+                    style={{ position: 'absolute', right: scale(12), top: verticalScale(12), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
+                  >
+                    <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            </View>
+          </View>
+          <View style={[styles.inputCard, { 
+            backgroundColor: colors.cardBackground,
+            borderColor: colors.cardBorder,
+            borderWidth: 1,
+            shadowColor: colors.shadowColor,
+            shadowOffset: colors.shadowOffset,
+            shadowOpacity: colors.shadowOpacity,
+            shadowRadius: colors.shadowRadius,
+            elevation: colors.elevation,
+          }]}>
+            <View style={{ flex: 1 }}>
+              <View style={styles.labelRow}>
+                <View style={styles.labelTextContainer}>
+                <Iconify icon="uil:comment-alt-check" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.answer", "Cevap")}</Text>
+                </View>
+                <View>
+                  <BadgeText required={true} />
+                </View>
+              </View>
+              <View style={{ position: 'relative' }}>
+                <TextInput
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: answer?.length > 0 ? scale(48) : scale(12), borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
+                  placeholder={t("cardDetail.answerPlaceholder", "Kartın cevabı")}
+                  placeholderTextColor={colors.muted}
+                  value={answer}
+                  onChangeText={setAnswer}
+                  multiline
+                />
+                {answer?.length > 0 ? (
+                  <TouchableOpacity
+                    onPress={() => setAnswer('')}
+                    accessibilityLabel={t('common.clear', 'Temizle')}
+                    hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
+                    style={{ position: 'absolute', right: scale(12), top: verticalScale(12), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
+                  >
+                    <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            </View>
+          </View>
+          <View style={[styles.inputCard, { 
+            backgroundColor: colors.cardBackground,
+            borderColor: colors.cardBorder,
+            borderWidth: 1,
+            shadowColor: colors.shadowColor,
+            shadowOffset: colors.shadowOffset,
+            shadowOpacity: colors.shadowOpacity,
+            shadowRadius: colors.shadowRadius,
+            elevation: colors.elevation,
+          }]}>
+            <View style={{ flex: 1 }}>
+              <View style={styles.labelRow}>
+                <View style={styles.labelTextContainer}>
+                <Iconify icon="lucide:lightbulb" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.example", "Örnek")}</Text>
+                </View>
+                <View>
+                  <BadgeText required={false} />
+                </View>
+              </View>
+              <View style={{ position: 'relative' }}>
+                <TextInput
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: example?.length > 0 ? scale(48) : scale(12), borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
+                  placeholder={t("cardDetail.examplePlaceholder", "Örnek cümle (opsiyonel)")}
+                  placeholderTextColor={colors.muted}
+                  value={example}
+                  onChangeText={setExample}
+                  multiline
+                />
+                {example?.length > 0 ? (
+                  <TouchableOpacity
+                    onPress={() => setExample('')}
+                    accessibilityLabel={t('common.clear', 'Temizle')}
+                    hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
+                    style={{ position: 'absolute', right: scale(12), top: verticalScale(12), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
+                  >
+                    <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            </View>
+          </View>
+          <View style={[styles.inputCard, { 
+            backgroundColor: colors.cardBackground,
+            borderColor: colors.cardBorder,
+            borderWidth: 1,
+            shadowColor: colors.shadowColor,
+            shadowOffset: colors.shadowOffset,
+            shadowOpacity: colors.shadowOpacity,
+            shadowRadius: colors.shadowRadius,
+            elevation: colors.elevation,
+          }]}>
+            <View style={{ flex: 1 }}>
+              <View style={styles.labelRow}>
+                <View style={styles.labelTextContainer}>
+                <Iconify icon="material-symbols-light:stylus-note" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.note", "Not")}</Text>
+                </View>
+                <View>
+                  <BadgeText required={false} />
+                </View>
+              </View>
+              <View style={{ position: 'relative' }}>
+                <TextInput
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: note?.length > 0 ? scale(48) : scale(12), borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
+                  placeholder={t("cardDetail.notePlaceholder", "Not (opsiyonel)")}
+                  placeholderTextColor={colors.muted}
+                  value={note}
+                  onChangeText={setNote}
+                  multiline
+                />
+                {note?.length > 0 ? (
+                  <TouchableOpacity
+                    onPress={() => setNote('')}
+                    accessibilityLabel={t('common.clear', 'Temizle')}
+                    hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
+                    style={{ position: 'absolute', right: scale(12), top: verticalScale(12), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
+                  >
+                    <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            </View>
+          </View>
+          <View style={styles.buttonRowModern}>
+            <UndoButton
+              onPress={onCancel}
+              disabled={loading}
+              text={t("cardDetail.cancel", "İptal Et")}
+            />
+            <CreateButton
+              onPress={handleUpdateCard}
+              disabled={loading}
+              loading={loading}
+              text={t("cardDetail.save", "Kaydet")}
+            />
+          </View>
+    </KeyboardAwareScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  formContainer: {
+    flexGrow: 1,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    padding: scale(16),
+    paddingTop: verticalScale(16),
+
+  },
+  inputCard: {
+    width: '100%',
+    maxWidth: scale(440),
+    borderRadius: moderateScale(28),
+    padding: moderateScale(20),
+    marginBottom: verticalScale(11),
+    shadowOffset: { width: scale(4), height: verticalScale(6)},
+    shadowOpacity: 0.10,
+    shadowRadius: moderateScale(10),
+    elevation: 5,
+    overflow: 'hidden',
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: verticalScale(12),
+
+  },
+  labelTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(8),
+  },
+  label: {
+    fontSize: moderateScale(16),
+    fontWeight: '500',
+  },
+  input: {
+    borderWidth: moderateScale(1),
+    borderRadius: moderateScale(20),
+    padding: scale(12),
+    marginBottom: 0,
+    fontSize: moderateScale(16),
+  },
+  cardImage: {
+    width: '100%',
+    height: verticalScale(160),
+    borderRadius: moderateScale(18),
+    marginBottom: verticalScale(8),
+    resizeMode: 'contain',
+    backgroundColor: 'transparent',
+  },
+  addImageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: moderateScale(28),
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(18),
+    borderWidth: moderateScale(1),
+    borderColor: '#F98A21',
+    marginTop: verticalScale(6),
+  },
+  addImageButtonText: {
+    color: '#F98A21',
+    fontWeight: 'bold',
+    fontSize: moderateScale(15),
+    marginLeft: scale(6),
+  },
+  removeImageButton: {
+    backgroundColor: '#F98A21',
+    borderWidth: moderateScale(1),
+    borderColor: '#F98A21',
+    borderRadius: moderateScale(28),
+    paddingVertical: verticalScale(6),
+    paddingHorizontal: scale(18),
+    alignItems: 'center',
+    marginTop: verticalScale(4),
+    
+  },
+  removeImageButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: moderateScale(15),
+  },
+  buttonRowModern: {
+    flexDirection: 'row',
+    gap: scale(20),
+    marginTop: verticalScale(24),
+    marginBottom: verticalScale(32),
+  },
+}); 
