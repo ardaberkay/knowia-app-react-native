@@ -22,8 +22,6 @@ export default {
       compileSdkVersion: 35,
       targetSdkVersion: 35,
       enableProguardInReleaseBuilds: true,
-      versionCode: 2,
-
       adaptiveIcon: {
         foregroundImage: "./assets/android_logo.png",
         backgroundColor: "#FF8D1A"
