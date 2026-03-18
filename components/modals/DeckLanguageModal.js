@@ -129,7 +129,7 @@ export default function DeckLanguageModal({
       index={0}
       onChange={(index) => index === -1 && onClose()}
       backdropComponent={renderBackdrop}
-      backgroundStyle={{ backgroundColor: colors.background, borderRadius: moderateScale(32) }}
+      backgroundStyle={{ backgroundColor: colors.background, borderRadius: moderateScale(44) }}
       handleIndicatorStyle={{ backgroundColor: isDarkMode ? '#555' : '#CCC' }}
       enableDynamicSizing={true}
       maxDynamicContentSize={SCREEN_HEIGHT * 0.85}

@@ -121,7 +121,7 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
       // Radius ve Arka Plan
       backgroundStyle={{ 
         backgroundColor: colors.background,
-        borderRadius: moderateScale(36) 
+        borderRadius: moderateScale(44) 
       }}
       handleIndicatorStyle={{ backgroundColor: isDarkMode ? '#666' : '#CCC' }}
       

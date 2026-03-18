@@ -1,6 +1,22 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
-import Modal from 'react-native-modal';
+import React, { useEffect, useState } from 'react';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
+  ScrollView, 
+  Modal,
+  Pressable,
+  Dimensions
+} from 'react-native';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming, 
+  runOnJS,
+  Easing
+} from 'react-native-reanimated';
+
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
@@ -9,10 +25,51 @@ import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import BadgeText from '../tools/BadgeText';
 import { triggerHaptic } from '../../lib/hapticManager';
 
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+
 export default function HowToCreateModal({ isVisible, onClose }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const screenHeight = Dimensions.get('screen').height;
+
+  // Animasyon bitmeden Modal'ı DOM'dan kaldırmamak için local state
+  const [renderModal, setRenderModal] = useState(isVisible);
+  
+  // Reanimated Değerleri
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(SCREEN_HEIGHT); // Ekranın en altından başlar
+
+  useEffect(() => {
+    if (isVisible) {
+      setRenderModal(true);
+      // Açılış Animasyonu (Yumuşak geliş)
+      opacity.value = withTiming(1, { duration: 250 });
+      translateY.value = withTiming(0, { 
+        duration: 350, 
+        easing: Easing.out(Easing.exp) 
+      });
+    } else {
+      // Kapanış Animasyonu (Hızlı ve keskin)
+      opacity.value = withTiming(0, { duration: 150 });
+      translateY.value = withTiming(SCREEN_HEIGHT, { 
+        duration: 150,
+        easing: Easing.in(Easing.quad) 
+      }, (isFinished) => {
+        if (isFinished) {
+          runOnJS(setRenderModal)(false);
+        }
+      });
+    }
+  }, [isVisible]);
+
+  // Animasyon Stilleri
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
+
+  const modalAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
 
   const steps = [
     {
@@ -52,107 +109,126 @@ export default function HowToCreateModal({ isVisible, onClose }) {
     }
   ];
 
+  if (!renderModal) return null;
+
   return (
     <Modal
-      isVisible={isVisible}
-      onBackdropPress={onClose}
-      onBackButtonPress={onClose}
-      useNativeDriver
-      useNativeDriverForBackdrop
-      backdropTransitionOutTiming={150}
-      animationInTiming={200}
-      animationOutTiming={200}
-      backdropTransitionInTiming={200}
-      hardwareAccelerated={true}
-      animationIn="slideInUp"
-      animationOut="slideOutDown"
+      transparent={true}
+      visible={renderModal}
+      animationType="none" 
+      onRequestClose={onClose} 
       statusBarTranslucent={true}
-      deviceHeight={screenHeight}
     >
-      <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-        <View style={styles.headerRow}>
-          <View style={styles.headerTitleContainer}>
-            <Iconify icon="material-symbols:info-outline" size={moderateScale(24)} color={colors.secondary} style={{ marginRight: scale(8) }} />
-            <Text style={[typography.styles.h2, { color: colors.text }]}>
-              {t('howToCreate.title', 'Nasıl Oluşturulur?')}
-            </Text>
-          </View>
-          <TouchableOpacity onPress={onClose} style={styles.closeButtonIcon} hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}>
-            <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
-          </TouchableOpacity>
-        </View>
+      <View style={styles.overlay}>
+        
+        {/* Kararan Arka Plan */}
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
+          <Animated.View style={[styles.backdrop, backdropStyle, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]} />
+        </Pressable>
 
-        <ScrollView 
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          <Text style={[styles.introText, typography.styles.body, { color: colors.muted, marginBottom: verticalScale(24) }]}>
-            {t('howToCreate.intro', 'Aşağıdaki adımları takip ederek kolayca bir deste oluşturabilirsiniz. Her adımın ne işe yaradığını öğrenin:')}
-          </Text>
-
-          {steps.map((step, index) => (
-            <View key={index} style={[styles.stepContainer, { backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground, borderColor: colors.cardBorder }]}>
-              <View style={styles.stepHeader}>
-                <View style={[styles.stepIconContainer, { backgroundColor: colors.iconBackground }]}>
-                  <Iconify icon={step.icon} size={moderateScale(24)} color={colors.secondary} />
-                </View>
-                <View style={styles.stepTitleContainer}>
-                  <View style={styles.stepTitleRow}>
-                    <Text style={[styles.stepTitle, typography.styles.h3, { color: colors.text }]}>
-                      {step.title}
-                    </Text>
-                    {step.required}
-                  </View>
-                </View>
-              </View>
-              <Text style={[styles.stepDescription, typography.styles.body, { color: colors.muted, marginTop: verticalScale(8) }]}>
-                {step.description.replace(/Örn:/g, '\nÖrn:')}
+        {/* Modal Kutusu */}
+        <Animated.View style={[styles.modalContainer, { backgroundColor: colors.background }, modalAnimatedStyle]}>
+          
+          {/* Header */}
+          <View style={styles.headerRow}>
+            <View style={styles.headerTitleContainer}>
+              <Iconify icon="material-symbols:info-outline" size={moderateScale(24)} color={colors.secondary} style={{ marginRight: scale(8) }} />
+              <Text style={[typography.styles.h2, { color: colors.text }]}>
+                {t('howToCreate.title', 'Nasıl Oluşturulur?')}
               </Text>
             </View>
-          ))}
-
-          <View style={[styles.tipContainer, { backgroundColor: colors.secondary + '15', borderColor: colors.secondary + '30' }]}>
-            <Iconify icon="lucide:lightbulb" size={moderateScale(20)} color={colors.secondary} style={{ marginRight: scale(8) }} />
-            <Text style={[styles.tipText, typography.styles.caption, { color: colors.text, flex: 1 }]}>
-              {t('howToCreate.tip', 'İpucu: Deste oluşturduktan sonra istediğiniz zaman düzenleyebilir veya kart ekleyebilirsiniz.')}
-            </Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButtonIcon} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
+            </TouchableOpacity>
           </View>
-        </ScrollView>
 
-        <TouchableOpacity
-          style={[styles.closeButton, { backgroundColor: colors.secondary }]}
-          onPress={() => {
-            triggerHaptic('light');
-            onClose();
-          }}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.closeButtonText, typography.styles.body, { color: '#fff' }]}>
-            {t('common.ok', 'Tamam')}
-          </Text>
-        </TouchableOpacity>
+          {/* Scroll Edilebilir İçerik */}
+          <ScrollView 
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+            bounces={true}
+          >
+            <Text style={[styles.introText, typography.styles.body, { color: colors.muted, marginBottom: verticalScale(24) }]}>
+              {t('howToCreate.intro', 'Aşağıdaki adımları takip ederek kolayca bir deste oluşturabilirsiniz. Her adımın ne işe yaradığını öğrenin:')}
+            </Text>
+
+            {steps.map((step, index) => (
+              <View key={index} style={[styles.stepContainer, { backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground, borderColor: colors.cardBorder }]}>
+                <View style={styles.stepHeader}>
+                  <View style={[styles.stepIconContainer, { backgroundColor: colors.iconBackground }]}>
+                    <Iconify icon={step.icon} size={moderateScale(24)} color={colors.secondary} />
+                  </View>
+                  <View style={styles.stepTitleContainer}>
+                    <View style={styles.stepTitleRow}>
+                      <Text style={[styles.stepTitle, typography.styles.h3, { color: colors.text }]}>
+                        {step.title}
+                      </Text>
+                      {step.required}
+                    </View>
+                  </View>
+                </View>
+                <Text style={[styles.stepDescription, typography.styles.body, { color: colors.muted }]}>
+                  {step.description.replace(/Örn:/g, '\nÖrn:')}
+                </Text>
+              </View>
+            ))}
+
+            <View style={[styles.tipContainer, { backgroundColor: colors.secondary + '15', borderColor: colors.secondary + '30' }]}>
+              <Iconify icon="lucide:lightbulb" size={moderateScale(20)} color={colors.secondary} style={{ marginRight: scale(8) }} />
+              <Text style={[styles.tipText, typography.styles.caption, { color: colors.text, flex: 1 }]}>
+                {t('howToCreate.tip', 'İpucu: Deste oluşturduktan sonra istediğiniz zaman düzenleyebilir veya kart ekleyebilirsiniz.')}
+              </Text>
+            </View>
+          </ScrollView>
+
+          {/* Alt Buton */}
+          <TouchableOpacity
+            style={[styles.closeButton, { backgroundColor: colors.secondary }]}
+            onPress={() => {
+              triggerHaptic('light');
+              onClose();
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.closeButtonText, typography.styles.body, { color: '#fff' }]}>
+              {t('common.ok', 'Tamam')}
+            </Text>
+          </TouchableOpacity>
+
+        </Animated.View>
       </View>
     </Modal>
-
   );
 }
 
 const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    justifyContent: 'center', 
+    alignItems: 'center',     
+  },
+  backdrop: {
+    flex: 1,
+    ...StyleSheet.absoluteFillObject,
+  },
   modalContainer: {
-    borderRadius: moderateScale(32),
-    padding: scale(24),
+    width: '90%', 
     maxHeight: '85%',
-    minHeight: verticalScale(300),
-    width: '100%',
-    alignSelf: 'center',
+    borderRadius: moderateScale(32),
+    padding: scale(20), // 24'ten 20'ye hafif çekildi, ekranda daha rahat durması için
     overflow: 'hidden',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: verticalScale(20),
+    marginBottom: verticalScale(16),
   },
   headerTitleContainer: {
     flexDirection: 'row',
@@ -202,20 +278,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     flex: 1,
   },
-  requiredBadge: {
-    paddingHorizontal: scale(8),
-    paddingVertical: verticalScale(4),
-    borderRadius: moderateScale(6),
-  },
-  requiredText: {
-    fontSize: moderateScale(11),
-    fontWeight: '600',
-  },
   stepDescription: {
     lineHeight: moderateScale(20),
-    marginTop: verticalScale(8),
-    paddingLeft: scale(16),
-    textAlign: 'left',
+    marginTop: verticalScale(4),
+    paddingLeft: scale(4),
   },
   tipContainer: {
     flexDirection: 'row',
@@ -233,7 +299,7 @@ const styles = StyleSheet.create({
     paddingVertical: verticalScale(14),
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: verticalScale(20),
+    marginTop: verticalScale(16),
   },
   closeButtonIcon: {
     backgroundColor: 'rgba(150, 150, 150, 0.1)',
@@ -245,4 +311,3 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 });
-
