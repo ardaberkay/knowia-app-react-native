@@ -1,12 +1,34 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, Platform, Modal as RNModal, TouchableWithoutFeedback, Dimensions, LayoutAnimation, UIManager } from 'react-native';
-import Modal from 'react-native-modal';
+import React, { useState, useRef, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
+  ScrollView, 
+  Image, 
+  Platform, 
+  Modal, 
+  TouchableWithoutFeedback, 
+  Dimensions, 
+  LayoutAnimation, 
+  UIManager,
+  Pressable
+} from 'react-native';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming, 
+  runOnJS,
+  Easing,
+  LinearTransition
+} from 'react-native-reanimated';
+
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
 import * as ImagePicker from 'expo-image-picker';
@@ -17,10 +39,7 @@ import { uploadCardImage } from '../../services/StorageService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSnackbarHelpers } from '../ui/Snackbar';
 
-// Android cihazlarda LayoutAnimation'ın çalışması için bu ayar zorunludur
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export default function CsvUploadModal({
   isVisible,
@@ -32,7 +51,7 @@ export default function CsvUploadModal({
   const { session } = useAuth();
   const userId = session?.user?.id;
   const { showSuccess, showError } = useSnackbarHelpers();
-  const screenHeight = Dimensions.get('screen').height;
+  
   const [csvPreview, setCsvPreview] = useState(null);
   const [csvLoading, setCsvLoading] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
@@ -42,6 +61,41 @@ export default function CsvUploadModal({
   const [dropdownPos, setDropdownPos] = useState({});
   const dropdownRefs = useRef({});
   const [tableGuideExpanded, setTableGuideExpanded] = useState(false);
+  const [isImageModalVisible, setImageModalVisible] = useState(false);
+  const [renderModal, setRenderModal] = useState(isVisible);
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(SCREEN_HEIGHT);
+  const scrollViewRef = useRef(null);
+
+  useEffect(() => {
+    if (isVisible) {
+      setRenderModal(true);
+      opacity.value = withTiming(1, { duration: 250 });
+      translateY.value = withTiming(0, { 
+        duration: 350, 
+        easing: Easing.out(Easing.exp) 
+      });
+    } else {
+      opacity.value = withTiming(0, { duration: 150 });
+      translateY.value = withTiming(SCREEN_HEIGHT, { 
+        duration: 150,
+        easing: Easing.in(Easing.quad) 
+      }, (isFinished) => {
+        if (isFinished) {
+          runOnJS(setRenderModal)(false);
+        }
+      });
+    }
+  }, [isVisible]);
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
+
+  const modalAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
 
   // --- FONKSİYONEL KISIMLAR (HİÇ DOKUNULMADI) ---
 
@@ -74,7 +128,6 @@ export default function CsvUploadModal({
     'note': ['not', 'note', 'n', 'notlar', 'açıklama', 'aciklama', 'Not', 'N', 'NOT', 'Note'],
     'image': ['görsel', 'gorsel', 'grsel', 'image', 'img', 'resim', 'picture', 'pic', 'Görsel', 'Gorsel', 'G', 'GÖRSEL', 'GORSEL', 'Image']
   };
-  const [isImageModalVisible, setImageModalVisible] = useState(false);
 
   const processHeaders = (headers) => {
     const columnMap = {};
@@ -145,7 +198,6 @@ export default function CsvUploadModal({
     const lines = csvContent.split(/\r?\n/).filter(line => line.trim());
     if (lines.length < 2) return { validCards: [], errors: [], ignoredColumns: [] };
 
-    // 🌟 YENİ: Virgülleri doğru ayıran, metin içi virgülleri yoksayan yardımcı fonksiyon
     const parseCsvLine = (line) => {
       const result = [];
       let current = '';
@@ -153,7 +205,6 @@ export default function CsvUploadModal({
       for (let i = 0; i < line.length; i++) {
         const char = line[i];
         if (char === '"' && line[i + 1] === '"') {
-          // Çift tırnak escape edilmişse
           current += '"';
           i++;
         } else if (char === '"') {
@@ -169,7 +220,6 @@ export default function CsvUploadModal({
       return result.map(v => v.trim().replace(/^"|"$/g, '').replace(/\r$/, ''));
     };
 
-    // 🌟 DÜZELTME: split(',') yerine yeni fonksiyonumuzu kullanıyoruz
     const rawHeaders = parseCsvLine(lines[0]);
     const headers = rawHeaders.map(h => h.toLowerCase());
     console.log('CSV Headers Debug:', { rawHeaders, headers });
@@ -190,7 +240,6 @@ export default function CsvUploadModal({
     const errors = [];
 
     for (let i = 1; i < lines.length; i++) {
-      // 🌟 DÜZELTME: Satırları da yeni fonksiyonla okuyoruz
       const values = parseCsvLine(lines[i]);
       const card = {};
 
@@ -210,7 +259,7 @@ export default function CsvUploadModal({
   const handleDownloadTemplate = async () => {
     const csvContent = 'soru,cevap,ornek,not,görsel\nBook,Kitap,i am reading a book,Buk seklinde okunur,book\nKnowledge,Bilgi,Knowledge is power.,Bilgi guctur,https://flagcdn.com/w1280/it.png';
     const fileUri = FileSystem.documentDirectory + 'ornek_kartlar.csv';
-    await FileSystem.writeAsStringAsync(fileUri, csvContent, { encoding: FileSystem.EncodingType.UTF8 });
+    await FileSystem.writeAsStringAsync(fileUri, csvContent, { encoding: 'utf8' });
     if (await Sharing.isAvailableAsync()) {
       await Sharing.shareAsync(fileUri);
     } else {
@@ -270,7 +319,7 @@ export default function CsvUploadModal({
   const uploadImageToSupabase = async (imageUri) => {
     try {
       if (!userId) throw new Error('Kullanıcı bulunamadı');
-      const base64 = await FileSystem.readAsStringAsync(imageUri, { encoding: FileSystem.EncodingType.Base64 });
+      const base64 = await FileSystem.readAsStringAsync(imageUri, { encoding: 'base64' });
       const buffer = Buffer.from(base64, 'base64');
       return await uploadCardImage(deck.id, userId, buffer);
     } catch (error) {
@@ -366,12 +415,12 @@ export default function CsvUploadModal({
           setCsvLoading(false);
           return;
         }
-        let csvContent = await FileSystem.readAsStringAsync(file.uri, { encoding: FileSystem.EncodingType.UTF8 });
+        let csvContent = await FileSystem.readAsStringAsync(file.uri, { encoding: 'utf8' });
         if (csvContent.includes('\uFFFD') || csvContent.includes('\u0000')) {
-          const base64Content = await FileSystem.readAsStringAsync(file.uri, { encoding: FileSystem.EncodingType.Base64 });
+          const base64Content = await FileSystem.readAsStringAsync(file.uri, { encoding: 'base64' });
           const fileBuffer = Buffer.from(base64Content, 'base64');
           if (fileBuffer[0] === 0xEF && fileBuffer[1] === 0xBB && fileBuffer[2] === 0xBF) {
-            csvContent = fileBuffer.slice(3).toString('utf-8');
+            csvContent = fileBuffer.slice(3).toString('utf8');
           } else {
             csvContent = decodeWindows1254(fileBuffer);
           }
@@ -399,9 +448,6 @@ export default function CsvUploadModal({
 
         console.log('CSV Parse Debug:', { totalCards: validCards.length, hasImageColumn, hasLocalImageFiles, imageIds: uniqueImageIds, sampleCard: validCards[0], allCardsWithImages: validCards.filter(c => c.image !== undefined), imageColumnMap: validCards.filter(c => c.image !== undefined).map(c => ({ question: c.question, image: c.image, imageType: getImageType(c.image) })) });
 
-        // LayoutAnimation ekleyerek önizleme ekranının yumuşak açılmasını sağladık
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-
         setCsvPreview({
           fileName: file.name,
           totalRows: totalRows,
@@ -414,6 +460,10 @@ export default function CsvUploadModal({
           hasLocalImageFiles: hasLocalImageFiles,
           cardsWithSvg: cardsWithSvg
         });
+
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 200);
 
         setImageIds(uniqueImageIds);
         setImageIdMap({});
@@ -541,382 +591,394 @@ export default function CsvUploadModal({
     onClose();
   };
 
-  // Açılır kapanır menü animasyonu (UI)
   const toggleGuide = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setTableGuideExpanded(!tableGuideExpanded);
   };
 
   // --- UI RENDER KISMI ---
 
+  if (!renderModal) return null;
+
   return (
     <Modal
-      isVisible={isVisible}
-      onBackdropPress={handleClose}
-      onBackButtonPress={handleClose}
-      useNativeDriver
-      useNativeDriverForBackdrop
-      hideModalContentWhileAnimating
-      backdropTransitionOutTiming={150}
-      animationInTiming={200}
-      animationOutTiming={200}
-      backdropTransitionInTiming={200}
-      animationIn="slideInUp"
-      animationOut="slideOutDown"
+      transparent={true}
+      visible={renderModal}
+      animationType="none" 
+      onRequestClose={handleClose} 
       statusBarTranslucent={true}
-      deviceHeight={screenHeight}
     >
-      <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+      <View style={styles.overlay}>
+        
+        {/* Kararan Arka Plan */}
+        <Pressable style={StyleSheet.absoluteFill} onPress={handleClose}>
+          <Animated.View style={[styles.backdrop, backdropStyle, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]} />
+        </Pressable>
 
-        <View style={styles.headerRow}>
-          <Text style={[typography.styles.h2, { color: colors.text }]}>
-            {t('addCard.csvUpload', 'CSV ile Yükle')}
-          </Text>
-          <TouchableOpacity
-            onPress={handleClose}
-            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-            style={styles.closeBtnWrapper}
-          >
-            <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
-          </TouchableOpacity>
-        </View>
+        {/* Modal Kutusu */}
+        <Animated.View style={[styles.modalContainer, { backgroundColor: colors.background }, modalAnimatedStyle]}>
 
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-
-          <Text style={[styles.description, { color: colors.muted }]}>
-            {t('addCard.csvUploadDescriptionMain', 'Kartlarınızı Excel veya Google Sheets\'te hazırlayın ve CSV olarak kaydedin. CSV dosyanızı yükleyin ve kartlarınız hazır!')}
-          </Text>
-
-          {/* TABLO NASIL OLUŞTURULUR REHBERİ */}
-          <View style={[styles.expandableSection, { backgroundColor: isDarkMode ? '#222' : '#F7F7F7' }]}>
-            <TouchableOpacity onPress={toggleGuide} activeOpacity={0.7} style={styles.expandableHeader}>
-              <View style={styles.expandableHeaderLeft}>
-                <Iconify icon="material-symbols:info-outline" size={moderateScale(22)} color={colors.primary || '#007AFF'} style={{ marginRight: scale(10) }} />
-                <Text style={[styles.expandableHeaderText, { color: colors.text }]}>
-                  {t('addCard.howToCreateTable', 'Tablo Nasıl Oluşturulur?')}
-                </Text>
-              </View>
-              <Iconify
-                icon="flowbite:caret-down-solid"
-                size={moderateScale(18)}
-                color={colors.text}
-                style={{ transform: [{ rotate: tableGuideExpanded ? '180deg' : '0deg' }] }}
-              />
+          <View style={styles.headerRow}>
+            <Text style={[typography.styles.h2, { color: colors.text }]}>
+              {t('addCard.csvUpload', 'CSV ile Yükle')}
+            </Text>
+            <TouchableOpacity
+              onPress={handleClose}
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+              style={styles.closeBtnWrapper}
+            >
+              <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
             </TouchableOpacity>
+          </View>
 
-            {tableGuideExpanded && (
-              <View style={styles.expandableContent}>
+          <ScrollView ref={scrollViewRef} style={styles.scrollView} showsVerticalScrollIndicator={false}>
 
-                <View style={[styles.guideCard, { backgroundColor: isDarkMode ? '#2A2A2A' : '#FFFFFF', borderColor: isDarkMode ? '#333' : '#EEE' }]}>
-                  <Text style={[styles.guideTitle, { color: colors.text }]}>
-                    {t('addCard.tableStructureTitle', 'CSV Formatı')}
+            <Text style={[styles.description, { color: colors.muted }]}>
+              {t('addCard.csvUploadDescriptionMain', 'Kartlarınızı Excel veya Google Sheets\'te hazırlayın ve CSV olarak kaydedin. CSV dosyanızı yükleyin ve kartlarınız hazır!')}
+            </Text>
+
+            {/* TABLO NASIL OLUŞTURULUR REHBERİ */}
+            <View style={[styles.expandableSection, { backgroundColor: isDarkMode ? '#222' : '#F7F7F7' }]}>
+              <TouchableOpacity onPress={toggleGuide} activeOpacity={0.7} style={styles.expandableHeader}>
+                <View style={styles.expandableHeaderLeft}>
+                  <Iconify icon="material-symbols:info-outline" size={moderateScale(22)} color={colors.primary || '#007AFF'} style={{ marginRight: scale(10) }} />
+                  <Text style={[styles.expandableHeaderText, { color: colors.text }]}>
+                    {t('addCard.howToCreateTable', 'Tablo Nasıl Oluşturulur?')}
                   </Text>
-                  <Text style={[styles.guideText, { color: colors.text }]}>
-                    {t('addCard.tableStructure', 'Tablo 2 zorunlu, 3 opsiyonel olmak üzere en fazla 5 sütundan oluşabilir:')}
-                  </Text>
+                </View>
+                <Iconify
+                  icon="flowbite:caret-down-solid"
+                  size={moderateScale(18)}
+                  color={colors.text}
+                  style={{ transform: [{ rotate: tableGuideExpanded ? '180deg' : '0deg' }] }}
+                />
+              </TouchableOpacity>
 
-                  <View style={[styles.codeBadge, { backgroundColor: isDarkMode ? '#111' : '#F0F0F0', borderColor: isDarkMode ? '#333' : '#E0E0E0' }]}>
-                    <Text style={[styles.codeBadgeText, { color: colors.primary || '#ffffff' }]}>
-                      {t('addCard.tableColumnsText', 'soru, cevap, ornek, not, gorsel')}
+              {tableGuideExpanded && (
+                <View style={styles.expandableContent}>
+
+                  <View style={[styles.guideCard, { backgroundColor: isDarkMode ? '#2A2A2A' : '#FFFFFF', borderColor: isDarkMode ? '#333' : '#EEE' }]}>
+                    <Text style={[styles.guideTitle, { color: colors.text }]}>
+                      {t('addCard.tableStructureTitle', 'CSV Formatı')}
+                    </Text>
+                    <Text style={[styles.guideText, { color: colors.text }]}>
+                      {t('addCard.tableStructure', 'Tablo 2 zorunlu, 3 opsiyonel olmak üzere en fazla 5 sütundan oluşabilir:')}
+                    </Text>
+
+                    <View style={[styles.codeBadge, { backgroundColor: isDarkMode ? '#111' : '#F0F0F0', borderColor: isDarkMode ? '#333' : '#E0E0E0' }]}>
+                      <Text style={[styles.codeBadgeText, { color: colors.primary || '#ffffff' }]}>
+                        {t('addCard.tableColumnsText', 'soru, cevap, ornek, not, gorsel')}
+                      </Text>
+                    </View>
+
+                    <View style={styles.alertInline}>
+                      <Iconify icon="mdi:required" size={moderateScale(22)} color={colors.secondary || '#F39C12'} style={{ marginRight: scale(6) }} />
+                      <Text style={[styles.alertInlineText, { color: colors.secondary || '#F39C12' }]}>
+                        {t('addCard.requiredColumns', 'Soru ve Cevap sütunları zorunludur!')}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={[styles.guideCard, { backgroundColor: isDarkMode ? '#2A2A2A' : '#FFFFFF', borderColor: isDarkMode ? '#333' : '#EEE' }]}>
+                    <Text style={[styles.guideTitle, { color: colors.text }]}>
+                      {t('addCard.tableImageInstructionsTitle', 'Görsel Ekleme')}
+                    </Text>
+                    <Text style={[styles.guideText, { color: colors.text }]}>
+                      {t('addCard.imageInstructions', 'Görsel sütununa eklemek istediğiniz resmin URL adresini yapıştırabilir veya telefonunuzdan seçeceğiniz görselin dosya ismini yazabilirsiniz.')}
+                    </Text>
+                    <Text style={[styles.guideText, { color: colors.muted, fontStyle: 'italic', marginTop: verticalScale(4) }]}>
+                      {t('addCard.svgNote', 'Not: SVG formatı desteklenmemektedir.')}
                     </Text>
                   </View>
 
-                  <View style={styles.alertInline}>
-                    <Iconify icon="mdi:required" size={moderateScale(22)} color={colors.secondary || '#F39C12'} style={{ marginRight: scale(6) }} />
-                    <Text style={[styles.alertInlineText, { color: colors.secondary || '#F39C12' }]}>
-                      {t('addCard.requiredColumns', 'Soru ve Cevap sütunları zorunludur!')}
+                  <TouchableOpacity activeOpacity={0.9} onPress={() => setImageModalVisible(true)} style={styles.imagePreviewWrapper}>
+                    <Image
+                      source={require('../../assets/examtable.png')}
+                      style={styles.exampleTableImage}
+                      resizeMode="contain"
+                    />
+                    <View style={styles.zoomIconBadge}>
+                      <Iconify icon="fluent:scan-camera-20-regular" size={22} color="#FFF" />
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* Büyütülmüş Resim Modalı - Core Modal'a taşındı */}
+              <Modal
+                visible={isImageModalVisible}
+                transparent={true}
+                animationType="fade"
+                statusBarTranslucent={true}
+                onRequestClose={() => setImageModalVisible(false)}
+              >
+                <Pressable 
+                  style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' }} 
+                  onPress={() => setImageModalVisible(false)}
+                >
+                  <TouchableOpacity style={styles.fullScreenCloseBtn} onPress={() => setImageModalVisible(false)}>
+                    <Iconify icon="mingcute:close-fill" size={24} color="white" />
+                  </TouchableOpacity>
+
+                  {/* Görsele tıklayınca modalın kapanmaması için TouchableWithoutFeedback */}
+                  <TouchableWithoutFeedback>
+                    <Image
+                      source={require('../../assets/examtable.png')}
+                      style={{ width: '90%', height: '70%' }}
+                      resizeMode="contain"
+                    />
+                  </TouchableWithoutFeedback>
+                </Pressable>
+              </Modal>
+            </View>
+
+            {/* ÖNİZLEME (PREVIEW) EKRANI */}
+            {csvPreview && (
+              <View style={styles.previewSection}>
+
+                {/* Dosya Adı Barı */}
+                <View style={[styles.fileNameBar, { backgroundColor: isDarkMode ? '#222' : '#F4F6F8' }]}>
+                  <Iconify icon="hugeicons:document-validation" size={moderateScale(22)} color={colors.primary || '#007AFF'} />
+                  <Text style={[styles.fileNameText, { color: colors.text }]} numberOfLines={1}>
+                    {csvPreview.fileName}
+                  </Text>
+                </View>
+
+                {/* İstatistik Dashboard Grid'i */}
+                <View style={styles.statsGrid}>
+                  <View style={[styles.statBox, { backgroundColor: isDarkMode ? '#1E2A38' : '#EBF5FF' }]}>
+                    <Text style={[styles.statTitle, { color: '#007AFF' }]}>{t('addCard.totalRows', 'Toplam')}</Text>
+                    <Text style={[styles.statValue, { color: '#007AFF' }]}>{csvPreview.totalRows}</Text>
+                  </View>
+
+                  <View style={[styles.statBox, { backgroundColor: isDarkMode ? '#1A3324' : '#E8F5E9' }]}>
+                    <Text style={[styles.statTitle, { color: '#27AE60' }]}>{t('addCard.validCards', 'Geçerli')}</Text>
+                    <Text style={[styles.statValue, { color: '#27AE60' }]}>{csvPreview.allValidCards.length}</Text>
+                  </View>
+
+                  <View style={[styles.statBox, { backgroundColor: isDarkMode ? '#3B1E1E' : '#FFEBEE' }]}>
+                    <Text style={[styles.statTitle, { color: '#D32F2F' }]}>{t('addCard.invalidCards', 'Hatalı')}</Text>
+                    <Text style={[styles.statValue, { color: '#D32F2F' }]}>{csvPreview.allErrors.length}</Text>
+                  </View>
+                </View>
+
+                {/* SVG Uyarısı */}
+                {csvPreview.cardsWithSvg && csvPreview.cardsWithSvg.length > 0 && (
+                  <View style={styles.alertBoxWarning}>
+                    <Iconify icon="mdi:information-variant" size={moderateScale(24)} color="#B7791F" style={{ marginRight: scale(10) }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.alertBoxTitleWarning}>{t('addCard.svgWarning', 'SVG Desteklenmiyor')}</Text>
+                      <Text style={styles.alertBoxTextWarning}>
+                        {csvPreview.cardsWithSvg.length} {t('addCard.svgWarningMessage', 'kartta SVG görseli bulundu. Bu kartlar görselsiz eklenecek.')}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Hata Listesi */}
+                {csvPreview.errors.length > 0 && (
+                  <View style={styles.alertBoxError}>
+                    <View style={styles.errorHeaderRow}>
+                      <Iconify icon="material-symbols:info-outline" size={moderateScale(20)} color="#D32F2F" style={{ marginRight: scale(8) }} />
+                      <Text style={styles.alertBoxTitleError}>{t('addCard.errors', 'Hatalar (İlk 5)')}</Text>
+                    </View>
+                    {csvPreview.errors.map((err, idx) => (
+                      <Text key={idx} style={styles.alertBoxTextError}>
+                        <Text style={{ fontWeight: 'bold' }}>Satır {err.row}: </Text>{err.message}
+                      </Text>
+                    ))}
+                  </View>
+                )}
+
+                {/* Görsel Eşleştirme Alanı */}
+                {csvPreview.hasLocalImageFiles && (
+                  <View style={[styles.imageMapSection, { backgroundColor: isDarkMode ? '#222' : '#F9FAFB', borderColor: colors.border }]}>
+
+                    <View style={styles.imageMapHeader}>
+                      <View style={{ flex: 2 }}>
+                        <Text style={[styles.imageMapTitle, { color: colors.text }]}>{t('addCard.selectImages', 'Görselleri Seç ve Eşleştir')}</Text>
+                        <Text style={[styles.imageMapSub, { color: colors.muted }]}>
+                          {selectedImages.length > 0
+                            ? `${selectedImages.length} ${t('addCard.imagesSelected', 'görsel seçildi')}`
+                            : t('addCard.noImagesSelected', 'Henüz görsel seçilmedi')}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={handlePickImages}
+                        style={[styles.pickImgBtn, { backgroundColor: colors.primary || '#007AFF', flex: 1 }]}
+                        disabled={csvLoading}
+                      >
+                        <Iconify icon="mage:image-fill" size={moderateScale(18)} color="#FFF" style={{ marginRight: scale(6) }} />
+                        <Text style={styles.pickImgBtnText}>{t('addCard.pickImages', 'Seç')}</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Dropdownlar */}
+                    {imageIds.length > 0 && selectedImages.length > 0 && (
+                      <View style={styles.dropdownsList}>
+                        {imageIds.map((imageId, index) => {
+                          const selectedImg = imageIdMap[imageId];
+
+                          return (
+                            <View key={imageId} style={[styles.dropdownRow, { zIndex: imageIds.length - index }]}>
+
+                              <View style={[styles.badgeContainer, { backgroundColor: isDarkMode ? '#333' : '#E5E7EB' }]}>
+                                <Text style={[styles.badgeText, { color: colors.text }]}>{index + 1}</Text>
+                              </View>
+
+                              <View style={{ flex: 1, paddingRight: scale(10) }}>
+                                <Text style={[styles.imgIdLabel, { color: colors.muted }]} numberOfLines={1}>{imageId}</Text>
+                              </View>
+
+                              <TouchableOpacity
+                                ref={(ref) => { if (ref) dropdownRefs.current[imageId] = ref; }}
+                                onPress={() => openImageDropdown(imageId)}
+                                style={[styles.dropdownTrigger, { borderColor: selectedImg ? (colors.primary || '#007AFF') : colors.border, backgroundColor: isDarkMode ? '#111' : '#FFF' }]}
+                                activeOpacity={0.8}
+                              >
+                                {selectedImg ? (
+                                  <View style={styles.dropdownSelectedInner}>
+                                    <Image source={{ uri: selectedImg.uri }} style={styles.dropdownTriggerThumb} />
+                                    <Text style={[styles.dropdownTriggerText, { color: colors.text, fontWeight: '600' }]} numberOfLines={1}>
+                                      {t('addCard.chooseImages', 'Seçim')} {selectedImg.selectionIndex}
+                                    </Text>
+                                  </View>
+                                ) : (
+                                  <Text style={[styles.dropdownTriggerPlaceholder, { color: colors.muted }]}>{t('addCard.matchImages', 'Eşleştir')}</Text>
+                                )}
+                                <Iconify icon="flowbite:caret-down-solid" size={moderateScale(16)} color={colors.text} style={{ marginLeft: scale(6) }} />
+                              </TouchableOpacity>
+
+                              {/* Modal Dropdown Menü - Core Modal'a çevrildi */}
+                              <Modal
+                                visible={dropdownOpen[imageId] || false}
+                                transparent={true}
+                                animationType="fade"
+                                onRequestClose={() => closeImageDropdown(imageId)}
+                              >
+                                <TouchableWithoutFeedback onPress={() => closeImageDropdown(imageId)}>
+                                  <View style={{ flex: 1 }}>
+                                    <View style={[
+                                      styles.dropdownMenu,
+                                      {
+                                        backgroundColor: colors.background,
+                                        borderColor: colors.border,
+                                        left: dropdownPos[imageId]?.x || 0,
+                                        top: Platform.OS === 'android'
+                                          ? (dropdownPos[imageId]?.y || 0) + (dropdownPos[imageId]?.height || 0)
+                                          : (dropdownPos[imageId]?.y || 0) + (dropdownPos[imageId]?.height || 0) + verticalScale(4),
+                                        minWidth: dropdownPos[imageId]?.width || scale(150),
+                                        zIndex: imageIds.length - index + 1000,
+                                      }
+                                    ]}>
+                                      <ScrollView style={styles.dropdownScrollView} showsVerticalScrollIndicator={false}>
+                                        {selectedImages.map((img, idx) => {
+                                          const isSelected = imageIdMap[imageId]?.uri === img.uri;
+                                          const isLastItem = idx === selectedImages.length - 1;
+                                          return (
+                                            <TouchableOpacity
+                                              key={img.uri}
+                                              onPress={() => handleImageSelect(imageId, img, idx)}
+                                              style={[
+                                                styles.dropdownListItem,
+                                                { borderBottomColor: colors.border, borderBottomWidth: isLastItem ? 0 : 1 },
+                                                isSelected && { backgroundColor: isDarkMode ? '#333' : '#F0F9FF' }
+                                              ]}
+                                            >
+                                              <Image source={{ uri: img.uri }} style={styles.dropdownImageThumbnail} />
+                                              <Text style={[styles.dropdownListItemText, { color: isSelected ? (colors.primary || '#007AFF') : colors.text, fontWeight: isSelected ? '700' : '500' }]}>
+                                                Seçim {idx + 1}
+                                              </Text>
+                                            </TouchableOpacity>
+                                          );
+                                        })}
+                                      </ScrollView>
+                                    </View>
+                                  </View>
+                                </TouchableWithoutFeedback>
+                              </Modal>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                {/* Aksiyon Butonları (İçeridekiler) */}
+                <View style={styles.previewActionButtons}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setCsvPreview(null); // LayoutAnimation kalıntısı temizlendi
+                    }}
+                    style={[styles.btnCancel, { backgroundColor: isDarkMode ? '#333' : '#F0F0F0' }]}
+                  >
+                    <Text style={[styles.btnCancelText, { color: colors.text }]}>{t('common.cancel', 'İptal')}</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={handleImportCards}
+                    style={[styles.btnImport, { backgroundColor: colors.buttonColor || '#007AFF', opacity: (csvLoading || (csvPreview.hasLocalImageFiles && selectedImages.length === 0) || (imageIds.length > 0 && Object.keys(imageIdMap).length !== imageIds.length)) ? 0.6 : 1 }]}
+                    disabled={csvLoading || (csvPreview.hasLocalImageFiles && selectedImages.length === 0) || (imageIds.length > 0 && Object.keys(imageIdMap).length !== imageIds.length)}
+                  >
+                    <Text style={styles.btnImportText}>
+                      {csvLoading ? t('addCard.loading', 'Yükleniyor...') : t('addCard.importCards', 'İçe Aktar')}
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                 </View>
 
-                <View style={[styles.guideCard, { backgroundColor: isDarkMode ? '#2A2A2A' : '#FFFFFF', borderColor: isDarkMode ? '#333' : '#EEE' }]}>
-                  <Text style={[styles.guideTitle, { color: colors.text }]}>
-                    {t('addCard.tableImageInstructionsTitle', 'Görsel Ekleme')}
-                  </Text>
-                  <Text style={[styles.guideText, { color: colors.text }]}>
-                    {t('addCard.imageInstructions', 'Görsel sütununa eklemek istediğiniz resmin URL adresini yapıştırabilir veya telefonunuzdan seçeceğiniz görselin dosya ismini yazabilirsiniz.')}
-                  </Text>
-                  <Text style={[styles.guideText, { color: colors.muted, fontStyle: 'italic', marginTop: verticalScale(4) }]}>
-                    {t('addCard.svgNote', 'Not: SVG formatı desteklenmemektedir.')}
-                  </Text>
-                </View>
-
-                <TouchableOpacity activeOpacity={0.9} onPress={() => setImageModalVisible(true)} style={styles.imagePreviewWrapper}>
-                  <Image
-                    source={require('../../assets/examtable.png')}
-                    style={styles.exampleTableImage}
-                    resizeMode="contain"
-                  />
-                  <View style={styles.zoomIconBadge}>
-                    <Iconify icon="fluent:scan-camera-20-regular" size={22} color="#FFF" />
-                  </View>
-                </TouchableOpacity>
               </View>
             )}
 
-            {/* Büyütülmüş Resim Modalı */}
-            <Modal
-              isVisible={isImageModalVisible}
-              style={{ margin: 0 }}
-              backdropOpacity={0.8}
-              animationIn="fadeIn"
-              animationOut="fadeOut"
-              statusBarTranslucent={true}
-              deviceHeight={screenHeight}
-              hardwareAccelerated={true}
-              useNativeDriver={true}
-              useNativeDriverForBackdrop={true}
-              hideModalContentWhileAnimating={true}
-              onBackdropPress={() => setImageModalVisible(false)}
-            >
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          </ScrollView>
 
-                <TouchableOpacity style={styles.fullScreenCloseBtn} onPress={() => setImageModalVisible(false)}>
-                  <Iconify icon="mingcute:close-fill" size={24} color="white" />
-                </TouchableOpacity>
+          {/* Aksiyon Butonları (Sabit Alt Kısım - Önizleme Yokken) */}
+          {!csvPreview && (
+            <View style={styles.bottomActions}>
+              <TouchableOpacity onPress={handleDownloadTemplate} style={styles.btnDownloadTemplate}>
+                <Iconify icon="tabler:file-download-filled" size={moderateScale(20)} color="#F98A21" style={{ marginRight: scale(8) }} />
+                <Text style={styles.btnDownloadTemplateText}>{t('addCard.downloadTemplate', 'Örnek CSV İndir')}</Text>
+              </TouchableOpacity>
 
-                <Image
-                  source={require('../../assets/examtable.png')}
-                  style={{ width: '90%', height: '70%' }}
-                  resizeMode="contain"
-                />
-
-              </View>
-            </Modal>
-          </View>
-
-          {/* ÖNİZLEME (PREVIEW) EKRANI */}
-          {csvPreview && (
-            <View style={styles.previewSection}>
-
-              {/* Dosya Adı Barı */}
-              <View style={[styles.fileNameBar, { backgroundColor: isDarkMode ? '#222' : '#F4F6F8' }]}>
-                <Iconify icon="hugeicons:document-validation" size={moderateScale(22)} color={colors.primary || '#007AFF'} />
-                <Text style={[styles.fileNameText, { color: colors.text }]} numberOfLines={1}>
-                  {csvPreview.fileName}
+              <TouchableOpacity
+                onPress={handlePickCSV}
+                style={[styles.btnPickCsv, { backgroundColor: colors.primary || '#007AFF' }]}
+                disabled={csvLoading}
+              >
+                <Iconify icon="cuida:upload-outline" size={moderateScale(20)} color="#FFF" style={{ marginRight: scale(8) }} />
+                <Text style={styles.btnPickCsvText}>
+                  {csvLoading ? t('addCard.loading', 'Yükleniyor...') : t('addCard.selectCSV', 'CSV Yükle')}
                 </Text>
-              </View>
-
-              {/* İstatistik Dashboard Grid'i */}
-              <View style={styles.statsGrid}>
-                <View style={[styles.statBox, { backgroundColor: isDarkMode ? '#1E2A38' : '#EBF5FF' }]}>
-                  <Text style={[styles.statTitle, { color: '#007AFF' }]}>{t('addCard.totalRows', 'Toplam')}</Text>
-                  <Text style={[styles.statValue, { color: '#007AFF' }]}>{csvPreview.totalRows}</Text>
-                </View>
-
-                <View style={[styles.statBox, { backgroundColor: isDarkMode ? '#1A3324' : '#E8F5E9' }]}>
-                  <Text style={[styles.statTitle, { color: '#27AE60' }]}>{t('addCard.validCards', 'Geçerli')}</Text>
-                  <Text style={[styles.statValue, { color: '#27AE60' }]}>{csvPreview.allValidCards.length}</Text>
-                </View>
-
-                <View style={[styles.statBox, { backgroundColor: isDarkMode ? '#3B1E1E' : '#FFEBEE' }]}>
-                  <Text style={[styles.statTitle, { color: '#D32F2F' }]}>{t('addCard.invalidCards', 'Hatalı')}</Text>
-                  <Text style={[styles.statValue, { color: '#D32F2F' }]}>{csvPreview.allErrors.length}</Text>
-                </View>
-              </View>
-
-              {/* SVG Uyarısı */}
-              {csvPreview.cardsWithSvg && csvPreview.cardsWithSvg.length > 0 && (
-                <View style={styles.alertBoxWarning}>
-                  <Iconify icon="mdi:information-variant" size={moderateScale(24)} color="#B7791F" style={{ marginRight: scale(10) }} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.alertBoxTitleWarning}>{t('addCard.svgWarning', 'SVG Desteklenmiyor')}</Text>
-                    <Text style={styles.alertBoxTextWarning}>
-                      {csvPreview.cardsWithSvg.length} {t('addCard.svgWarningMessage', 'kartta SVG görseli bulundu. Bu kartlar görselsiz eklenecek.')}
-                    </Text>
-                  </View>
-                </View>
-              )}
-
-              {/* Hata Listesi */}
-              {csvPreview.errors.length > 0 && (
-                <View style={styles.alertBoxError}>
-                  <View style={styles.errorHeaderRow}>
-                    <Iconify icon="material-symbols:info-outline" size={moderateScale(20)} color="#D32F2F" style={{ marginRight: scale(8) }} />
-                    <Text style={styles.alertBoxTitleError}>{t('addCard.errors', 'Hatalar (İlk 5)')}</Text>
-                  </View>
-                  {csvPreview.errors.map((err, idx) => (
-                    <Text key={idx} style={styles.alertBoxTextError}>
-                      <Text style={{ fontWeight: 'bold' }}>Satır {err.row}: </Text>{err.message}
-                    </Text>
-                  ))}
-                </View>
-              )}
-
-              {/* Görsel Eşleştirme Alanı */}
-              {csvPreview.hasLocalImageFiles && (
-                <View style={[styles.imageMapSection, { backgroundColor: isDarkMode ? '#222' : '#F9FAFB', borderColor: colors.border }]}>
-
-                  <View style={styles.imageMapHeader}>
-                    <View style={{ flex: 2 }}>
-                      <Text style={[styles.imageMapTitle, { color: colors.text }]}>{t('addCard.selectImages', 'Görselleri Seç ve Eşleştir')}</Text>
-                      <Text style={[styles.imageMapSub, { color: colors.muted }]}>
-                        {selectedImages.length > 0
-                          ? `${selectedImages.length} ${t('addCard.imagesSelected', 'görsel seçildi')}`
-                          : t('addCard.noImagesSelected', 'Henüz görsel seçilmedi')}
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      onPress={handlePickImages}
-                      style={[styles.pickImgBtn, { backgroundColor: colors.primary || '#007AFF', flex: 1 }]}
-                      disabled={csvLoading}
-                    >
-                      <Iconify icon="mage:image-fill" size={moderateScale(18)} color="#FFF" style={{ marginRight: scale(6) }} />
-                      <Text style={styles.pickImgBtnText}>{t('addCard.pickImages', 'Seç')}</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Dropdownlar */}
-                  {imageIds.length > 0 && selectedImages.length > 0 && (
-                    <View style={styles.dropdownsList}>
-                      {imageIds.map((imageId, index) => {
-                        const selectedImg = imageIdMap[imageId];
-
-                        return (
-                          <View key={imageId} style={[styles.dropdownRow, { zIndex: imageIds.length - index }]}>
-
-                            <View style={[styles.badgeContainer, { backgroundColor: isDarkMode ? '#333' : '#E5E7EB' }]}>
-                              <Text style={[styles.badgeText, { color: colors.text }]}>{index + 1}</Text>
-                            </View>
-
-                            <View style={{ flex: 1, paddingRight: scale(10) }}>
-                              <Text style={[styles.imgIdLabel, { color: colors.muted }]} numberOfLines={1}>{imageId}</Text>
-                            </View>
-
-                            <TouchableOpacity
-                              ref={(ref) => { if (ref) dropdownRefs.current[imageId] = ref; }}
-                              onPress={() => openImageDropdown(imageId)}
-                              style={[styles.dropdownTrigger, { borderColor: selectedImg ? (colors.primary || '#007AFF') : colors.border, backgroundColor: isDarkMode ? '#111' : '#FFF' }]}
-                              activeOpacity={0.8}
-                            >
-                              {selectedImg ? (
-                                <View style={styles.dropdownSelectedInner}>
-                                  <Image source={{ uri: selectedImg.uri }} style={styles.dropdownTriggerThumb} />
-                                  <Text style={[styles.dropdownTriggerText, { color: colors.text, fontWeight: '600' }]} numberOfLines={1}>
-                                    {t('addCard.chooseImages', 'Seçim')} {selectedImg.selectionIndex}
-                                  </Text>
-                                </View>
-                              ) : (
-                                <Text style={[styles.dropdownTriggerPlaceholder, { color: colors.muted }]}>{t('addCard.matchImages', 'Eşleştir')}</Text>
-                              )}
-                              <Iconify icon="flowbite:caret-down-solid" size={moderateScale(16)} color={colors.text} style={{ marginLeft: scale(6) }} />
-                            </TouchableOpacity>
-
-                            {/* Modal Dropdown Menü (Aynı kaldı) */}
-                            <RNModal
-                              visible={dropdownOpen[imageId] || false}
-                              transparent
-                              animationType="fade"
-                              onRequestClose={() => closeImageDropdown(imageId)}
-                            >
-                              <TouchableWithoutFeedback onPress={() => closeImageDropdown(imageId)}>
-                                <View style={{ flex: 1 }}>
-                                  <View style={[
-                                    styles.dropdownMenu,
-                                    {
-                                      backgroundColor: colors.background,
-                                      borderColor: colors.border,
-                                      left: dropdownPos[imageId]?.x || 0,
-                                      top: Platform.OS === 'android'
-                                        ? (dropdownPos[imageId]?.y || 0) + (dropdownPos[imageId]?.height || 0)
-                                        : (dropdownPos[imageId]?.y || 0) + (dropdownPos[imageId]?.height || 0) + verticalScale(4),
-                                      minWidth: dropdownPos[imageId]?.width || scale(150),
-                                      zIndex: imageIds.length - index + 1000,
-                                    }
-                                  ]}>
-                                    <ScrollView style={styles.dropdownScrollView} showsVerticalScrollIndicator={false}>
-                                      {selectedImages.map((img, idx) => {
-                                        const isSelected = imageIdMap[imageId]?.uri === img.uri;
-                                        const isLastItem = idx === selectedImages.length - 1;
-                                        return (
-                                          <TouchableOpacity
-                                            key={img.uri}
-                                            onPress={() => handleImageSelect(imageId, img, idx)}
-                                            style={[
-                                              styles.dropdownListItem,
-                                              { borderBottomColor: colors.border, borderBottomWidth: isLastItem ? 0 : 1 },
-                                              isSelected && { backgroundColor: isDarkMode ? '#333' : '#F0F9FF' }
-                                            ]}
-                                          >
-                                            <Image source={{ uri: img.uri }} style={styles.dropdownImageThumbnail} />
-                                            <Text style={[styles.dropdownListItemText, { color: isSelected ? (colors.primary || '#007AFF') : colors.text, fontWeight: isSelected ? '700' : '500' }]}>
-                                              Seçim {idx + 1}
-                                            </Text>
-                                          </TouchableOpacity>
-                                        );
-                                      })}
-                                    </ScrollView>
-                                  </View>
-                                </View>
-                              </TouchableWithoutFeedback>
-                            </RNModal>
-                          </View>
-                        );
-                      })}
-                    </View>
-                  )}
-                </View>
-              )}
-
-              {/* Aksiyon Butonları (İçeridekiler) */}
-              <View style={styles.previewActionButtons}>
-                <TouchableOpacity
-                  onPress={() => {
-                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                    setCsvPreview(null);
-                  }}
-                  style={[styles.btnCancel, { backgroundColor: isDarkMode ? '#333' : '#F0F0F0' }]}
-                >
-                  <Text style={[styles.btnCancelText, { color: colors.text }]}>{t('common.cancel', 'İptal')}</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={handleImportCards}
-                  style={[styles.btnImport, { backgroundColor: colors.buttonColor || '#007AFF', opacity: (csvLoading || (csvPreview.hasLocalImageFiles && selectedImages.length === 0) || (imageIds.length > 0 && Object.keys(imageIdMap).length !== imageIds.length)) ? 0.6 : 1 }]}
-                  disabled={csvLoading || (csvPreview.hasLocalImageFiles && selectedImages.length === 0) || (imageIds.length > 0 && Object.keys(imageIdMap).length !== imageIds.length)}
-                >
-                  <Text style={styles.btnImportText}>
-                    {csvLoading ? t('addCard.loading', 'Yükleniyor...') : t('addCard.importCards', 'İçe Aktar')}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
+              </TouchableOpacity>
             </View>
           )}
 
-        </ScrollView>
-
-        {/* Aksiyon Butonları (Sabit Alt Kısım - Önizleme Yokken) */}
-        {!csvPreview && (
-          <View style={styles.bottomActions}>
-            <TouchableOpacity onPress={handleDownloadTemplate} style={styles.btnDownloadTemplate}>
-              <Iconify icon="tabler:file-download-filled" size={moderateScale(20)} color="#F98A21" style={{ marginRight: scale(8) }} />
-              <Text style={styles.btnDownloadTemplateText}>{t('addCard.downloadTemplate', 'Örnek CSV İndir')}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={handlePickCSV}
-              style={[styles.btnPickCsv, { backgroundColor: colors.primary || '#007AFF' }]}
-              disabled={csvLoading}
-            >
-              <Iconify icon="cuida:upload-outline" size={moderateScale(20)} color="#FFF" style={{ marginRight: scale(8) }} />
-              <Text style={styles.btnPickCsvText}>
-                {csvLoading ? t('addCard.loading', 'Yükleniyor...') : t('addCard.selectCSV', 'CSV Yükle')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
+        </Animated.View>
       </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    justifyContent: 'center', 
+    alignItems: 'center',     
+  },
+  backdrop: {
+    flex: 1,
+    ...StyleSheet.absoluteFillObject,
+  },
   modalContainer: {
+    width: '90%', 
+    maxHeight: '90%',
     borderRadius: moderateScale(32),
     padding: scale(20),
-    maxHeight: '90%',
+    overflow: 'hidden',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
   },
   headerRow: {
     flexDirection: 'row',
