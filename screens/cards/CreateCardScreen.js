@@ -19,7 +19,7 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import HowToCreateCardModal from '../../components/modals/HowToCreateCardModal';
 import CsvUploadModal from '../../components/modals/CsvUploadModal';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
-import BadgeText from '../../components/modals/BadgeText';
+import BadgeText from '../../components/tools/BadgeText';
 import { triggerHaptic } from '../../lib/hapticManager';
 
 export default function AddCardScreen() {

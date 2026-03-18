@@ -17,6 +17,7 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase } from './lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import './lib/i18n';
 import { cleanupStaleCache } from './services/CacheService';
 
@@ -254,11 +255,13 @@ function AppContent() {
 export default function App() {
 
   return (
-    <GestureHandlerRootView style={styles.gestureRoot}>
+<GestureHandlerRootView style={styles.gestureRoot}>
       <SafeAreaProvider>
         <ThemeProvider>
           <PaperProvider>
-            <AppContent />
+            <BottomSheetModalProvider>              
+              <AppContent />
+            </BottomSheetModalProvider>
           </PaperProvider>
         </ThemeProvider>
       </SafeAreaProvider>

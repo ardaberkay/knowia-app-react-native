@@ -1,26 +1,59 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
-import Modal from 'react-native-modal';
+import React, { useRef, useEffect, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
+
+// ETKİLEŞİMLİ BİLEŞENLER
+import { 
+  BottomSheetModal, 
+  BottomSheetFlatList, 
+  BottomSheetBackdrop,
+  TouchableOpacity 
+} from '@gorhom/bottom-sheet';
+
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+
 export default function CategorySelector({ isVisible, onClose, categories = [], selectedCategoryId, onSelectCategory }) {
   const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
-  const screenHeight = Dimensions.get('screen').height;
-
-  // Marka Rengi Fallback
+  
   const primaryColor = colors.buttonColor || colors.primary || '#F98A21';
+  const bottomSheetModalRef = useRef(null);
 
-  // Kategori ismini sort_order değerine göre çeviri ile al
-  const getCategoryName = (category) => {
-    return t(`categories.${category.sort_order}`, null);
-  };
+  useEffect(() => {
+    if (isVisible) {
+      bottomSheetModalRef.current?.present();
+    } else {
+      bottomSheetModalRef.current?.dismiss();
+    }
+  }, [isVisible]);
 
-  // Kategori ikonunu sort_order değerine göre al
+  const handleSheetChanges = useCallback((index) => {
+    if (index === -1) {
+      onClose();
+    }
+  }, [onClose]);
+
+  const renderBackdrop = useCallback(
+    (props) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        pressBehavior="close" 
+        opacity={0.5}
+      />
+    ),
+    []
+  );
+
+  // --- ORİJİNAL FONKSİYONLARIN (KORUNDU) ---
+  const getCategoryName = (category) => t(`categories.${category.sort_order}`, null);
+
   const getCategoryIcon = (sortOrder) => {
     const icons = {
       1: "hugeicons:language-skill",
@@ -35,117 +68,120 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
     return icons[sortOrder] || "material-symbols:category";
   };
 
-  return (
-    <Modal
-      isVisible={isVisible}
-      onBackdropPress={onClose}
-      onBackButtonPress={onClose}
-      animationIn="slideInUp"
-      animationOut="slideOutDown"
-      backdropTransitionOutTiming={150}
-      animationInTiming={200}
-      animationOutTiming={200}
-      backdropTransitionInTiming={200}
-      hardwareAccelerated={true}
-      useNativeDriver
-      useNativeDriverForBackdrop
-      statusBarTranslucent={true}
-      deviceHeight={screenHeight}
-    >
-      <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-        
-        {/* Header Row */}
-        <View style={styles.headerRow}>
-          <Text style={[typography.styles.h2, { color: colors.text }]}>
-            {t('categorySelector.title')}
-          </Text>
-          <TouchableOpacity 
-            onPress={onClose} 
-            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-            style={styles.closeBtnWrapper}
-          >
-            <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
-          </TouchableOpacity>
+  const renderItem = useCallback(({ item: category }) => {
+    const isSelected = selectedCategoryId === category.id;
+    
+    return (
+      <TouchableOpacity
+        style={[
+          styles.categoryCard,
+          {
+            backgroundColor: isSelected ? (isDarkMode ? `${primaryColor}20` : `${primaryColor}15`) : (isDarkMode ? '#2A2A2A' : '#F5F5F5'),
+            borderColor: isSelected ? primaryColor : 'transparent',
+          }
+        ]}
+        onPress={() => {
+          if (onSelectCategory) {
+            onSelectCategory(category.id);
+            bottomSheetModalRef.current?.dismiss(); 
+          }
+        }}
+        disabled={isSelected}
+        activeOpacity={0.7}
+      >
+        <View style={styles.iconWrapper}>
+          <Iconify
+            icon={getCategoryIcon(category.sort_order)}
+            size={moderateScale(26)}
+            color={isSelected ? primaryColor : colors.text}
+          />
         </View>
-
-        <ScrollView 
-          style={styles.scrollView} 
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+        
+        <Text
+          style={[
+            styles.categoryText,
+            {
+              color: isSelected ? primaryColor : colors.text,
+              fontWeight: isSelected ? '700' : '500',
+            },
+          ]}
         >
-          {categories.map((category) => {
-            const isSelected = selectedCategoryId === category.id;
-            
-            return (
-              <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.categoryCard,
-                  {
-                    backgroundColor: isSelected ? (isDarkMode ? `${primaryColor}20` : `${primaryColor}15`) : (isDarkMode ? '#2A2A2A' : '#F5F5F5'),
-                    borderColor: isSelected ? primaryColor : 'transparent',
-                  }
-                ]}
-                onPress={() => {
-                  if (onSelectCategory) {
-                    onSelectCategory(category.id);
-                    onClose(); // Seçim yapıldıktan sonra modalı kapatmak UX açısından iyidir (opsiyonel)
-                  }
-                }}
-                disabled={isSelected} // Zaten seçiliyse tekrar basılmasın
-                activeOpacity={0.7}
-              >
-                <View style={styles.iconWrapper}>
-                  <Iconify
-                    icon={getCategoryIcon(category.sort_order)}
-                    size={moderateScale(26)}
-                    color={isSelected ? primaryColor : colors.text}
-                  />
-                </View>
-                
-                <Text
-                  style={[
-                    styles.categoryText,
-                    {
-                      color: isSelected ? primaryColor : colors.text,
-                      fontWeight: isSelected ? '700' : '500',
-                    },
-                  ]}
-                >
-                  {getCategoryName(category)}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+          {getCategoryName(category)}
+        </Text>
+      </TouchableOpacity>
+    );
+  }, [selectedCategoryId, onSelectCategory, primaryColor, colors.text, isDarkMode]);
+
+  return (
+    <BottomSheetModal
+      ref={bottomSheetModalRef}
+      index={0}
+      onChange={handleSheetChanges}
+      backdropComponent={renderBackdrop}
+      // Radius ve Arka Plan
+      backgroundStyle={{ 
+        backgroundColor: colors.background,
+        borderRadius: moderateScale(36) 
+      }}
+      handleIndicatorStyle={{ backgroundColor: isDarkMode ? '#666' : '#CCC' }}
+      
+      // Dinamik Boyutlandırma ve Scroll Ayarları
+      enableDynamicSizing={true} 
+      maxDynamicContentSize={SCREEN_HEIGHT * 0.6} 
+      enableContentPanningGesture={false} 
+    >
+      
+      {/* --- SABİT HEADER (LİSTENİN DIŞINDA) --- */}
+      <View style={[styles.fixedHeader, { backgroundColor: colors.background }]}>
+        <Text style={[typography.styles.h2, { color: colors.text }]}>
+          {t('categorySelector.title')}
+        </Text>
+        <TouchableOpacity 
+          onPress={() => bottomSheetModalRef.current?.dismiss()} 
+          hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+          style={styles.closeBtnWrapper}
+        >
+          <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
+        </TouchableOpacity>
       </View>
-    </Modal>
+
+      {/* --- SCROLL EDİLEBİLİR LİSTE --- */}
+      <BottomSheetFlatList
+        data={categories}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderItem}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+        nestedScrollEnabled={true}
+        style={{ flex: 1 }}
+      />
+      
+    </BottomSheetModal>
   );
 }
 
 const styles = StyleSheet.create({
-  modalContainer: {
-    borderRadius: moderateScale(32),
-    padding: scale(20),
-    paddingBottom: verticalScale(32),
-    maxHeight: '85%',
-  },
-  headerRow: {
+  fixedHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: verticalScale(20),
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(12),
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(150, 150, 150, 0.2)',
+    zIndex: 10,
+  },
+  scrollContent: {
+    paddingHorizontal: scale(20),
+    paddingTop: verticalScale(15),
+    paddingBottom: verticalScale(40), 
+    gap: verticalScale(12),
   },
   closeBtnWrapper: {
     backgroundColor: 'rgba(150, 150, 150, 0.1)',
     padding: moderateScale(6),
     borderRadius: 99,
-  },
-  scrollView: {
-    maxHeight: verticalScale(420),
-  },
-  scrollContent: {
-    gap: verticalScale(12),
   },
   categoryCard: {
     flexDirection: 'row',
@@ -157,12 +193,6 @@ const styles = StyleSheet.create({
   },
   iconWrapper: {
     marginRight: scale(14),
-    // İkona hafif bir derinlik
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
-    elevation: 2,
   },
   categoryText: {
     fontSize: moderateScale(16),

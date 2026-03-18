@@ -17,7 +17,7 @@ import CreateButton from '../../components/tools/CreateButton';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
 import DeckLanguageModal from '../../components/modals/DeckLanguageModal';
-import BadgeText from '../../components/modals/BadgeText';
+import BadgeText from '../../components/tools/BadgeText';
 import { triggerHaptic } from '../../lib/hapticManager';
 
 export default function CreateScreen() {

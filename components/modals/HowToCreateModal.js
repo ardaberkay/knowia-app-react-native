@@ -6,7 +6,7 @@ import { typography } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
-import BadgeText from './BadgeText';
+import BadgeText from '../tools/BadgeText';
 import { triggerHaptic } from '../../lib/hapticManager';
 
 export default function HowToCreateModal({ isVisible, onClose }) {

@@ -14,7 +14,7 @@ import UndoButton from '../../components/tools/UndoButton';
 import CreateButton from '../../components/tools/CreateButton';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
-import BadgeText from '../../components/modals/BadgeText';
+import BadgeText from '../../components/tools/BadgeText';
 import DeckLanguageModal from '../../components/modals/DeckLanguageModal';
 
 export default function DeckEditScreen() {

@@ -15,7 +15,7 @@ import { Iconify } from 'react-native-iconify';
 import CreateButton from '../tools/CreateButton';
 import UndoButton from '../tools/UndoButton';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
-import BadgeText from '../modals/BadgeText';
+import BadgeText from '../tools/BadgeText';
 
 export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) {
   const { colors } = useTheme();
