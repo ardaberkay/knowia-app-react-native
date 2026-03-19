@@ -274,7 +274,7 @@ export default function LibraryScreen() {
     }
   }, [activeTab, favoritesFetched, userId]);
 
-  const FAVORITE_CARDS_PAGE_SIZE = 50;
+  const FAVORITE_CARDS_PAGE_SIZE = 20;
   const fetchFavorites = async (silent = false, forceRefresh = false, sortOverride = null) => {
     if (!userId) return;
     const currentSort = sortOverride ?? favCardsSort;

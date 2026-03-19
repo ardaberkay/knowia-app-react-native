@@ -58,13 +58,10 @@ export default function FavoriteCards() {
   const [favoriteCards, setFavoriteCards] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
   const latestDetailFetchRef = useRef(null);
-  const favoriteCardsRef = useRef(new Set());
   const flatListRef = useRef(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    favoriteCardsRef.current = new Set(favoriteCards);
-  }, [favoriteCards]);
+  const favoriteCardsSet = useMemo(() => new Set(favoriteCards), [favoriteCards]);
 
   const fetchData = useCallback(async (silent = false, forceRefresh = false, sortOverride = null) => {
     if (!userId) {
@@ -256,14 +253,14 @@ export default function FavoriteCards() {
     return (
       <MemoizedFavCardItem
         item={item}
-        isFavorite={favoriteCardsRef.current.has(item.id)}
+        isFavorite={favoriteCardsSet.has(item.id)} // Artık doğrudan Set'e bakıyor
         isOwner={isOwner}
         onPress={fetchAndSetCardDetail}
         onToggleFavorite={handleToggleFavoriteCard}
         onDelete={handleDeleteCard}
       />
     );
-  }, [currentUserId, fetchAndSetCardDetail, handleToggleFavoriteCard, handleDeleteCard]);
+  }, [currentUserId, favoriteCardsSet, fetchAndSetCardDetail, handleToggleFavoriteCard, handleDeleteCard]);
 
   const favListHeader = useMemo(() => (
     !selectedCard ? (
