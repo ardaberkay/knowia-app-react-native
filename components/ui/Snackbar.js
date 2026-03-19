@@ -24,27 +24,6 @@ export const SnackbarProvider = ({ children }) => {
   const translateY = useRef(new Animated.Value(0)).current;
   const timeoutRef = useRef(null);
 
-  const showSnackbar = useCallback((text, snackbarType = 'default') => {
-    // Önceki timer'ı temizle
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-    // --- BURAYA TİTREŞİM KONTROLÜNÜ EKLİYORUZ ---
-    if (snackbarType === 'success') {
-      triggerHaptic('success'); // Başarılı işlem titreşimi
-    } else if (snackbarType === 'error') {
-      triggerHaptic('error'); // Hata/Uyarı titreşimi
-    } else {
-      triggerHaptic('light'); // Normal bilgi titreşimi
-    }
-    
-    setMessage(text);
-    setType(snackbarType);
-    setVisible(true);
-    translateY.setValue(0);
-  }, [translateY]);
-
   const hideSnackbar = useCallback(() => {
     // Timer'ı temizle
     if (timeoutRef.current) {
@@ -52,9 +31,48 @@ export const SnackbarProvider = ({ children }) => {
       timeoutRef.current = null;
     }
     
-    setVisible(false);
-    translateY.setValue(0);
+    // Önce yukarı doğru (ekran dışına) yumuşakça kaydır
+    Animated.timing(translateY, {
+      toValue: verticalScale(-300),
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      // Animasyon tamamen bittikten sonra DOM'dan kaldır (Titremeyi önler)
+      setVisible(false);
+    });
   }, [translateY]);
+
+  const showSnackbar = useCallback((text, snackbarType = 'default') => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    if (snackbarType === 'success') {
+      triggerHaptic('success');
+    } else if (snackbarType === 'error') {
+      triggerHaptic('error');
+    } else {
+      triggerHaptic('light');
+    }
+    
+    setMessage(text);
+    setType(snackbarType);
+    
+    // 1. Önce elementi DOM'a ekle (Şu an translateY -300'de, yani ekranın üstünde gizli)
+    setVisible(true); 
+
+    // 2. Hemen ardından ekranın içine doğru (0 noktasına) kaydırarak indir
+    Animated.timing(translateY, {
+      toValue: 0,
+      duration: 250,
+      useNativeDriver: true,
+    }).start();
+
+    // 3. 3 saniye sonra kapanma fonksiyonunu tetikle
+    timeoutRef.current = setTimeout(() => {
+      hideSnackbar();
+    }, 3000);
+  }, [translateY, hideSnackbar]);
 
   // Otomatik kapanma için useEffect
   useEffect(() => {
@@ -93,22 +111,12 @@ export const SnackbarProvider = ({ children }) => {
     const { translationY, velocityY, state } = event.nativeEvent;
     
     if (state === State.END) {
-      // Yukarı kaydırma eşiği: -50px veya hızlı yukarı kaydırma
+      // Yukarı kaydırma eşiği
       if (translationY < verticalScale(-50) || velocityY < -500) {
-        // Yukarı kaydırıldı, snackbar'ı kapat (timer'ı da temizle)
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-          timeoutRef.current = null;
-        }
-        Animated.timing(translateY, {
-          toValue: verticalScale(-300),
-          duration: 200,
-          useNativeDriver: true,
-        }).start(() => {
-          hideSnackbar();
-        });
+        // SADECE BUNU ÇAĞIRMAN YETERLİ:
+        hideSnackbar(); 
       } else {
-        // Eşik altında, geri dön
+        // Eşik altında kaldıysa geri sekme animasyonu
         Animated.spring(translateY, {
           toValue: 0,
           useNativeDriver: true,

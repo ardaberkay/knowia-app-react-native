@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, Modal, Pressable, Image, Switch, Animated, Dimensions, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, Modal, Pressable, Image, Switch, Animated, StatusBar, RefreshControl } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Alert } from 'react-native';
@@ -23,11 +23,13 @@ import { scale, moderateScale, verticalScale, useWindowDimensions } from '../../
 import { useFocusEffect } from '@react-navigation/native';
 import { triggerHaptic } from '../../lib/hapticManager';
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const AnimatedFabContainer = Animated.createAnimatedComponent(View);
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 
 export default function DeckDetailScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const { deck } = route.params;
   const { colors } = useTheme();
   const isDarkMode = colors.background === '#1C1C1C';
@@ -1640,7 +1642,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                               numberOfLines={1}
                             >
                               {`${t('chapters.chapter', 'Bölüm')} ${selectedChapter.ordinal}`}
-                            </Text> 
+                            </Text>
                             <View style={{ width: scale(12), height: scale(2), marginHorizontal: scale(8), backgroundColor: 'rgba(255,255,255,0.7)' }} />
                             <View style={styles.fabChapterStatRow}>
                               <Iconify icon="ri:stack-fill" size={moderateScale(14)} color="rgba(255,255,255,0.9)" style={{ marginRight: scale(4) }} />
@@ -1690,7 +1692,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                             ]}
                             numberOfLines={1}
                           >
-                            {t('deckDetail.selectChapterCtaShort', 'Bir bölüm seç')+ "!"}
+                            {t('deckDetail.selectChapterCtaShort', 'Bir bölüm seç') + "!"}
                           </Text>
                         </View>
                       </View>
@@ -1825,11 +1827,14 @@ export default function DeckDetailScreen({ route, navigation }) {
           activeOpacity={1}
           onPress={() => setMoreMenuVisible(false)}
         >
-          <Animated.View // View yerine Animated.View
+          <Animated.View
             style={{
               position: 'absolute',
               right: scale(20),
-              top: Platform.OS === 'android' ? moreMenuPos.y + moreMenuPos.height + verticalScale(4) : moreMenuPos.y + moreMenuPos.height + verticalScale(8),
+              // Android'de aradaki farkı tam olarak safe area boşluğu ile kapatıyoruz
+              top: Platform.OS === 'android'
+                ? moreMenuPos.y + moreMenuPos.height + verticalScale(4) + insets.top
+                : moreMenuPos.y + moreMenuPos.height + verticalScale(8),
               minWidth: scale(160),
               backgroundColor: colors.cardBackground,
               borderRadius: moderateScale(14),
@@ -1975,11 +1980,14 @@ export default function DeckDetailScreen({ route, navigation }) {
           activeOpacity={1}
           onPress={() => setCreatorMenuVisible(false)}
         >
-          <Animated.View // View yerine Animated.View kullanıyoruz
+          <Animated.View
             style={{
               position: 'absolute',
               left: creatorMenuPos.x,
-              top: Platform.OS === 'android' ? creatorMenuPos.y + creatorMenuPos.height + verticalScale(4) : creatorMenuPos.y + creatorMenuPos.height + verticalScale(8),
+              // Yalnızca Android için top değerine insets.top ekliyoruz:
+              top: Platform.OS === 'android'
+                ? creatorMenuPos.y + creatorMenuPos.height + verticalScale(4) + insets.top
+                : creatorMenuPos.y + creatorMenuPos.height + verticalScale(8),
               minWidth: scale(180),
               backgroundColor: colors.cardBackground,
               borderRadius: moderateScale(14),

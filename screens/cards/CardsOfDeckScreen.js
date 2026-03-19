@@ -254,9 +254,16 @@ export default function DeckCardsScreen({ route, navigation }) {
       }
       return false; // Normal navigation geri çalışsın
     };
-    BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+    // 1. Event listener'ı ekle ve dönen referansı bir değişkene ata
+    const backHandlerSubscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress
+    );
+
     return () => {
-      BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+      // 2. Eski removeEventListener yerine, referans üzerinden remove() çağır
+      backHandlerSubscription.remove();
     };
   }, [selectedCard]);
 
@@ -697,20 +704,20 @@ export default function DeckCardsScreen({ route, navigation }) {
                   }
                   ListEmptyComponent={
                     <View style={styles.noDecksEmpty} pointerEvents="none">
-                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="none">
-                      <Image
-                        source={require('../../assets/cardbg.webp')}
-                        style={{ position: 'absolute', alignSelf: 'center', width: moderateScale(500, 0.3), height: moderateScale(500, 0.3), opacity: 0.2 }}
-                        resizeMode="contain"
-                        pointerEvents="none"
-                      />
+                      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="none">
+                        <Image
+                          source={require('../../assets/cardbg.webp')}
+                          style={{ position: 'absolute', alignSelf: 'center', width: moderateScale(500, 0.3), height: moderateScale(500, 0.3), opacity: 0.2 }}
+                          resizeMode="contain"
+                          pointerEvents="none"
+                        />
+                      </View>
+                      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="none">
+                        <Text style={[typography.styles.body, { color: colors.border, textAlign: 'center', fontSize: moderateScale(16), marginTop: verticalScale(20) }]}>
+                          {t('cardDetail.addToDeck', 'Desteye bir kart ekle')}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="none">
-                      <Text style={[typography.styles.body, { color: colors.border, textAlign: 'center', fontSize: moderateScale(16), marginTop: verticalScale(20) }]}>
-                        {t('cardDetail.addToDeck', 'Desteye bir kart ekle')}
-                      </Text>
-                    </View>
-                  </View>
                   }
                   renderItem={renderCardItem}
                   extraData={favoriteCards}

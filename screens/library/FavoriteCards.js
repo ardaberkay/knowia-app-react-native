@@ -149,9 +149,15 @@ export default function FavoriteCards() {
       }
       return false; // Normal navigation geri çalışsın
     };
-    BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+    // 1. Event listener'ı ekle ve dönen referansı bir değişkene ata
+    const backHandlerSubscription = BackHandler.addEventListener(
+      'hardwareBackPress', 
+      onBackPress
+    );
+
     return () => {
-      BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+      backHandlerSubscription.remove();
     };
   }, [selectedCard]);
 

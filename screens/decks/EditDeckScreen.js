@@ -129,7 +129,19 @@ export default function DeckEditScreen() {
       });
       showSuccess(t("common.successDeckMessage", "Deste güncellendi."));
       setTimeout(() => {
-        navigation.navigate('DeckDetail', { deck: { ...deck, name: name.trim(), to_name: toName.trim() || null, description: description.trim() || null, category_id: selectedCategory } });
+        navigation.goBack({
+          name: 'DeckDetail',
+          params: { 
+            deck: { 
+              ...deck, 
+              name: name.trim(), 
+              to_name: toName.trim() || null, 
+              description: description.trim() || null, 
+              category_id: selectedCategory 
+            } 
+          },
+          merge: true,
+        });
       }, 500);
     } catch (e) {
       showError(e.message || t("common.errorDeckMessage", "Deste güncellenemedi."));

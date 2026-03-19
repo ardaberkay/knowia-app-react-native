@@ -1,17 +1,31 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Platform, Dimensions, LayoutAnimation, UIManager } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  StyleSheet, 
+  Text, 
+  TouchableOpacity, 
+  ScrollView, 
+  Dimensions, 
+  Modal, 
+  Pressable 
+} from 'react-native';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming, 
+  runOnJS,
+  Easing
+} from 'react-native-reanimated';
+
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
-import Modal from 'react-native-modal';
 import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { triggerHaptic } from '../../lib/hapticManager';
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export const FilterModalButton = ({ onPress, variant }) => {
   const { colors, isDarkMode } = useTheme();
@@ -35,7 +49,7 @@ export const FilterModalButton = ({ onPress, variant }) => {
         styles.filterIconButton,
         { 
           borderColor,
-          backgroundColor // <-- Arka plan rengini buraya ekledik
+          backgroundColor
         }
       ]}
       onPress={() => {
@@ -67,12 +81,6 @@ const getCategoryOptions = (t) => [
   { sortOrder: 8, label: t('categories.8', 'Genel Kültür'), icon: 'garden:puzzle-piece-fill-16' },
 ];
 
-const customLayoutAnimation = {
-  duration: 200,
-  create: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
-  update: { type: LayoutAnimation.Types.easeInEaseOut },
-};
-
 const FilterModal = ({
   visible,
   onClose,
@@ -89,7 +97,6 @@ const FilterModal = ({
 }) => {
   const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
-  const screenHeight = Dimensions.get('screen').height;
   
   const primaryColor = colors.buttonColor || colors.primary || '#F98A21';
   const selectedBgColor = isDarkMode ? `${primaryColor}20` : '#FFF4EA';
@@ -102,28 +109,54 @@ const FilterModal = ({
   const [tempCategories, setTempCategories] = useState(currentCategories || []);
   const [tempLanguages, setTempLanguages] = useState(currentLanguages || []);
 
+  // Animasyon bitmeden Modal'ı DOM'dan kaldırmamak için local state
+  const [renderModal, setRenderModal] = useState(visible);
+  
+  // Reanimated Değerleri
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(SCREEN_HEIGHT); // Ekranın en altından başlar
+
   useEffect(() => {
     if (visible) {
       setTempSort(currentSort || defaultSort);
       setTempCategories(currentCategories || []);
       setTempLanguages(currentLanguages || []);
+      
+      setRenderModal(true);
+      // Açılış Animasyonu (Yumuşak geliş)
+      opacity.value = withTiming(1, { duration: 250 });
+      translateY.value = withTiming(0, { 
+        duration: 350, 
+        easing: Easing.out(Easing.exp) 
+      });
+    } else {
+      // Kapanış Animasyonu (Hızlı ve keskin)
+      opacity.value = withTiming(0, { duration: 150 });
+      translateY.value = withTiming(SCREEN_HEIGHT, { 
+        duration: 150,
+        easing: Easing.in(Easing.quad) 
+      }, (isFinished) => {
+        if (isFinished) {
+          runOnJS(setRenderModal)(false);
+        }
+      });
     }
   }, [visible]);
 
-  const toggleSort = () => {
-    LayoutAnimation.configureNext(customLayoutAnimation);
-    setIsSortOpen(prev => !prev);
-  };
+  // Animasyon Stilleri
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
 
-  const toggleCategory = () => {
-    LayoutAnimation.configureNext(customLayoutAnimation);
-    setIsCategoryOpen(prev => !prev);
-  };
+  const modalAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
 
-  const toggleLanguage = () => {
-    LayoutAnimation.configureNext(customLayoutAnimation);
-    setIsLanguageOpen(prev => !prev);
-  };
+  // İç animasyonlar kaldırıldı, sadece state değişecek
+  const toggleSort = () => setIsSortOpen(prev => !prev);
+  const toggleCategory = () => setIsCategoryOpen(prev => !prev);
+  const toggleLanguage = () => setIsLanguageOpen(prev => !prev);
 
   const handleLanguageToggle = (langId) => {
     setTempLanguages(prev => {
@@ -166,7 +199,6 @@ const FilterModal = ({
   const selectedSortLabel = sortOptions.find(opt => opt.key === tempSort)?.label || sortOptions[0].label;
   const categoryOptions = getCategoryOptions(t);
 
-  // Çoklu seçim (Kategori & Dil) için Kare Checkbox
   const CheckboxSquare = ({ isSelected }) => (
     <View style={[
       styles.checkboxSquare, 
@@ -179,78 +211,219 @@ const FilterModal = ({
     </View>
   );
 
+  if (!renderModal) return null;
+
   return (
     <Modal
-      isVisible={visible}
-      onBackdropPress={onClose}
-      onBackButtonPress={onClose}
-      useNativeDriver
-      useNativeDriverForBackdrop
-      backdropTransitionOutTiming={150}
-      animationInTiming={200}
-      animationOutTiming={200}
-      backdropTransitionInTiming={200}
-      hardwareAccelerated={true}
-      animationIn="slideInUp"
-      animationOut="slideOutDown"
+      transparent={true}
+      visible={renderModal}
+      animationType="none" 
+      onRequestClose={onClose} 
       statusBarTranslucent={true}
-      deviceHeight={screenHeight}
     >
-      <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+      <View style={styles.overlay}>
         
-        {/* Header */}
-        <View style={styles.modalHeader}>
-          <View style={styles.headerLeft}>
-            <Iconify icon="si:filter-list-alt-fill" size={moderateScale(28)} color={colors.text} />
-            <Text style={[typography.styles.h2, { color: colors.text, fontSize: moderateScale(22) }]}>
-              {t('common.filters', 'Filtreler')}
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={onClose}
-            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-            style={styles.closeBtnWrapper}
-          >
-            <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
-          </TouchableOpacity>
-        </View>
+        {/* Kararan Arka Plan */}
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
+          <Animated.View style={[styles.backdrop, backdropStyle, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]} />
+        </Pressable>
 
-        <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+        {/* Modal Kutusu */}
+        <Animated.View style={[styles.modalContainer, { backgroundColor: colors.background }, modalAnimatedStyle]}>
           
-          {/* Sıralama Bölümü - Tekli Seçim */}
-          {showSortOptions && (
+          {/* Header */}
+          <View style={styles.modalHeader}>
+            <View style={styles.headerLeft}>
+              <Iconify icon="si:filter-list-alt-fill" size={moderateScale(28)} color={colors.text} />
+              <Text style={[typography.styles.h2, { color: colors.text, fontSize: moderateScale(22) }]}>
+                {t('common.filters', 'Filtreler')}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={onClose}
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+              style={styles.closeBtnWrapper}
+            >
+              <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+            
+            {/* Sıralama Bölümü */}
+            {showSortOptions && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <View style={[styles.headerAccent, { backgroundColor: primaryColor }]} />
+                  <Iconify icon="lucide:sort-asc" size={moderateScale(20)} color={colors.text} />
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                    {t('common.sortBy', 'Sıralama')}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  onPress={toggleSort}
+                  style={[styles.accordionHeader, { borderColor: colors.border, backgroundColor: isDarkMode ? '#222' : '#F9FAFB' }]}
+                  activeOpacity={0.8}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(8) }}>
+                    <Text style={[styles.accordionHeaderText, { color: colors.text, fontWeight: '600' }]}>
+                      {selectedSortLabel}
+                    </Text>
+                  </View>
+                  <Iconify icon={isSortOpen ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'} size={moderateScale(20)} color={colors.text} />
+                </TouchableOpacity>
+
+                {isSortOpen && (
+                  <View style={styles.optionsList}>
+                    {sortOptions.map((option) => {
+                      const isSelected = tempSort === option.key;
+                      return (
+                        <TouchableOpacity
+                          key={option.key}
+                          onPress={() => {
+                            triggerHaptic('light');
+                            setTempSort(option.key);
+                          }}
+                          style={[
+                            styles.optionCard,
+                            {
+                              backgroundColor: isSelected ? selectedBgColor : (isDarkMode ? '#2A2A2A' : '#FFFFFF'),
+                              borderColor: isSelected ? primaryColor : (isDarkMode ? '#333' : '#EEE'),
+                            }
+                          ]}
+                          activeOpacity={1}
+                        >
+                          <View style={styles.optionCardLeft}>
+                            <Text style={[
+                              styles.optionCardText,
+                              {
+                                color: isSelected ? primaryColor : colors.text,
+                                fontWeight: isSelected ? '700' : '500'
+                              }
+                            ]}>
+                              {option.label}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Kategori Bölümü */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <View style={[styles.headerAccent, { backgroundColor: primaryColor }]} />
-                <Iconify icon="lucide:sort-asc" size={moderateScale(20)} color={colors.text} />
+                <Iconify icon="material-symbols:category-search-rounded" size={moderateScale(20)} color={colors.text} />
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  {t('common.sortBy', 'Sıralama')}
+                  {t('common.categories', 'Kategoriler')}
                 </Text>
               </View>
-
+              
               <TouchableOpacity
-                onPress={toggleSort}
+                onPress={toggleCategory}
                 style={[styles.accordionHeader, { borderColor: colors.border, backgroundColor: isDarkMode ? '#222' : '#F9FAFB' }]}
                 activeOpacity={0.8}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(8) }}>
-                  <Text style={[styles.accordionHeaderText, { color: colors.text, fontWeight: '600' }]}>
-                    {selectedSortLabel}
+                  <Text style={[styles.accordionHeaderText, { color: colors.text }]}>
+                    {t('common.selectCategories', 'Kategorileri Seç')}
                   </Text>
+                  {tempCategories.length > 0 && (
+                    <View style={[styles.badgePill, { backgroundColor: primaryColor }]}>
+                      <Text style={styles.badgePillText}>{tempCategories.length}</Text>
+                    </View>
+                  )}
                 </View>
-                <Iconify icon={isSortOpen ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'} size={moderateScale(20)} color={colors.text} />
+                <Iconify icon={isCategoryOpen ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'} size={moderateScale(20)} color={colors.text} />
               </TouchableOpacity>
 
-              {isSortOpen && (
+              {isCategoryOpen && (
                 <View style={styles.optionsList}>
-                  {sortOptions.map((option) => {
-                    const isSelected = tempSort === option.key;
+                  {categoryOptions.map((option) => {
+                    const isSelected = tempCategories.includes(option.sortOrder);
+                    
                     return (
                       <TouchableOpacity
-                        key={option.key}
+                        key={option.sortOrder}
+                        onPress={() => {
+                            triggerHaptic('light');
+                            handleCategoryToggle(option.sortOrder);
+                          }}
+                        style={[
+                          styles.optionCard,
+                          {
+                            backgroundColor: isSelected ? selectedBgColor : (isDarkMode ? '#2A2A2A' : '#FFFFFF'),
+                            borderColor: isSelected ? primaryColor : (isDarkMode ? '#333' : '#EEE'),
+                          }
+                        ]}
+                        activeOpacity={1} 
+                      >
+                        <View style={styles.optionCardLeft}>
+                          <View style={styles.optionIconWrapper}>
+                            <Iconify icon={option.icon} size={moderateScale(22)} color={isSelected ? primaryColor : colors.text} />
+                          </View>
+                          <Text style={[
+                            styles.optionCardText,
+                            {
+                              color: isSelected ? primaryColor : colors.text,
+                              fontWeight: isSelected ? '700' : '500'
+                            }
+                          ]}>
+                            {option.label}
+                          </Text>
+                        </View>
+                        
+                        <CheckboxSquare isSelected={isSelected} />
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+
+            {/* Dil Bölümü */}
+            <View style={[styles.section, { marginBottom: verticalScale(20) }]}>
+              <View style={styles.sectionHeader}>
+                <View style={[styles.headerAccent, { backgroundColor: primaryColor }]} />
+                <Iconify icon="fa:language" size={moderateScale(20)} color={colors.text} />
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  {t('create.language', 'İçerik Dili')}
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                onPress={toggleLanguage}
+                style={[styles.accordionHeader, { borderColor: colors.border, backgroundColor: isDarkMode ? '#222' : '#F9FAFB' }]}
+                activeOpacity={0.8}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(8) }}>
+                  <Text style={[styles.accordionHeaderText, { color: colors.text }]}>
+                    {t('common.selectLanguages', 'Dil Seç')}
+                  </Text>
+                  {tempLanguages.length > 0 && (
+                    <View style={[styles.badgePill, { backgroundColor: primaryColor }]}>
+                      <Text style={styles.badgePillText}>{tempLanguages.length}</Text>
+                    </View>
+                  )}
+                </View>
+                <Iconify icon={isLanguageOpen ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'} size={moderateScale(20)} color={colors.text} />
+              </TouchableOpacity>
+
+              {isLanguageOpen && (
+                <View style={styles.optionsList}>
+                  {languages.map((lang) => {
+                    const isSelected = tempLanguages.includes(lang.id);
+                    
+                    return (
+                      <TouchableOpacity
+                        key={lang.id}
                         onPress={() => {
                           triggerHaptic('light');
-                          setTempSort(option.key);
+                          handleLanguageToggle(lang.id);
                         }}
                         style={[
                           styles.optionCard,
@@ -269,200 +442,69 @@ const FilterModal = ({
                               fontWeight: isSelected ? '700' : '500'
                             }
                           ]}>
-                            {option.label}
+                            {t(`languages.${lang.sort_order}`, lang.name)}
                           </Text>
                         </View>
-                        {/* Tekli seçim olduğu için sağ taraftaki tik kaldırıldı */}
+                        
+                        <CheckboxSquare isSelected={isSelected} />
                       </TouchableOpacity>
                     );
                   })}
                 </View>
               )}
             </View>
-          )}
+          </ScrollView>
 
-          {/* Kategori Bölümü - Çoklu Seçim */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={[styles.headerAccent, { backgroundColor: primaryColor }]} />
-              <Iconify icon="material-symbols:category-search-rounded" size={moderateScale(20)} color={colors.text} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {t('common.categories', 'Kategoriler')}
-              </Text>
-            </View>
-            
+          {/* Footer Buttons */}
+          <View style={styles.modalFooter}>
             <TouchableOpacity
-              onPress={toggleCategory}
-              style={[styles.accordionHeader, { borderColor: colors.border, backgroundColor: isDarkMode ? '#222' : '#F9FAFB' }]}
-              activeOpacity={0.8}
+              style={[styles.resetButton, { borderColor: colors.border }]}
+              onPress={handleReset}
+              activeOpacity={0.7}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(8) }}>
-                <Text style={[styles.accordionHeaderText, { color: colors.text }]}>
-                  {t('common.selectCategories', 'Kategorileri Seç')}
-                </Text>
-                {tempCategories.length > 0 && (
-                  <View style={[styles.badgePill, { backgroundColor: primaryColor }]}>
-                    <Text style={styles.badgePillText}>{tempCategories.length}</Text>
-                  </View>
-                )}
-              </View>
-              <Iconify icon={isCategoryOpen ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'} size={moderateScale(20)} color={colors.text} />
+              <Text style={[styles.resetButtonText, { color: colors.text }]}>
+                {t('common.reset', 'Sıfırla')}
+              </Text>
             </TouchableOpacity>
 
-            {isCategoryOpen && (
-              <View style={styles.optionsList}>
-                {categoryOptions.map((option) => {
-                  const isSelected = tempCategories.includes(option.sortOrder);
-                  
-                  return (
-                    <TouchableOpacity
-                      key={option.sortOrder}
-                      onPress={() => {
-                          triggerHaptic('light');
-                          handleCategoryToggle(option.sortOrder);
-                        }}
-                      style={[
-                        styles.optionCard,
-                        {
-                          backgroundColor: isSelected ? selectedBgColor : (isDarkMode ? '#2A2A2A' : '#FFFFFF'),
-                          borderColor: isSelected ? primaryColor : (isDarkMode ? '#333' : '#EEE'),
-                        }
-                      ]}
-                      activeOpacity={1} 
-                    >
-                      <View style={styles.optionCardLeft}>
-                        <View style={styles.optionIconWrapper}>
-                          <Iconify icon={option.icon} size={moderateScale(22)} color={isSelected ? primaryColor : colors.text} />
-                        </View>
-                        <Text style={[
-                          styles.optionCardText,
-                          {
-                            color: isSelected ? primaryColor : colors.text,
-                            fontWeight: isSelected ? '700' : '500'
-                          }
-                        ]}>
-                          {option.label}
-                        </Text>
-                      </View>
-                      
-                      <CheckboxSquare isSelected={isSelected} />
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
-          </View>
-
-          {/* Dil Bölümü - Çoklu Seçim */}
-          <View style={[styles.section, { marginBottom: verticalScale(20) }]}>
-            <View style={styles.sectionHeader}>
-              <View style={[styles.headerAccent, { backgroundColor: primaryColor }]} />
-              <Iconify icon="fa:language" size={moderateScale(20)} color={colors.text} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {t('create.language', 'İçerik Dili')}
-              </Text>
-            </View>
-
             <TouchableOpacity
-              onPress={toggleLanguage}
-              style={[styles.accordionHeader, { borderColor: colors.border, backgroundColor: isDarkMode ? '#222' : '#F9FAFB' }]}
+              style={styles.applyButton}
+              onPress={
+                () => {
+                  triggerHaptic('medium');
+                  handleApply();
+                }}
               activeOpacity={0.8}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(8) }}>
-                <Text style={[styles.accordionHeaderText, { color: colors.text }]}>
-                  {t('common.selectLanguages', 'Dil Seç')}
+              <LinearGradient
+                colors={['#F98A21', '#FF6B35']}
+                locations={[0, 0.99]}
+                style={styles.gradientButton}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Text style={styles.applyButtonText}>
+                  {t('common.apply', 'Uygula')}
                 </Text>
-                {tempLanguages.length > 0 && (
-                  <View style={[styles.badgePill, { backgroundColor: primaryColor }]}>
-                    <Text style={styles.badgePillText}>{tempLanguages.length}</Text>
-                  </View>
-                )}
-              </View>
-              <Iconify icon={isLanguageOpen ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'} size={moderateScale(20)} color={colors.text} />
+              </LinearGradient>
             </TouchableOpacity>
-
-            {isLanguageOpen && (
-              <View style={styles.optionsList}>
-                {languages.map((lang) => {
-                  const isSelected = tempLanguages.includes(lang.id);
-                  
-                  return (
-                    <TouchableOpacity
-                      key={lang.id}
-                      onPress={() => {
-                        triggerHaptic('light');
-                        handleLanguageToggle(lang.id);
-                      }}
-                      style={[
-                        styles.optionCard,
-                        {
-                          backgroundColor: isSelected ? selectedBgColor : (isDarkMode ? '#2A2A2A' : '#FFFFFF'),
-                          borderColor: isSelected ? primaryColor : (isDarkMode ? '#333' : '#EEE'),
-                        }
-                      ]}
-                      activeOpacity={1}
-                    >
-                      <View style={styles.optionCardLeft}>
-                        <Text style={[
-                          styles.optionCardText,
-                          {
-                            color: isSelected ? primaryColor : colors.text,
-                            fontWeight: isSelected ? '700' : '500'
-                          }
-                        ]}>
-                          {t(`languages.${lang.sort_order}`, lang.name)}
-                        </Text>
-                      </View>
-                      
-                      <CheckboxSquare isSelected={isSelected} />
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
           </View>
-        </ScrollView>
-
-        {/* Footer Buttons */}
-        <View style={styles.modalFooter}>
-          <TouchableOpacity
-            style={[styles.resetButton, { borderColor: colors.border }]}
-            onPress={handleReset}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.resetButtonText, { color: colors.text }]}>
-              {t('common.reset', 'Sıfırla')}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.applyButton}
-            onPress={
-              () => {
-                triggerHaptic('medium');
-                handleApply();
-              }}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={['#F98A21', '#FF6B35']}
-              locations={[0, 0.99]}
-              style={styles.gradientButton}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <Text style={styles.applyButtonText}>
-                {t('common.apply', 'Uygula')}
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    justifyContent: 'center', 
+    alignItems: 'center',     
+  },
+  backdrop: {
+    flex: 1,
+    ...StyleSheet.absoluteFillObject,
+  },
   filterIconButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -475,12 +517,16 @@ const styles = StyleSheet.create({
     width: scale(46),
   },
   modalContainer: {
+    width: '90%', 
+    maxHeight: '85%',
     borderRadius: moderateScale(32),
     padding: 0,
-    maxHeight: '85%',
-    width: '100%',
-    alignSelf: 'center',
     overflow: 'hidden',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -560,7 +606,7 @@ const styles = StyleSheet.create({
   optionCardLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1, // Yazının ortalanmasını daha temiz yapar
+    flex: 1,
   },
   optionIconWrapper: {
     marginRight: scale(12),

@@ -5,11 +5,12 @@ import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { triggerHaptic } from '../../lib/hapticManager';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const FilterIcon = ({ style, size, color, value = 'original', onChange, hideFavorites = false, hideAz = false, variant }) => {
   const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
-  
+  const insets = useSafeAreaInsets();
   useWindowDimensions();
   const isTablet = getIsTablet();
   
@@ -48,7 +49,6 @@ const FilterIcon = ({ style, size, color, value = 'original', onChange, hideFavo
     : (isDarkMode 
         ? 'rgba(255, 255, 255, 0.05)' // Karanlık mod (%5 hafif beyaz dolgu)
         : 'rgba(0, 0, 0, 0.03)');     // Açık mod (%3 hafif koyu dolgu)
-  // ===============================================================
 
   const openMenu = () => {
     triggerHaptic('selection');
@@ -101,7 +101,8 @@ const FilterIcon = ({ style, size, color, value = 'original', onChange, hideFavo
             <View style={{
               position: 'absolute',
               left: Math.max(scale(8), dropdownPos.x + dropdownPos.width - filterIconDimensions.dropdownMaxWidth),
-              top: Platform.OS === 'android' ? dropdownPos.y + dropdownPos.height : dropdownPos.y + dropdownPos.height + verticalScale(4),
+              top: Platform.OS === 'android' ? dropdownPos.y + dropdownPos.height + insets.top
+              : dropdownPos.y + dropdownPos.height + verticalScale(4),
               minWidth: filterIconDimensions.dropdownMinWidth,
               maxWidth: filterIconDimensions.dropdownMaxWidth,
               backgroundColor: colors.background,
