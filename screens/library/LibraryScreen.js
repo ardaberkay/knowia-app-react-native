@@ -3,13 +3,16 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, Modal, 
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
 import { useAuth } from '../../contexts/AuthContext';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { typography } from '../../theme/typography';
 import { getDecksByCategory, deleteDeck } from '../../services/DeckService';
 import { deleteCard, getUserCardProgressForCards } from '../../services/CardService';
 import { Iconify } from 'react-native-iconify';
 import { getFavoriteDecks, getFavoriteCards, addFavoriteDeck, removeFavoriteDeck, addFavoriteCard, removeFavoriteCard } from '../../services/FavoriteService';
-
+import {
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetScrollView
+} from '@gorhom/bottom-sheet';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import PagerView from 'react-native-pager-view';
@@ -159,6 +162,35 @@ export default function LibraryScreen() {
       categoryIconLeft: isTablet ? moderateScale(-75, 0.3) : moderateScale(-70, 0.3),
     };
   }, [height, isTablet]);
+
+  // Gorhom Bottom Sheet Referansı
+  const cardDetailSheetRef = useRef(null);
+
+  // Ekranda kaplayacağı alan: %90 (Üstten %10 boşluk bırakır, diğer 3 tarafa yapışır)
+  const snapPoints = useMemo(() => ['90%'], []);
+
+  // Modal görünürlük kontrolü
+  useEffect(() => {
+    if (cardDetailModalVisible) {
+      cardDetailSheetRef.current?.present();
+    } else {
+      cardDetailSheetRef.current?.dismiss();
+    }
+  }, [cardDetailModalVisible]);
+
+  // Arka plan karartma ayarı
+  const renderBackdrop = useCallback(
+    (props) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        pressBehavior="close" // Boşluğa tıklayınca kapatır
+        opacity={0.5}
+      />
+    ),
+    []
+  );
 
   // Kategoriye göre renkleri al (Supabase sort_order kullanarak)
   const getCategoryColors = (sortOrder) => {
@@ -1028,50 +1060,89 @@ export default function LibraryScreen() {
       </PagerView>
 
       {/* Card Detail Modal */}
-      <Modal
-        visible={cardDetailModalVisible}
-        animationType="slide"
-        transparent={false}
-        onRequestClose={() => setCardDetailModalVisible(false)}
+      {/* Card Detail Modal */}
+      {/* Gorhom Bottom Sheet Modal */}
+      {/* --- GORHOM CARD DETAIL BOTTOM SHEET --- */}
+      <BottomSheetModal
+        ref={cardDetailSheetRef}
+        index={0}
+        snapPoints={snapPoints}
+        onChange={(index) => {
+          // Kullanıcı paneli aşağı sürükleyerek kapatırsa state'i güncelle
+          if (index === -1) setCardDetailModalVisible(false);
+        }}
+        backdropComponent={renderBackdrop}
+        backgroundStyle={{
+          backgroundColor: colors.background,
+          borderRadius: moderateScale(44)
+        }}
+        handleComponent={() => null}
+        enableContentPanningGesture={false} // İçeriği (ScrollView'u) kaydırırken panelin sürüklenmesini tamamen kapatır. Sadece içerik kayar.
+        enableDynamicSizing={false} // İçerik azaldığında veya arttığında panelin kendi kendine boyut değiştirmesini engeller. Kesinlikle %90'da kalır.
+        enableOverDrag={false} // Paneli en yukarı kaydırdığında lastik gibi esnemesini durdurur.
       >
-        <View style={{ flex: 1, backgroundColor: colors.background }}>
-          <View style={[styles.modalHeader, { backgroundColor: colors.background }]}>
+
+        {/* --- SABİT HEADER BÖLÜMÜ (Aşağı kaymaz, hep üstte durur) --- */}
+        <View style={[styles.modalHeader, {
+          backgroundColor: colors.background,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: colors.cardBorder || '#E0E0E0',
+          paddingBottom: verticalScale(12),
+          paddingTop: verticalScale(24),
+          paddingHorizontal: scale(16),
+          borderRadius: moderateScale(44),
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }]}>
+          <TouchableOpacity
+            onPress={() => setCardDetailModalVisible(false)}
+            style={styles.modalCloseButton}
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+          >
+            <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
+          </TouchableOpacity>
+
+          <Text style={[styles.modalTitle, { color: colors.text, flex: 1, textAlign: 'center', fontWeight: '600' }]}>
+            {t('cardDetail.cardDetail', 'Kart Detayı')}
+          </Text>
+
+          {selectedCard ? (
             <TouchableOpacity
-              onPress={() => setCardDetailModalVisible(false)}
-              style={styles.modalCloseButton}
+              onPress={() => handleToggleFavoriteCard(selectedCard.id)}
+              activeOpacity={0.7}
+              style={styles.modalFavoriteButton}
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
             >
-              <Iconify icon="mdi:arrow-back" size={moderateScale(24)} color={colors.text} />
-            </TouchableOpacity>
-            <Text style={[styles.modalTitle, { color: colors.text, flex: 1, textAlign: 'center' }]}>
-              {t('cardDetail.cardDetail', 'Kart Detayı')}
-            </Text>
-            {selectedCard && (
-              <TouchableOpacity
-                onPress={() => handleToggleFavoriteCard(selectedCard.id)}
-                activeOpacity={0.7}
-                style={styles.modalFavoriteButton}
-              >
-                <Iconify
-                  icon={favoriteCardIds.includes(selectedCard.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-                  size={moderateScale(24)}
-                  color={favoriteCardIds.includes(selectedCard.id) ? '#F98A21' : colors.text}
-                />
-              </TouchableOpacity>
-            )}
-            {!selectedCard && <View style={{ width: scale(28) }} />}
-          </View>
-          <View style={{ flex: 1 }}>
-            {selectedCard && (
-              <CardDetailView
-                card={selectedCard}
-                cards={filteredFavoriteCards}
-                onSelectCard={(card) => setSelectedCard(card)}
-                showCreatedAt={true}
+              <Iconify
+                icon={favoriteCardIds.includes(selectedCard.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
+                size={moderateScale(24)}
+                color={favoriteCardIds.includes(selectedCard.id) ? '#F98A21' : colors.text}
               />
-            )}
-          </View>
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: moderateScale(24) }} />
+          )}
         </View>
-      </Modal>
+
+        {/* --- KAYDIRILABİLİR İÇERİK (Sihirli Kısım Burası) --- */}
+        <BottomSheetScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: verticalScale(30) }}
+          showsVerticalScrollIndicator={false}
+          bounces={true}
+        >
+          {selectedCard && (
+            <CardDetailView
+              card={selectedCard}
+              cards={filteredFavoriteCards}
+              onSelectCard={(card) => setSelectedCard(card)}
+              showCreatedAt={true}
+            />
+          )}
+        </BottomSheetScrollView>
+
+      </BottomSheetModal>
 
       {/* MyDecks Filter Modal */}
       <FilterModal
