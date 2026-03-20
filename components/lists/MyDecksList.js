@@ -390,7 +390,7 @@ const MyDecksList = ({
       key={`mydecks-${decks.length}`}
       data={rows}
       keyExtractor={(_, idx) => `row_${idx}`}
-      contentContainerStyle={{ paddingBottom: '25%', paddingTop: '25%' }}
+      contentContainerStyle={{ paddingBottom: '35%', paddingTop: '25%' }}
       ListHeaderComponent={ListHeaderComponent}
       renderItem={renderListItem}
       ListEmptyComponent={renderEmptyComponent}

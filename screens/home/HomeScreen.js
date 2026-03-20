@@ -476,8 +476,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContentContainer: {
-    paddingBottom: '25%',
-  },
+  paddingBottom: '35%',
+},
   sectionHeaderGradient: {
     flexDirection: 'row',
     alignItems: 'center',

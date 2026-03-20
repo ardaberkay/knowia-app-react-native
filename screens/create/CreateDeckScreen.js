@@ -465,7 +465,7 @@ export default function CreateScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={[styles.buttonRowModern, { paddingBottom: isKeyboardVisible ? '10%' : '30%' }]}>
+          <View style={[styles.buttonRowModern, { paddingBottom: isKeyboardVisible ? '20%' : '40%' }]}>
             <UndoButton
               onPress={resetForm}
               disabled={loading}

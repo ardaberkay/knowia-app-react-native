@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'flex-start',
-    paddingBottom: '25%',
+    paddingBottom: '35%',
   },
   profileRow: {
     flexDirection: 'row',

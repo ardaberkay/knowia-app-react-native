@@ -1368,7 +1368,6 @@ const styles = StyleSheet.create({
   },
   // MyDecks Card styles
   myDecksCard: {
-    // marginTop dinamik olarak uygulanacak
   },
   myDecksCardContainer: {
     borderRadius: moderateScale(36),

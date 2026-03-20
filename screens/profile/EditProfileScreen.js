@@ -756,7 +756,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: scale(20),
     marginTop: verticalScale(16),
-
+    marginBottom: verticalScale(32),
     width: '100%',
     maxWidth: scale(440),
     alignSelf: 'center',

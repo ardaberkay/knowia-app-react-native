@@ -516,7 +516,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: scale(10),
     marginTop: verticalScale(28),
-    marginBottom: verticalScale(32),
+    marginBottom: verticalScale(52),
   },
   optional: {
     marginLeft: scale(4),

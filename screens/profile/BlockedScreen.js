@@ -214,6 +214,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: scale(24),
     paddingTop: verticalScale(16),
+    paddingBottom: '15%',
   },
   tabs: {
     flexDirection: 'row',

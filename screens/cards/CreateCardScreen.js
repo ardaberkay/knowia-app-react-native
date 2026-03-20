@@ -561,6 +561,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: scale(20),
     marginTop: verticalScale(24),
-    marginBottom: verticalScale(32),
+    marginBottom: verticalScale(52),
   },
 });
