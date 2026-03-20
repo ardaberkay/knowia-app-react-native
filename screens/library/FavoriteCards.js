@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useLayoutEffect, useRef, useCallback, memo } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, BackHandler, Alert, Keyboard, RefreshControl, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -335,7 +336,7 @@ export default function FavoriteCards() {
   }, [loading, selectedCard, colors.text, navigation, favoriteCards, handleToggleFavoriteCard]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
       {loading ? (
         <View style={styles.loadingContainer}>
           <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: scale(200), height: verticalScale(200) }} />
@@ -374,7 +375,7 @@ export default function FavoriteCards() {
           updateCellsBatchingPeriod={50}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

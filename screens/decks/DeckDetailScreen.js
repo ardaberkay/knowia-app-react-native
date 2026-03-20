@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Platform, Modal, Pressable, Image, Switch, Animated, StatusBar, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Modal, Pressable, Image, Switch, Animated, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Alert } from 'react-native';
@@ -934,7 +935,7 @@ export default function DeckDetailScreen({ route, navigation }) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
 
       <ScrollView
         contentContainerStyle={{ paddingBottom: verticalScale(screenHeight * 0.10) }}
@@ -2075,7 +2076,7 @@ export default function DeckDetailScreen({ route, navigation }) {
         onSubmit={handleReportModalSubmit}
       />
 
-    </View>
+    </SafeAreaView>
   );
 }
 

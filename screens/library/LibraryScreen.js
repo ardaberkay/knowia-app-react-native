@@ -1,6 +1,7 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, Modal, Alert, Animated, ScrollView, RefreshControl, Image, SafeAreaView, StatusBar, Keyboard } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions,  Alert, Animated, ScrollView, RefreshControl, Image, Keyboard } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { typography } from '../../theme/typography';
@@ -687,7 +688,7 @@ export default function LibraryScreen() {
 
 
   return (
-    <View style={[styles.container]}>
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.container]}>
       {/* Header + Pill Tabs - Hafif saydam arka plan (BlurView kaldırıldı, geçişte dim sorununu önlemek için) */}
       <View style={[styles.segmentedControlContainer, { top: 0 }]} pointerEvents="box-none">
         <View
@@ -1160,7 +1161,7 @@ export default function LibraryScreen() {
         languages={allLanguages}
         currentLanguages={selectedLanguages}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

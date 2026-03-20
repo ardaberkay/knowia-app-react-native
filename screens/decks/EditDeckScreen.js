@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Platform, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { getCategories } from '../../services/CategoryService';
 import { updateDeck } from '../../services/DeckService';
@@ -152,7 +153,7 @@ export default function DeckEditScreen() {
 
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAwareScrollView
         contentContainerStyle={styles.formContainer}
         keyboardShouldPersistTaps="handled"
@@ -162,7 +163,7 @@ export default function DeckEditScreen() {
       >
         <View
           style={[
-            styles.inputCard,
+            styles.inputCard, 
             {
               backgroundColor: colors.cardBackground,
               borderColor: colors.cardBorder,
@@ -466,7 +467,7 @@ export default function DeckEditScreen() {
         }}
 
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

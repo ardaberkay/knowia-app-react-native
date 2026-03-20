@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useLayoutEffect, useCallback, memo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Alert, Pressable, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, Pressable, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
-import { listChapters, distributeUnassignedEvenly, getNextOrdinal, createChapter, getChaptersProgress, deleteChapter, reorderChapterOrdinals } from '../../services/ChapterService';
-import CreateButton from '../../components/tools/CreateButton';
+import { listChapters, getNextOrdinal, createChapter, getChaptersProgress, deleteChapter, reorderChapterOrdinals } from '../../services/ChapterService';
 import CircularProgress from '../../components/ui/CircularProgress';
 import { useAuth } from '../../contexts/AuthContext';
 import LottieView from 'lottie-react-native';
@@ -390,7 +390,7 @@ const addChapterAnimatedStyle = useAnimatedStyle(() => {
 
   return (
     <View style={[styles.bgGradient, { backgroundColor: colors.background }]}>
-      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
+      <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.container, { backgroundColor: 'transparent' }]}>
         {loading ? (
           renderLoading()
         ) : (

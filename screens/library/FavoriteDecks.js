@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef,  } from 'react';
 import { View, Image, Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
 import { useAuth } from '../../contexts/AuthContext';
@@ -189,7 +190,7 @@ export default function FavoriteDecks() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background, marginVertical: verticalScale(10) }}>
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: colors.background, marginVertical: verticalScale(10) }}>
       {loading ? (
         <View style={styles.loadingContainer}>
           <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: scale(200), height: verticalScale(200) }} />
@@ -250,7 +251,7 @@ export default function FavoriteDecks() {
         languages={allLanguages}
         currentLanguages={selectedLanguages}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Platform, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Animated, Easing } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import PagerView from 'react-native-pager-view';
 import LottieView from 'lottie-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -238,7 +239,7 @@ export default function OnboardingScreen({ navigation, route }) {
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.root, { backgroundColor: colors.background }]}>
       <LinearGradient
         colors={lightOverlayColors}
         locations={lightOverlayColors.length === 4 ? [0, 0.4, 0.6, 1] : [0, 0.2, 0.5, 0.8, 1]}
@@ -335,7 +336,7 @@ export default function OnboardingScreen({ navigation, route }) {
 
         {Platform.OS === 'android' ? <View style={{ height: verticalScale(10) }} /> : null}
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 

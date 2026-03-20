@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator, Share, Switch, Alert, Linking, Platform } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Share, Switch, Alert, Linking} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { getCurrentUserProfile, updateNotificationPreference, clearPushToken } from '../../services/ProfileService';
@@ -406,7 +407,7 @@ export default function ProfileScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Sabit profil alanı */}
       <View style={styles.profileRow}>
         {(loading || themeLoading) ? (
@@ -455,7 +456,7 @@ export default function ProfileScreen() {
         onClose={() => setLanguageModalVisible(false)}
         onLanguageChange={handleLanguageChange}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

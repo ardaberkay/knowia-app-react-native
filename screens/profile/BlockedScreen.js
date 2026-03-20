@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, ActivityIndicator, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useAuth } from '../../contexts/AuthContext';
@@ -116,7 +117,7 @@ export default function BlockedScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.tabs, { backgroundColor: colors.border + '40' }]}>
         <TouchableOpacity
           style={[styles.tab, blockedTab === 'users' && { backgroundColor: colors.buttonColor }]}
@@ -205,7 +206,7 @@ export default function BlockedScreen() {
           ))}
         </ScrollView>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

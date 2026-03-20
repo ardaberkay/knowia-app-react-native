@@ -19,6 +19,7 @@ import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
 import DeckLanguageModal from '../../components/modals/DeckLanguageModal';
 import BadgeText from '../../components/tools/BadgeText';
 import { triggerHaptic } from '../../lib/hapticManager';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CreateScreen() {
   const { session } = useAuth();
@@ -163,7 +164,7 @@ export default function CreateScreen() {
 
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAwareScrollView
         style={{flex: 1}}
         contentContainerStyle={[styles.formContainer]}
@@ -512,7 +513,7 @@ export default function CreateScreen() {
         }}
 
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

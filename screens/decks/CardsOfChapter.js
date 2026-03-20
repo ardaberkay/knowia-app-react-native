@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, memo, useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, TouchableHighlight, ActivityIndicator, Platform, Modal, Image, Pressable, RefreshControl } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, TouchableHighlight, ActivityIndicator, Platform, Modal, Image, Pressable, RefreshControl } from 'react-native';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useAuth } from '../../contexts/AuthContext';
@@ -576,12 +576,12 @@ export default function ChapterCardsScreen({ route, navigation }) {
   if (loading) {
     return (
       <View style={[styles.bgGradient, { backgroundColor: colors.background }]}>
-        <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
+        <View style={[styles.container, { backgroundColor: 'transparent' }]}>
           <View style={styles.loadingContainer}>
             <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: scale(200), height: scale(200) }} />
             <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100), height: scale(100) }} />
           </View>
-        </SafeAreaView>
+        </View>
       </View>
     );
   }
@@ -589,7 +589,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
   // Kart detay görünümü gösteriliyorsa
   if (selectedCard) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
         {editCardMode ? (
           <AddEditCardInlineForm
             card={selectedCard}

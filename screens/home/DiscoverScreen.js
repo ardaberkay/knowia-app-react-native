@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Platform, Image, Animated, Keyboard } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
@@ -559,7 +560,7 @@ export default function DiscoverScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
       {renderFixedHeader()}
 
       <View style={[styles.listContainer, { backgroundColor: colors.background }]}>
@@ -589,7 +590,7 @@ export default function DiscoverScreen() {
         onApply={(cats, langs) => handleApplyFilters(cats, langs)} // Dil parametresini ekledik
         showSortOptions={false} // Discover ekranındaki ihtiyacına göre
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

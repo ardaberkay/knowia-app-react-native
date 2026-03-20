@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Animated, Easing, Image, Pressable } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, Image, Pressable } from 'react-native';
 import Reanimated, {
   useAnimatedStyle,
   useSharedValue,
@@ -11,6 +11,7 @@ import Reanimated, {
   withTiming,
   withRepeat,
 } from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Swiper from 'react-native-deck-swiper';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -57,7 +58,7 @@ const AnimatedTimeButton = ({ onPress, icon, text, buttonStyle, textStyle, iconC
       onPressIn={() => { isPressed.value = 1; }}
       onPressOut={() => { isPressed.value = 0; }}
       onPress={() => {
-        triggerHaptic('light'); 
+        triggerHaptic('light');
         requestAnimationFrame(() => {
           onPress();
         });
@@ -762,7 +763,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     const progress = learnedCount;
 
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={{ width: '100%', alignItems: 'center', marginTop: verticalScale(60) }}>
           <Image source={home_logo} style={{ width: scale(260), height: scale(260), resizeMode: 'cover' }} />
           <Text style={[typography.styles.h2, { color: colors.text, textAlign: 'center', marginTop: verticalScale(16), paddingHorizontal: scale(32) }]}>
@@ -807,7 +808,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
   return (
     <>
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Sayaçlar */}
         <View style={styles.counterRow}>
           <Reanimated.View
@@ -960,9 +961,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
           />
         </View>
         {/* Yatay birleşik butonlar */}
-{/* Yatay birleşik butonlar */}
-<View style={[styles.horizontalButtonRow, { backgroundColor: colors.buttonColor }]}>
-          
+        {/* Yatay birleşik butonlar */}
+        <View style={[styles.horizontalButtonRow, { backgroundColor: colors.buttonColor }]}>
+
           <AnimatedTimeButton
             onPress={() => handleSkip(15)}
             icon="material-symbols:repeat-rounded"

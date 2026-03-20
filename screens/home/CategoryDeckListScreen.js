@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { View, StyleSheet, Text, Platform, Keyboard } from 'react-native';
+import { View, StyleSheet, Text, Keyboard, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
@@ -345,7 +346,7 @@ export default function CategoryDeckListScreen({ route }) {
   }, [category, title, search, colors, t, insets, heroDimensions, width]);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
       {renderFixedHeader()}
 
       <View style={[styles.listContainer, { backgroundColor: colors.background }]}>
@@ -374,7 +375,7 @@ export default function CategoryDeckListScreen({ route }) {
         languages={allLanguages}
         currentLanguages={selectedLanguages}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

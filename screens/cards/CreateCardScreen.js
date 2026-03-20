@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Platform, Image } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useAuth } from '../../contexts/AuthContext';
 import { createCard } from '../../services/CardService';
@@ -140,7 +141,7 @@ export default function AddCardScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
       <CsvUploadModal
         isVisible={csvModalVisible}
         onClose={() => setCsvModalVisible(false)}
@@ -417,7 +418,7 @@ export default function AddCardScreen() {
         isVisible={isHowToCreateCardModalVisible}
         onClose={() => setHowToCreateCardModalVisible(false)}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

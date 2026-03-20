@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, BackHandler, Alert, Dimensions, Animated, Easing, ActivityIndicator, Modal, Image, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, BackHandler, Alert, Animated, Easing, Modal, Image, RefreshControl } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
@@ -92,6 +93,7 @@ export default function DeckCardsScreen({ route, navigation }) {
   const { session } = useAuth();
   const userId = session?.user?.id;
   const showFullScreenLoading = loading && cards.length === 0 && !selectedCard;
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     setCurrentUserId(userId || null);
@@ -532,11 +534,6 @@ export default function DeckCardsScreen({ route, navigation }) {
     }
   }, []);
 
-  const handleBackFromDetail = () => {
-    setSelectedCard(null);
-    setMoreMenuVisible(false);
-    latestDetailFetchRef.current = null;
-  };
   const handleListItemPress = useCallback((item) => {
     setEditMode(false);
     fetchAndSetCardDetail(item);
@@ -608,7 +605,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                 style={{
                   position: 'absolute',
                   right: scale(20),
-                  top: Platform.OS === 'android' ? moreMenuPos.y + moreMenuPos.height + verticalScale(4) : moreMenuPos.y + moreMenuPos.height + verticalScale(8),
+                  top: Platform.OS === 'android' ? moreMenuPos.y + moreMenuPos.height + verticalScale(4) + insets.top : moreMenuPos.y + moreMenuPos.height + verticalScale(8),
                   minWidth: scale(160),
                   backgroundColor: colors.cardBackground,
                   borderRadius: moderateScale(14),

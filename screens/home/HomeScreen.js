@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Dimensions, ActivityIndicator, Image, RefreshControl, Pressable, Animated } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Image, RefreshControl, Pressable, Animated } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDecksByCategory } from '../../services/DeckService';
@@ -17,7 +18,7 @@ import ProfileAvatarButton from '../../components/layout/ProfileAvatarButton';
 import DeckSkeleton from '../../components/skeleton/DeckSkeleton';
 import { useTranslation } from 'react-i18next';
 import DeckCard from '../../components/ui/DeckUi';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 // Kategoriye göre ikon seçen yardımcı fonksiyon
@@ -70,7 +71,7 @@ export default function HomeScreen() {
   const userId = session?.user?.id;
   const navigation = useNavigation();
   const { colors, isDarkMode } = useTheme();
-
+  const insets = useSafeAreaInsets();
   // useWindowDimensions hook'u - ekran döndürme desteği
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
@@ -407,7 +408,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={[styles.header, { backgroundColor: colors.appbar, borderBottomColor: colors.border }]}>
         <View style={styles.headerContent}>
           <View style={styles.logoContainer}>
