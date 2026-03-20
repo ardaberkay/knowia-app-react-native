@@ -17,7 +17,7 @@ import ProfileAvatarButton from '../../components/layout/ProfileAvatarButton';
 import DeckSkeleton from '../../components/skeleton/DeckSkeleton';
 import { useTranslation } from 'react-i18next';
 import DeckCard from '../../components/ui/DeckUi';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 // Kategoriye göre ikon seçen yardımcı fonksiyon
@@ -407,7 +407,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.appbar, borderBottomColor: colors.border }]}>
         <View style={styles.headerContent}>
           <View style={styles.logoContainer}>
@@ -443,7 +443,7 @@ export default function HomeScreen() {
           </React.Fragment>
         ))}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -457,7 +457,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: moderateScale(5),
-    paddingTop: verticalScale(55),
     paddingBottom: verticalScale(10),
     marginRight: scale(12),
     marginLeft: scale(12),
@@ -476,7 +475,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContentContainer: {
-  paddingBottom: '35%',
+  paddingBottom: '25%',
 },
   sectionHeaderGradient: {
     flexDirection: 'row',

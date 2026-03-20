@@ -7,7 +7,6 @@ import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet }
 import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 import { triggerHaptic } from '../../lib/hapticManager'; // Titreşim yöneticimizi ekledik
 
-// Fade efekti için yardımcı bileşen
 const FadeText = ({ text, style, maxWidth = 120, maxChars = 15 }) => {
   const shouldShowFade = text && text.length > maxChars;
   
@@ -16,31 +15,35 @@ const FadeText = ({ text, style, maxWidth = 120, maxChars = 15 }) => {
       <Text 
         style={[style, { maxWidth }]} 
         numberOfLines={1}
-        ellipsizeMode="clip"
+        ellipsizeMode="clip" // Kısa metinlerde normal davranışı koruyoruz
       >
         {text}
       </Text>
     );
   }
   
+  // SİHİRLİ DOKUNUŞ: Normal boşlukları "bölünemez boşluk" ile değiştiriyoruz.
+  // RN bunu tek bir kelime sanıp jilet gibi "clip" yapacak, kelimeyi bütün olarak yutmayacak.
+  const singleLineText = text.replace(/ /g, '\u00A0');
+  
   return (
     <MaskedView
-      style={[styles.maskedView, { maxWidth }]}
+      style={[styles.maskedView, { maxWidth, flexDirection: 'row' }]}
       maskElement={
         <LinearGradient
           colors={['black', 'black', 'transparent']}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1.15, y: 0 }}
-          style={styles.maskGradient}
+          end={{ x: 0.96, y: 0 }}
+          style={[styles.maskGradient, { flex: 1, width: '100%' }]}
         />
       }
     >
       <Text 
-        style={style} 
+        style={[style, { flexShrink: 0 }]} 
         numberOfLines={1}
-        ellipsizeMode="clip"
+        ellipsizeMode="clip" // Tail riskinden kurtulduk, tekrar "clip" kullanıyoruz!
       >
-        {text}
+        {singleLineText}
       </Text>
     </MaskedView>
   );
