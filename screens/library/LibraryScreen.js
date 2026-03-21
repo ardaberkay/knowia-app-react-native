@@ -80,7 +80,7 @@ export default function LibraryScreen() {
   const [activeTab, setActiveTab] = useState('myDecks');
   const [myDecks, setMyDecks] = useState([]);
   const [favoriteDecks, setFavoriteDecks] = useState([]);
-  const [favoritesLoading, setFavoritesLoading] = useState(false);
+  const [favoritesLoading, setFavoritesLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [favoritesFetched, setFavoritesFetched] = useState(false);
   const [activeDeckMenuId, setActiveDeckMenuId] = useState(null);
@@ -681,14 +681,14 @@ export default function LibraryScreen() {
   // Yükleniyor ekranı (sadece Favorites için)
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
-      <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: moderateScale(200, 0.3), height: moderateScale(200, 0.3) }} />
-      <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: moderateScale(100, 0.3), height: moderateScale(100, 0.3) }} />
+      <LottieView source={require('../../assets/flexloader.json')} speed={1.1} autoPlay loop style={{ width: moderateScale(160, 0.3), height: moderateScale(160, 0.3) }} />
+      <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: moderateScale(100, 0.3), height: moderateScale(100, 0.3), marginTop: verticalScale(-65) }} />
     </View>
   );
 
 
   return (
-    <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.container]}>
+    <SafeAreaView edges={['left', 'right']} style={[styles.container]}>
       {/* Header + Pill Tabs - Hafif saydam arka plan (BlurView kaldırıldı, geçişte dim sorununu önlemek için) */}
       <View style={[styles.segmentedControlContainer, { top: 0 }]} pointerEvents="box-none">
         <View

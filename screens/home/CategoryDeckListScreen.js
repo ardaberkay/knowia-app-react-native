@@ -346,7 +346,7 @@ export default function CategoryDeckListScreen({ route }) {
   }, [category, title, search, colors, t, insets, heroDimensions, width]);
 
   return (
-    <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
       {renderFixedHeader()}
 
       <View style={[styles.listContainer, { backgroundColor: colors.background }]}>

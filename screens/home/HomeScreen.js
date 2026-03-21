@@ -408,7 +408,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingBottom: '25%', paddingTop: insets.top}]}>
       <View style={[styles.header, { backgroundColor: colors.appbar, borderBottomColor: colors.border }]}>
         <View style={styles.headerContent}>
           <View style={styles.logoContainer}>

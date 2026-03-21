@@ -935,7 +935,7 @@ export default function DeckDetailScreen({ route, navigation }) {
   };
 
   return (
-    <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
 
       <ScrollView
         contentContainerStyle={{ paddingBottom: verticalScale(screenHeight * 0.10) }}

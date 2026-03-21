@@ -10,6 +10,7 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
 import { triggerHaptic } from '../../lib/hapticManager';
 import * as BlockService from '../../services/BlockService';
+import LottieView from 'lottie-react-native';
 
 export default function BlockedScreen() {
   const { colors } = useTheme();
@@ -140,8 +141,9 @@ export default function BlockedScreen() {
       </View>
 
       {loadingBlocked ? (
-        <View style={styles.loading}>
-          <ActivityIndicator size="small" color={colors.buttonColor} />
+        <View style={styles.loadingContainer}>
+          <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: moderateScale(160, 0.3), height: moderateScale(160, 0.3) }} />
+          <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: moderateScale(100, 0.3), height: moderateScale(100, 0.3), marginTop: verticalScale(-65) }} />
         </View>
       ) : blockedTab === 'users' ? (
         blockedUsers.length === 0 ? (
@@ -237,6 +239,14 @@ const styles = StyleSheet.create({
   loading: {
     paddingVertical: verticalScale(24),
     alignItems: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: verticalScale(200),
+    flexDirection: 'column',
+    marginTop: verticalScale(-120),
   },
   empty: {
     paddingVertical: verticalScale(24),

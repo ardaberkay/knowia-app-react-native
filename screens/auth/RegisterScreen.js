@@ -83,6 +83,7 @@ export default function RegisterScreen({ navigation }) {
         enableOnAndroid={true}
         enableAutomaticScroll={true}
         extraScrollHeight={verticalScale(50)}
+        enableResetScrollToCoords={false}
       >
         <View style={styles.form}>
           <View style={styles.inputContainer}>

@@ -135,7 +135,8 @@ module.exports = function (api) {
             'fluent:scan-camera-20-regular',
             'streamline:check-solid',
             'fluent:eye-lines-24-filled',
-            'gridicons:block'
+            'gridicons:block',
+            'mage:inbox-star'
           ],
         },
       ],

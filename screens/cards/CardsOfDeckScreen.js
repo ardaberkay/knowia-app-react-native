@@ -661,8 +661,8 @@ export default function DeckCardsScreen({ route, navigation }) {
             <View style={{ flex: 1, minHeight: 0 }}>
               {showFullScreenLoading ? (
                 <View style={styles.loadingContainer}>
-                  <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: scale(200), height: scale(200) }} />
-                  <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100), height: scale(100) }} />
+                  <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: scale(160, 0.3), height: scale(160, 0.3) }} />
+                  <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100, 0.3), height: scale(100, 0.3), marginTop: verticalScale(-65) }} />
                 </View>
               ) : selectedCard ? (
                 <LinearGradient
@@ -751,7 +751,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: verticalScale(200),
     flexDirection: 'column',
-    gap: verticalScale(-65),
+    marginTop: verticalScale(-120),
   },
   loadingText: {
     fontSize: moderateScale(18),

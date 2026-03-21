@@ -116,6 +116,8 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
       enableOnAndroid={true}
       enableAutomaticScroll={true}
       extraScrollHeight={verticalScale(24)}
+      enableResetScrollToCoords={false}
+      showsVerticalScrollIndicator={false}
     >
           <View style={[styles.inputCard, { 
             backgroundColor: colors.cardBackground,

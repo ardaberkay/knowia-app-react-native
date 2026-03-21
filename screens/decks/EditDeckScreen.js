@@ -17,6 +17,7 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import BadgeText from '../../components/tools/BadgeText';
 import DeckLanguageModal from '../../components/modals/DeckLanguageModal';
+import { triggerHaptic } from '../../lib/hapticManager';
 
 export default function DeckEditScreen() {
   const route = useRoute();
@@ -35,7 +36,6 @@ export default function DeckEditScreen() {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { showSuccess, showError } = useSnackbarHelpers();
-
   const deckCategory = deck.categories || null;
 
   const selectedLang = languages.filter(l =>
@@ -198,7 +198,6 @@ export default function DeckEditScreen() {
               onChangeText={setName}
               returnKeyType="next"
               accessibilityLabel={t('create.name', 'Deste Adı')}
-              autoFocus
             />
             {name?.length > 0 ? (
               <TouchableOpacity
@@ -338,7 +337,14 @@ export default function DeckEditScreen() {
           <TouchableOpacity
             style={[styles.categorySelector, { borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
             accessibilityLabel={t('createDeck.selectCategoryA11y', 'Kategori seç')}
-            onPress={() => setCategoryModalVisible(true)}
+            onPress={() => 
+              {
+                Keyboard.dismiss();
+                triggerHaptic('selection');
+                requestAnimationFrame(() => {
+                  setCategoryModalVisible(true);
+                });
+              }}
           >
             <View style={styles.categoryRow}>
               {selectedCategory && (() => {
@@ -407,7 +413,13 @@ export default function DeckEditScreen() {
             style={[styles.categorySelector, { borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
             accessibilityLabel={t('create.selectLanguage', 'Dil Seç')}
             onPress={() =>
-              setDeckLanguageModalVisible(true)}
+              {
+              Keyboard.dismiss();
+              triggerHaptic('selection');
+              requestAnimationFrame(() => {
+                setDeckLanguageModalVisible(true);
+              });
+            }}
           >
             <View style={styles.categoryRow}>
               <Text

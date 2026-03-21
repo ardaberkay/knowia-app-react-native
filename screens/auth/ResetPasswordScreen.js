@@ -194,6 +194,7 @@ export default function ResetPasswordScreen({ navigation }) {
         enableOnAndroid={true}
         enableAutomaticScroll={true}
         extraScrollHeight={verticalScale(50)}
+        enableResetScrollToCoords={false}
       >
         <View style={styles.form}>
           {/* Şifre input */}

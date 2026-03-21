@@ -64,7 +64,7 @@ const MemoizedCardItem = memo(({
         }
       }}
       underlayColor={colors.cardBackground === '#F4F1EA' ? '#EBE7DD' : '#383838'}
-      >
+    >
       <View style={styles.cardContent}>
         {editMode && (
           <View style={styles.checkboxContainer}>
@@ -575,13 +575,9 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
   if (loading) {
     return (
-      <View style={[styles.bgGradient, { backgroundColor: colors.background }]}>
-        <View style={[styles.container, { backgroundColor: 'transparent' }]}>
-          <View style={styles.loadingContainer}>
-            <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: scale(200), height: scale(200) }} />
-            <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100), height: scale(100) }} />
-          </View>
-        </View>
+      <View style={styles.loadingContainer}>
+        <LottieView source={require('../../assets/flexloader.json')} speed={1.1} autoPlay loop style={{ width: scale(160, 0.3), height: scale(160, 0.3) }} />
+        <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100, 0.3), height: scale(100, 0.3), marginTop: verticalScale(-65) }} />
       </View>
     );
   }
@@ -589,7 +585,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
   // Kart detay görünümü gösteriliyorsa
   if (selectedCard) {
     return (
-      <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
+      <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
         {editCardMode ? (
           <AddEditCardInlineForm
             card={selectedCard}
@@ -686,7 +682,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
   // Header yüksekliği: status bar + header (yaklaşık 44-56px) + safe area top + ekstra boşluk
   const headerHeight = Platform.OS === 'ios' ? insets.top + 44 : 56;
-  const chapterIcon = chapter?.id ? 'streamline-freehand:plugin-jigsaw-puzzle' : 'solar:calendar-minimalistic-bold';
+  const chapterIcon = chapter?.id ? 'streamline-freehand:plugin-jigsaw-puzzle' : 'mage:inbox-star';
   const chapterName = chapter?.name || t('chapterCards.noChapter', 'Atanmamış Kartlar');
 
   return (
@@ -938,6 +934,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: verticalScale(200),
+    flexDirection: 'column',
+    marginTop: verticalScale(-120),
+  },
   header: {
     alignItems: 'center',
     paddingHorizontal: scale(18),
@@ -1107,14 +1111,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: verticalScale(-250),
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: verticalScale(200),
-    flexDirection: 'column',
-    gap: verticalScale(-65),
   },
   loadingText: {
     fontSize: moderateScale(16),

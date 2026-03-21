@@ -124,21 +124,21 @@ export default function ChaptersScreen({ route, navigation }) {
   const [refreshing, setRefreshing] = useState(false);
 
   // Sadece butonun basılı olup olmadığını takip ediyoruz (0 = boşta, 1 = basılı)
-const isPressed = useSharedValue(0);
+  const isPressed = useSharedValue(0);
 
-const addChapterAnimatedStyle = useAnimatedStyle(() => {
-  // Apple tarzı pürüzsüz yay ayarları (Hafif kütle, yüksek sönümleme)
-  const springConfig = { mass: 0.5, damping: 30, stiffness: 400 };
+  const addChapterAnimatedStyle = useAnimatedStyle(() => {
+    // Apple tarzı pürüzsüz yay ayarları (Hafif kütle, yüksek sönümleme)
+    const springConfig = { mass: 0.5, damping: 30, stiffness: 400 };
 
-  return {
-    // Basıldığında %8 küçül (0.92), bırakıldığında 1'e dön
-    transform: [
-      { scale: withSpring(isPressed.value ? 0.92 : 1, springConfig) }
-    ],
-    // Basıldığında hafifçe şeffaflaş (0.85), bırakıldığında tam opak ol (1)
-    opacity: withSpring(isPressed.value ? 0.85 : 1, springConfig),
-  };
-});
+    return {
+      // Basıldığında %8 küçül (0.92), bırakıldığında 1'e dön
+      transform: [
+        { scale: withSpring(isPressed.value ? 0.92 : 1, springConfig) }
+      ],
+      // Basıldığında hafifçe şeffaflaş (0.85), bırakıldığında tam opak ol (1)
+      opacity: withSpring(isPressed.value ? 0.85 : 1, springConfig),
+    };
+  });
 
   // currentUserId'yi erken yükle (header için)
   useEffect(() => {
@@ -350,7 +350,7 @@ const addChapterAnimatedStyle = useAnimatedStyle(() => {
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Iconify icon="ic:round-assignment-late" size={moderateScale(20)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
+              <Iconify icon="mage:inbox-star" size={moderateScale(24)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
               <Text style={[typography.styles.body, { color: colors.text }]}>{t('chapters.unassigned', 'Atanmamış')}</Text>
             </View>
             {unassignedCount > 0 && (
@@ -383,14 +383,14 @@ const addChapterAnimatedStyle = useAnimatedStyle(() => {
   // Yükleniyor ekranı
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
-      <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: scale(200), height: scale(200) }} />
-      <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100), height: scale(100) }} />
+      <LottieView source={require('../../assets/flexloader.json')} speed={1.1} autoPlay loop style={{ width: scale(160, 0.3), height: scale(160, 0.3) }} />
+      <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100, 0.3), height: scale(100, 0.3), marginTop: verticalScale(-65) }} />
     </View>
   );
 
   return (
     <View style={[styles.bgGradient, { backgroundColor: colors.background }]}>
-      <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.container, { backgroundColor: 'transparent' }]}>
+      <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: 'transparent' }]}>
         {loading ? (
           renderLoading()
         ) : (
@@ -414,7 +414,7 @@ const addChapterAnimatedStyle = useAnimatedStyle(() => {
 
           </View>
         )}
-{!loading && isOwner && (
+        {!loading && isOwner && (
           <AnimatedPressable
             style={[styles.fab, addChapterAnimatedStyle]} // Modern stili bağladık
             onPressIn={() => {
@@ -548,7 +548,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: verticalScale(200),
     flexDirection: 'column',
-    gap: verticalScale(-65),
+    marginTop: verticalScale(-120),
   },
   countBadge: {
     minWidth: scale(28),

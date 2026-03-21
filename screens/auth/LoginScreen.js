@@ -113,6 +113,7 @@ export default function LoginScreen({ navigation }) {
         enableOnAndroid={true}
         enableAutomaticScroll={true}
         extraScrollHeight={verticalScale(50)}
+        enableResetScrollToCoords={false}
       >
         <View style={styles.form}>
           {/* Dil seçimi butonu */}

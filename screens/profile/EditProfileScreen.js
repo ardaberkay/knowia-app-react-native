@@ -294,8 +294,8 @@ export default function EditProfileScreen({ navigation }) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: moderateScale(200, 0.3), height: moderateScale(200, 0.3) }} />
-        <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: moderateScale(100, 0.3), height: moderateScale(100, 0.3) }} />
+        <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: moderateScale(160, 0.3), height: moderateScale(160, 0.3) }} />
+        <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: moderateScale(100, 0.3), height: moderateScale(100, 0.3), marginTop: verticalScale(-65) }} />
       </View>
     );
   }
@@ -676,7 +676,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: verticalScale(200),
     flexDirection: 'column',
-    gap: verticalScale(-65),
+    marginTop: verticalScale(-120),
   },
   profilePhotoContainer: {
     alignItems: 'center',

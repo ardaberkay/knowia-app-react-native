@@ -190,11 +190,11 @@ export default function FavoriteDecks() {
   };
 
   return (
-    <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: colors.background, marginVertical: verticalScale(10) }}>
+    <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background, marginVertical: verticalScale(10) }}>
       {loading ? (
         <View style={styles.loadingContainer}>
-          <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: scale(200), height: verticalScale(200) }} />
-          <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100), height: verticalScale(100) }} />
+          <LottieView source={require('../../assets/flexloader.json')} speed={1.1} autoPlay loop style={{ width: scale(160, 0.3), height: verticalScale(160, 0.3) }} />
+          <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100, 0.3), height: verticalScale(100, 0.3), marginTop: verticalScale(-65) }} />
         </View>
       ) : filteredDecks.length < 0 ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: verticalScale(-150)}}>
@@ -262,6 +262,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: verticalScale(200),
     flexDirection: 'column',
-    gap: verticalScale(-65),
+    marginTop: verticalScale(-120),
   },
 });
