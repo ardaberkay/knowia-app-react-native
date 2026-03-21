@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Animated, Easing, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PagerView from 'react-native-pager-view';
 import LottieView from 'lottie-react-native';
@@ -232,7 +232,7 @@ export default function OnboardingScreen({ navigation, route }) {
         <Image
           source={slide.source}
           resizeMode="contain"
-          style={{ width: Math.min(width * 0.88, scale(340)), height: mediaHeight }}
+          style={{ width: Math.min(width * 0.88, scale(340)), height: mediaHeight, fadeDuration: 0 } }
         />
       </View>
     );

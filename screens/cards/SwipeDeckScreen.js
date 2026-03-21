@@ -765,7 +765,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     return (
       <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={{ width: '100%', alignItems: 'center', marginTop: verticalScale(60) }}>
-          <Image source={home_logo} style={{ width: scale(260), height: scale(260), resizeMode: 'cover' }} />
+          <Image source={home_logo} style={{ width: scale(260), height: scale(260), resizeMode: 'cover', fadeDuration: 0 }} />
           <Text style={[typography.styles.h2, { color: colors.text, textAlign: 'center', marginTop: verticalScale(16), paddingHorizontal: scale(32) }]}>
             {progress === totalCardCount ? t('swipeDeck.bravo', "Bravo! Tüm Kartları Tamamladın") : t('swipeDeck.learnTime', "Kalan Kartları Öğrenmeye Vakit Var")}
           </Text>

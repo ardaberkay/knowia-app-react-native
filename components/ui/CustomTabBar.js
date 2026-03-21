@@ -10,7 +10,7 @@ export default function CustomTabBar(props) {
   const [visible, setVisible] = useState(true);
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const scaleAnim = new Animated.Value(1);
+  const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     let show, hide;

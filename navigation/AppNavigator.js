@@ -33,6 +33,7 @@ import { scale, moderateScale, verticalScale } from '../lib/scaling';
 import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { triggerHaptic } from '../lib/hapticManager';
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -42,7 +43,18 @@ function MainTabs() {
   const { t } = useTranslation();
   return (
     <Tab.Navigator
-      tabBar={props => <CustomTabBar {...props} />}
+      tabBar={(props) => {
+        const route = props.state.routes[props.state.index];
+        const routeName = getFocusedRouteNameFromRoute(route) ?? route.name;
+
+        const hideOnScreens = ['Discover', 'CategoryDeckList', 'SwipeDeck'];
+
+        if (hideOnScreens.includes(routeName)) {
+          return null;
+        }
+
+        return <CustomTabBar {...props} />;
+      }}
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarShowLabel: true,
@@ -99,15 +111,15 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: t('tabs.home', 'Anasayfa'), tabBarLabel: t('tabs.home', 'Anasayfa') }} />
-      <Tab.Screen name="Create" component={CreateScreen} options={{ tabBarLabel: t('tabs.create', 'Oluştur'), title: t('tabs.create', 'Oluştur'), headerShown: true, headerTitleAlign: 'center', headerRight: () => <ProfileAvatarButton />}} />
-      <Tab.Screen 
-        name="Library" 
-        component={LibraryScreen} 
-        options={{ 
-          title: t('tabs.myLibrary', 'Kitaplığım'), 
-          tabBarLabel: t('tabs.library', 'Kitaplığım'), 
+      <Tab.Screen name="Create" component={CreateScreen} options={{ tabBarLabel: t('tabs.create', 'Oluştur'), title: t('tabs.create', 'Oluştur'), headerShown: true, headerTitleAlign: 'center', headerRight: () => <ProfileAvatarButton /> }} />
+      <Tab.Screen
+        name="Library"
+        component={LibraryScreen}
+        options={{
+          title: t('tabs.myLibrary', 'Kitaplığım'),
+          tabBarLabel: t('tabs.library', 'Kitaplığım'),
           headerShown: false,
-        }} 
+        }}
       />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: t('tabs.profile', 'Profilim'), tabBarLabel: t('tabs.profile', 'Profilim') }} />
     </Tab.Navigator>
@@ -160,96 +172,103 @@ export default function AppNavigator() {
 
   return (
     <OnboardingFinishContext.Provider value={showOnboarding ? onFinishOnboarding : null}>
-    <Stack.Navigator screenOptions={{ 
-      headerShown: false, 
-      headerStyle: { backgroundColor: colors.tabBarBackground },
-      headerTitleStyle: {
-        fontFamily: 'Inter-SemiBold',
-        fontSize: 18
-      }
-    }}>
-      {showOnboarding ? (
-        <>
-          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-        </>
-      ) : showAuthStack ? (
-        <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
-        </>
-      ) : (
-        <>
-          <Stack.Screen name="MainTabs" component={MainTabs} />
-          <Stack.Screen name="DeckDetail" component={DeckDetailScreen} options={{ headerShown: true, title: t('tabs.deckInfo', 'Deste Bilgisi'), headerTitleAlign: 'center' }} />
-          <Stack.Screen
-            name="Discover"
-            component={DiscoverScreen}
-            options={{
+      <Stack.Navigator screenOptions={{
+        headerShown: false,
+        headerStyle: { backgroundColor: colors.tabBarBackground },
+        animation: 'default',
+        headerTitleStyle: {
+          fontFamily: 'Inter-SemiBold',
+          fontSize: 18
+        },
+        detachInactiveScreens: true,
+      }}>
+        {showOnboarding ? (
+          <>
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+          </>
+        ) : showAuthStack ? (
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
+          </>
+        ) : (
+          <>
+            <Stack.Screen name="MainTabs" component={MainTabs} options={{ freezeOnBlur: true }} />
+            <Stack.Screen name="DeckDetail" component={DeckDetailScreen} options={{ headerShown: true, title: t('tabs.deckInfo', 'Deste Bilgisi'), headerTitleAlign: 'center' }} />
+            <Stack.Screen
+              name="Discover"
+              component={DiscoverScreen}
+              options={{
+                headerShown: true,
+                title: '',
+                headerTransparent: true,
+                
+                animation: 'fade',
+                contentStyle: {
+                  backgroundColor: colors.background,
+                },
+                headerTitleAlign: 'center',
+                headerStyle: {
+                  backgroundColor: 'transparent',
+                },
+                headerTintColor: colors.text, // Geri butonu beyaz olsun
+              }}
+            />
+            <Stack.Screen
+              name="CategoryDeckList"
+              component={CategoryDeckListScreen}
+              options={({ route }) => ({
+                headerShown: true,
+                title: '',
+                headerTitleAlign: 'center',
+                headerTransparent: true,
+                headerStyle: {
+                  backgroundColor: 'transparent',
+                },
+                headerTintColor: '#fff', // Geri butonu beyaz olsun
+              })}
+            />
+            <Stack.Screen name="SwipeDeck" component={SwipeDeckScreen} options={{ headerShown: true, title: t('tabs.deckCards', 'Öğren'), headerTitleAlign: 'center', }} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: t('tabs.profileEdit', 'Profili Düzenle'), headerTitleAlign: 'center' }} />
+            <Stack.Screen name="Blocked" component={BlockedScreen} options={{ headerShown: true, title: t('profile.blockedSection', 'Engellenenler'), headerTitleAlign: 'center' }} />
+            <Stack.Screen name="DeckEdit" component={DeckEditScreen} options={{ headerShown: true, title: t('tabs.deckEdit', 'Desteyi Düzenle'), headerTitleAlign: 'center' }} />
+            <Stack.Screen name="AddCard" component={AddCardScreen} options={({ navigation }) => ({
+              headerShown: true,
+              title: t('tabs.addCard', 'Kart Ekle'),
+              headerTitleAlign: 'center',
+              headerRight: () => (
+                <TouchableOpacity
+                  onPress={() => {
+                    triggerHaptic('selection');
+                    requestAnimationFrame(() => {
+                      navigation.setParams({ openCsvModal: true });
+                    });
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    marginRight: scale(12),
+                    borderWidth: moderateScale(1), borderColor: colors.text, paddingHorizontal: scale(6), paddingVertical: verticalScale(2), borderRadius: moderateScale(8)
+                  }}
+                >
+                  <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: moderateScale(15), marginRight: scale(6) }}>CSV</Text>
+                  <Iconify icon="solar:cloud-upload-broken" size={moderateScale(22)} color={colors.text} />
+                </TouchableOpacity>
+              ),
+            })} />
+            <Stack.Screen name="DeckCards" component={DeckCardsScreen} options={{ headerShown: true, title: t('tabs.cards', 'Kartlar'), headerTitleAlign: 'center' }} />
+            <Stack.Screen name="Chapters" component={ChaptersScreen} options={{ headerShown: true, title: t('tabs.chapters', 'Bölümler'), headerTitleAlign: 'center' }} />
+            <Stack.Screen name="ChapterCards" component={ChapterCardsScreen} options={{
               headerShown: true,
               title: '',
               headerTitleAlign: 'center',
-              headerTransparent: true,
-              headerStyle: {
-                backgroundColor: 'transparent',
-              },
-              headerTintColor: colors.text, // Geri butonu beyaz olsun
-            }}
-          />
-          <Stack.Screen
-            name="CategoryDeckList"
-            component={CategoryDeckListScreen}
-            options={({ route }) => ({
-              headerShown: true,
-              title: '',
-              headerTitleAlign: 'center',
-              headerTransparent: true,
-              headerStyle: {
-                backgroundColor: 'transparent',
-              },
-              headerTintColor: '#fff', // Geri butonu beyaz olsun
-            })}
-          />
-          <Stack.Screen name="SwipeDeck" component={SwipeDeckScreen} options={{ headerShown: true, title: t('tabs.deckCards', 'Öğren'), headerTitleAlign: 'center', }} />
-          <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: t('tabs.profileEdit', 'Profili Düzenle'), headerTitleAlign: 'center' }} />
-          <Stack.Screen name="Blocked" component={BlockedScreen} options={{ headerShown: true, title: t('profile.blockedSection', 'Engellenenler'), headerTitleAlign: 'center' }} />
-          <Stack.Screen name="DeckEdit" component={DeckEditScreen} options={{ headerShown: true, title: t('tabs.deckEdit', 'Desteyi Düzenle'), headerTitleAlign: 'center' }} />
-          <Stack.Screen name="AddCard" component={AddCardScreen} options={({ navigation }) => ({
-            headerShown: true,
-            title: t('tabs.addCard', 'Kart Ekle'),
-            headerTitleAlign: 'center',
-            headerRight: () => (
-              <TouchableOpacity
-                onPress={() => {
-                  triggerHaptic('selection');
-                  requestAnimationFrame(() => {
-                    navigation.setParams({ openCsvModal: true });
-                  });
-                }}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  marginRight: scale(12),
-                  borderWidth: moderateScale(1), borderColor: colors.text, paddingHorizontal: scale(6), paddingVertical: verticalScale(2), borderRadius: moderateScale(8)
-                }}
-              >
-                <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: moderateScale(15), marginRight: scale(6)}}>CSV</Text>
-                <Iconify icon="solar:cloud-upload-broken" size={moderateScale(22)} color={colors.text} />
-              </TouchableOpacity>
-            ),
-          })} />
-          <Stack.Screen name="DeckCards" component={DeckCardsScreen} options={{ headerShown: true, title: t('tabs.cards', 'Kartlar'), headerTitleAlign: 'center'}} />
-          <Stack.Screen name="Chapters" component={ChaptersScreen} options={{ headerShown: true, title: t('tabs.chapters', 'Bölümler'), headerTitleAlign: 'center' }} />
-          <Stack.Screen name="ChapterCards" component={ChapterCardsScreen} options={{
-            headerShown: true,
-            title: '',
-            headerTitleAlign: 'center',
-          }} />
-          <Stack.Screen name="FavoriteDecks" component={FavoriteDecks} options={{ headerShown: true, title: t('library.favoriteDecksTitle', 'Favori Desteler'), headerTitleAlign: 'center' }} />
-          <Stack.Screen name="FavoriteCards" component={FavoriteCards} options={{ headerShown: true, title: t('library.favoriteCardsTitle', 'Favori Kartlar'), headerTitleAlign: 'center' }} />
-        </>
-      )}
-    </Stack.Navigator>
+            }} />
+            <Stack.Screen name="FavoriteDecks" component={FavoriteDecks} options={{ headerShown: true, title: t('library.favoriteDecksTitle', 'Favori Desteler'), headerTitleAlign: 'center' }} />
+            <Stack.Screen name="FavoriteCards" component={FavoriteCards} options={{ headerShown: true, title: t('library.favoriteCardsTitle', 'Favori Kartlar'), headerTitleAlign: 'center' }} />
+          </>
+        )}
+      </Stack.Navigator>
     </OnboardingFinishContext.Provider>
   );
 } 
