@@ -113,6 +113,7 @@ export default function CreateScreen() {
   }, []);
 
   const resetForm = () => {
+    Keyboard.dismiss();
     setName('');
     setToName('');
     setDescription('');
@@ -121,6 +122,7 @@ export default function CreateScreen() {
   };
 
   const handleCreate = async () => {
+    Keyboard.dismiss();
     const MAX_NAME_LENGTH = 70; 
     const MAX_TONAME_LENGTH = 70;
     if (!name.trim()) {
@@ -172,6 +174,7 @@ export default function CreateScreen() {
         showsVerticalScrollIndicator={false}
         enableOnAndroid={true}
         enableAutomaticScroll={true}
+        enableResetScrollToCoords={false}
       >
           {/* Header Card */}
           <View style={[styles.headerCard, styles.headerCardContainer, { borderRadius: 44, backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, borderWidth: 1 }]}>
@@ -387,6 +390,7 @@ export default function CreateScreen() {
               style={[styles.categorySelector, { borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
               accessibilityLabel={t('createDeck.selectCategoryA11y', 'Kategori seç')}
               onPress={() => {
+                Keyboard.dismiss();
                 triggerHaptic('selection');
                 requestAnimationFrame(() => {
                   setCategoryModalVisible(true);
@@ -441,6 +445,7 @@ export default function CreateScreen() {
               style={[styles.categorySelector, { borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
               accessibilityLabel={t('create.selectLanguage', 'Dil Seç')}
               onPress={() => {
+                Keyboard.dismiss();
                 triggerHaptic('selection');
                 requestAnimationFrame(() => {
                 setDeckLanguageModalVisible(true);

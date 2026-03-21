@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useAuth } from '../../contexts/AuthContext';
@@ -84,6 +84,7 @@ export default function AddCardScreen() {
   };
 
   const handleCreateCard = async () => {
+    Keyboard.dismiss();
     const MAX_QUESTION_LENGTH = 400;
     const MAX_ANSWER_LENGTH = 300;
     const MAX_EXAMPLE_LENGTH = 200;
@@ -132,6 +133,7 @@ export default function AddCardScreen() {
   };
 
   const handleResetForm = () => {
+    Keyboard.dismiss();
     setQuestion('');
     setAnswer('');
     setExample('');
@@ -153,7 +155,8 @@ export default function AddCardScreen() {
         keyboardShouldPersistTaps="handled"
         enableOnAndroid={true}
         enableAutomaticScroll={true}
-        extraScrollHeight={verticalScale(30)}
+        enableResetScrollToCoords={false}
+        showsVerticalScrollIndicator={false}
       >
         {/* Header Card */}
         <View style={[styles.headerCard, styles.headerCardContainer, { borderRadius: moderateScale(44), backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, borderWidth: 1 }]}>

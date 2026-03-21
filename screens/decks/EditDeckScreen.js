@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { getCategories } from '../../services/CategoryService';
@@ -89,6 +89,7 @@ export default function DeckEditScreen() {
   }, []);
 
   const resetForm = () => {
+    Keyboard.dismiss();
     setName('');
     setToName('');
     setDescription('');
@@ -97,6 +98,7 @@ export default function DeckEditScreen() {
   };
 
   const handleSave = async () => {
+    Keyboard.dismiss();
     const MAX_NAME_LENGTH = 70; 
     const MAX_TONAME_LENGTH = 70;
     if (!name.trim()) {
@@ -153,13 +155,15 @@ export default function DeckEditScreen() {
 
 
   return (
-    <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAwareScrollView
         contentContainerStyle={styles.formContainer}
         keyboardShouldPersistTaps="handled"
         enableOnAndroid={true}
         enableAutomaticScroll={true}
         extraScrollHeight={verticalScale(20)}
+        enableResetScrollToCoords={false}
+        showsVerticalScrollIndicator={false}
       >
         <View
           style={[
@@ -402,7 +406,8 @@ export default function DeckEditScreen() {
           <TouchableOpacity
             style={[styles.categorySelector, { borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
             accessibilityLabel={t('create.selectLanguage', 'Dil Seç')}
-            onPress={() => setDeckLanguageModalVisible(true)}
+            onPress={() =>
+              setDeckLanguageModalVisible(true)}
           >
             <View style={styles.categoryRow}>
               <Text

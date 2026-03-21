@@ -223,6 +223,10 @@ export default function AppNavigator() {
                 title: '',
                 headerTitleAlign: 'center',
                 headerTransparent: true,
+                animation: 'fade',
+                contentStyle: {
+                  backgroundColor: colors.background,
+                },
                 headerStyle: {
                   backgroundColor: 'transparent',
                 },
