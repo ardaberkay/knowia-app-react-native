@@ -408,7 +408,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingBottom: '25%', paddingTop: insets.top}]}>
+    <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top}]}>
       <View style={[styles.header, { backgroundColor: colors.appbar, borderBottomColor: colors.border }]}>
         <View style={styles.headerContent}>
           <View style={styles.logoContainer}>
@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContentContainer: {
-  paddingBottom: '25%',
+  paddingBottom: '35%',
 },
   sectionHeaderGradient: {
     flexDirection: 'row',

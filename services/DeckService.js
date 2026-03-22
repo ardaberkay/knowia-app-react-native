@@ -227,14 +227,58 @@ export const getDeckById = async (deckId, forceRefresh = false) => {
 };
 
 export const deleteDeck = async (deckId) => {
-  const { error } = await supabase
-    .from('decks')
-    .delete()
-    .eq('id', deckId);
-  if (error) throw error;
-  await invalidateCache(`deck_detail_${deckId}`);
-  await invalidateCache(`cards_deck_${deckId}`);
-  await invalidateCache('mydecks_');
+  try {
+    // 1. Desteye ait kartların sadece 'image' sütununu çekiyoruz.
+    // .not('image', 'is', null) ile sadece görseli olan kartları getirerek performansı artırıyoruz.
+    const { data: cards, error: cardsError } = await supabase
+      .from('cards')
+      .select('image')
+      .eq('deck_id', deckId) // 'deck_id' sütun adını kendi veritabanına göre kontrol et
+      .not('image', 'is', null);
+
+    if (cardsError) throw cardsError;
+
+    // 2. Tam URL'leri parçalayıp Supabase'in istediği dosya yollarına (path) çeviriyoruz.
+    const imagePaths = cards
+      .filter(card => card.image)
+      .map(card => {
+        // Örnek URL: https://[proje].supabase.co/storage/v1/object/public/images/kartlar/resim.jpg
+        // split('/images/') yaptığımızda dizinin 2. elemanı (index 1) 'kartlar/resim.jpg' olur.
+        const urlParts = card.image.split('/images/');
+        return urlParts.length > 1 ? urlParts[1] : null;
+      })
+      .filter(path => path !== null); // Olası hatalı parçalamaları diziden çıkarıyoruz
+
+    // 3. Eğer silinecek görsel yolu varsa, 'images' bucket'ından topluca siliyoruz.
+    if (imagePaths.length > 0) {
+      const { error: storageError } = await supabase
+        .storage
+        .from('images') // Senin belirttiğin bucket adı
+        .remove(imagePaths);
+
+      if (storageError) {
+        console.error("Görseller storage'dan silinirken hata:", storageError);
+        // Not: Görseller silinemese bile desteyi silmek istersen burayı böyle bırakabilirsin.
+      }
+    }
+
+    // 4. Desteyi veritabanından siliyoruz (Senin mevcut kodun)
+    const { error: deleteError } = await supabase
+      .from('decks')
+      .delete()
+      .eq('id', deckId);
+
+    if (deleteError) throw deleteError;
+
+    // 5. Önbelleği (Cache) temizliyoruz
+    await invalidateCache(`deck_detail_${deckId}`);
+    await invalidateCache(`cards_deck_${deckId}`);
+    await invalidateCache('mydecks_');
+
+  } catch (error) {
+    console.error("Deste silme işlemi başarısız:", error);
+    throw error;
+  }
 };
 
 export const updateDeckShare = async (deckId, userId, isShared) => {

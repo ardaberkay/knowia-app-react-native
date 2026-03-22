@@ -324,35 +324,114 @@ export const createCard = async (deckId, cardData) => {
 };
 
 export const updateCard = async (cardId, cardData) => {
-  const { data, error } = await supabase
-    .from('cards')
-    .update({
-      question: cardData.question,
-      answer: cardData.answer,
-      example: cardData.example || null,
-      note: cardData.note || null,
-      image: cardData.image || null,
-    })
-    .eq('id', cardId)
-    .select();
-  if (error) throw error;
-  const card = data?.[0] || null;
-  if (card) {
-    await invalidateCache(`card_detail_${cardId}`);
-    if (card.deck_id) await invalidateCache(`cards_deck_${card.deck_id}`);
+  try {
+    // 1. Önce kartın mevcut (eski) halini veritabanından çekiyoruz.
+    // Sadece 'image' sütununu çekmek işlemi hızlandırır.
+    const { data: existingCard, error: fetchError } = await supabase
+      .from('cards')
+      .select('image')
+      .eq('id', cardId)
+      .single(); // Sadece tek bir satır döneceğini biliyoruz
+
+    if (fetchError) throw fetchError;
+
+    const oldImage = existingCard?.image;
+    const newImage = cardData.image || null;
+
+    // 2. KONTROL: Eğer eski bir görsel varsa VE yeni görselden farklıysa
+    // (Yani kullanıcı resmi değiştirdiyse VEYA resmi tamamen sildiyse)
+    if (oldImage && oldImage !== newImage) {
+      
+      // Eski görselin tam URL'sini parçalayıp Supabase'in istediği yolu buluyoruz
+      const urlParts = oldImage.split('/images/');
+      const oldImagePath = urlParts.length > 1 ? urlParts[1] : null;
+
+      // 3. Eski görseli 'images' bucket'ından siliyoruz
+      if (oldImagePath) {
+        const { error: storageError } = await supabase
+          .storage
+          .from('images')
+          .remove([oldImagePath]);
+
+        if (storageError) {
+          console.error("Eski görsel storage'dan silinemedi, ancak güncelleme devam edecek:", storageError);
+          // Not: Görsel silinemese bile kartın metin verilerini güncellemek 
+          // kullanıcı deneyimi açısından daha iyidir, bu yüzden burada 'throw' yapmıyoruz.
+        }
+      }
+    }
+
+    // 4. Kartı veritabanında güncelliyoruz (Senin mevcut kodun)
+    const { data, error: updateError } = await supabase
+      .from('cards')
+      .update({
+        question: cardData.question,
+        answer: cardData.answer,
+        example: cardData.example || null,
+        note: cardData.note || null,
+        image: newImage,
+      })
+      .eq('id', cardId)
+      .select();
+
+    if (updateError) throw updateError;
+
+    const card = data?.[0] || null;
+
+    // 5. Önbelleği (Cache) temizliyoruz
+    if (card) {
+      await invalidateCache(`card_detail_${cardId}`);
+      if (card.deck_id) await invalidateCache(`cards_deck_${card.deck_id}`);
+    }
+
+    return card;
+
+  } catch (error) {
+    console.error("Kart güncellenirken hata oluştu:", error);
+    throw error;
   }
-  return card;
 };
 
 /**
  * Kartı siler. deckId verilirse ilgili deste kart listesi cache'i de temizlenir (mutation invalidation).
  */
 export const deleteCard = async (cardId, deckId = null) => {
+  // 1. Silinecek kartın görsel yolunu (URL) veritabanından çekiyoruz
+  const { data: card, error: fetchError } = await supabase
+    .from('cards')
+    .select('image')
+    .eq('id', cardId)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // 2. Eğer kartın bir görseli varsa, tam URL'yi parçalayıp Storage'dan siliyoruz
+  if (card && card.image) {
+    const urlParts = card.image.split('/images/');
+    const imagePath = urlParts.length > 1 ? urlParts[1] : null;
+
+    if (imagePath) {
+      const { error: storageError } = await supabase
+        .storage
+        .from('images')
+        .remove([imagePath]);
+
+      if (storageError) {
+        console.error("Görsel storage'dan silinemedi:", storageError);
+        // Hata olsa bile kartın veritabanından silinmesini engellememek için throw kullanmıyoruz.
+      }
+    }
+  }
+
+  // 3. Kartı veritabanından siliyoruz (Senin orijinal kodun)
   const { error } = await supabase
     .from('cards')
     .delete()
     .eq('id', cardId);
+
   if (error) throw error;
+
+  // 4. Önbelleği temizliyoruz (Senin orijinal kodun)
   await invalidateCache(`card_detail_${cardId}`);
   if (deckId) await invalidateCache(`cards_deck_${deckId}`);
 };
