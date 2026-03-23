@@ -10,7 +10,7 @@ import { SnackbarProvider } from './components/ui/Snackbar';
 import AppNavigator from './navigation/AppNavigator';
 import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold, Inter_300Light } from '@expo-google-fonts/inter';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useTheme } from './theme/theme';
 import * as Linking from 'expo-linking';
@@ -29,6 +29,10 @@ export const navigationRef = createNavigationContainerRef();
 
 function AppContent() {
   const { colors, isDarkMode } = useTheme();
+  
+  // Uygulamanın hazır olup olmadığını takip ettiğimiz state
+  const [appIsReady, setAppIsReady] = useState(false);
+
   const [fontsLoaded] = useFonts({
     'Inter': Inter_400Regular,
     'Inter-Light': Inter_300Light,
@@ -36,9 +40,10 @@ function AppContent() {
     'Inter-Bold': Inter_700Bold,
   });
 
+  // Fontlar yüklendiğinde uygulamanın render edilmeye hazır olduğunu belirt
   useEffect(() => {
     if (fontsLoaded) {
-      SplashScreen.hideAsync();
+      setAppIsReady(true);
     }
   }, [fontsLoaded]);
 
@@ -201,7 +206,15 @@ function AppContent() {
     return () => sub.remove()
   }, [])
 
-  if (!fontsLoaded) {
+  // Ana View ekrana yerleştirildiğinde ve uygulama hazır olduğunda Splash'i gizle
+  const onLayoutRootView = useCallback(async () => {
+    if (appIsReady) {
+      await SplashScreen.hideAsync();
+    }
+  }, [appIsReady]);
+
+  // Uygulama hazır olana kadar (örneğin fontlar yüklenene kadar) hiçbir şey render etme
+  if (!appIsReady) {
     return null;
   }
 
@@ -237,7 +250,10 @@ function AppContent() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View 
+      style={{ flex: 1, backgroundColor: colors.background }}
+      onLayout={onLayoutRootView} 
+    >
       <AuthProvider>
         <ProfileProvider>
           <SnackbarProvider>
@@ -253,7 +269,6 @@ function AppContent() {
 }
 
 export default function App() {
-
   return (
     <GestureHandlerRootView style={styles.gestureRoot}>
       <SafeAreaProvider initialWindowMetrics={initialWindowMetrics}>

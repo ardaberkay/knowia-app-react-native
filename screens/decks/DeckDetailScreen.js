@@ -30,6 +30,7 @@ const AnimatedFabContainer = Animated.createAnimatedComponent(View);
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 
 export default function DeckDetailScreen({ route, navigation }) {
+  
   const insets = useSafeAreaInsets();
   const { deck } = route.params;
   const { colors } = useTheme();
@@ -417,56 +418,42 @@ export default function DeckDetailScreen({ route, navigation }) {
     setRefreshing(true);
     try {
       const uid = userId;
-      const [deckData, favDeckIds, cardsData, favCardIds, langIds] = await Promise.all([
+  
+      // 1. ADIM: Sadece temel bilgileri çek (Hafif istekler)
+      const [deckData, favDeckIds, langIds] = await Promise.all([
         getDeckById(deck.id, true),
         uid ? getFavoriteDeckIds(uid, true) : Promise.resolve([]),
-        getAllCardsForDeck(deck.id, uid || null),
-        uid ? getFavoriteCardIds(uid, true) : Promise.resolve([]),
         getDeckLanguages(deck.id),
       ]);
+  
       if (deckData) {
+        // Deste adı, açıklaması vb. burada güncelleniyor
         if (deckData.is_admin_created && deckData.profiles) {
           deckData.profiles = { ...deckData.profiles, username: 'Knowia', image_url: null };
         }
-        deckData.is_favorite = uid ? favDeckIds.includes(deck.id) : false;
-        route.params.deck = deckData;
+        route.params.deck = deckData; // Veriyi navigation'a geri yaz
         setCategoryInfo(deckData.categories);
-        setIsShared(deckData.is_shared || false);
-        setIsFavorite(!!(uid && favDeckIds.includes(deck.id)));
+        setIsFavorite(uid ? favDeckIds.includes(deck.id) : false);
       }
-      setCards(cardsData);
-      setOriginalCards(cardsData);
-      setFavoriteCards(favCardIds);
-      setDecksLanguages(langIds);
-      await fetchProgressFromAPI(false);
+  
+      // 2. ADIM: İstatistikleri (Toplam, Learned, Learning) güncelle
+      // Bu fonksiyon getDeckProgressCounts'u çağırır ve hafiftir.
+      await fetchProgressFromAPI(false); 
+  
+      // 3. ADIM: Chapter detaylarını güncelle (Eğer modal varsa lazım)
       if (uid && chapters.length > 0) {
-        try {
-          const progress = await getChaptersProgress(chapters, deck.id, uid);
-          setChapterProgressMap(progress);
-        } catch (e) {
-          console.error('Error fetching chapter progress:', e);
-        }
+        const progress = await getChaptersProgress(chapters, deck.id, uid);
+        setChapterProgressMap(progress);
       }
+  
+      // DİKKAT: getAllCardsForDeck silindi. 2800 kartlık yük kalktı!
+  
     } catch (e) {
       console.error('DeckDetail refresh error:', e);
     } finally {
       setRefreshing(false);
     }
   }, [deck?.id, userId, chapters]);
-
-  useEffect(() => {
-    const fetchCards = async () => {
-      try {
-        const data = await getAllCardsForDeck(deck.id, userId || null);
-        setCards(data);
-        setOriginalCards(data);
-      } catch (e) {
-        setCards([]);
-        setOriginalCards([]);
-      }
-    };
-    fetchCards();
-  }, [deck.id, userId]);
 
   useEffect(() => {
     if (!search.trim()) {
@@ -941,7 +928,7 @@ export default function DeckDetailScreen({ route, navigation }) {
         contentContainerStyle={{ paddingBottom: verticalScale(screenHeight * 0.10) }}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh}/>
         }
       >
         {/* GRADIENT FLOW DESIGN - Modern & Eye-catching */}

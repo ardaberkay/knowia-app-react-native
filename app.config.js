@@ -10,8 +10,8 @@ export default {
     newArchEnabled: true,
     scheme: "knowia",
     splash: {
-      image: "./assets/splash.png",
-      resizeMode: "cover",
+      image: "./assets/app_icon_splash.png",
+      resizeMode: "contain",
       backgroundColor: "#FF8D1A"
     },
     ios: {
