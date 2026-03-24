@@ -2,6 +2,7 @@ export default {
   expo: {
     name: "Knowia",
     slug: "knowia",
+    backgroundColor: "#FF8D1A",
     version: "1.0.0",
     owner: "imati",
     orientation: "portrait",
@@ -11,14 +12,21 @@ export default {
     scheme: "knowia",
     splash: {
       image: "./assets/app_icon_splash.png",
-      resizeMode: "contain",
+      resizeMode: "cover",
       backgroundColor: "#FF8D1A"
     },
     ios: {
+      backgroundColor: "#FF8D1A",
       supportsTablet: true,
       bundleIdentifier: "com.arda.knowia"
     },
     android: {
+      backgroundColor: "#FF8D1A",
+      splash: {
+        image: "./assets/app_icon_splash.png",
+        resizeMode: "contain",
+        backgroundColor: "#FF8D1A"
+      },
       adaptiveIcon: {
         foregroundImage: "./assets/android_logo.png",
         backgroundColor: "#FF8D1A"
