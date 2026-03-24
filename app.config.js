@@ -60,6 +60,8 @@ export default {
       "expo-localization",
       "expo-dev-client",
       "expo-notifications",
+      "expo-sharing",
+      "expo-web-browser",
       "./plugins/withAndroidKeyboardMode"
     ],
     extra: {
