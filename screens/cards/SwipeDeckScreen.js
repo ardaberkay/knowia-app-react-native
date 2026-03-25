@@ -7,11 +7,10 @@ import Reanimated, {
   withSequence,
   LinearTransition,
   FadeIn,
-  FadeOut,
   withTiming,
   withRepeat,
 } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Swiper from 'react-native-deck-swiper';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -75,7 +74,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const { colors } = useTheme();
   const { session } = useAuth();
   const authUserId = session?.user?.id;
-
+  const insets = useSafeAreaInsets();
   // useWindowDimensions hook'u - ekran döndürme desteği
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
@@ -763,7 +762,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     const progress = learnedCount;
 
     return (
-      <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
+      <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingBottom: insets.bottom }]}>
         <View style={{ width: '100%', alignItems: 'center', marginTop: verticalScale(60) }}>
           <Image source={home_logo} style={{ width: scale(260), height: scale(260), resizeMode: 'cover', fadeDuration: 0 }} />
           <Text style={[typography.styles.h2, { color: colors.text, textAlign: 'center', marginTop: verticalScale(16), paddingHorizontal: scale(32) }]}>
@@ -808,7 +807,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
   return (
     <>
-      <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
+      <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background}]}>
         {/* Sayaçlar */}
         <View style={styles.counterRow}>
           <Reanimated.View
@@ -962,6 +961,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
         </View>
         {/* Yatay birleşik butonlar */}
         {/* Yatay birleşik butonlar */}
+        <View style={{ paddingBottom: verticalScale(16) }}>
         <View style={[styles.horizontalButtonRow, { backgroundColor: colors.buttonColor }]}>
 
           <AnimatedTimeButton
@@ -999,15 +999,15 @@ export default function SwipeDeckScreen({ route, navigation }) {
             textStyle={styles.horizontalButtonText}
             iconColor={colors.buttonText}
           />
-
+          </View>
         </View>
         {/* Geri alma butonu */}
-        <TouchableOpacity style={[styles.undoButton, undoDisabled && { opacity: 0.5 }]} onPress={handleUndo} disabled={undoDisabled}>
+        <TouchableOpacity style={[styles.undoButton, undoDisabled && { opacity: 0.5 }, { paddingBottom: insets.bottom }]} onPress={handleUndo} disabled={undoDisabled}>
           <Iconify icon="lets-icons:refund-back" size={moderateScale(28)} color={colors.orWhite} />
         </TouchableOpacity>
         {/* Auto play butonu */}
         <TouchableOpacity
-          style={styles.autoPlayButton}
+          style={[styles.autoPlayButton, { paddingBottom: insets.bottom }]}
           onPress={() => setAutoPlay((prev) => !prev)}
         >
           {autoPlay ? (
@@ -1017,7 +1017,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
           )}
         </TouchableOpacity>
         {/* Progress Bar (undoButton'un hemen üstünde) */}
-        <View style={[styles.progressBarContainer, { backgroundColor: colors.progressBarSwipe, overflow: 'hidden' }]}>
+        <View style={[styles.progressBarContainer, { backgroundColor: colors.progressBarSwipe, overflow: 'hidden', marginBottom: insets.bottom }]}>
           {/* Ana Dolgu Barı */}
           <Reanimated.View
             style={[

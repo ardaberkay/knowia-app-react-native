@@ -922,13 +922,13 @@ export default function DeckDetailScreen({ route, navigation }) {
   };
 
   return (
-    <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background}}>
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: verticalScale(screenHeight * 0.10) }}
+        contentContainerStyle={{ paddingBottom: verticalScale(screenHeight * 0.10) + insets.bottom }}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh}/>
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} colors={[colors.buttonColor]} />
         }
       >
         {/* GRADIENT FLOW DESIGN - Modern & Eye-catching */}
@@ -1329,7 +1329,7 @@ export default function DeckDetailScreen({ route, navigation }) {
       )}
 
       {/* Floating Action Buttons */}
-      <View style={[styles.fabContainer, { backgroundColor: 'transparent' }]}>
+      <View style={[styles.fabContainer, { backgroundColor: 'transparent', bottom: insets.bottom }]}>
         <View style={styles.fabLeftColumn}>
           {fabMenuOpen && inlineChapterListVisible && (
             <Animated.View
@@ -1345,7 +1345,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             >
               <ScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.fabChapterListVertical}
+                contentContainerStyle={[styles.fabChapterListVertical]}
               >
                 {/* Aksiyon Bölümü - Her zaman en üstte */}
                 <TouchableOpacity

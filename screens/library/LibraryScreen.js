@@ -643,7 +643,7 @@ export default function LibraryScreen() {
   // MyDecks Card
   const renderMyDecksCard = () => {
     return (
-      <View style={[styles.myDecksCard, styles.myDecksCardContainer, { backgroundColor: colors.cardBackground, marginTop: myDecksCardTopMargin, borderColor: colors.cardBorder, borderWidth: 1 }]}>
+      <View style={[styles.myDecksCardContainer, { backgroundColor: colors.cardBackground, marginTop: myDecksCardTopMargin, borderColor: colors.cardBorder, borderWidth: 1 }]}>
         <View style={styles.myDecksContent}>
           <View style={styles.myDecksTextContainer}>
             <View style={styles.myDecksTitleContainer}>

@@ -408,7 +408,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top}]}>
+    <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <View style={[styles.header, { backgroundColor: colors.appbar, borderBottomColor: colors.border }]}>
         <View style={styles.headerContent}>
           <View style={styles.logoContainer}>
@@ -426,7 +426,7 @@ export default function HomeScreen() {
       </View>
       <ScrollView
         style={[styles.content, { backgroundColor: colors.background }]}
-        contentContainerStyle={styles.scrollContentContainer}
+        contentContainerStyle={{ paddingBottom: insets.bottom + verticalScale(120)}}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl

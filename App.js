@@ -14,19 +14,25 @@ import { SnackbarProvider } from './components/ui/Snackbar';
 import AppNavigator from './navigation/AppNavigator';
 import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold, Inter_300Light } from '@expo-google-fonts/inter';
 import { useEffect, useCallback } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase } from './lib/supabase';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import './lib/i18n';
 import { cleanupStaleCache } from './services/CacheService';
+import * as NavigationBar from 'expo-navigation-bar';
 
 // Splash ayarlarını sabitliyoruz (fade efekti ile yumuşak geçiş)
 SplashScreen.setOptions({
   fade: true,
   duration: 250,
 });
+
+if (Platform.OS === 'android') {
+  NavigationBar.setBackgroundColorAsync("transparent");
+  NavigationBar.setPositionAsync("absolute"); 
+}
 
 export const navigationRef = createNavigationContainerRef();
 

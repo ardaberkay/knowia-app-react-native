@@ -14,6 +14,7 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { triggerHaptic } from '../../lib/hapticManager';
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 
@@ -125,6 +126,7 @@ export default function ChaptersScreen({ route, navigation }) {
 
   // Sadece butonun basılı olup olmadığını takip ediyoruz (0 = boşta, 1 = basılı)
   const isPressed = useSharedValue(0);
+  const insets = useSafeAreaInsets();
 
   const addChapterAnimatedStyle = useAnimatedStyle(() => {
     // Apple tarzı pürüzsüz yay ayarları (Hafif kütle, yüksek sönümleme)
@@ -416,7 +418,7 @@ export default function ChaptersScreen({ route, navigation }) {
         )}
         {!loading && isOwner && (
           <AnimatedPressable
-            style={[styles.fab, addChapterAnimatedStyle]} // Modern stili bağladık
+            style={[styles.fab, addChapterAnimatedStyle, { bottom: insets.bottom + verticalScale(24) }]} // Modern stili bağladık
             onPressIn={() => {
               isPressed.value = 1; // Basıldı animasyonunu tetikle
             }}

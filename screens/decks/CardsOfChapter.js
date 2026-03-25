@@ -876,7 +876,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
       {/* Floating Action Button - Atanmamış kartlar için dağıtım butonu */}
       {!chapter?.id && !editMode && currentUserId && deck?.user_id === currentUserId && !deck?.is_shared && (
         <AnimatedPressable
-          style={[styles.fab, shuffleAnimatedStyle]} // Dönüş ve küçülme stilini verdik
+          style={[styles.fab, shuffleAnimatedStyle, { bottom: insets.bottom + verticalScale(24) }]} // Dönüş ve küçülme stilini verdik
           disabled={distLoading} // Yüklenirken tıklamayı kapat
           onPressIn={() => {
             if (!distLoading) shufflePressed.value = 1; // Yüklenmiyorsa animasyonu başlat
