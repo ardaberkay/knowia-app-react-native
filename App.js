@@ -14,7 +14,7 @@ import { SnackbarProvider } from './components/ui/Snackbar';
 import AppNavigator from './navigation/AppNavigator';
 import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold, Inter_300Light } from '@expo-google-fonts/inter';
 import { useEffect, useCallback } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet, Platform, Text, TextInput } from 'react-native';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase } from './lib/supabase';
@@ -33,6 +33,20 @@ if (Platform.OS === 'android') {
   NavigationBar.setBackgroundColorAsync("transparent");
   NavigationBar.setPositionAsync("absolute"); 
 }
+
+// Tüm Text bileşenleri için maksimum büyüme oranını sınırla
+if (Text.defaultProps == null) {
+  Text.defaultProps = {};
+}
+Text.defaultProps.maxFontSizeMultiplier = 1.2; 
+// veya tamamen kapatmak için: Text.defaultProps.allowFontScaling = false;
+
+// Input alanları için de aynı sorunu yaşamamak adına
+if (TextInput.defaultProps == null) {
+  TextInput.defaultProps = {};
+}
+TextInput.defaultProps.maxFontSizeMultiplier = 1.2;
+// veya TextInput.defaultProps.allowFontScaling = false;
 
 export const navigationRef = createNavigationContainerRef();
 
