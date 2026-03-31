@@ -2,6 +2,7 @@ import { createContext, useState, useContext, useEffect } from 'react';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../theme/theme';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 const OAUTH_REDIRECT = 'knowia://auth/callback';
 
@@ -121,34 +122,41 @@ const register = async (email, password) => {
     }
   };
 
-  // Apple ile giriş fonksiyonu (Apple Developer hesabı açıldığında Supabase’te provider yapılandırılınca çalışır)
   const signInWithApple = async () => {
     try {
-      console.log('Supabase Apple OAuth başlatılıyor...');
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'apple',
-        options: {
-          redirectTo: OAUTH_REDIRECT,
-          skipBrowserRedirect: true,
-        },
+      console.log('Native Apple Login başlatılıyor...');
+  
+      // 1. ADIM: Telefonun kendi FaceID/TouchID ekranını açıyoruz
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
       });
-      console.log('Supabase Apple OAuth yanıtı:', data ? 'Data var' : 'Data yok', error ? 'Hata var' : 'Hata yok');
-      if (error) {
-        console.log('Supabase Apple OAuth hatası:', error.message);
-        throw error;
-      }
-      if (data?.url) {
-        await WebBrowser.openAuthSessionAsync(data.url, OAUTH_REDIRECT, {
-          toolbarColor: colors.buttonColor,
-        });
-      }
-      return { error: null };
+  
+      console.log('Apple onayladı, Supabase ile eşleştiriliyor...');
+  
+      // 2. ADIM: Apple'dan gelen o güvenli bileti (identityToken) Supabase'e veriyoruz
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: credential.identityToken,
+      });
+  
+      if (error) throw error;
+  
+      console.log('Giriş başarılı!', data);
+      return { data, error: null };
+  
     } catch (error) {
-      console.log('Supabase Apple OAuth catch bloğu:', error);
+      // Kullanıcı FaceID ekranını çarpıdan kapatırsa buraya düşer
+      if (error.code === 'ERR_REQUEST_CANCELED') {
+        console.log('Kullanıcı giriş yapmaktan vazgeçti.');
+      } else {
+        console.log('Native Apple Login hatası:', error);
+      }
       return { error };
     }
   };
-
   // Şifre sıfırlama email'i gönderme fonksiyonu
   const resetPasswordForEmail = async (email) => {
     try {

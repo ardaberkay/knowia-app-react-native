@@ -18,7 +18,11 @@ export default {
     ios: {
       backgroundColor: "#FF8D1A",
       supportsTablet: true,
-      bundleIdentifier: "com.arda.knowia"
+      bundleIdentifier: "com.arda.knowia",
+      usesAppleSignIn: true,
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false
+      }
     },
     android: {
       backgroundColor: "#FF8D1A",

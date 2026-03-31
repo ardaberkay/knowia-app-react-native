@@ -76,24 +76,33 @@ export default function LoginScreen({ navigation }) {
 
   const handleAppleLogin = async () => {
     if (loading) return;
-
+  
     try {
       console.log('Apple girişi başlatılıyor...');
       setLoading(true);
+      
       const { error } = await signInWithApple();
-      console.log('Apple girişi yanıtı:', error ? 'Hata var' : 'Başarılı');
+      
       if (error) {
         console.log('Apple giriş hatası:', error.message);
         throw error;
       }
+      
+      console.log('Apple girişi başarılı, yönlendirme bekleniyor...');
+  
     } catch (error) {
       console.log('Apple giriş catch bloğu:', error);
-      Alert.alert(t('login.error', 'Hata'), error.message);
+      
+      // 🔥 Sadece kullanıcı gerçekten bir hata yaşarsa Alert göster, 
+      // kendi isteğiyle pencereyi kapattıysa sessizce işlemi bitir.
+      if (error.code !== 'ERR_REQUEST_CANCELED') {
+        Alert.alert(t('login.error', 'Hata'), error.message || 'Giriş yapılamadı.');
+      }
     } finally {
       setLoading(false);
     }
   };
-
+  
   const handleLanguageChange = async (lng) => {
     await i18n.changeLanguage(lng);
     setLanguageModalVisible(false);
