@@ -332,7 +332,6 @@ export default function DeckCardsScreen({ route, navigation }) {
                   });
                 }}
                 activeOpacity={0.7}
-                style={{ paddingHorizontal: scale(6) }}
                 hitSlop={{ top: scale(15), bottom: scale(15), left: scale(8), right: scale(8) }}
               >
                 <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={moderateScale(26)} color={colors.text} />

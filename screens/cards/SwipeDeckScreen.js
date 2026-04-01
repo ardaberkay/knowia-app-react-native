@@ -613,30 +613,51 @@ export default function SwipeDeckScreen({ route, navigation }) {
   };
 
   const handleUndo = () => {
-    if (undoDisabled) return;
+    if (undoDisabled || history.length === 0) return;
+  
     setUndoDisabled(true);
-    setTimeout(() => setUndoDisabled(false), 1000);
-    if (swiperRef.current && history.length > 0) {
+  
+    if (swiperRef.current) {
       const lastIndex = history[history.length - 1];
       const undoneCard = cards[lastIndex];
+  
+      // 1. İlerleme verisini temizle
       if (undoneCard) {
         delete pendingProgressRef.current[undoneCard.card_id];
       }
-      swiperRef.current.swipeBack();
-      setCurrentIndex(lastIndex);
-      setHistory((prev) => prev.slice(0, -1));
-      setHistoryDirections((prev) => {
-        if (prev.length === 0) return prev;
-        const lastDirection = prev[prev.length - 1];
-        if (lastDirection === 'right') {
-          setRightCount((c) => Math.max(0, c - 1));
-        } else if (lastDirection === 'left') {
-          const removedCardId = historyLeftCardIds.current.pop();
-          if (removedCardId) leftCountedCardIds.current.delete(removedCardId);
-          setLeftCount((c) => Math.max(0, c - 1));
+  
+      const lastDirection = historyDirections[historyDirections.length - 1];
+  
+      // 2. Ref Mutasyonlarını State Güncelleyicisinin DIŞINA alıyoruz
+      if (lastDirection === 'left') {
+        const removedCardId = historyLeftCardIds.current.pop(); // Pop işlemi setState dışında yapılıyor
+        if (removedCardId) {
+          leftCountedCardIds.current.delete(removedCardId);
         }
-        setTotalSwipeCount((c) => Math.max(0, c - 1));
-        return prev.slice(0, -1);
+      }
+      // 3. ÖNCE Native animasyonu tetikle
+      swiperRef.current.swipeBack();
+      // 4. State güncellemelerini bir sonraki frame'e (boyama karesine) ertele. 
+      // Bu, donmaları ve kilitlenmeleri engeller.
+      requestAnimationFrame(() => {
+        setCurrentIndex(lastIndex);
+        setHistory((prev) => prev.slice(0, -1));
+  
+        // Artık içinde Ref mutasyonu barındırmayan temiz state güncellemesi
+        setHistoryDirections((prev) => {
+          if (prev.length === 0) return prev;
+  
+          if (lastDirection === 'right') {
+            setRightCount((c) => Math.max(0, c - 1));
+          } else if (lastDirection === 'left') {
+            setLeftCount((c) => Math.max(0, c - 1));
+          }
+          setTotalSwipeCount((c) => Math.max(0, c - 1));
+          
+          return prev.slice(0, -1);
+        });
+        // Animasyonun bitmesi için butonu biraz daha geç aktif hale getirmek daha güvenlidir
+        setTimeout(() => setUndoDisabled(false), 600); 
       });
     }
   };
@@ -1145,7 +1166,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: moderateScale(8),
     elevation: 4,
-    marginBottom: verticalScale(94),
+    ...Platform.select({
+      ios: {
+        marginBottom: verticalScale(92),
+      },
+      android: {
+        marginBottom: verticalScale(94),
+      },
+    })
   },
   horizontalButton: {
     flex: 1,
@@ -1196,7 +1224,14 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(8),
     marginBottom: verticalScale(8),
     position: 'absolute',
-    bottom: verticalScale(68),
+    ...Platform.select({
+      ios: {
+        bottom: verticalScale(66),
+      },
+      android: {
+        bottom: verticalScale(68),
+      },
+    }),
     overflow: 'hidden',
   },
   progressBarFill: {
