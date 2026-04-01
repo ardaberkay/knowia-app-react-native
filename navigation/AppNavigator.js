@@ -192,13 +192,13 @@ export default function AppNavigator() {
         ) : showAuthStack ? (
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Register" component={RegisterScreen} options={{ headerBackTitleVisible: false, headerBackTitle: '' }} />
-            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false, headerBackTitleVisible: false, headerBackTitle: '' }} />
+            <Stack.Screen name="Register" component={RegisterScreen} options={{ headerBackButtonDisplayMode: 'minimal',headerBackTitleVisible: false, headerBackTitle: '' }} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false, headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
           </>
         ) : (
           <>
-            <Stack.Screen name="MainTabs" component={MainTabs} options={{ freezeOnBlur: true, headerBackTitleVisible: false, headerBackTitle: '' }} />
-            <Stack.Screen name="DeckDetail" component={DeckDetailScreen} options={{ headerShown: true, title: t('tabs.deckInfo', 'Deste Bilgisi'), headerTitleAlign: 'center', headerBackTitleVisible: false, headerBackTitle: '' }} />
+            <Stack.Screen name="MainTabs" component={MainTabs} options={{ freezeOnBlur: true, headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
+            <Stack.Screen name="DeckDetail" component={DeckDetailScreen} options={{ headerShown: true, title: t('tabs.deckInfo', 'Deste Bilgisi'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
             <Stack.Screen
               name="Discover"
               component={DiscoverScreen}
@@ -206,6 +206,7 @@ export default function AppNavigator() {
                 headerShown: true,
                 title: '',
                 headerTransparent: true,
+                headerBackButtonDisplayMode: 'minimal',
                 headerBackTitleVisible: false,
                 headerBackTitle: '',
                 animation: 'fade',
@@ -228,6 +229,7 @@ export default function AppNavigator() {
                 headerTitleAlign: 'center',
                 headerTransparent: true,
                 animation: 'fade',
+                headerBackButtonDisplayMode: 'minimal',
                 headerBackTitleVisible: false,
                 headerBackTitle: '',
                 contentStyle: {
@@ -239,14 +241,15 @@ export default function AppNavigator() {
                 headerTintColor: '#fff', // Geri butonu beyaz olsun
               })}
             />
-            <Stack.Screen name="SwipeDeck" component={SwipeDeckScreen} options={{ headerShown: true, title: t('tabs.deckCards', 'Öğren'), headerTitleAlign: 'center', headerBackTitleVisible: false, headerBackTitle: '' }} />
-            <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: t('tabs.profileEdit', 'Profili Düzenle'), headerTitleAlign: 'center', headerBackTitleVisible: false, headerBackTitle: '' }} />
-            <Stack.Screen name="Blocked" component={BlockedScreen} options={{ headerShown: true, title: t('profile.blockedSection', 'Engellenenler'), headerTitleAlign: 'center', headerBackTitleVisible: false, headerBackTitle: '' }} />
-            <Stack.Screen name="DeckEdit" component={DeckEditScreen} options={{ headerShown: true, title: t('tabs.deckEdit', 'Desteyi Düzenle'), headerTitleAlign: 'center', headerBackTitleVisible: false, headerBackTitle: '' }} />
+            <Stack.Screen name="SwipeDeck" component={SwipeDeckScreen} options={{ headerShown: true, title: t('tabs.deckCards', 'Öğren'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: t('tabs.profileEdit', 'Profili Düzenle'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
+            <Stack.Screen name="Blocked" component={BlockedScreen} options={{ headerShown: true, title: t('profile.blockedSection', 'Engellenenler'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
+            <Stack.Screen name="DeckEdit" component={DeckEditScreen} options={{ headerShown: true, title: t('tabs.deckEdit', 'Desteyi Düzenle'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
             <Stack.Screen name="AddCard" component={AddCardScreen} options={({ navigation }) => ({
               headerShown: true,
               title: t('tabs.addCard', 'Kart Ekle'),
               headerTitleAlign: 'center',
+              headerBackButtonDisplayMode: 'minimal',
               headerBackTitleVisible: false,
               headerBackTitle: '',
               headerRight: () => (
@@ -269,17 +272,18 @@ export default function AppNavigator() {
                 </TouchableOpacity>
               ),
             })} />
-            <Stack.Screen name="DeckCards" component={DeckCardsScreen} options={{ headerShown: true, title: t('tabs.cards', 'Kartlar'), headerTitleAlign: 'center', headerBackTitleVisible: false, headerBackTitle: '' }} />
-            <Stack.Screen name="Chapters" component={ChaptersScreen} options={{ headerShown: true, title: t('tabs.chapters', 'Bölümler'), headerTitleAlign: 'center', headerBackTitleVisible: false, headerBackTitle: '' }} />
+            <Stack.Screen name="DeckCards" component={DeckCardsScreen} options={{ headerShown: true, title: t('tabs.cards', 'Kartlar'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
+            <Stack.Screen name="Chapters" component={ChaptersScreen} options={{ headerShown: true, title: t('tabs.chapters', 'Bölümler'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
             <Stack.Screen name="ChapterCards" component={ChapterCardsScreen} options={{
               headerShown: true,
               title: '',
               headerTitleAlign: 'center',
+              headerBackButtonDisplayMode: 'minimal',
               headerBackTitleVisible: false,
               headerBackTitle: '',
             }} />
-            <Stack.Screen name="FavoriteDecks" component={FavoriteDecks} options={{ headerShown: true, title: t('library.favoriteDecksTitle', 'Favori Desteler'), headerTitleAlign: 'center', headerBackTitleVisible: false, headerBackTitle: '' }} />
-            <Stack.Screen name="FavoriteCards" component={FavoriteCards} options={{ headerShown: true, title: t('library.favoriteCardsTitle', 'Favori Kartlar'), headerTitleAlign: 'center', headerBackTitleVisible: false, headerBackTitle: '' }} />
+            <Stack.Screen name="FavoriteDecks" component={FavoriteDecks} options={{ headerShown: true, title: t('library.favoriteDecksTitle', 'Favori Desteler'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
+            <Stack.Screen name="FavoriteCards" component={FavoriteCards} options={{ headerShown: true, title: t('library.favoriteCardsTitle', 'Favori Kartlar'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
           </>
         )}
       </Stack.Navigator>
