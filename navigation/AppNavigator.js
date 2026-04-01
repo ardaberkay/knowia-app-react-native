@@ -26,7 +26,7 @@ import ChaptersScreen from '../screens/decks/ChaptersScreen';
 import ChapterCardsScreen from '../screens/decks/CardsOfChapter.js';
 import FavoriteDecks from '../screens/library/FavoriteDecks';
 import FavoriteCards from '../screens/library/FavoriteCards';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import { scale, moderateScale, verticalScale } from '../lib/scaling';
@@ -177,8 +177,6 @@ export default function AppNavigator() {
         headerStyle: { backgroundColor: colors.tabBarBackground },
         animation: 'default',
         headerBackButtonDisplayMode: 'minimal',
-        headerBackTitleVisible: false,
-        headerBackTitle: '',
         headerTitleStyle: {
           fontFamily: 'Inter-SemiBold',
           fontSize: 18
@@ -192,13 +190,13 @@ export default function AppNavigator() {
         ) : showAuthStack ? (
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Register" component={RegisterScreen} options={{ headerBackButtonDisplayMode: 'minimal',headerBackTitleVisible: false, headerBackTitle: '' }} />
-            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false, headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
+            <Stack.Screen name="Register" component={RegisterScreen} options={{ headerBackButtonDisplayMode: 'minimal' }} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false, headerBackButtonDisplayMode: 'minimal' }} />
           </>
         ) : (
           <>
-            <Stack.Screen name="MainTabs" component={MainTabs} options={{ freezeOnBlur: true, headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
-            <Stack.Screen name="DeckDetail" component={DeckDetailScreen} options={{ headerShown: true, title: t('tabs.deckInfo', 'Deste Bilgisi'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
+            <Stack.Screen name="MainTabs" component={MainTabs} options={{ freezeOnBlur: true, headerBackButtonDisplayMode: 'minimal' }} />
+            <Stack.Screen name="DeckDetail" component={DeckDetailScreen} options={{ headerShown: true, title: t('tabs.deckInfo', 'Deste Bilgisi'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
             <Stack.Screen
               name="Discover"
               component={DiscoverScreen}
@@ -207,8 +205,6 @@ export default function AppNavigator() {
                 title: '',
                 headerTransparent: true,
                 headerBackButtonDisplayMode: 'minimal',
-                headerBackTitleVisible: false,
-                headerBackTitle: '',
                 animation: 'fade',
                 contentStyle: {
                   backgroundColor: colors.background,
@@ -230,8 +226,6 @@ export default function AppNavigator() {
                 headerTransparent: true,
                 animation: 'fade',
                 headerBackButtonDisplayMode: 'minimal',
-                headerBackTitleVisible: false,
-                headerBackTitle: '',
                 contentStyle: {
                   backgroundColor: colors.background,
                 },
@@ -241,49 +235,63 @@ export default function AppNavigator() {
                 headerTintColor: '#fff', // Geri butonu beyaz olsun
               })}
             />
-            <Stack.Screen name="SwipeDeck" component={SwipeDeckScreen} options={{ headerShown: true, title: t('tabs.deckCards', 'Öğren'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
-            <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: t('tabs.profileEdit', 'Profili Düzenle'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
-            <Stack.Screen name="Blocked" component={BlockedScreen} options={{ headerShown: true, title: t('profile.blockedSection', 'Engellenenler'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
-            <Stack.Screen name="DeckEdit" component={DeckEditScreen} options={{ headerShown: true, title: t('tabs.deckEdit', 'Desteyi Düzenle'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
-            <Stack.Screen name="AddCard" component={AddCardScreen} options={({ navigation }) => ({
-              headerShown: true,
-              title: t('tabs.addCard', 'Kart Ekle'),
-              headerTitleAlign: 'center',
-              headerBackButtonDisplayMode: 'minimal',
-              headerBackTitleVisible: false,
-              headerBackTitle: '',
-              headerRight: () => (
-                <TouchableOpacity
-                  onPress={() => {
-                    triggerHaptic('selection');
-                    requestAnimationFrame(() => {
-                      navigation.setParams({ openCsvModal: true });
-                    });
-                  }}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    marginRight: scale(12),
-                    borderWidth: moderateScale(1), borderColor: colors.text, paddingHorizontal: scale(6), paddingVertical: verticalScale(2), borderRadius: moderateScale(8)
-                  }}
-                >
-                  <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: moderateScale(15), marginRight: scale(6) }}>CSV</Text>
-                  <Iconify icon="solar:cloud-upload-broken" size={moderateScale(22)} color={colors.text} />
-                </TouchableOpacity>
-              ),
-            })} />
-            <Stack.Screen name="DeckCards" component={DeckCardsScreen} options={{ headerShown: true, title: t('tabs.cards', 'Kartlar'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
-            <Stack.Screen name="Chapters" component={ChaptersScreen} options={{ headerShown: true, title: t('tabs.chapters', 'Bölümler'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
+            <Stack.Screen name="SwipeDeck" component={SwipeDeckScreen} options={{ headerShown: true, title: t('tabs.deckCards', 'Öğren'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', gestureEnabled: false }} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: t('tabs.profileEdit', 'Profili Düzenle'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
+            <Stack.Screen name="Blocked" component={BlockedScreen} options={{ headerShown: true, title: t('profile.blockedSection', 'Engellenenler'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
+            <Stack.Screen name="DeckEdit" component={DeckEditScreen} options={{ headerShown: true, title: t('tabs.deckEdit', 'Desteyi Düzenle'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
+            <Stack.Screen
+              name="AddCard"
+              component={AddCardScreen}
+              options={({ navigation }) => ({
+                headerShown: true,
+                title: t('tabs.addCard', 'Kart Ekle'),
+                headerTitleAlign: 'center',
+                headerBackButtonDisplayMode: 'minimal',
+                headerRight: () => (
+                  <TouchableOpacity
+                    onPress={() => {
+                      triggerHaptic('selection');
+                      requestAnimationFrame(() => {
+                        navigation.setParams({ openCsvModal: true });
+                      });
+                    }}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      // Sadece Android'e özel border ve padding ayarları:
+                      ...Platform.select({
+                        android: {
+                          borderWidth: moderateScale(1),
+                          borderColor: colors.text,
+                          paddingHorizontal: scale(6),
+                          paddingVertical: verticalScale(2),
+                          borderRadius: moderateScale(8)
+                        },
+                        ios: {
+                          // iOS'te burayı boş bırakıyoruz. 
+                          // Böylece iOS hiçbir çakışma yaşamadan kendi native buton tarzını uygulayacak.
+                        }
+                      })
+                    }}
+                  >
+                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: moderateScale(15), marginRight: scale(6) }}>
+                      CSV
+                    </Text>
+                    <Iconify icon="solar:cloud-upload-broken" size={moderateScale(22)} color={colors.text} />
+                  </TouchableOpacity>
+                ),
+              })}
+            />
+            <Stack.Screen name="DeckCards" component={DeckCardsScreen} options={{ headerShown: true, title: t('tabs.cards', 'Kartlar'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
+            <Stack.Screen name="Chapters" component={ChaptersScreen} options={{ headerShown: true, title: t('tabs.chapters', 'Bölümler'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
             <Stack.Screen name="ChapterCards" component={ChapterCardsScreen} options={{
               headerShown: true,
               title: '',
               headerTitleAlign: 'center',
               headerBackButtonDisplayMode: 'minimal',
-              headerBackTitleVisible: false,
-              headerBackTitle: '',
             }} />
-            <Stack.Screen name="FavoriteDecks" component={FavoriteDecks} options={{ headerShown: true, title: t('library.favoriteDecksTitle', 'Favori Desteler'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
-            <Stack.Screen name="FavoriteCards" component={FavoriteCards} options={{ headerShown: true, title: t('library.favoriteCardsTitle', 'Favori Kartlar'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', headerBackTitleVisible: false, headerBackTitle: '' }} />
+            <Stack.Screen name="FavoriteDecks" component={FavoriteDecks} options={{ headerShown: true, title: t('library.favoriteDecksTitle', 'Favori Desteler'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
+            <Stack.Screen name="FavoriteCards" component={FavoriteCards} options={{ headerShown: true, title: t('library.favoriteCardsTitle', 'Favori Kartlar'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
           </>
         )}
       </Stack.Navigator>

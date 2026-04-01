@@ -845,10 +845,11 @@ export default function DeckDetailScreen({ route, navigation }) {
   React.useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(12), marginRight: scale(4) }}>
-          {/* Favori ikonu - Her zaman görünür */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(16), paddingHorizontal: scale(12) }}>
+          
+          {/* Favori ikonu - Serbest ve çerçevesiz (hitSlop ile tıklama alanı geniş) */}
           <TouchableOpacity
-            onPress={handleToggleFavorite} // Sadece bunu çağırman yeterli!
+            onPress={handleToggleFavorite}
             activeOpacity={0.7}
             hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
           >
@@ -859,7 +860,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             />
           </TouchableOpacity>
 
-          {/* More menüsü - Giriş yapmış her kullanıcı için görünür */}
+          {/* More menüsü - Etrafı çerçeveli (Border) ve kendi iç boşluğu (Padding) var */}
           {currentUserId && (
             <TouchableOpacity
               ref={moreMenuRef}
@@ -870,14 +871,16 @@ export default function DeckDetailScreen({ route, navigation }) {
                 });
               }}
               activeOpacity={0.7}
+              hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
             >
               <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={moderateScale(24)} color={colors.text} />
             </TouchableOpacity>
           )}
+          
         </View>
       ),
     });
-  }, [navigation, colors.text, isFavorite, favLoading, currentUserId, deck.user_id]);
+  }, [navigation, colors.text, colors.border, isFavorite, favLoading, currentUserId, deck.user_id]);
 
   const sortCards = (type, cardsList) => {
     if (type === 'az') {
@@ -1329,7 +1332,7 @@ export default function DeckDetailScreen({ route, navigation }) {
       )}
 
       {/* Floating Action Buttons */}
-      <View style={[styles.fabContainer, { backgroundColor: 'transparent', bottom: insets.bottom }]}>
+      <View style={[styles.fabContainer, { backgroundColor: 'transparent', bottom: insets.bottom + verticalScale(20) }]}>
         <View style={styles.fabLeftColumn}>
           {fabMenuOpen && inlineChapterListVisible && (
             <Animated.View

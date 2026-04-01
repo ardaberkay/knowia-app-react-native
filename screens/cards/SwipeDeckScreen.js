@@ -889,7 +889,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
             )}
           </Reanimated.View>
         </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', marginTop: verticalScale(15) }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', marginTop: verticalScale(8) }}>
           <Swiper
             ref={swiperRef}
             cards={cards}
@@ -962,7 +962,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
         </View>
         {/* Yatay birleşik butonlar */}
         {/* Yatay birleşik butonlar */}
-        <View style={{ paddingBottom: verticalScale(16) }}>
+        <View style={{ paddingBottom: insets.bottom }}>
         <View style={[styles.horizontalButtonRow, { backgroundColor: colors.buttonColor }]}>
 
           <AnimatedTimeButton
@@ -1146,7 +1146,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: moderateScale(8),
     elevation: 4,
-    marginBottom: verticalScale(105),
+    marginBottom: verticalScale(100),
   },
   horizontalButton: {
     flex: 1,

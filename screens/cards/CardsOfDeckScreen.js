@@ -352,12 +352,13 @@ export default function DeckCardsScreen({ route, navigation }) {
             return null;
           }
           return (
+            <View style={{}}>
             <TouchableOpacity
               // hitSlop: Butonun görsel boyutunu büyütmeden dokunmatik alanını genişletir. 
               // (Tıklamayı kaçırma/zor algılama hissini tamamen yok eder)
               hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
               activeOpacity={0.6} // Tıklama hissiyatını netleştirir
-              style={[styles.addCardIcon, { marginRight: scale(4) }]}
+              style={[styles.addCardIcon]}
               onPress={() => {
                 // 1. Arayüz tepkilerini ANINDA ver (Sıfır gecikme)
                 triggerHaptic('selection');
@@ -371,6 +372,7 @@ export default function DeckCardsScreen({ route, navigation }) {
             >
               <Iconify icon="ic:round-plus" size={moderateScale(28)} color={colors.text} />
             </TouchableOpacity>
+            </View>
           );
         },
       });

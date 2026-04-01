@@ -225,6 +225,7 @@ export default function ChaptersScreen({ route, navigation }) {
           return null;
         }
         return (
+          <View style={{  }}>
           <TouchableOpacity
             onPress={() => {
               triggerHaptic('light');
@@ -232,7 +233,6 @@ export default function ChaptersScreen({ route, navigation }) {
                 setEditMode(!editMode);
               });
             }}
-            style={{ marginRight: scale(16) }}
             activeOpacity={0.7}
             hitSlop={{ top: scale(15), bottom: scale(15), left: scale(15), right: scale(15) }}
           >
@@ -242,6 +242,7 @@ export default function ChaptersScreen({ route, navigation }) {
               color={colors.text}
             />
           </TouchableOpacity>
+          </View>
         );
       },
     });

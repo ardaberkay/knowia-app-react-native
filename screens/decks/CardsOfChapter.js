@@ -255,7 +255,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
         headerTintColor: colors.text,
         headerTitle: '',
         headerRight: () => (
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: scale(4) }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(16), marginRight: scale(4) }}>
             <TouchableOpacity
               onPress={() => {
                 triggerHaptic('medium');
@@ -264,7 +264,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
                 });
               }}
               activeOpacity={0.7}
-              style={{ paddingHorizontal: scale(6) }}
+              hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
             >
               <Iconify
                 icon={favoriteCards.includes(selectedCard.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
@@ -282,7 +282,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
                   });
                 }}
                 activeOpacity={0.7}
-                style={{ paddingHorizontal: scale(6) }}
+                hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
               >
                 <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={moderateScale(26)} color={colors.text} />
               </TouchableOpacity>
@@ -308,7 +308,6 @@ export default function ChapterCardsScreen({ route, navigation }) {
               setSelectedCards(new Set());
             }
           }}
-          style={{ marginRight: scale(16) }}
           activeOpacity={0.7}
           hitSlop={{ top: scale(15), bottom: scale(15), left: scale(15), right: scale(15) }}
         >
