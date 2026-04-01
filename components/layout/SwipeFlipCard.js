@@ -193,6 +193,8 @@ function SwipeFlipCardImpl({
     ],
     []
   );
+  
+  const pixelRatio = useMemo(() => PixelRatio.get(), []);
 
   if (isPlaceholder) {
     return (
@@ -209,7 +211,6 @@ function SwipeFlipCardImpl({
     );
   }
 
-  const pixelRatio = useMemo(() => PixelRatio.get(), []);
 
   return (
     <View style={containerStyle}>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, Image, Pressable } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, Image, Pressable, Platform } from 'react-native';
 import Reanimated, {
   useAnimatedStyle,
   useSharedValue,
@@ -946,11 +946,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
             disableTopSwipe={true}
             disableBottomSwipe={true}
             stackSize={2}
-            showSecondCard={false}
+            showSecondCard={true}
             swipeBackCard={true}
             backgroundColor={colors.background}
-            stackSeparation={verticalScale(18)}
-            stackScale={0.07}
+            stackSeparation={0}
+            useViewOverflow={Platform.OS === 'ios' ? false : true}
+            stackScale={1}
             cardHorizontalMargin={CARD_HORIZONTAL_MARGIN}
             containerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
             cardStyle={{ width: CARD_WIDTH, height: CARD_HEIGHT, alignSelf: 'center', justifyContent: 'center' }}

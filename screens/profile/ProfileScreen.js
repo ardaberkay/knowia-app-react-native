@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Share, Switch, Alert, Linking} from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Share, Switch, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -297,18 +297,15 @@ export default function ProfileScreen() {
   const appSettingsItems = useMemo(() => [
     {
       label: t('profile.night_mode'),
-      right: (
-        <View style={{ width: scale(40) }}>
-          <Switch
-            value={localThemeDark}
-            onValueChange={handleThemeToggle}
-            trackColor={{ false: '#ccc', true: '#5AA3F0' }}
-            thumbColor={localThemeDark ? colors.secondary : '#f4f3f4'} // isDarkMode yerine bunu kullan
-            ios_backgroundColor="#ccc"
-            disabled={themePreference === 'system'}
-          />
-        </View>
-      ),
+      right:
+        <Switch
+          value={localThemeDark}
+          onValueChange={handleThemeToggle}
+          trackColor={{ false: '#ccc', true: '#5AA3F0' }}
+          thumbColor={localThemeDark ? colors.secondary : '#f4f3f4'} // isDarkMode yerine bunu kullan
+          ios_backgroundColor="#ccc"
+          disabled={themePreference === 'system'}
+        />
     },
     {
       label: t('profile.language'),
@@ -327,17 +324,15 @@ export default function ProfileScreen() {
     },
     {
       label: t('profile.haptics', 'Titreşim'),
-      right: (
-        <View style={{ width: scale(40) }}>
-          <Switch
-            value={hapticsEnabled}
-            onValueChange={handleToggleHaptics}
-            trackColor={{ false: '#ccc', true: '#5AA3F0' }}
-            thumbColor={hapticsEnabled ? colors.secondary : '#f4f3f4'}
-            ios_backgroundColor="#ccc"
-          />
-        </View>
-      ),
+      right:
+        <Switch
+          value={hapticsEnabled}
+          onValueChange={handleToggleHaptics}
+          trackColor={{ false: '#ccc', true: '#5AA3F0' }}
+          thumbColor={hapticsEnabled ? colors.secondary : '#f4f3f4'}
+          ios_backgroundColor="#ccc"
+        />
+
     },
     {
       label: t('profile.notifications'),

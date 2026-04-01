@@ -2,5 +2,6 @@ w# Önemli: android/ klasörünü komple gizle
 node_modules/
 android/
 ios/
+apple-jwt.js
 .expo/
 dist/

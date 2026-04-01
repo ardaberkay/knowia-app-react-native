@@ -10,9 +10,12 @@ export default {
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     scheme: "knowia",
+    updates: {
+      url: "https://u.expo.dev/35370cb0-28f6-4273-86d2-f920b86c8acb"
+    },
     splash: {
-      image: "./assets/app_icon_splash.png",
-      resizeMode: "cover",
+      image: "./assets/splash.png",
+      resizeMode: "contain",
       backgroundColor: "#FF8D1A"
     },
     ios: {
@@ -22,6 +25,9 @@ export default {
       usesAppleSignIn: true,
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false
+      },
+      runtimeVersion: {
+        policy: "appVersion"
       }
     },
     android: {
