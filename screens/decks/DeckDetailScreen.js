@@ -845,7 +845,7 @@ export default function DeckDetailScreen({ route, navigation }) {
   React.useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(16), paddingHorizontal: scale(12) }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(16), paddingHorizontal: scale(8) }}>
           
           {/* Favori ikonu - Serbest ve çerçevesiz (hitSlop ile tıklama alanı geniş) */}
           <TouchableOpacity

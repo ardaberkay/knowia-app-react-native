@@ -268,8 +268,7 @@ export default function AppNavigator() {
                           borderRadius: moderateScale(8)
                         },
                         ios: {
-                          // iOS'te burayı boş bırakıyoruz. 
-                          // Böylece iOS hiçbir çakışma yaşamadan kendi native buton tarzını uygulayacak.
+                          paddingHorizontal: scale(8),
                         }
                       })
                     }}

@@ -214,14 +214,13 @@ export default function SwipeDeckScreen({ route, navigation }) {
       headerRight: () => {
         if (loading || !currentCard) return null;
         return (
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(16), paddingHorizontal: scale(8) }}>
             <TouchableOpacity
               onPress={() => {
                 triggerHaptic('medium');
                 toggleFavorite(currentCard.card_id);
               }}
-              style={{ marginRight: scale(8) }}
-              hitSlop={{ top: scale(8), right: scale(8), bottom: scale(8), left: scale(8) }}
+              hitSlop={{ top: scale(15), bottom: scale(15), left: scale(8), right: scale(8) }}
             >
               <Iconify
                 icon={isCurrentCardFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
@@ -235,8 +234,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
                   triggerHaptic('light');
                   openReportCardModal();
                 }}
-                style={{ paddingHorizontal: scale(6) }}
                 activeOpacity={0.7}
+                hitSlop={{ top: scale(15), bottom: scale(15), left: scale(8), right: scale(8) }}
               >
                 <Iconify icon="ic:round-report-problem" size={moderateScale(24)} color='#FED7AA' />
               </TouchableOpacity>
@@ -1146,7 +1145,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: moderateScale(8),
     elevation: 4,
-    marginBottom: verticalScale(100),
+    marginBottom: verticalScale(94),
   },
   horizontalButton: {
     flex: 1,
@@ -1197,7 +1196,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(8),
     marginBottom: verticalScale(8),
     position: 'absolute',
-    bottom: verticalScale(72),
+    bottom: verticalScale(68),
     overflow: 'hidden',
   },
   progressBarFill: {

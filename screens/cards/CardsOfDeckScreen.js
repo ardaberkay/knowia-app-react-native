@@ -293,14 +293,13 @@ export default function DeckCardsScreen({ route, navigation }) {
     if (selectedCard && !editMode) {
       navigation.setOptions({
         headerRight: () => (
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: scale(4) }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: scale(4), gap: scale(16), paddingHorizontal: scale(8) }}>
             <TouchableOpacity
               onPress={() => {
                 triggerHaptic('medium');
                 handleToggleFavoriteCard(selectedCard.id);
               }}
               activeOpacity={0.7}
-              style={{ paddingHorizontal: scale(6) }}
               hitSlop={{ top: scale(15), bottom: scale(15), left: scale(8), right: scale(8) }}
             >
               <Iconify
@@ -318,7 +317,6 @@ export default function DeckCardsScreen({ route, navigation }) {
                   });
                 }}
                 activeOpacity={0.7}
-                style={{ paddingHorizontal: scale(6) }}
                 hitSlop={{ top: scale(15), bottom: scale(15), left: scale(8), right: scale(8) }}
               >
                 <Iconify icon="ic:round-report-problem" size={moderateScale(24)} color='#FED7AA' />
@@ -352,7 +350,6 @@ export default function DeckCardsScreen({ route, navigation }) {
             return null;
           }
           return (
-            <View style={{}}>
             <TouchableOpacity
               // hitSlop: Butonun görsel boyutunu büyütmeden dokunmatik alanını genişletir. 
               // (Tıklamayı kaçırma/zor algılama hissini tamamen yok eder)
@@ -372,7 +369,6 @@ export default function DeckCardsScreen({ route, navigation }) {
             >
               <Iconify icon="ic:round-plus" size={moderateScale(28)} color={colors.text} />
             </TouchableOpacity>
-            </View>
           );
         },
       });
