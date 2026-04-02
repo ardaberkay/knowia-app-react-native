@@ -614,51 +614,81 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
   const handleUndo = () => {
     if (undoDisabled || history.length === 0) return;
-  
+
     setUndoDisabled(true);
-  
+
     if (swiperRef.current) {
       const lastIndex = history[history.length - 1];
       const undoneCard = cards[lastIndex];
-  
-      // 1. İlerleme verisini temizle
+      const lastDirection = historyDirections[historyDirections.length - 1];
+
+      // ----------------------------------------------------------------------
+      // 1. FLASH'I VE KİLİTLENMEYİ ÖNLEYEN AKILLI STATE GÜNCELLEMESİ
+      // ----------------------------------------------------------------------
+      if (lastDirection === 'left' && undoneCard) {
+        
+        // A) SADECE eğer kart gerçekten kuyruktaysa state'i değiştir.
+        setPendingReinserts((prev) => {
+          const exists = prev.some(p => p.card.card_id === undoneCard.card_id);
+          if (!exists) return prev; // Değişiklik yoksa ESKİ STATE'İ DÖN (Re-render yapmaz)
+          return prev.filter(p => p.card.card_id !== undoneCard.card_id);
+        });
+
+        // B) SADECE eğer kart diziye sonradan eklenmişse (reinsert olmuşsa) diziyi güncelle.
+        setCards((prevCards) => {
+          const duplicateIdx = prevCards.findLastIndex(
+            (c, idx) => c.card_id === undoneCard.card_id && idx > lastIndex
+          );
+          // EĞER KART HENÜZ EKLENMEMİŞSE ESKİ DİZİYİ DÖN!
+          // (İşte Swiper'ın kafasının karışmasını ve Flash yapmasını engelleyen kritik satır burası)
+          if (duplicateIdx === -1) return prevCards; 
+          
+          const newCards = [...prevCards];
+          newCards.splice(duplicateIdx, 1);
+          return newCards;
+        });
+      }
+
+      // ----------------------------------------------------------------------
+      // 2. ANDROID ÇÖKMESİNİ ENGELLEYEN REF TEMİZLİĞİ (State döngüsü dışında)
+      // ----------------------------------------------------------------------
       if (undoneCard) {
         delete pendingProgressRef.current[undoneCard.card_id];
       }
-  
-      const lastDirection = historyDirections[historyDirections.length - 1];
-  
-      // 2. Ref Mutasyonlarını State Güncelleyicisinin DIŞINA alıyoruz
+
       if (lastDirection === 'left') {
-        const removedCardId = historyLeftCardIds.current.pop(); // Pop işlemi setState dışında yapılıyor
+        const removedCardId = historyLeftCardIds.current.pop();
         if (removedCardId) {
           leftCountedCardIds.current.delete(removedCardId);
         }
       }
-      // 3. ÖNCE Native animasyonu tetikle
+
+      // ----------------------------------------------------------------------
+      // 3. ANİMASYONU TETİKLE
+      // ----------------------------------------------------------------------
       swiperRef.current.swipeBack();
-      // 4. State güncellemelerini bir sonraki frame'e (boyama karesine) ertele. 
-      // Bu, donmaları ve kilitlenmeleri engeller.
-      requestAnimationFrame(() => {
-        setCurrentIndex(lastIndex);
-        setHistory((prev) => prev.slice(0, -1));
-  
-        // Artık içinde Ref mutasyonu barındırmayan temiz state güncellemesi
-        setHistoryDirections((prev) => {
-          if (prev.length === 0) return prev;
-  
-          if (lastDirection === 'right') {
-            setRightCount((c) => Math.max(0, c - 1));
-          } else if (lastDirection === 'left') {
-            setLeftCount((c) => Math.max(0, c - 1));
-          }
-          setTotalSwipeCount((c) => Math.max(0, c - 1));
-          
-          return prev.slice(0, -1);
-        });
-        // Animasyonun bitmesi için butonu biraz daha geç aktif hale getirmek daha güvenlidir
-        setTimeout(() => setUndoDisabled(false), 600); 
+
+      // ----------------------------------------------------------------------
+      // 4. SAYAÇLARI VE INDEX'I GÜNCELLE
+      // ----------------------------------------------------------------------
+      setCurrentIndex(lastIndex);
+      setHistory((prev) => prev.slice(0, -1));
+      
+      setHistoryDirections((prev) => {
+        if (prev.length === 0) return prev;
+        
+        if (lastDirection === 'right') {
+          setRightCount((c) => Math.max(0, c - 1));
+        } else if (lastDirection === 'left') {
+          setLeftCount((c) => Math.max(0, c - 1));
+        }
+        setTotalSwipeCount((c) => Math.max(0, c - 1));
+        
+        return prev.slice(0, -1);
       });
+
+      // Spam tıklamayı engellemek için butonu kısa süre sonra aktif et
+      setTimeout(() => setUndoDisabled(false), 400); 
     }
   };
 
@@ -1168,7 +1198,7 @@ const styles = StyleSheet.create({
     elevation: 4,
     ...Platform.select({
       ios: {
-        marginBottom: verticalScale(92),
+        marginBottom: verticalScale(90),
       },
       android: {
         marginBottom: verticalScale(94),
@@ -1226,7 +1256,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     ...Platform.select({
       ios: {
-        bottom: verticalScale(66),
+        bottom: verticalScale(64),
       },
       android: {
         bottom: verticalScale(68),
