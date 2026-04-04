@@ -3,6 +3,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../theme/theme';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import { Alert } from 'react-native';
 
 const OAUTH_REDIRECT = 'knowia://auth/callback';
 
@@ -105,7 +106,6 @@ const register = async (email, password) => {
           skipBrowserRedirect: true,
           queryParams: {
             prompt: 'select_account',
-            // Buraya senin aldığın ID'yi tam olarak işledik
             ios_client_id: '158481249201-f230dgm3cd55ru0qmcujglh9lgeadie8.apps.googleusercontent.com'
           },
         },
@@ -114,20 +114,41 @@ const register = async (email, password) => {
       if (error) throw error;
 
       if (data?.url) {
-        // 🔥 KRİTİK DÜZELTME: 'const result =' ekledik
         const result = await WebBrowser.openAuthSessionAsync(data.url, OAUTH_REDIRECT, {
           toolbarColor: colors.buttonColor,
         });
 
-        // iOS'ta kullanıcı web sayfasını kapattığında veya işlem bittiğinde burası çalışır
         if (result.type === 'success' && result.url) {
-           console.log('WebBrowser başarıyla döndü:', result.url);
-           // Supabase session'ı otomatik olarak onAuthStateChange üzerinden güncellenecektir
+          // 1. Google'dan gelen URL içindeki gizli şifreleri (token) çekiyoruz
+          const tokenMatch = result.url.match(/access_token=([^&]+)/);
+          const refreshMatch = result.url.match(/refresh_token=([^&]+)/);
+
+          if (tokenMatch && refreshMatch) {
+            const access_token = decodeURIComponent(tokenMatch[1]);
+            const refresh_token = decodeURIComponent(refreshMatch[1]);
+
+            // 2. Supabase'e "Al bu şifreleri, kapıyı aç" diyoruz (Manuel Giriş)
+            const { error: sessionError } = await supabase.auth.setSession({
+              access_token,
+              refresh_token,
+            });
+
+            if (sessionError) {
+              Alert.alert("Giriş Başarısız", sessionError.message);
+            } else {
+              // GİRİŞ BAŞARILI! 
+              // Eğer uygulaman otomatik yönlenmezse buraya bir Alert ekleyebilir veya yönlendirme kodu yazabilirsin.
+            }
+          } else {
+            // Eğer URL'de token yoksa, Google bir hata fırlatmış demektir
+            Alert.alert("Bağlantı Hatası", "Google bilgileri göndermedi.");
+          }
         }
       }
       return { error: null };
     } catch (error) {
       console.log('Supabase OAuth catch bloğu:', error);
+      Alert.alert("Hata", "Beklenmeyen bir hata oluştu.");
       return { error };
     }
   };
