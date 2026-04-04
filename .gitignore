@@ -42,3 +42,4 @@ yarn-error.*
 
 # Apple Secrets
 apple-jwt.js
+dist/
