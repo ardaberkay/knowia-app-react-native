@@ -166,7 +166,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const [reportCardId, setReportCardId] = useState(null);
   const { showSuccess, showError } = useSnackbarHelpers();
   const isOwner = userId && deck?.user_id === userId;
-
+  const isAnimatingRef = useRef(false);
   const BATCH_SIZE = 30;
   const PROGRESS_FLUSH_SIZE = 5;
   const PRE_FETCH_THRESHOLD = 10;
@@ -445,10 +445,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
       }
       const now = Date.now();
       setPendingReinserts((prev) => {
+        if (isAnimatingRef.current) return prev;
         const due = prev.filter((p) => p.insertAt <= now);
         if (due.length === 0) return prev;
         const stillPending = prev.filter((p) => p.insertAt > now);
         setCards((prevCards) => {
+          if (isAnimatingRef.current) return prevCards;
           let nextCards = prevCards;
           const idx = Math.min(currentIndexRef.current, nextCards.length - 1);
           const tailStart = idx + 1;
@@ -556,6 +558,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     const card = cards[cardIndex];
     resetFlipForCardId(card.card_id);
     if (!userId) return;
+    isAnimatingRef.current = true;
     setHistory((prev) => [...prev, cardIndex]);
     setHistoryDirections((prev) => [...prev, direction]);
     setTotalSwipeCount((prev) => prev + 1);
@@ -578,7 +581,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
       queueProgress(card.card_id, 'learning', nextReview);
       setPendingReinserts((prev) => [...prev, { card, insertAt }]);
     }
-    setCurrentIndex(cardIndex + 1);
+    requestAnimationFrame(() => {
+      setCurrentIndex(cardIndex + 1);
+    });
+    setTimeout(() => {
+      isAnimatingRef.current = false;
+    }, 400);
   }, [cards, userId, resetFlipForCardId, queueProgress]);
 
   const handleFlipById = useCallback((cardId) => {
@@ -614,82 +622,71 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
   const handleUndo = () => {
     if (undoDisabled || history.length === 0) return;
-
+    isAnimatingRef.current = true;
     setUndoDisabled(true);
-
-    if (swiperRef.current) {
-      const lastIndex = history[history.length - 1];
-      const undoneCard = cards[lastIndex];
-      const lastDirection = historyDirections[historyDirections.length - 1];
-
-      // ----------------------------------------------------------------------
-      // 1. FLASH'I VE KİLİTLENMEYİ ÖNLEYEN AKILLI STATE GÜNCELLEMESİ
-      // ----------------------------------------------------------------------
+  
+    if (!swiperRef.current) return;
+  
+    const lastIndex = history[history.length - 1];
+    const undoneCard = cards[lastIndex];
+    const lastDirection = historyDirections[historyDirections.length - 1];
+  
+    // 🟢 1. SADECE ANİMASYON
+    swiperRef.current.swipeBack();
+  
+    // 🟡 2. STATE'LERİ GECİKMELİ YAP (CRITICAL)
+    setTimeout(() => {
       if (lastDirection === 'left' && undoneCard) {
-        
-        // A) SADECE eğer kart gerçekten kuyruktaysa state'i değiştir.
+  
         setPendingReinserts((prev) => {
           const exists = prev.some(p => p.card.card_id === undoneCard.card_id);
-          if (!exists) return prev; // Değişiklik yoksa ESKİ STATE'İ DÖN (Re-render yapmaz)
+          if (!exists) return prev;
           return prev.filter(p => p.card.card_id !== undoneCard.card_id);
         });
-
-        // B) SADECE eğer kart diziye sonradan eklenmişse (reinsert olmuşsa) diziyi güncelle.
+  
         setCards((prevCards) => {
           const duplicateIdx = prevCards.findLastIndex(
             (c, idx) => c.card_id === undoneCard.card_id && idx > lastIndex
           );
-          // EĞER KART HENÜZ EKLENMEMİŞSE ESKİ DİZİYİ DÖN!
-          // (İşte Swiper'ın kafasının karışmasını ve Flash yapmasını engelleyen kritik satır burası)
-          if (duplicateIdx === -1) return prevCards; 
-          
+          if (duplicateIdx === -1) return prevCards;
+  
           const newCards = [...prevCards];
           newCards.splice(duplicateIdx, 1);
           return newCards;
         });
       }
-
-      // ----------------------------------------------------------------------
-      // 2. ANDROID ÇÖKMESİNİ ENGELLEYEN REF TEMİZLİĞİ (State döngüsü dışında)
-      // ----------------------------------------------------------------------
       if (undoneCard) {
         delete pendingProgressRef.current[undoneCard.card_id];
       }
-
+  
       if (lastDirection === 'left') {
         const removedCardId = historyLeftCardIds.current.pop();
         if (removedCardId) {
           leftCountedCardIds.current.delete(removedCardId);
         }
       }
-
-      // ----------------------------------------------------------------------
-      // 3. ANİMASYONU TETİKLE
-      // ----------------------------------------------------------------------
-      swiperRef.current.swipeBack();
-
-      // ----------------------------------------------------------------------
-      // 4. SAYAÇLARI VE INDEX'I GÜNCELLE
-      // ----------------------------------------------------------------------
-      setCurrentIndex(lastIndex);
       setHistory((prev) => prev.slice(0, -1));
-      
+  
       setHistoryDirections((prev) => {
         if (prev.length === 0) return prev;
-        
+  
         if (lastDirection === 'right') {
           setRightCount((c) => Math.max(0, c - 1));
         } else if (lastDirection === 'left') {
           setLeftCount((c) => Math.max(0, c - 1));
         }
+  
         setTotalSwipeCount((c) => Math.max(0, c - 1));
-        
+  
         return prev.slice(0, -1);
       });
-
-      // Spam tıklamayı engellemek için butonu kısa süre sonra aktif et
-      setTimeout(() => setUndoDisabled(false), 400); 
-    }
+  
+    }, 50); // 🔥 1 frame delay (çok önemli)
+  
+    setTimeout(() => setUndoDisabled(false), 400);
+    setTimeout(() => {
+      isAnimatingRef.current = false;
+    }, 400);
   };
 
   const toggleFavorite = useCallback(async (cardId) => {
@@ -948,7 +945,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
               const cardId = card?.card_id;
               const animatedValue = cardId ? getAnimatedValueForCardId(cardId) : null;
               const gradientColors = getCategoryColors(categorySortOrder);
-              const isPlaceholder = !card || !card.cards || i > currentIndex;
+              const isPlaceholder = !card || !card.cards;
               return (
                 <SwipeFlipCard
                   key={cardId || `placeholder-${i}`}

@@ -103,17 +103,27 @@ const register = async (email, password) => {
         options: {
           redirectTo: OAUTH_REDIRECT,
           skipBrowserRedirect: true,
+          queryParams: {
+            prompt: 'select_account',
+            // Buraya senin aldığın ID'yi tam olarak işledik
+            ios_client_id: '158481249201-f230dgm3cd55ru0qmcujglh9lgeadie8.apps.googleusercontent.com'
+          },
         },
       });
-      console.log('Supabase OAuth yanıtı:', data ? 'Data var' : 'Data yok', error ? 'Hata var' : 'Hata yok');
-      if (error) {
-        console.log('Supabase OAuth hatası:', error.message);
-        throw error;
-      }
+
+      if (error) throw error;
+
       if (data?.url) {
-        await WebBrowser.openAuthSessionAsync(data.url, OAUTH_REDIRECT, {
+        // 🔥 KRİTİK DÜZELTME: 'const result =' ekledik
+        const result = await WebBrowser.openAuthSessionAsync(data.url, OAUTH_REDIRECT, {
           toolbarColor: colors.buttonColor,
         });
+
+        // iOS'ta kullanıcı web sayfasını kapattığında veya işlem bittiğinde burası çalışır
+        if (result.type === 'success' && result.url) {
+           console.log('WebBrowser başarıyla döndü:', result.url);
+           // Supabase session'ı otomatik olarak onAuthStateChange üzerinden güncellenecektir
+        }
       }
       return { error: null };
     } catch (error) {

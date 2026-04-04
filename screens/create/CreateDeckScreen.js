@@ -201,7 +201,7 @@ export default function CreateScreen() {
                     }}
                   >
                     <Iconify icon="material-symbols:info-outline" size={moderateScale(16)} color={colors.secondary} style={{ marginRight: scale(4) }} />
-                    <Text style={[typography.styles.caption, { color: colors.secondary, fontWeight: '600', textDecorationLine: 'underline' }]}>
+                    <Text style={[typography.styles.caption, { color: colors.secondary, fontWeight: '600'}]}>
                       {t('createDeck.howToCreate', 'Nasıl Oluşturulur?')}
                     </Text>
                   </TouchableOpacity>

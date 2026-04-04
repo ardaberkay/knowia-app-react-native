@@ -473,7 +473,7 @@ const DeckList = ({
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          tintColor={colors.buttonColor}
+          tintColor={colors.text}
           colors={[colors.buttonColor]}
         />
       }

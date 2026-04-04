@@ -2,11 +2,11 @@ import React, { useRef, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 
 // ETKİLEŞİMLİ BİLEŞENLER
-import { 
-  BottomSheetModal, 
-  BottomSheetFlatList, 
+import {
+  BottomSheetModal,
+  BottomSheetFlatList,
   BottomSheetBackdrop,
-  TouchableOpacity 
+  TouchableOpacity
 } from '@gorhom/bottom-sheet';
 
 import { useTheme } from '../../theme/theme';
@@ -20,7 +20,7 @@ const SCREEN_HEIGHT = Dimensions.get('window').height;
 export default function CategorySelector({ isVisible, onClose, categories = [], selectedCategoryId, onSelectCategory }) {
   const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
-  
+
   const primaryColor = colors.buttonColor || colors.primary || '#F98A21';
   const bottomSheetModalRef = useRef(null);
 
@@ -44,7 +44,7 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
         {...props}
         disappearsOnIndex={-1}
         appearsOnIndex={0}
-        pressBehavior="close" 
+        pressBehavior="close"
         opacity={0.5}
       />
     ),
@@ -70,7 +70,7 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
 
   const renderItem = useCallback(({ item: category }) => {
     const isSelected = selectedCategoryId === category.id;
-    
+
     return (
       <TouchableOpacity
         style={[
@@ -83,7 +83,7 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
         onPress={() => {
           if (onSelectCategory) {
             onSelectCategory(category.id);
-            bottomSheetModalRef.current?.dismiss(); 
+            bottomSheetModalRef.current?.dismiss();
           }
         }}
         disabled={isSelected}
@@ -96,7 +96,7 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
             color={isSelected ? primaryColor : colors.text}
           />
         </View>
-        
+
         <Text
           style={[
             styles.categoryText,
@@ -119,25 +119,28 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
       onChange={handleSheetChanges}
       backdropComponent={renderBackdrop}
       // Radius ve Arka Plan
-      backgroundStyle={{ 
+      backgroundStyle={{
         backgroundColor: colors.background,
-        borderRadius: moderateScale(44) 
+        borderRadius: moderateScale(44)
       }}
       handleIndicatorStyle={{ backgroundColor: isDarkMode ? '#666' : '#CCC' }}
-      
+
       // Dinamik Boyutlandırma ve Scroll Ayarları
-      enableDynamicSizing={true} 
-      maxDynamicContentSize={SCREEN_HEIGHT * 0.6} 
-      enableContentPanningGesture={false} 
+      enableDynamicSizing={true}
+      maxDynamicContentSize={SCREEN_HEIGHT * 0.6}
+      enableContentPanningGesture={false}
     >
-      
+
       {/* --- SABİT HEADER (LİSTENİN DIŞINDA) --- */}
-      <View style={[styles.fixedHeader, { backgroundColor: colors.background }]}>
+      <View style={[styles.fixedHeader, {
+        backgroundColor: colors.background, borderTopLeftRadius: moderateScale(44),
+        borderTopRightRadius: moderateScale(44)
+      }]}>
         <Text style={[typography.styles.h2, { color: colors.text }]}>
           {t('categorySelector.title')}
         </Text>
-        <TouchableOpacity 
-          onPress={() => bottomSheetModalRef.current?.dismiss()} 
+        <TouchableOpacity
+          onPress={() => bottomSheetModalRef.current?.dismiss()}
           hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
           style={styles.closeBtnWrapper}
         >
@@ -156,7 +159,7 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
         nestedScrollEnabled={true}
         style={{ flex: 1 }}
       />
-      
+
     </BottomSheetModal>
   );
 }
@@ -175,7 +178,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: scale(20),
     paddingTop: verticalScale(15),
-    paddingBottom: verticalScale(40), 
+    paddingBottom: verticalScale(60),
     gap: verticalScale(12),
   },
   closeBtnWrapper: {

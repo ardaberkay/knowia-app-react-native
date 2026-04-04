@@ -15,7 +15,7 @@ export default {
     },
     splash: {
       image: "./assets/splash.png",
-      resizeMode: "contain",
+      resizeMode: "cover",
       backgroundColor: "#FF8D1A"
     },
     ios: {
@@ -24,7 +24,14 @@ export default {
       bundleIdentifier: "com.arda.knowia",
       usesAppleSignIn: true,
       infoPlist: {
-        ITSAppUsesNonExemptEncryption: false
+        ITSAppUsesNonExemptEncryption: false,
+        CFBundleURLTypes: [
+          {
+            CFBundleURLSchemes: [
+              "knowia" // Senin scheme adın
+            ]
+          }
+        ]
       },
       runtimeVersion: {
         policy: "appVersion"

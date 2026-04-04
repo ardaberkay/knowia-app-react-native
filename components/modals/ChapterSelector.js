@@ -216,6 +216,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(20),
     paddingTop: verticalScale(10),
     paddingBottom: verticalScale(5),
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(150, 150, 150, 0.2)',
+    zIndex: 10,
   },
   headerRow: {
     flexDirection: 'row',
@@ -230,8 +233,8 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingHorizontal: scale(20),
-    paddingTop: verticalScale(5),
-    paddingBottom: verticalScale(40), 
+    paddingTop: verticalScale(12),
+    paddingBottom: verticalScale(60), 
   },
   chapterItem: {
     flexDirection: 'column',
@@ -275,13 +278,12 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(15),
   },
   emptyChapters: {
-    padding: scale(40),
+    minHeight: verticalScale(160),
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: verticalScale(20),
+    paddingBottom: verticalScale(60),
   },
   emptyChaptersText: {
     fontSize: moderateScale(16),
-    textAlign: 'center',
   },
 });

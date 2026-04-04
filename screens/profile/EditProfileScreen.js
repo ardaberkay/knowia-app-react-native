@@ -12,7 +12,7 @@ import { supabase } from '../../lib/supabase';
 import { cacheProfile, cacheProfileImage, clearUserCache } from '../../services/CacheService';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Buffer } from 'buffer';
 import { useTranslation } from 'react-i18next';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
@@ -103,7 +103,7 @@ export default function EditProfileScreen({ navigation }) {
   const handlePickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         quality: 1,
       });
@@ -111,7 +111,7 @@ export default function EditProfileScreen({ navigation }) {
         const manipResult = await ImageManipulator.manipulateAsync(
           result.assets[0].uri,
           [{ resize: { width: 512 } }],
-          { compress: 0.7, format: 'jpeg' }
+          { compress: 0.7, format: 'webp' }
         );
         setImageUrl(manipResult.uri);
         setImageChanged(true);

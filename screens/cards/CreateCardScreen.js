@@ -8,7 +8,7 @@ import { uploadCardImage } from '../../services/StorageService';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { typography } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import * as ImagePicker from 'expo-image-picker';
@@ -60,7 +60,7 @@ export default function AddCardScreen() {
   const handlePickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         quality: 1,
       });
@@ -68,7 +68,7 @@ export default function AddCardScreen() {
         const manipResult = await ImageManipulator.manipulateAsync(
           result.assets[0].uri,
           [{ resize: { width: 512 } }],
-          { compress: 0.7, format: 'jpeg' }
+          { compress: 0.7, format: 'webp' }
         );
         setImage(manipResult.uri);
         setImageChanged(true);
@@ -183,7 +183,7 @@ export default function AddCardScreen() {
                   }}
                 >
                   <Iconify icon="material-symbols:info-outline" size={moderateScale(16)} color={colors.secondary} style={{ marginRight: scale(4) }} />
-                  <Text style={[typography.styles.caption, { color: colors.secondary, fontWeight: '600', textDecorationLine: 'underline' }]}>
+                  <Text style={[typography.styles.caption, { color: colors.secondary, fontWeight: '600'}]}>
                     {t('addCard.howToCreate', 'Nasıl Oluşturulur?')}
                   </Text>
                 </TouchableOpacity>

@@ -10,8 +10,6 @@ import {
   Modal, 
   TouchableWithoutFeedback, 
   Dimensions, 
-  LayoutAnimation, 
-  UIManager,
   Pressable
 } from 'react-native';
 import Animated, { 
@@ -979,6 +977,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 20,
     elevation: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(150, 150, 150, 0.2)',
   },
   headerRow: {
     flexDirection: 'row',
