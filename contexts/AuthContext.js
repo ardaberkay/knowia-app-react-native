@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useTheme } from '../theme/theme';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { Alert } from 'react-native';
+import * as Linking from 'expo-linking';
 
 const OAUTH_REDIRECT = 'knowia://auth/callback';
 
@@ -20,7 +21,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     console.log('AuthContext useEffect çalıştı');
     
-    // Mevcut oturumu kontrol et
+    // 1. MEVCUT OTURUMU KONTROL ET (Senin Kodun)
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       console.log('Session check sonucu:', { session, error });
       setSession(session);
@@ -30,13 +31,57 @@ export function AuthProvider({ children }) {
       setLoading(false);
     });
 
-    // Oturum değişikliklerini dinle
+    // 2. OTURUM DEĞİŞİKLİKLERİNİ DİNLE (Senin Kodun)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       console.log('Auth state change:', _event, session);
       setSession(session);
     });
 
-    return () => subscription.unsubscribe();
+    // 🔥 3. YENİ EKLENEN: DIŞARIDAN GELEN (GOOGLE) LİNKİ YAKALAYICI
+    const handleDeepLink = async (event) => {
+      const url = event.url;
+      console.log("🔗 Dışarıdan link geldi:", url);
+      
+      // Eğer gelen linkin içinde token varsa (Google girişi ise)
+      if (url && url.includes('access_token')) {
+        const tokenMatch = url.match(/access_token=([^&]+)/);
+        const refreshMatch = url.match(/refresh_token=([^&]+)/);
+
+        if (tokenMatch && refreshMatch) {
+          const access_token = decodeURIComponent(tokenMatch[1]);
+          const refresh_token = decodeURIComponent(refreshMatch[1]);
+
+          console.log("🔑 Tokenlar yakalandı, Supabase'e veriliyor...");
+
+          // Supabase'e manuel giriş emri ver!
+          // Bu işlem başarılı olunca, yukarıdaki onAuthStateChange otomatik tetiklenecek!
+          const { error } = await supabase.auth.setSession({
+            access_token,
+            refresh_token,
+          });
+
+          if (error) {
+            console.error("Giriş Hatası:", error.message);
+          } else {
+            console.log("✅ Google ile giriş kusursuz tamamlandı!");
+          }
+        }
+      }
+    };
+
+    // Uygulama açık veya arkaplandayken gelen linkleri dinle
+    const linkingSubscription = Linking.addEventListener('url', handleDeepLink);
+
+    // Uygulama kapalıyken linkle açıldıysa dinle
+    Linking.getInitialURL().then((url) => {
+      if (url) handleDeepLink({ url });
+    });
+
+    // TEMİZLİK KISMI
+    return () => {
+      subscription.unsubscribe();
+      linkingSubscription.remove();
+    };
   }, []);
 
   // Login fonksiyonu
