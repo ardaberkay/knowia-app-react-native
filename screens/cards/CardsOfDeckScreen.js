@@ -5,7 +5,6 @@ import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import LottieView from 'lottie-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import AddEditCardInlineForm from '../../components/layout/EditCardForm';
 import { useTranslation } from 'react-i18next';
 import CardListItem from '../../components/lists/CardList';
@@ -518,16 +517,33 @@ export default function DeckCardsScreen({ route, navigation }) {
       setSelectedCard(null);
       return;
     }
+
     const cardId = card.id;
-    latestDetailFetchRef.current = cardId;
+
+    // 1. Kullanıcıyı bekletmemek için eldeki hafif veriyi (soru/cevap) anında ekrana bas
     setSelectedCard(card);
-    try {
-      const detail = await getCardDetail(cardId);
-      if (latestDetailFetchRef.current === cardId && detail) {
-        setSelectedCard(prev => prev?.id === cardId ? { ...prev, ...detail } : prev);
+
+    // 2. Eğer bu kartın 'note', 'image' gibi detayları henüz çekilmediyse API'ye git
+    // isFullDataLoaded adında kendimiz bir işaret (flag) koyuyoruz.
+    if (!card.isFullDataLoaded) {
+      try {
+        const detail = await getCardDetail(cardId); 
+        
+        if (detail) {
+          // Gelen yeni veriyi eski veriyle birleştir ve "artık tam yüklendi" diye işaretle
+          const updatedCard = { ...card, ...detail, isFullDataLoaded: true };
+
+          // Ekranda açık olan detayı güncelle (veriler sessizce yerine otursun)
+          setSelectedCard(prev => prev?.id === cardId ? updatedCard : prev);
+
+          // ÇOK ÖNEMLİ: Ana listedeki kartı da bu yeni verilerle güncelle!
+          // Böylece kullanıcı slider'da sağa/sola gidip tekrar bu karta gelirse 
+          // yanıp sönme olmaz ve boşuna internet harcanmaz.
+          setCards(prevCards => prevCards.map(c => c.id === cardId ? updatedCard : c));
+        }
+      } catch (e) {
+        console.error("Kart detayları çekilemedi:", e);
       }
-    } catch (e) {
-      // keep lightweight data
     }
   }, []);
 
@@ -584,152 +600,127 @@ export default function DeckCardsScreen({ route, navigation }) {
           }}
           onCancel={() => setEditMode(false)}
         />
-      ) : selectedCard ? (
-        <>
-          <CardDetailView card={selectedCard} cards={cards} onSelectCard={fetchAndSetCardDetail} />
-          <Modal
-            visible={moreMenuVisible}
-            transparent
-            animationType="fade"
-            onRequestClose={() => setMoreMenuVisible(false)}
-          >
-            <TouchableOpacity
-              style={{ flex: 1 }}
-              activeOpacity={1}
-              onPress={() => setMoreMenuVisible(false)}
-            >
-              <View
-                style={{
-                  position: 'absolute',
-                  right: scale(20),
-                  top: Platform.OS === 'android' ? moreMenuPos.y + moreMenuPos.height + verticalScale(4) + insets.top : moreMenuPos.y + moreMenuPos.height + verticalScale(8),
-                  minWidth: scale(160),
-                  backgroundColor: colors.cardBackground,
-                  borderRadius: moderateScale(14),
-                  paddingVertical: verticalScale(8),
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: verticalScale(2) },
-                  shadowOpacity: 0.15,
-                  shadowRadius: moderateScale(8),
-                  elevation: 8,
-                  borderWidth: moderateScale(1),
-                  borderColor: colors.cardBorder,
-                }}
-              >
-                <TouchableOpacity
-                  onPress={handleEditSelectedCard}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingVertical: verticalScale(12),
-                    paddingHorizontal: scale(16),
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Iconify icon="lucide:edit" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
-                  <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
-                    {t('cardDetail.edit', 'Kartı Düzenle')}
-                  </Text>
-                </TouchableOpacity>
-                <View style={{ height: verticalScale(1), backgroundColor: colors.border, marginVertical: verticalScale(4) }} />
-                <TouchableOpacity
-                  onPress={handleDeleteSelectedCard}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingVertical: verticalScale(12),
-                    paddingHorizontal: scale(16),
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Iconify icon="mdi:garbage" size={moderateScale(20)} color="#E74C3C" style={{ marginRight: scale(12) }} />
-                  <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: moderateScale(16) }]}>
-                    {t('cardDetail.delete', 'Kartı Sil')}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          </Modal>
-        </>
       ) : (
-        <>
-          <View style={{ flex: 1, backgroundColor: colors.background }}>
-            {/* Kartlar Listesi veya Detay */}
-            <View style={{ flex: 1, minHeight: 0 }}>
-              {showFullScreenLoading ? (
-                <View style={styles.loadingContainer}>
-                  <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: scale(160, 0.3), height: scale(160, 0.3) }} />
-                  <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100, 0.3), height: scale(100, 0.3), marginTop: verticalScale(-65) }} />
-                </View>
-              ) : selectedCard ? (
-                <LinearGradient
-                  colors={["#fff8f0", "#ffe0c3", "#f9b97a"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{ flex: 1 }}
-                >
-                  <CardDetailView card={selectedCard} cards={cards} onSelectCard={fetchAndSetCardDetail} />
-                </LinearGradient>
-              ) : (
-                <FlatList
-                  ref={flatListRef}
-                  data={filteredCards}
-                  keyExtractor={item => item.id?.toString()}
-                  showsVerticalScrollIndicator={false}
-                  contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(24) }}
-                  refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-                  }
-                  ListHeaderComponent={
-                    !selectedCard && (
-                      <View style={styles.cardsBlurSearchContainer}>
-                        <SearchBar
-                          value={search}
-                          onChangeText={setSearch}
-                          placeholder={t("common.searchPlaceholder", "Kartlarda ara...")}
-                          style={{ flex: 1 }}
-                        />
-                        <FilterIcon
-                          value={cardSort}
-                          onChange={handleSortChange}
-                        />
-                      </View>
-                    )
-                  }
-                  ListEmptyComponent={
-                    <View style={styles.noDecksEmpty} pointerEvents="none">
-                      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="none">
-                        <Image
-                          source={require('../../assets/cardbg.webp')}
-                          style={{ position: 'absolute', alignSelf: 'center', width: moderateScale(500, 0.3), height: moderateScale(500, 0.3), opacity: 0.2 }}
-                          resizeMode="contain"
-                          pointerEvents="none"
-                        />
-                      </View>
-                      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="none">
-                        <Text style={[typography.styles.body, { color: colors.border, textAlign: 'center', fontSize: moderateScale(16), marginTop: verticalScale(20) }]}>
-                          {t('cardDetail.addToDeck', 'Desteye bir kart ekle')}
-                        </Text>
-                      </View>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
+
+          {/* --- ALT KATMAN: KARTLAR LİSTESİ --- 
+              (Hiçbir zaman ekrandan silinmez (unmount olmaz), arkada hazır bekler. 
+              Böylece scroll pozisyonu asla kaybolmaz.) 
+          */}
+          <View style={{ flex: 1, minHeight: 0 }}>
+            {showFullScreenLoading ? (
+              <View style={styles.loadingContainer}>
+                <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: scale(160, 0.3), height: scale(160, 0.3) }} />
+                <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100, 0.3), height: scale(100, 0.3), marginTop: verticalScale(-65) }} />
+              </View>
+            ) : (
+              <FlatList
+                ref={flatListRef}
+                data={filteredCards}
+                keyExtractor={item => item.id?.toString()}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(24) }}
+                refreshControl={
+                  <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                }
+                ListHeaderComponent={
+                  <View style={styles.cardsBlurSearchContainer}>
+                    <SearchBar
+                      value={search}
+                      onChangeText={setSearch}
+                      placeholder={t("common.searchPlaceholder", "Kartlarda ara...")}
+                      style={{ flex: 1 }}
+                    />
+                    <FilterIcon
+                      value={cardSort}
+                      onChange={handleSortChange}
+                    />
+                  </View>
+                }
+                ListEmptyComponent={
+                  <View style={styles.noDecksEmpty} pointerEvents="none">
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="none">
+                      <Image
+                        source={require('../../assets/cardbg.webp')}
+                        style={{ position: 'absolute', alignSelf: 'center', width: moderateScale(500, 0.3), height: moderateScale(500, 0.3), opacity: 0.2 }}
+                        resizeMode="contain"
+                        pointerEvents="none"
+                      />
                     </View>
-                  }
-                  renderItem={renderCardItem}
-                  extraData={favoriteCards}
-                  onEndReached={loadMore}
-                  onEndReachedThreshold={0.5}
-                  ListFooterComponent={null}
-                  removeClippedSubviews={true}
-                  initialNumToRender={8}
-                  maxToRenderPerBatch={8}
-                  windowSize={11}
-                  updateCellsBatchingPeriod={50}
-                />
-              )}
-            </View>
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="none">
+                      <Text style={[typography.styles.body, { color: colors.border, textAlign: 'center', fontSize: moderateScale(16), marginTop: verticalScale(20) }]}>
+                        {t('cardDetail.addToDeck', 'Desteye bir kart ekle')}
+                      </Text>
+                    </View>
+                  </View>
+                }
+                renderItem={renderCardItem}
+                extraData={favoriteCards}
+                onEndReached={loadMore}
+                onEndReachedThreshold={0.5}
+                ListFooterComponent={null}
+                removeClippedSubviews={true}
+                initialNumToRender={8}
+                maxToRenderPerBatch={8}
+                windowSize={11}
+                updateCellsBatchingPeriod={50}
+              />
+            )}
           </View>
 
-        </>
+          {/* --- ÜST KATMAN: KART DETAY SAYFASI --- 
+              (Eğer seçili bir kart varsa, listenin üzerine position: 'absolute' ile tam ekran olarak biner)
+          */}
+          {selectedCard && (
+            <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: colors.background, zIndex: 10 }}>
+              <View style={{ flex: 1, backgroundColor: colors.background }}>
+                <CardDetailView card={selectedCard} cards={cards} onSelectCard={fetchAndSetCardDetail} />
+              </View>
+
+              {/* Detay sayfasının More (Üç nokta) Menüsü */}
+              <Modal
+                visible={moreMenuVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setMoreMenuVisible(false)}
+              >
+                <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setMoreMenuVisible(false)}>
+                  <View
+                    style={{
+                      position: 'absolute',
+                      right: scale(20),
+                      top: Platform.OS === 'android' ? moreMenuPos.y + moreMenuPos.height + verticalScale(4) + insets.top : moreMenuPos.y + moreMenuPos.height + verticalScale(8),
+                      minWidth: scale(160),
+                      backgroundColor: colors.cardBackground,
+                      borderRadius: moderateScale(14),
+                      paddingVertical: verticalScale(8),
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: verticalScale(2) },
+                      shadowOpacity: 0.15,
+                      shadowRadius: moderateScale(8),
+                      elevation: 8,
+                      borderWidth: moderateScale(1),
+                      borderColor: colors.cardBorder,
+                    }}
+                  >
+                    <TouchableOpacity onPress={handleEditSelectedCard} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: verticalScale(12), paddingHorizontal: scale(16) }} activeOpacity={0.7}>
+                      <Iconify icon="lucide:edit" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
+                      <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>{t('cardDetail.edit', 'Kartı Düzenle')}</Text>
+                    </TouchableOpacity>
+                    <View style={{ height: verticalScale(1), backgroundColor: colors.border, marginVertical: verticalScale(4) }} />
+                    <TouchableOpacity onPress={handleDeleteSelectedCard} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: verticalScale(12), paddingHorizontal: scale(16) }} activeOpacity={0.7}>
+                      <Iconify icon="mdi:garbage" size={moderateScale(20)} color="#E74C3C" style={{ marginRight: scale(12) }} />
+                      <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: moderateScale(16) }]}>{t('cardDetail.delete', 'Kartı Sil')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+              </Modal>
+            </View>
+          )}
+
+        </View>
       )}
+
       <ReportModal
         visible={reportModalVisible}
         onClose={() => { setReportModalVisible(false); setReportCardId(null); }}

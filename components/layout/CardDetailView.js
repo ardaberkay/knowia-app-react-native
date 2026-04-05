@@ -120,7 +120,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
     
     Animated.timing(flipAnimations.current[cardId], {
       toValue,
-      duration: 500,
+      duration: 300,
       useNativeDriver: true,
     }).start();
 
@@ -135,17 +135,25 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
       flipAnimations.current[cardId] = new Animated.Value(0);
     }
 
-    const frontInterpolate = flipAnimations.current[cardId].interpolate({
+    // Ana kart rotasyonu (0'dan 180'e)
+    const rotateY = flipAnimations.current[cardId].interpolate({
       inputRange: [0, 1],
       outputRange: ['0deg', '180deg'],
     });
 
-    const backInterpolate = flipAnimations.current[cardId].interpolate({
-      inputRange: [0, 1],
-      outputRange: ['180deg', '360deg'],
+    // Kart 90 dereceye geldiğinde (0.49 -> 0.50) ön yüzü gizle
+    const frontOpacity = flipAnimations.current[cardId].interpolate({
+      inputRange: [0, 0.49, 0.5, 1],
+      outputRange: [1, 1, 0, 0],
     });
 
-    return { frontInterpolate, backInterpolate };
+    // Kart 90 dereceyi geçtiğinde (0.50 -> 0.51) arka yüzü göster
+    const backOpacity = flipAnimations.current[cardId].interpolate({
+      inputRange: [0, 0.5, 0.51, 1],
+      outputRange: [0, 0, 1, 1],
+    });
+
+    return { rotateY, frontOpacity, backOpacity };
   };
 
   const getCardItemLayout = useCallback((data, index) => ({
@@ -161,7 +169,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
 
   const renderCardSliderItem = useCallback(({ item }) => {
     const cardId = item?.id || `card-${item?.name || 'unknown'}`;
-    const { frontInterpolate, backInterpolate } = getFlipInterpolation(cardId);
+    const { rotateY, frontOpacity, backOpacity } = getFlipInterpolation(cardId);
     const categorySortOrder = item?.deck?.categories?.sort_order;
     const gradientColors = getCategoryColors(categorySortOrder);
     const categoryIcon = getCategoryIcon(categorySortOrder);
@@ -174,7 +182,8 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
             {
               shadowOpacity: 0,
               elevation: 0,
-              transform: [{ rotateY: frontInterpolate }],
+              // iOS için perspective eklemek 3D derinliği artırır ve render hatalarını önler
+              transform: [{ perspective: 1000 }, { rotateY: rotateY }], 
             },
           ]}
         >
@@ -188,6 +197,8 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
               <Iconify icon={categoryIcon} size={scale(200)} color="rgba(0, 0, 0, 0.1)" style={styles.categoryIconStyle} />
             </View>
             <TouchableOpacity activeOpacity={0.9} onPress={() => flipCard(cardId)} style={styles.cardTouchable}>
+              
+              {/* İkonlar kısmını orijinal kodundaki gibi bırakıyorum */}
               <Animated.View style={[styles.quarterCircleContainer, { opacity: flipAnimations.current[cardId]?.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0, 0], extrapolate: 'clamp' }) || 1 }]}>
                 <View style={[styles.quarterCircle, { backgroundColor: colors.buttonColor }]}>
                   <Iconify icon="uil:comment-alt-question" size={moderateScale(26)} color="rgba(255, 255, 255, 0.9)" />
@@ -201,16 +212,23 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
                   <Iconify icon="uil:comment-alt-check" size={moderateScale(26)} color="rgba(255, 255, 255, 0.9)" />
                 </View>
               </Animated.View>
-              <Animated.View style={[styles.cardFace, { transform: [{ rotateY: frontInterpolate }], backfaceVisibility: 'hidden' }]}>
+
+              {/* ÖN YÜZ - Sadece Opacity ile kontrol ediliyor */}
+              <Animated.View style={[styles.cardFace, { opacity: frontOpacity, position: 'absolute', width: '100%', height: '100%' }]}>
                 <View style={styles.cardContent}>
                   <MathText value={item?.question || item?.name || item?.title || t('cardDetail.unnamed', 'İsimsiz Kart')} style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText }]} numberOfLines={3} />
                 </View>
               </Animated.View>
-              <Animated.View style={[styles.cardFace, { transform: [{ rotateY: backInterpolate }], backfaceVisibility: 'hidden' }]}>
+
+              {/* ARKA YÜZ - Sadece Opacity ile kontrol ediliyor */}
+              {/* Not: Ana container döndüğü için içerik ters görünmesin diye arka yüzü statik olarak 180 derece (veya scaleX: -1) çeviriyoruz. */}
+              <Animated.View style={[styles.cardFace, { opacity: backOpacity, position: 'absolute', width: '100%', height: '100%', transform: [{ rotateY: '180deg' }] }]}>
                 <View style={styles.cardContent}>
-                  <MathText value={item?.answer || t('cardDetail.noAnswer', 'Cevap yok')} style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText, transform: [{ scaleX: -1 }] }]} numberOfLines={4} />
+                  {/* Kodunda MathText içinde kullandığın scaleX: -1 transformunu kaldırmanı öneririm, çünkü artık kapsayıcıyı rotateY: '180deg' ile çevirdik. */}
+                  <MathText value={item?.answer || t('cardDetail.noAnswer', 'Cevap yok')} style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText }]} numberOfLines={4} />
                 </View>
               </Animated.View>
+
             </TouchableOpacity>
           </LinearGradient>
         </Animated.View>
@@ -263,21 +281,34 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
             </TouchableOpacity>
           )}
 
-          <FlatList
+<FlatList
             ref={flatListRef}
             data={cards}
             keyExtractor={(item, index) => (item?.id ? String(item.id) : `card-${index}`)}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
+            
+            // GECİKME ÇÖZÜMÜ 1: İlk açılışta hemen çizilecek kartları hesapla
             initialScrollIndex={currentIndex}
             getItemLayout={getCardItemLayout}
+            
+            // GECİKME ÇÖZÜMÜ 2: Render motorunu hızlandıran proplar
+            removeClippedSubviews={false} // iOS'te true ise swipe sırasında titreme/kaybolma yapabilir! False yap.
+            initialNumToRender={5} // İlk açılışta daha fazla kart hazırda beklesin
+            maxToRenderPerBatch={5}
+            windowSize={5}
+            
             renderItem={renderCardSliderItem}
             onMomentumScrollEnd={handleScrollEnd}
-            removeClippedSubviews={true}
-            initialNumToRender={3}
-            maxToRenderPerBatch={3}
-            windowSize={5}
+            
+            // GECİKME ÇÖZÜMÜ 3 (Opsiyonel ama etkili): Render hatasında çökmeyi engeller, sessizce o karta gider
+            onScrollToIndexFailed={(info) => {
+              const wait = new Promise(resolve => setTimeout(resolve, 50));
+              wait.then(() => {
+                flatListRef.current?.scrollToIndex({ index: info.index, animated: false });
+              });
+            }}
           />
 
           {/* Sağ Ok Butonu */}
@@ -638,6 +669,7 @@ const styles = StyleSheet.create({
   cardContent: {
     flex: 1,
     justifyContent: 'center',
+    paddingHorizontal: scale(16),
   },
   divider: {
     width: '100%',
