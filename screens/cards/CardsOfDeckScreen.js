@@ -93,6 +93,7 @@ export default function DeckCardsScreen({ route, navigation }) {
   const userId = session?.user?.id;
   const showFullScreenLoading = loading && cards.length === 0 && !selectedCard;
   const insets = useSafeAreaInsets();
+  const selectedCardRef = useRef(null);
 
   useEffect(() => {
     setCurrentUserId(userId || null);
@@ -248,34 +249,41 @@ export default function DeckCardsScreen({ route, navigation }) {
   }, [fetchData]);
 
   useEffect(() => {
+    selectedCardRef.current = selectedCard;
+  }, [selectedCard]);
+  
+  // Android back
+  useEffect(() => {
     const onBackPress = () => {
-      if (selectedCard) {
+      if (selectedCardRef.current) {
         setSelectedCard(null);
-        return true; // Geri tuşunu burada tüket
+        return true;
       }
-      return false; // Normal navigation geri çalışsın
+      return false;
     };
-
-    // 1. Event listener'ı ekle ve dönen referansı bir değişkene ata
-    const backHandlerSubscription = BackHandler.addEventListener(
+  
+    const sub = BackHandler.addEventListener(
       'hardwareBackPress',
       onBackPress
     );
-
-    return () => {
-      // 2. Eski removeEventListener yerine, referans üzerinden remove() çağır
-      backHandlerSubscription.remove();
-    };
-  }, [selectedCard]);
-
+  
+    return () => sub.remove();
+  }, []);
+  
+  // iOS back safety net
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-      if (selectedCard) {
-        e.preventDefault();
-        setSelectedCard(null);
-      }
+      if (!selectedCardRef.current) return;
+      e.preventDefault();
     });
     return unsubscribe;
+  }, [navigation]);
+
+  // iOS swipe-back gesture kontrolü
+  useEffect(() => {
+    navigation.setOptions({
+      gestureEnabled: !selectedCard,
+    });
   }, [navigation, selectedCard]);
 
   // Header'ı ayarla - selectedCard durumuna göre
@@ -283,6 +291,7 @@ export default function DeckCardsScreen({ route, navigation }) {
     // Loading bitene kadar header ikonlarını gösterme
     if (showFullScreenLoading) {
       navigation.setOptions({
+        headerLeft: undefined,
         headerRight: () => null,
       });
       return;
@@ -291,6 +300,19 @@ export default function DeckCardsScreen({ route, navigation }) {
     const isOwner = currentUserId && deck.user_id === currentUserId;
     if (selectedCard && !editMode) {
       navigation.setOptions({
+        headerLeft: () => (
+          <TouchableOpacity
+            onPress={() => setSelectedCard(null)}
+            activeOpacity={0.6}
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+          >
+            <Iconify
+              icon={Platform.OS === 'ios' ? 'meteor-icons:chevron-left' : 'mdi:arrow-back'}
+              size={Platform.OS === 'ios' ? moderateScale(24) : moderateScale(24)}
+              color={colors.text}
+            />
+          </TouchableOpacity>
+        ),
         headerRight: () => (
           <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: scale(4), gap: scale(16), paddingHorizontal: scale(8) }}>
             <TouchableOpacity
@@ -343,6 +365,7 @@ export default function DeckCardsScreen({ route, navigation }) {
       const isOwner = currentUserId && deck.user_id === currentUserId && !deck.is_shared;
 
       navigation.setOptions({
+        headerLeft: undefined,
         headerRight: () => {
           if (!isOwner) {
             return null;
@@ -527,8 +550,8 @@ export default function DeckCardsScreen({ route, navigation }) {
     // isFullDataLoaded adında kendimiz bir işaret (flag) koyuyoruz.
     if (!card.isFullDataLoaded) {
       try {
-        const detail = await getCardDetail(cardId); 
-        
+        const detail = await getCardDetail(cardId);
+
         if (detail) {
           // Gelen yeni veriyi eski veriyle birleştir ve "artık tam yüklendi" diye işaretle
           const updatedCard = { ...card, ...detail, isFullDataLoaded: true };
@@ -747,7 +770,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   addCardIcon: {
-    backgroundColor: 'rgba(150, 150, 150, 0.1)',
+    backgroundColor: Platform.OS === 'android' ? 'rgba(150, 150, 150, 0.1)' : 'transparent',
     padding: moderateScale(6),
     borderRadius: 99,
   },

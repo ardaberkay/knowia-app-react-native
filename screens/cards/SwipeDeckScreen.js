@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, Image, Pressable, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, Image, Pressable, Platform, BackHandler } from 'react-native';
 import Reanimated, {
   useAnimatedStyle,
   useSharedValue,
@@ -158,6 +158,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const [pendingReinserts, setPendingReinserts] = useState([]); // { card, insertAt }[]
   const leftCountedCardIds = useRef(new Set()); // Sola veya butonla bir kez sayılmış kartlar; reinsert sonrası tekrar sayılmasın
   const historyLeftCardIds = useRef([]); // Undo için: son left kaydın card_id
+  const programmaticSwipeRef = useRef(null);
   const { t } = useTranslation();
   const [favoriteIds, setFavoriteIds] = useState(new Set());
   const [categorySortOrder, setCategorySortOrder] = useState(null);
@@ -386,6 +387,16 @@ export default function SwipeDeckScreen({ route, navigation }) {
     };
   }, [navigation, authUserId, deck?.id]);
 
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const onHardwareBack = () => {
+      if (isAnimatingRef.current) return true;
+      return false;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onHardwareBack);
+    return () => sub.remove();
+  }, []);
+
   const leftScale = useSharedValue(1);
   const rightScale = useSharedValue(1);
 
@@ -576,14 +587,13 @@ export default function SwipeDeckScreen({ route, navigation }) {
       }
       setLeftHighlight(true);
       setTimeout(() => setLeftHighlight(false), 400);
-      const insertAt = Date.now() + 2 * 60 * 1000;
-      const nextReview = new Date(insertAt).toISOString();
+      const override = programmaticSwipeRef.current;
+      programmaticSwipeRef.current = null;
+      const insertAt = override ? override.insertAt : (Date.now() + 2 * 60 * 1000);
+      const nextReview = override ? override.nextReview : new Date(insertAt).toISOString();
       queueProgress(card.card_id, 'learning', nextReview);
       setPendingReinserts((prev) => [...prev, { card, insertAt }]);
     }
-    requestAnimationFrame(() => {
-      setCurrentIndex(cardIndex + 1);
-    });
     setTimeout(() => {
       isAnimatingRef.current = false;
     }, 400);
@@ -606,15 +616,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
     }).start();
   }, [getAnimatedValueForCardId]);
 
-  const handleSkip = async (minutes) => {
+  const handleSkip = (minutes) => {
     if (!cards[currentIndex]) return;
-    const card = cards[currentIndex];
     if (!userId) return;
-    setTotalSwipeCount((prev) => prev + 1);
-    const nextReviewIso = new Date(Date.now() + minutes * 60 * 1000).toISOString();
-    queueProgress(card.card_id, 'learning', nextReviewIso);
-    setHistory((prev) => [...prev, currentIndex]);
-    setHistoryDirections((prev) => [...prev, 'left']);
+    const insertAt = Date.now() + minutes * 60 * 1000;
+    const nextReviewIso = new Date(insertAt).toISOString();
+    programmaticSwipeRef.current = { nextReview: nextReviewIso, insertAt };
     if (swiperRef.current) {
       swiperRef.current.swipeLeft();
     }
@@ -622,71 +629,92 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
   const handleUndo = () => {
     if (undoDisabled || history.length === 0) return;
-    isAnimatingRef.current = true;
-    setUndoDisabled(true);
-  
     if (!swiperRef.current) return;
-  
+
     const lastIndex = history[history.length - 1];
     const undoneCard = cards[lastIndex];
     const lastDirection = historyDirections[historyDirections.length - 1];
-  
-    // 🟢 1. SADECE ANİMASYON
-    swiperRef.current.swipeBack();
-  
-    // 🟡 2. STATE'LERİ GECİKMELİ YAP (CRITICAL)
-    setTimeout(() => {
-      if (lastDirection === 'left' && undoneCard) {
-  
-        setPendingReinserts((prev) => {
-          const exists = prev.some(p => p.card.card_id === undoneCard.card_id);
-          if (!exists) return prev;
-          return prev.filter(p => p.card.card_id !== undoneCard.card_id);
-        });
-  
-        setCards((prevCards) => {
-          const duplicateIdx = prevCards.findLastIndex(
-            (c, idx) => c.card_id === undoneCard.card_id && idx > lastIndex
+
+    isAnimatingRef.current = true;
+    setUndoDisabled(true);
+
+    const swiperState = swiperRef.current.state;
+    const canSwipeBack = swiperState &&
+      !swiperState.isSwipingBack &&
+      swiperState.swipeBackXYPositions &&
+      swiperState.swipeBackXYPositions.length > 0;
+
+    const performUndoCleanup = () => {
+      try {
+        if (lastDirection === 'left' && undoneCard) {
+          setPendingReinserts((prev) =>
+            prev.filter(p => p.card.card_id !== undoneCard.card_id)
           );
+        }
+
+        if (undoneCard) {
+          delete pendingProgressRef.current[undoneCard.card_id];
+          resetFlipForCardId(undoneCard.card_id);
+        }
+
+        if (lastDirection === 'left') {
+          const removedCardId = historyLeftCardIds.current.pop();
+          if (removedCardId) leftCountedCardIds.current.delete(removedCardId);
+        }
+
+        setHistory((prev) => prev.slice(0, -1));
+        setHistoryDirections((prev) => {
+          if (prev.length === 0) return prev;
+          if (lastDirection === 'right') setRightCount((c) => Math.max(0, c - 1));
+          else if (lastDirection === 'left') setLeftCount((c) => Math.max(0, c - 1));
+          setTotalSwipeCount((c) => Math.max(0, c - 1));
+          return prev.slice(0, -1);
+        });
+
+        setCurrentIndex(lastIndex);
+      } catch (e) {
+        console.error('handleUndo cleanup error:', e);
+      } finally {
+        isAnimatingRef.current = false;
+        setUndoDisabled(false);
+      }
+    };
+
+    const deferDuplicateRemoval = () => {
+      if (lastDirection !== 'left' || !undoneCard) return;
+      requestAnimationFrame(() => {
+        setCards((prevCards) => {
+          let duplicateIdx = -1;
+          for (let idx = prevCards.length - 1; idx > lastIndex; idx--) {
+            if (prevCards[idx].card_id === undoneCard.card_id) {
+              duplicateIdx = idx;
+              break;
+            }
+          }
           if (duplicateIdx === -1) return prevCards;
-  
           const newCards = [...prevCards];
           newCards.splice(duplicateIdx, 1);
           return newCards;
         });
-      }
-      if (undoneCard) {
-        delete pendingProgressRef.current[undoneCard.card_id];
-      }
-  
-      if (lastDirection === 'left') {
-        const removedCardId = historyLeftCardIds.current.pop();
-        if (removedCardId) {
-          leftCountedCardIds.current.delete(removedCardId);
-        }
-      }
-      setHistory((prev) => prev.slice(0, -1));
-  
-      setHistoryDirections((prev) => {
-        if (prev.length === 0) return prev;
-  
-        if (lastDirection === 'right') {
-          setRightCount((c) => Math.max(0, c - 1));
-        } else if (lastDirection === 'left') {
-          setLeftCount((c) => Math.max(0, c - 1));
-        }
-  
-        setTotalSwipeCount((c) => Math.max(0, c - 1));
-  
-        return prev.slice(0, -1);
       });
-  
-    }, 50); // 🔥 1 frame delay (çok önemli)
-  
-    setTimeout(() => setUndoDisabled(false), 400);
-    setTimeout(() => {
-      isAnimatingRef.current = false;
-    }, 400);
+    };
+
+    if (canSwipeBack) {
+      const safetyTimeout = setTimeout(() => {
+        isAnimatingRef.current = false;
+        setUndoDisabled(false);
+      }, 2000);
+
+      swiperRef.current.swipeBack(() => {
+        clearTimeout(safetyTimeout);
+        performUndoCleanup();
+        deferDuplicateRemoval();
+      });
+    } else {
+      performUndoCleanup();
+      deferDuplicateRemoval();
+      swiperRef.current.jumpToCardIndex(lastIndex);
+    }
   };
 
   const toggleFavorite = useCallback(async (cardId) => {

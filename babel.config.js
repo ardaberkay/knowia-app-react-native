@@ -136,7 +136,8 @@ module.exports = function (api) {
             'streamline:check-solid',
             'fluent:eye-lines-24-filled',
             'gridicons:block',
-            'mage:inbox-star'
+            'mage:inbox-star',
+            'meteor-icons:chevron-left'
           ],
         },
       ],

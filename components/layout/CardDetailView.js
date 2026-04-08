@@ -51,31 +51,31 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
   // Dot indikatör için görüntülenecek kartları hesapla
   const getVisibleCards = useMemo(() => {
     if (!cards || cards.length === 0) return [];
-    
+
     const totalCards = cards.length;
     const currentIdx = currentIndex;
-    
+
     if (totalCards <= 3) {
       // 3 veya daha az kart varsa hepsini göster
       return cards.map((card, index) => ({ card, index }));
     }
-    
+
     // Mevcut kartı ortada tutacak şekilde görüntülenecek kartları belirle
     let startIndex = currentIdx - 1;
     let endIndex = currentIdx + 1;
-    
+
     // Başlangıçta sınır kontrolü
     if (startIndex < 0) {
       startIndex = 0;
       endIndex = 2;
     }
-    
+
     // Sonda sınır kontrolü
     if (endIndex >= totalCards) {
       endIndex = totalCards - 1;
       startIndex = endIndex - 2;
     }
-    
+
     return cards.slice(startIndex, endIndex + 1).map((card, relativeIndex) => ({
       card,
       index: startIndex + relativeIndex
@@ -86,7 +86,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
   useEffect(() => {
     getVisibleCards.forEach(({ card: dotCard, index: dotIndex }) => {
       const cardId = dotCard?.id || `dot-${dotIndex}`;
-      
+
       if (!dotAnimations.current[cardId]) {
         dotAnimations.current[cardId] = {
           scale: new Animated.Value(dotIndex === currentIndex ? 1.5 : 1),
@@ -117,7 +117,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
     }
 
     const toValue = flippedCards[cardId] ? 0 : 1;
-    
+
     Animated.timing(flipAnimations.current[cardId], {
       toValue,
       duration: 300,
@@ -183,7 +183,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
               shadowOpacity: 0,
               elevation: 0,
               // iOS için perspective eklemek 3D derinliği artırır ve render hatalarını önler
-              transform: [{ perspective: 1000 }, { rotateY: rotateY }], 
+              transform: [{ perspective: 1000 }, { rotateY: rotateY }],
             },
           ]}
         >
@@ -197,7 +197,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
               <Iconify icon={categoryIcon} size={scale(200)} color="rgba(0, 0, 0, 0.1)" style={styles.categoryIconStyle} />
             </View>
             <TouchableOpacity activeOpacity={0.9} onPress={() => flipCard(cardId)} style={styles.cardTouchable}>
-              
+
               {/* İkonlar kısmını orijinal kodundaki gibi bırakıyorum */}
               <Animated.View style={[styles.quarterCircleContainer, { opacity: flipAnimations.current[cardId]?.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0, 0], extrapolate: 'clamp' }) || 1 }]}>
                 <View style={[styles.quarterCircle, { backgroundColor: colors.buttonColor }]}>
@@ -239,14 +239,14 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
   if (!card) return null;
 
   return (
-    <ScrollView 
-      style={{ flex: 1 }} 
-      contentContainerStyle={{ paddingBottom: verticalScale(8), flexGrow: 1 }} 
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{ paddingBottom: verticalScale(8), flexGrow: 1 }}
       showsVerticalScrollIndicator={false}
     >
       {/* Deck Slider */}
-      <View style={{ 
-        width: '100%', 
+      <View style={{
+        width: '100%',
         position: 'relative',
         paddingVertical: verticalScale(20),
       }}>
@@ -265,111 +265,111 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
             />
           </Svg>
         </View>
-          {/* Sol Ok Butonu */}
-          {currentIndex > 0 && (
-            <TouchableOpacity
-              style={[styles.navButton, styles.leftNavButton, { backgroundColor: colors.buttonColor, borderColor: colors.cardBorder }]}
-              onPress={() => {
-                const prevIndex = currentIndex - 1;
-                if (prevIndex >= 0 && flatListRef.current) {
-                  flatListRef.current.scrollToIndex({ index: prevIndex, animated: true });
-                  if (onSelectCard) onSelectCard(cards[prevIndex]);
-                }
-              }}
-            >
-              <Iconify icon="material-symbols:arrow-back-ios-new-rounded" size={moderateScale(22)} color={'#FFFFFF'} />
-            </TouchableOpacity>
-          )}
-
-<FlatList
-            ref={flatListRef}
-            data={cards}
-            keyExtractor={(item, index) => (item?.id ? String(item.id) : `card-${index}`)}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            
-            // GECİKME ÇÖZÜMÜ 1: İlk açılışta hemen çizilecek kartları hesapla
-            initialScrollIndex={currentIndex}
-            getItemLayout={getCardItemLayout}
-            
-            // GECİKME ÇÖZÜMÜ 2: Render motorunu hızlandıran proplar
-            removeClippedSubviews={false} // iOS'te true ise swipe sırasında titreme/kaybolma yapabilir! False yap.
-            initialNumToRender={5} // İlk açılışta daha fazla kart hazırda beklesin
-            maxToRenderPerBatch={5}
-            windowSize={5}
-            
-            renderItem={renderCardSliderItem}
-            onMomentumScrollEnd={handleScrollEnd}
-            
-            // GECİKME ÇÖZÜMÜ 3 (Opsiyonel ama etkili): Render hatasında çökmeyi engeller, sessizce o karta gider
-            onScrollToIndexFailed={(info) => {
-              const wait = new Promise(resolve => setTimeout(resolve, 50));
-              wait.then(() => {
-                flatListRef.current?.scrollToIndex({ index: info.index, animated: false });
-              });
+        {/* Sol Ok Butonu */}
+        {currentIndex > 0 && (
+          <TouchableOpacity
+            style={[styles.navButton, styles.leftNavButton, { backgroundColor: colors.buttonColor, borderColor: colors.cardBorder }]}
+            onPress={() => {
+              const prevIndex = currentIndex - 1;
+              if (prevIndex >= 0 && flatListRef.current) {
+                flatListRef.current.scrollToIndex({ index: prevIndex, animated: true });
+                if (onSelectCard) onSelectCard(cards[prevIndex]);
+              }
             }}
-          />
+          >
+            <Iconify icon="material-symbols:arrow-back-ios-new-rounded" size={moderateScale(22)} color={'#FFFFFF'} />
+          </TouchableOpacity>
+        )}
 
-          {/* Sağ Ok Butonu */}
-          {currentIndex < cards.length - 1 && (
-            <TouchableOpacity
-              style={[styles.navButton, styles.rightNavButton, { backgroundColor: colors.buttonColor, borderColor: colors.cardBorder }]}
-              onPress={() => {
-                const nextIndex = currentIndex + 1;
-                if (nextIndex < cards.length && flatListRef.current) {
-                  flatListRef.current.scrollToIndex({ index: nextIndex, animated: true });
-                  if (onSelectCard) onSelectCard(cards[nextIndex]);
-                }
-              }}
-            >
-              <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(22)} color={'#FFFFFF'} />
-            </TouchableOpacity>
-          )}
+        <FlatList
+          ref={flatListRef}
+          data={cards}
+          keyExtractor={(item, index) => (item?.id ? String(item.id) : `card-${index}`)}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
 
-          {/* Dot Indikatör */}
-          {cards && cards.length > 1 && (
-            <View style={styles.dotContainer}>
-              {getVisibleCards.map(({ card: dotCard, index: dotIndex }) => {
-                const cardId = dotCard?.id || `dot-${dotIndex}`;
-                const animation = dotAnimations.current[cardId];
-                
-                return (
-                  <Animated.View
-                    key={cardId}
+          // GECİKME ÇÖZÜMÜ 1: İlk açılışta hemen çizilecek kartları hesapla
+          initialScrollIndex={currentIndex}
+          getItemLayout={getCardItemLayout}
+
+          // GECİKME ÇÖZÜMÜ 2: Render motorunu hızlandıran proplar
+          removeClippedSubviews={false} // iOS'te true ise swipe sırasında titreme/kaybolma yapabilir! False yap.
+          initialNumToRender={5} // İlk açılışta daha fazla kart hazırda beklesin
+          maxToRenderPerBatch={5}
+          windowSize={5}
+
+          renderItem={renderCardSliderItem}
+          onMomentumScrollEnd={handleScrollEnd}
+
+          // GECİKME ÇÖZÜMÜ 3 (Opsiyonel ama etkili): Render hatasında çökmeyi engeller, sessizce o karta gider
+          onScrollToIndexFailed={(info) => {
+            const wait = new Promise(resolve => setTimeout(resolve, 50));
+            wait.then(() => {
+              flatListRef.current?.scrollToIndex({ index: info.index, animated: false });
+            });
+          }}
+        />
+
+        {/* Sağ Ok Butonu */}
+        {currentIndex < cards.length - 1 && (
+          <TouchableOpacity
+            style={[styles.navButton, styles.rightNavButton, { backgroundColor: colors.buttonColor, borderColor: colors.cardBorder }]}
+            onPress={() => {
+              const nextIndex = currentIndex + 1;
+              if (nextIndex < cards.length && flatListRef.current) {
+                flatListRef.current.scrollToIndex({ index: nextIndex, animated: true });
+                if (onSelectCard) onSelectCard(cards[nextIndex]);
+              }
+            }}
+          >
+            <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(22)} color={'#FFFFFF'} />
+          </TouchableOpacity>
+        )}
+
+        {/* Dot Indikatör */}
+        {cards && cards.length > 1 && (
+          <View style={styles.dotContainer}>
+            {getVisibleCards.map(({ card: dotCard, index: dotIndex }) => {
+              const cardId = dotCard?.id || `dot-${dotIndex}`;
+              const animation = dotAnimations.current[cardId];
+
+              return (
+                <Animated.View
+                  key={cardId}
+                  style={[
+                    {
+                      transform: [{ scale: animation?.scale || 1 }],
+                      opacity: animation?.opacity || 0.4,
+                    }
+                  ]}
+                >
+                  <TouchableOpacity
                     style={[
+                      dotIndex === currentIndex ? styles.activeDot : styles.inactiveDot,
                       {
-                        transform: [{ scale: animation?.scale || 1 }],
-                        opacity: animation?.opacity || 0.4,
+                        backgroundColor: dotIndex === currentIndex
+                          ? colors.buttonColor
+                          : colors.border,
                       }
                     ]}
-                  >
-                    <TouchableOpacity
-                      style={[
-                        dotIndex === currentIndex ? styles.activeDot : styles.inactiveDot,
-                        {
-                          backgroundColor: dotIndex === currentIndex 
-                            ? colors.buttonColor 
-                            : colors.border,
-                        }
-                      ]}
-                      onPress={() => {
-                        if (flatListRef.current) {
-                          flatListRef.current.scrollToIndex({ index: dotIndex, animated: true });
-                          if (onSelectCard) onSelectCard(cards[dotIndex]);
-                        }
-                      }}
-                    />
-                  </Animated.View>
-                );
-              })}
-            </View>
-          )}
-        </View>
+                    onPress={() => {
+                      if (flatListRef.current) {
+                        flatListRef.current.scrollToIndex({ index: dotIndex, animated: true });
+                        if (onSelectCard) onSelectCard(cards[dotIndex]);
+                      }
+                    }}
+                  />
+                </Animated.View>
+              );
+            })}
+          </View>
+        )}
+      </View>
 
       {/* Kart Detayları - Ayrı Kartlar */}
       <View style={styles.cardDetailsContainer}>
-        
+
         {/* Görsel Kartı */}
         {card?.image ? (
           <View style={[styles.detailCard, {
@@ -384,13 +384,13 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
             <View style={[styles.cardHeader, { borderBottomColor: colors.cardBorder }]}>
               <View style={styles.labelRow}>
                 <Iconify icon="mage:image-fill" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, {color: colors.cardQuestionText}]}>
+                <Text style={[styles.label, typography.styles.body, { color: colors.cardQuestionText }]}>
                   {t("cardDetail.image", "Kart Görseli")}
                 </Text>
               </View>
             </View>
             <View style={styles.cardContent}>
-                <Image source={{ uri: card.image }} style={styles.cardImage} />
+              <Image source={{ uri: card.image }} style={styles.cardImage} />
             </View>
           </View>
         ) : null}
@@ -408,7 +408,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
           <View style={[styles.cardHeader, { borderBottomColor: colors.cardBorder }]}>
             <View style={styles.labelRow}>
               <Iconify icon="uil:comment-alt-question" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, {color: colors.cardQuestionText}]}>
+              <Text style={[styles.label, typography.styles.body, { color: colors.cardQuestionText }]}>
                 {t("cardDetail.question", "Soru")}
               </Text>
             </View>
@@ -435,7 +435,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
             <View style={[styles.cardHeader, { borderBottomColor: colors.cardBorder }]}>
               <View style={styles.labelRow}>
                 <Iconify icon="uil:comment-alt-check" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, {color: colors.cardQuestionText}]}>
+                <Text style={[styles.label, typography.styles.body, { color: colors.cardQuestionText }]}>
                   {t("cardDetail.answer", "Cevap")}
                 </Text>
               </View>
@@ -463,7 +463,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
             <View style={[styles.cardHeader, { borderBottomColor: colors.cardBorder }]}>
               <View style={styles.labelRow}>
                 <Iconify icon="lucide:lightbulb" size={24} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, {color: colors.cardQuestionText}]}>
+                <Text style={[styles.label, typography.styles.body, { color: colors.cardQuestionText }]}>
                   {t("cardDetail.example", "Örnek")}
                 </Text>
               </View>
@@ -491,7 +491,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
             <View style={[styles.cardHeader, { borderBottomColor: colors.cardBorder }]}>
               <View style={styles.labelRow}>
                 <Iconify icon="material-symbols-light:stylus-note" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, {color: colors.cardQuestionText}]}>
+                <Text style={[styles.label, typography.styles.body, { color: colors.cardQuestionText }]}>
                   {t("cardDetail.note", "Not")}
                 </Text>
               </View>
@@ -504,7 +504,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
             </View>
           </View>
         ) : null}
-        
+
       </View>
 
       {/* Oluşturulma tarihi */}
