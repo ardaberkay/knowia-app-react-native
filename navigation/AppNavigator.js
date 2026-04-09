@@ -17,7 +17,6 @@ import { useTheme } from '../theme/theme';
 import SwipeDeckScreen from '../screens/cards/SwipeDeckScreen';
 import EditProfileScreen from '../screens/profile/EditProfileScreen';
 import BlockedScreen from '../screens/profile/BlockedScreen';
-import ProfileAvatarButton from '../components/layout/ProfileAvatarButton';
 import DeckEditScreen from '../screens/decks/EditDeckScreen';
 import CustomTabBar from '../components/ui/CustomTabBar';
 import AddCardScreen from '../screens/cards/CreateCardScreen';
@@ -111,7 +110,7 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: t('tabs.home', 'Anasayfa'), tabBarLabel: t('tabs.home', 'Anasayfa') }} />
-      <Tab.Screen name="Create" component={CreateScreen} options={{ tabBarLabel: t('tabs.create', 'Oluştur'), title: t('tabs.create', 'Oluştur'), headerShown: true, headerTitleAlign: 'center', headerRight: () => <ProfileAvatarButton /> }} />
+      <Tab.Screen name="Create" component={CreateScreen} options={{ tabBarLabel: t('tabs.create', 'Oluştur'), title: t('tabs.create', 'Oluştur'), headerShown: false }} />
       <Tab.Screen
         name="Library"
         component={LibraryScreen}

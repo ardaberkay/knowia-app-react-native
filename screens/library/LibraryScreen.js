@@ -1187,7 +1187,6 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     height: '100%',
-
   },
   headerLeft: {
   },

@@ -14,11 +14,11 @@ import { getFavoriteDecks, addFavoriteDeck, removeFavoriteDeck } from '../../ser
 import { updateLastActiveAt, updateNotificationPreference } from '../../services/ProfileService';
 import { registerForPushNotificationsAsync } from '../../services/NotificationService';
 import * as Notifications from 'expo-notifications';
-import ProfileAvatarButton from '../../components/layout/ProfileAvatarButton';
 import DeckSkeleton from '../../components/skeleton/DeckSkeleton';
 import { useTranslation } from 'react-i18next';
 import DeckCard from '../../components/ui/DeckUi';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import StandardCustomAppBar from '../../components/layout/StandardCustomAppBar';
 
 
 // Kategoriye göre ikon seçen yardımcı fonksiyon
@@ -408,22 +408,8 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      <View style={[styles.header, { backgroundColor: colors.appbar, borderBottomColor: colors.border }]}>
-        <View style={styles.headerContent}>
-          <View style={styles.logoContainer}>
-            <Image
-              source={require('../../assets/home_logo.png')}
-              style={styles.logoImage}
-              resizeMode="contain"
-            />
-            <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(24), letterSpacing: moderateScale(-1) }]}>Knowia</Text>
-          </View>
-          <View style={{ position: 'absolute', right: -24 }}>
-            <ProfileAvatarButton />
-          </View>
-        </View>
-      </View>
+    <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
+      <StandardCustomAppBar showLogo />
       <ScrollView
         style={[styles.content, { backgroundColor: colors.background }]}
         contentContainerStyle={{ paddingBottom: insets.bottom + verticalScale(120)}}
@@ -452,25 +438,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: moderateScale(5),
-    paddingBottom: verticalScale(10),
-    marginRight: scale(12),
-    marginLeft: scale(12),
-    backgroundColor: '#f8f8f8',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-    width: '100%',
   },
   content: {
     flex: 1,
@@ -504,15 +471,6 @@ const styles = StyleSheet.create({
     width: scale(44),
     marginLeft: scale(4),
     marginRight: scale(8),
-  },
-  logoImage: {
-    width: scale(44),
-    height: scale(44),
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   glassCard: {
     borderRadius: moderateScale(40),

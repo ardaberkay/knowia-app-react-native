@@ -18,6 +18,10 @@ import FilterModal, { FilterModalButton } from '../../components/modals/FilterMo
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { getLanguages } from '../../services/LanguageService';
 
+const LIST_TOP_RADIUS = moderateScale(28);
+const HEADER_BOTTOM_BLEED = verticalScale(24);
+const LIST_HEADER_OVERLAP = verticalScale(24);
+
 export default function CategoryDeckListScreen({ route }) {
   const { category, title, decks: initialDecks, favoriteDecks: initialFavoriteDecks } = route.params || {};
   const navigation = useNavigation();
@@ -261,8 +265,8 @@ export default function CategoryDeckListScreen({ route }) {
 
   const renderFixedHeader = useCallback(() => {
     const config = getCategoryConfig(category, t);
-    const headerHeight = Platform.OS === 'ios' ? insets.top + 44 : 56;
-    const gradientPaddingTop = headerHeight + verticalScale(32);
+    const targetTopSpace = Platform.OS === 'ios' ? 108 : 108;
+    const gradientPaddingTop = targetTopSpace - heroDimensions.headerContentPaddingTop;
 
     return (
       <View style={styles.fixedHeaderContainer}>
@@ -388,7 +392,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   fixedHeaderGradient: {
-    paddingBottom: verticalScale(12),
+    // Keep gradient visible under rounded list corners.
+    paddingBottom: HEADER_BOTTOM_BLEED,
     paddingHorizontal: 0,
     // paddingTop dinamik olarak uygulanacak
   },
@@ -438,10 +443,10 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     flex: 1,
-    marginTop: verticalScale(-20),
+    marginTop: -LIST_HEADER_OVERLAP,
     zIndex: 2,
-    borderTopLeftRadius: moderateScale(28),
-    borderTopRightRadius: moderateScale(28),
+    borderTopLeftRadius: LIST_TOP_RADIUS,
+    borderTopRightRadius: LIST_TOP_RADIUS,
     overflow: 'hidden',
   },
 });

@@ -628,61 +628,38 @@ export default function SwipeDeckScreen({ route, navigation }) {
   };
 
   const handleUndo = () => {
-    if (undoDisabled || history.length === 0) return;
-    if (!swiperRef.current) return;
+    if (undoDisabled || history.length === 0 || !swiperRef.current) return;
+
+    setUndoDisabled(true);
 
     const lastIndex = history[history.length - 1];
     const undoneCard = cards[lastIndex];
     const lastDirection = historyDirections[historyDirections.length - 1];
 
-    isAnimatingRef.current = true;
-    setUndoDisabled(true);
+    if (undoneCard) {
+      delete pendingProgressRef.current[undoneCard.card_id];
+      resetFlipForCardId(undoneCard.card_id);
+    }
 
-    const swiperState = swiperRef.current.state;
-    const canSwipeBack = swiperState &&
-      !swiperState.isSwipingBack &&
-      swiperState.swipeBackXYPositions &&
-      swiperState.swipeBackXYPositions.length > 0;
+    if (lastDirection === 'left' && undoneCard) {
+      setPendingReinserts((prev) =>
+        prev.filter(p => p.card.card_id !== undoneCard.card_id)
+      );
+      const removedCardId = historyLeftCardIds.current.pop();
+      if (removedCardId) leftCountedCardIds.current.delete(removedCardId);
+      setLeftCount((c) => Math.max(0, c - 1));
+    } else if (lastDirection === 'right') {
+      setRightCount((c) => Math.max(0, c - 1));
+    }
 
-    const performUndoCleanup = () => {
-      try {
-        if (lastDirection === 'left' && undoneCard) {
-          setPendingReinserts((prev) =>
-            prev.filter(p => p.card.card_id !== undoneCard.card_id)
-          );
-        }
+    setTotalSwipeCount((c) => Math.max(0, c - 1));
+    setHistory((prev) => prev.slice(0, -1));
+    setHistoryDirections((prev) => prev.slice(0, -1));
+    setCurrentIndex(lastIndex);
+    swiperRef.current.jumpToCardIndex(lastIndex);
 
-        if (undoneCard) {
-          delete pendingProgressRef.current[undoneCard.card_id];
-          resetFlipForCardId(undoneCard.card_id);
-        }
-
-        if (lastDirection === 'left') {
-          const removedCardId = historyLeftCardIds.current.pop();
-          if (removedCardId) leftCountedCardIds.current.delete(removedCardId);
-        }
-
-        setHistory((prev) => prev.slice(0, -1));
-        setHistoryDirections((prev) => {
-          if (prev.length === 0) return prev;
-          if (lastDirection === 'right') setRightCount((c) => Math.max(0, c - 1));
-          else if (lastDirection === 'left') setLeftCount((c) => Math.max(0, c - 1));
-          setTotalSwipeCount((c) => Math.max(0, c - 1));
-          return prev.slice(0, -1);
-        });
-
-        setCurrentIndex(lastIndex);
-      } catch (e) {
-        console.error('handleUndo cleanup error:', e);
-      } finally {
-        isAnimatingRef.current = false;
-        setUndoDisabled(false);
-      }
-    };
-
-    const deferDuplicateRemoval = () => {
-      if (lastDirection !== 'left' || !undoneCard) return;
-      requestAnimationFrame(() => {
+    if (lastDirection === 'left' && undoneCard) {
+      setTimeout(() => {
         setCards((prevCards) => {
           let duplicateIdx = -1;
           for (let idx = prevCards.length - 1; idx > lastIndex; idx--) {
@@ -696,25 +673,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
           newCards.splice(duplicateIdx, 1);
           return newCards;
         });
-      });
-    };
-
-    if (canSwipeBack) {
-      const safetyTimeout = setTimeout(() => {
-        isAnimatingRef.current = false;
-        setUndoDisabled(false);
-      }, 2000);
-
-      swiperRef.current.swipeBack(() => {
-        clearTimeout(safetyTimeout);
-        performUndoCleanup();
-        deferDuplicateRemoval();
-      });
-    } else {
-      performUndoCleanup();
-      deferDuplicateRemoval();
-      swiperRef.current.jumpToCardIndex(lastIndex);
+      }, 500);
     }
+
+    setTimeout(() => setUndoDisabled(false), 350);
   };
 
   const toggleFavorite = useCallback(async (cardId) => {
@@ -1012,17 +974,11 @@ export default function SwipeDeckScreen({ route, navigation }) {
               setCurrentIndex(i + 1);
               swipeX.setValue(0);
             }}
-            onSwipedTop={(i) => {
-              if (swiperRef.current) {
-                swiperRef.current.swipeBack();
-              }
-              swipeX.setValue(0);
-            }}
             disableTopSwipe={true}
             disableBottomSwipe={true}
             stackSize={2}
             showSecondCard={true}
-            swipeBackCard={true}
+            swipeBackCard={false}
             backgroundColor={colors.background}
             stackSeparation={0}
             useViewOverflow={Platform.OS === 'ios' ? false : true}

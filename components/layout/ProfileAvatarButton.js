@@ -9,7 +9,7 @@ import { triggerHaptic } from '../../lib/hapticManager';
 // Pressable bileşenini animasyonlu hale getiriyoruz
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export default function ProfileAvatarButton() {
+export default function ProfileAvatarButton({ compact = false }) {
   const navigation = useNavigation();
   const { profile } = useProfile();
 
@@ -38,7 +38,7 @@ export default function ProfileAvatarButton() {
 
   return (
     <AnimatedPressable
-      style={[styles.profileAvatarButton, animatedStyle]} // Animasyon stilini bağladık
+      style={[compact ? styles.profileAvatarButtonCompact : styles.profileAvatarButton, animatedStyle]} // Animasyon stilini bağladık
       onPressIn={() => {
         isPressed.value = 1;
       }}
@@ -52,7 +52,7 @@ export default function ProfileAvatarButton() {
     >
       <Image
         source={imageSource}
-        style={styles.profileAvatar}
+        style={compact ? styles.profileAvatarCompact : styles.profileAvatar}
       />
     </AnimatedPressable>
   );
@@ -73,6 +73,22 @@ const styles = StyleSheet.create({
   profileAvatar: {
     width: scale(47),
     height: scale(47),
+    borderRadius: moderateScale(22),
+    resizeMode: 'cover',
+    backgroundColor: 'transparent',
+  },
+  profileAvatarButtonCompact: {
+    width: scale(44),
+    height: scale(44),
+    borderRadius: moderateScale(22),
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  profileAvatarCompact: {
+    width: scale(44),
+    height: scale(44),
     borderRadius: moderateScale(22),
     resizeMode: 'cover',
     backgroundColor: 'transparent',
