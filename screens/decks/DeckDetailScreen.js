@@ -374,9 +374,9 @@ export default function DeckDetailScreen({ route, navigation }) {
   // bu yüzden cache kullanmadan direkt güncel veriyi çekiyoruz
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', async () => {
-      // Progress'i güncelle (cache kullanma, direkt güncel veriyi çek)
-      // Bu sayede SwipeDeckScreen'den döndüğünde yeni learned değeri hemen görünür
-      fetchProgressFromAPI(true);
+      // Progress'i sessizce güncelle (showLoading: false) — kartlar vb. alt ekrandan
+      // dönünce progressLoading tetiklenmez, yanıp sönme/az flash azalır; veri yine API'den gelir.
+      fetchProgressFromAPI(false);
 
       // Chapter progress bilgisini güncelle
       if (currentUserId && chapters.length > 0) {

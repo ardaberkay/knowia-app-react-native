@@ -109,15 +109,23 @@ export default function MyDecksSkeleton({ ListHeaderComponent }) {
   const bgColor = isDarkMode ? '#222' : '#ececec';
   const lineColor = isDarkMode ? '#333' : '#ddd';
 
-  return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ paddingBottom: '25%', paddingTop: '25%' }}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header Component */}
-      {ListHeaderComponent && (typeof ListHeaderComponent === 'function' ? ListHeaderComponent() : ListHeaderComponent)}
+  const listTopClearance = useMemo(() => height * 0.11, [height]);
 
+  const listHeader =
+    ListHeaderComponent == null
+      ? null
+      : typeof ListHeaderComponent === 'function'
+        ? ListHeaderComponent()
+        : ListHeaderComponent;
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: listTopClearance }}>
+      {listHeader}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: '25%', paddingTop: verticalScale(4) }}
+        showsVerticalScrollIndicator={false}
+      >
       {/* Skeleton Rows */}
       {[1, 2, 3].map((rowIndex) => (
         <View key={`skeleton_row_${rowIndex}`}>
@@ -212,7 +220,8 @@ export default function MyDecksSkeleton({ ListHeaderComponent }) {
           </View>
         </View>
       ))}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 

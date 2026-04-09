@@ -135,20 +135,20 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
       flipAnimations.current[cardId] = new Animated.Value(0);
     }
 
-    // Ana kart rotasyonu (0'dan 180'e)
-    const rotateY = flipAnimations.current[cardId].interpolate({
+    const anim = flipAnimations.current[cardId];
+
+    const rotateY = anim.interpolate({
       inputRange: [0, 1],
       outputRange: ['0deg', '180deg'],
     });
 
-    // Kart 90 dereceye geldiğinde (0.49 -> 0.50) ön yüzü gizle
-    const frontOpacity = flipAnimations.current[cardId].interpolate({
+    // RN'de backfaceVisibility gradient/touchable altında güvenilir değil; yüz seçimi opacity ile.
+    const frontOpacity = anim.interpolate({
       inputRange: [0, 0.49, 0.5, 1],
       outputRange: [1, 1, 0, 0],
     });
 
-    // Kart 90 dereceyi geçtiğinde (0.50 -> 0.51) arka yüzü göster
-    const backOpacity = flipAnimations.current[cardId].interpolate({
+    const backOpacity = anim.interpolate({
       inputRange: [0, 0.5, 0.51, 1],
       outputRange: [0, 0, 1, 1],
     });
@@ -177,13 +177,13 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
     return (
       <View style={{ width: screenWidth, paddingHorizontal: scale(18), marginVertical: verticalScale(27), justifyContent: 'center', alignItems: 'center' }}>
         <Animated.View
+          renderToHardwareTextureAndroid={false}
           style={[
             styles.sliderItem,
             {
               shadowOpacity: 0,
               elevation: 0,
-              // iOS için perspective eklemek 3D derinliği artırır ve render hatalarını önler
-              transform: [{ perspective: 1000 }, { rotateY: rotateY }],
+              transform: [{ perspective: 3500 }, { rotateY: rotateY }],
             },
           ]}
         >
@@ -213,18 +213,24 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
                 </View>
               </Animated.View>
 
-              {/* ÖN YÜZ - Sadece Opacity ile kontrol ediliyor */}
-              <Animated.View style={[styles.cardFace, { opacity: frontOpacity, position: 'absolute', width: '100%', height: '100%' }]}>
+              <Animated.View
+                collapsable={false}
+                style={[styles.cardFace, styles.cardFaceFlip, { opacity: frontOpacity }]}
+              >
                 <View style={styles.cardContent}>
                   <MathText value={item?.question || item?.name || item?.title || t('cardDetail.unnamed', 'İsimsiz Kart')} style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText }]} numberOfLines={3} />
                 </View>
               </Animated.View>
 
-              {/* ARKA YÜZ - Sadece Opacity ile kontrol ediliyor */}
-              {/* Not: Ana container döndüğü için içerik ters görünmesin diye arka yüzü statik olarak 180 derece (veya scaleX: -1) çeviriyoruz. */}
-              <Animated.View style={[styles.cardFace, { opacity: backOpacity, position: 'absolute', width: '100%', height: '100%', transform: [{ rotateY: '180deg' }] }]}>
+              <Animated.View
+                collapsable={false}
+                style={[
+                  styles.cardFace,
+                  styles.cardFaceFlip,
+                  { opacity: backOpacity, transform: [{ rotateY: '180deg' }] },
+                ]}
+              >
                 <View style={styles.cardContent}>
-                  {/* Kodunda MathText içinde kullandığın scaleX: -1 transformunu kaldırmanı öneririm, çünkü artık kapsayıcıyı rotateY: '180deg' ile çevirdik. */}
                   <MathText value={item?.answer || t('cardDetail.noAnswer', 'Cevap yok')} style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText }]} numberOfLines={4} />
                 </View>
               </Animated.View>
@@ -586,6 +592,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: moderateScale(20),
     backgroundColor: 'transparent',
+  },
+  cardFaceFlip: {
+    width: '100%',
+    height: '100%',
   },
   quarterCircleContainer: {
     position: 'absolute',

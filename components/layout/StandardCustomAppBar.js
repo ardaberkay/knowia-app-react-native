@@ -42,7 +42,7 @@ export default function StandardCustomAppBar({
             </Text>
           </View>
         ) : (
-          <Text style={[typography.styles.h2, styles.titleText, { color: colors.text }]}>
+          <Text style={[typography.styles.subtitle, styles.titleText, { color: colors.text, fontSize: moderateScale(22) }]}>
             {title}
           </Text>
         )}

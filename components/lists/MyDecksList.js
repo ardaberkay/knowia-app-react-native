@@ -235,6 +235,9 @@ const MyDecksList = ({
     listPaddingVertical: verticalScale(5),
   }), []);
 
+  // Absolute header altı boşluk (%25 fazla geldi; kartta zaten marginTop var).
+  const listTopClearance = useMemo(() => height * 0.11, [height]);
+
   const getCategoryColors = (sortOrder) => {
     if (colors.categoryColors && colors.categoryColors[sortOrder]) {
       return colors.categoryColors[sortOrder];
@@ -385,39 +388,61 @@ const MyDecksList = ({
     return renderSingleRow(row);
   }, [colors, DECK_CARD_VERTICAL_HEIGHT, DECK_CARD_HORIZONTAL_HEIGHT, categoryIconDimensions, onPressDeck, onToggleFavorite, onDeleteDeck, responsiveSpacing]);
 
+  const listHeader =
+    ListHeaderComponent == null
+      ? null
+      : React.isValidElement(ListHeaderComponent)
+        ? ListHeaderComponent
+        : <ListHeaderComponent />;
+
   return (
-    <FlatList
-      key={`mydecks-${decks.length}`}
-      data={rows}
-      keyExtractor={(_, idx) => `row_${idx}`}
-      contentContainerStyle={{ paddingBottom: '35%', paddingTop: '25%' }}
-      ListHeaderComponent={ListHeaderComponent}
-      renderItem={renderListItem}
-      ListEmptyComponent={renderEmptyComponent}
-      showsVerticalScrollIndicator={false}
-      
-      removeClippedSubviews={true} 
-      initialNumToRender={6} 
-      maxToRenderPerBatch={4} 
-      windowSize={5} 
-      keyboardDismissMode="on-drag" 
-      keyboardShouldPersistTaps="handled"
-      onScrollBeginDrag={() => Keyboard.dismiss()}
-      onEndReached={onEndReached}
-      onEndReachedThreshold={onEndReached ? 0.5 : undefined}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={colors.buttonColor}
-          colors={[colors.buttonColor]}
-        />
-      }
-    />
+    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: listTopClearance }]}>
+      {listHeader}
+      <FlatList
+        key={`mydecks-${decks.length}`}
+        style={styles.decksFlatList}
+        data={rows}
+        keyExtractor={(_, idx) => `row_${idx}`}
+        contentContainerStyle={styles.decksListContent}
+        renderItem={renderListItem}
+        ListEmptyComponent={renderEmptyComponent}
+        showsVerticalScrollIndicator={false}
+        removeClippedSubviews={true}
+        initialNumToRender={6}
+        maxToRenderPerBatch={4}
+        windowSize={5}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+        onScrollBeginDrag={() => Keyboard.dismiss()}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={onEndReached ? 0.5 : undefined}
+        refreshControl={
+          onRefresh ? (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.buttonColor}
+              colors={[colors.buttonColor]}
+            />
+          ) : undefined
+        }
+      />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+  decksFlatList: {
+    flex: 1,
+  },
+  decksListContent: {
+    flexGrow: 1,
+    paddingBottom: '35%',
+    paddingTop: verticalScale(4),
+  },
   myDecksList: {
   },
   myDeckRow: {

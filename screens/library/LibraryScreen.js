@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions,  Alert, Animated, ScrollView, RefreshControl, Image, Keyboard } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions,  Alert, Animated, ScrollView, Image, Keyboard } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
@@ -82,6 +82,7 @@ export default function LibraryScreen() {
   const [favoriteDecks, setFavoriteDecks] = useState([]);
   const [favoritesLoading, setFavoritesLoading] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [myDecksRefreshing, setMyDecksRefreshing] = useState(false);
   const [favoritesFetched, setFavoritesFetched] = useState(false);
   const [activeDeckMenuId, setActiveDeckMenuId] = useState(null);
   const { t } = useTranslation();
@@ -238,12 +239,17 @@ export default function LibraryScreen() {
       if (!userId) {
         setMyDecks([]);
         setLoading(false);
+        setMyDecksRefreshing(false);
         setMyDecksPage(0);
         setMyDecksHasMore(false);
         return;
       }
 
-      setLoading(true);
+      if (forceRefresh) {
+        setMyDecksRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       try {
         const decks = await getDecksByCategory(userId, 'myDecks', {
           page: 0,
@@ -258,7 +264,11 @@ export default function LibraryScreen() {
         setMyDecks([]);
         setMyDecksHasMore(false);
       } finally {
-        setLoading(false);
+        if (forceRefresh) {
+          setMyDecksRefreshing(false);
+        } else {
+          setLoading(false);
+        }
       }
     },
     [userId]
@@ -697,7 +707,7 @@ export default function LibraryScreen() {
         >
           {/* Header Content */}
           <View style={styles.headerContent}>
-            <View style={{ position: 'absolute', right: scale(-24), top: scale(8) }}>
+            <View style={styles.headerAvatarAbsolute}>
               <ProfileAvatarButton />
             </View>
           </View>
@@ -780,7 +790,7 @@ export default function LibraryScreen() {
               onDeleteDeck={handleDeleteDeck}
               onPressDeck={(deck) => navigation.navigate('DeckDetail', { deck })}
               ListHeaderComponent={renderMyDecksCard}
-              refreshing={loading}
+              refreshing={myDecksRefreshing}
               onRefresh={() => fetchMyDecks(true)}
               onEndReached={myDecksHasMore ? async () => {
                 if (!userId || myDecksLoadingMore || !myDecksHasMore) return;
@@ -822,14 +832,6 @@ export default function LibraryScreen() {
               keyboardDismissMode="on-drag"
               keyboardShouldPersistTaps="handled"
               onScrollBeginDrag={() => Keyboard.dismiss()}
-              refreshControl={
-                <RefreshControl
-                  refreshing={favoritesLoading}
-                  onRefresh={() => fetchFavorites(false, true)}
-                  tintColor={colors.buttonColor}
-                  colors={[colors.buttonColor]}
-                />
-              }
             >
               <View style={styles.favoriteSliderWrapper}>
                 <View style={[styles.favoriteHeaderRow, (favoriteDecks?.length === 0 && { zIndex: 10, elevation: 10 })]}>
@@ -1187,6 +1189,13 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     height: '100%',
+  },
+  headerAvatarAbsolute: {
+    position: 'absolute',
+    right: scale(-36),
+    top: 0,
+    height: verticalScale(44),
+    justifyContent: 'center',
   },
   headerLeft: {
   },

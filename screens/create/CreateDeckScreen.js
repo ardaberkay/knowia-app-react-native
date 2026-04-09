@@ -15,7 +15,7 @@ import HowToCreateModal from '../../components/modals/HowToCreateModal';
 import UndoButton from '../../components/tools/UndoButton';
 import CreateButton from '../../components/tools/CreateButton';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
-import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import DeckLanguageModal from '../../components/modals/DeckLanguageModal';
 import BadgeText from '../../components/tools/BadgeText';
 import { triggerHaptic } from '../../lib/hapticManager';
@@ -530,17 +530,19 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     padding: scale(16),
-    paddingTop: verticalScale(8),
+    paddingTop: 0,
   },
+  // HomeScreen popularDecksCard ile aynı üst boşluk: marginTop 16, altta marginVertical’ın bottom’u
   headerCard: {
     width: '100%',
+    marginTop: verticalScale(16),
     marginBottom: verticalScale(12),
   },
   headerCardContainer: {
     borderRadius: moderateScale(28),
     overflow: 'hidden',
     marginHorizontal: scale(10),
-    marginVertical: verticalScale(8),
+    marginBottom: verticalScale(8),
     paddingVertical: verticalScale(10),
   },
   headerCardContent: {

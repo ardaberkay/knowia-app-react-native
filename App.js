@@ -38,14 +38,14 @@ if (Platform.OS === 'android') {
 if (Text.defaultProps == null) {
   Text.defaultProps = {};
 }
-Text.defaultProps.maxFontSizeMultiplier = 1.2; 
+Text.defaultProps.maxFontSizeMultiplier = 1.1; 
 // veya tamamen kapatmak için: Text.defaultProps.allowFontScaling = false;
 
 // Input alanları için de aynı sorunu yaşamamak adına
 if (TextInput.defaultProps == null) {
   TextInput.defaultProps = {};
 }
-TextInput.defaultProps.maxFontSizeMultiplier = 1.2;
+TextInput.defaultProps.maxFontSizeMultiplier = 1.1;
 // veya TextInput.defaultProps.allowFontScaling = false;
 
 export const navigationRef = createNavigationContainerRef();
@@ -60,22 +60,16 @@ function MainAppRunner({ fontsLoaded, colors, isDarkMode, linking, navigationThe
   // Uygulama navigasyonu hazır olduğunda tetiklenir.
   const onNavReady = useCallback(() => {
     if (isReady) {
-      // Navigation hazır olsa bile, React Native'in ilk sayfayı (Home/Login)
-      // ekrana çizmesi (paint) için ~100-200ms civarı bir süreye ihtiyacı vardır.
-      // Bu gecikme, arkadaki beyazlık/turunculuk patlamasını yutar.
+
       setTimeout(async () => {
         await SplashScreen.hideAsync();
       }, 150); 
     }
   }, [isReady]);
 
-  // JS yüklenene kadar hiçbir şey render etme (Arkada Native Splash kilitli duruyor)
   if (!isReady) return null;
 
   return (
-    // 🔥 3. ADIM: Buradaki turuncu renk zorlamasını kaldırdık. 
-    // Temanın kendi arkaplan rengi neyse o kullanılacak, böylece splash kalktığında
-    // boş turuncu bir ekran DEĞİL, doğrudan uygulamanın kendisi görünecek.
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <NavigationContainer
         ref={navigationRef}
