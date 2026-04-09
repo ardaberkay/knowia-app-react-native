@@ -307,7 +307,7 @@ export default function DeckCardsScreen({ route, navigation }) {
             hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
           >
             <Iconify
-              icon={Platform.OS === 'ios' ? 'meteor-icons:chevron-left' : 'mdi:arrow-back'}
+              icon={Platform.OS === 'ios' ? 'ci:chevron-left' : 'mdi:arrow-back'}
               size={Platform.OS === 'ios' ? moderateScale(24) : moderateScale(24)}
               color={colors.text}
             />

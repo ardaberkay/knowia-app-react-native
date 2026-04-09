@@ -402,6 +402,42 @@ export default function CsvUploadModal({
     }
   };
 
+  const readPickedCsvAsString = async (sourceUri) => {
+    const utf8Enc = FileSystem.EncodingType?.UTF8 ?? 'utf8';
+    const b64Enc = FileSystem.EncodingType?.Base64 ?? 'base64';
+    let readUri = sourceUri;
+    let tempCopyUri = null;
+    try {
+      let csvContent;
+      try {
+        csvContent = await FileSystem.readAsStringAsync(readUri, { encoding: utf8Enc });
+      } catch {
+        tempCopyUri = `${FileSystem.cacheDirectory}csv_import_${Date.now()}.csv`;
+        await FileSystem.copyAsync({ from: sourceUri, to: tempCopyUri });
+        readUri = tempCopyUri;
+        csvContent = await FileSystem.readAsStringAsync(readUri, { encoding: utf8Enc });
+      }
+      if (csvContent.includes('\uFFFD') || csvContent.includes('\u0000')) {
+        const base64Content = await FileSystem.readAsStringAsync(readUri, { encoding: b64Enc });
+        const fileBuffer = Buffer.from(base64Content, 'base64');
+        if (fileBuffer[0] === 0xEF && fileBuffer[1] === 0xBB && fileBuffer[2] === 0xBF) {
+          csvContent = fileBuffer.slice(3).toString('utf8');
+        } else {
+          csvContent = decodeWindows1254(fileBuffer);
+        }
+      }
+      return csvContent;
+    } finally {
+      if (tempCopyUri) {
+        try {
+          await FileSystem.deleteAsync(tempCopyUri, { idempotent: true });
+        } catch {
+          /* temp temizliği isteğe bağlı */
+        }
+      }
+    }
+  };
+
   const handlePickCSV = async () => {
     try {
       setCsvLoading(true);
@@ -413,16 +449,7 @@ export default function CsvUploadModal({
           setCsvLoading(false);
           return;
         }
-        let csvContent = await FileSystem.readAsStringAsync(file.uri, { encoding: 'utf8' });
-        if (csvContent.includes('\uFFFD') || csvContent.includes('\u0000')) {
-          const base64Content = await FileSystem.readAsStringAsync(file.uri, { encoding: 'base64' });
-          const fileBuffer = Buffer.from(base64Content, 'base64');
-          if (fileBuffer[0] === 0xEF && fileBuffer[1] === 0xBB && fileBuffer[2] === 0xBF) {
-            csvContent = fileBuffer.slice(3).toString('utf8');
-          } else {
-            csvContent = decodeWindows1254(fileBuffer);
-          }
-        }
+        const csvContent = await readPickedCsvAsString(file.uri);
 
         const { validCards, errors, ignoredColumns, totalRows } = parseCSV(csvContent);
         const hasImageColumn = validCards.some(card => card.image && typeof card.image === 'string' && card.image.trim() !== '');

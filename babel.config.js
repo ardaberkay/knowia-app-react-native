@@ -137,7 +137,7 @@ module.exports = function (api) {
             'fluent:eye-lines-24-filled',
             'gridicons:block',
             'mage:inbox-star',
-            'meteor-icons:chevron-left'
+            'ci:chevron-left'
           ],
         },
       ],
