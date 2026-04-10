@@ -9,12 +9,13 @@ import Svg, { Path } from 'react-native-svg';
 import { scale, moderateScale, verticalScale, useWindowDimensions } from '../../lib/scaling';
 import MathText from '../ui/MathText';
 
-export default function CardDetailView({ card, cards = [], onSelectCard, showCreatedAt = true }) {
+export default function CardDetailView({ card, cards = [], onSelectCard, showCreatedAt = true, isDeckOwner = false }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { width: screenWidth } = useWindowDimensions();
   const flatListRef = useRef(null);
   const [flippedCards, setFlippedCards] = useState({});
+  const [imageLoaded, setImageLoaded] = useState(false);
   const flipAnimations = useRef({});
   const dotAnimations = useRef({});
 
@@ -131,6 +132,10 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
   };
 
   const pixelRatio = useMemo(() => PixelRatio.get(), []);
+
+  useEffect(() => {
+    setImageLoaded(false);
+  }, [card?.id, card?.image]);
 
   const getFlipInterpolation = (cardId) => {
     if (!flipAnimations.current[cardId]) {
@@ -429,7 +434,16 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
               </View>
             </View>
             <View style={styles.cardContent}>
-              <Image source={{ uri: card.image }} style={styles.cardImage} />
+              <View style={styles.cardImageContainer}>
+                {!imageLoaded && (
+                  <View style={[styles.cardImagePlaceholder, { backgroundColor: colors.border }]} />
+                )}
+                <Image
+                  source={{ uri: card.image }}
+                  style={[styles.cardImage, !imageLoaded && { opacity: 0 }]}
+                  onLoadEnd={() => setImageLoaded(true)}
+                />
+              </View>
             </View>
           </View>
         ) : null}
@@ -547,8 +561,8 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
       </View>
 
       {/* Oluşturulma tarihi */}
-      {showCreatedAt && card?.created_at ? (
-        <View style={{ paddingHorizontal: scale(18), marginTop: 'auto', marginBottom: verticalScale(12) }}>
+      {showCreatedAt && isDeckOwner && card?.created_at ? (
+        <View style={{ paddingHorizontal: scale(18), marginTop: 'auto', marginBottom: verticalScale(36) }}>
           <MathText
             value={`${t("cardDetail.createdAt", "Oluşturulma Tarihi")} ${new Date(card.created_at).toLocaleString('tr-TR')}`}
             style={[typography.styles.caption, { color: colors.muted, textAlign: 'center', fontSize: moderateScale(14) }]}
@@ -600,6 +614,22 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
     backgroundColor: 'transparent',
     alignSelf: 'center',
+  },
+  cardImageContainer: {
+    width: '100%',
+    height: verticalScale(160),
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  cardImagePlaceholder: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: moderateScale(12),
+    opacity: 0.35,
   },
   flipContainer: {
     width: scale(240),

@@ -609,6 +609,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
                 setEditCardMode(false);
               }}
               showCreatedAt={true}
+              isDeckOwner={isOwner}
             />
             <Modal
               visible={moreMenuVisible}
