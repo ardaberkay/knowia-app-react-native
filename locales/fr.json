@@ -186,7 +186,7 @@
     "deckEdit": "Modifier le Paquet",
     "deckCards": "Apprendre",
     "profileEdit": "Modifier le Profil",
-    "addCard": "Ajouter une Carte",
+    "addCard": "Ajouter",
     "infoDeck": "Infos du Paquet",
     "editCard": "Modifier la Carte",
     "cards": "Cartes",
@@ -195,7 +195,7 @@
   },
   "deckDetail": {
     "start": "Commencer",
-    "addCard": "Ajouter une Carte",
+    "addCard": "Ajouter",
     "cards": "Cartes",
     "chapters": "Chapitres",
     "progress": "Progrès",

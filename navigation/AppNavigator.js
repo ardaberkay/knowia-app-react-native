@@ -180,7 +180,8 @@ export default function AppNavigator() {
           fontFamily: 'Inter-SemiBold',
           fontSize: 18
         },
-        detachInactiveScreens: true,
+        // DeckDetail vb. geri çıkışta bir karelik yanlış ekran / flash azaltır (native stack + detach etkileşimi)
+        detachInactiveScreens: false,
       }}>
         {showOnboarding ? (
           <>

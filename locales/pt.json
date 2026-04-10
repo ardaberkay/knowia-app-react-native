@@ -186,7 +186,7 @@
     "deckEdit": "Editar Baralho",
     "deckCards": "Aprender",
     "profileEdit": "Editar Perfil",
-    "addCard": "Adicionar Cartão",
+    "addCard": "Adicionar",
     "infoDeck": "Informações do Baralho",
     "editCard": "Editar Cartão",
     "cards": "Cartões",
@@ -195,7 +195,7 @@
   },
   "deckDetail": {
     "start": "Iniciar",
-    "addCard": "Adicionar Cartão",
+    "addCard": "Adicionar",
     "cards": "Cartões",
     "chapters": "Capítulos",
     "progress": "Progresso",

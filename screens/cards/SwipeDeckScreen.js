@@ -17,6 +17,7 @@ import { typography } from '../../theme/typography';
 import { getCardsToLearn, batchUpsertProgress, getChapterProgressCounts } from '../../services/CardService';
 import { getDeckById } from '../../services/DeckService';
 import { invalidateCache } from '../../services/CacheService';
+import { mergeChapterProgressIntoCache } from '../../services/ChapterService';
 import { useAuth } from '../../contexts/AuthContext';
 import { Iconify } from 'react-native-iconify';
 import home_logo from '../../assets/home_logo.png';
@@ -340,15 +341,22 @@ export default function SwipeDeckScreen({ route, navigation }) {
     fetchCards();
   }, [deck.id, chapter?.id]);
 
-  // SwipeDeck'ten çıkıldığında progress cache'lerini invalidate et (DeckDetail/Chapters güncel sayı görsün)
+  // Swipe çıkışı: tek bölümde cache'i merge et; tüm deste modunda chapters progress cache'ini sıfırla
   useEffect(() => {
     return () => {
-      if (deck?.id && authUserId) {
-        invalidateCache(`progress_deck_${deck.id}_${authUserId}`);
+      if (!deck?.id || !authUserId) return;
+      invalidateCache(`progress_deck_${deck.id}_${authUserId}`);
+      const statsChapterId =
+        typeof chapter === 'undefined'
+          ? undefined
+          : (chapter === null ? null : chapter.id);
+      if (statsChapterId === undefined) {
         invalidateCache(`progress_chapters_${deck.id}_${authUserId}`);
+      } else {
+        mergeChapterProgressIntoCache(deck.id, authUserId, statsChapterId).catch(() => {});
       }
     };
-  }, [deck?.id, authUserId]);
+  }, [deck?.id, authUserId, chapter]);
 
   useEffect(() => {
     if (loading || currentIndex === 0) return;
@@ -374,10 +382,16 @@ export default function SwipeDeckScreen({ route, navigation }) {
         }
       }
       if (authUserId && deck?.id) {
-        await Promise.all([
-          invalidateCache(`progress_deck_${deck.id}`),
-          invalidateCache(`progress_chapters_${deck.id}`),
-        ]);
+        invalidateCache(`progress_deck_${deck.id}_${authUserId}`);
+        const statsChapterId =
+          typeof chapter === 'undefined'
+            ? undefined
+            : (chapter === null ? null : chapter.id);
+        if (statsChapterId === undefined) {
+          await invalidateCache(`progress_chapters_${deck.id}_${authUserId}`);
+        } else {
+          await mergeChapterProgressIntoCache(deck.id, authUserId, statsChapterId);
+        }
       }
     };
     const unsubscribe = navigation.addListener('blur', handleExit);
@@ -385,7 +399,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       unsubscribe();
       handleExit();
     };
-  }, [navigation, authUserId, deck?.id]);
+  }, [navigation, authUserId, deck?.id, chapter]);
 
   useEffect(() => {
     if (Platform.OS !== 'android') return;

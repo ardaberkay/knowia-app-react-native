@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Modal, Pressable, Image, Switch, Animated, RefreshControl } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Modal, Pressable, Image, Switch, Animated, RefreshControl, InteractionManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -23,18 +23,14 @@ import ReportModal from '../../components/modals/ReportModal';
 import { scale, moderateScale, verticalScale, useWindowDimensions } from '../../lib/scaling';
 import { useFocusEffect } from '@react-navigation/native';
 import { triggerHaptic } from '../../lib/hapticManager';
-import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const AnimatedFabContainer = Animated.createAnimatedComponent(View);
-const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
+import { BottomSheetModal, BottomSheetFlatList, BottomSheetBackdrop, TouchableOpacity as BSTouchableOpacity } from '@gorhom/bottom-sheet';
 
 export default function DeckDetailScreen({ route, navigation }) {
   
   const insets = useSafeAreaInsets();
   const { deck } = route.params;
   const { colors } = useTheme();
-  const isDarkMode = colors.background === '#1C1C1C';
   const { session } = useAuth();
   const userId = session?.user?.id;
   // Favori durumunu route.params'dan al (eğer varsa), yoksa false
@@ -61,6 +57,19 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [reportModalTargetId, setReportModalTargetId] = useState(null);
   const [reportModalAlreadyCodes, setReportModalAlreadyCodes] = useState([]);
   const chaptersFetchedRef = useRef(false);
+  /** Aynı anda birden fazla fetchChapters; eski cevap state'i güncellemesin */
+  const chaptersFetchGenRef = useRef(0);
+  /** Ekran unmount olduysa (stack'ten çıkıldıysa) chapter/progress setState yapılmasın — çıkış animasyonunda flash azaltır */
+  const deckDetailMountedRef = useRef(true);
+  /** useFocusEffect veri yenilemesi: blur sonrası gelen progress cevabı state güncellemesin */
+  const detailFocusRefreshActiveRef = useRef(false);
+
+  useEffect(() => {
+    deckDetailMountedRef.current = true;
+    return () => {
+      deckDetailMountedRef.current = false;
+    };
+  }, []);
   // Session'dan user ID'yi al (eğer varsa)
   const initialUserId = session?.user?.id || null;
   const [currentUserId, setCurrentUserId] = useState(initialUserId);
@@ -85,60 +94,47 @@ export default function DeckDetailScreen({ route, navigation }) {
   const toNameScrollHintDone = useRef(false);
   const nameLayoutDone = useRef(false);
   const toNameLayoutDone = useRef(false);
-  const [fabMenuOpen, setFabMenuOpen] = useState(false);
-  const fabMenuAnimation = useRef(new Animated.Value(0)).current;
   const [chapters, setChapters] = useState([]);
   const [chapterProgressMap, setChapterProgressMap] = useState(new Map());
   const [decksLanguages, setDecksLanguages] = useState([]);
   // "Aksiyon" özel bölümü - tüm kartları gösterir
   const ACTION_CHAPTER = { id: 'action', name: 'Aksiyon', ordinal: null };
   const [selectedChapter, setSelectedChapter] = useState(null);
-  const [inlineChapterListVisible, setInlineChapterListVisible] = useState(false);
+  const [chapterSheetVisible, setChapterSheetVisible] = useState(false);
+  const [chapterProgressLoading, setChapterProgressLoading] = useState(false);
+  const [chapterProgressLoadedCount, setChapterProgressLoadedCount] = useState(0);
+  const chapterProgressLoadedRef = useRef(false);
+  const chapterProgressJobRef = useRef(0);
+  /** Aynı anda iki fetch (prefetch + sheet açılışı) çakışmasın */
+  const chapterProgressPromiseRef = useRef(null);
+  /** onRefresh gibi üstte tanımlı callback'ler güncel fetchChapterProgress'e erişsin */
+  const fetchChapterProgressRef = useRef(async () => {});
+  const chapterSheetModalRef = useRef(null);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   // 120+ karakter genelde 3 satırı aşar (tahmin)
   const [descriptionNeedsExpand, setDescriptionNeedsExpand] = useState(deck?.description?.length > 120);
   const descriptionLayoutDone = useRef(false);
   const [refreshing, setRefreshing] = useState(false);
-  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-  const fabRightPosition = scale(20); // FAB butonunun sağdan mesafesi
-  const fabButtonWidth = scale(56);
-  const fabGap = scale(12);
-  const fabTotalWidth = fabButtonWidth + fabGap + fabButtonWidth; // İki buton + gap
+  const { height: screenHeight } = useWindowDimensions();
+  /** Az bölümde sheet kısa; çok bölümde en fazla ~%68 ekran (önceki sabit snap ile aynı tavan) */
+  const chapterSheetMaxContentHeight = useMemo(() => screenHeight * 0.68, [screenHeight]);
+  /** Çok az bölümde sheet çökük kalmasın; tavanı aşmasın */
+  const chapterSheetMinContentHeight = useMemo(
+    () =>
+      Math.min(
+        chapterSheetMaxContentHeight,
+        Math.max(screenHeight * 0.36, verticalScale(300))
+      ),
+    [chapterSheetMaxContentHeight, screenHeight]
+  );
+  const chapterSheetHeaderApprox = verticalScale(56);
   const moreMenuScaleAnim = useRef(new Animated.Value(0)).current;
-
-  const panelMaxWidth = screenWidth - fabRightPosition - fabTotalWidth - scale(20); // Sol padding için 20
-  const fabExpandedWidth = fabMenuAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [fabButtonWidth, fabButtonWidth + panelMaxWidth],
-  });
-  const fabContentPadding = fabMenuAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, scale(16)],
-  });
-  const fabContentTranslate = fabMenuAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [scale(20), 0],
-  });
-  const fabContentOpacity = fabMenuAnimation.interpolate({
-    inputRange: [0, 0.2, 1],
-    outputRange: [0, 0, 1],
-    extrapolate: 'clamp',
-  });
 
   // Animation values for entrance effects
   const heroAnim = useRef(new Animated.Value(0)).current;
   const statsAnim = useRef(new Animated.Value(0)).current;
   const cardsAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0)).current;
-
-  const buttonScale = useSharedValue(1);
-  // Animasyon stili
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: buttonScale.value }],
-    };
-  });
-
 
   useEffect(() => {
     if (creatorMenuVisible) {
@@ -205,26 +201,13 @@ export default function DeckDetailScreen({ route, navigation }) {
     ]).start();
   }, []);
 
-  useEffect(() => {
-    if (!fabMenuOpen && inlineChapterListVisible) {
-      setInlineChapterListVisible(false);
-    }
-  }, [fabMenuOpen, inlineChapterListVisible]);
-
-  // Swipe ekranına gidip geri dönünce FAB state'i takılı kalmasın
+  // Swipe ekranına gidip geri dönünce chapter sheet açık kalmasın
   useEffect(() => {
     const onBlur = navigation.addListener('blur', () => {
-      setFabMenuOpen(false);
-      setInlineChapterListVisible(false);
+      setChapterSheetVisible(false);
     });
-
-    const onFocus = navigation.addListener('focus', () => {
-      setInlineChapterListVisible(false);
-    });
-
     return () => {
       onBlur?.();
-      onFocus?.();
     };
   }, [navigation]);
 
@@ -307,12 +290,16 @@ export default function DeckDetailScreen({ route, navigation }) {
     await fetchProgressFromAPI(true);
   };
 
-  const fetchProgressFromAPI = async (showLoading = true) => {
+  const fetchProgressFromAPI = async (showLoading = true, fromFocusRefresh = false) => {
     if (showLoading) {
       setProgressLoading(true);
     }
     try {
       const stats = await getDeckProgressCounts(userId, deck.id);
+      if (fromFocusRefresh && !detailFocusRefreshActiveRef.current) {
+        if (showLoading) setProgressLoading(false);
+        return;
+      }
 
       const calculatedProgress = stats.total > 0 ? stats.learned / stats.total : 0;
 
@@ -336,6 +323,10 @@ export default function DeckDetailScreen({ route, navigation }) {
         setProgressLoading(false);
       }
     } catch (e) {
+      if (fromFocusRefresh && !detailFocusRefreshActiveRef.current) {
+        if (showLoading) setProgressLoading(false);
+        return;
+      }
       console.error('Progress fetch error:', e);
       setProgress(0);
       if (showLoading) {
@@ -369,49 +360,47 @@ export default function DeckDetailScreen({ route, navigation }) {
     }
   }, [deck?.id, session?.user?.id]); // deck.id ve session değiştiğinde tekrar yükle
 
-  // Sayfa focus olduğunda progress ve deck verisini güncelle
-  // ÖNEMLİ: SwipeDeckScreen'den döndüğünde learned değeri değişmiş olabilir,
-  // bu yüzden cache kullanmadan direkt güncel veriyi çekiyoruz
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', async () => {
-      // Progress'i sessizce güncelle (showLoading: false) — kartlar vb. alt ekrandan
-      // dönünce progressLoading tetiklenmez, yanıp sönme/az flash azalır; veri yine API'den gelir.
-      fetchProgressFromAPI(false);
+  // Sayfa focus olduğunda progress ve deck verisini güncelle (useFocusEffect + isActive:
+  // geri tuşuyla çıkış sırasında tamamlanan API cevapları setState / params mutasyonu yapmasın;
+  // ara ara DeckDetail'in bir anlığına yeniden görünmesine yol açabiliyordu.)
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      detailFocusRefreshActiveRef.current = true;
 
-      // Chapter progress bilgisini güncelle
-      if (currentUserId && chapters.length > 0) {
+      const run = async () => {
+        await fetchProgressFromAPI(false, true);
+        if (!isActive) return;
+
         try {
-          const progress = await getChaptersProgress(chapters, deck.id, currentUserId);
-          setChapterProgressMap(progress);
-        } catch (e) {
-          console.error('Error fetching chapter progress:', e);
-        }
-      }
-
-      // Deck verisini ve favori durumunu servislerden güncelle
-      try {
-        const [deckData, favIds] = await Promise.all([
-          getDeckById(deck.id),
-          userId ? getFavoriteDeckIds(userId) : Promise.resolve([]),
-        ]);
-        const isFav = userId ? favIds.includes(deck.id) : false;
-        if (deckData) {
-          if (deckData.is_admin_created && deckData.profiles) {
-            deckData.profiles = { ...deckData.profiles, username: 'Knowia', image_url: null };
+          const [deckData, favIds] = await Promise.all([
+            getDeckById(deck.id),
+            userId ? getFavoriteDeckIds(userId) : Promise.resolve([]),
+          ]);
+          if (!isActive) return;
+          const isFav = userId ? favIds.includes(deck.id) : false;
+          if (deckData) {
+            if (deckData.is_admin_created && deckData.profiles) {
+              deckData.profiles = { ...deckData.profiles, username: 'Knowia', image_url: null };
+            }
+            deckData.is_favorite = isFav;
+            route.params.deck = deckData;
+            setCategoryInfo(deckData.categories);
+            setIsShared(deckData.is_shared || false);
           }
-          deckData.is_favorite = isFav;
-          route.params.deck = deckData;
-          setCategoryInfo(deckData.categories);
-          setIsShared(deckData.is_shared || false);
+          setIsFavorite(isFav);
+        } catch (e) {
+          console.error('Deck verisi güncellenemedi:', e);
         }
-        setIsFavorite(isFav);
-      } catch (e) {
-        console.error('Deck verisi güncellenemedi:', e);
-      }
-    });
+      };
 
-    return unsubscribe;
-  }, [navigation, deck.id, currentUserId, chapters]);
+      run();
+      return () => {
+        isActive = false;
+        detailFocusRefreshActiveRef.current = false;
+      };
+    }, [deck.id, currentUserId, userId])
+  );
 
   const onRefresh = useCallback(async () => {
     if (!deck?.id) return;
@@ -438,22 +427,21 @@ export default function DeckDetailScreen({ route, navigation }) {
   
       // 2. ADIM: İstatistikleri (Toplam, Learned, Learning) güncelle
       // Bu fonksiyon getDeckProgressCounts'u çağırır ve hafiftir.
-      await fetchProgressFromAPI(false); 
-  
-      // 3. ADIM: Chapter detaylarını güncelle (Eğer modal varsa lazım)
+      await fetchProgressFromAPI(false);
+
+      // 3. ADIM: Bölüm progress özetini tazele (sheet + seçili bölüm %)
       if (uid && chapters.length > 0) {
-        const progress = await getChaptersProgress(chapters, deck.id, uid);
-        setChapterProgressMap(progress);
+        await fetchChapterProgressRef.current(true);
       }
-  
+
       // DİKKAT: getAllCardsForDeck silindi. 2800 kartlık yük kalktı!
-  
+
     } catch (e) {
       console.error('DeckDetail refresh error:', e);
     } finally {
       setRefreshing(false);
     }
-  }, [deck?.id, userId, chapters]);
+  }, [deck?.id, userId, chapters.length]);
 
   useEffect(() => {
     if (!search.trim()) {
@@ -507,10 +495,12 @@ export default function DeckDetailScreen({ route, navigation }) {
     try {
       const storageKey = `last_selected_chapter_${deck.id}`;
       const savedChapterId = await AsyncStorage.getItem(storageKey);
+      if (!deckDetailMountedRef.current) return;
 
       if (savedChapterId) {
         // Eğer "action" seçiliyse
         if (savedChapterId === 'action') {
+          if (!deckDetailMountedRef.current) return;
           setSelectedChapter(ACTION_CHAPTER);
           return;
         }
@@ -518,16 +508,18 @@ export default function DeckDetailScreen({ route, navigation }) {
         // Kaydedilmiş chapter'ı bul
         const savedChapter = availableChapters.find(ch => ch.id === savedChapterId);
         if (savedChapter) {
+          if (!deckDetailMountedRef.current) return;
           setSelectedChapter(savedChapter);
           return;
         }
       }
 
       // Eğer kayıtlı chapter bulunamazsa veya yoksa: hiçbir seçim yapma (kullanıcı seçsin)
+      if (!deckDetailMountedRef.current) return;
       setSelectedChapter(null);
     } catch (e) {
       console.error('Error loading last selected chapter:', e);
-      // Hata durumunda da seçim yapma
+      if (!deckDetailMountedRef.current) return;
       setSelectedChapter(null);
     }
   };
@@ -557,26 +549,21 @@ export default function DeckDetailScreen({ route, navigation }) {
   // Chapter'ları çek (mount ve focus'ta sessiz yenileme için kullanılır)
   const fetchChapters = useCallback(async () => {
     if (!deck?.id) return;
+    const gen = ++chaptersFetchGenRef.current;
     try {
       const data = await listChapters(deck.id);
+      if (gen !== chaptersFetchGenRef.current || !deckDetailMountedRef.current) return;
       const availableChapters = data || [];
       setChapters(availableChapters);
       chaptersFetchedRef.current = true;
 
       // Son seçilen chapter'ı yükle
       await loadLastSelectedChapter(availableChapters);
+      if (gen !== chaptersFetchGenRef.current || !deckDetailMountedRef.current) return;
 
-      // Progress bilgisini çek
-      if (currentUserId && availableChapters.length > 0) {
-        try {
-          const progress = await getChaptersProgress(availableChapters, deck.id, currentUserId);
-          setChapterProgressMap(progress);
-        } catch (e) {
-          console.error('Error fetching chapter progress:', e);
-        }
-      }
     } catch (e) {
       console.error('Error fetching chapters:', e);
+      if (gen !== chaptersFetchGenRef.current || !deckDetailMountedRef.current) return;
       setChapters([]);
       setSelectedChapter(null);
     }
@@ -584,6 +571,9 @@ export default function DeckDetailScreen({ route, navigation }) {
 
   useEffect(() => {
     chaptersFetchedRef.current = false;
+    chapterProgressLoadedRef.current = false;
+    setChapterProgressMap(new Map());
+    setChapterProgressLoadedCount(0);
     if (deck?.id) {
       fetchChapters();
     }
@@ -594,18 +584,136 @@ export default function DeckDetailScreen({ route, navigation }) {
       if (chaptersFetchedRef.current) {
         fetchChapters();
       }
+      chapterProgressLoadedRef.current = false;
+      const raf = requestAnimationFrame(() => {
+        fetchChapterProgressRef.current?.(false, { silent: true });
+      });
+      return () => cancelAnimationFrame(raf);
     }, [fetchChapters])
   );
 
-  // FAB menü animasyonu
+  const fetchChapterProgress = useCallback(async (force = false, options = {}) => {
+    const { silent = false } = options;
+    if (!currentUserId || chapters.length === 0) return;
+    if (!force && chapterProgressLoadedRef.current) return;
+    if (!force && chapterProgressPromiseRef.current) {
+      return chapterProgressPromiseRef.current;
+    }
+    if (force) {
+      chapterProgressPromiseRef.current = null;
+    }
+
+    const jobId = ++chapterProgressJobRef.current;
+    if (!silent) {
+      setChapterProgressLoading(true);
+    }
+    if (force) {
+      setChapterProgressMap(new Map());
+      setChapterProgressLoadedCount(0);
+      chapterProgressLoadedRef.current = false;
+    }
+
+    let p;
+    p = (async () => {
+      try {
+        const batchSize = 15;
+        for (let i = 0; i < chapters.length; i += batchSize) {
+          const batch = chapters.slice(i, i + batchSize);
+          const progressBatch = await getChaptersProgress(batch, deck.id, currentUserId, force);
+          if (!deckDetailMountedRef.current || chapterProgressJobRef.current !== jobId) return;
+          setChapterProgressMap(prev => {
+            const next = new Map(prev);
+            progressBatch.forEach((value, key) => next.set(key, value));
+            return next;
+          });
+          setChapterProgressLoadedCount(Math.min(chapters.length, i + batch.length));
+        }
+        if (!deckDetailMountedRef.current || chapterProgressJobRef.current !== jobId) return;
+        chapterProgressLoadedRef.current = true;
+      } catch (e) {
+        console.error('Error fetching chapter progress:', e);
+      } finally {
+        if (!silent && deckDetailMountedRef.current && chapterProgressJobRef.current === jobId) {
+          setChapterProgressLoading(false);
+        }
+        if (chapterProgressPromiseRef.current === p) {
+          chapterProgressPromiseRef.current = null;
+        }
+      }
+    })();
+
+    chapterProgressPromiseRef.current = p;
+    return p;
+  }, [chapters, currentUserId, deck.id]);
+
+  fetchChapterProgressRef.current = fetchChapterProgress;
+
+  // İlk animasyonlar bittikten sonra bölüm progress'ini sessizce önden yükle (sheet açılınca hazır olsun)
   useEffect(() => {
-    Animated.spring(fabMenuAnimation, {
-      toValue: fabMenuOpen ? 1 : 0,
-      useNativeDriver: false, // width animasyonu için false
-      tension: 80,
-      friction: 8,
-    }).start();
-  }, [fabMenuOpen]);
+    if (!currentUserId || chapters.length === 0) return undefined;
+    const task = InteractionManager.runAfterInteractions(() => {
+      fetchChapterProgress(false);
+    });
+    return () => {
+      if (task && typeof task.cancel === 'function') {
+        task.cancel();
+      }
+    };
+  }, [chapters, currentUserId, deck.id, fetchChapterProgress]);
+
+  const openChapterSheet = useCallback(async () => {
+    triggerHaptic('light');
+    setChapterSheetVisible(true);
+    await fetchChapterProgress(false);
+  }, [fetchChapterProgress]);
+
+  useEffect(() => {
+    if (chapterSheetVisible) {
+      chapterSheetModalRef.current?.present();
+      return;
+    }
+    chapterSheetModalRef.current?.dismiss();
+  }, [chapterSheetVisible]);
+
+  const renderChapterSheetBackdrop = useCallback(
+    (props) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        opacity={0.45}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
+
+  const handleStartDeck = useCallback(async () => {
+    triggerHaptic('heavy');
+
+    if (!selectedChapter?.id) {
+      setChapterSheetVisible(true);
+      return;
+    }
+
+    try {
+      if (userId) {
+        await insertDeckStats(deck.id, userId);
+      }
+    } catch (error) {
+      console.log('Deck stats log error:', error);
+    }
+
+    const chapterParam = selectedChapter.id === 'action' ? undefined : selectedChapter;
+    navigation.navigate('SwipeDeck', { deck, chapter: chapterParam });
+  }, [selectedChapter, t, userId, deck, navigation]);
+
+  const selectedChapterProgress = selectedChapter?.id === 'action'
+    ? deckStats
+    : (selectedChapter?.id ? chapterProgressMap.get(selectedChapter.id) : null);
+  const selectedChapterLearnedPct = selectedChapterProgress?.total > 0
+    ? Math.round((selectedChapterProgress.learned / selectedChapterProgress.total) * 100)
+    : null;
 
   const handleToggleFavorite = async () => {
     // 1. KULLANICIYI BEKLETME: Kalbi anında doldur/boşalt ve titret
@@ -1136,18 +1244,21 @@ export default function DeckDetailScreen({ route, navigation }) {
           </LinearGradient>
         </Animated.View>
 
-        {/* Progress & Stats Card - Side by Side Layout */}
-        <Animated.View
-          style={[
-            styles.gfProgressCard,
-            {
-              backgroundColor: colors.cardBackground,
-              opacity: statsAnim,
-              transform: [{ translateY: statsAnim.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }) }]
-            }
-          ]}
-        >
-          <View style={styles.gfCardContent}>
+        <View style={[styles.gfLearningFlowCard, { borderColor: colors.cardBorder, backgroundColor: colors.cardBackground }]}>
+          {/* Progress & Stats Card - Side by Side Layout */}
+          <Animated.View
+            style={[
+              styles.gfProgressCard,
+              {
+                backgroundColor: 'transparent',
+                shadowOpacity: 0,
+                elevation: 0,
+                opacity: statsAnim,
+                transform: [{ translateY: statsAnim.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }) }]
+              }
+            ]}
+          >
+            <View style={styles.gfCardContent}>
             {/* Left Side - Progress Ring */}
             <View style={styles.gfProgressSide}>
               <View style={[styles.gfProgressGlow, { backgroundColor: getCategoryColor(categoryInfo?.sort_order) + '15' }]} />
@@ -1219,8 +1330,78 @@ export default function DeckDetailScreen({ route, navigation }) {
                 </View>
               </View>
             </View>
+            </View>
+          </Animated.View>
+
+          <View style={styles.gfLearningFlowDividerWrap}>
+            <View style={[styles.gfLearningFlowDivider, { backgroundColor: colors.border }]} />
           </View>
-        </Animated.View>
+
+          <Animated.View
+            style={[
+              styles.gfStudyCard,
+              {
+                backgroundColor: 'transparent',
+                borderColor: 'transparent',
+                marginHorizontal: 0,
+                marginBottom: 0,
+                padding: 0,
+                opacity: cardsAnim,
+                transform: [{ translateY: cardsAnim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }],
+              },
+            ]}
+          >
+            <TouchableOpacity
+              style={[styles.gfStudyChapterButton, { borderColor: colors.border, backgroundColor: colors.background }]}
+              onPress={openChapterSheet}
+              activeOpacity={0.75}
+            >
+              <LinearGradient
+                colors={[colors.secondary, colors.secondary + 'CC']}
+                style={styles.gfStudyChapterIcon}
+              >
+                <Iconify icon="streamline-flex:module-puzzle-2" size={moderateScale(22)} color="#fff" />
+              </LinearGradient>
+              <View style={styles.gfStudyTextWrap}>
+                <Text style={[styles.gfStudyPrimaryText, { color: colors.cardQuestionText }]}>
+                  {selectedChapter?.id === 'action'
+                    ? t('deckDetail.action', 'Aksiyon')
+                    : selectedChapter?.id
+                      ? `${t('chapters.chapter', 'Bölüm')} ${selectedChapter.ordinal}`
+                      : t('deckDetail.selectChapterCtaShort', 'Bir bölüm seç')}
+                </Text>
+                {!!selectedChapter?.id && (
+                  <Text style={[styles.gfStudyMetaText, { color: colors.muted }]}>
+                    %{selectedChapterLearnedPct ?? 0} {t('deckDetail.learned', 'öğrenildi')}
+                  </Text>
+                )}
+              </View>
+              <Iconify icon="flowbite:caret-down-solid" size={moderateScale(18)} color={colors.muted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.gfStartButton,
+                { opacity: selectedChapter?.id ? 1 : 0.92 },
+              ]}
+              activeOpacity={0.85}
+              onPress={handleStartDeck}
+            >
+              <LinearGradient
+                colors={['#F98A21', '#FF6B35']}
+                locations={[0, 0.99]}
+                style={styles.gfStartButtonGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <View style={styles.gfStartMain}>
+                  <Iconify icon="streamline:button-play-solid" size={moderateScale(20)} color="#fff" />
+                  <Text style={styles.gfStartButtonText}>{t('deckDetail.start', 'Başla')}</Text>
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
 
         {/* Action Buttons - Combined Card */}
         <Animated.View
@@ -1266,7 +1447,7 @@ export default function DeckDetailScreen({ route, navigation }) {
               colors={[colors.secondary, colors.secondary + 'DD']}
               style={styles.gfActionIconBox}
             >
-              <Iconify icon="streamline-flex:module-puzzle-2" size={moderateScale(24)} color="#fff" />
+              <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={moderateScale(24)} color="#fff" />
             </LinearGradient>
             <View style={styles.gfActionTextWrap}>
               <Text style={[styles.gfActionTitle, { color: colors.cardQuestionText }]}>{t('deckDetail.chapters', 'Bölümler')}</Text>
@@ -1322,489 +1503,137 @@ export default function DeckDetailScreen({ route, navigation }) {
         )}
       </ScrollView>
 
-      {/* FAB Menü Overlay - Dışarı tıklandığında kapat (FAB'ın ARKASINDA durmalı) */}
-      {fabMenuOpen && (
-        <TouchableOpacity
-          style={styles.fabMenuOverlay}
-          activeOpacity={1}
-          onPress={() => setFabMenuOpen(false)}
-        />
-      )}
-
-      {/* Floating Action Buttons */}
-      <View style={[styles.fabContainer, { backgroundColor: 'transparent', bottom: insets.bottom + verticalScale(20) }]}>
-        <View style={styles.fabLeftColumn}>
-          {fabMenuOpen && inlineChapterListVisible && (
-            <Animated.View
-              style={[
-                styles.fabInlineDropdown,
-                {
-                  width: fabExpandedWidth,
-                  opacity: fabContentOpacity,
-                  transform: [{ translateX: fabContentTranslate }],
-                  backgroundColor: colors.buttonColor,
-                },
-              ]}
-            >
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={[styles.fabChapterListVertical]}
-              >
-                {/* Aksiyon Bölümü - Her zaman en üstte */}
-                <TouchableOpacity
-                  style={[
-                    styles.fabChapterItemVertical,
-                    {
-                      backgroundColor: selectedChapter?.id === 'action'
-                        ? (isDarkMode ? colors.cardBackground : 'rgba(0,0,0,0.35)')
-                        : 'rgba(255,255,255,0.15)',
-                      borderColor: selectedChapter?.id === 'action'
-                        ? (isDarkMode ? colors.cardBackground : 'rgba(0,0,0,0.5)')
-                        : 'rgba(255,255,255,0.1)',
-                    },
-                  ]}
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    handleChapterSelect(ACTION_CHAPTER);
-                    setInlineChapterListVisible(false);
-                  }}
-                >
-                  <View style={styles.fabChapterItemBadge}>
-                    <Iconify
-                      icon="streamline:startup-solid"
-                      size={moderateScale(18)}
-                      color={selectedChapter?.id === 'action' ? colors.buttonColor : '#fff'}
-                    />
-                  </View>
-                  <View style={styles.fabChapterItemContent}>
-                    <View style={styles.fabChapterItemTitleRow}>
-                      <Text
-                        style={[
-                          styles.fabChapterItemVerticalText,
-                          {
-                            color: '#fff',
-                            fontWeight: selectedChapter?.id === 'action' ? '700' : '500',
-                          },
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {t('deckDetail.action', 'Aksiyon')}
-                      </Text>
-                      <View style={{ width: scale(12), height: scale(2), marginHorizontal: scale(8), backgroundColor: 'rgba(255,255,255,0.7)' }} />
-                      <View style={styles.fabChapterStatRow}>
-                        <Iconify icon="ri:stack-fill" size={moderateScale(14)} color="rgba(255,255,255,0.9)" style={{ marginRight: scale(4) }} />
-                        <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.9)' }]}>
-                          {deckStats.total}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.fabChapterItemStats}>
-                      <View style={styles.fabChapterStatRow}>
-                        <Iconify icon="basil:eye-closed-outline" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
-                        <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
-                          {deckStats.new || 0}
-                        </Text>
-                      </View>
-                      <View style={styles.fabChapterStatRow}>
-                        <Iconify icon="mdi:fire" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
-                        <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
-                          {deckStats.learning || 0}
-                        </Text>
-                      </View>
-                      <View style={styles.fabChapterStatRow}>
-                        <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
-                        <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
-                          {deckStats.learned}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-
-                {/* Diğer Bölümler */}
-                {chapters.length > 0 && chapters.map((chapter) => {
-                  const isSelected = selectedChapter?.id === chapter.id;
-                  const chapterProgress = chapterProgressMap.get(chapter.id) || { total: 0, learned: 0, learning: 0, new: 0 };
-                  return (
-                    <TouchableOpacity
-                      key={chapter.id}
-                      style={[
-                        styles.fabChapterItemVertical,
-                        {
-                          backgroundColor: isSelected
-                            ? (isDarkMode ? colors.cardBackground : 'rgba(0,0,0,0.35)')
-                            : 'rgba(255,255,255,0.15)',
-                          borderColor: isSelected
-                            ? (isDarkMode ? colors.cardBackground : 'rgba(0,0,0,0.5)')
-                            : 'rgba(255,255,255,0.35)',
-                        },
-                      ]}
-                      activeOpacity={0.7}
-                      onPress={() => {
-                        handleChapterSelect(chapter);
-                        setInlineChapterListVisible(false);
-                      }}
-                    >
-                      <View style={styles.fabChapterItemBadge}>
-                        <CircularProgress
-                          progress={chapterProgress.total > 0 ? chapterProgress.learned / chapterProgress.total : 0}
-                          size={36}
-                          strokeWidth={4}
-                          showText={false}
-                          shouldAnimate={false}
-                          fullCircle={true}
-                        />
-                        <View style={styles.fabChapterProgressTextContainer}>
-                          <Text style={[styles.fabChapterProgressText, { color: isSelected ? colors.buttonColor : '#fff' }]}>
-                            {Math.round(chapterProgress.total > 0 ? (chapterProgress.learned / chapterProgress.total) * 100 : 0)}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={styles.fabChapterItemContent}>
-                        <View style={styles.fabChapterItemTitleRow}>
-                          <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={moderateScale(16)} color="#fff" style={{ marginRight: scale(6) }} />
-                          <Text
-                            style={[
-                              styles.fabChapterItemVerticalText,
-                              {
-                                color: '#fff',
-                                fontWeight: isSelected ? '700' : '500',
-                              },
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {`${t('chapters.chapter', 'Bölüm')} ${chapter.ordinal}`}
-                          </Text>
-                          <View style={{ width: scale(12), height: scale(2), marginHorizontal: scale(8), backgroundColor: 'rgba(255,255,255,0.7)' }} />
-                          <View style={styles.fabChapterStatRow}>
-                            <Iconify icon="ri:stack-fill" size={14} color="rgba(255,255,255,0.9)" style={{ marginRight: 4 }} />
-                            <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.9)' }]}>
-                              {chapterProgress.total}
-                            </Text>
-                          </View>
-                        </View>
-                        <View style={styles.fabChapterItemStats}>
-                          <View style={styles.fabChapterStatRow}>
-                            <Iconify icon="basil:eye-closed-outline" size={14} color="rgba(255,255,255,0.7)" style={{ marginRight: 4 }} />
-                            <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
-                              {chapterProgress.new || 0}
-                            </Text>
-                          </View>
-                          <View style={styles.fabChapterStatRow}>
-                            <Iconify icon="mdi:fire" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
-                            <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
-                              {chapterProgress.learning || 0}
-                            </Text>
-                          </View>
-                          <View style={styles.fabChapterStatRow}>
-                            <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
-                            <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
-                              {chapterProgress.learned}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </Animated.View>
-          )}
-
-          {/* Ana FAB Butonu */}
-          <AnimatedFabContainer
-            style={[
-              styles.fabButton,
-              styles.fabButtonLeft,
-              {
-                backgroundColor: colors.buttonColor,
-                borderColor: colors.buttonColor,
-                width: fabExpandedWidth,
-                paddingLeft: fabContentPadding,
-                justifyContent: fabMenuOpen ? 'flex-end' : 'center',
-              },
-            ]}
+      <BottomSheetModal
+        ref={chapterSheetModalRef}
+        index={0}
+        onChange={(idx) => {
+          if (idx === -1) {
+            setChapterSheetVisible(false);
+          }
+        }}
+        backdropComponent={renderChapterSheetBackdrop}
+        backgroundStyle={{ backgroundColor: colors.background, borderRadius: moderateScale(40) }}
+        handleIndicatorStyle={{ backgroundColor: colors.muted }}
+        enableDynamicSizing
+        maxDynamicContentSize={chapterSheetMaxContentHeight}
+        bottomInset={insets.bottom}
+        enableContentPanningGesture={false}
+      >
+        <View style={[styles.chapterSheetHeader, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.chapterSheetTitle, { color: colors.cardQuestionText }]}>
+            {t('deckDetail.selectChapterTitle', 'Bölüm Seç')}
+          </Text>
+          <Text style={[styles.chapterSheetHeaderMeta, { color: colors.muted }]}>
+            {chapterProgressLoading
+              ? `${chapterProgressLoadedCount}/${chapters.length} ${t('common.loading', 'yükleniyor')}`
+              : `${chapters.length} ${t('deckDetail.chaptersCount', 'bölüm')}`}
+          </Text>
+          <TouchableOpacity
+            onPress={() => setChapterSheetVisible(false)}
+            hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+            style={styles.chapterSheetCloseBtn}
           >
-            <Pressable
-              style={styles.fabMorphTouchableArea}
-              android_ripple={null}
-              onPress={() => {
-                if (!fabMenuOpen) {
-                  setFabMenuOpen(true);
-                  return;
-                }
-                setInlineChapterListVisible(!inlineChapterListVisible);
-              }}
-            >
-              <Animated.View
+            <Iconify icon="material-symbols:close-rounded" size={moderateScale(22)} color={colors.muted} />
+          </TouchableOpacity>
+        </View>
+
+        <BottomSheetFlatList
+          data={[ACTION_CHAPTER, ...chapters]}
+          keyExtractor={(item) => String(item.id)}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.chapterSheetList,
+            {
+              flexGrow: 1,
+              minHeight: Math.max(
+                chapterSheetMinContentHeight - chapterSheetHeaderApprox,
+                verticalScale(120)
+              ),
+              paddingBottom: insets.bottom + verticalScale(24),
+            },
+          ]}
+          style={{ flex: 1 }}
+          nestedScrollEnabled
+          renderItem={({ item }) => {
+            const isAction = item.id === 'action';
+            const isSelected = selectedChapter?.id === item.id;
+            const chapterProgress = isAction
+              ? deckStats
+              : (chapterProgressMap.get(item.id) || { total: 0, learned: 0, learning: 0, new: 0 });
+            const hasProgress = isAction || chapterProgressMap.has(item.id);
+            const chapterPct = chapterProgress.total > 0
+              ? Math.round((chapterProgress.learned / chapterProgress.total) * 100)
+              : 0;
+            return (
+              <BSTouchableOpacity
                 style={[
-                  styles.fabMorphContent,
+                  styles.chapterSheetItem,
                   {
-                    opacity: fabContentOpacity,
-                    transform: [{ translateX: fabContentTranslate }],
+                    borderColor: isSelected ? colors.buttonColor : colors.border,
+                    backgroundColor: isSelected ? colors.buttonColor + '16' : (colors.cardBackground || colors.background),
                   },
                 ]}
-                pointerEvents={fabMenuOpen ? 'auto' : 'none'}
+                activeOpacity={0.78}
+                onPress={() => {
+                  handleChapterSelect(item);
+                  setChapterSheetVisible(false);
+                }}
               >
-                <View style={styles.fabSelectedChapterPreview}>
-                  {selectedChapter?.id === 'action' ? (
-                    <View style={styles.fabChapterInfoRow}>
-                      <View style={styles.fabChapterItemBadge}>
-                        <Iconify
-                          icon="streamline:startup-solid"
-                          size={moderateScale(22)}
-                          color="#fff"
-                        />
-                      </View>
-                      <View style={styles.fabChapterItemContent}>
-                        <View style={styles.fabChapterItemTitleRow}>
-                          <Text
-                            style={[
-                              styles.fabChapterItemVerticalText,
-                              {
-                                color: '#fff',
-                                fontWeight: '700',
-                              },
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {t('deckDetail.action', 'Aksiyon')}
-                          </Text>
-                          <View style={{ width: scale(12), height: scale(2), marginHorizontal: scale(8), backgroundColor: 'rgba(255,255,255,0.7)' }} />
-                          <View style={styles.fabChapterStatRow}>
-                            <Iconify icon="ri:stack-fill" size={moderateScale(14)} color="rgba(255,255,255,0.9)" style={{ marginRight: scale(4) }} />
-                            <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.9)' }]}>
-                              {deckStats.total}
-                            </Text>
-                          </View>
-                        </View>
-                        <View style={styles.fabChapterItemStats}>
-                          <View style={styles.fabChapterStatRow}>
-                            <Iconify icon="basil:eye-closed-outline" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
-                            <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
-                              {deckStats.new || 0}
-                            </Text>
-                          </View>
-                          <View style={styles.fabChapterStatRow}>
-                            <Iconify icon="mdi:fire" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
-                            <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
-                              {deckStats.learning || 0}
-                            </Text>
-                          </View>
-                          <View style={styles.fabChapterStatRow}>
-                            <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
-                            <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
-                              {deckStats.learned}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
+                {isAction ? (
+                  <LinearGradient colors={['#F98A21', '#FF6B35']} style={styles.chapterSheetIcon}>
+                    <Iconify icon="streamline:startup-solid" size={moderateScale(16)} color="#fff" />
+                  </LinearGradient>
+                ) : (
+                  <View style={styles.chapterSheetProgressBadge}>
+                    <CircularProgress
+                      progress={chapterProgress.total > 0 ? chapterProgress.learned / chapterProgress.total : 0}
+                      size={34}
+                      strokeWidth={4}
+                      showText={false}
+                      shouldAnimate={false}
+                      fullCircle={true}
+                    />
+                    <View style={styles.fabChapterProgressTextContainer}>
+                      <Text style={[styles.fabChapterProgressText, { color: colors.cardQuestionText }]}>
+                        {chapterPct}
+                      </Text>
                     </View>
-                  ) : selectedChapter?.id ? (() => {
-                    const chapterProgress = chapterProgressMap.get(selectedChapter.id) || { total: 0, learned: 0, learning: 0, new: 0 };
-                    return (
-                      <View style={styles.fabChapterInfoRow}>
-                        <View style={[styles.fabChapterItemBadge, { marginLeft: scale(6) }]}>
-                          <CircularProgress
-                            progress={chapterProgress.total > 0 ? chapterProgress.learned / chapterProgress.total : 0}
-                            size={36}
-                            strokeWidth={4}
-                            showText={false}
-                            shouldAnimate={false}
-                            fullCircle={true}
-                          />
-                          <View style={styles.fabChapterProgressTextContainer}>
-                            <Text style={[styles.fabChapterProgressText, { color: '#fff' }]}>
-                              {Math.round(chapterProgress.total > 0 ? (chapterProgress.learned / chapterProgress.total) * 100 : 0)}
-                            </Text>
-                          </View>
-                        </View>
-                        <View style={styles.fabChapterItemContent}>
-                          <View style={styles.fabChapterItemTitleRow}>
-                            <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={16} color="#fff" style={{ marginRight: 6 }} />
-                            <Text
-                              style={[
-                                styles.fabChapterItemVerticalText,
-                                {
-                                  color: '#fff',
-                                  fontWeight: '700',
-                                },
-                              ]}
-                              numberOfLines={1}
-                            >
-                              {`${t('chapters.chapter', 'Bölüm')} ${selectedChapter.ordinal}`}
-                            </Text>
-                            <View style={{ width: scale(12), height: scale(2), marginHorizontal: scale(8), backgroundColor: 'rgba(255,255,255,0.7)' }} />
-                            <View style={styles.fabChapterStatRow}>
-                              <Iconify icon="ri:stack-fill" size={moderateScale(14)} color="rgba(255,255,255,0.9)" style={{ marginRight: scale(4) }} />
-                              <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.9)' }]}>
-                                {chapterProgress.total}
-                              </Text>
-                            </View>
-                          </View>
-                          <View style={styles.fabChapterItemStats}>
-                            <View style={styles.fabChapterStatRow}>
-                              <Iconify icon="basil:eye-closed-outline" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
-                              <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
-                                {chapterProgress.new || 0}
-                              </Text>
-                            </View>
-                            <View style={styles.fabChapterStatRow}>
-                              <Iconify icon="mdi:fire" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
-                              <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
-                                {chapterProgress.learning || 0}
-                              </Text>
-                            </View>
-                            <View style={styles.fabChapterStatRow}>
-                              <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(14)} color="rgba(255,255,255,0.7)" style={{ marginRight: scale(4) }} />
-                              <Text style={[styles.fabChapterStatText, { color: 'rgba(255,255,255,0.7)' }]}>
-                                {chapterProgress.learned}
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
+                  </View>
+                )}
+                <View style={styles.chapterSheetItemTextWrap}>
+                  <Text style={[styles.chapterSheetItemTitle, { color: colors.cardQuestionText }]}>
+                    {isAction ? t('deckDetail.action', 'Aksiyon') : `${t('chapters.chapter', 'Bölüm')} ${item.ordinal}`}
+                  </Text>
+                  {!hasProgress && !isAction ? (
+                    <Text style={[styles.chapterSheetItemMeta, { color: colors.muted }]}>
+                      {t('common.loading', 'Yükleniyor...')}
+                    </Text>
+                  ) : (
+                    <View style={styles.chapterSheetStatRow}>
+                      <View style={styles.chapterSheetStatItem}>
+                        <Iconify icon="ri:stack-fill" size={moderateScale(13)} color={colors.muted} />
+                        <Text style={[styles.chapterSheetStatText, { color: colors.muted }]}>{chapterProgress.total || 0}</Text>
                       </View>
-                    );
-                  })() : (
-                    <View style={styles.fabChapterInfoRow}>
-                      <View style={styles.fabChapterItemBadge}>
-                        <Iconify
-                          icon="streamline-flex:module-puzzle-2"
-                          size={moderateScale(28)}
-                          color="#fff"
-                        />
+                      <View style={styles.chapterSheetStatItem}>
+                        <Iconify icon="basil:eye-closed-outline" size={moderateScale(13)} color={colors.muted} />
+                        <Text style={[styles.chapterSheetStatText, { color: colors.muted }]}>{chapterProgress.new || 0}</Text>
                       </View>
-                      <View style={styles.fabChapterItemContent}>
-                        <View style={styles.fabChapterItemTitleRow}>
-                          <Text
-                            style={[
-                              styles.fabChapterItemVerticalText,
-                              { color: '#fff', fontWeight: '700' },
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {t('deckDetail.selectChapterCtaShort', 'Bir bölüm seç') + "!"}
-                          </Text>
-                        </View>
+                      <View style={styles.chapterSheetStatItem}>
+                        <Iconify icon="mdi:fire" size={moderateScale(13)} color={colors.muted} />
+                        <Text style={[styles.chapterSheetStatText, { color: colors.muted }]}>{chapterProgress.learning || 0}</Text>
+                      </View>
+                      <View style={styles.chapterSheetStatItem}>
+                        <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(13)} color={colors.muted} />
+                        <Text style={[styles.chapterSheetStatText, { color: colors.muted }]}>{chapterProgress.learned || 0}</Text>
                       </View>
                     </View>
                   )}
                 </View>
-              </Animated.View>
-            </Pressable>
-            <TouchableOpacity
-              style={styles.fabIconWrapper}
-              activeOpacity={0.8}
-              onPress={() => {
-                triggerHaptic('light');
-                setFabMenuOpen(!fabMenuOpen);
-                if (fabMenuOpen) {
-                  setInlineChapterListVisible(false);
-                }
-              }}
-            >
-              <Animated.View style={{
-                opacity: fabMenuAnimation.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [1, 0],
-                })
-              }}>
-                {selectedChapter?.id === 'action' ? (
-                  <Iconify
-                    icon="streamline:startup-solid"
-                    size={moderateScale(22)}
-                    color="#fff"
-                  />
-                ) : selectedChapter?.id ? (
-                  <View style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                    borderRadius: moderateScale(99),
-                    borderWidth: moderateScale(1.5),
-                    borderColor: 'rgba(255, 255, 255, 0.3)',
-                    paddingHorizontal: scale(10),
-                    paddingVertical: verticalScale(6),
-                    minWidth: scale(32),
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
-                    <Text style={{
-                      color: '#fff',
-                      fontSize: moderateScale(20),
-                      fontWeight: '700',
-                      textShadowColor: 'rgba(0, 0, 0, 0.25)',
-                      textShadowOffset: { width: 0, height: verticalScale(1) },
-                      textShadowRadius: moderateScale(2),
-                    }}>
-                      {selectedChapter?.ordinal ?? '-'}
-                    </Text>
-                  </View>
-                ) : (
-                  <Iconify
-                    icon="streamline-flex:module-puzzle-2"
-                    size={moderateScale(28)}
-                    color="#fff"
-                  />
-                )}
-              </Animated.View>
-            </TouchableOpacity>
-          </AnimatedFabContainer>
-        </View>
-
-        <AnimatedPressable
-          style={[
-            styles.fabButton,
-            styles.fabButtonRight,
-            animatedStyle, // Animasyon stilimizi bağladık
-            {
-              borderColor: 'transparent',
-              overflow: 'hidden',
-            }
-          ]}
-          // 1. Parmağı bastığında: Tok bir şekilde küçül (0.88)
-          onPressIn={() => {
-            buttonScale.value = withSpring(0.88, { damping: 15, stiffness: 400 });
+              </BSTouchableOpacity>
+            );
           }}
-          // 2. Parmağı çektiğinde: Tatlı bir yaylanma (bounce) ile geri dön
-          onPressOut={() => {
-            buttonScale.value = withSpring(1, { damping: 8, stiffness: 400, mass: 0.8 });
-          }}
-          onPress={async () => {
-            triggerHaptic('heavy');
-
-            if (!selectedChapter?.id) {
-              Alert.alert(
-                t('deckDetail.selectChapterTitle', 'Bölüm Seç'),
-                t('deckDetail.selectChapterMessage', 'Lütfen önce bir bölüm seçin.')
-              );
-              return;
-            }
-
-            // Deck başlatma kaydı oluştur (decks_stats tablosuna)
-            try {
-              if (userId) {
-                await insertDeckStats(deck.id, userId);
-              }
-            } catch (error) {
-              // Hata olsa bile devam et (kritik değil)
-              console.log('Deck stats log error:', error);
-            }
-
-            // Aksiyon seçiliyse chapter parametresi gönderme (tüm kartlar gösterilecek)
-            const chapterParam = selectedChapter.id === 'action' ? undefined : selectedChapter;
-            navigation.navigate('SwipeDeck', { deck, chapter: chapterParam });
-          }}
-        >
-          <LinearGradient
-            colors={['#F98A21', '#FF6B35']}
-            locations={[0, 0.99]}
-            style={styles.fabButtonGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-          >
-            <Iconify icon="streamline:button-play-solid" size={moderateScale(22)} color="#fff" />
-          </LinearGradient>
-        </AnimatedPressable>
-      </View>
+        />
+      </BottomSheetModal>
 
       {/* More Menüsü Modal - sahibi: Düzenle/Sil; sahibi değil: Gizle/Şikayet et */}
       <Modal
@@ -2212,16 +2041,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   gfProgressCard: {
-    marginHorizontal: scale(16),
-    borderRadius: moderateScale(44),
-    paddingVertical: verticalScale(28),
-    paddingHorizontal: scale(22),
+    paddingVertical: verticalScale(16),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: verticalScale(4) },
     shadowOpacity: 0.08,
     shadowRadius: moderateScale(12),
     elevation: 4,
-    marginBottom: verticalScale(20),
   },
   gfCardContent: {
     flexDirection: 'row',
@@ -2380,113 +2205,165 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(14),
     fontWeight: '600',
   },
-  // FAB Styles
-  fabContainer: {
-    position: 'absolute',
-    right: scale(20),
-    bottom: verticalScale(20),
-    flexDirection: 'row',
-    gap: scale(12),
-    alignItems: 'flex-end',
-    zIndex: 1000,
-  },
-  fabButton: {
-    width: scale(60),
-    height: scale(60),
-    borderRadius: moderateScale(99),
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fabButtonLeft: {
-    borderWidth: moderateScale(2),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
-  },
-  fabButtonRight: {
-    borderWidth: 0,
-  },
-  fabButtonGradient: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-    borderRadius: moderateScale(99),
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fabMorphContent: {
-    flex: 1,
-    height: '100%',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    gap: scale(12),
-    marginRight: scale(12),
-    paddingVertical: verticalScale(12),
-  },
-  fabMorphTouchableArea: {
-    flex: 1,
-    height: '100%',
-    borderRadius: moderateScale(28),
-    overflow: 'hidden',
-  },
-  fabSelectedChapterPreview: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingRight: scale(12),
-  },
-  fabIconWrapper: {
-    width: scale(56),
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fabChapterInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: scale(6),
-    marginBottom: verticalScale(2),
-  },
-  fabChapterInfoTitle: {
-    fontSize: moderateScale(14),
-    fontWeight: '700',
-    marginBottom: verticalScale(4),
-  },
-  fabLeftColumn: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    justifyContent: 'flex-end',
-  },
-  fabInlineDropdown: {
-    marginBottom: verticalScale(8),
-    borderRadius: moderateScale(20),
-    paddingVertical: verticalScale(12),
-    paddingHorizontal: scale(12),
-    maxHeight: verticalScale(200),
-  },
-  fabChapterListVertical: {
-    gap: verticalScale(8),
-    paddingRight: scale(8),
-  },
-  fabChapterItemVertical: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: moderateScale(16),
+  gfLearningFlowCard: {
+    marginHorizontal: scale(16),
+    borderRadius: moderateScale(34),
     borderWidth: moderateScale(1),
-    paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(12),
-    marginBottom: verticalScale(6),
+    padding: moderateScale(14),
+    marginBottom: verticalScale(14),
   },
-  fabChapterItemBadge: {
-    width: scale(36),
-    height: scale(36),
+  gfLearningFlowDividerWrap: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingBottom: verticalScale(12),
+  },
+  gfLearningFlowDivider: {
+    width: '78%',
+    maxWidth: scale(280),
+    height: StyleSheet.hairlineWidth,
+    borderRadius: moderateScale(1),
+  },
+  gfStudyCard: {
+    marginHorizontal: 0,
+    borderRadius: moderateScale(30),
+    borderWidth: moderateScale(1),
+    padding: 0,
+    marginBottom: 0,
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: verticalScale(12),
+  },
+  gfStudyChapterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    borderWidth: moderateScale(1),
+    borderRadius: moderateScale(28),
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(10),
+  },
+  gfStudyChapterIcon: {
+    width: scale(44),
+    height: scale(44),
+    borderRadius: moderateScale(18),
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: scale(10),
-    position: 'relative',
+  },
+  gfStudyTextWrap: {
+    flex: 1,
+  },
+  gfStudyPrimaryText: {
+    fontSize: moderateScale(16),
+    fontWeight: '800',
+    marginBottom: verticalScale(2),
+  },
+  gfStudyMetaText: {
+    fontSize: moderateScale(12),
+    fontWeight: '500',
+  },
+  gfStartButton: {
+    width: scale(128),
+    borderRadius: moderateScale(26),
+    overflow: 'hidden',
+  },
+  gfStartButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: scale(6),
+    flex: 1,
+    paddingVertical: verticalScale(14),
+    paddingHorizontal: scale(10),
+  },
+  gfStartMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(8),
+  },
+  gfStartButtonText: {
+    color: '#fff',
+    fontSize: moderateScale(18),
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  chapterSheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(12),
+  },
+  chapterSheetTitle: {
+    fontSize: moderateScale(18),
+    fontWeight: '800',
+    flex: 1,
+  },
+  chapterSheetHeaderMeta: {
+    fontSize: moderateScale(12),
+    fontWeight: '600',
+    marginRight: scale(10),
+  },
+  chapterSheetCloseBtn: {
+    backgroundColor: 'rgba(150,150,150,0.1)',
+    padding: moderateScale(6),
+    borderRadius: moderateScale(99),
+  },
+  chapterSheetList: {
+    paddingHorizontal: scale(20),
+    paddingTop: verticalScale(12),
+    gap: verticalScale(8),
+  },
+  chapterSheetItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: moderateScale(1),
+    borderRadius: moderateScale(16),
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(10),
+  },
+  chapterSheetIcon: {
+    width: scale(34),
+    height: scale(34),
+    borderRadius: moderateScale(12),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: scale(10),
+  },
+  chapterSheetProgressBadge: {
+    width: scale(34),
+    height: scale(34),
+    marginRight: scale(10),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chapterSheetItemTextWrap: {
+    flex: 1,
+  },
+  chapterSheetItemTitle: {
+    fontSize: moderateScale(15),
+    fontWeight: '700',
+    marginBottom: verticalScale(1),
+  },
+  chapterSheetItemMeta: {
+    fontSize: moderateScale(12),
+    fontWeight: '500',
+  },
+  chapterSheetStatRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: scale(10),
+    marginTop: verticalScale(2),
+  },
+  chapterSheetStatItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(4),
+  },
+  chapterSheetStatText: {
+    fontSize: moderateScale(11),
+    fontWeight: '600',
   },
   fabChapterProgressTextContainer: {
     position: 'absolute',
@@ -2500,39 +2377,5 @@ const styles = StyleSheet.create({
   fabChapterProgressText: {
     fontSize: moderateScale(11),
     fontWeight: '700',
-  },
-  fabChapterItemContent: {
-    flex: 1,
-    flexDirection: 'column',
-  },
-  fabChapterItemTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: verticalScale(4),
-  },
-  fabChapterItemVerticalText: {
-    fontSize: moderateScale(14),
-  },
-  fabChapterItemStats: {
-    flexDirection: 'row',
-    gap: scale(20),
-    alignItems: 'center',
-  },
-  fabChapterStatRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  fabChapterStatText: {
-    fontSize: moderateScale(12),
-    fontWeight: '500',
-  },
-  fabMenuOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'transparent',
-    zIndex: 998,
   },
 });

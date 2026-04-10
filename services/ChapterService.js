@@ -1,7 +1,37 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { cacheData, getCachedData, invalidateCache, CACHE_DURATIONS } from './CacheService';
 
 const buildNotInList = (ids) => `(${ids.map((id) => `"${id}"`).join(',')})`;
+
+/** @param {string} deckId @param {string} userId */
+export const chaptersProgressCacheKey = (deckId, userId) => `progress_chapters_${deckId}_${userId}`;
+
+async function readChaptersProgressEntriesObject(deckId, userId) {
+  try {
+    const raw = await AsyncStorage.getItem(chaptersProgressCacheKey(deckId, userId));
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed?.data && typeof parsed.data === 'object' ? parsed.data : {};
+  } catch {
+    return {};
+  }
+}
+
+/** @param {Map<string, object>} fragment */
+async function mergeAndPersistChaptersProgress(deckId, userId, fragment) {
+  if (!userId || !deckId || !fragment || fragment.size === 0) return;
+  const prev = await readChaptersProgressEntriesObject(deckId, userId);
+  const next = { ...prev };
+  fragment.forEach((val, key) => {
+    next[key] = val;
+  });
+  await cacheData(chaptersProgressCacheKey(deckId, userId), next);
+}
+
+function chapterRowKey(ch) {
+  return ch.id != null ? ch.id : 'unassigned';
+}
 
 const getHiddenCardIdsForChapter = async (userId, deckId, chapterId) => {
   if (!userId) return [];
@@ -226,76 +256,128 @@ export async function getChapterProgress(chapterId, deckId, userId) {
 /**
  * Get progress for multiple chapters at once using count+head:true (0 rows downloaded).
  * Each chapter gets 3 parallel count queries (total, learned, learning).
- * All chapters run in parallel via Promise.all.
+ * Disk cache: progress_chapters_{deckId}_{userId}, TTL CHAPTER_PROGRESS (24 saat).
+ * @param {boolean} [forceRefresh] true: cache atla, ağdan çek ve cache'i güncelle
  */
-export async function getChaptersProgress(chapters, deckId, userId) {
+async function fetchChaptersProgressFromNetwork(chapters, deckId, userId) {
   const progressMap = new Map();
+  const chapterPromises = chapters.map(async (ch) => {
+    const chapterId = ch.id;
+    const key = chapterId || 'unassigned';
+
+    let totalQuery = supabase
+      .from('cards')
+      .select('id', { count: 'exact', head: true })
+      .eq('deck_id', deckId);
+
+    let learnedQuery = supabase
+      .from('user_card_progress')
+      .select('id, cards!inner(id)', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'learned')
+      .eq('cards.deck_id', deckId);
+
+    let learningQuery = supabase
+      .from('user_card_progress')
+      .select('id, cards!inner(id)', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'learning')
+      .eq('cards.deck_id', deckId);
+
+    if (chapterId) {
+      totalQuery = totalQuery.eq('chapter_id', chapterId);
+      learnedQuery = learnedQuery.eq('cards.chapter_id', chapterId);
+      learningQuery = learningQuery.eq('cards.chapter_id', chapterId);
+    } else {
+      totalQuery = totalQuery.is('chapter_id', null);
+      learnedQuery = learnedQuery.is('cards.chapter_id', null);
+      learningQuery = learningQuery.is('cards.chapter_id', null);
+    }
+
+    const hiddenIds = await getHiddenCardIdsForChapter(userId, deckId, chapterId);
+    if (hiddenIds.length > 0) {
+      const notIn = buildNotInList(hiddenIds);
+      totalQuery = totalQuery.not('id', 'in', notIn);
+      learnedQuery = learnedQuery.not('cards.id', 'in', notIn);
+      learningQuery = learningQuery.not('cards.id', 'in', notIn);
+    }
+
+    const [totalRes, learnedRes, learningRes] = await Promise.all([
+      totalQuery, learnedQuery, learningQuery,
+    ]);
+
+    const total = totalRes.count || 0;
+    const learned = learnedRes.count || 0;
+    const learning = learningRes.count || 0;
+    const progress = total > 0 ? learned / total : 0;
+
+    return { key, total, learned, learning, new: total - learned - learning, progress };
+  });
+
+  const results = await Promise.all(chapterPromises);
+  results.forEach(r => progressMap.set(r.key, {
+    total: r.total, learned: r.learned, learning: r.learning, new: r.new, progress: r.progress,
+  }));
+
+  return progressMap;
+}
+
+export async function getChaptersProgress(chapters, deckId, userId, forceRefresh = false) {
+  const emptyFallback = () => {
+    const m = new Map();
+    (chapters || []).forEach(ch => {
+      m.set(ch.id || 'unassigned', { total: 0, learned: 0, learning: 0, new: 0, progress: 0 });
+    });
+    return m;
+  };
+
+  if (!chapters?.length) return new Map();
+
+  if (!userId) {
+    try {
+      return await fetchChaptersProgressFromNetwork(chapters, deckId, userId);
+    } catch (error) {
+      console.error('Error fetching chapters progress:', error);
+      return emptyFallback();
+    }
+  }
+
+  const requiredKeys = chapters.map(chapterRowKey);
+
+  if (!forceRefresh) {
+    const cached = await getCachedData(
+      chaptersProgressCacheKey(deckId, userId),
+      CACHE_DURATIONS.CHAPTER_PROGRESS,
+    );
+    if (cached && !cached.isStale && cached.data && typeof cached.data === 'object') {
+      const d = cached.data;
+      const allPresent = requiredKeys.every(k => {
+        const v = d[k];
+        return v && typeof v === 'object' && typeof v.total === 'number';
+      });
+      if (allPresent) {
+        const progressMap = new Map();
+        requiredKeys.forEach(k => progressMap.set(k, d[k]));
+        return progressMap;
+      }
+    }
+  }
 
   try {
-    const chapterPromises = chapters.map(async (ch) => {
-      const chapterId = ch.id;
-      const key = chapterId || 'unassigned';
-
-      let totalQuery = supabase
-        .from('cards')
-        .select('id', { count: 'exact', head: true })
-        .eq('deck_id', deckId);
-
-      let learnedQuery = supabase
-        .from('user_card_progress')
-        .select('id, cards!inner(id)', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('status', 'learned')
-        .eq('cards.deck_id', deckId);
-
-      let learningQuery = supabase
-        .from('user_card_progress')
-        .select('id, cards!inner(id)', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('status', 'learning')
-        .eq('cards.deck_id', deckId);
-
-      if (chapterId) {
-        totalQuery = totalQuery.eq('chapter_id', chapterId);
-        learnedQuery = learnedQuery.eq('cards.chapter_id', chapterId);
-        learningQuery = learningQuery.eq('cards.chapter_id', chapterId);
-      } else {
-        totalQuery = totalQuery.is('chapter_id', null);
-        learnedQuery = learnedQuery.is('cards.chapter_id', null);
-        learningQuery = learningQuery.is('cards.chapter_id', null);
-      }
-
-      const hiddenIds = await getHiddenCardIdsForChapter(userId, deckId, chapterId);
-      if (hiddenIds.length > 0) {
-        const notIn = buildNotInList(hiddenIds);
-        totalQuery = totalQuery.not('id', 'in', notIn);
-        learnedQuery = learnedQuery.not('cards.id', 'in', notIn);
-        learningQuery = learningQuery.not('cards.id', 'in', notIn);
-      }
-
-      const [totalRes, learnedRes, learningRes] = await Promise.all([
-        totalQuery, learnedQuery, learningQuery,
-      ]);
-
-      const total = totalRes.count || 0;
-      const learned = learnedRes.count || 0;
-      const learning = learningRes.count || 0;
-      const progress = total > 0 ? learned / total : 0;
-
-      return { key, total, learned, learning, new: total - learned - learning, progress };
-    });
-
-    const results = await Promise.all(chapterPromises);
-    results.forEach(r => progressMap.set(r.key, {
-      total: r.total, learned: r.learned, learning: r.learning, new: r.new, progress: r.progress,
-    }));
-
-    return progressMap;
+    const networkMap = await fetchChaptersProgressFromNetwork(chapters, deckId, userId);
+    await mergeAndPersistChaptersProgress(deckId, userId, networkMap);
+    return networkMap;
   } catch (error) {
     console.error('Error fetching chapters progress:', error);
-    chapters.forEach(ch => {
-      progressMap.set(ch.id || 'unassigned', { total: 0, learned: 0, learning: 0, new: 0, progress: 0 });
-    });
-    return progressMap;
+    return emptyFallback();
   }
+}
+
+/**
+ * Çalışma / çıkış sonrası ilgili bölümün progress'ini ağdan çekip cache'e yazar (tüm deste cache'ini silmez).
+ * @param {string|null} chapterScopeId null = atanmamış bölüm; undefined ile çağırma (tüm deste invalidate kullan).
+ */
+export async function mergeChapterProgressIntoCache(deckId, userId, chapterScopeId) {
+  if (!deckId || !userId || chapterScopeId === undefined) return;
+  await getChaptersProgress([{ id: chapterScopeId }], deckId, userId, true);
 }

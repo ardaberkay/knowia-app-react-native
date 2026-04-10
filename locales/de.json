@@ -183,7 +183,7 @@
     "deckEdit": "Deck bearbeiten",
     "deckCards": "Lernen",
     "profileEdit": "Profil bearbeiten",
-    "addCard": "Karte hinzufügen",
+    "addCard": "Hinzufügen",
     "infoDeck": "Deck Info",
     "editCard": "Karte bearbeiten",
     "cards": "Karten",
@@ -194,7 +194,7 @@
   },
   "deckDetail": {
     "start": "Start",
-    "addCard": "Karte hinzufügen",
+    "addCard": "Hinzufügen",
     "cards": "Karten",
     "chapters": "Kapitel",
     "progress": "Fortschritt",

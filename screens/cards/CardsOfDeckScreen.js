@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, BackHandler, Alert, Animated, Easing, Modal, Image, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, BackHandler, Alert, Animated, Easing, Modal, Image, RefreshControl, Pressable } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -21,6 +21,10 @@ import { addFavoriteCard, removeFavoriteCard, getFavoriteCardIdsForCards } from 
 import { invalidateCache } from '../../services/CacheService';
 import ReportModal from '../../components/modals/ReportModal';
 import { triggerHaptic } from '../../lib/hapticManager';
+import { LinearGradient } from 'expo-linear-gradient';
+import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+
+const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 
 // DeckCardsScreen.js (Ana fonksiyonun DIŞINA yazılacak)
 
@@ -94,6 +98,16 @@ export default function DeckCardsScreen({ route, navigation }) {
   const showFullScreenLoading = loading && cards.length === 0 && !selectedCard;
   const insets = useSafeAreaInsets();
   const selectedCardRef = useRef(null);
+  const editModeRef = useRef(false);
+  const addCardFabPressed = useSharedValue(0);
+
+  const addCardFabAnimatedStyle = useAnimatedStyle(() => {
+    const springConfig = { mass: 0.5, damping: 30, stiffness: 400 };
+    return {
+      transform: [{ scale: withSpring(addCardFabPressed.value ? 0.92 : 1, springConfig) }],
+      opacity: withSpring(addCardFabPressed.value ? 0.85 : 1, springConfig),
+    };
+  });
 
   useEffect(() => {
     setCurrentUserId(userId || null);
@@ -228,6 +242,10 @@ export default function DeckCardsScreen({ route, navigation }) {
     return list;
   }, [cards, search]);
 
+  // Ref (favoriteCardsRef) effect'ten sonra güncellenir; liste ilk render'da ref'e bakarsa
+  // favori ikonları bir kare gecikmeli/boş kalır. isFavorite için state ile aynı commit'te güncellenen Set kullan.
+  const favoriteIdSet = useMemo(() => new Set(favoriteCards), [favoriteCards]);
+
   const handleSortChange = useCallback((newSort) => {
     setCardSort(newSort);
     if (flatListRef.current) {
@@ -251,10 +269,18 @@ export default function DeckCardsScreen({ route, navigation }) {
   useEffect(() => {
     selectedCardRef.current = selectedCard;
   }, [selectedCard]);
+
+  useEffect(() => {
+    editModeRef.current = editMode;
+  }, [editMode]);
   
   // Android back
   useEffect(() => {
     const onBackPress = () => {
+      if (editModeRef.current) {
+        setEditMode(false);
+        return true;
+      }
       if (selectedCardRef.current) {
         setSelectedCard(null);
         return true;
@@ -298,6 +324,25 @@ export default function DeckCardsScreen({ route, navigation }) {
     }
 
     const isOwner = currentUserId && deck.user_id === currentUserId;
+    if (selectedCard && editMode) {
+      navigation.setOptions({
+        headerLeft: () => (
+          <TouchableOpacity
+            onPress={() => setEditMode(false)}
+            activeOpacity={0.6}
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+          >
+            <Iconify
+              icon={Platform.OS === 'ios' ? 'ci:chevron-left' : 'mdi:arrow-back'}
+              size={moderateScale(30)}
+              color={colors.text}
+            />
+          </TouchableOpacity>
+        ),
+        headerRight: () => null,
+      });
+      return;
+    }
     if (selectedCard && !editMode) {
       navigation.setOptions({
         headerLeft: () => (
@@ -308,7 +353,7 @@ export default function DeckCardsScreen({ route, navigation }) {
           >
             <Iconify
               icon={Platform.OS === 'ios' ? 'ci:chevron-left' : 'mdi:arrow-back'}
-              size={Platform.OS === 'ios' ? moderateScale(24) : moderateScale(24)}
+              size={Platform.OS === 'ios' ? moderateScale(30) : moderateScale(24)}
               color={colors.text}
             />
           </TouchableOpacity>
@@ -362,36 +407,9 @@ export default function DeckCardsScreen({ route, navigation }) {
         ),
       });
     } else {
-      const isOwner = currentUserId && deck.user_id === currentUserId && !deck.is_shared;
-
       navigation.setOptions({
         headerLeft: undefined,
-        headerRight: () => {
-          if (!isOwner) {
-            return null;
-          }
-          return (
-            <TouchableOpacity
-              // hitSlop: Butonun görsel boyutunu büyütmeden dokunmatik alanını genişletir. 
-              // (Tıklamayı kaçırma/zor algılama hissini tamamen yok eder)
-              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-              activeOpacity={0.6} // Tıklama hissiyatını netleştirir
-              style={[styles.addCardIcon]}
-              onPress={() => {
-                // 1. Arayüz tepkilerini ANINDA ver (Sıfır gecikme)
-                triggerHaptic('selection');
-
-                // 2. Yeni sayfayı çizmeyi (render) bir sonraki boyama karesine (frame) ertele.
-                // Bu sayede butonun tıklanma animasyonu asla kilitlenmez.
-                requestAnimationFrame(() => {
-                  navigation.navigate('AddCard', { deck });
-                });
-              }}
-            >
-              <Iconify icon="ic:round-plus" size={moderateScale(28)} color={colors.text} />
-            </TouchableOpacity>
-          );
-        },
+        headerRight: () => null,
       });
     }
   }, [showFullScreenLoading, selectedCard, editMode, colors.text, navigation, deck, favoriteCards, currentUserId, handleToggleFavoriteCard, openMoreMenu, openReportCardModal]);
@@ -602,14 +620,26 @@ export default function DeckCardsScreen({ route, navigation }) {
     return (
       <MemoizedDeckCard
         item={item}
-        isFavorite={favoriteCardsRef.current.has(item.id)}
+        isFavorite={favoriteIdSet.has(item.id)}
         isOwner={isOwner}
         onPress={handleListItemPress}
         onToggleFavorite={handleToggleFavoriteCard}
         onDelete={handleListItemDelete}
       />
     );
-  }, [currentUserId, deck?.user_id, handleListItemPress, handleToggleFavoriteCard, handleListItemDelete]);
+  }, [currentUserId, deck?.user_id, favoriteIdSet, handleListItemPress, handleToggleFavoriteCard, handleListItemDelete]);
+
+  const showAddCardFab =
+    !showFullScreenLoading &&
+    !selectedCard &&
+    currentUserId &&
+    deck.user_id === currentUserId &&
+    !deck.is_shared;
+
+  const listContentPaddingBottom = showAddCardFab
+    ? insets.bottom + verticalScale(100)
+    : verticalScale(24);
+
   return (
     <>
       {selectedCard && editMode ? (
@@ -642,7 +672,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                 data={filteredCards}
                 keyExtractor={item => item.id?.toString()}
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(24) }}
+                contentContainerStyle={{ flexGrow: 1, paddingBottom: listContentPaddingBottom }}
                 refreshControl={
                   <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
                 }
@@ -691,6 +721,39 @@ export default function DeckCardsScreen({ route, navigation }) {
             )}
           </View>
 
+          {showAddCardFab && (
+            <AnimatedPressable
+              accessibilityRole="button"
+              accessibilityLabel={t('deckDetail.addCard', 'Kart Ekle')}
+              style={[styles.addCardFab, addCardFabAnimatedStyle, { bottom: insets.bottom + verticalScale(24) }]}
+              onPressIn={() => {
+                addCardFabPressed.value = 1;
+              }}
+              onPressOut={() => {
+                addCardFabPressed.value = 0;
+              }}
+              onPress={() => {
+                triggerHaptic('light');
+                requestAnimationFrame(() => {
+                  navigation.navigate('AddCard', { deck });
+                });
+              }}
+            >
+              <LinearGradient
+                colors={['#F98A21', '#FF6B35']}
+                locations={[0, 0.99]}
+                style={styles.addCardFabGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Iconify icon="ic:round-plus" size={moderateScale(26)} color="#FFFFFF" />
+                <Text style={styles.addCardFabLabel} numberOfLines={1}>
+                  {t('deckDetail.addCard', 'Kart Ekle')}
+                </Text>
+              </LinearGradient>
+            </AnimatedPressable>
+          )}
+
           {/* --- ÜST KATMAN: KART DETAY SAYFASI --- 
               (Eğer seçili bir kart varsa, listenin üzerine position: 'absolute' ile tam ekran olarak biner)
           */}
@@ -712,7 +775,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                     style={{
                       position: 'absolute',
                       right: scale(20),
-                      top: Platform.OS === 'android' ? moreMenuPos.y + moreMenuPos.height + verticalScale(4) + insets.top : moreMenuPos.y + moreMenuPos.height + verticalScale(8),
+                      top: moreMenuPos.y + moreMenuPos.height + (Platform.OS === 'android' ? verticalScale(4) : verticalScale(8)) + insets.top,
                       minWidth: scale(160),
                       backgroundColor: colors.cardBackground,
                       borderRadius: moderateScale(14),
@@ -769,10 +832,32 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  addCardIcon: {
-    backgroundColor: Platform.OS === 'android' ? 'rgba(150, 150, 150, 0.1)' : 'transparent',
-    padding: moderateScale(6),
-    borderRadius: 99,
+  addCardFab: {
+    position: 'absolute',
+    right: scale(20),
+    borderRadius: moderateScale(28),
+    overflow: 'hidden',
+    zIndex: 3,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: verticalScale(1) },
+    shadowOpacity: 0.12,
+    shadowRadius: moderateScale(4),
+    elevation: 2,
+    maxWidth: '88%',
+  },
+  addCardFabGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: verticalScale(14),
+    paddingHorizontal: scale(18),
+    gap: scale(8),
+    minHeight: scale(52),
+  },
+  addCardFabLabel: {
+    fontSize: moderateScale(16),
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   cardsBlurSearchContainer: {
     flexDirection: 'row',

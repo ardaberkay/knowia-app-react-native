@@ -20,6 +20,8 @@ export const CACHE_DURATIONS = {
   CARDS_CONTENT: 4 * 60 * 60 * 1000,        // 4 saat (mutation: kendi destesinde CRUD)
   CARD_DETAIL: 4 * 60 * 60 * 1000,          // 4 saat (mutation: kart düzenleme/silme)
   CHAPTERS: 4 * 60 * 60 * 1000,             // 4 saat (mutation: chapter CRUD)
+  /** Bölüm progress özetleri (deck+user); Swipe sonrası merge veya invalidate */
+  CHAPTER_PROGRESS: 24 * 60 * 60 * 1000,    // 24 saat
 
   // Kullanıcıya özel
   FAVORITES_DECK_IDS: 4 * 60 * 60 * 1000,   // 4 saat (mutation: favori toggle)

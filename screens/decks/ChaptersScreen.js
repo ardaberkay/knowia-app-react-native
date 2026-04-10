@@ -200,7 +200,7 @@ export default function ChaptersScreen({ route, navigation }) {
       setChapters(data);
       if (userId) {
         const chaptersWithUnassigned = [{ id: null }, ...data];
-        const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, userId);
+        const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, userId, true);
         setProgressMap(progress);
       }
     } finally {
@@ -270,7 +270,7 @@ export default function ChaptersScreen({ route, navigation }) {
       // Refresh progress for new chapter
       if (currentUserId) {
         const chaptersWithUnassigned = [{ id: null }, ...updatedChapters];
-        const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, currentUserId);
+        const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, currentUserId, true);
         setProgressMap(progress);
       }
     } catch (e) {
@@ -301,7 +301,7 @@ export default function ChaptersScreen({ route, navigation }) {
               // Progress'i güncelle
               if (currentUserId) {
                 const chaptersWithUnassigned = [{ id: null }, ...updatedChapters];
-                const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, currentUserId);
+                const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, currentUserId, true);
                 setProgressMap(progress);
               }
               showSuccess(t('chapters.deleted', 'Bölüm silindi.'));

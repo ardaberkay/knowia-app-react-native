@@ -378,7 +378,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
         const data = await listChapters(deck.id, true);
         setChapters(data);
         const chaptersWithUnassigned = [{ id: null }, ...data];
-        const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, userId);
+        const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, userId, true);
         setProgressMap(progress);
       }
       await fetchChapterCards();
