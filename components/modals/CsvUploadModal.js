@@ -403,39 +403,37 @@ export default function CsvUploadModal({
   };
 
   const readPickedCsvAsString = async (sourceUri) => {
-    const utf8Enc = FileSystem.EncodingType?.UTF8 ?? 'utf8';
     const b64Enc = FileSystem.EncodingType?.Base64 ?? 'base64';
-    let readUri = sourceUri;
-    let tempCopyUri = null;
+
+    const readAsBase64 = async (uri) => {
+      return await FileSystem.readAsStringAsync(uri, { encoding: b64Enc });
+    };
+
+    let base64;
     try {
-      let csvContent;
+      base64 = await readAsBase64(sourceUri);
+    } catch {
+      const tempUri = `${FileSystem.cacheDirectory}csv_import_${Date.now()}.csv`;
       try {
-        csvContent = await FileSystem.readAsStringAsync(readUri, { encoding: utf8Enc });
-      } catch {
-        tempCopyUri = `${FileSystem.cacheDirectory}csv_import_${Date.now()}.csv`;
-        await FileSystem.copyAsync({ from: sourceUri, to: tempCopyUri });
-        readUri = tempCopyUri;
-        csvContent = await FileSystem.readAsStringAsync(readUri, { encoding: utf8Enc });
-      }
-      if (csvContent.includes('\uFFFD') || csvContent.includes('\u0000')) {
-        const base64Content = await FileSystem.readAsStringAsync(readUri, { encoding: b64Enc });
-        const fileBuffer = Buffer.from(base64Content, 'base64');
-        if (fileBuffer[0] === 0xEF && fileBuffer[1] === 0xBB && fileBuffer[2] === 0xBF) {
-          csvContent = fileBuffer.slice(3).toString('utf8');
-        } else {
-          csvContent = decodeWindows1254(fileBuffer);
-        }
-      }
-      return csvContent;
-    } finally {
-      if (tempCopyUri) {
-        try {
-          await FileSystem.deleteAsync(tempCopyUri, { idempotent: true });
-        } catch {
-          /* temp temizliği isteğe bağlı */
-        }
+        await FileSystem.copyAsync({ from: sourceUri, to: tempUri });
+        base64 = await readAsBase64(tempUri);
+      } finally {
+        FileSystem.deleteAsync(tempUri, { idempotent: true }).catch(() => {});
       }
     }
+
+    const fileBuffer = Buffer.from(base64, 'base64');
+
+    if (fileBuffer[0] === 0xEF && fileBuffer[1] === 0xBB && fileBuffer[2] === 0xBF) {
+      return fileBuffer.slice(3).toString('utf8');
+    }
+
+    const utf8Text = fileBuffer.toString('utf8');
+    if (utf8Text.includes('\uFFFD') || utf8Text.includes('\u0000')) {
+      return decodeWindows1254(fileBuffer);
+    }
+
+    return utf8Text;
   };
 
   const handlePickCSV = async () => {

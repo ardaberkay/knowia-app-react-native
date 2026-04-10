@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, FlatList, Dimensions, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, FlatList, Dimensions, TouchableOpacity, Animated, PixelRatio } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -130,6 +130,8 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
     }));
   };
 
+  const pixelRatio = useMemo(() => PixelRatio.get(), []);
+
   const getFlipInterpolation = (cardId) => {
     if (!flipAnimations.current[cardId]) {
       flipAnimations.current[cardId] = new Animated.Value(0);
@@ -137,28 +139,37 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
 
     const anim = flipAnimations.current[cardId];
 
-    const rotateY = anim.interpolate({
+    const frontRotateY = anim.interpolate({
       inputRange: [0, 1],
       outputRange: ['0deg', '180deg'],
     });
 
+    const backRotateY = anim.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['180deg', '360deg'],
+    });
+
     const frontOpacity = anim.interpolate({
-      inputRange: [0, 0.49, 0.5, 1],
+      inputRange: [0, 0.5, 0.51, 1],
       outputRange: [1, 1, 0, 0],
     });
 
     const backOpacity = anim.interpolate({
-      inputRange: [0, 0.5, 0.51, 1],
+      inputRange: [0, 0.49, 0.5, 1],
       outputRange: [0, 0, 1, 1],
     });
 
-    // Kartın 3D dönüşünün perspektif genişliğini taklit eden 2D scaleX
-    const textScaleX = anim.interpolate({
-      inputRange: [0, 0.25, 0.5, 0.75, 1],
-      outputRange: [1, 0.65, 0.01, 0.65, 1],
+    const frontZIndex = anim.interpolate({
+      inputRange: [0, 0.5, 0.51, 1],
+      outputRange: [10, 10, 0, 0],
     });
 
-    return { rotateY, frontOpacity, backOpacity, textScaleX };
+    const backZIndex = anim.interpolate({
+      inputRange: [0, 0.49, 0.5, 1],
+      outputRange: [0, 0, 10, 10],
+    });
+
+    return { frontRotateY, backRotateY, frontOpacity, backOpacity, frontZIndex, backZIndex };
   };
 
   const getCardItemLayout = useCallback((data, index) => ({
@@ -174,7 +185,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
 
   const renderCardSliderItem = useCallback(({ item }) => {
     const cardId = item?.id || `card-${item?.name || 'unknown'}`;
-    const { rotateY, frontOpacity, backOpacity, textScaleX } = getFlipInterpolation(cardId);
+    const { frontRotateY, backRotateY, frontOpacity, backOpacity, frontZIndex, backZIndex } = getFlipInterpolation(cardId);
     const categorySortOrder = item?.deck?.categories?.sort_order;
     const gradientColors = getCategoryColors(categorySortOrder);
     const categoryIcon = getCategoryIcon(categorySortOrder);
@@ -184,65 +195,85 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
 
     return (
       <View style={{ width: screenWidth, paddingHorizontal: scale(18), marginVertical: verticalScale(27), justifyContent: 'center', alignItems: 'center' }}>
-        <Animated.View
-          renderToHardwareTextureAndroid={false}
-          style={[
-            styles.sliderItem,
-            {
-              shadowOpacity: 0,
-              elevation: 0,
-              transform: [{ perspective: 3500 }, { rotateY: rotateY }],
-            },
-          ]}
-        >
-          <LinearGradient
-            colors={gradientColors}
-            start={{ x: 0, y: 1 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.sliderItemGradient}
-          >
-            <View style={styles.backgroundCategoryIcon}>
-              <Iconify icon={categoryIcon} size={scale(200)} color="rgba(0, 0, 0, 0.1)" style={styles.categoryIconStyle} />
-            </View>
-            <TouchableOpacity activeOpacity={0.9} onPress={() => flipCard(cardId)} style={styles.cardTouchable}>
+        <View style={styles.flipContainer}>
 
-              <Animated.View style={[styles.quarterCircleContainer, { opacity: flipAnimations.current[cardId]?.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0, 0], extrapolate: 'clamp' }) || 1 }]}>
-                <View style={[styles.quarterCircle, { backgroundColor: colors.buttonColor }]}>
+          <Animated.View
+            shouldRasterizeIOS={true}
+            rasterizationScale={pixelRatio}
+            renderToHardwareTextureAndroid={true}
+            style={[
+              styles.sliderItem,
+              {
+                backfaceVisibility: 'hidden',
+                position: 'absolute',
+                opacity: frontOpacity,
+                zIndex: frontZIndex,
+                transform: [{ rotateY: frontRotateY }],
+              },
+            ]}
+          >
+            <LinearGradient
+              colors={gradientColors}
+              start={{ x: 0, y: 1 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.sliderItemGradient}
+            >
+              <View style={styles.backgroundCategoryIcon}>
+                <Iconify icon={categoryIcon} size={scale(200)} color="rgba(0, 0, 0, 0.1)" style={styles.categoryIconStyle} />
+              </View>
+              <TouchableOpacity activeOpacity={0.9} onPress={() => flipCard(cardId)} style={styles.cardTouchable}>
+                <View style={[styles.quarterCircle, styles.quarterCircleContainer, { backgroundColor: colors.buttonColor }]}>
                   <Iconify icon="uil:comment-alt-question" size={moderateScale(26)} color="rgba(255, 255, 255, 0.9)" />
                 </View>
-              </Animated.View>
-              <Animated.View style={[styles.flipIconContainer, { opacity: flipAnimations.current[cardId]?.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0, 0], extrapolate: 'clamp' }) || 1 }]}>
-                <Iconify icon="fluent:card-ui-portrait-flip-24-regular" size={24} color="rgba(255, 255, 255, 0.9)" />
-              </Animated.View>
-              <Animated.View style={[styles.quarterCircleContainer, { opacity: flipAnimations.current[cardId]?.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 0, 1], extrapolate: 'clamp' }) || 0 }]}>
-                <View style={[styles.quarterCircle, { backgroundColor: colors.buttonColor, transform: [{ rotateY: '180deg' }] }]}>
+                <View style={styles.flipIconContainer}>
+                  <Iconify icon="fluent:card-ui-portrait-flip-24-regular" size={24} color="rgba(255, 255, 255, 0.9)" />
+                </View>
+                <View style={styles.cardFaceContent}>
+                  <MathText value={questionText} style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText }]} numberOfLines={3} />
+                </View>
+              </TouchableOpacity>
+            </LinearGradient>
+          </Animated.View>
+
+          <Animated.View
+            shouldRasterizeIOS={true}
+            rasterizationScale={pixelRatio}
+            renderToHardwareTextureAndroid={true}
+            style={[
+              styles.sliderItem,
+              {
+                backfaceVisibility: 'hidden',
+                position: 'absolute',
+                opacity: backOpacity,
+                zIndex: backZIndex,
+                transform: [{ rotateY: backRotateY }],
+              },
+            ]}
+          >
+            <LinearGradient
+              colors={gradientColors}
+              start={{ x: 0, y: 1 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.sliderItemGradient}
+            >
+              <View style={styles.backgroundCategoryIcon}>
+                <Iconify icon={categoryIcon} size={scale(200)} color="rgba(0, 0, 0, 0.1)" style={styles.categoryIconStyle} />
+              </View>
+              <TouchableOpacity activeOpacity={0.9} onPress={() => flipCard(cardId)} style={styles.cardTouchable}>
+                <View style={[styles.quarterCircle, styles.quarterCircleContainer, { backgroundColor: colors.buttonColor }]}>
                   <Iconify icon="uil:comment-alt-check" size={moderateScale(26)} color="rgba(255, 255, 255, 0.9)" />
                 </View>
-              </Animated.View>
-
-            </TouchableOpacity>
-          </LinearGradient>
-        </Animated.View>
-
-        <Animated.View
-          pointerEvents="none"
-          style={[styles.sliderItem, styles.textOverlay, { transform: [{ scaleX: textScaleX }] }]}
-        >
-          <Animated.View style={[styles.cardFace, styles.cardFaceFlip, { opacity: frontOpacity }]}>
-            <View style={styles.cardContent}>
-              <MathText value={questionText} style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText }]} numberOfLines={3} />
-            </View>
+                <View style={styles.cardFaceContent}>
+                  <MathText value={answerText} style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText }]} numberOfLines={4} />
+                </View>
+              </TouchableOpacity>
+            </LinearGradient>
           </Animated.View>
 
-          <Animated.View style={[styles.cardFace, styles.cardFaceFlip, { opacity: backOpacity }]}>
-            <View style={styles.cardContent}>
-              <MathText value={answerText} style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText }]} numberOfLines={4} />
-            </View>
-          </Animated.View>
-        </Animated.View>
+        </View>
       </View>
     );
-  }, [screenWidth, colors, flippedCards, t]);
+  }, [screenWidth, colors, flippedCards, t, pixelRatio]);
 
   if (!card) return null;
 
@@ -550,10 +581,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
-  sectionContainer: {
-    width: '100%',
-    paddingVertical: verticalScale(16),
-  },
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -574,35 +601,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     alignSelf: 'center',
   },
-  cardAnswer: {
-    fontSize: moderateScale(15),
-    fontWeight: '400',
-    letterSpacing: 0.2,
-    borderRadius: moderateScale(8),
-    padding: moderateScale(2),
-    paddingTop: 0,
-    marginTop: 0,
+  flipContainer: {
+    width: scale(240),
+    height: verticalScale(315),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  scrollableContent: {
+  cardFaceContent: {
     flex: 1,
-  },
-  cardFace: {
-    position: 'absolute',
-    width: '90%',
-    height: '90%',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: moderateScale(20),
-    backgroundColor: 'transparent',
-  },
-  cardFaceFlip: {
+    paddingHorizontal: scale(16),
     width: '100%',
-    height: '100%',
-  },
-  textOverlay: {
-    position: 'absolute',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   quarterCircleContainer: {
     position: 'absolute',
@@ -621,21 +631,6 @@ const styles = StyleSheet.create({
     width: scale(32),
     height: scale(32),
     overflow: 'hidden',
-  },
-  flipIconCircle: {
-    width: scale(32),
-    height: scale(32),
-    borderRadius: moderateScale(8),
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-    borderWidth: moderateScale(2),
-    borderColor: '#F98A21',
-    shadowColor: '#000',
-    shadowOffset: { width: scale(2), height: verticalScale(4) },
-    shadowOpacity: 0.3,
-    shadowRadius: moderateScale(6),
-    elevation: 8,
   },
   quarterCircle: {
     width: scale(40),
@@ -687,11 +682,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: scale(16),
-  },
-  divider: {
-    width: '100%',
-    height: verticalScale(2),
-    marginVertical: verticalScale(6),
   },
   navButton: {
     position: 'absolute',

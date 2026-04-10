@@ -150,8 +150,8 @@ export default function AddCardScreen() {
         deck={deck}
       />
       <KeyboardAwareScrollView
-        contentContainerStyle={[styles.formContainer, { backgroundColor: colors.background }]}
         style={{ flex: 1 }}
+        contentContainerStyle={[styles.formContainer]}
         keyboardShouldPersistTaps="handled"
         enableOnAndroid={true}
         enableAutomaticScroll={true}
@@ -159,7 +159,7 @@ export default function AddCardScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header Card */}
-        <View style={[styles.headerCard, styles.headerCardContainer, { borderRadius: moderateScale(44), backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, borderWidth: 1 }]}>
+        <View style={[styles.headerCard, styles.headerCardContainer, { borderRadius: 44, backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, borderWidth: 1 }]}>
           <View style={[styles.headerCardContent, styles.headerContent]}>
             <View style={styles.headerTitleContainer}>
               <Iconify icon="hugeicons:file-add" size={moderateScale(26)} color="#F98A21" style={{ marginRight: scale(6) }} />
@@ -169,7 +169,7 @@ export default function AddCardScreen() {
             </View>
             <View style={styles.headerBottomRow}>
               <View style={styles.headerTextColumn}>
-                <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: verticalScale(22), flex: 1, alignSelf: 'flex-start' }]}>
+                <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: moderateScale(22), flex: 1, alignSelf: 'flex-start' }]}>
                   {t('addCard.motivationText', 'Bilgini pekiştirmek için soru-cevap kartları oluştur ve öğrenme sürecini hızlandır.')}
                 </Text>
                 <TouchableOpacity
@@ -431,12 +431,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     padding: scale(16),
-    paddingTop: verticalScale(8),
+    paddingTop: verticalScale(4),
   },
   headerCard: {
     width: '100%',
     marginBottom: verticalScale(12),
-    marginTop: verticalScale(8),
   },
   headerCardContainer: {
     borderRadius: moderateScale(28),
@@ -448,11 +447,11 @@ const styles = StyleSheet.create({
   headerCardContent: {
     borderRadius: moderateScale(28),
     paddingHorizontal: scale(20),
-    paddingVertical: verticalScale(10),
-    minHeight: verticalScale(180),
+    paddingVertical: verticalScale(6),
+    minHeight: verticalScale(160),
   },
   headerContent: {
-    paddingVertical: verticalScale(8),
+    paddingVertical: verticalScale(4),
   },
   headerTitleContainer: {
     flexDirection: 'row',
@@ -472,19 +471,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(12),
+    paddingHorizontal: scale(10),
     borderRadius: moderateScale(20),
-    borderWidth: moderateScale(1),
+    borderWidth: 1,
     marginTop: verticalScale(12),
   },
   headerImageContainer: {
-    width: scale(120),
-    height: scale(120),
+    width: moderateScale(120, 0.3),
+    height: moderateScale(120, 0.3),
     marginLeft: scale(12),
   },
   headerImage: {
-    width: scale(140),
-    height: scale(140),
+    width: moderateScale(140, 0.3),
+    height: moderateScale(140, 0.3),
     alignSelf: 'flex-end',
     top: '-10%',
   },
