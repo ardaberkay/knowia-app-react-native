@@ -110,6 +110,8 @@ export default function DeckDetailScreen({ route, navigation }) {
   /** onRefresh gibi üstte tanımlı callback'ler güncel fetchChapterProgress'e erişsin */
   const fetchChapterProgressRef = useRef(async () => {});
   const chapterSheetModalRef = useRef(null);
+  /** Başlat’a basıldığında bölüm yoksa sheet açılır; ilk seçimde doğrudan çalışmaya git */
+  const autoStartAfterChapterPickRef = useRef(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   // 120+ karakter genelde 3 satırı aşar (tahmin)
   const [descriptionNeedsExpand, setDescriptionNeedsExpand] = useState(deck?.description?.length > 120);
@@ -663,6 +665,7 @@ export default function DeckDetailScreen({ route, navigation }) {
 
   const openChapterSheet = useCallback(async () => {
     triggerHaptic('light');
+    autoStartAfterChapterPickRef.current = false;
     setChapterSheetVisible(true);
     await fetchChapterProgress(false);
   }, [fetchChapterProgress]);
@@ -688,25 +691,33 @@ export default function DeckDetailScreen({ route, navigation }) {
     []
   );
 
+  const navigateToSwipeDeck = useCallback(
+    async (chapter) => {
+      try {
+        if (userId) {
+          await insertDeckStats(deck.id, userId);
+        }
+      } catch (error) {
+        console.log('Deck stats log error:', error);
+      }
+      const chapterParam = chapter?.id === 'action' ? undefined : chapter;
+      navigation.navigate('SwipeDeck', { deck, chapter: chapterParam });
+    },
+    [userId, deck, navigation]
+  );
+
   const handleStartDeck = useCallback(async () => {
     triggerHaptic('heavy');
 
     if (!selectedChapter?.id) {
+      autoStartAfterChapterPickRef.current = true;
       setChapterSheetVisible(true);
+      await fetchChapterProgress(false);
       return;
     }
 
-    try {
-      if (userId) {
-        await insertDeckStats(deck.id, userId);
-      }
-    } catch (error) {
-      console.log('Deck stats log error:', error);
-    }
-
-    const chapterParam = selectedChapter.id === 'action' ? undefined : selectedChapter;
-    navigation.navigate('SwipeDeck', { deck, chapter: chapterParam });
-  }, [selectedChapter, t, userId, deck, navigation]);
+    await navigateToSwipeDeck(selectedChapter);
+  }, [selectedChapter, fetchChapterProgress, navigateToSwipeDeck]);
 
   const selectedChapterProgress = selectedChapter?.id === 'action'
     ? deckStats
@@ -1368,7 +1379,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                     ? t('deckDetail.action', 'Aksiyon')
                     : selectedChapter?.id
                       ? `${t('chapters.chapter', 'Bölüm')} ${selectedChapter.ordinal}`
-                      : t('deckDetail.selectChapterCtaShort', 'Bir bölüm seç')}
+                      : t('deckDetail.selectChapterCtaShort', 'Bölüm seç')}
                 </Text>
                 {!!selectedChapter?.id && (
                   <Text style={[styles.gfStudyMetaText, { color: colors.muted }]}>
@@ -1508,6 +1519,7 @@ export default function DeckDetailScreen({ route, navigation }) {
         index={0}
         onChange={(idx) => {
           if (idx === -1) {
+            autoStartAfterChapterPickRef.current = false;
             setChapterSheetVisible(false);
           }
         }}
@@ -1516,12 +1528,11 @@ export default function DeckDetailScreen({ route, navigation }) {
         handleIndicatorStyle={{ backgroundColor: colors.muted }}
         enableDynamicSizing
         maxDynamicContentSize={chapterSheetMaxContentHeight}
-        bottomInset={insets.bottom}
         enableContentPanningGesture={false}
       >
         <View style={[styles.chapterSheetHeader, { borderBottomColor: colors.border }]}>
           <Text style={[styles.chapterSheetTitle, { color: colors.cardQuestionText }]}>
-            {t('deckDetail.selectChapterTitle', 'Bölüm Seç')}
+            {t('deckDetail.selectChapterTitle', 'Bölüm seç')}
           </Text>
           <Text style={[styles.chapterSheetHeaderMeta, { color: colors.muted }]}>
             {chapterProgressLoading
@@ -1529,7 +1540,10 @@ export default function DeckDetailScreen({ route, navigation }) {
               : `${chapters.length} ${t('deckDetail.chaptersCount', 'bölüm')}`}
           </Text>
           <TouchableOpacity
-            onPress={() => setChapterSheetVisible(false)}
+            onPress={() => {
+              autoStartAfterChapterPickRef.current = false;
+              setChapterSheetVisible(false);
+            }}
             hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
             style={styles.chapterSheetCloseBtn}
           >
@@ -1574,9 +1588,14 @@ export default function DeckDetailScreen({ route, navigation }) {
                   },
                 ]}
                 activeOpacity={0.78}
-                onPress={() => {
+                onPress={async () => {
+                  const shouldAutoStart = autoStartAfterChapterPickRef.current;
+                  autoStartAfterChapterPickRef.current = false;
                   handleChapterSelect(item);
                   setChapterSheetVisible(false);
+                  if (shouldAutoStart) {
+                    await navigateToSwipeDeck(item);
+                  }
                 }}
               >
                 {isAction ? (

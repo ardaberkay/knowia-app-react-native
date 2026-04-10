@@ -270,8 +270,8 @@
     "sharedStatus": "Herkes görebilir",
     "notSharedStatus": "Sadece sen",
     "moreInfo": "Daha fazla bilgi",
-    "selectChapterCtaShort": "Bir bölüm seç",
-    "selectChapterTitle": "Bölüm Seç",
+    "selectChapterCtaShort": "Bölüm seç",
+    "selectChapterTitle": "Bölüm seç",
     "selectChapterMessage": "Lütfen önce bir bölüm seçin."
   },
   "cardDetail": {

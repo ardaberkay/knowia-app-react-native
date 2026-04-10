@@ -334,7 +334,7 @@ export default function DeckCardsScreen({ route, navigation }) {
           >
             <Iconify
               icon={Platform.OS === 'ios' ? 'ci:chevron-left' : 'mdi:arrow-back'}
-              size={moderateScale(30)}
+              size={moderateScale(29)}
               color={colors.text}
             />
           </TouchableOpacity>
@@ -353,7 +353,7 @@ export default function DeckCardsScreen({ route, navigation }) {
           >
             <Iconify
               icon={Platform.OS === 'ios' ? 'ci:chevron-left' : 'mdi:arrow-back'}
-              size={Platform.OS === 'ios' ? moderateScale(30) : moderateScale(24)}
+              size={Platform.OS === 'ios' ? moderateScale(29) : moderateScale(24)}
               color={colors.text}
             />
           </TouchableOpacity>

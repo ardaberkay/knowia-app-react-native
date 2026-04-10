@@ -194,7 +194,7 @@
     "allDecks": "Todas las Barajas"
   },
   "deckDetail": {
-    "start": "Comenzar",
+    "start": "Empezar",
     "addCard": "Agregar",
     "cards": "Tarjetas",
     "chapters": "Capítulos",
@@ -234,8 +234,8 @@
     "sharedStatus": "Todos pueden ver",
     "notSharedStatus": "Solo tú",
     "moreInfo": "Más información",
-    "selectChapterCtaShort": "Selecciona un capítulo",
-    "selectChapterTitle": "Seleccionar capítulo",
+    "selectChapterCtaShort": "Elegir",
+    "selectChapterTitle": "Capítulos",
     "selectChapterMessage": "Por favor, selecciona un capítulo primero."
   },
   "cardDetail": {

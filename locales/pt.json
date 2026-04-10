@@ -194,7 +194,7 @@
     "allDecks": "Todos os Baralhos"
   },
   "deckDetail": {
-    "start": "Iniciar",
+    "start": "Ir",
     "addCard": "Adicionar",
     "cards": "Cartões",
     "chapters": "Capítulos",
@@ -234,8 +234,8 @@
     "sharedStatus": "Todos podem ver",
     "notSharedStatus": "Apenas você",
     "moreInfo": "Mais informações",
-    "selectChapterCtaShort": "Selecionar um capítulo",
-    "selectChapterTitle": "Selecionar capítulo",
+    "selectChapterCtaShort": "Escolher",
+    "selectChapterTitle": "Capítulos",
     "selectChapterMessage": "Por favor, selecione um capítulo primeiro."
   },
   "cardDetail": {
