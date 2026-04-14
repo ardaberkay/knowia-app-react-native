@@ -22,6 +22,7 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import './lib/i18n';
 import { cleanupStaleCache } from './services/CacheService';
 import * as NavigationBar from 'expo-navigation-bar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Splash ayarlarını sabitliyoruz (fade efekti ile yumuşak geçiş)
 SplashScreen.setOptions({
@@ -124,6 +125,21 @@ function AppContent() {
         if (refreshMatch) params.refresh_token = decodeURIComponent(refreshMatch[1]);
       }
       if (params.access_token && params.refresh_token) {
+        // Şifre sıfırlama e-postası: oturum açmadan ResetPassword ekranına yönlendir
+        const isRecovery = params.type === 'recovery' || (url && url.includes('type=recovery'));
+        if (isRecovery) {
+          await supabase.auth.signOut();
+          await AsyncStorage.multiSet([
+            ['recovery_access_token', params.access_token],
+            ['recovery_refresh_token', params.refresh_token],
+          ]);
+          setTimeout(() => {
+            if (navigationRef.isReady()) {
+              navigationRef.navigate('ResetPassword');
+            }
+          }, 300);
+          return;
+        }
         const { data, error } = await supabase.auth.setSession({
           access_token: params.access_token,
           refresh_token: params.refresh_token,

@@ -41,6 +41,11 @@ export function AuthProvider({ children }) {
     const handleDeepLink = async (event) => {
       const url = event.url;
       console.log("🔗 Dışarıdan link geldi:", url);
+
+      // Şifre sıfırlama linki App.js tarafından işlenir; burada setSession yapma
+      if (url && url.includes('type=recovery')) {
+        return;
+      }
       
       // Eğer gelen linkin içinde token varsa (Google girişi ise)
       if (url && url.includes('access_token')) {
