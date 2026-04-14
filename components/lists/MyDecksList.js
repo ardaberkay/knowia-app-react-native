@@ -430,7 +430,6 @@ const MyDecksList = ({
               onRefresh={onRefresh}
               tintColor={colors.buttonColor}
               colors={[colors.buttonColor]}
-              progressViewOffset={listTopClearance}
             />
           ) : undefined
         }
