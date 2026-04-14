@@ -1,5 +1,5 @@
-import React from 'react';
-import { Image, StyleSheet, Pressable } from 'react-native'; // TouchableOpacity'yi Pressable ile değiştirdik
+import React, { useMemo } from 'react';
+import { Image, StyleSheet, Pressable, Platform } from 'react-native'; // TouchableOpacity'yi Pressable ile değiştirdik
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import { useProfile } from '../../contexts/ProfileContext';
@@ -9,7 +9,7 @@ import { triggerHaptic } from '../../lib/hapticManager';
 // Pressable bileşenini animasyonlu hale getiriyoruz
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export default function ProfileAvatarButton({ compact = false }) {
+function ProfileAvatarButton({ compact = false }) {
   const navigation = useNavigation();
   const { profile } = useProfile();
 
@@ -31,10 +31,15 @@ export default function ProfileAvatarButton({ compact = false }) {
     };
   });
 
-  // Eğer profil henüz yükleniyorsa (null/undefined) veya image_url yoksa doğrudan default resmi kullan
-  const imageSource = profile?.image_url 
-    ? { uri: profile.image_url } 
-    : require('../../assets/avatar_default.webp');
+  // URI objesi her render'da yenilenirse Image gereksiz yeniden decode edebilir; uri + cache sabit tutulur.
+  const imageSource = useMemo(() => {
+    if (!profile?.image_url) return require('../../assets/avatar_default.webp');
+    const uri = profile.image_url;
+    if (Platform.OS === 'android') {
+      return { uri, cache: 'force-cache' };
+    }
+    return { uri };
+  }, [profile?.image_url]);
 
   return (
     <AnimatedPressable
@@ -53,6 +58,7 @@ export default function ProfileAvatarButton({ compact = false }) {
       <Image
         source={imageSource}
         style={compact ? styles.profileAvatarCompact : styles.profileAvatar}
+        fadeDuration={0}
       />
     </AnimatedPressable>
   );
@@ -94,3 +100,5 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
 });
+
+export default React.memo(ProfileAvatarButton);

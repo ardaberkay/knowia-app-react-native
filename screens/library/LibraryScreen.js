@@ -70,6 +70,96 @@ const FadeText = ({ text, style, maxChars = 15 }) => {
   );
 };
 
+/** Aynı ekranda inline fonksiyon kullanılırsa her render'da yeni component tipi oluşur; liste yenilenince header (Image) yeniden mount olur. */
+const MyDecksListHeaderCard = React.memo(function MyDecksListHeaderCard({
+  cardBackground,
+  cardBorder,
+  textColor,
+  mutedColor,
+  cardTopMargin,
+  searchTopMargin,
+  query,
+  onQueryChange,
+  onOpenFilter,
+}) {
+  const { t } = useTranslation();
+  return (
+    <View style={[myDecksListHeaderStyles.myDecksCardContainer, { backgroundColor: cardBackground, marginTop: cardTopMargin, borderColor: cardBorder, borderWidth: 1 }]}>
+      <View style={myDecksListHeaderStyles.myDecksContent}>
+        <View style={myDecksListHeaderStyles.myDecksTextContainer}>
+          <View style={myDecksListHeaderStyles.myDecksTitleContainer}>
+            <Iconify icon="ph:cards-fill" size={moderateScale(26)} color="#F98A21" style={{ marginRight: scale(6) }} />
+            <Text style={[typography.styles.h2, { color: textColor }]}>
+              {t('library.myDecksHeading', 'Destelerim')}
+            </Text>
+          </View>
+          <Text style={[typography.styles.caption, { color: mutedColor, lineHeight: moderateScale(22), marginRight: scale(3) }]}>
+            {t('library.myDecksSubtitle', ' Oluşturduğun destelerle kendi öğrenme yolculuğunu tasarla; keşfet, pekiştir ve hedeflerine doğru ilerle')}
+          </Text>
+        </View>
+        <View style={myDecksListHeaderStyles.myDecksImageContainer}>
+          <Image
+            source={require('../../assets/mydecks_item.webp')}
+            style={myDecksListHeaderStyles.myDecksImage}
+            resizeMode="contain"
+            fadeDuration={0}
+          />
+        </View>
+      </View>
+      <View style={[myDecksListHeaderStyles.myDecksSearchContainer, { marginTop: searchTopMargin }]}>
+        <SearchBar
+          value={query}
+          onChangeText={onQueryChange}
+          placeholder={t('common.searchPlaceholder', 'Destelerde ara...')}
+          style={{ flex: 1 }}
+        />
+        <FilterModalButton onPress={onOpenFilter} />
+      </View>
+    </View>
+  );
+});
+
+const myDecksListHeaderStyles = StyleSheet.create({
+  myDecksCardContainer: {
+    borderRadius: moderateScale(36),
+    overflow: 'hidden',
+    marginHorizontal: scale(10),
+    marginVertical: verticalScale(8),
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(8),
+    minHeight: verticalScale(180),
+    paddingBottom: verticalScale(16),
+  },
+  myDecksContent: {
+    flexDirection: 'row',
+  },
+  myDecksTextContainer: {
+    flex: 1,
+    marginRight: scale(15),
+    gap: verticalScale(5),
+  },
+  myDecksTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: '5%',
+  },
+  myDecksImageContainer: {
+    width: moderateScale(150, 0.3),
+    height: moderateScale(150, 0.3),
+    marginTop: verticalScale(20),
+  },
+  myDecksImage: {
+    width: moderateScale(160, 0.3),
+    height: moderateScale(160, 0.3),
+  },
+  myDecksSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(10),
+    paddingTop: verticalScale(12),
+  },
+});
+
 export default function LibraryScreen() {
   const { colors, isDarkMode } = useTheme();
   const { session } = useAuth();
@@ -650,43 +740,33 @@ export default function LibraryScreen() {
     // Bağımlılık listesi: favoriteDecks artık sadece Favorilerim sekmesi için; Destelerim filtresi deck.is_favorite kullanır
   }, [myDecks, myDecksQuery, myDecksSelectedCategories, myDecksSort, selectedLanguages]);
 
-  // MyDecks Card
-  const renderMyDecksCard = () => {
-    return (
-      <View style={[styles.myDecksCardContainer, { backgroundColor: colors.cardBackground, marginTop: myDecksCardTopMargin, borderColor: colors.cardBorder, borderWidth: 1 }]}>
-        <View style={styles.myDecksContent}>
-          <View style={styles.myDecksTextContainer}>
-            <View style={styles.myDecksTitleContainer}>
-              <Iconify icon="ph:cards-fill" size={moderateScale(26)} color="#F98A21" style={{ marginRight: scale(6) }} />
-              <Text style={[typography.styles.h2, { color: colors.text }]}>
-                {t('library.myDecksHeading', 'Destelerim')}
-              </Text>
-            </View>
-            <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: moderateScale(22), marginRight: scale(3) }]}>
-              {t('library.myDecksSubtitle', ' Oluşturduğun destelerle kendi öğrenme yolculuğunu tasarla; keşfet, pekiştir ve hedeflerine doğru ilerle')}
-            </Text>
-          </View>
-          <View style={styles.myDecksImageContainer}>
-            <Image
-              source={require('../../assets/mydecks_item.webp')}
-              style={styles.myDecksImage}
-              resizeMode="contain"
-              fadeDuration={0}
-            />
-          </View>
-        </View>
-        <View style={[styles.myDecksSearchContainer, { marginTop: myDecksSearchContainerTopMargin }]}>
-          <SearchBar
-            value={myDecksQuery}
-            onChangeText={setMyDecksQuery}
-            placeholder={t('common.searchPlaceholder', 'Destelerde ara...')}
-            style={{ flex: 1 }}
-          />
-          <FilterModalButton onPress={() => setMyDecksFilterModalVisible(true)} />
-        </View>
-      </View>
-    );
-  };
+  const openMyDecksFilterModal = useCallback(() => setMyDecksFilterModalVisible(true), []);
+
+  const myDecksListHeader = useMemo(
+    () => (
+      <MyDecksListHeaderCard
+        cardBackground={colors.cardBackground}
+        cardBorder={colors.cardBorder}
+        textColor={colors.text}
+        mutedColor={colors.muted}
+        cardTopMargin={myDecksCardTopMargin}
+        searchTopMargin={myDecksSearchContainerTopMargin}
+        query={myDecksQuery}
+        onQueryChange={setMyDecksQuery}
+        onOpenFilter={openMyDecksFilterModal}
+      />
+    ),
+    [
+      colors.cardBackground,
+      colors.cardBorder,
+      colors.text,
+      colors.muted,
+      myDecksCardTopMargin,
+      myDecksSearchContainerTopMargin,
+      myDecksQuery,
+      openMyDecksFilterModal,
+    ]
+  );
 
   // Yükleniyor ekranı (sadece Favorites için)
   const renderLoading = () => (
@@ -776,7 +856,7 @@ export default function LibraryScreen() {
         {/* Page 0: My Decks */}
         <View key="myDecks" style={{ flex: 1 }}>
           {loading ? (
-            <MyDecksSkeleton ListHeaderComponent={renderMyDecksCard} />
+            <MyDecksSkeleton ListHeaderComponent={myDecksListHeader} />
           ) : (
             <MyDecksList
               decks={filteredMyDecks}
@@ -789,7 +869,7 @@ export default function LibraryScreen() {
               }}
               onDeleteDeck={handleDeleteDeck}
               onPressDeck={(deck) => navigation.navigate('DeckDetail', { deck })}
-              ListHeaderComponent={renderMyDecksCard}
+              ListHeaderComponent={myDecksListHeader}
               refreshing={myDecksRefreshing}
               onRefresh={() => fetchMyDecks(true)}
               onEndReached={myDecksHasMore ? async () => {
@@ -1374,49 +1454,6 @@ const styles = StyleSheet.create({
   categoryIconStyle: {
     // Subtle background effect için
     opacity: 0.8,
-  },
-  // MyDecks Card styles
-  myDecksCard: {
-  },
-  myDecksCardContainer: {
-    borderRadius: moderateScale(36),
-    overflow: 'hidden',
-    marginHorizontal: scale(10),
-    marginVertical: verticalScale(8),
-    paddingHorizontal: scale(20),
-    paddingVertical: verticalScale(8),
-    minHeight: verticalScale(180),
-    paddingBottom: verticalScale(16),
-  },
-  myDecksContent: {
-    flexDirection: 'row',
-
-  },
-  myDecksTextContainer: {
-    flex: 1,
-    marginRight: scale(15),
-    gap: verticalScale(5),
-  },
-  myDecksTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: '5%',
-  },
-  myDecksImageContainer: {
-    width: moderateScale(150, 0.3),
-    height: moderateScale(150, 0.3),
-    marginTop: verticalScale(20),
-  },
-  myDecksImage: {
-    width: moderateScale(160, 0.3),
-    height: moderateScale(160, 0.3),
-  },
-  myDecksSearchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: scale(10),
-    // marginTop dinamik olarak uygulanacak
-    paddingTop: verticalScale(12),
   },
   modalHeader: {
     flexDirection: 'row',

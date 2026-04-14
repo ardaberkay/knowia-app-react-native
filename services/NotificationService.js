@@ -58,6 +58,18 @@ export async function registerForPushNotificationsAsync(userId) {
     return null;
   }
 
+  // Bu token daha önce farklı bir profile yazıldıysa temizle (tek token = tek profil)
+  const { error: cleanupError } = await supabase
+    .from('profiles')
+    .update({ expo_push_token: null })
+    .eq('expo_push_token', token)
+    .neq('id', userId);
+
+  if (cleanupError) {
+    console.error('Eski push token kayıtları temizlenemedi:', cleanupError.message);
+    return null;
+  }
+
   const { error } = await supabase
     .from('profiles')
     .update({ expo_push_token: token })

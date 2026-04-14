@@ -1,10 +1,11 @@
-import { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../theme/theme';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import { Alert } from 'react-native';
+import { Alert, AppState } from 'react-native';
 import * as Linking from 'expo-linking';
+import { updateLastActiveAt } from '../services/ProfileService';
 
 const OAUTH_REDIRECT = 'knowia://auth/callback';
 
@@ -17,6 +18,16 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   const { colors } = useTheme();
+  const currentUserIdRef = useRef(null);
+
+  const touchLastActive = useCallback(async (userId) => {
+    if (!userId) return;
+    try {
+      await updateLastActiveAt(userId);
+    } catch (err) {
+      console.error('last_active_at update failed:', err?.message || err);
+    }
+  }, []);
 
   useEffect(() => {
     console.log('AuthContext useEffect çalıştı');
@@ -25,6 +36,11 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       console.log('Session check sonucu:', { session, error });
       setSession(session);
+      const currentUserId = session?.user?.id || null;
+      currentUserIdRef.current = currentUserId;
+      if (currentUserId) {
+        touchLastActive(currentUserId);
+      }
       setLoading(false);
     }).catch(err => {
       console.error('Session check hatası:', err);
@@ -35,6 +51,17 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       console.log('Auth state change:', _event, session);
       setSession(session);
+      const currentUserId = session?.user?.id || null;
+      currentUserIdRef.current = currentUserId;
+      if ((_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED') && currentUserId) {
+        touchLastActive(currentUserId);
+      }
+    });
+
+    const appStateSubscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active' && currentUserIdRef.current) {
+        touchLastActive(currentUserIdRef.current);
+      }
     });
 
     // 🔥 3. YENİ EKLENEN: DIŞARIDAN GELEN (GOOGLE) LİNKİ YAKALAYICI
@@ -86,17 +113,21 @@ export function AuthProvider({ children }) {
     return () => {
       subscription.unsubscribe();
       linkingSubscription.remove();
+      appStateSubscription.remove();
     };
-  }, []);
+  }, [touchLastActive]);
 
   // Login fonksiyonu
   const login = async (email, password) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       if (error) throw error;
+      if (data?.user?.id) {
+        await touchLastActive(data.user.id);
+      }
       return { error: null };
     } catch (error) {
       return { error };

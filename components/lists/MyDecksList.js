@@ -271,24 +271,28 @@ const MyDecksList = ({
         const wouldLeaveOne = (total - (i + 3)) === 1;
         const first = decks[i];
         const second = decks[i + 1];
+        const pairItems = [first, second].filter(Boolean).map(deck => ({
+          ...deck,
+          gradientColors: getCategoryColors(deck.categories?.sort_order),
+          categoryIcon: getCategoryIcon(deck.categories?.sort_order)
+        }));
         builtRows.push({ 
+          key: `double_${pairItems.map(item => item.id).join('_')}`,
           type: 'double', 
-          items: [first, second].filter(Boolean).map(deck => ({
-            ...deck,
-            gradientColors: getCategoryColors(deck.categories?.sort_order),
-            categoryIcon: getCategoryIcon(deck.categories?.sort_order)
-          }))
+          items: pairItems
         });
         i += 2;
         if (!wouldLeaveOne) {
           const singleDeck = decks[i];
+          const singleItem = {
+            ...singleDeck,
+            gradientColors: getCategoryColors(singleDeck.categories?.sort_order),
+            categoryIcon: getCategoryIcon(singleDeck.categories?.sort_order)
+          };
           builtRows.push({ 
+            key: `single_${singleItem?.id ?? i}`,
             type: 'single', 
-            item: {
-              ...singleDeck,
-              gradientColors: getCategoryColors(singleDeck.categories?.sort_order),
-              categoryIcon: getCategoryIcon(singleDeck.categories?.sort_order)
-            }
+            item: singleItem
           });
           i += 1;
         }
@@ -298,26 +302,30 @@ const MyDecksList = ({
       if (remaining === 2) {
         const first = decks[i];
         const second = decks[i + 1];
+        const pairItems = [first, second].filter(Boolean).map(deck => ({
+          ...deck,
+          gradientColors: getCategoryColors(deck.categories?.sort_order),
+          categoryIcon: getCategoryIcon(deck.categories?.sort_order)
+        }));
         builtRows.push({ 
+          key: `double_${pairItems.map(item => item.id).join('_')}`,
           type: 'double', 
-          items: [first, second].filter(Boolean).map(deck => ({
-            ...deck,
-            gradientColors: getCategoryColors(deck.categories?.sort_order),
-            categoryIcon: getCategoryIcon(deck.categories?.sort_order)
-          }))
+          items: pairItems
         });
         i += 2;
         continue;
       }
 
       const singleDeck = decks[i];
+      const singleItem = {
+        ...singleDeck,
+        gradientColors: getCategoryColors(singleDeck.categories?.sort_order),
+        categoryIcon: getCategoryIcon(singleDeck.categories?.sort_order)
+      };
       builtRows.push({ 
+        key: `single_vertical_${singleItem?.id ?? i}`,
         type: 'singleVertical', 
-        item: {
-          ...singleDeck,
-          gradientColors: getCategoryColors(singleDeck.categories?.sort_order),
-          categoryIcon: getCategoryIcon(singleDeck.categories?.sort_order)
-        }
+        item: singleItem
       });
       i += 1;
     }
@@ -399,10 +407,9 @@ const MyDecksList = ({
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: listTopClearance }]}>
       {listHeader}
       <FlatList
-        key={`mydecks-${decks.length}`}
         style={styles.decksFlatList}
         data={rows}
-        keyExtractor={(_, idx) => `row_${idx}`}
+        keyExtractor={(row, idx) => row?.key || `row_${idx}`}
         contentContainerStyle={styles.decksListContent}
         renderItem={renderListItem}
         ListEmptyComponent={renderEmptyComponent}
@@ -423,6 +430,7 @@ const MyDecksList = ({
               onRefresh={onRefresh}
               tintColor={colors.buttonColor}
               colors={[colors.buttonColor]}
+              progressViewOffset={listTopClearance}
             />
           ) : undefined
         }

@@ -72,15 +72,24 @@ export default function ResetPasswordScreen({ navigation }) {
     
     // Cleanup: Sayfa unmount olduğunda
     return () => {
-      // Recovery modunu kapat
       setIsRecoveryMode(false);
-      // Session aktifse signOut yap
-      supabase.auth.getSession().then(({ data }) => {
-        if (data.session) {
-          console.log('ResetPassword: Cleanup - Session temizleniyor');
-          supabase.auth.signOut();
+      // Sadece recovery token'ları hâlâ duruyorsa (akış yarım kaldıysa) oturumu kapat.
+      // Başarılı sıfırlamadan sonra token'lar silinir; kullanıcı giriş yaptığında unmount
+      // burada yeni oturumu signOut etmemeli.
+      void (async () => {
+        try {
+          const access = await AsyncStorage.getItem('recovery_access_token');
+          const refresh = await AsyncStorage.getItem('recovery_refresh_token');
+          if (!access && !refresh) return;
+          const { data } = await supabase.auth.getSession();
+          if (data.session) {
+            console.log('ResetPassword: Cleanup - Yarım kalan recovery oturumu temizleniyor');
+            await supabase.auth.signOut();
+          }
+        } catch (e) {
+          console.log('ResetPassword: Cleanup hatası', e);
         }
-      });
+      })();
     };
   }, []);
 
