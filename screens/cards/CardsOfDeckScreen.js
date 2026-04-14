@@ -638,7 +638,7 @@ export default function DeckCardsScreen({ route, navigation }) {
 
   const listContentPaddingBottom = showAddCardFab
     ? insets.bottom + verticalScale(100)
-    : verticalScale(24);
+    : (Platform.OS === 'android' ? insets.bottom + verticalScale(72) : verticalScale(24));
 
   return (
     <>

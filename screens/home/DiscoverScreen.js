@@ -577,6 +577,7 @@ export default function DiscoverScreen() {
             onRefresh={handleRefresh}
             showPopularityBadge={activeTab === 'trend'}
             contentPaddingTop={verticalScale(20)}
+            contentPaddingBottom={Platform.OS === 'android' ? insets.bottom + verticalScale(72) : '10%'}
           />
         )}
       </View>

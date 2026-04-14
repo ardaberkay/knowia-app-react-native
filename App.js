@@ -30,11 +30,6 @@ SplashScreen.setOptions({
   duration: 250,
 });
 
-if (Platform.OS === 'android') {
-  NavigationBar.setBackgroundColorAsync("transparent");
-  NavigationBar.setPositionAsync("absolute"); 
-}
-
 // Tüm Text bileşenleri için maksimum büyüme oranını sınırla
 if (Text.defaultProps == null) {
   Text.defaultProps = {};

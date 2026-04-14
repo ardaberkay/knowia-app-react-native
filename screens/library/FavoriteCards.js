@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useLayoutEffect, useRef, useCallback, memo } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, BackHandler, Alert, Keyboard, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, BackHandler, Alert, Keyboard, RefreshControl, ActivityIndicator, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -46,6 +46,7 @@ export default function FavoriteCards() {
   const { showSuccess, showError } = useSnackbarHelpers();
   const { session } = useAuth();
   const userId = session?.user?.id;
+  const insets = useSafeAreaInsets();
 
   const PAGE_SIZE = 50;
   const [cards, setCards] = useState([]);
@@ -350,7 +351,10 @@ export default function FavoriteCards() {
           data={filteredCards}
           keyExtractor={item => item.id?.toString()}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: verticalScale(24) }}
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingBottom: Platform.OS === 'android' ? insets.bottom + verticalScale(48) : verticalScale(24),
+          }}
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
           onScrollBeginDrag={() => Keyboard.dismiss()}

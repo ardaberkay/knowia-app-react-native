@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions,  Alert, Animated, ScrollView, Image, Keyboard } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions,  Alert, Animated, ScrollView, Image, Keyboard, Platform } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
@@ -220,9 +220,10 @@ export default function LibraryScreen() {
   }, [width, height]);
 
   const myDecksCardTopMargin = useMemo(() => {
-    if (isTablet) return height * 0.01;
-    return height * 0.08;
-  }, [height, isTablet]);
+    const androidExtraTop = Platform.OS === 'android' ? insets.top + verticalScale(-16) : 0;
+    if (isTablet) return height * 0.01 + androidExtraTop;
+    return height * 0.08 + androidExtraTop;
+  }, [height, isTablet, insets.top]);
 
   const myDecksSearchContainerTopMargin = useMemo(() => {
     if (isTablet) return verticalScale(12);
@@ -782,7 +783,7 @@ export default function LibraryScreen() {
       {/* Header + Pill Tabs - Hafif saydam arka plan (BlurView kaldırıldı, geçişte dim sorununu önlemek için) */}
       <View style={[styles.segmentedControlContainer, { top: 0 }]} pointerEvents="box-none">
         <View
-          style={[styles.segmentedControlInner, { paddingTop: insets.top, backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground, borderColor: colors.cardBorder, borderWidth: 1, shadowColor: colors.shadowColor, shadowOpacity: colors.shadowOpacity, shadowRadius: colors.shadowRadius, shadowOffset: colors.shadowOffset, elevation: colors.elevation }]}
+          style={[styles.segmentedControlInner, { paddingTop: Platform.OS === 'android' ? insets.top + verticalScale(8) : insets.top, backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground, borderColor: colors.cardBorder, borderWidth: 1, shadowColor: colors.shadowColor, shadowOpacity: colors.shadowOpacity, shadowRadius: colors.shadowRadius, shadowOffset: colors.shadowOffset, elevation: colors.elevation }]}
           pointerEvents="box-none"
         >
           {/* Header Content */}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, Keyboard } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, Keyboard, Platform } from 'react-native';
 import { getCategories } from '../../services/CategoryService';
 import { createDeck } from '../../services/DeckService';
 import { getLanguages } from '../../services/LanguageService';
@@ -19,7 +19,7 @@ import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
 import DeckLanguageModal from '../../components/modals/DeckLanguageModal';
 import BadgeText from '../../components/tools/BadgeText';
 import { triggerHaptic } from '../../lib/hapticManager';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import StandardCustomAppBar from '../../components/layout/StandardCustomAppBar';
 
 export default function CreateScreen() {
@@ -42,6 +42,7 @@ export default function CreateScreen() {
   const [languages, setLanguages] = useState([]);
 
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     // Klavye açıldığında state'i true yap
@@ -473,7 +474,15 @@ export default function CreateScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={[styles.buttonRowModern, { paddingBottom: isKeyboardVisible ? '20%' : '40%' }]}>
+          <View
+            style={[
+              styles.buttonRowModern,
+              {
+                paddingBottom: isKeyboardVisible ? '20%' : '36%',
+                marginBottom: Platform.OS === 'android' ? insets.bottom : 0,
+              },
+            ]}
+          >
             <UndoButton
               onPress={resetForm}
               disabled={loading}

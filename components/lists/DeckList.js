@@ -264,6 +264,7 @@ const DeckList = ({
   showPopularityBadge = false,
   loading = false,
   contentPaddingTop = 0,
+  contentPaddingBottom = '10%',
   onScrollBeginDrag,
   onEndReached,
 }) => {
@@ -442,7 +443,7 @@ const DeckList = ({
     <FlatList
       data={rows}
       keyExtractor={(_, idx) => `row_${idx}`}
-      contentContainerStyle={{ paddingBottom: '10%', paddingTop: contentPaddingTop }}
+      contentContainerStyle={{ paddingBottom: contentPaddingBottom, paddingTop: contentPaddingTop }}
       ListHeaderComponent={ListHeaderComponent}
       removeClippedSubviews={true} 
       initialNumToRender={6} 

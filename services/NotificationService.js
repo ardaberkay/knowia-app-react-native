@@ -17,6 +17,7 @@ const version = Constants.expoConfig?.version;
  */
 export async function registerForPushNotificationsAsync(userId) {
   let token = null;
+  if (!userId) return null;
 
   // Sadece gerçek cihazda çalışır, emulator/simülatörde çalışmaz!
   if (!Device.isDevice) {
@@ -58,25 +59,11 @@ export async function registerForPushNotificationsAsync(userId) {
     return null;
   }
 
-  // Bu token daha önce farklı bir profile yazıldıysa temizle (tek token = tek profil)
-  const { error: cleanupError } = await supabase
-    .from('profiles')
-    .update({ expo_push_token: null })
-    .eq('expo_push_token', token)
-    .neq('id', userId);
-
-  if (cleanupError) {
-    console.error('Eski push token kayıtları temizlenemedi:', cleanupError.message);
-    return null;
-  }
-
-  const { error } = await supabase
-    .from('profiles')
-    .update({ expo_push_token: token })
-    .eq('id', userId);
+  // Token sahipliğini backend RPC ile yönet (RLS + unique index çakışmasını önler)
+  const { error } = await supabase.rpc('claim_push_token', { p_token: token });
 
   if (error) {
-    console.error('Push token kaydedilemedi:', error.message);
+    console.error('Push token claim edilemedi:', error.message);
     return null;
   }
 

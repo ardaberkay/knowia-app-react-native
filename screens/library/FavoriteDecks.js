@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef,  } from 'react';
-import { View, Image, Text } from 'react-native';
+import { View, Image, Text, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
@@ -14,6 +14,7 @@ import { typography } from '../../theme/typography';
 import { StyleSheet } from 'react-native';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { getLanguages } from '../../services/LanguageService';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function FavoriteDecks() {
   const navigation = useNavigation();
@@ -21,6 +22,7 @@ export default function FavoriteDecks() {
   const { t } = useTranslation();
   const { session } = useAuth();
   const userId = session?.user?.id;
+  const insets = useSafeAreaInsets();
 
   const [favoriteDecks, setFavoriteDecks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -236,6 +238,7 @@ export default function FavoriteDecks() {
           refreshing={loading}
           onRefresh={() => fetchFavorites(true)}
           onEndReached={hasMore ? loadMoreFavorites : undefined}
+          contentPaddingBottom={Platform.OS === 'android' ? insets.bottom + verticalScale(72) : '10%'}
         />
       )}
 

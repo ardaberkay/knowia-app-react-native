@@ -366,6 +366,7 @@ export default function CategoryDeckListScreen({ route }) {
           showPopularityBadge={false}
           loading={loading}
           contentPaddingTop={verticalScale(20)}
+          contentPaddingBottom={Platform.OS === 'android' ? insets.bottom + verticalScale(72) : '10%'}
         />
       </View>
 

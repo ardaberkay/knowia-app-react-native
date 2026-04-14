@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl, Image, Keyboard } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl, Image, Keyboard, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
@@ -7,6 +7,7 @@ import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { triggerHaptic } from '../../lib/hapticManager';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // --- FADE TEXT BİLEŞENİ ---
 const FadeText = ({ text, style, maxChars = 15 }) => {
@@ -208,6 +209,7 @@ const MyDecksList = ({
 }) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
@@ -403,6 +405,10 @@ const MyDecksList = ({
         ? ListHeaderComponent
         : <ListHeaderComponent />;
 
+  const listBottomPadding = Platform.OS === 'android'
+    ? insets.bottom + verticalScale(120)
+    : '35%';
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: listTopClearance }]}>
       {listHeader}
@@ -410,7 +416,7 @@ const MyDecksList = ({
         style={styles.decksFlatList}
         data={rows}
         keyExtractor={(row, idx) => row?.key || `row_${idx}`}
-        contentContainerStyle={styles.decksListContent}
+        contentContainerStyle={[styles.decksListContent, { paddingBottom: listBottomPadding }]}
         renderItem={renderListItem}
         ListEmptyComponent={renderEmptyComponent}
         showsVerticalScrollIndicator={false}
@@ -447,7 +453,6 @@ const styles = StyleSheet.create({
   },
   decksListContent: {
     flexGrow: 1,
-    paddingBottom: '35%',
     paddingTop: verticalScale(4),
   },
   myDecksList: {
