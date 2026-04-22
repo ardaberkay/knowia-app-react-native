@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl, Image, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
@@ -263,6 +263,7 @@ const DeckList = ({
   onRefresh,
   showPopularityBadge = false,
   loading = false,
+  loadingMore = false,
   contentPaddingTop = 0,
   contentPaddingBottom = '10%',
   onScrollBeginDrag,
@@ -470,6 +471,11 @@ const DeckList = ({
       onScrollBeginDrag={onScrollBeginDrag}
       onEndReached={onEndReached}
       onEndReachedThreshold={onEndReached ? 0.5 : undefined}
+      ListFooterComponent={loadingMore ? (
+        <View style={{ paddingVertical: verticalScale(16), alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="small" color={colors.text} />
+        </View>
+      ) : null}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}

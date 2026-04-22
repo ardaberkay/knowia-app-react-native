@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, BackHandler, Alert, Animated, Easing, Modal, Image, RefreshControl, Pressable } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform, BackHandler, Alert, Animated, Easing, Modal, Image, RefreshControl, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -68,6 +68,7 @@ export default function DeckCardsScreen({ route, navigation }) {
   const { showSuccess, showError } = useSnackbarHelpers();
   const [cards, setCards] = useState([]);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [favoriteCards, setFavoriteCards] = useState([]);
   const [cardSort, setCardSort] = useState('original');
   const [selectedCard, setSelectedCard] = useState(null);
@@ -86,6 +87,9 @@ export default function DeckCardsScreen({ route, navigation }) {
   const latestDetailFetchRef = useRef(null);
   const serverSortRef = useRef('original');
   const serverFilterRef = useRef(null);
+  const serverSearchRef = useRef('');
+  const cardsFetchGenRef = useRef(0);
+  const debouncedSearchFetchBootRef = useRef(true);
   const favoriteCardsRef = useRef(new Set());
   const [moreMenuVisible, setMoreMenuVisible] = useState(false);
   const [moreMenuPos, setMoreMenuPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
@@ -117,12 +121,23 @@ export default function DeckCardsScreen({ route, navigation }) {
     favoriteCardsRef.current = new Set(favoriteCards);
   }, [favoriteCards]);
 
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search.trim()), 350);
+    return () => clearTimeout(id);
+  }, [search]);
+
   const fetchData = useCallback(async (silent = false, options = {}) => {
     const {
       sort: sortOverride,
       filter: filterOverride,
       forceRefresh = false,
+      search: searchOverride,
     } = options || {};
+
+    const nextSearch = searchOverride !== undefined
+      ? String(searchOverride ?? '').trim()
+      : serverSearchRef.current;
+    serverSearchRef.current = nextSearch;
 
     const requestedSort = ['original', 'az'].includes(sortOverride) ? sortOverride : serverSortRef.current;
     const nextFilter = (filterOverride === null)
@@ -130,9 +145,12 @@ export default function DeckCardsScreen({ route, navigation }) {
       : (['fav', 'unlearned', 'learned'].includes(filterOverride) ? filterOverride : serverFilterRef.current);
     const nextSort = nextFilter ? 'original' : requestedSort;
 
+    const fetchId = ++cardsFetchGenRef.current;
+
     if (!silent) setLoading(true);
     try {
-      const cardsData = await getCardsByDeck(deck.id, 0, PAGE_SIZE, nextSort, forceRefresh, userId, nextFilter || undefined);
+      const cardsData = await getCardsByDeck(deck.id, 0, PAGE_SIZE, nextSort, forceRefresh, userId, nextFilter || undefined, nextSearch || null);
+      if (fetchId !== cardsFetchGenRef.current) return;
 
       let statusMap = {};
       let favoriteCardIds = new Set();
@@ -147,11 +165,14 @@ export default function DeckCardsScreen({ route, navigation }) {
         favoriteCardIds = favSet;
       }
 
+      if (fetchId !== cardsFetchGenRef.current) return;
+
       const cardsWithProgress = cardsData.map(card => ({
         ...card,
         status: statusMap[card.id] || (nextFilter === 'learned' ? 'learned' : 'new')
       }));
 
+      if (fetchId !== cardsFetchGenRef.current) return;
       serverSortRef.current = nextSort;
       serverFilterRef.current = nextFilter;
       setCards(cardsWithProgress);
@@ -161,12 +182,27 @@ export default function DeckCardsScreen({ route, navigation }) {
       dataFetchedRef.current = true;
     } catch (e) {
       console.error("Error fetching deck cards:", e);
-      setCards([]);
-      setFavoriteCards([]);
+      if (fetchId === cardsFetchGenRef.current) {
+        setCards([]);
+        setFavoriteCards([]);
+      }
     } finally {
       if (!silent) setLoading(false);
     }
   }, [deck.id, userId]);
+
+  useEffect(() => {
+    if (debouncedSearchFetchBootRef.current) {
+      debouncedSearchFetchBootRef.current = false;
+      return;
+    }
+    if (!deck?.id) return;
+    fetchData(true, {
+      sort: serverSortRef.current,
+      filter: serverFilterRef.current,
+      search: debouncedSearch,
+    });
+  }, [debouncedSearch, fetchData]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -177,9 +213,11 @@ export default function DeckCardsScreen({ route, navigation }) {
   const loadMore = useCallback(async () => {
     if (!hasMore || loadingMore || loading) return;
     setLoadingMore(true);
+    const loadGen = cardsFetchGenRef.current;
     try {
       const nextPage = page + 1;
-      const cardsData = await getCardsByDeck(deck.id, nextPage, PAGE_SIZE, serverSortRef.current, false, userId, serverFilterRef.current || undefined);
+      const cardsData = await getCardsByDeck(deck.id, nextPage, PAGE_SIZE, serverSortRef.current, false, userId, serverFilterRef.current || undefined, serverSearchRef.current || null);
+      if (loadGen !== cardsFetchGenRef.current) return;
       if (cardsData.length === 0) {
         setHasMore(false);
         return;
@@ -203,7 +241,18 @@ export default function DeckCardsScreen({ route, navigation }) {
         status: statusMap[card.id] || 'new'
       }));
 
-      setCards(prev => [...prev, ...newCards]);
+      if (loadGen !== cardsFetchGenRef.current) return;
+      setCards(prev => {
+        const seen = new Set(prev.map(c => c.id));
+        const merged = [...prev];
+        for (const card of newCards) {
+          if (card?.id != null && !seen.has(card.id)) {
+            seen.add(card.id);
+            merged.push(card);
+          }
+        }
+        return merged;
+      });
       setFavoriteCards(prev => [...new Set([...prev, ...Array.from(newFavIds)])]);
       setPage(nextPage);
       setHasMore(cardsData.length >= PAGE_SIZE);
@@ -218,8 +267,12 @@ export default function DeckCardsScreen({ route, navigation }) {
     dataFetchedRef.current = false;
     serverSortRef.current = 'original';
     serverFilterRef.current = null;
+    serverSearchRef.current = '';
+    debouncedSearchFetchBootRef.current = true;
     setCardSort('original');
-    fetchData(false, { sort: 'original', filter: null });
+    setSearch('');
+    setDebouncedSearch('');
+    fetchData(false, { sort: 'original', filter: null, search: '' });
   }, [deck.id, fetchData]);
 
   useFocusEffect(
@@ -229,18 +282,6 @@ export default function DeckCardsScreen({ route, navigation }) {
       }
     }, [fetchData])
   );
-
-  const filteredCards = useMemo(() => {
-    let list = cards;
-    if (search.trim()) {
-      const s = search.trim().toLowerCase();
-      list = list.filter(c =>
-        (c.question && c.question.toLowerCase().includes(s)) ||
-        (c.answer && c.answer.toLowerCase().includes(s))
-      );
-    }
-    return list;
-  }, [cards, search]);
 
   // Ref (favoriteCardsRef) effect'ten sonra güncellenir; liste ilk render'da ref'e bakarsa
   // favori ikonları bir kare gecikmeli/boş kalır. isFavorite için state ile aynı commit'te güncellenen Set kullan.
@@ -262,9 +303,9 @@ export default function DeckCardsScreen({ route, navigation }) {
 
     if (filterChanged || sortChanged) {
       // Filtre/sıralama geçişleri sessiz olsun (ikon kaybolmasın, loader çıkmasın)
-      fetchData(true, { sort: nextSort, filter: nextFilter });
+      fetchData(true, { sort: nextSort, filter: nextFilter, search: search.trim() });
     }
-  }, [fetchData]);
+  }, [fetchData, search]);
 
   useEffect(() => {
     selectedCardRef.current = selectedCard;
@@ -474,12 +515,12 @@ export default function DeckCardsScreen({ route, navigation }) {
 
       // Favoriler filtresindeyken favorite eklediyse, sıralama en yeni favori üstte olacak şekilde server'dan tazele.
       if (serverFilterRef.current === 'fav' && !wasFavorite) {
-        fetchData(true, { sort: 'original', filter: 'fav', forceRefresh: true });
+        fetchData(true, { sort: 'original', filter: 'fav', forceRefresh: true, search: search.trim() });
       }
     } catch (e) {
       setFavoriteCards(prev => wasFavorite ? [...prev, cardId] : prev.filter(id => id !== cardId));
     }
-  }, [userId, deck.id, fetchData]);
+  }, [userId, deck.id, fetchData, search]);
 
   const handleEditSelectedCard = () => {
     if (!selectedCard) return;
@@ -640,6 +681,15 @@ export default function DeckCardsScreen({ route, navigation }) {
     ? insets.bottom + verticalScale(100)
     : (Platform.OS === 'android' ? insets.bottom + verticalScale(72) : verticalScale(24));
 
+  const listFooter = useMemo(() => {
+    if (!loadingMore) return null;
+    return (
+      <View style={styles.listFooterLoading} accessibilityRole="progressbar" accessibilityLabel={t('common.loading', 'Yükleniyor')}>
+        <ActivityIndicator size="small" color={colors.text} />
+      </View>
+    );
+  }, [loadingMore, colors.text, t]);
+
   return (
     <>
       {selectedCard && editMode ? (
@@ -669,7 +719,7 @@ export default function DeckCardsScreen({ route, navigation }) {
             ) : (
               <FlatList
                 ref={flatListRef}
-                data={filteredCards}
+                data={cards}
                 keyExtractor={item => item.id?.toString()}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ flexGrow: 1, paddingBottom: listContentPaddingBottom }}
@@ -711,7 +761,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                 extraData={favoriteCards}
                 onEndReached={loadMore}
                 onEndReachedThreshold={0.5}
-                ListFooterComponent={null}
+                ListFooterComponent={listFooter}
                 removeClippedSubviews={true}
                 initialNumToRender={8}
                 maxToRenderPerBatch={8}
@@ -877,6 +927,11 @@ const styles = StyleSheet.create({
   cardListItem: {
     paddingHorizontal: scale(12),
     paddingVertical: 0,
+  },
+  listFooterLoading: {
+    paddingVertical: verticalScale(16),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   noDecksEmpty: {
     height: verticalScale(200),

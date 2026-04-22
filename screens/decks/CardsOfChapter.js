@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import SearchBar from '../../components/tools/SearchBar';
 import CardDetailView from '../../components/layout/CardDetailView';
 import AddEditCardInlineForm from '../../components/layout/EditCardForm';
-import { listChapters, distributeUnassignedEvenly, getChaptersProgress } from '../../services/ChapterService';
+import { listChapters, distributeUnassignedEvenly, getDeckChaptersProgressRpc } from '../../services/ChapterService';
 import { deleteCard, getCardsByChapter, getUserCardProgressForCards, getChapterProgressCounts, getCardDetail } from '../../services/CardService';
 import { addFavoriteCard, removeFavoriteCard, getFavoriteCardIdsForCards } from '../../services/FavoriteService';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -210,9 +210,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
         const data = await listChapters(deck.id);
         setChapters(data);
-
-        const chaptersWithUnassigned = [{ id: null }, ...data];
-        const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, userId);
+        const progress = await getDeckChaptersProgressRpc(deck.id, userId);
         setProgressMap(progress);
       }
     } catch (e) {
@@ -377,8 +375,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
       if (userId && deck?.id) {
         const data = await listChapters(deck.id, true);
         setChapters(data);
-        const chaptersWithUnassigned = [{ id: null }, ...data];
-        const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, userId, true);
+        const progress = await getDeckChaptersProgressRpc(deck.id, userId, true);
         setProgressMap(progress);
       }
       await fetchChapterCards();
@@ -492,7 +489,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
     }
     setDistLoading(true);
     try {
-      await distributeUnassignedEvenly(deck.id, chapters.map(c => c.id));
+      await distributeUnassignedEvenly(deck.id, chapters.map(c => c.id), currentUserId);
       showSuccess(t('chapters.distributed', 'Atanmamış kartlar bölümlere dağıtıldı.'));
       await fetchChapterCards();
     } catch (e) {
@@ -532,7 +529,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
     setMoveLoading(true);
     try {
       const cardIds = Array.from(selectedCards);
-      await updateCardsChapter(cardIds, targetChapterId);
+      await updateCardsChapter(cardIds, targetChapterId, deck.id, currentUserId);
 
       showSuccess(t('chapterCards.cardsMoved', '{{count}} kart bölüme taşındı.', { count: selectedCards.size }));
 

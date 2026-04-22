@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { View, StyleSheet, Text, Keyboard, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -53,6 +53,7 @@ export default function CategoryDeckListScreen({ route }) {
   }), []);
 
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sort, setSort] = useState('default');
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedLanguages, setSelectedLanguages] = useState([]);
@@ -66,6 +67,7 @@ export default function CategoryDeckListScreen({ route }) {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const PAGE_SIZE = 50;
+  const fetchGenRef = useRef(0);
 
   useEffect(() => {
     getLanguages().then(setAllLanguages);
@@ -75,22 +77,18 @@ export default function CategoryDeckListScreen({ route }) {
     if (!initialFavoriteDecks || initialFavoriteDecks.length === 0) {
       loadFavoriteDecks();
     }
-    if (!initialDecks || initialDecks.length === 0) {
-      loadDecks();
-    }
   }, []);
-
-  useEffect(() => {
-    if (category) {
-      loadDecks();
-    }
-  }, [category]);
 
   useEffect(() => {
     if (initialFavoriteDecks) {
       setFavoriteDecks(initialFavoriteDecks);
     }
   }, [initialFavoriteDecks]);
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search.trim()), 350);
+    return () => clearTimeout(id);
+  }, [search]);
 
   const loadFavoriteDecks = async () => {
     try {
@@ -103,22 +101,59 @@ export default function CategoryDeckListScreen({ route }) {
     }
   };
 
-  const loadDecks = async () => {
+  const loadDecks = async (opts = {}) => {
     if (!category) return;
 
+    const {
+      forceRefresh = false,
+      pageOverride = 0,
+      append = false,
+      sortOverride = sort,
+      categorySortOrdersOverride = selectedCategories,
+      languageIdsOverride = selectedLanguages,
+      searchOverride = debouncedSearch,
+    } = opts;
+
+    const sortBy = ['az', 'default', 'popularity'].includes(sortOverride) ? sortOverride : 'default';
+    const favoritesOnly = sortOverride === 'favorites';
+    const requestGen = ++fetchGenRef.current;
+
     try {
-      setLoading(true);
-      const loadedDecks = await getDecksByCategory(userId, category, { page: 0, limit: PAGE_SIZE });
+      if (!append) setLoading(true);
+      const loadedDecks = await getDecksByCategory(userId, category, {
+        page: pageOverride,
+        limit: PAGE_SIZE,
+        forceRefresh,
+        searchQuery: searchOverride,
+        sortBy,
+        favoritesOnly,
+        categorySortOrders: categorySortOrdersOverride,
+        languageIds: languageIdsOverride,
+      });
+      if (requestGen !== fetchGenRef.current) return;
       const safeDecks = loadedDecks || [];
-      setDecks(safeDecks);
-      setPage(0);
+      setDecks((prev) => {
+        if (!append) return safeDecks;
+        const seen = new Set(prev.map((d) => d.id));
+        const merged = [...prev];
+        for (const deck of safeDecks) {
+          if (deck?.id && !seen.has(deck.id)) {
+            seen.add(deck.id);
+            merged.push(deck);
+          }
+        }
+        return merged;
+      });
+      setPage(pageOverride);
       setHasMore(safeDecks.length >= PAGE_SIZE);
     } catch (error) {
       console.error('Error loading decks:', error);
-      setDecks([]);
+      if (requestGen === fetchGenRef.current && !append) {
+        setDecks([]);
+      }
       setHasMore(false);
     } finally {
-      setLoading(false);
+      if (!append) setLoading(false);
     }
   };
 
@@ -127,17 +162,7 @@ export default function CategoryDeckListScreen({ route }) {
     try {
       setLoadingMore(true);
       const nextPage = page + 1;
-      const loadedDecks = await getDecksByCategory(userId, category, { page: nextPage, limit: PAGE_SIZE });
-      const safeDecks = loadedDecks || [];
-      if (safeDecks.length === 0) {
-        setHasMore(false);
-        return;
-      }
-      setDecks(prev => [...prev, ...safeDecks]);
-      setPage(nextPage);
-      if (safeDecks.length < PAGE_SIZE) {
-        setHasMore(false);
-      }
+      await loadDecks({ pageOverride: nextPage, append: true, sortOverride: sort, searchOverride: debouncedSearch });
     } catch (error) {
       console.error('Error loading more decks:', error);
       setHasMore(false);
@@ -146,82 +171,21 @@ export default function CategoryDeckListScreen({ route }) {
     }
   };
 
-  const filteredDecks = useMemo(() => {
-    let filtered = decks.filter(deck => {
-      const matchesSearch =
-        (deck.name && deck.name.toLowerCase().includes(search.toLowerCase())) ||
-        (deck.to_name && deck.to_name.toLowerCase().includes(search.toLowerCase()));
-
-      const deckSortOrder = deck.categories?.sort_order;
-      const hasActiveCategoryFilter = selectedCategories.length > 0;
-      const matchesCategory = !hasActiveCategoryFilter
-        ? true
-        : (deckSortOrder != null && selectedCategories.includes(deckSortOrder));
-
-      // 3. Dil Kontrolü
-      const hasActiveLanguageFilter = selectedLanguages.length > 0;
-
-      // NOT: Supabase sorgunda decks_languages'i (language_id) olarak çekmelisin
-      const deckLanguageIds = deck.decks_languages?.map(dl => dl.language_id) || [];
-
-      const matchesLanguage = !hasActiveLanguageFilter
-        ? true
-        : deckLanguageIds.some(id => selectedLanguages.includes(id));
-
-      if (sort === 'favorites') {
-        return matchesSearch && matchesCategory && matchesLanguage && favoriteDecks.includes(deck.id);
-      }
-
-      return matchesSearch && matchesCategory && matchesLanguage;
-    });
-
-    // default: API sırası korunur (communityDecks: shared_at, inProgressDecks: en son çalışılan, vb.)
-    const sortDate = (d) => new Date(d.updated_at != null ? d.updated_at : d.created_at || 0).getTime();
-    switch (sort) {
-      case 'default':
-        break;
-      case 'az':
-        filtered.sort((a, b) => {
-          const cmp = (a.name || '').localeCompare(b.name || '');
-          return cmp !== 0 ? cmp : sortDate(b) - sortDate(a);
-        });
-        break;
-      case 'favorites':
-        filtered.sort((a, b) => {
-          const aIsFavorite = favoriteDecks.includes(a.id);
-          const bIsFavorite = favoriteDecks.includes(b.id);
-          if (aIsFavorite && !bIsFavorite) return -1;
-          if (!aIsFavorite && bIsFavorite) return 1;
-          return sortDate(b) - sortDate(a);
-        });
-        break;
-      case 'popularity':
-        filtered.sort((a, b) => {
-          const scoreA = a.popularity_score || 0;
-          const scoreB = b.popularity_score || 0;
-          if (scoreA !== scoreB) return scoreB - scoreA;
-          return sortDate(b) - sortDate(a);
-        });
-        break;
-      default:
-        break;
-    }
-
-    // is_admin_created kontrolü - tüm kategoriler için geçerli
-    return filtered.map((deck) => {
+  const visibleDecks = useMemo(() => (
+    decks.map((deck) => {
       if (deck.is_admin_created) {
         return {
           ...deck,
           profiles: {
             ...deck.profiles,
             username: 'Knowia',
-            image_url: null, // app_icon.png kullanılacak
+            image_url: null,
           },
         };
       }
       return deck;
-    });
-  }, [decks, search, sort, favoriteDecks, selectedCategories, selectedLanguages]);
+    })
+  ), [decks]);
 
   const handleDeckPress = (deck) => {
     navigation.navigate('DeckDetail', { deck });
@@ -248,7 +212,10 @@ export default function CategoryDeckListScreen({ route }) {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([loadFavoriteDecks(), loadDecks()]);
+      await Promise.all([
+        loadFavoriteDecks(),
+        loadDecks({ forceRefresh: true, pageOverride: 0, append: false }),
+      ]);
     } catch (error) {
       console.error('Error refreshing:', error);
     } finally {
@@ -262,6 +229,18 @@ export default function CategoryDeckListScreen({ route }) {
     setFilterModalVisible(false);
     setSelectedLanguages(newLanguages || []);
   };
+
+  useEffect(() => {
+    if (!category) return;
+    loadDecks({
+      pageOverride: 0,
+      append: false,
+      sortOverride: sort,
+      categorySortOrdersOverride: selectedCategories,
+      languageIdsOverride: selectedLanguages,
+      searchOverride: debouncedSearch,
+    });
+  }, [category, debouncedSearch, sort, selectedCategories, selectedLanguages, userId]);
 
   const renderFixedHeader = useCallback(() => {
     const config = getCategoryConfig(category, t);
@@ -355,7 +334,7 @@ export default function CategoryDeckListScreen({ route }) {
 
       <View style={[styles.listContainer, { backgroundColor: colors.background }]}>
         <DeckList
-          decks={filteredDecks}
+          decks={visibleDecks}
           favoriteDecks={favoriteDecks}
           onToggleFavorite={handleToggleFavorite}
           onPressDeck={handleDeckPress}
@@ -365,6 +344,7 @@ export default function CategoryDeckListScreen({ route }) {
           onRefresh={handleRefresh}
           showPopularityBadge={false}
           loading={loading}
+          loadingMore={loadingMore}
           contentPaddingTop={verticalScale(20)}
           contentPaddingBottom={Platform.OS === 'android' ? insets.bottom + verticalScale(72) : '10%'}
         />

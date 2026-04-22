@@ -96,7 +96,7 @@ export async function listChapters(deckId, forceRefresh = false) {
  * @param {string} deckId
  * @param {number} ordinal
  */
-export async function createChapter(deckId, ordinal) {
+export async function createChapter(deckId, ordinal, userId = null) {
   const { data, error } = await supabase
     .from('chapters')
     .insert({ deck_id: deckId, ordinal })
@@ -104,6 +104,7 @@ export async function createChapter(deckId, ordinal) {
     .single();
   if (error) throw error;
   await invalidateCache(`chapters_${deckId}`);
+  if (userId) await invalidateCache(chaptersProgressCacheKey(deckId, userId));
   return data;
 }
 
@@ -129,12 +130,13 @@ export async function getNextOrdinal(deckId) {
  * @param {string} deckId
  * @param {string[]} chapterIds
  */
-export async function distributeUnassignedEvenly(deckId, chapterIds) {
+export async function distributeUnassignedEvenly(deckId, chapterIds, userId = null) {
   const { error } = await supabase.rpc('distribute_unassigned_evenly', {
     p_deck: deckId,
     p_chapters: chapterIds,
   });
   if (error) throw error;
+  if (userId) await invalidateCache(chaptersProgressCacheKey(deckId, userId));
   return true;
 }
 
@@ -143,13 +145,14 @@ export async function distributeUnassignedEvenly(deckId, chapterIds) {
  * @param {string} chapterId
  * @param {string} [deckId] - Varsa bu destenin chapters cache'i invalidate edilir
  */
-export async function deleteChapter(chapterId, deckId = null) {
+export async function deleteChapter(chapterId, deckId = null, userId = null) {
   const { error } = await supabase
     .from('chapters')
     .delete()
     .eq('id', chapterId);
   if (error) throw error;
   if (deckId) await invalidateCache(`chapters_${deckId}`);
+  if (deckId && userId) await invalidateCache(chaptersProgressCacheKey(deckId, userId));
   return true;
 }
 
@@ -256,7 +259,7 @@ export async function getChapterProgress(chapterId, deckId, userId) {
 /**
  * Get progress for multiple chapters at once using count+head:true (0 rows downloaded).
  * Each chapter gets 3 parallel count queries (total, learned, learning).
- * Disk cache: progress_chapters_{deckId}_{userId}, TTL CHAPTER_PROGRESS (24 saat).
+ * Disk cache: progress_chapters_{deckId}_{userId}, TTL CHAPTER_PROGRESS.
  * @param {boolean} [forceRefresh] true: cache atla, ağdan çek ve cache'i güncelle
  */
 async function fetchChaptersProgressFromNetwork(chapters, deckId, userId) {
@@ -371,6 +374,51 @@ export async function getChaptersProgress(chapters, deckId, userId, forceRefresh
     console.error('Error fetching chapters progress:', error);
     return emptyFallback();
   }
+}
+
+/**
+ * Fetch chapter progress (including unassigned) in one RPC call.
+ * Returns a map keyed by chapter id or 'unassigned'.
+ */
+export async function getDeckChaptersProgressRpc(deckId, userId, forceRefresh = false) {
+  if (!deckId || !userId) return new Map();
+  const cacheKey = chaptersProgressCacheKey(deckId, userId);
+  if (!forceRefresh) {
+    const cached = await getCachedData(cacheKey, CACHE_DURATIONS.CHAPTER_PROGRESS);
+    if (cached && !cached.isStale && cached.data && typeof cached.data === 'object') {
+      const progressMap = new Map();
+      Object.entries(cached.data).forEach(([key, value]) => {
+        progressMap.set(key, value);
+      });
+      return progressMap;
+    }
+  }
+
+  const { data, error } = await supabase.rpc('get_deck_chapters_progress', {
+    p_deck_id: deckId,
+    p_user_id: userId,
+  });
+  if (error) throw error;
+
+  const progressMap = new Map();
+  (data || []).forEach((row) => {
+    const key = row?.scope_key || (row?.chapter_id ?? 'unassigned');
+    progressMap.set(key, {
+      total: Number(row?.total_count || 0),
+      learned: Number(row?.learned_count || 0),
+      learning: Number(row?.learning_count || 0),
+      new: Number(row?.new_count || 0),
+      progress: Number(row?.progress || 0),
+    });
+  });
+
+  const asObject = {};
+  progressMap.forEach((value, key) => {
+    asObject[key] = value;
+  });
+  await cacheData(cacheKey, asObject);
+
+  return progressMap;
 }
 
 /**

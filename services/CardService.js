@@ -87,14 +87,39 @@ const getHiddenCardIdsForScope = async (userId, deckId, chapterId, isAll, isUnas
  * @param {boolean} forceRefresh - Cache bypass
  * @param {string} [userId] - Filtre için gerekli (learned/unlearned/fav)
  * @param {string} [filter] - 'learned' | 'unlearned' | 'fav' - Tüm liste üzerinde sunucu tarafı filtre
+ * @param {string|null} [searchQuery] - Soru/cevap metninde sunucu tarafı ilike (tüm deste)
  */
-export const getCardsByDeck = async (deckId, page = 0, pageSize = PAGE_SIZE, sortBy = 'original', forceRefresh = false, userId = null, filter = null) => {
-  const cacheKey = `cards_deck_${deckId}_p${page}_${sortBy}_${filter || 'all'}`;
+const buildIlikePattern = (searchQuery) => {
+  if (!searchQuery || typeof searchQuery !== 'string') return null;
+  const inner = searchQuery
+    .trim()
+    .replace(/%/g, '')
+    .replace(/_/g, '')
+    .replace(/\\/g, '')
+    .replace(/,/g, ' ')
+    .replace(/"/g, '');
+  if (!inner) return null;
+  return `%${inner}%`;
+};
+
+const applyQuestionAnswerOrIlike = (query, likePattern, { nestedCards = false } = {}) => {
+  if (!likePattern) return query;
+  const escaped = likePattern.replace(/"/g, '');
+  const qCol = nestedCards ? 'cards.question' : 'question';
+  const aCol = nestedCards ? 'cards.answer' : 'answer';
+  return query.or(`${qCol}.ilike."${escaped}",${aCol}.ilike."${escaped}"`);
+};
+
+export const getCardsByDeck = async (deckId, page = 0, pageSize = PAGE_SIZE, sortBy = 'original', forceRefresh = false, userId = null, filter = null, searchQuery = null) => {
+  const searchNorm = searchQuery && String(searchQuery).trim() ? String(searchQuery).trim() : '';
+  const searchKeyPart = searchNorm ? `_q_${encodeURIComponent(searchNorm).slice(0, 80)}` : '';
+  const cacheKey = `cards_deck_${deckId}_p${page}_${sortBy}_${filter || 'all'}${searchKeyPart}`;
   if (!forceRefresh) {
     const cached = await getCachedData(cacheKey, CACHE_DURATIONS.CARDS_CONTENT);
     if (cached && !cached.isStale) return cached.data;
   }
   const from = page * pageSize;
+  const likePattern = buildIlikePattern(searchNorm);
 
   let result = [];
 
@@ -105,6 +130,7 @@ export const getCardsByDeck = async (deckId, page = 0, pageSize = PAGE_SIZE, sor
       .eq('user_id', userId)
       .eq('status', 'learned')
       .eq('cards.deck_id', deckId);
+    query = applyQuestionAnswerOrIlike(query, likePattern, { nestedCards: true });
     query = query.order('card_id', { ascending: true });
     const { data, error } = await query.range(from, from + pageSize - 1);
     if (error) throw error;
@@ -115,6 +141,7 @@ export const getCardsByDeck = async (deckId, page = 0, pageSize = PAGE_SIZE, sor
       .select('card_id, created_at, cards!inner(id, question, answer, created_at, deck_id)')
       .eq('user_id', userId)
       .eq('cards.deck_id', deckId);
+    favQuery = applyQuestionAnswerOrIlike(favQuery, likePattern, { nestedCards: true });
     favQuery = favQuery.order('created_at', { ascending: false });
     const { data, error } = await favQuery.range(from, from + pageSize - 1);
     if (error) throw error;
@@ -136,6 +163,7 @@ export const getCardsByDeck = async (deckId, page = 0, pageSize = PAGE_SIZE, sor
         .select('id, question, answer, created_at')
         .eq('deck_id', deckId)
         .not('id', 'in', `(${learnedIds.map((id) => `"${id}"`).join(',')})`);
+      unlearnedQuery = applyQuestionAnswerOrIlike(unlearnedQuery, likePattern, { nestedCards: false });
       unlearnedQuery = sortBy === 'az' ? unlearnedQuery.order('question', { ascending: true }) : unlearnedQuery.order('created_at', { ascending: false });
       const { data, error } = await unlearnedQuery.range(from, from + pageSize - 1);
       if (error) throw error;
@@ -145,6 +173,7 @@ export const getCardsByDeck = async (deckId, page = 0, pageSize = PAGE_SIZE, sor
         .from('cards')
         .select('id, question, answer, created_at')
         .eq('deck_id', deckId);
+      unlearnedQuery = applyQuestionAnswerOrIlike(unlearnedQuery, likePattern, { nestedCards: false });
       unlearnedQuery = sortBy === 'az' ? unlearnedQuery.order('question', { ascending: true }) : unlearnedQuery.order('created_at', { ascending: false });
       const { data, error } = await unlearnedQuery.range(from, from + pageSize - 1);
       if (error) throw error;
@@ -155,6 +184,7 @@ export const getCardsByDeck = async (deckId, page = 0, pageSize = PAGE_SIZE, sor
       .from('cards')
       .select('id, question, answer, created_at')
       .eq('deck_id', deckId);
+    query = applyQuestionAnswerOrIlike(query, likePattern, { nestedCards: false });
     if (sortBy === 'az') {
       query = query.order('question', { ascending: true });
     } else {
@@ -196,14 +226,15 @@ export const getAllCardsForDeck = async (deckId, userId = null) => {
  * @param {string[]} cardIds - Güncellenecek kart id'leri
  * @param {string|null} targetChapterId - Hedef bölüm id (null = atanmamış)
  */
-export const updateCardsChapter = async (cardIds, targetChapterId) => {
+export const updateCardsChapter = async (cardIds, targetChapterId, deckId = null, userId = null) => {
   if (!cardIds || cardIds.length === 0) return;
   const { error } = await supabase
     .from('cards')
     .update({ chapter_id: targetChapterId || null })
     .in('id', cardIds);
   if (error) throw error;
-  // Deck bazlı kart listesi cache'ini invalidate etmek için deckId gerekir; çağıran ekran gerekirse invalidate eder.
+  if (deckId) await invalidateCache(`cards_deck_${deckId}`);
+  if (deckId && userId) await invalidateCache(`progress_chapters_${deckId}_${userId}`);
 };
 
 export const getCardsByChapter = async (deckId, chapterId, page = 0, pageSize = PAGE_SIZE, userId = null) => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef,  } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { View, Image, Text, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -27,6 +27,7 @@ export default function FavoriteDecks() {
   const [favoriteDecks, setFavoriteDecks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [sort, setSort] = useState('default');
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -37,6 +38,7 @@ export default function FavoriteDecks() {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const PAGE_SIZE = 50;
+  const fetchGenRef = useRef(0);
 
   const mapAdminDecks = (decks) =>
     (decks || []).map((deck) => {
@@ -53,8 +55,18 @@ export default function FavoriteDecks() {
       return deck;
     });
 
-  const fetchFavorites = async (forceRefresh = false) => {
-    setLoading(true);
+  const fetchFavorites = async (opts = {}) => {
+    const {
+      forceRefresh = false,
+      pageOverride = 0,
+      append = false,
+      sortOverride = sort,
+      categorySortOrdersOverride = selectedCategories,
+      languageIdsOverride = selectedLanguages,
+      searchOverride = debouncedQuery,
+    } = opts;
+    const requestGen = ++fetchGenRef.current;
+    if (!append) setLoading(true);
     try {
       if (!userId) {
         setFavoriteDecks([]);
@@ -63,16 +75,32 @@ export default function FavoriteDecks() {
         return;
       }
       const decks = await getFavoriteDecks(userId, {
-        page: 0,
+        page: pageOverride,
         limit: PAGE_SIZE,
         forceRefresh,
+        searchQuery: searchOverride,
+        sortBy: sortOverride,
+        categorySortOrders: categorySortOrdersOverride,
+        languageIds: languageIdsOverride,
       });
+      if (requestGen !== fetchGenRef.current) return;
       const modifiedDecks = mapAdminDecks(decks);
-      setFavoriteDecks(modifiedDecks);
-      setPage(0);
+      setFavoriteDecks((prev) => {
+        if (!append) return modifiedDecks;
+        const seen = new Set(prev.map((d) => d.id));
+        const merged = [...prev];
+        for (const deck of modifiedDecks) {
+          if (deck?.id && !seen.has(deck.id)) {
+            seen.add(deck.id);
+            merged.push(deck);
+          }
+        }
+        return merged;
+      });
+      setPage(pageOverride);
       setHasMore(modifiedDecks.length >= PAGE_SIZE);
     } finally {
-      setLoading(false);
+      if (!append) setLoading(false);
     }
   };
 
@@ -81,20 +109,7 @@ export default function FavoriteDecks() {
     setLoadingMore(true);
     try {
       const nextPage = page + 1;
-      const decks = await getFavoriteDecks(userId, {
-        page: nextPage,
-        limit: PAGE_SIZE,
-      });
-      const modifiedDecks = mapAdminDecks(decks);
-      if (modifiedDecks.length === 0) {
-        setHasMore(false);
-        return;
-      }
-      setFavoriteDecks(prev => [...prev, ...modifiedDecks]);
-      setPage(nextPage);
-      if (modifiedDecks.length < PAGE_SIZE) {
-        setHasMore(false);
-      }
+      await fetchFavorites({ pageOverride: nextPage, append: true });
     } finally {
       setLoadingMore(false);
     }
@@ -105,69 +120,39 @@ export default function FavoriteDecks() {
   }, []);
 
   useEffect(() => {
-    fetchFavorites(false);
+    fetchFavorites({ forceRefresh: false, pageOverride: 0, append: false });
   }, [userId]);
 
-  const filteredDecks = useMemo(() => {
-    let list = favoriteDecks.slice();
-    
-    // Search filter
-    if (query && query.trim()) {
-      const q = query.toLowerCase();
-      list = list.filter(d => 
-        (d.name || '').toLowerCase().includes(q) || 
-        (d.to_name || '').toLowerCase().includes(q)
-      );
-    }
-    
-    // Category filter
-    if (selectedCategories.length > 0) {
-      list = list.filter(d => {
-        const deckSortOrder = d.categories?.sort_order;
-        return deckSortOrder != null && selectedCategories.includes(deckSortOrder);
-      });
-    }
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedQuery(query.trim()), 350);
+    return () => clearTimeout(id);
+  }, [query]);
 
-    if (selectedLanguages.length > 0) {
-      list = list.filter(d => {
-        const deckLanguageIds = d.decks_languages?.map(dl => dl.language_id) || [];
-        return deckLanguageIds.some(id => selectedLanguages.includes(id));
-      });
-    }
-    
-    // Sorting (en son favorilenen en üstte: favorited_at)
-    const favAt = (d) => new Date(d.favorited_at || d.created_at || 0).getTime();
-    switch (sort) {
-      case 'az':
-        list.sort((a, b) => {
-          const cmp = (a.name || '').localeCompare(b.name || '');
-          return cmp !== 0 ? cmp : favAt(b) - favAt(a);
-        });
-        break;
-      case 'favorites':
-        // Already favorites; keep API order (en son favorilenen en üstte)
-        break;
-      case 'popularity':
-        list.sort((a, b) => {
-          const scoreA = a.popularity_score || 0;
-          const scoreB = b.popularity_score || 0;
-          if (scoreA !== scoreB) return scoreB - scoreA;
-          return favAt(b) - favAt(a);
-        });
-        break;
-      case 'default':
-      default:
-        list.sort((a, b) => favAt(b) - favAt(a));
-        break;
-    }
-    
-    return list;
-  }, [favoriteDecks, query, sort, selectedCategories, selectedLanguages]);
+  useEffect(() => {
+    if (!userId) return;
+    fetchFavorites({
+      forceRefresh: false,
+      pageOverride: 0,
+      append: false,
+      sortOverride: sort,
+      categorySortOrdersOverride: selectedCategories,
+      languageIdsOverride: selectedLanguages,
+      searchOverride: debouncedQuery,
+    });
+  }, [userId, debouncedQuery, sort, selectedCategories, selectedLanguages]);
 
   const handleAddFavoriteDeck = async (deckId) => {
     if (!userId) return;
     await addFavoriteDeck(userId, deckId);
-    const decks = await getFavoriteDecks(userId, { page: 0, limit: PAGE_SIZE, forceRefresh: true });
+    const decks = await getFavoriteDecks(userId, {
+      page: 0,
+      limit: PAGE_SIZE,
+      forceRefresh: true,
+      searchQuery: debouncedQuery,
+      sortBy: sort,
+      categorySortOrders: selectedCategories,
+      languageIds: selectedLanguages,
+    });
     const modifiedDecks = mapAdminDecks(decks);
     setFavoriteDecks(modifiedDecks);
     setPage(0);
@@ -177,7 +162,15 @@ export default function FavoriteDecks() {
   const handleRemoveFavoriteDeck = async (deckId) => {
     if (!userId) return;
     await removeFavoriteDeck(userId, deckId);
-    const decks = await getFavoriteDecks(userId, { page: 0, limit: PAGE_SIZE, forceRefresh: true });
+    const decks = await getFavoriteDecks(userId, {
+      page: 0,
+      limit: PAGE_SIZE,
+      forceRefresh: true,
+      searchQuery: debouncedQuery,
+      sortBy: sort,
+      categorySortOrders: selectedCategories,
+      languageIds: selectedLanguages,
+    });
     const modifiedDecks = mapAdminDecks(decks);
     setFavoriteDecks(modifiedDecks);
     setPage(0);
@@ -198,7 +191,7 @@ export default function FavoriteDecks() {
           <LottieView source={require('../../assets/flexloader.json')} speed={1.1} autoPlay loop style={{ width: scale(160, 0.3), height: verticalScale(160, 0.3) }} />
           <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100, 0.3), height: verticalScale(100, 0.3), marginTop: verticalScale(-65) }} />
         </View>
-      ) : filteredDecks.length < 0 ? (
+      ) : favoriteDecks.length === 0 ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: verticalScale(-150)}}>
           <Image
             source={require('../../assets/deckbg.webp')}
@@ -212,7 +205,7 @@ export default function FavoriteDecks() {
         </View>
       ) : (
         <DeckList
-          decks={filteredDecks}
+          decks={favoriteDecks}
           favoriteDecks={favoriteDecks.map(d => d.id)}
           onToggleFavorite={async (deckId) => {
             if (favoriteDecks.some(d => d.id === deckId)) {
@@ -236,8 +229,9 @@ export default function FavoriteDecks() {
             </View>
           )}
           refreshing={loading}
-          onRefresh={() => fetchFavorites(true)}
+          onRefresh={() => fetchFavorites({ forceRefresh: true, pageOverride: 0, append: false })}
           onEndReached={hasMore ? loadMoreFavorites : undefined}
+          loadingMore={loadingMore}
           contentPaddingBottom={Platform.OS === 'android' ? insets.bottom + verticalScale(72) : '10%'}
         />
       )}

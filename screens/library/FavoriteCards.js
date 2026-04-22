@@ -61,7 +61,11 @@ export default function FavoriteCards() {
   const [currentUserId, setCurrentUserId] = useState(null);
   const latestDetailFetchRef = useRef(null);
   const flatListRef = useRef(null);
+  const serverSearchRef = useRef('');
+  const favFetchGenRef = useRef(0);
+  const debouncedQueryFetchBootRef = useRef(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
 
   const favoriteCardsSet = useMemo(() => new Set(favoriteCards), [favoriteCards]);
 
@@ -75,14 +79,18 @@ export default function FavoriteCards() {
     const currentSort = sortOverride ?? sort;
     const sortBy = ['original', 'az'].includes(currentSort) ? currentSort : 'original';
     const filter = ['learned', 'unlearned'].includes(currentSort) ? currentSort : null;
+    const searchArg = serverSearchRef.current || null;
+    const fetchId = ++favFetchGenRef.current;
     if (!silent) setLoading(true);
     setCurrentUserId(userId);
     try {
-      const cardsData = await getFavoriteCards(userId, 0, PAGE_SIZE, forceRefresh, sortBy, filter);
+      const cardsData = await getFavoriteCards(userId, 0, PAGE_SIZE, forceRefresh, sortBy, filter, searchArg);
+      if (fetchId !== favFetchGenRef.current) return;
       const cardIds = (cardsData || []).map(c => c.id);
       const statusMap = cardIds.length > 0
         ? await getUserCardProgressForCards(userId, cardIds)
         : {};
+      if (fetchId !== favFetchGenRef.current) return;
       const cardsWithProgress = (cardsData || []).map(card => ({
         ...card,
         status: statusMap[card.id] || 'new',
@@ -92,8 +100,10 @@ export default function FavoriteCards() {
       setPage(0);
       setHasMore((cardsData || []).length >= PAGE_SIZE);
     } catch (e) {
-      setCards([]);
-      setFavoriteCards([]);
+      if (fetchId === favFetchGenRef.current) {
+        setCards([]);
+        setFavoriteCards([]);
+      }
     } finally {
       if (!silent) setLoading(false);
     }
@@ -102,11 +112,13 @@ export default function FavoriteCards() {
   const loadMore = useCallback(async () => {
     if (!hasMore || loadingMore || loading || !userId) return;
     setLoadingMore(true);
+    const loadGen = favFetchGenRef.current;
     try {
       const nextPage = page + 1;
       const sortBy = ['original', 'az'].includes(sort) ? sort : 'original';
       const filter = ['learned', 'unlearned'].includes(sort) ? sort : null;
-      const cardsData = await getFavoriteCards(userId, nextPage, PAGE_SIZE, false, sortBy, filter);
+      const cardsData = await getFavoriteCards(userId, nextPage, PAGE_SIZE, false, sortBy, filter, serverSearchRef.current || null);
+      if (loadGen !== favFetchGenRef.current) return;
       if (!cardsData || cardsData.length === 0) {
         setHasMore(false);
         return;
@@ -119,7 +131,18 @@ export default function FavoriteCards() {
         ...card,
         status: statusMap[card.id] || 'new',
       }));
-      setCards(prev => [...prev, ...newCards]);
+      if (loadGen !== favFetchGenRef.current) return;
+      setCards(prev => {
+        const seen = new Set(prev.map(c => c.id));
+        const merged = [...prev];
+        for (const card of newCards) {
+          if (card?.id != null && !seen.has(card.id)) {
+            seen.add(card.id);
+            merged.push(card);
+          }
+        }
+        return merged;
+      });
       setFavoriteCards(prev => [...new Set([...prev, ...newCards.map(c => c.id)])]);
       setPage(nextPage);
       setHasMore(cardsData.length >= PAGE_SIZE);
@@ -137,8 +160,24 @@ export default function FavoriteCards() {
   }, [fetchData]);
 
   useEffect(() => {
+    debouncedQueryFetchBootRef.current = true;
     fetchData(false);
   }, [userId, fetchData]);
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedQuery(query.trim()), 350);
+    return () => clearTimeout(id);
+  }, [query]);
+
+  useEffect(() => {
+    if (debouncedQueryFetchBootRef.current) {
+      debouncedQueryFetchBootRef.current = false;
+      return;
+    }
+    if (!userId) return;
+    serverSearchRef.current = debouncedQuery;
+    fetchData(true, false);
+  }, [debouncedQuery, userId, fetchData]);
 
   useEffect(() => {
     const onBackPress = () => {
@@ -169,15 +208,6 @@ export default function FavoriteCards() {
     });
     return unsubscribe;
   }, [navigation, selectedCard]);
-
-  const filteredCards = useMemo(() => {
-    let list = cards.slice();
-    if (query && query.trim()) {
-      const q = query.toLowerCase();
-      list = list.filter(c => (c.question || '').toLowerCase().includes(q) || (c.answer || '').toLowerCase().includes(q));
-    }
-    return list;
-  }, [cards, query]);
 
   const fetchAndSetCardDetail = useCallback(async (card) => {
     if (!card) {
@@ -280,6 +310,7 @@ export default function FavoriteCards() {
             if (flatListRef.current) {
               flatListRef.current.scrollToOffset({ offset: 0, animated: false });
             }
+            serverSearchRef.current = query.trim();
             fetchData(false, false, newSort);
           }}
           hideFavorites={true}
@@ -344,11 +375,11 @@ export default function FavoriteCards() {
           <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100, 0.3), height: verticalScale(100, 0.3), marginTop: verticalScale(-65) }} />
         </View>
       ) : selectedCard ? (
-        <CardDetailView card={selectedCard} cards={filteredCards} onSelectCard={fetchAndSetCardDetail} />
+        <CardDetailView card={selectedCard} cards={cards} onSelectCard={fetchAndSetCardDetail} />
       ) : (
         <FlatList
           ref={flatListRef}
-          data={filteredCards}
+          data={cards}
           keyExtractor={item => item.id?.toString()}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{

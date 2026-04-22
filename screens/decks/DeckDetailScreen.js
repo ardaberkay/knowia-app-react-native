@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Modal, Pressable, Image, Switch, Animated, RefreshControl, InteractionManager } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Modal, Pressable, Image, Switch, Animated, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -13,7 +13,7 @@ import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import CircularProgress from '../../components/ui/CircularProgress';
 import { useAuth } from '../../contexts/AuthContext';
-import { listChapters, getChaptersProgress } from '../../services/ChapterService';
+import { listChapters, getDeckChaptersProgressRpc } from '../../services/ChapterService';
 import { deleteDeck, updateDeckShare, insertDeckStats } from '../../services/DeckService';
 import { getDeckProgressCounts } from '../../services/CardService';
 import { addFavoriteDeck, removeFavoriteDeck } from '../../services/FavoriteService';
@@ -618,19 +618,10 @@ export default function DeckDetailScreen({ route, navigation }) {
     let p;
     p = (async () => {
       try {
-        const batchSize = 15;
-        for (let i = 0; i < chapters.length; i += batchSize) {
-          const batch = chapters.slice(i, i + batchSize);
-          const progressBatch = await getChaptersProgress(batch, deck.id, currentUserId, force);
-          if (!deckDetailMountedRef.current || chapterProgressJobRef.current !== jobId) return;
-          setChapterProgressMap(prev => {
-            const next = new Map(prev);
-            progressBatch.forEach((value, key) => next.set(key, value));
-            return next;
-          });
-          setChapterProgressLoadedCount(Math.min(chapters.length, i + batch.length));
-        }
+        const progressMap = await getDeckChaptersProgressRpc(deck.id, currentUserId, force);
         if (!deckDetailMountedRef.current || chapterProgressJobRef.current !== jobId) return;
+        setChapterProgressMap(progressMap);
+        setChapterProgressLoadedCount(chapters.length);
         chapterProgressLoadedRef.current = true;
       } catch (e) {
         console.error('Error fetching chapter progress:', e);
@@ -650,16 +641,20 @@ export default function DeckDetailScreen({ route, navigation }) {
 
   fetchChapterProgressRef.current = fetchChapterProgress;
 
-  // İlk animasyonlar bittikten sonra bölüm progress'ini sessizce önden yükle (sheet açılınca hazır olsun)
+  // İlk frame'lerden sonra bölüm progress'ini sessizce önden yükle (sheet açılınca hazır olsun; InteractionManager kaldırıldı)
   useEffect(() => {
     if (!currentUserId || chapters.length === 0) return undefined;
-    const task = InteractionManager.runAfterInteractions(() => {
-      fetchChapterProgress(false);
+    let cancelled = false;
+    let raf2 = null;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        if (!cancelled) fetchChapterProgress(false);
+      });
     });
     return () => {
-      if (task && typeof task.cancel === 'function') {
-        task.cancel();
-      }
+      cancelled = true;
+      cancelAnimationFrame(raf1);
+      if (raf2 != null) cancelAnimationFrame(raf2);
     };
   }, [chapters, currentUserId, deck.id, fetchChapterProgress]);
 
@@ -667,7 +662,8 @@ export default function DeckDetailScreen({ route, navigation }) {
     triggerHaptic('light');
     autoStartAfterChapterPickRef.current = false;
     setChapterSheetVisible(true);
-    await fetchChapterProgress(false);
+    // Open sheet immediately; fetch progress in background for faster perceived opening.
+    fetchChapterProgress(false);
   }, [fetchChapterProgress]);
 
   useEffect(() => {
@@ -712,7 +708,8 @@ export default function DeckDetailScreen({ route, navigation }) {
     if (!selectedChapter?.id) {
       autoStartAfterChapterPickRef.current = true;
       setChapterSheetVisible(true);
-      await fetchChapterProgress(false);
+      // Do not block sheet opening on network.
+      fetchChapterProgress(false);
       return;
     }
 
@@ -1555,6 +1552,10 @@ export default function DeckDetailScreen({ route, navigation }) {
           data={[ACTION_CHAPTER, ...chapters]}
           keyExtractor={(item) => String(item.id)}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={7}
+          removeClippedSubviews={true}
           contentContainerStyle={[
             styles.chapterSheetList,
             {

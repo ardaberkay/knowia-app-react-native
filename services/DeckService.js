@@ -13,6 +13,11 @@ export const getDecksByCategory = async (userId, category, options = false) => {
   let forceRefresh = false;
   let page = 0;
   let limit;
+  let searchQuery = '';
+  let sortBy = 'default';
+  let categorySortOrders = [];
+  let languageIds = [];
+  let favoritesOnly = false;
 
   if (typeof options === 'boolean') {
     forceRefresh = options;
@@ -20,6 +25,11 @@ export const getDecksByCategory = async (userId, category, options = false) => {
     forceRefresh = options.forceRefresh ?? false;
     page = options.page ?? 0;
     limit = options.limit;
+    searchQuery = (options.searchQuery || '').trim();
+    sortBy = options.sortBy || 'default';
+    categorySortOrders = Array.isArray(options.categorySortOrders) ? options.categorySortOrders : [];
+    languageIds = Array.isArray(options.languageIds) ? options.languageIds : [];
+    favoritesOnly = Boolean(options.favoritesOnly);
   }
 
   if (category === 'myDecks' && userId && !forceRefresh) {
@@ -99,6 +109,32 @@ export const getDecksByCategory = async (userId, category, options = false) => {
       });
     }
 
+    if (searchQuery) {
+      const q = searchQuery.toLocaleLowerCase();
+      resultData = resultData.filter((deck) =>
+        (deck.name || '').toLocaleLowerCase().includes(q) ||
+        (deck.to_name || '').toLocaleLowerCase().includes(q)
+      );
+    }
+
+    if (categorySortOrders.length > 0) {
+      const allowed = new Set(categorySortOrders);
+      resultData = resultData.filter((d) => d.categories?.sort_order != null && allowed.has(d.categories.sort_order));
+    }
+
+    if (languageIds.length > 0) {
+      const langSet = new Set(languageIds);
+      resultData = resultData.filter((d) => (d.decks_languages || []).some((dl) => langSet.has(dl.language_id)));
+    }
+
+    if (favoritesOnly) {
+      resultData = resultData.filter((d) => d.is_favorite === true);
+    }
+
+    if (sortBy === 'az') {
+      resultData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
+
     // inProgressDecks için sayfalama: slice ile uygula
     if (typeof limit === 'number' && limit > 0) {
       const start = page * limit;
@@ -132,6 +168,35 @@ export const getDecksByCategory = async (userId, category, options = false) => {
         .eq('is_admin_created', false)
         .order('shared_at', { ascending: false });
       break;
+  }
+
+  const searchLike = searchQuery
+    ? `%${searchQuery.replace(/%/g, '').replace(/_/g, '').replace(/\\/g, '').replace(/"/g, '')}%`
+    : null;
+  if (searchLike) {
+    query = query.or(`name.ilike."${searchLike}",to_name.ilike."${searchLike}"`);
+  }
+
+  if (categorySortOrders.length > 0) {
+    const { data: categoryRows, error: categoryErr } = await supabase
+      .from('categories')
+      .select('id')
+      .in('sort_order', categorySortOrders);
+    if (categoryErr) throw categoryErr;
+    const categoryIds = (categoryRows || []).map((r) => r.id);
+    if (categoryIds.length === 0) return [];
+    query = query.in('category_id', categoryIds);
+  }
+
+  if (languageIds.length > 0) {
+    const { data: deckLangRows, error: deckLangErr } = await supabase
+      .from('decks_languages')
+      .select('deck_id')
+      .in('language_id', languageIds);
+    if (deckLangErr) throw deckLangErr;
+    const deckIds = Array.from(new Set((deckLangRows || []).map((r) => r.deck_id)));
+    if (deckIds.length === 0) return [];
+    query = query.in('id', deckIds);
   }
 
   // Sayfalama: limit belirtilmişse Supabase range kullan
@@ -179,6 +244,14 @@ export const getDecksByCategory = async (userId, category, options = false) => {
     resultData.forEach(deck => {
       deck.is_favorite = false;
     });
+  }
+
+  if (favoritesOnly) {
+    resultData = resultData.filter((deck) => deck.is_favorite === true);
+  }
+
+  if (sortBy === 'az') {
+    resultData = [...resultData].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   }
 
   if (category === 'myDecks' && userId) {

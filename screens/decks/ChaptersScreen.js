@@ -6,7 +6,7 @@ import { typography } from '../../theme/typography';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
-import { listChapters, getNextOrdinal, createChapter, getChaptersProgress, deleteChapter, reorderChapterOrdinals } from '../../services/ChapterService';
+import { listChapters, getNextOrdinal, createChapter, getDeckChaptersProgressRpc, deleteChapter, reorderChapterOrdinals } from '../../services/ChapterService';
 import CircularProgress from '../../components/ui/CircularProgress';
 import { useAuth } from '../../contexts/AuthContext';
 import LottieView from 'lottie-react-native';
@@ -160,10 +160,9 @@ export default function ChaptersScreen({ route, navigation }) {
         const data = await listChapters(deck.id);
         if (mounted) {
           setChapters(data);
-          // Load progress for all chapters
+          // Load progress for all chapters (+unassigned) in one RPC call
           if (userId) {
-            const chaptersWithUnassigned = [{ id: null }, ...data];
-            const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, userId);
+            const progress = await getDeckChaptersProgressRpc(deck.id, userId);
             if (mounted) setProgressMap(progress);
           }
         }
@@ -182,8 +181,7 @@ export default function ChaptersScreen({ route, navigation }) {
     const unsubscribe = navigation.addListener('focus', async () => {
       if (!deck?.id || !currentUserId || chapters.length === 0) return;
       try {
-        const chaptersWithUnassigned = [{ id: null }, ...chapters];
-        const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, currentUserId);
+        const progress = await getDeckChaptersProgressRpc(deck.id, currentUserId);
         setProgressMap(progress);
       } catch (e) {
         // noop
@@ -199,8 +197,7 @@ export default function ChaptersScreen({ route, navigation }) {
       const data = await listChapters(deck.id, true);
       setChapters(data);
       if (userId) {
-        const chaptersWithUnassigned = [{ id: null }, ...data];
-        const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, userId, true);
+        const progress = await getDeckChaptersProgressRpc(deck.id, userId, true);
         setProgressMap(progress);
       }
     } finally {
@@ -260,7 +257,7 @@ export default function ChaptersScreen({ route, navigation }) {
     }
     try {
       const next = await getNextOrdinal(deck.id);
-      const inserted = await createChapter(deck.id, next);
+      const inserted = await createChapter(deck.id, next, currentUserId);
       // Ordinal'e göre sırala, aynı ordinal'de yeni eklenenler altta (created_at ascending)
       const updatedChapters = [...chapters, inserted].sort((a, b) => {
         if (a.ordinal !== b.ordinal) return a.ordinal - b.ordinal;
@@ -269,8 +266,7 @@ export default function ChaptersScreen({ route, navigation }) {
       setChapters(updatedChapters);
       // Refresh progress for new chapter
       if (currentUserId) {
-        const chaptersWithUnassigned = [{ id: null }, ...updatedChapters];
-        const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, currentUserId, true);
+        const progress = await getDeckChaptersProgressRpc(deck.id, currentUserId);
         setProgressMap(progress);
       }
     } catch (e) {
@@ -292,7 +288,7 @@ export default function ChaptersScreen({ route, navigation }) {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteChapter(chapterId, deck.id);
+              await deleteChapter(chapterId, deck.id, currentUserId);
               // Ordinal'leri yeniden düzenle (1, 2, 3, ... şeklinde)
               await reorderChapterOrdinals(deck.id);
               // Bölümleri yeniden yükle (ordinal'ler güncellenmiş olacak)
@@ -300,8 +296,7 @@ export default function ChaptersScreen({ route, navigation }) {
               setChapters(updatedChapters);
               // Progress'i güncelle
               if (currentUserId) {
-                const chaptersWithUnassigned = [{ id: null }, ...updatedChapters];
-                const progress = await getChaptersProgress(chaptersWithUnassigned, deck.id, currentUserId, true);
+                const progress = await getDeckChaptersProgressRpc(deck.id, currentUserId);
                 setProgressMap(progress);
               }
               showSuccess(t('chapters.deleted', 'Bölüm silindi.'));
