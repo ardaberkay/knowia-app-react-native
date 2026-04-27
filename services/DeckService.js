@@ -135,6 +135,55 @@ export const getDecksByCategory = async (userId, category, options = false) => {
       resultData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     }
 
+    // Her deste için öğrenme ilerleme özetini ekle (deckProgress)
+    if (userId && resultData.length > 0) {
+      try {
+        const progressDeckIds = resultData.map((deck) => deck.id);
+        const { data: learnedProgressRows, error: learnedProgressError } = await supabase
+          .from('user_card_progress')
+          .select('cards!inner(deck_id)')
+          .eq('user_id', userId)
+          .eq('status', 'learned')
+          .in('cards.deck_id', progressDeckIds);
+
+        if (learnedProgressError) throw learnedProgressError;
+
+        const learnedByDeck = new Map();
+        (learnedProgressRows || []).forEach((row) => {
+          const deckId = row?.cards?.deck_id;
+          if (!deckId) return;
+          learnedByDeck.set(deckId, (learnedByDeck.get(deckId) || 0) + 1);
+        });
+
+        resultData = resultData.map((deck) => {
+          const total = Number(deck.card_count || 0);
+          const learned = Math.min(Number(learnedByDeck.get(deck.id) || 0), total);
+          const remaining = Math.max(total - learned, 0);
+          const progress = total > 0 ? learned / total : 0;
+          return {
+            ...deck,
+            deckProgress: {
+              total,
+              learned,
+              remaining,
+              progress,
+            },
+          };
+        });
+      } catch (progressErr) {
+        console.error('Error fetching in-progress deck summary:', progressErr);
+        resultData = resultData.map((deck) => ({
+          ...deck,
+          deckProgress: {
+            total: Number(deck.card_count || 0),
+            learned: 0,
+            remaining: Number(deck.card_count || 0),
+            progress: 0,
+          },
+        }));
+      }
+    }
+
     // inProgressDecks için sayfalama: slice ile uygula
     if (typeof limit === 'number' && limit > 0) {
       const start = page * limit;

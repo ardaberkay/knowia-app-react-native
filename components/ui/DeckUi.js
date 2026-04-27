@@ -58,6 +58,7 @@ const DeckCard = ({
   onToggleFavorite,
   isFavorite = false,
   showPopularityBadge = false,
+  variant = 'default',
 }) => {
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
@@ -114,6 +115,21 @@ const DeckCard = ({
 
   const gradientColors = getCategoryColors(deck.categories?.sort_order);
   const categoryIcon = getCategoryIcon(deck.categories?.sort_order);
+  const isInProgressVariant = variant === 'inProgress';
+  const progressValue = Math.max(0, Math.min(1, Number(deck?.deckProgress?.progress || 0)));
+  const progressPercent = Math.round(progressValue * 100);
+
+  const renderDeckTitle = (text) => {
+    if (!text) return null;
+    return (
+      <FadeText
+        text={text}
+        style={[typography.styles.body, styles.deckTitleModern, { color: colors.headText }]}
+        maxWidth={'95%'}
+        maxChars={12}
+      />
+    );
+  };
   
   return (
     <View style={[styles.deckCardModern, { width: DECK_CARD_WIDTH, height: DECK_CARD_HEIGHT }]}>
@@ -142,69 +158,86 @@ const DeckCard = ({
           <View style={styles.deckProfileRow}>
             <Image
               source={
-                deck.is_admin_created 
+                deck.is_admin_created
                   ? require('../../assets/app_icon.png')
-                  : deck.profiles?.image_url 
-                    ? { uri: deck.profiles.image_url } 
+                  : deck.profiles?.image_url
+                    ? { uri: deck.profiles.image_url }
                     : require('../../assets/avatar_default.webp')
               }
               style={styles.deckProfileAvatar}
             />
-            <FadeText 
-              text={deck.profiles?.username || 'Kullanıcı'} 
-              style={[typography.styles.body, styles.deckProfileUsername]} 
+            <FadeText
+              text={deck.profiles?.username || 'Kullanıcı'}
+              style={[typography.styles.body, styles.deckProfileUsername]}
               maxWidth={'75%'}
               maxChars={12}
             />
           </View>
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <View style={styles.centerContentContainer}>
             <View style={styles.deckHeaderModern}>
               {deck.to_name ? (
                 <>
-                  <FadeText 
-                    text={deck.name} 
-                    style={[typography.styles.body, styles.deckTitleModern, { color: colors.headText }]} 
-                    maxWidth={'95%'}
-                    maxChars={12}
-                  />
+                  {renderDeckTitle(deck.name)}
                   <View style={{ width: scale(60), height: moderateScale(2), backgroundColor: colors.divider, borderRadius: moderateScale(1), marginVertical: verticalScale(10) }} />
-                  <FadeText 
-                    text={deck.to_name} 
-                    style={[typography.styles.body, styles.deckTitleModern, { color: colors.headText }]} 
-                    maxWidth={'95%'}
-                    maxChars={12}
-                  />
+                  {renderDeckTitle(deck.to_name)}
                 </>
               ) : (
-                <FadeText 
-                  text={deck.name} 
-                  style={[typography.styles.body, styles.deckTitleModern, { color: colors.headText }]} 
-                  maxWidth={'95%'}
-                  maxChars={12}
-                />
+                renderDeckTitle(deck.name)
               )}
             </View>
           </View>
-          <View style={styles.deckStatsModern}>
-            {/* Popularity Badge */}
-            {showPopularityBadge && deck.popularity_score && deck.popularity_score > 0 && (
-              <View style={[styles.popularityBadge, { backgroundColor: 'rgba(255, 255, 255, 0.25)' }]}>
-                <Iconify icon="mdi:fire" size={moderateScale(12)} color="#fff" style={{ marginRight: scale(3) }} />
-                <Text style={[styles.popularityBadgeText, { color: '#fff' }]}>
-                  {Math.round(deck.popularity_score)}
-                </Text>
+          {!isInProgressVariant ? (
+            <View style={styles.deckStatsModern}>
+              {/* Popularity Badge */}
+              {showPopularityBadge && deck.popularity_score && deck.popularity_score > 0 && (
+                <View style={[styles.popularityBadge, { backgroundColor: 'rgba(255, 255, 255, 0.25)' }]}>
+                  <Iconify icon="mdi:fire" size={moderateScale(12)} color="#fff" style={{ marginRight: scale(3) }} />
+                  <Text style={[styles.popularityBadgeText, { color: '#fff' }]}>
+                    {Math.round(deck.popularity_score)}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.deckCountBadge}>
+                <Iconify icon="ri:stack-fill" size={moderateScale(15)} color="#fff" style={{ marginRight: scale(3) }} />
+                <Text style={[typography.styles.body, styles.deckCountBadgeText]}>{deck.card_count || 0}</Text>
               </View>
-            )}
-            <View style={styles.deckCountBadge}>
-              <Iconify icon="ri:stack-fill" size={moderateScale(15)} color="#fff" style={{ marginRight: scale(3) }} />
-              <Text style={[typography.styles.body, styles.deckCountBadgeText]}>{deck.card_count || 0}</Text>
             </View>
-          </View>
+          ) : null}
         </View>
 
         {/* HIZLANDIRILMIŞ FAVORİ BUTONU */}
+        {isInProgressVariant && (
+          <View style={styles.progressBadgeContainer}>
+            <View style={[styles.deckCountBadge, styles.progressBottomBadge]}>
+              <View style={styles.progressPercentChip}>
+                <Text style={[typography.styles.body, styles.progressPercentChipText]}>
+                  <Text style={styles.progressPercentSign}>%</Text>
+                  {progressPercent}
+                </Text>
+              </View>
+              <View style={styles.progressBottomTrack}>
+                <View
+                  style={[
+                    styles.progressBottomFill,
+                    {
+                      width: `${progressPercent}%`,
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+          </View>
+        )}
         <TouchableOpacity
-          style={{ position: 'absolute', bottom: verticalScale(8), right: scale(8), backgroundColor: colors.iconBackground, padding: moderateScale(5), borderRadius: 999, zIndex: 10 }}
+          style={{
+            position: 'absolute',
+            bottom: verticalScale(8),
+            right: scale(8),
+            backgroundColor: colors.iconBackground,
+            padding: moderateScale(5),
+            borderRadius: 999,
+            zIndex: 10,
+          }}
           onPress={handleFavoritePress} // YENİ FONKSİYONUMUZA BAĞLADIK
           activeOpacity={0.7}
         >
@@ -242,14 +275,24 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'space-between',
   },
+  centerContentContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: verticalScale(8),
+    paddingBottom: verticalScale(8),
+  },
   deckHeaderModern: {
     alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
   },
   deckTitleModern: {
     fontSize: moderateScale(16),
     fontWeight: '700',
     color: '#F98A21',
     maxWidth: '95%',
+    textAlign: 'center',
   },
   deckStatsModern: {
     flexDirection: 'row',
@@ -333,6 +376,67 @@ const styles = StyleSheet.create({
   maskGradient: {
     flexDirection: 'row',
     height: '100%',
+  },
+  progressBadgeContainer: {
+    position: 'absolute',
+    left: scale(16),
+    right: scale(46),
+    bottom: verticalScale(16),
+    zIndex: 10,
+  },
+  progressBottomBadge: {
+    width: '100%',
+    justifyContent: 'center',
+    position: 'relative',
+    borderRadius: moderateScale(999),
+    paddingLeft: scale(24),
+    paddingRight: scale(6),
+    paddingVertical: verticalScale(6),
+    overflow: 'visible',
+  },
+  progressPercentChip: {
+    width: scale(40),
+    height: scale(40),
+    borderRadius: moderateScale(999),
+    backgroundColor: '#F98A21',
+    borderWidth: moderateScale(1),
+    borderColor: 'rgba(255, 255, 255, 0.28)',
+    position: 'absolute',
+    left: scale(-8),
+    top: '50%',
+    transform: [{ translateY: -scale(17) }],
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: verticalScale(1) },
+    shadowOpacity: 0.15,
+    shadowRadius: moderateScale(2),
+    elevation: 1,
+  },
+  progressPercentChipText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: moderateScale(12),
+    letterSpacing: -0.2,
+  },
+  progressPercentSign: {
+    fontSize: moderateScale(10),
+    fontWeight: '700',
+    marginRight: scale(1),
+  },
+  progressBottomTrack: {
+    flex: 1,
+    height: verticalScale(2.5),
+    borderRadius: moderateScale(999),
+    backgroundColor: 'rgba(0, 0, 0, 0.18)',
+    overflow: 'hidden',
+    marginRight: scale(2),
+  },
+  progressBottomFill: {
+    height: '100%',
+    borderRadius: moderateScale(999),
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
 });
 

@@ -383,6 +383,7 @@ export default function HomeScreen() {
                   deck={modifiedDeck}
                   colors={colors}
                   typography={typography}
+                  variant={category === 'inProgressDecks' ? 'inProgress' : 'default'}
                   onPress={handleDeckPress}
                   onToggleFavorite={async (deckId) => {
                     const isFavorite = favoriteDecks.some(fav => fav.id === deckId);
