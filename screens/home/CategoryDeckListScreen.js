@@ -338,6 +338,7 @@ export default function CategoryDeckListScreen({ route }) {
           favoriteDecks={favoriteDecks}
           onToggleFavorite={handleToggleFavorite}
           onPressDeck={handleDeckPress}
+          progressMode={category === 'inProgressDecks'}
           onScrollBeginDrag={() => Keyboard.dismiss()}
           onEndReached={loadMoreDecks}
           refreshing={refreshing}

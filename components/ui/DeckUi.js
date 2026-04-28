@@ -49,6 +49,16 @@ const FadeText = ({ text, style, maxWidth = 120, maxChars = 15 }) => {
   );
 };
 
+// Progress yüzdesine göre chip gradient'ı (5 bantlı saturation ramp)
+// Hepsi brand turuncu ailesinden — alt bantlar belirgin koyu/amber, üst bantlar yoğunlaşmış brand.
+// 100% ayrı, "blazing peak" olarak doğrudan render kısmında tanımlı.
+const getInProgressGradient = (percent) => {
+  if (percent >= 75) return ['#FFAB52', '#FB7B0B', '#D55E0B']; // bold brand
+  if (percent >= 50) return ['#FFBC6B', '#F98A21', '#E87318']; // BRAND default
+  if (percent >= 25) return ['#FFB96E', '#F38624', '#D36D14']; // warm brand (hafif kısık)
+  return ['#FFBC78', '#E58A35', '#B86715']; // amber brand (en kısık ama koyu, kremimsi değil)
+};
+
 // Fonksiyonu React.memo ile sarmak için const yapısına çevirdik
 const DeckCard = ({
   deck,
@@ -118,8 +128,11 @@ const DeckCard = ({
   const isInProgressVariant = variant === 'inProgress';
   const progressValue = Math.max(0, Math.min(1, Number(deck?.deckProgress?.progress || 0)));
   const progressPercent = Math.round(progressValue * 100);
+  const isProgressCompleted = progressPercent >= 100;
+  const isProgressNearComplete = progressPercent >= 75 && progressPercent < 100;
+  const inProgressGradient = getInProgressGradient(progressPercent);
   // Chip (~42) left -8 → ~34px overlap; barı bundan sonra başlatıyoruz ki düşük % görünsün
-  const progressChipOverlap = scale(12);
+  const progressChipOverlap = scale(10);
   const progressFillMinWidth = progressPercent > 0 ? scale(4) : 0;
 
   const renderDeckTitle = (text) => {
@@ -212,17 +225,31 @@ const DeckCard = ({
         {isInProgressVariant && (
           <View style={styles.progressBadgeContainer}>
             <View style={[styles.deckCountBadge, styles.progressBottomBadge]}>
-              <View style={styles.progressPercentChip}>
+              <View style={[
+                styles.progressPercentChip,
+                isProgressNearComplete && styles.progressPercentChipNearComplete,
+                isProgressCompleted && styles.progressPercentChipCompleted,
+              ]}>
                 <LinearGradient
-                  colors={['#FFBC6B', '#F98A21', '#E87318']}
+                  colors={isProgressCompleted ? ['#FFCC70', '#FF7505', '#D74400'] : inProgressGradient}
                   locations={[0, 0.45, 1]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.progressPercentChipGradient}
                 />
                 <View style={styles.progressPercentChipInner}>
-                  <Text style={styles.progressPercentChipNumber}>{progressPercent}</Text>
-                  <Text style={styles.progressPercentSign}>%</Text>
+                  {isProgressCompleted ? (
+                    <Iconify
+                      icon="streamline:check-solid"
+                      size={moderateScale(16)}
+                      color="#FFFFFF"
+                    />
+                  ) : (
+                    <>
+                      <Text style={styles.progressPercentChipNumber}>{progressPercent}</Text>
+                      <Text style={styles.progressPercentSign}>%</Text>
+                    </>
+                  )}
                 </View>
               </View>
               <View style={styles.progressBarRow}>
@@ -231,6 +258,7 @@ const DeckCard = ({
                   <View
                     style={[
                       styles.progressBottomFill,
+                      isProgressCompleted && styles.progressBottomFillCompleted,
                       {
                         width: `${progressPercent}%`,
                         minWidth: progressFillMinWidth,
@@ -395,7 +423,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: scale(16),
     right: scale(46),
-    bottom: verticalScale(16),
+    bottom: verticalScale(14),
     zIndex: 10,
   },
   progressBottomBadge: {
@@ -417,14 +445,14 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   progressPercentChip: {
-    width: scale(42),
-    height: scale(42),
+    width: scale(38),
+    height: scale(38),
     borderRadius: moderateScale(999),
     backgroundColor: '#F98A21',
     position: 'absolute',
     left: scale(-8),
     top: '50%',
-    transform: [{ translateY: -scale(21) }],
+    transform: [{ translateY: -scale(19) }],
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 2,
@@ -454,29 +482,48 @@ const styles = StyleSheet.create({
   progressPercentChipNumber: {
     color: '#FFFFFF',
     fontWeight: '800',
-    fontSize: moderateScale(13),
-    letterSpacing: moderateScale(-0.3),
+    fontSize: moderateScale(15),
+    letterSpacing: moderateScale(-0.4),
   },
   progressPercentSign: {
-    fontSize: moderateScale(9),
+    fontSize: moderateScale(10),
     fontWeight: '700',
     color: 'rgba(255, 255, 255, 0.92)',
-    marginLeft: scale(1),
-    marginBottom: verticalScale(1),
+    marginLeft: 0,
+    marginBottom: verticalScale(2),
   },
   progressBottomTrack: {
     flex: 1,
     minWidth: 0,
-    height: verticalScale(2.5),
+    height: verticalScale(4),
     borderRadius: moderateScale(999),
-    backgroundColor: 'rgba(0, 0, 0, 0.18)',
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
     overflow: 'hidden',
     marginRight: scale(2),
   },
   progressBottomFill: {
     height: '100%',
     borderRadius: moderateScale(999),
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+  },
+  progressBottomFillCompleted: {
+    backgroundColor: '#FFFFFF',
+  },
+  progressPercentChipNearComplete: {
+    shadowColor: '#FB7B0B',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.45,
+    shadowRadius: moderateScale(7),
+    elevation: 4,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
+  },
+  progressPercentChipCompleted: {
+    shadowColor: '#FF7505',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: moderateScale(12),
+    elevation: 7,
+    borderColor: 'rgba(255, 255, 255, 0.6)',
   },
 });
 

@@ -78,6 +78,13 @@ const FadeText = ({ text, style, maxChars = 15 }) => {
   );
 };
 
+const getInProgressGradient = (percent) => {
+  if (percent >= 75) return ['#FFAB52', '#FB7B0B', '#D55E0B'];
+  if (percent >= 50) return ['#FFBC6B', '#F98A21', '#E87318'];
+  if (percent >= 25) return ['#FFB96E', '#F38624', '#D36D14'];
+  return ['#FFBC78', '#E58A35', '#B86715'];
+};
+
 // --- OPTIMISTIC DECK CARD BİLEŞENİ ---
 const DeckCard = React.memo(({ 
   deck, 
@@ -86,6 +93,7 @@ const DeckCard = React.memo(({
   isInitiallyFavorite, 
   colors, 
   showPopularityBadge,
+  progressMode = false,
   cardStyle,
   height,
   marginStyle,
@@ -93,6 +101,13 @@ const DeckCard = React.memo(({
   isVertical = true
 }) => {
   const [localFavorite, setLocalFavorite] = useState(isInitiallyFavorite);
+  const progressValue = Math.max(0, Math.min(1, Number(deck?.deckProgress?.progress || 0)));
+  const progressPercent = Math.round(progressValue * 100);
+  const isProgressCompleted = progressPercent >= 100;
+  const isProgressNearComplete = progressPercent >= 75 && progressPercent < 100;
+  const progressChipOverlap = scale(12);
+  const progressFillMinWidth = progressPercent > 0 ? scale(4) : 0;
+  const inProgressGradient = getInProgressGradient(progressPercent);
 
   useEffect(() => {
     setLocalFavorite(isInitiallyFavorite);
@@ -146,6 +161,57 @@ const DeckCard = React.memo(({
     }
   };
 
+  const renderProgressBadge = () => (
+    <View style={[styles.deckCountBadge, styles.progressBottomBadge]}>
+      <View style={[
+        styles.progressPercentChip,
+        isProgressNearComplete && styles.progressPercentChipNearComplete,
+        isProgressCompleted && styles.progressPercentChipCompleted,
+      ]}>
+        <LinearGradient
+          colors={isProgressCompleted ? ['#FFCC70', '#FF7505', '#D74400'] : inProgressGradient}
+          locations={[0, 0.45, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.progressPercentChipGradient}
+        />
+        <View style={styles.progressPercentChipInner}>
+          {isProgressCompleted ? (
+            <Iconify
+              icon="solar:check-circle-bold"
+              size={moderateScale(18)}
+              color="#FFFFFF"
+            />
+          ) : (
+            <>
+              <Text style={styles.progressPercentChipNumber}>{progressPercent}</Text>
+              <Text style={styles.progressPercentSign}>%</Text>
+            </>
+          )}
+        </View>
+      </View>
+      <View style={styles.progressBarRow}>
+        <View style={{ width: progressChipOverlap }} />
+        <View style={styles.progressBottomTrack}>
+          <View
+            style={[
+              styles.progressBottomFill,
+              isProgressCompleted && styles.progressBottomFillCompleted,
+              {
+                width: `${progressPercent}%`,
+                minWidth: progressFillMinWidth,
+              },
+            ]}
+          />
+        </View>
+      </View>
+    </View>
+  );
+
+  const progressContainerStyle = isVertical
+    ? { position: 'absolute', bottom: verticalScale(16), left: scale(16), right: scale(60), zIndex: 10 }
+    : { position: 'absolute', bottom: verticalScale(16), left: scale(16), maxWidth: scale(200), zIndex: 10 };
+
   return (
     <TouchableOpacity
       activeOpacity={0.93}
@@ -169,7 +235,7 @@ const DeckCard = React.memo(({
         </View>
 
         {/* Profile Section */}
-        <View style={[styles.deckProfileRow, isVertical ? {} : { top: 'auto', bottom: verticalScale(8) }]}>
+        <View style={[styles.deckProfileRow, isVertical ? {} : { top: verticalScale(8), bottom: 'auto' }]}>
           <Image
             source={
               deck.is_admin_created 
@@ -191,17 +257,27 @@ const DeckCard = React.memo(({
 
         {/* Badge Bölümleri */}
         {isVertical ? (
-          <View style={{ position: 'absolute', bottom: verticalScale(12), left: scale(12), flexDirection: 'column', alignItems: 'flex-start' }}>
+          <View
+            style={
+              progressMode
+                ? progressContainerStyle
+                : { position: 'absolute', bottom: verticalScale(12), left: scale(12), flexDirection: 'column', alignItems: 'flex-start' }
+            }
+          >
             {showPopularityBadge && deck.popularity_score && deck.popularity_score > 0 ? (
               <View style={[styles.popularityBadge, { marginBottom: verticalScale(6) }]}>
                 <Iconify icon="mdi:fire" size={moderateScale(14)} color="#fff" style={{ marginRight: scale(4) }} />
                 <Text style={styles.popularityBadgeText}>{Math.round(deck.popularity_score)}</Text>
               </View>
             ) : null}
-            <View style={styles.deckCountBadge}>
-              <Iconify icon="ri:stack-fill" size={moderateScale(18)} color="#fff" style={{ marginRight: scale(3) }} />
-              <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(16) }]}>{deck.card_count || 0}</Text>
-            </View>
+            {progressMode ? (
+              renderProgressBadge()
+            ) : (
+              <View style={styles.deckCountBadge}>
+                <Iconify icon="ri:stack-fill" size={moderateScale(18)} color="#fff" style={{ marginRight: scale(3) }} />
+                <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(16) }]}>{deck.card_count || 0}</Text>
+              </View>
+            )}
           </View>
         ) : (
           <>
@@ -213,18 +289,28 @@ const DeckCard = React.memo(({
                 </View>
               </View>
             ) : null}
-            <View style={{ position: 'absolute', bottom: verticalScale(10), right: scale(12) }}>
-              <View style={styles.deckCountBadge}>
-                <Iconify icon="ri:stack-fill" size={moderateScale(18)} color="#fff" style={{ marginRight: scale(4) }} />
-                <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(16) }]}>{deck.card_count || 0}</Text>
-              </View>
+            <View
+              style={
+                progressMode
+                  ? progressContainerStyle
+                  : { position: 'absolute', bottom: verticalScale(10), left: scale(12) }
+              }
+            >
+              {progressMode ? (
+                renderProgressBadge()
+              ) : (
+                <View style={styles.deckCountBadge}>
+                  <Iconify icon="ri:stack-fill" size={moderateScale(18)} color="#fff" style={{ marginRight: scale(4) }} />
+                  <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(16) }]}>{deck.card_count || 0}</Text>
+                </View>
+              )}
             </View>
           </>
         )}
 
         {/* HIZLANDIRILMIŞ FAVORİ BUTONU */}
         <TouchableOpacity
-          style={{ position: 'absolute', [isVertical ? 'bottom' : 'top']: verticalScale(8), right: scale(10), zIndex: 10, backgroundColor: colors.iconBackground, padding: moderateScale(8), borderRadius: 999 }}
+          style={{ position: 'absolute', bottom: verticalScale(8), right: scale(10), zIndex: 10, backgroundColor: colors.iconBackground, padding: moderateScale(8), borderRadius: 999 }}
           onPress={handleFavoritePress} 
           activeOpacity={0.7}
         >
@@ -262,6 +348,7 @@ const DeckList = ({
   refreshing = false,
   onRefresh,
   showPopularityBadge = false,
+  progressMode = false,
   loading = false,
   loadingMore = false,
   contentPaddingTop = 0,
@@ -402,6 +489,7 @@ const DeckList = ({
           isInitiallyFavorite={isFavorite(deck)}
           colors={colors}
           showPopularityBadge={showPopularityBadge}
+          progressMode={progressMode}
           cardStyle={styles.deckCardVertical}
           height={DECK_CARD_VERTICAL_HEIGHT}
           marginStyle={idx === 0 ? { marginRight: responsiveSpacing.cardMargin } : { marginLeft: responsiveSpacing.cardMargin }}
@@ -424,6 +512,7 @@ const DeckList = ({
         isInitiallyFavorite={isFavorite(row.item)}
         colors={colors}
         showPopularityBadge={showPopularityBadge}
+        progressMode={progressMode}
         cardStyle={styles.deckCardHorizontal}
         height={DECK_CARD_HORIZONTAL_HEIGHT}
         marginStyle={{}}
@@ -517,6 +606,105 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(8),
     paddingVertical: verticalScale(2),
     marginRight: scale(2),
+  },
+  progressBottomBadge: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    borderRadius: moderateScale(999),
+    paddingLeft: scale(24),
+    paddingRight: scale(6),
+    paddingVertical: verticalScale(6),
+    overflow: 'visible',
+  },
+  progressBarRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    minWidth: 0,
+  },
+  progressPercentChip: {
+    width: scale(42),
+    height: scale(42),
+    borderRadius: moderateScale(999),
+    backgroundColor: '#F98A21',
+    position: 'absolute',
+    left: scale(-8),
+    top: '50%',
+    transform: [{ translateY: -scale(21) }],
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+    overflow: 'hidden',
+    borderWidth: moderateScale(1.5),
+    borderColor: 'rgba(255, 255, 255, 0.38)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: verticalScale(2) },
+    shadowOpacity: 0.22,
+    shadowRadius: moderateScale(4),
+    elevation: 3,
+  },
+  progressPercentChipGradient: {
+    position: 'absolute',
+    top: -scale(2),
+    left: -scale(2),
+    right: -scale(2),
+    bottom: -scale(2),
+    borderRadius: moderateScale(999),
+  },
+  progressPercentChipInner: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  progressPercentChipNumber: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: moderateScale(16),
+    letterSpacing: moderateScale(-0.4),
+  },
+  progressPercentSign: {
+    fontSize: moderateScale(11),
+    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.92)',
+    marginLeft: 0,
+    marginBottom: verticalScale(2),
+  },
+  progressBottomTrack: {
+    flex: 1,
+    minWidth: 0,
+    height: verticalScale(4),
+    borderRadius: moderateScale(999),
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    overflow: 'hidden',
+    marginRight: scale(2),
+  },
+  progressBottomFill: {
+    height: '100%',
+    borderRadius: moderateScale(999),
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+  },
+  progressBottomFillCompleted: {
+    backgroundColor: '#FFFFFF',
+  },
+  progressPercentChipNearComplete: {
+    shadowColor: '#FB7B0B',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.45,
+    shadowRadius: moderateScale(7),
+    elevation: 4,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
+  },
+  progressPercentChipCompleted: {
+    shadowColor: '#FF7505',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: moderateScale(12),
+    elevation: 7,
+    borderColor: 'rgba(255, 255, 255, 0.6)',
   },
   emptyText: {
     fontSize: moderateScale(14),
