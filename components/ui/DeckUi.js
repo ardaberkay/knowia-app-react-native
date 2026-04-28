@@ -118,6 +118,9 @@ const DeckCard = ({
   const isInProgressVariant = variant === 'inProgress';
   const progressValue = Math.max(0, Math.min(1, Number(deck?.deckProgress?.progress || 0)));
   const progressPercent = Math.round(progressValue * 100);
+  // Chip (~42) left -8 → ~34px overlap; barı bundan sonra başlatıyoruz ki düşük % görünsün
+  const progressChipOverlap = scale(12);
+  const progressFillMinWidth = progressPercent > 0 ? scale(4) : 0;
 
   const renderDeckTitle = (text) => {
     if (!text) return null;
@@ -210,20 +213,31 @@ const DeckCard = ({
           <View style={styles.progressBadgeContainer}>
             <View style={[styles.deckCountBadge, styles.progressBottomBadge]}>
               <View style={styles.progressPercentChip}>
-                <Text style={[typography.styles.body, styles.progressPercentChipText]}>
-                  <Text style={styles.progressPercentSign}>%</Text>
-                  {progressPercent}
-                </Text>
-              </View>
-              <View style={styles.progressBottomTrack}>
-                <View
-                  style={[
-                    styles.progressBottomFill,
-                    {
-                      width: `${progressPercent}%`,
-                    },
-                  ]}
+                <LinearGradient
+                  colors={['#FFBC6B', '#F98A21', '#E87318']}
+                  locations={[0, 0.45, 1]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.progressPercentChipGradient}
                 />
+                <View style={styles.progressPercentChipInner}>
+                  <Text style={styles.progressPercentChipNumber}>{progressPercent}</Text>
+                  <Text style={styles.progressPercentSign}>%</Text>
+                </View>
+              </View>
+              <View style={styles.progressBarRow}>
+                <View style={{ width: progressChipOverlap }} />
+                <View style={styles.progressBottomTrack}>
+                  <View
+                    style={[
+                      styles.progressBottomFill,
+                      {
+                        width: `${progressPercent}%`,
+                        minWidth: progressFillMinWidth,
+                      },
+                    ]}
+                  />
+                </View>
               </View>
             </View>
           </View>
@@ -386,6 +400,8 @@ const styles = StyleSheet.create({
   },
   progressBottomBadge: {
     width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
     borderRadius: moderateScale(999),
@@ -394,39 +410,63 @@ const styles = StyleSheet.create({
     paddingVertical: verticalScale(6),
     overflow: 'visible',
   },
+  progressBarRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    minWidth: 0,
+  },
   progressPercentChip: {
-    width: scale(40),
-    height: scale(40),
+    width: scale(42),
+    height: scale(42),
     borderRadius: moderateScale(999),
     backgroundColor: '#F98A21',
-    borderWidth: moderateScale(1),
-    borderColor: 'rgba(255, 255, 255, 0.28)',
     position: 'absolute',
     left: scale(-8),
     top: '50%',
-    transform: [{ translateY: -scale(17) }],
+    transform: [{ translateY: -scale(21) }],
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 2,
+    overflow: 'hidden',
+    borderWidth: moderateScale(1.5),
+    borderColor: 'rgba(255, 255, 255, 0.38)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: verticalScale(1) },
-    shadowOpacity: 0.15,
-    shadowRadius: moderateScale(2),
-    elevation: 1,
+    shadowOffset: { width: 0, height: verticalScale(2) },
+    shadowOpacity: 0.22,
+    shadowRadius: moderateScale(4),
+    elevation: 3,
   },
-  progressPercentChipText: {
+  progressPercentChipGradient: {
+    position: 'absolute',
+    top: -scale(2),
+    left: -scale(2),
+    right: -scale(2),
+    bottom: -scale(2),
+    borderRadius: moderateScale(999),
+  },
+  progressPercentChipInner: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  progressPercentChipNumber: {
     color: '#FFFFFF',
     fontWeight: '800',
-    fontSize: moderateScale(12),
-    letterSpacing: -0.2,
+    fontSize: moderateScale(13),
+    letterSpacing: moderateScale(-0.3),
   },
   progressPercentSign: {
-    fontSize: moderateScale(10),
+    fontSize: moderateScale(9),
     fontWeight: '700',
-    marginRight: scale(1),
+    color: 'rgba(255, 255, 255, 0.92)',
+    marginLeft: scale(1),
+    marginBottom: verticalScale(1),
   },
   progressBottomTrack: {
     flex: 1,
+    minWidth: 0,
     height: verticalScale(2.5),
     borderRadius: moderateScale(999),
     backgroundColor: 'rgba(0, 0, 0, 0.18)',
