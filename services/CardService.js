@@ -586,3 +586,15 @@ export const getDeckProgressCounts = async (userId, deckId) => {
     new: total - learned - learning,
   };
 };
+
+export const getTotalLearnedCardsCount = async (userId) => {
+  if (!userId) return 0;
+  const { count, error } = await supabase
+    .from('user_card_progress')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('status', 'learned');
+
+  if (error) throw error;
+  return count || 0;
+};

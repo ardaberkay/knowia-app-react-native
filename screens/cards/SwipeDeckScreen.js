@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, Image, Pressable, Platform, BackHandler } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, Image, Pressable, Platform, BackHandler, AppState } from 'react-native';
 import Reanimated, {
   useAnimatedStyle,
   useSharedValue,
@@ -14,7 +14,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import Swiper from 'react-native-deck-swiper';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
-import { getCardsToLearn, batchUpsertProgress, getChapterProgressCounts } from '../../services/CardService';
+import { getCardsToLearn, batchUpsertProgress, getChapterProgressCounts, getTotalLearnedCardsCount } from '../../services/CardService';
 import { getDeckById } from '../../services/DeckService';
 import { invalidateCache } from '../../services/CacheService';
 import { mergeChapterProgressIntoCache } from '../../services/ChapterService';
@@ -31,6 +31,7 @@ import ReportModal from '../../components/modals/ReportModal';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import SwipeFlipCard from '../../components/layout/SwipeFlipCard';
 import { triggerHaptic } from '../../lib/hapticManager';
+import { maybePromptForReview, getReviewMilestones } from '../../services/ReviewPromptService';
 
 // Eğer henüz yoksa AnimatedPressable'ı oluştur (önceki sayfalardaki gibi)
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
@@ -171,12 +172,50 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const isAnimatingRef = useRef(false);
   const BATCH_SIZE = 30;
   const PROGRESS_FLUSH_SIZE = 5;
+  const REVIEW_LARGE_FLUSH_THRESHOLD = 20;
+  const RESUME_RECHECK_INTERVAL_MS = 10 * 60 * 1000;
+  const REVIEW_PROMPT_DELAY_MS = 600;
   const PRE_FETCH_THRESHOLD = 10;
   const pendingProgressRef = useRef({});
   const swipesSinceFlushRef = useRef(0);
   const seenCardIdsRef = useRef(new Set());
   const isFetchingMoreRef = useRef(false);
   const hasMoreCardsRef = useRef(true);
+  const reviewMilestonesRef = useRef(getReviewMilestones());
+  const estimatedTotalLearnedRef = useRef(0);
+  const reviewCheckInFlightRef = useRef(false);
+  const reviewPromptTimeoutRef = useRef(null);
+  const lastResumeSyncAtRef = useRef(0);
+
+  const scheduleReviewCheck = useCallback(async ({ delayMs = REVIEW_PROMPT_DELAY_MS, requireMilestoneHit = false } = {}) => {
+    if (!authUserId) return;
+    if (autoPlay) return;
+
+    if (requireMilestoneHit) {
+      const estimated = estimatedTotalLearnedRef.current;
+      const shouldCheck = reviewMilestonesRef.current.some((m) => estimated >= m);
+      if (!shouldCheck) return;
+    }
+
+    if (reviewPromptTimeoutRef.current) clearTimeout(reviewPromptTimeoutRef.current);
+    reviewPromptTimeoutRef.current = setTimeout(async () => {
+      if (reviewCheckInFlightRef.current) return;
+      reviewCheckInFlightRef.current = true;
+      try {
+        const totalLearned = await getTotalLearnedCardsCount(authUserId);
+        estimatedTotalLearnedRef.current = totalLearned;
+        await maybePromptForReview({
+          userId: authUserId,
+          totalLearned,
+          allowFallback: true,
+        });
+      } catch (error) {
+        console.error('Review eligibility check failed:', error);
+      } finally {
+        reviewCheckInFlightRef.current = false;
+      }
+    }, delayMs);
+  }, [authUserId, autoPlay]);
 
   const openReportCardModal = useCallback(async () => {
     if (!userId || !cards[currentIndex]) return;
@@ -321,7 +360,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
             ? undefined
             : (chapter === null ? null : chapter.id);
 
-        const progressCounts = await getChapterProgressCounts(authUserId, deck.id, statsChapterId);
+        const [progressCounts, globalLearnedCount] = await Promise.all([
+          getChapterProgressCounts(authUserId, deck.id, statsChapterId),
+          getTotalLearnedCardsCount(authUserId),
+        ]);
         const totalCardsCount = progressCounts.total;
         const learningCount = progressCounts.learning;
         const learnedCount = progressCounts.learned;
@@ -330,6 +372,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
         setTotalLearningCount(learningCount);
         setInitialLearnedCount(learnedCount);
         setRemainingCardCount(totalCardsCount - learnedCount);
+        estimatedTotalLearnedRef.current = globalLearnedCount;
 
       } catch (error) {
         console.error("Swipe sayfasında veri çekme hatası:", error.message);
@@ -344,6 +387,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
   // Swipe çıkışı: tek bölümde cache'i merge et; tüm deste modunda chapters progress cache'ini sıfırla
   useEffect(() => {
     return () => {
+      if (reviewPromptTimeoutRef.current) clearTimeout(reviewPromptTimeoutRef.current);
       if (!deck?.id || !authUserId) return;
       invalidateCache(`progress_deck_${deck.id}_${authUserId}`);
       const statsChapterId =
@@ -357,6 +401,19 @@ export default function SwipeDeckScreen({ route, navigation }) {
       }
     };
   }, [deck?.id, authUserId, chapter]);
+
+  useEffect(() => {
+    const appStateSub = AppState.addEventListener('change', (nextState) => {
+      if (nextState !== 'active') return;
+      const now = Date.now();
+      if (now - lastResumeSyncAtRef.current < RESUME_RECHECK_INTERVAL_MS) return;
+      lastResumeSyncAtRef.current = now;
+      scheduleReviewCheck({ delayMs: 0, requireMilestoneHit: true });
+    });
+    return () => {
+      appStateSub.remove();
+    };
+  }, [scheduleReviewCheck]);
 
   useEffect(() => {
     if (loading || currentIndex === 0) return;
@@ -516,6 +573,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
     swipesSinceFlushRef.current = 0;
     try {
       await batchUpsertProgress(items);
+      if (items.length >= REVIEW_LARGE_FLUSH_THRESHOLD) {
+        scheduleReviewCheck({ delayMs: 0, requireMilestoneHit: true });
+      }
     } catch (error) {
       Object.entries(pending).forEach(([key, val]) => {
         if (!pendingProgressRef.current[key]) {
@@ -524,7 +584,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       });
       console.error('Failed to flush progress:', error);
     }
-  }, []);
+  }, [scheduleReviewCheck]);
 
   const queueProgress = useCallback((cardId, status, nextReview) => {
     if (!userId) return;
@@ -589,10 +649,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
     setTotalSwipeCount((prev) => prev + 1);
     if (direction === 'right') {
       setRightCount((prev) => prev + 1);
+      estimatedTotalLearnedRef.current += 1;
       setRightHighlight(true);
       setTimeout(() => setRightHighlight(false), 400);
       const now = new Date().toISOString();
       queueProgress(card.card_id, 'learned', now);
+      scheduleReviewCheck({ delayMs: REVIEW_PROMPT_DELAY_MS, requireMilestoneHit: true });
     } else if (direction === 'left') {
       historyLeftCardIds.current.push(card.card_id);
       if (!leftCountedCardIds.current.has(card.card_id)) {
@@ -1193,7 +1255,7 @@ const styles = StyleSheet.create({
     elevation: 4,
     ...Platform.select({
       ios: {
-        marginBottom: verticalScale(90),
+        marginBottom: verticalScale(86),
       },
       android: {
         marginBottom: verticalScale(94),
@@ -1251,7 +1313,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     ...Platform.select({
       ios: {
-        bottom: verticalScale(64),
+        bottom: verticalScale(62),
       },
       android: {
         bottom: verticalScale(68),
