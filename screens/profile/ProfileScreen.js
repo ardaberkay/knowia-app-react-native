@@ -441,7 +441,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
         <View style={styles.footerContainer}>
-          <Text style={styles.appNameText}>Knowia v1.0.0</Text>
+          <Text style={styles.appNameText}>Knowia v1.0.1</Text>
           <Text style={styles.companyText}>© 2026 BB Nova</Text>
         </View>
       </ScrollView>

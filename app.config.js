@@ -3,7 +3,7 @@ export default {
     name: "Knowia",
     slug: "knowia",
     backgroundColor: "#FF8D1A",
-    version: "1.0.0",
+    version: "1.0.1",
     owner: "imati",
     orientation: "portrait",
     icon: "./assets/app_icon.png",
