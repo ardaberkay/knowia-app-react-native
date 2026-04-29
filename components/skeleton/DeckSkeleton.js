@@ -84,7 +84,7 @@ const ShimmerBox = ({ children, style, delay = 0, isDarkMode = false, borderRadi
   );
 };
 
-export default function DeckSkeleton() {
+export default function DeckSkeleton({ progressMode = false }) {
   const { isDarkMode } = useTheme();
   
   const { width, height } = useWindowDimensions();
@@ -137,16 +137,69 @@ export default function DeckSkeleton() {
           </ShimmerBox>
         </View>
 
-        {/* Alt Kısım: İstatistikler ve Favori Butonu */}
-        <View style={styles.bottomRow}>
-          <ShimmerBox delay={80} isDarkMode={isDarkMode} borderRadius={moderateScale(12)} screenWidth={SCREEN_WIDTH}>
-            <View style={[styles.badge, { backgroundColor: lineColor }]} />
-          </ShimmerBox>
-
-          <ShimmerBox delay={100} isDarkMode={isDarkMode} borderRadius={999} screenWidth={SCREEN_WIDTH}>
-            <View style={[styles.favoriteButton, { backgroundColor: lineColor }]} />
-          </ShimmerBox>
-        </View>
+        {/* Alt Kısım: kart sayısı badge VEYA chip+progress (Çalıştığım Desteler) + Favori */}
+        {progressMode ? (
+          <>
+            <View style={styles.progressBadgeContainer}>
+              <View style={styles.progressBottomBadgeSkeleton}>
+                <ShimmerBox
+                  delay={78}
+                  isDarkMode={isDarkMode}
+                  borderRadius={moderateScale(999)}
+                  screenWidth={SCREEN_WIDTH}
+                  style={styles.progressBottomBadgeBaseShimmer}
+                >
+                  <View style={[styles.progressBottomBadgeBase, { backgroundColor: lineColor }]} />
+                </ShimmerBox>
+                <ShimmerBox
+                  delay={84}
+                  isDarkMode={isDarkMode}
+                  borderRadius={moderateScale(999)}
+                  screenWidth={SCREEN_WIDTH}
+                  style={styles.progressChipAbsoluteShimmer}
+                >
+                  <View style={[styles.progressChipPlaceholder, { backgroundColor: lineColor }]} />
+                </ShimmerBox>
+                <View style={styles.progressBarRowSkeleton}>
+                  <View style={{ width: scale(12) }} />
+                  <ShimmerBox
+                    delay={92}
+                    isDarkMode={isDarkMode}
+                    borderRadius={moderateScale(999)}
+                    screenWidth={SCREEN_WIDTH}
+                    style={styles.progressTrackShimmerGrow}
+                  >
+                    <View
+                      style={[
+                        styles.progressTrackPlaceholder,
+                        { backgroundColor: isDarkMode ? '#3A3A3A' : '#D3D3D3' },
+                      ]}
+                    />
+                  </ShimmerBox>
+                </View>
+              </View>
+            </View>
+            <ShimmerBox
+              delay={100}
+              isDarkMode={isDarkMode}
+              borderRadius={999}
+              screenWidth={SCREEN_WIDTH}
+              style={styles.favoriteButtonProgressPosition}
+            >
+              <View style={[styles.favoriteButton, { backgroundColor: lineColor }]} />
+            </ShimmerBox>
+            <View style={styles.bottomRowReserve} />
+          </>
+        ) : (
+          <View style={styles.bottomRow}>
+            <ShimmerBox delay={80} isDarkMode={isDarkMode} borderRadius={moderateScale(12)} screenWidth={SCREEN_WIDTH}>
+              <View style={[styles.badge, { backgroundColor: lineColor }]} />
+            </ShimmerBox>
+            <ShimmerBox delay={100} isDarkMode={isDarkMode} borderRadius={999} screenWidth={SCREEN_WIDTH}>
+              <View style={[styles.favoriteButton, { backgroundColor: lineColor }]} />
+            </ShimmerBox>
+          </View>
+        )}
 
       </View>
     </View>
@@ -164,7 +217,7 @@ const styles = StyleSheet.create({
   skeletonCardGradient: {
     flex: 1,
     borderRadius: moderateScale(18),
-    padding: scale(12), // Padding'i biraz artırdım, kenarlara çok yapışmaması için
+    padding: scale(8), // DeckUi deckCardGradient ile uyumlu
     justifyContent: 'space-between', // İçeriği yukarı, ortaya ve aşağıya eşit dağıtacak
   },
   
@@ -182,7 +235,76 @@ const styles = StyleSheet.create({
   bottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between', // Badge solda, Fav butonu sağda kalacak
+    justifyContent: 'space-between',
+  },
+  progressBadgeContainer: {
+    position: 'absolute',
+    left: scale(16),
+    right: scale(46),
+    bottom: verticalScale(14),
+    zIndex: 10,
+  },
+  progressBottomBadgeSkeleton: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    borderRadius: moderateScale(999),
+    paddingLeft: scale(24),
+    paddingRight: scale(6),
+    paddingVertical: verticalScale(6),
+    overflow: 'visible',
+  },
+  progressBottomBadgeBaseShimmer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  progressBottomBadgeBase: {
+    width: '100%',
+    height: '100%',
+    borderRadius: moderateScale(999),
+  },
+  progressChipAbsoluteShimmer: {
+    position: 'absolute',
+    left: scale(-8),
+    top: '50%',
+    transform: [{ translateY: -scale(19) }],
+    zIndex: 2,
+  },
+  progressChipPlaceholder: {
+    width: scale(38),
+    height: scale(38),
+    borderRadius: moderateScale(999),
+  },
+  progressBarRowSkeleton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    minWidth: 0,
+  },
+  progressTrackShimmerGrow: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+  },
+  progressTrackPlaceholder: {
+    width: '100%',
+    height: verticalScale(4),
+    borderRadius: moderateScale(999),
+    marginRight: scale(2),
+  },
+  favoriteButtonProgressPosition: {
+    position: 'absolute',
+    right: scale(8),
+    bottom: verticalScale(8),
+    zIndex: 11,
+  },
+  bottomRowReserve: {
+    height: verticalScale(30),
   },
 
   // Elemanlar

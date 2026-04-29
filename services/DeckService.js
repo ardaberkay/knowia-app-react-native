@@ -13,6 +13,7 @@ export const getDecksByCategory = async (userId, category, options = false) => {
   let forceRefresh = false;
   let page = 0;
   let limit;
+  let includeHasMore = false;
   let searchQuery = '';
   let sortBy = 'default';
   let categorySortOrders = [];
@@ -25,6 +26,7 @@ export const getDecksByCategory = async (userId, category, options = false) => {
     forceRefresh = options.forceRefresh ?? false;
     page = options.page ?? 0;
     limit = options.limit;
+    includeHasMore = Boolean(options.includeHasMore);
     searchQuery = (options.searchQuery || '').trim();
     sortBy = options.sortBy || 'default';
     categorySortOrders = Array.isArray(options.categorySortOrders) ? options.categorySortOrders : [];
@@ -184,11 +186,25 @@ export const getDecksByCategory = async (userId, category, options = false) => {
       }
     }
 
+    const totalCount = resultData.length;
+    let hasMore = false;
+
     // inProgressDecks için sayfalama: slice ile uygula
     if (typeof limit === 'number' && limit > 0) {
       const start = page * limit;
-      const end = start + limit;
-      resultData = resultData.slice(start, end);
+      const requestedLimit = includeHasMore ? limit + 1 : limit;
+      const end = start + requestedLimit;
+      const paginatedData = resultData.slice(start, end);
+      hasMore = includeHasMore && paginatedData.length > limit;
+      resultData = includeHasMore ? paginatedData.slice(0, limit) : paginatedData;
+    }
+
+    if (includeHasMore) {
+      return {
+        decks: resultData,
+        hasMore,
+        totalCount,
+      };
     }
 
     return resultData;
@@ -251,7 +267,8 @@ export const getDecksByCategory = async (userId, category, options = false) => {
   // Sayfalama: limit belirtilmişse Supabase range kullan
   if (typeof limit === 'number' && limit > 0) {
     const from = page * limit;
-    query = query.range(from, from + limit - 1);
+    const requestedLimit = includeHasMore ? limit + 1 : limit;
+    query = query.range(from, from + requestedLimit - 1);
   }
 
   const { data, error } = await query;
@@ -262,6 +279,12 @@ export const getDecksByCategory = async (userId, category, options = false) => {
   }
 
   let resultData = data || [];
+  let hasMore = false;
+  if (includeHasMore && typeof limit === 'number' && limit > 0) {
+    hasMore = resultData.length > limit;
+    resultData = resultData.slice(0, limit);
+  }
+
   if ((category === 'communityDecks' || category === 'defaultDecks') && userId) {
     const [blockedIds, hiddenIds] = await getCachedBlockedAndHidden(userId);
     resultData = filterDecksByBlockAndHide(resultData, blockedIds, hiddenIds);
@@ -305,6 +328,13 @@ export const getDecksByCategory = async (userId, category, options = false) => {
 
   if (category === 'myDecks' && userId) {
     await cacheData(`mydecks_${userId}`, resultData);
+  }
+
+  if (includeHasMore) {
+    return {
+      decks: resultData,
+      hasMore,
+    };
   }
 
   return resultData;

@@ -119,11 +119,12 @@ export default function HomeScreen() {
       await Promise.all(
         Object.keys(DECK_CATEGORIES).map(async (category) => {
           try {
-            // Anasayfada performans için her kategoriden yalnızca son 10 deste getir
-            decksData[category] = await getDecksByCategory(userId, category, { limit: 10 });
+            // Anasayfada 10 deste göster, 11. kayıt varsa devam işareti göster.
+            const result = await getDecksByCategory(userId, category, { limit: 10, includeHasMore: true });
+            decksData[category] = result || { decks: [], hasMore: false };
           } catch (err) {
             console.error(`Error loading ${category}:`, err);
-            decksData[category] = [];
+            decksData[category] = { decks: [], hasMore: false };
           }
         })
       );
@@ -140,11 +141,11 @@ export default function HomeScreen() {
   const loadInProgressDecks = useCallback(async () => {
     try {
       // Çalıştığım Desteler için de anasayfada yalnızca son 10 kayıt yeterli
-      const data = await getDecksByCategory(userId, 'inProgressDecks', { limit: 10 });
-      setDecks(prev => ({ ...prev, inProgressDecks: data || [] }));
+      const data = await getDecksByCategory(userId, 'inProgressDecks', { limit: 10, includeHasMore: true });
+      setDecks(prev => ({ ...prev, inProgressDecks: data || { decks: [], hasMore: false } }));
     } catch (err) {
       console.error('Error loading inProgressDecks:', err);
-      setDecks(prev => ({ ...prev, inProgressDecks: [] }));
+      setDecks(prev => ({ ...prev, inProgressDecks: { decks: [], hasMore: false } }));
     }
   }, [userId]);
 
@@ -256,9 +257,16 @@ export default function HomeScreen() {
   };
 
   const renderDeckSection = (category) => {
-    const categoryDecks = decks[category];
+    const categoryData = decks[category];
+    const categoryDecks = Array.isArray(categoryData) ? categoryData : categoryData?.decks;
+    const hasMoreDecks = Array.isArray(categoryData) ? false : Boolean(categoryData?.hasMore);
+    const totalActiveDeckCount = Array.isArray(categoryData) ? undefined : categoryData?.totalCount;
     const limitedDecks = categoryDecks || []; // Tüm desteler gösterilecek
     const isCategoryLoading = loading || categoryDecks === undefined;
+    const isInProgressSection = category === 'inProgressDecks';
+    const activeDeckCount = isInProgressSection
+      ? (totalActiveDeckCount ?? categoryDecks?.length ?? 0)
+      : (categoryDecks?.length || 0);
 
     const handleSeeAll = () => {
       // Favori deck ID'lerini çıkar
@@ -274,7 +282,8 @@ export default function HomeScreen() {
     const handleEmptyDeckPress = () => {
       // Placeholder kart tıklandığında her zaman Ready Decks (defaultDecks) kategorisine git
       const favoriteDeckIds = (favoriteDecks || []).map(deck => deck.id);
-      const defaultDecksList = decks['defaultDecks'] || [];
+      const defaultDecksData = decks['defaultDecks'];
+      const defaultDecksList = Array.isArray(defaultDecksData) ? defaultDecksData : defaultDecksData?.decks || [];
       navigation.navigate('CategoryDeckList', {
         category: 'defaultDecks',
         title: DECK_CATEGORIES['defaultDecks'],
@@ -283,7 +292,7 @@ export default function HomeScreen() {
       });
     };
 
-    const showEndIcon = (categoryDecks?.length || 0) > 10;
+    const showEndIcon = hasMoreDecks;
 
     return (
       <AnimatedPressable
@@ -294,9 +303,25 @@ export default function HomeScreen() {
         }]}
       >
         <View style={styles.sectionHeaderGradient}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Iconify icon={getCategoryIcon(category)} size={moderateScale(26)} color="#F98A21" style={{ marginRight: scale(8), marginTop: moderateScale(1) }} />
-            <Text style={[typography.styles.h2, { color: colors.text }]}>{DECK_CATEGORIES[category]}</Text>
+          <View style={styles.sectionHeaderLeft}>
+            <Iconify
+              icon={getCategoryIcon(category)}
+              size={moderateScale(26)}
+              color="#F98A21"
+              style={{ marginRight: scale(8) }}
+            />
+            <View style={styles.sectionTitleBlock}>
+              <Text style={[typography.styles.h2, { color: colors.text }]}>{DECK_CATEGORIES[category]}</Text>
+              {isInProgressSection ? (
+                <Text style={[typography.styles.caption, styles.inProgressMetaText, { color: colors.muted }]}>
+                  {isCategoryLoading
+                    ? t('common.loading', 'Yükleniyor...')
+                    : activeDeckCount > 0
+                      ? t('home.activeDeckCount', { count: activeDeckCount, defaultValue: '{{count}} aktif deste' })
+                      : t('home.noActiveDecks', { defaultValue: 'Aktif deste yok' })}
+                </Text>
+              ) : null}
+            </View>
           </View>
           <View>
             <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(20)} color="#007AFF" />
@@ -312,7 +337,7 @@ export default function HomeScreen() {
             snapToAlignment="start"
           >
             {[...Array(4)].map((_, i) => (
-              <DeckSkeleton key={i} />
+              <DeckSkeleton key={i} progressMode={isInProgressSection} />
             ))}
           </ScrollView>
         ) : !loading && categoryDecks !== undefined && limitedDecks.length === 0 ? (
@@ -399,7 +424,17 @@ export default function HomeScreen() {
             })}
             {showEndIcon && (
               <View style={[styles.endIconContainer, { height: emptyDeckCardDimensions.height }]}>
-                <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(35)} color="#F98A21" style={{ marginLeft: scale(2), marginTop: moderateScale(1) }} />
+                <View
+                  style={[
+                    styles.endIconPill,
+                    {
+                      borderColor: isDarkMode ? 'rgba(249, 138, 33, 0.5)' : 'rgba(249, 138, 33, 0.35)',
+                      backgroundColor: isDarkMode ? 'rgba(249, 138, 33, 0.08)' : 'rgba(249, 138, 33, 0.05)',
+                    },
+                  ]}
+                >
+                  <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(30)} color="#F98A21" style={{ marginLeft: scale(2), marginTop: moderateScale(1) }} />
+                </View>
               </View>
             )}
           </ScrollView>
@@ -454,12 +489,27 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(12),
     paddingVertical: verticalScale(8),
   },
+  sectionHeaderLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sectionTitleBlock: {
+    flex: 1,
+    justifyContent: 'center',
+  },
   sectionTitle: {
     fontSize: moderateScale(20),
     fontWeight: '700',
   },
   decksContainer: {
     paddingBottom: verticalScale(8),
+  },
+  inProgressMetaText: {
+    marginTop: verticalScale(2),
+    fontSize: moderateScale(12),
+    lineHeight: moderateScale(16),
+    opacity: 0.9,
   },
   emptyText: {
     fontSize: moderateScale(14),
@@ -472,6 +522,14 @@ const styles = StyleSheet.create({
     width: scale(44),
     marginLeft: scale(4),
     marginRight: scale(8),
+  },
+  endIconPill: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: scale(42),
+    height: scale(42),
+    borderRadius: moderateScale(21),
+    borderWidth: 1,
   },
   glassCard: {
     borderRadius: moderateScale(40),
