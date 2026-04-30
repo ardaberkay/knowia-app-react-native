@@ -49,14 +49,13 @@ const FadeText = ({ text, style, maxWidth = 120, maxChars = 15 }) => {
   );
 };
 
-// Progress yüzdesine göre chip gradient'ı (5 bantlı saturation ramp)
-// Hepsi brand turuncu ailesinden — alt bantlar belirgin koyu/amber, üst bantlar yoğunlaşmış brand.
-// 100% ayrı, "blazing peak" olarak doğrudan render kısmında tanımlı.
+// Progress yüzdesine göre chip gradient'ı — açıktan %100 (tik) paletine (#FFCC70 / #FF7505 / #D74400) doğru.
+// En alt kademe daha açıktır ama tamamen soluk/krem değil; turuncu doygunluğu korunur.
 const getInProgressGradient = (percent) => {
-  if (percent >= 75) return ['#FFAB52', '#FB7B0B', '#D55E0B']; // bold brand
-  if (percent >= 50) return ['#FFBC6B', '#F98A21', '#E87318']; // BRAND default
-  if (percent >= 25) return ['#FFB96E', '#F38624', '#D36D14']; // warm brand (hafif kısık)
-  return ['#FFBC78', '#E58A35', '#B86715']; // amber brand (en kısık ama koyu, kremimsi değil)
+  if (percent >= 75) return ['#FFCC70', '#FF7505', '#D74400']; // %100 ile aynı üçlü (yaklaşan kademe)
+  if (percent >= 50) return ['#FFC888', '#FB7A0E', '#E0500A'];
+  if (percent >= 25) return ['#FFC2A0', '#F28E2C', '#D45E16'];
+  return ['#FFB890', '#EA8F48', '#C66E30'];
 };
 
 // Fonksiyonu React.memo ile sarmak için const yapısına çevirdik
@@ -131,8 +130,8 @@ const DeckCard = ({
   const isProgressCompleted = progressPercent >= 100;
   const isProgressNearComplete = progressPercent >= 75 && progressPercent < 100;
   const inProgressGradient = getInProgressGradient(progressPercent);
-  // Chip (~42) left -8 → ~34px overlap; barı bundan sonra başlatıyoruz ki düşük % görünsün
-  const progressChipOverlap = scale(10);
+  // Chip slightly bigger; overlap'i dengeleyip düşük % görünürlüğünü koruyoruz.
+  const progressChipOverlap = scale(11);
   const progressFillMinWidth = progressPercent > 0 ? scale(4) : 0;
 
   const renderDeckTitle = (text) => {
@@ -445,14 +444,14 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   progressPercentChip: {
-    width: scale(38),
-    height: scale(38),
+    width: scale(40),
+    height: scale(40),
     borderRadius: moderateScale(999),
     backgroundColor: '#F98A21',
     position: 'absolute',
     left: scale(-8),
     top: '50%',
-    transform: [{ translateY: -scale(19) }],
+    transform: [{ translateY: -scale(20) }],
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 2,
@@ -482,11 +481,11 @@ const styles = StyleSheet.create({
   progressPercentChipNumber: {
     color: '#FFFFFF',
     fontWeight: '800',
-    fontSize: moderateScale(15),
-    letterSpacing: moderateScale(-0.4),
+    fontSize: moderateScale(14.5),
+    letterSpacing: moderateScale(-0.38),
   },
   progressPercentSign: {
-    fontSize: moderateScale(10),
+    fontSize: moderateScale(9.75),
     fontWeight: '700',
     color: 'rgba(255, 255, 255, 0.92)',
     marginLeft: 0,

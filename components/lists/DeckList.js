@@ -79,10 +79,10 @@ const FadeText = ({ text, style, maxChars = 15 }) => {
 };
 
 const getInProgressGradient = (percent) => {
-  if (percent >= 75) return ['#FFAB52', '#FB7B0B', '#D55E0B'];
-  if (percent >= 50) return ['#FFBC6B', '#F98A21', '#E87318'];
-  if (percent >= 25) return ['#FFB96E', '#F38624', '#D36D14'];
-  return ['#FFBC78', '#E58A35', '#B86715'];
+  if (percent >= 75) return ['#FFCC70', '#FF7505', '#D74400'];
+  if (percent >= 50) return ['#FFC888', '#FB7A0E', '#E0500A'];
+  if (percent >= 25) return ['#FFC2A0', '#F28E2C', '#D45E16'];
+  return ['#FFB890', '#EA8F48', '#C66E30'];
 };
 
 // --- OPTIMISTIC DECK CARD BİLEŞENİ ---
@@ -105,7 +105,7 @@ const DeckCard = React.memo(({
   const progressPercent = Math.round(progressValue * 100);
   const isProgressCompleted = progressPercent >= 100;
   const isProgressNearComplete = progressPercent >= 75 && progressPercent < 100;
-  const progressChipOverlap = scale(12);
+  const progressChipOverlap = scale(11);
   const progressFillMinWidth = progressPercent > 0 ? scale(4) : 0;
   const inProgressGradient = getInProgressGradient(progressPercent);
 
@@ -178,8 +178,8 @@ const DeckCard = React.memo(({
         <View style={styles.progressPercentChipInner}>
           {isProgressCompleted ? (
             <Iconify
-              icon="solar:check-circle-bold"
-              size={moderateScale(18)}
+              icon="streamline:check-solid"
+              size={moderateScale(16)}
               color="#FFFFFF"
             />
           ) : (
@@ -626,14 +626,14 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   progressPercentChip: {
-    width: scale(42),
-    height: scale(42),
+    width: scale(40),
+    height: scale(40),
     borderRadius: moderateScale(999),
     backgroundColor: '#F98A21',
     position: 'absolute',
     left: scale(-8),
     top: '50%',
-    transform: [{ translateY: -scale(21) }],
+    transform: [{ translateY: -scale(20) }],
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 2,
@@ -663,11 +663,11 @@ const styles = StyleSheet.create({
   progressPercentChipNumber: {
     color: '#FFFFFF',
     fontWeight: '800',
-    fontSize: moderateScale(16),
-    letterSpacing: moderateScale(-0.4),
+    fontSize: moderateScale(15.5),
+    letterSpacing: moderateScale(-0.38),
   },
   progressPercentSign: {
-    fontSize: moderateScale(11),
+    fontSize: moderateScale(10.25),
     fontWeight: '700',
     color: 'rgba(255, 255, 255, 0.92)',
     marginLeft: 0,

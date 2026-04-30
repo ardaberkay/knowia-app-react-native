@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, Image, Pressable, Platform, BackHandler, AppState } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, Image, Pressable, Platform, BackHandler } from 'react-native';
 import Reanimated, {
   useAnimatedStyle,
   useSharedValue,
@@ -35,6 +35,12 @@ import { maybePromptForReview, getReviewMilestones } from '../../services/Review
 
 // Eğer henüz yoksa AnimatedPressable'ı oluştur (önceki sayfalardaki gibi)
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
+const learnedRuntimeState = {
+  userId: null,
+  baseLearned: 0,
+  deltaLearned: 0,
+  lastSyncedAt: 0,
+};
 
 // --- YENİ MİNİ BİLEŞENİMİZ ---
 const AnimatedTimeButton = ({ onPress, icon, text, buttonStyle, textStyle, iconColor }) => {
@@ -172,8 +178,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const isAnimatingRef = useRef(false);
   const BATCH_SIZE = 30;
   const PROGRESS_FLUSH_SIZE = 5;
-  const REVIEW_LARGE_FLUSH_THRESHOLD = 20;
-  const RESUME_RECHECK_INTERVAL_MS = 10 * 60 * 1000;
   const REVIEW_PROMPT_DELAY_MS = 600;
   const PRE_FETCH_THRESHOLD = 10;
   const pendingProgressRef = useRef({});
@@ -185,16 +189,25 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const estimatedTotalLearnedRef = useRef(0);
   const reviewCheckInFlightRef = useRef(false);
   const reviewPromptTimeoutRef = useRef(null);
-  const lastResumeSyncAtRef = useRef(0);
+  const hasInitializedGlobalLearnedRef = useRef(false);
+  const lastTriggeredMilestoneRef = useRef(null);
+
+  const getEffectiveLearnedEstimate = useCallback(() => {
+    return learnedRuntimeState.baseLearned + learnedRuntimeState.deltaLearned;
+  }, []);
 
   const scheduleReviewCheck = useCallback(async ({ delayMs = REVIEW_PROMPT_DELAY_MS, requireMilestoneHit = false } = {}) => {
     if (!authUserId) return;
     if (autoPlay) return;
 
+    let estimated = getEffectiveLearnedEstimate();
     if (requireMilestoneHit) {
-      const estimated = estimatedTotalLearnedRef.current;
-      const shouldCheck = reviewMilestonesRef.current.some((m) => estimated >= m);
-      if (!shouldCheck) return;
+      const reachedMilestone = [...reviewMilestonesRef.current]
+        .reverse()
+        .find((m) => estimated >= m);
+      if (!reachedMilestone) return;
+      if (lastTriggeredMilestoneRef.current === reachedMilestone) return;
+      lastTriggeredMilestoneRef.current = reachedMilestone;
     }
 
     if (reviewPromptTimeoutRef.current) clearTimeout(reviewPromptTimeoutRef.current);
@@ -202,11 +215,11 @@ export default function SwipeDeckScreen({ route, navigation }) {
       if (reviewCheckInFlightRef.current) return;
       reviewCheckInFlightRef.current = true;
       try {
-        const totalLearned = await getTotalLearnedCardsCount(authUserId);
-        estimatedTotalLearnedRef.current = totalLearned;
+        estimated = getEffectiveLearnedEstimate();
+        estimatedTotalLearnedRef.current = estimated;
         await maybePromptForReview({
           userId: authUserId,
-          totalLearned,
+          totalLearned: estimated,
           allowFallback: true,
         });
       } catch (error) {
@@ -215,7 +228,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
         reviewCheckInFlightRef.current = false;
       }
     }, delayMs);
-  }, [authUserId, autoPlay]);
+  }, [authUserId, autoPlay, getEffectiveLearnedEstimate]);
 
   const openReportCardModal = useCallback(async () => {
     if (!userId || !cards[currentIndex]) return;
@@ -360,10 +373,17 @@ export default function SwipeDeckScreen({ route, navigation }) {
             ? undefined
             : (chapter === null ? null : chapter.id);
 
-        const [progressCounts, globalLearnedCount] = await Promise.all([
-          getChapterProgressCounts(authUserId, deck.id, statsChapterId),
-          getTotalLearnedCardsCount(authUserId),
-        ]);
+        let globalLearnedCount = getEffectiveLearnedEstimate();
+        const shouldInitGlobalLearned = !hasInitializedGlobalLearnedRef.current || learnedRuntimeState.userId !== authUserId;
+
+        const progressCounts = await getChapterProgressCounts(authUserId, deck.id, statsChapterId);
+        if (shouldInitGlobalLearned) {
+          globalLearnedCount = await getTotalLearnedCardsCount(authUserId);
+          learnedRuntimeState.userId = authUserId;
+          learnedRuntimeState.baseLearned = globalLearnedCount;
+          learnedRuntimeState.deltaLearned = 0;
+          hasInitializedGlobalLearnedRef.current = true;
+        }
         const totalCardsCount = progressCounts.total;
         const learningCount = progressCounts.learning;
         const learnedCount = progressCounts.learned;
@@ -401,19 +421,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
       }
     };
   }, [deck?.id, authUserId, chapter]);
-
-  useEffect(() => {
-    const appStateSub = AppState.addEventListener('change', (nextState) => {
-      if (nextState !== 'active') return;
-      const now = Date.now();
-      if (now - lastResumeSyncAtRef.current < RESUME_RECHECK_INTERVAL_MS) return;
-      lastResumeSyncAtRef.current = now;
-      scheduleReviewCheck({ delayMs: 0, requireMilestoneHit: true });
-    });
-    return () => {
-      appStateSub.remove();
-    };
-  }, [scheduleReviewCheck]);
 
   useEffect(() => {
     if (loading || currentIndex === 0) return;
@@ -573,9 +580,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
     swipesSinceFlushRef.current = 0;
     try {
       await batchUpsertProgress(items);
-      if (items.length >= REVIEW_LARGE_FLUSH_THRESHOLD) {
-        scheduleReviewCheck({ delayMs: 0, requireMilestoneHit: true });
-      }
     } catch (error) {
       Object.entries(pending).forEach(([key, val]) => {
         if (!pendingProgressRef.current[key]) {
@@ -649,6 +653,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     setTotalSwipeCount((prev) => prev + 1);
     if (direction === 'right') {
       setRightCount((prev) => prev + 1);
+      learnedRuntimeState.deltaLearned += 1;
       estimatedTotalLearnedRef.current += 1;
       setRightHighlight(true);
       setTimeout(() => setRightHighlight(false), 400);
@@ -1255,7 +1260,7 @@ const styles = StyleSheet.create({
     elevation: 4,
     ...Platform.select({
       ios: {
-        marginBottom: verticalScale(86),
+        marginBottom: verticalScale(84),
       },
       android: {
         marginBottom: verticalScale(94),
@@ -1313,7 +1318,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     ...Platform.select({
       ios: {
-        bottom: verticalScale(62),
+        bottom: verticalScale(60),
       },
       android: {
         bottom: verticalScale(68),
