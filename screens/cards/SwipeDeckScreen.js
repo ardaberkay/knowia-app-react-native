@@ -220,7 +220,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
         await maybePromptForReview({
           userId: authUserId,
           totalLearned: estimated,
-          allowFallback: false,
+          allowFallback: true,
         });
       } catch (error) {
         console.error('Review eligibility check failed:', error);
