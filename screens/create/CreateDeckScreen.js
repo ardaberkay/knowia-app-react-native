@@ -478,7 +478,7 @@ export default function CreateScreen() {
             style={[
               styles.buttonRowModern,
               {
-                paddingBottom: isKeyboardVisible ? '20%' : '36%',
+                paddingBottom: isKeyboardVisible ? '20%' : '35%',
                 marginBottom: Platform.OS === 'android' ? insets.bottom : 0,
               },
             ]}
