@@ -21,6 +21,7 @@ import {
   getTotalLearnedCardsCount,
   startSwipeSession,
   getSwipeSessionNextCards,
+  recordSwipeSessionSwipe,
 } from '../../services/CardService';
 import { getDeckById } from '../../services/DeckService';
 import { invalidateCache } from '../../services/CacheService';
@@ -655,17 +656,24 @@ export default function SwipeDeckScreen({ route, navigation }) {
   }, [userId, flushProgress]);
 
   const fetchMoreCards = useCallback(async () => {
-    if (isFetchingMoreRef.current || !userId || !hasMoreCardsRef.current) return;
+    if (isFetchingMoreRef.current || !userId || !sessionIdRef.current || !hasMoreCardsRef.current) return;
     isFetchingMoreRef.current = true;
     try {
       await flushProgress();
-      const chapterId = chapter?.id || null;
-      const unassignedOnly = chapter === null;
-      const moreCards = await getCardsToLearn(deck.id, userId, chapterId, unassignedOnly, BATCH_SIZE, 0);
+      const moreCards = await getSwipeSessionNextCards({
+        sessionId: sessionIdRef.current,
+        afterSortKey: paginationCursorRef.current.afterSortKey,
+        afterQueueId: paginationCursorRef.current.afterQueueId,
+        currentSortKey: currentPositionCursorRef.current.currentSortKey,
+        currentQueueId: currentPositionCursorRef.current.currentQueueId,
+        limit: SESSION_BATCH_LIMIT,
+      });
 
       const newCards = moreCards
         .filter(c => !seenCardIdsRef.current.has(c.card_id))
         .map(card => ({
+          queue_id: card.queue_id,
+          sort_key: card.sort_key,
           card_id: card.card_id,
           status: card.status || 'new',
           next_review: card.next_review || new Date().toISOString(),
@@ -681,6 +689,11 @@ export default function SwipeDeckScreen({ route, navigation }) {
         }));
       if (newCards.length > 0) {
         newCards.forEach(c => seenCardIdsRef.current.add(c.card_id));
+        const lastFetchedCard = newCards[newCards.length - 1];
+        paginationCursorRef.current = {
+          afterSortKey: lastFetchedCard.sort_key,
+          afterQueueId: lastFetchedCard.queue_id,
+        };
         setCards(prev => [...prev, ...newCards]);
       } else {
         hasMoreCardsRef.current = false;
@@ -690,27 +703,43 @@ export default function SwipeDeckScreen({ route, navigation }) {
     } finally {
       isFetchingMoreRef.current = false;
     }
-  }, [userId, deck.id, chapter, flushProgress]);
+  }, [userId, flushProgress]);
 
   const handleSwipe = useCallback(async (cardIndex, direction) => {
     if (!cards[cardIndex]) return;
     const card = cards[cardIndex];
+    const override = programmaticSwipeRef.current;
+    const actualDirection = override?.direction || direction;
+    const actualSkipMinutes = override?.skipMinutes ?? null;
+    programmaticSwipeRef.current = null;
     resetFlipForCardId(card.card_id);
     if (!userId) return;
     isAnimatingRef.current = true;
     setHistory((prev) => [...prev, cardIndex]);
-    setHistoryDirections((prev) => [...prev, direction]);
+    setHistoryDirections((prev) => [...prev, actualDirection]);
     setTotalSwipeCount((prev) => prev + 1);
-    if (direction === 'right') {
+    currentPositionCursorRef.current = {
+      currentSortKey: card.sort_key,
+      currentQueueId: card.queue_id,
+    };
+    try {
+      await recordSwipeSessionSwipe({
+        sessionId: sessionIdRef.current,
+        cardId: card.card_id,
+        direction: actualDirection,
+        skipMinutes: actualSkipMinutes,
+      });
+    } catch (error) {
+      console.error('Failed to record swipe session swipe:', error);
+    }
+    if (actualDirection === 'right') {
       setRightCount((prev) => prev + 1);
       learnedRuntimeState.deltaLearned += 1;
       estimatedTotalLearnedRef.current += 1;
       setRightHighlight(true);
       setTimeout(() => setRightHighlight(false), 400);
-      const now = new Date().toISOString();
-      queueProgress(card.card_id, 'learned', now);
       scheduleReviewCheck({ delayMs: REVIEW_PROMPT_DELAY_MS, requireMilestoneHit: true });
-    } else if (direction === 'left') {
+    } else if (actualDirection === 'left') {
       historyLeftCardIds.current.push(card.card_id);
       if (!leftCountedCardIds.current.has(card.card_id)) {
         leftCountedCardIds.current.add(card.card_id);
@@ -718,17 +747,11 @@ export default function SwipeDeckScreen({ route, navigation }) {
       }
       setLeftHighlight(true);
       setTimeout(() => setLeftHighlight(false), 400);
-      const override = programmaticSwipeRef.current;
-      programmaticSwipeRef.current = null;
-      const insertAt = override ? override.insertAt : (Date.now() + 2 * 60 * 1000);
-      const nextReview = override ? override.nextReview : new Date(insertAt).toISOString();
-      queueProgress(card.card_id, 'learning', nextReview);
-      setPendingReinserts((prev) => [...prev, { card, insertAt }]);
     }
     setTimeout(() => {
       isAnimatingRef.current = false;
     }, 400);
-  }, [cards, userId, resetFlipForCardId, queueProgress]);
+  }, [cards, userId, resetFlipForCardId, scheduleReviewCheck]);
 
   const handleFlipById = useCallback((cardId) => {
     if (!cardId) return;
@@ -750,9 +773,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const handleSkip = (minutes) => {
     if (!cards[currentIndex]) return;
     if (!userId) return;
-    const insertAt = Date.now() + minutes * 60 * 1000;
-    const nextReviewIso = new Date(insertAt).toISOString();
-    programmaticSwipeRef.current = { nextReview: nextReviewIso, insertAt };
+    programmaticSwipeRef.current = {
+      direction: 'skip',
+      skipMinutes: minutes,
+    };
     if (swiperRef.current) {
       swiperRef.current.swipeLeft();
     }
@@ -1094,12 +1118,20 @@ export default function SwipeDeckScreen({ route, navigation }) {
               }).start();
             }}
             onSwipedLeft={(i) => {
+              console.log('LEFT SWIPE', {
+                index: i,
+                time: Date.now(),
+              });
               triggerHaptic('selection');
               handleSwipe(i, 'left');
               setCurrentIndex(i + 1);
               swipeX.setValue(0);
             }}
             onSwipedRight={(i) => {
+              console.log('RIGHT SWIPE', {
+                index: i,
+                time: Date.now(),
+              });
               triggerHaptic('light');
               handleSwipe(i, 'right');
               setCurrentIndex(i + 1);
