@@ -14,7 +14,14 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import Swiper from 'react-native-deck-swiper';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
-import { getCardsToLearn, batchUpsertProgress, getChapterProgressCounts, getTotalLearnedCardsCount } from '../../services/CardService';
+import {
+  getCardsToLearn,
+  batchUpsertProgress,
+  getChapterProgressCounts,
+  getTotalLearnedCardsCount,
+  startSwipeSession,
+  getSwipeSessionNextCards,
+} from '../../services/CardService';
 import { getDeckById } from '../../services/DeckService';
 import { invalidateCache } from '../../services/CacheService';
 import { mergeChapterProgressIntoCache } from '../../services/ChapterService';
@@ -166,6 +173,15 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const [pendingReinserts, setPendingReinserts] = useState([]); // { card, insertAt }[]
   const leftCountedCardIds = useRef(new Set()); // Sola veya butonla bir kez sayılmış kartlar; reinsert sonrası tekrar sayılmasın
   const historyLeftCardIds = useRef([]); // Undo için: son left kaydın card_id
+  const sessionIdRef = useRef(null);
+  const paginationCursorRef = useRef({
+    afterSortKey: null,
+    afterQueueId: null,
+  });
+  const currentPositionCursorRef = useRef({
+    currentSortKey: null,
+    currentQueueId: null,
+  });
   const programmaticSwipeRef = useRef(null);
   const { t } = useTranslation();
   const [favoriteIds, setFavoriteIds] = useState(new Set());
@@ -177,6 +193,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const isOwner = userId && deck?.user_id === userId;
   const isAnimatingRef = useRef(false);
   const BATCH_SIZE = 30;
+  const SESSION_BATCH_LIMIT = 20;
   const PROGRESS_FLUSH_SIZE = 5;
   const REVIEW_PROMPT_DELAY_MS = 600;
   const PRE_FETCH_THRESHOLD = 10;
@@ -337,10 +354,33 @@ export default function SwipeDeckScreen({ route, navigation }) {
           : (chapter === null ? null : chapter.id);
         const unassignedOnly = chapter === null;
 
+        const sessionId = await startSwipeSession({
+          deckId: deck.id,
+          chapterId,
+          unassignedOnly,
+        });
+
+        sessionIdRef.current = sessionId;
+        paginationCursorRef.current = {
+          afterSortKey: null,
+          afterQueueId: null,
+        };
+        currentPositionCursorRef.current = {
+          currentSortKey: null,
+          currentQueueId: null,
+        };
+
         const [deckData, favCardIds, rpcCards] = await Promise.all([
           getDeckById(deck.id),
           getFavoriteCardIds(authUserId),
-          getCardsToLearn(deck.id, authUserId, chapterId, unassignedOnly, BATCH_SIZE, 0),
+          getSwipeSessionNextCards({
+            sessionId,
+            afterSortKey: null,
+            afterQueueId: null,
+            currentSortKey: null,
+            currentQueueId: null,
+            limit: SESSION_BATCH_LIMIT,
+          }),
         ]);
 
         if (deckData?.categories?.sort_order != null) {
@@ -350,6 +390,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
         setFavoriteIds(new Set(favCardIds || []));
 
         const learningCards = rpcCards.map(card => ({
+          queue_id: card.queue_id,
+          sort_key: card.sort_key,
           card_id: card.card_id,
           status: card.status || 'new',
           next_review: card.next_review || new Date().toISOString(),
@@ -365,6 +407,14 @@ export default function SwipeDeckScreen({ route, navigation }) {
         }));
 
         setCards(learningCards);
+        cardsLengthRef.current = learningCards.length;
+        const lastFetchedCard = learningCards[learningCards.length - 1];
+        if (lastFetchedCard) {
+          paginationCursorRef.current = {
+            afterSortKey: lastFetchedCard.sort_key,
+            afterQueueId: lastFetchedCard.queue_id,
+          };
+        }
         seenCardIdsRef.current = new Set(learningCards.map(c => c.card_id));
         flippedByIdRef.current = {};
 

@@ -529,6 +529,72 @@ export const getCardsToLearn = async (deckId, userId, chapterId = null, unassign
   return rows;
 };
 
+export const startSwipeSession = async ({ deckId, chapterId = null, unassignedOnly = false }) => {
+  const { data, error } = await supabase.rpc('swipe_session_start', {
+    p_deck_id: deckId,
+    p_chapter_id: chapterId,
+    p_unassigned_only: unassignedOnly,
+  });
+  if (error) throw error;
+  return typeof data === 'string' ? data : data?.session_id;
+};
+
+export const getSwipeSessionNextCards = async ({
+  sessionId,
+  afterSortKey = null,
+  afterQueueId = null,
+  currentSortKey = null,
+  currentQueueId = null,
+  limit = 20,
+}) => {
+  const { data, error } = await supabase.rpc('swipe_session_next_cards', {
+    p_session_id: sessionId,
+    p_after_sort_key: afterSortKey,
+    p_after_queue_id: afterQueueId,
+    p_current_sort_key: currentSortKey,
+    p_current_queue_id: currentQueueId,
+    p_limit: limit,
+  });
+  if (error) throw error;
+  return (data || []).map((card) => ({
+    ...card,
+    id: card.card_id,
+  }));
+};
+
+export const recordSwipeSessionSwipe = async ({
+  sessionId,
+  cardId,
+  direction,
+  skipMinutes = null,
+}) => {
+  const { data, error } = await supabase.rpc('swipe_session_record_swipe', {
+    p_session_id: sessionId,
+    p_card_id: cardId,
+    p_direction: direction,
+    p_skip_minutes: skipMinutes,
+  });
+  if (error) throw error;
+  return data;
+};
+
+export const undoLastSwipe = async ({ sessionId }) => {
+  const { data, error } = await supabase.rpc('swipe_session_undo_last_swipe', {
+    p_session_id: sessionId,
+  });
+  if (error) throw error;
+  return data;
+};
+
+export const endSwipeSession = async ({ sessionId }) => {
+  if (!sessionId) return null;
+  const { data, error } = await supabase.rpc('swipe_session_end', {
+    p_session_id: sessionId,
+  });
+  if (error) throw error;
+  return data;
+};
+
 export const batchUpsertProgress = async (progressItems) => {
   if (!progressItems || progressItems.length === 0) return;
   const { error } = await supabase
