@@ -15,13 +15,13 @@ import Swiper from 'react-native-deck-swiper';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import {
-  getCardsToLearn,
-  batchUpsertProgress,
   getChapterProgressCounts,
   getTotalLearnedCardsCount,
   startSwipeSession,
   getSwipeSessionNextCards,
   recordSwipeSessionSwipe,
+  undoLastSwipe,
+  endSwipeSession,
 } from '../../services/CardService';
 import { getDeckById } from '../../services/DeckService';
 import { invalidateCache } from '../../services/CacheService';
@@ -169,9 +169,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const [autoPlay, setAutoPlay] = useState(false);
   const autoPlayTimeout = useRef(null);
   const autoPlayFlipTimeout = useRef(null);
-  const currentIndexRef = useRef(0);
-  const cardsLengthRef = useRef(0);
-  const [pendingReinserts, setPendingReinserts] = useState([]); // { card, insertAt }[]
   const leftCountedCardIds = useRef(new Set()); // Sola veya butonla bir kez sayılmış kartlar; reinsert sonrası tekrar sayılmasın
   const historyLeftCardIds = useRef([]); // Undo için: son left kaydın card_id
   const sessionIdRef = useRef(null);
@@ -193,13 +190,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const { showSuccess, showError } = useSnackbarHelpers();
   const isOwner = userId && deck?.user_id === userId;
   const isAnimatingRef = useRef(false);
-  const BATCH_SIZE = 30;
   const SESSION_BATCH_LIMIT = 20;
-  const PROGRESS_FLUSH_SIZE = 5;
   const REVIEW_PROMPT_DELAY_MS = 600;
   const PRE_FETCH_THRESHOLD = 10;
-  const pendingProgressRef = useRef({});
-  const swipesSinceFlushRef = useRef(0);
   const seenCardIdsRef = useRef(new Set());
   const isFetchingMoreRef = useRef(false);
   const hasMoreCardsRef = useRef(true);
@@ -339,8 +332,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
       setLoading(true);
       setRightCount(0);
       setLeftCount(0);
-      pendingProgressRef.current = {};
-      swipesSinceFlushRef.current = 0;
       seenCardIdsRef.current = new Set();
       hasMoreCardsRef.current = true;
 
@@ -408,7 +399,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
         }));
 
         setCards(learningCards);
-        cardsLengthRef.current = learningCards.length;
         const lastFetchedCard = learningCards[learningCards.length - 1];
         if (lastFetchedCard) {
           paginationCursorRef.current = {
@@ -486,14 +476,16 @@ export default function SwipeDeckScreen({ route, navigation }) {
     const handleExit = async () => {
       if (flushed) return;
       flushed = true;
-      const pending = Object.values(pendingProgressRef.current);
-      if (pending.length > 0) {
-        pendingProgressRef.current = {};
-        swipesSinceFlushRef.current = 0;
+      const activeSessionId = sessionIdRef.current;
+      if (activeSessionId) {
         try {
-          await batchUpsertProgress(pending);
+          await endSwipeSession({ sessionId: activeSessionId });
         } catch (err) {
-          console.error('Failed to flush on exit:', err);
+          console.warn('endSwipeSession failed:', err);
+        } finally {
+          if (sessionIdRef.current === activeSessionId) {
+            sessionIdRef.current = null;
+          }
         }
       }
       if (authUserId && deck?.id) {
@@ -544,9 +536,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const animatedLeftBadge = useAnimatedStyle(() => ({ transform: [{ scale: leftScale.value }] }));
   const animatedRightBadge = useAnimatedStyle(() => ({ transform: [{ scale: rightScale.value }] }));
 
-  currentIndexRef.current = currentIndex;
-  cardsLengthRef.current = cards.length;
-
   const currentProgress = totalCardCount > 0
     ? ((leftCount + initialLearnedCount + rightCount) / totalCardCount) * 100
     : 0;
@@ -576,38 +565,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
     };
   });
 
-  // next_review (2 dk) geçen kartları kuyruğa rastgele ekle
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (currentIndexRef.current >= cardsLengthRef.current) {
-        setPendingReinserts([]);
-        return;
-      }
-      const now = Date.now();
-      setPendingReinserts((prev) => {
-        if (isAnimatingRef.current) return prev;
-        const due = prev.filter((p) => p.insertAt <= now);
-        if (due.length === 0) return prev;
-        const stillPending = prev.filter((p) => p.insertAt > now);
-        setCards((prevCards) => {
-          if (isAnimatingRef.current) return prevCards;
-          let nextCards = prevCards;
-          const idx = Math.min(currentIndexRef.current, nextCards.length - 1);
-          const tailStart = idx + 1;
-          for (const { card } of due) {
-            const rest = nextCards.slice(tailStart);
-            const randomPos = Math.floor(Math.random() * (rest.length + 1));
-            const newRest = [...rest.slice(0, randomPos), card, ...rest.slice(randomPos)];
-            nextCards = [...nextCards.slice(0, tailStart), ...newRest];
-          }
-          return nextCards;
-        });
-        return stillPending;
-      });
-    }, 10000);
-    return () => clearInterval(interval);
-  }, []);
-
   const getAnimatedValueForCardId = useCallback((cardId) => {
     if (!cardId) return null;
     if (!animatedValuesById.current[cardId]) {
@@ -623,43 +580,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
     if (v) v.setValue(0);
   }, [getAnimatedValueForCardId]);
 
-  const flushProgress = useCallback(async () => {
-    const pending = { ...pendingProgressRef.current };
-    const items = Object.values(pending);
-    if (items.length === 0) return;
-    pendingProgressRef.current = {};
-    swipesSinceFlushRef.current = 0;
-    try {
-      await batchUpsertProgress(items);
-    } catch (error) {
-      Object.entries(pending).forEach(([key, val]) => {
-        if (!pendingProgressRef.current[key]) {
-          pendingProgressRef.current[key] = val;
-        }
-      });
-      console.error('Failed to flush progress:', error);
-    }
-  }, [scheduleReviewCheck]);
-
-  const queueProgress = useCallback((cardId, status, nextReview) => {
-    if (!userId) return;
-    pendingProgressRef.current[cardId] = {
-      user_id: userId,
-      card_id: cardId,
-      status,
-      next_review: nextReview,
-    };
-    swipesSinceFlushRef.current += 1;
-    if (swipesSinceFlushRef.current >= PROGRESS_FLUSH_SIZE) {
-      flushProgress();
-    }
-  }, [userId, flushProgress]);
-
   const fetchMoreCards = useCallback(async () => {
     if (isFetchingMoreRef.current || !userId || !sessionIdRef.current || !hasMoreCardsRef.current) return;
     isFetchingMoreRef.current = true;
     try {
-      await flushProgress();
       const moreCards = await getSwipeSessionNextCards({
         sessionId: sessionIdRef.current,
         afterSortKey: paginationCursorRef.current.afterSortKey,
@@ -703,7 +627,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     } finally {
       isFetchingMoreRef.current = false;
     }
-  }, [userId, flushProgress]);
+  }, [userId]);
 
   const handleSwipe = useCallback(async (cardIndex, direction) => {
     if (!cards[cardIndex]) return;
@@ -739,8 +663,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
       setRightHighlight(true);
       setTimeout(() => setRightHighlight(false), 400);
       scheduleReviewCheck({ delayMs: REVIEW_PROMPT_DELAY_MS, requireMilestoneHit: true });
-    } else if (actualDirection === 'left') {
-      historyLeftCardIds.current.push(card.card_id);
+    } else if (actualDirection === 'left' || actualDirection === 'skip') {
+      if (actualDirection === 'left') {
+        historyLeftCardIds.current.push(card.card_id);
+      }
       if (!leftCountedCardIds.current.has(card.card_id)) {
         leftCountedCardIds.current.add(card.card_id);
         setLeftCount((prev) => prev + 1);
@@ -782,8 +708,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
     }
   };
 
-  const handleUndo = () => {
-    if (undoDisabled || history.length === 0 || !swiperRef.current) return;
+  const handleUndo = async () => {
+    if (undoDisabled || !sessionIdRef.current || !swiperRef.current) return;
 
     setUndoDisabled(true);
 
@@ -791,47 +717,95 @@ export default function SwipeDeckScreen({ route, navigation }) {
     const undoneCard = cards[lastIndex];
     const lastDirection = historyDirections[historyDirections.length - 1];
 
-    if (undoneCard) {
-      delete pendingProgressRef.current[undoneCard.card_id];
-      resetFlipForCardId(undoneCard.card_id);
-    }
+    try {
+      const result = await undoLastSwipe({ sessionId: sessionIdRef.current });
+      if (result?.success === false && result?.reason === 'empty_stack') {
+        return;
+      }
 
-    if (lastDirection === 'left' && undoneCard) {
-      setPendingReinserts((prev) =>
-        prev.filter(p => p.card.card_id !== undoneCard.card_id)
-      );
-      const removedCardId = historyLeftCardIds.current.pop();
-      if (removedCardId) leftCountedCardIds.current.delete(removedCardId);
-      setLeftCount((c) => Math.max(0, c - 1));
-    } else if (lastDirection === 'right') {
-      setRightCount((c) => Math.max(0, c - 1));
-    }
+      if (undoneCard) {
+        resetFlipForCardId(undoneCard.card_id);
+      }
 
-    setTotalSwipeCount((c) => Math.max(0, c - 1));
-    setHistory((prev) => prev.slice(0, -1));
-    setHistoryDirections((prev) => prev.slice(0, -1));
-    setCurrentIndex(lastIndex);
-    swiperRef.current.jumpToCardIndex(lastIndex);
+      if ((lastDirection === 'left' || lastDirection === 'skip') && undoneCard) {
+        if (lastDirection === 'left') {
+          historyLeftCardIds.current.pop();
+        }
+        leftCountedCardIds.current.delete(undoneCard.card_id);
+        setLeftCount((c) => Math.max(0, c - 1));
+      } else if (lastDirection === 'right') {
+        learnedRuntimeState.deltaLearned = Math.max(0, learnedRuntimeState.deltaLearned - 1);
+        estimatedTotalLearnedRef.current = Math.max(0, estimatedTotalLearnedRef.current - 1);
+        setRightCount((c) => Math.max(0, c - 1));
+      }
 
-    if (lastDirection === 'left' && undoneCard) {
+      if (lastDirection) {
+        setTotalSwipeCount((c) => Math.max(0, c - 1));
+        setHistory((prev) => prev.slice(0, -1));
+        setHistoryDirections((prev) => prev.slice(0, -1));
+      }
+
+      paginationCursorRef.current = {
+        afterSortKey: null,
+        afterQueueId: null,
+      };
+      currentPositionCursorRef.current = {
+        currentSortKey: null,
+        currentQueueId: null,
+      };
+
+      const freshCards = await getSwipeSessionNextCards({
+        sessionId: sessionIdRef.current,
+        afterSortKey: null,
+        afterQueueId: null,
+        currentSortKey: null,
+        currentQueueId: null,
+        limit: SESSION_BATCH_LIMIT,
+      });
+
+      const learningCards = freshCards.map(card => ({
+        queue_id: card.queue_id,
+        sort_key: card.sort_key,
+        card_id: card.card_id,
+        status: card.status || 'new',
+        next_review: card.next_review || new Date().toISOString(),
+        cards: {
+          id: card.card_id,
+          question: card.question,
+          answer: card.answer,
+          image: card.image,
+          example: card.example,
+          note: card.note,
+          chapter_id: card.chapter_id,
+        }
+      }));
+
+      setCards(learningCards);
+      setCurrentIndex(0);
+      seenCardIdsRef.current = new Set(learningCards.map(c => c.card_id));
+      flippedByIdRef.current = {};
+      hasMoreCardsRef.current = learningCards.length > 0;
+
+      const lastFetchedCard = learningCards[learningCards.length - 1];
+      if (lastFetchedCard) {
+        paginationCursorRef.current = {
+          afterSortKey: lastFetchedCard.sort_key,
+          afterQueueId: lastFetchedCard.queue_id,
+        };
+      }
+
+      requestAnimationFrame(() => {
+        if (swiperRef.current) {
+          swiperRef.current.jumpToCardIndex(0);
+        }
+      });
+    } catch (error) {
+      console.error('Failed to undo swipe session action:', error);
+    } finally {
       setTimeout(() => {
-        setCards((prevCards) => {
-          let duplicateIdx = -1;
-          for (let idx = prevCards.length - 1; idx > lastIndex; idx--) {
-            if (prevCards[idx].card_id === undoneCard.card_id) {
-              duplicateIdx = idx;
-              break;
-            }
-          }
-          if (duplicateIdx === -1) return prevCards;
-          const newCards = [...prevCards];
-          newCards.splice(duplicateIdx, 1);
-          return newCards;
-        });
-      }, 500);
+        setUndoDisabled(false);
+      }, 350);
     }
-
-    setTimeout(() => setUndoDisabled(false), 350);
   };
 
   const toggleFavorite = useCallback(async (cardId) => {
@@ -905,8 +879,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     const fetchCurrentStats = async () => {
       if ((cards.length === 0 || currentIndex >= cards.length) && userId && deck?.id) {
         try {
-          await flushProgress();
-
+    
           const statsChapterId =
             typeof chapter === 'undefined'
               ? undefined
@@ -922,7 +895,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     };
 
     fetchCurrentStats();
-  }, [cards.length, currentIndex, userId, deck?.id, chapter?.id, flushProgress]);
+  }, [cards.length, currentIndex, userId, deck?.id, chapter?.id]);
 
   if (loading) {
     return (
@@ -1029,9 +1002,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
               const currentCardNumber = uniqueCardIdsUpToNow.size;
               const allUniqueSeen = currentCardNumber >= totalCardCount;
               const currentCardIsReinserted = cards[currentIndex] && leftCountedCardIds.current.has(cards[currentIndex].card_id);
-              const hasReinsertToShow =
-                pendingReinserts.length > 0 ||
-                cards.slice(currentIndex + 1).some((c) => c?.card_id && leftCountedCardIds.current.has(c.card_id));
+              const hasReinsertToShow = cards
+                .slice(currentIndex + 1)
+                .some((c) => c?.card_id && leftCountedCardIds.current.has(c.card_id));
               const showVaktiGeldi =
                 totalCardCount > 0 && allUniqueSeen && hasReinsertToShow && currentCardIsReinserted;
               const iconWrapStyle = {
@@ -1123,9 +1096,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
                 time: Date.now(),
               });
               triggerHaptic('selection');
-              handleSwipe(i, 'left');
               setCurrentIndex(i + 1);
               swipeX.setValue(0);
+              handleSwipe(i, 'left');
             }}
             onSwipedRight={(i) => {
               console.log('RIGHT SWIPE', {
@@ -1133,9 +1106,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
                 time: Date.now(),
               });
               triggerHaptic('light');
-              handleSwipe(i, 'right');
               setCurrentIndex(i + 1);
               swipeX.setValue(0);
+              handleSwipe(i, 'right');
             }}
             disableTopSwipe={true}
             disableBottomSwipe={true}
