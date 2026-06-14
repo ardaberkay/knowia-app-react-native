@@ -593,8 +593,15 @@ export default function SwipeDeckScreen({ route, navigation }) {
         limit: SESSION_BATCH_LIMIT,
       });
 
+      const upcomingQueueIds = new Set(
+        cards
+          .slice(currentIndex + 1)
+          .map(c => c?.queue_id)
+          .filter(Boolean)
+      );
+
       const newCards = moreCards
-        .filter(c => !seenCardIdsRef.current.has(c.card_id))
+        .filter(c => !upcomingQueueIds.has(c.queue_id))
         .map(card => ({
           queue_id: card.queue_id,
           sort_key: card.sort_key,
@@ -618,8 +625,22 @@ export default function SwipeDeckScreen({ route, navigation }) {
           afterSortKey: lastFetchedCard.sort_key,
           afterQueueId: lastFetchedCard.queue_id,
         };
-        setCards(prev => [...prev, ...newCards]);
-      } else {
+        setCards(prev => {
+          const consumed = prev.slice(0, currentIndex + 1);
+          const upcoming = prev.slice(currentIndex + 1);
+          const upcomingQueueIdsForMerge = new Set(
+            upcoming.map(c => c?.queue_id).filter(Boolean)
+          );
+          const cardsToMerge = newCards.filter(c => !upcomingQueueIdsForMerge.has(c.queue_id));
+          const mergedUpcoming = [...upcoming, ...cardsToMerge].sort((a, b) => {
+            const sortA = Number(a.sort_key ?? 0);
+            const sortB = Number(b.sort_key ?? 0);
+            if (sortA !== sortB) return sortA - sortB;
+            return String(a.queue_id ?? '').localeCompare(String(b.queue_id ?? ''));
+          });
+          return [...consumed, ...mergedUpcoming];
+        });
+      } else if (moreCards.length === 0) {
         hasMoreCardsRef.current = false;
       }
     } catch (error) {
@@ -627,7 +648,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     } finally {
       isFetchingMoreRef.current = false;
     }
-  }, [userId]);
+  }, [userId, cards, currentIndex]);
 
   const handleSwipe = useCallback(async (cardIndex, direction) => {
     if (!cards[cardIndex]) return;
@@ -875,9 +896,15 @@ export default function SwipeDeckScreen({ route, navigation }) {
     };
   }, []);
 
+  const originalTargetCount = Math.max(0, totalCardCount - initialLearnedCount);
+  const uniqueSeenCardCount = new Set(
+    cards.slice(0, currentIndex).map((c) => c?.card_id).filter(Boolean)
+  ).size;
+  const originalFlowComplete = originalTargetCount > 0 && uniqueSeenCardCount >= originalTargetCount;
+
   useEffect(() => {
     const fetchCurrentStats = async () => {
-      if ((cards.length === 0 || currentIndex >= cards.length) && userId && deck?.id) {
+      if ((cards.length === 0 || currentIndex >= cards.length || originalFlowComplete) && userId && deck?.id) {
         try {
     
           const statsChapterId =
@@ -895,7 +922,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     };
 
     fetchCurrentStats();
-  }, [cards.length, currentIndex, userId, deck?.id, chapter?.id]);
+  }, [cards.length, currentIndex, originalFlowComplete, userId, deck?.id, chapter?.id]);
 
   if (loading) {
     return (
@@ -914,7 +941,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     );
   }
 
-  if (cards.length === 0 || currentIndex >= cards.length) {
+  if (cards.length === 0 || currentIndex >= cards.length || originalFlowComplete) {
     // Kullanıcıya ait güncel sayılar (veritabanından çekilen)
     // Learned: useEffect'ten gelen güncel sayı, yoksa başlangıç + bu oturumda öğrenilenler
     const learnedCount = currentLearnedCount !== null
