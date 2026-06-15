@@ -541,13 +541,18 @@ export default function ChapterCardsScreen({ route, navigation }) {
     const cardId = card.id;
     latestDetailFetchRef.current = cardId;
     setSelectedCard(card);
-    try {
-      const detail = await getCardDetail(cardId);
-      if (latestDetailFetchRef.current === cardId && detail) {
-        setSelectedCard(prev => prev?.id === cardId ? { ...prev, ...detail } : prev);
+
+    if (!card.isFullDataLoaded) {
+      try {
+        const detail = await getCardDetail(cardId);
+        if (latestDetailFetchRef.current === cardId && detail) {
+          const updatedCard = { ...card, ...detail, isFullDataLoaded: true };
+          setSelectedCard(prev => prev?.id === cardId ? updatedCard : prev);
+          setCards(prevCards => prevCards.map(c => c.id === cardId ? updatedCard : c));
+        }
+      } catch (e) {
+        // keep lightweight data
       }
-    } catch (e) {
-      // keep lightweight data
     }
   }, []);
 

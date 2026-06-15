@@ -285,7 +285,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
   return (
     <ScrollView
       style={{ flex: 1 }}
-      contentContainerStyle={{ paddingBottom: verticalScale(8), flexGrow: 1 }}
+      contentContainerStyle={{ paddingBottom: verticalScale(32), flexGrow: 1 }}
       showsVerticalScrollIndicator={false}
     >
       {/* Deck Slider */}
@@ -562,7 +562,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
 
       {/* Oluşturulma tarihi */}
       {showCreatedAt && isDeckOwner && card?.created_at ? (
-        <View style={{ paddingHorizontal: scale(18), marginTop: 'auto', marginBottom: verticalScale(36) }}>
+        <View style={{ paddingHorizontal: scale(18), marginTop: 'auto', marginBottom: verticalScale(56) }}>
           <MathText
             value={`${t("cardDetail.createdAt", "Oluşturulma Tarihi")} ${new Date(card.created_at).toLocaleString('tr-TR')}`}
             style={[typography.styles.caption, { color: colors.muted, textAlign: 'center', fontSize: moderateScale(14) }]}
