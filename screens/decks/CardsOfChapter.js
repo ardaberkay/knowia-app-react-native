@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, memo, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, TouchableHighlight, ActivityIndicator, Platform, Modal, Image, Pressable, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, TouchableHighlight, ActivityIndicator, Platform, Modal, Image, Pressable, RefreshControl, BackHandler } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -158,6 +158,8 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const latestDetailFetchRef = useRef(null);
+  const selectedCardRef = useRef(null);
+  const editCardModeRef = useRef(false);
   const [progressMap, setProgressMap] = useState(new Map());
   const [pageNum, setPageNum] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -202,6 +204,47 @@ export default function ChapterCardsScreen({ route, navigation }) {
     checkOwnerAndLoadChapters();
   }, [chapter.id, deck?.id, userId]);
 
+  useEffect(() => {
+    selectedCardRef.current = selectedCard;
+  }, [selectedCard]);
+
+  useEffect(() => {
+    editCardModeRef.current = editCardMode;
+  }, [editCardMode]);
+
+  useEffect(() => {
+    const onBackPress = () => {
+      if (editCardModeRef.current) {
+        setEditCardMode(false);
+        return true;
+      }
+      if (selectedCardRef.current) {
+        setSelectedCard(null);
+        return true;
+      }
+      return false;
+    };
+
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      if (editCardModeRef.current) {
+        e.preventDefault();
+        setEditCardMode(false);
+        return;
+      }
+      if (selectedCardRef.current) {
+        e.preventDefault();
+        setSelectedCard(null);
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
   const checkOwnerAndLoadChapters = async () => {
     try {
       if (userId && deck) {
@@ -241,6 +284,19 @@ export default function ChapterCardsScreen({ route, navigation }) {
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
           headerTitle: '',
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => setEditCardMode(false)}
+              activeOpacity={0.6}
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+            >
+              <Iconify
+                icon={Platform.OS === 'ios' ? 'ci:chevron-left' : 'mdi:arrow-back'}
+                size={Platform.OS === 'ios' ? moderateScale(29) : moderateScale(24)}
+                color={colors.text}
+              />
+            </TouchableOpacity>
+          ),
           headerRight: () => null,
         });
         return;
@@ -252,8 +308,21 @@ export default function ChapterCardsScreen({ route, navigation }) {
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.text,
         headerTitle: '',
+        headerLeft: () => (
+          <TouchableOpacity
+            onPress={() => setSelectedCard(null)}
+            activeOpacity={0.6}
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+          >
+            <Iconify
+              icon={Platform.OS === 'ios' ? 'ci:chevron-left' : 'mdi:arrow-back'}
+              size={Platform.OS === 'ios' ? moderateScale(29) : moderateScale(24)}
+              color={colors.text}
+            />
+          </TouchableOpacity>
+        ),
         headerRight: () => (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(16), marginRight: scale(4) }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(16), paddingHorizontal: scale(8) }}>
             <TouchableOpacity
               onPress={() => {
                 triggerHaptic('medium');
@@ -282,7 +351,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
                 activeOpacity={0.7}
                 hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
               >
-                <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={moderateScale(26)} color={colors.text} />
+                <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={moderateScale(24)} color={colors.text} />
               </TouchableOpacity>
             )}
           </View>
@@ -297,6 +366,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
       headerStyle: { backgroundColor: 'transparent' },
       headerTintColor: colors.text,
       headerTitle: '',
+      headerLeft: undefined,
       headerRight: isOwnerUser ? () => (
         <TouchableOpacity
           onPress={() => {
