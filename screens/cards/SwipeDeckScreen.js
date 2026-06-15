@@ -192,9 +192,11 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const isAnimatingRef = useRef(false);
   const SESSION_BATCH_LIMIT = 20;
   const REVIEW_PROMPT_DELAY_MS = 600;
-  const PRE_FETCH_THRESHOLD = 10;
+  const PRE_FETCH_THRESHOLD = 5;
   const seenCardIdsRef = useRef(new Set());
   const isFetchingMoreRef = useRef(false);
+  const lastDueCheckAtRef = useRef(Date.now());
+  const isDueCheckingRef = useRef(false);
   const hasMoreCardsRef = useRef(true);
   const reviewMilestonesRef = useRef(getReviewMilestones());
   const estimatedTotalLearnedRef = useRef(0);
@@ -592,6 +594,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
         currentQueueId: currentPositionCursorRef.current.currentQueueId,
         limit: SESSION_BATCH_LIMIT,
       });
+      lastDueCheckAtRef.current = Date.now();
 
       const upcomingQueueIds = new Set(
         cards
@@ -650,6 +653,76 @@ export default function SwipeDeckScreen({ route, navigation }) {
     }
   }, [userId, cards, currentIndex]);
 
+  const checkDueReinserts = useCallback(async () => {
+    if (isDueCheckingRef.current) return;
+    if (!sessionIdRef.current) return;
+    if (isFetchingMoreRef.current) return;
+    if (Date.now() - lastDueCheckAtRef.current < 120000) return;
+
+    isDueCheckingRef.current = true;
+    try {
+      const dueCards = await getSwipeSessionNextCards({
+        sessionId: sessionIdRef.current,
+        afterSortKey: paginationCursorRef.current.afterSortKey,
+        afterQueueId: paginationCursorRef.current.afterQueueId,
+        currentSortKey: currentPositionCursorRef.current.currentSortKey,
+        currentQueueId: currentPositionCursorRef.current.currentQueueId,
+        limit: 5,
+      });
+
+      lastDueCheckAtRef.current = Date.now();
+
+      const upcomingQueueIds = new Set(
+        cards
+          .slice(currentIndex + 1)
+          .map(c => c?.queue_id)
+          .filter(Boolean)
+      );
+
+      const newCards = dueCards
+        .filter(c => !upcomingQueueIds.has(c.queue_id))
+        .map(card => ({
+          queue_id: card.queue_id,
+          sort_key: card.sort_key,
+          card_id: card.card_id,
+          status: card.status || 'new',
+          next_review: card.next_review || new Date().toISOString(),
+          cards: {
+            id: card.card_id,
+            question: card.question,
+            answer: card.answer,
+            image: card.image,
+            example: card.example,
+            note: card.note,
+            chapter_id: card.chapter_id,
+          }
+        }));
+
+      if (newCards.length > 0) {
+        newCards.forEach(c => seenCardIdsRef.current.add(c.card_id));
+        setCards(prev => {
+          const consumed = prev.slice(0, currentIndex + 1);
+          const upcoming = prev.slice(currentIndex + 1);
+          const upcomingQueueIdsForMerge = new Set(
+            upcoming.map(c => c?.queue_id).filter(Boolean)
+          );
+          const cardsToMerge = newCards.filter(c => !upcomingQueueIdsForMerge.has(c.queue_id));
+          const mergedUpcoming = [...upcoming, ...cardsToMerge].sort((a, b) => {
+            const sortA = Number(a.sort_key ?? 0);
+            const sortB = Number(b.sort_key ?? 0);
+            if (sortA !== sortB) return sortA - sortB;
+            return String(a.queue_id ?? '').localeCompare(String(b.queue_id ?? ''));
+          });
+          return [...consumed, ...mergedUpcoming];
+        });
+      }
+    } catch (error) {
+      console.error('Error checking due reinserts:', error);
+    } finally {
+      isDueCheckingRef.current = false;
+    }
+  }, [cards, currentIndex]);
+
   const handleSwipe = useCallback(async (cardIndex, direction) => {
     if (!cards[cardIndex]) return;
     const card = cards[cardIndex];
@@ -695,10 +768,11 @@ export default function SwipeDeckScreen({ route, navigation }) {
       setLeftHighlight(true);
       setTimeout(() => setLeftHighlight(false), 400);
     }
+    checkDueReinserts();
     setTimeout(() => {
       isAnimatingRef.current = false;
     }, 400);
-  }, [cards, userId, resetFlipForCardId, scheduleReviewCheck]);
+  }, [cards, userId, resetFlipForCardId, scheduleReviewCheck, checkDueReinserts]);
 
   const handleFlipById = useCallback((cardId) => {
     if (!cardId) return;
