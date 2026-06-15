@@ -51,9 +51,12 @@ export default function AddCardScreen() {
 
   const handleCardSaved = (card) => {
     showSuccess(t('common.addCardSuccess', 'Kart eklendi!'));
-    setTimeout(() => {
-      navigation.goBack();
-    }, 500);
+    setQuestion('');
+    setAnswer('');
+    setExample('');
+    setNote('');
+    setImage('');
+    setImageChanged(false);
   };
 
 

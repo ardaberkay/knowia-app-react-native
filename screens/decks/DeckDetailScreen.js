@@ -25,6 +25,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheetModal, BottomSheetFlatList, BottomSheetBackdrop, TouchableOpacity as BSTouchableOpacity } from '@gorhom/bottom-sheet';
+import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+
+const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 
 export default function DeckDetailScreen({ route, navigation }) {
   
@@ -137,6 +140,15 @@ export default function DeckDetailScreen({ route, navigation }) {
   const statsAnim = useRef(new Animated.Value(0)).current;
   const cardsAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0)).current;
+  const addCardFabPressed = useSharedValue(0);
+
+  const addCardFabAnimatedStyle = useAnimatedStyle(() => {
+    const springConfig = { mass: 0.5, damping: 30, stiffness: 400 };
+    return {
+      transform: [{ scale: withSpring(addCardFabPressed.value ? 0.92 : 1, springConfig) }],
+      opacity: withSpring(addCardFabPressed.value ? 0.85 : 1, springConfig),
+    };
+  });
 
   useEffect(() => {
     if (creatorMenuVisible) {
@@ -1040,11 +1052,20 @@ export default function DeckDetailScreen({ route, navigation }) {
     return ['#F98A21', '#FF6B35'];
   };
 
+  const showAddCardFab =
+    currentUserId &&
+    deck.user_id === currentUserId &&
+    !isShared;
+
+  const scrollContentPaddingBottom = showAddCardFab
+    ? insets.bottom + verticalScale(100)
+    : verticalScale(screenHeight * 0.10) + insets.bottom;
+
   return (
     <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background}}>
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: verticalScale(screenHeight * 0.10) + insets.bottom }}
+        contentContainerStyle={{ paddingBottom: scrollContentPaddingBottom }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} colors={[colors.buttonColor]} />
@@ -1511,6 +1532,39 @@ export default function DeckDetailScreen({ route, navigation }) {
         )}
       </ScrollView>
 
+      {showAddCardFab && (
+        <AnimatedPressable
+          accessibilityRole="button"
+          accessibilityLabel={t('deckDetail.addCard', 'Kart Ekle')}
+          style={[styles.addCardFab, addCardFabAnimatedStyle, { bottom: insets.bottom + verticalScale(24) }]}
+          onPressIn={() => {
+            addCardFabPressed.value = 1;
+          }}
+          onPressOut={() => {
+            addCardFabPressed.value = 0;
+          }}
+          onPress={() => {
+            triggerHaptic('light');
+            requestAnimationFrame(() => {
+              navigation.navigate('AddCard', { deck });
+            });
+          }}
+        >
+          <LinearGradient
+            colors={['#F98A21', '#FF6B35']}
+            locations={[0, 0.99]}
+            style={styles.addCardFabGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          >
+            <Iconify icon="ic:round-plus" size={moderateScale(26)} color="#FFFFFF" />
+            <Text style={styles.addCardFabLabel} numberOfLines={1}>
+              {t('deckDetail.addCard', 'Kart Ekle')}
+            </Text>
+          </LinearGradient>
+        </AnimatedPressable>
+      )}
+
       <BottomSheetModal
         ref={chapterSheetModalRef}
         index={0}
@@ -1927,6 +1981,33 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(16),
     textAlign: 'center',
     marginTop: verticalScale(20),
+  },
+  addCardFab: {
+    position: 'absolute',
+    right: scale(20),
+    borderRadius: moderateScale(28),
+    overflow: 'hidden',
+    zIndex: 3,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: verticalScale(1) },
+    shadowOpacity: 0.12,
+    shadowRadius: moderateScale(4),
+    elevation: 2,
+    maxWidth: '88%',
+  },
+  addCardFabGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: verticalScale(14),
+    paddingHorizontal: scale(18),
+    gap: scale(8),
+    minHeight: scale(52),
+  },
+  addCardFabLabel: {
+    fontSize: moderateScale(16),
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 
   // GRADIENT FLOW STYLES - Modern & Eye-catching

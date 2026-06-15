@@ -148,6 +148,17 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const currentIndexRef = useRef(0);
+
+  const activeCards = useMemo(
+    () => (cards ?? []).slice(currentIndex),
+    [cards, currentIndex]
+  );
+
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
+
   const [userId, setUserId] = useState(null);
   const animatedValuesById = useRef({});
   const flippedByIdRef = useRef({});
@@ -191,9 +202,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const isOwner = userId && deck?.user_id === userId;
   const isAnimatingRef = useRef(false);
   const SESSION_BATCH_LIMIT = 20;
+  const SWIPE_ANIMATION_MS = 500;
   const REVIEW_PROMPT_DELAY_MS = 600;
   const PRE_FETCH_THRESHOLD = 5;
   const seenCardIdsRef = useRef(new Set());
+  const sessionSeenCardIdsRef = useRef(new Set());
+  const [sessionProgressCount, setSessionProgressCount] = useState(0);
   const isFetchingMoreRef = useRef(false);
   const lastDueCheckAtRef = useRef(Date.now());
   const isDueCheckingRef = useRef(false);
@@ -410,6 +424,11 @@ export default function SwipeDeckScreen({ route, navigation }) {
         }
         seenCardIdsRef.current = new Set(learningCards.map(c => c.card_id));
         flippedByIdRef.current = {};
+        sessionSeenCardIdsRef.current = learningCards[0]?.card_id
+          ? new Set([learningCards[0].card_id])
+          : new Set();
+        setSessionProgressCount(learningCards.length > 0 ? 1 : 0);
+        setCurrentIndex(0);
 
         const statsChapterId =
           typeof chapter === 'undefined'
@@ -730,7 +749,14 @@ export default function SwipeDeckScreen({ route, navigation }) {
     const actualDirection = override?.direction || direction;
     const actualSkipMinutes = override?.skipMinutes ?? null;
     programmaticSwipeRef.current = null;
-    resetFlipForCardId(card.card_id);
+    const swipedCardId = card.card_id;
+    setTimeout(() => resetFlipForCardId(swipedCardId), SWIPE_ANIMATION_MS);
+    sessionSeenCardIdsRef.current.add(swipedCardId);
+    const nextCard = cards[cardIndex + 1];
+    if (nextCard?.card_id) {
+      sessionSeenCardIdsRef.current.add(nextCard.card_id);
+    }
+    setSessionProgressCount(sessionSeenCardIdsRef.current.size);
     if (!userId) return;
     isAnimatingRef.current = true;
     setHistory((prev) => [...prev, cardIndex]);
@@ -771,7 +797,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     checkDueReinserts();
     setTimeout(() => {
       isAnimatingRef.current = false;
-    }, 400);
+    }, SWIPE_ANIMATION_MS);
   }, [cards, userId, resetFlipForCardId, scheduleReviewCheck, checkDueReinserts]);
 
   const handleFlipById = useCallback((cardId) => {
@@ -880,6 +906,15 @@ export default function SwipeDeckScreen({ route, navigation }) {
       seenCardIdsRef.current = new Set(learningCards.map(c => c.card_id));
       flippedByIdRef.current = {};
       hasMoreCardsRef.current = learningCards.length > 0;
+
+      const advancedToCard = cards[lastIndex + 1];
+      if (advancedToCard?.card_id) {
+        sessionSeenCardIdsRef.current.delete(advancedToCard.card_id);
+      }
+      if (undoneCard?.card_id) {
+        sessionSeenCardIdsRef.current.add(undoneCard.card_id);
+      }
+      setSessionProgressCount(Math.max(1, sessionSeenCardIdsRef.current.size));
 
       const lastFetchedCard = learningCards[learningCards.length - 1];
       if (lastFetchedCard) {
@@ -1097,10 +1132,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
           </Reanimated.View>
           <View style={[styles.deckProgressBox, { flexDirection: 'row' }]}>
             {(() => {
-              const uniqueCardIdsUpToNow = new Set(
-                cards.slice(0, currentIndex + 1).map((c) => c?.card_id).filter(Boolean)
-              );
-              const currentCardNumber = uniqueCardIdsUpToNow.size;
+              const currentCardNumber = sessionProgressCount;
               const allUniqueSeen = currentCardNumber >= totalCardCount;
               const currentCardIsReinserted = cards[currentIndex] && leftCountedCardIds.current.has(cards[currentIndex].card_id);
               const hasReinsertToShow = cards
@@ -1155,11 +1187,13 @@ export default function SwipeDeckScreen({ route, navigation }) {
             )}
           </Reanimated.View>
         </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', marginTop: verticalScale(8) }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', marginTop: verticalScale(8), overflow: 'hidden' }}>
+          {activeCards.length > 0 && (
           <Swiper
+            key={activeCards[0]?.card_id ?? `deck-${currentIndex}`}
             ref={swiperRef}
-            cards={cards}
-            cardIndex={currentIndex}
+            cards={activeCards}
+            keyExtractor={(card) => card?.card_id ?? card?.queue_id}
             renderCard={(card, i) => {
               const cardId = card?.card_id;
               const animatedValue = cardId ? getAnimatedValueForCardId(cardId) : null;
@@ -1191,25 +1225,17 @@ export default function SwipeDeckScreen({ route, navigation }) {
                 useNativeDriver: true,
               }).start();
             }}
-            onSwipedLeft={(i) => {
-              console.log('LEFT SWIPE', {
-                index: i,
-                time: Date.now(),
-              });
-              triggerHaptic('selection');
-              setCurrentIndex(i + 1);
+            onSwiped={() => {
+              setCurrentIndex((prev) => prev + 1);
               swipeX.setValue(0);
-              handleSwipe(i, 'left');
             }}
-            onSwipedRight={(i) => {
-              console.log('RIGHT SWIPE', {
-                index: i,
-                time: Date.now(),
-              });
+            onSwipedLeft={() => {
+              triggerHaptic('selection');
+              handleSwipe(currentIndexRef.current, 'left');
+            }}
+            onSwipedRight={() => {
               triggerHaptic('light');
-              setCurrentIndex(i + 1);
-              swipeX.setValue(0);
-              handleSwipe(i, 'right');
+              handleSwipe(currentIndexRef.current, 'right');
             }}
             disableTopSwipe={true}
             disableBottomSwipe={true}
@@ -1225,8 +1251,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
             cardStyle={{ width: CARD_WIDTH, height: CARD_HEIGHT, alignSelf: 'center', justifyContent: 'center' }}
             stackAnimationFriction={100}
             stackAnimationTension={100}
-            swipeAnimationDuration={600}
+            swipeAnimationDuration={SWIPE_ANIMATION_MS}
           />
+          )}
         </View>
         {/* Yatay birleşik butonlar */}
         {/* Yatay birleşik butonlar */}
