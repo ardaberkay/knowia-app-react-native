@@ -18,6 +18,7 @@ import {
   getChapterProgressCounts,
   getTotalLearnedCardsCount,
   startSwipeSession,
+  getSwipeSessionQueueCount,
   getSwipeSessionNextCards,
   recordSwipeSessionSwipe,
   undoLastSwipe,
@@ -173,6 +174,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const [historyDirections, setHistoryDirections] = useState([]);
   const [totalSwipeCount, setTotalSwipeCount] = useState(0);
   const [totalCardCount, setTotalCardCount] = useState(0);
+  const [sessionTargetCount, setSessionTargetCount] = useState(0);
   const [remainingCardCount, setRemainingCardCount] = useState(0);
   const [totalLearningCount, setTotalLearningCount] = useState(0);
   const [currentLearnedCount, setCurrentLearnedCount] = useState(null);
@@ -349,6 +351,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
       setRightCount(0);
       setLeftCount(0);
       seenCardIdsRef.current = new Set();
+      sessionSeenCardIdsRef.current = new Set();
+      setSessionTargetCount(0);
       hasMoreCardsRef.current = true;
 
       try {
@@ -369,6 +373,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
         });
 
         sessionIdRef.current = sessionId;
+        const targetCount = await getSwipeSessionQueueCount(sessionId);
+        setSessionTargetCount(targetCount);
         paginationCursorRef.current = {
           afterSortKey: null,
           afterQueueId: null,
@@ -557,8 +563,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const animatedLeftBadge = useAnimatedStyle(() => ({ transform: [{ scale: leftScale.value }] }));
   const animatedRightBadge = useAnimatedStyle(() => ({ transform: [{ scale: rightScale.value }] }));
 
-  const currentProgress = totalCardCount > 0
-    ? ((leftCount + initialLearnedCount + rightCount) / totalCardCount) * 100
+  const currentProgress = sessionTargetCount > 0
+    ? Math.min(100, (sessionProgressCount / sessionTargetCount) * 100)
     : 0;
 
   // Reanimated stili
@@ -787,10 +793,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
       if (actualDirection === 'left') {
         historyLeftCardIds.current.push(card.card_id);
       }
-      if (!leftCountedCardIds.current.has(card.card_id)) {
-        leftCountedCardIds.current.add(card.card_id);
-        setLeftCount((prev) => prev + 1);
-      }
+      leftCountedCardIds.current.add(card.card_id);
+      setLeftCount((prev) => prev + 1);
       setLeftHighlight(true);
       setTimeout(() => setLeftHighlight(false), 400);
     }
@@ -1005,11 +1009,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
     };
   }, []);
 
-  const originalTargetCount = Math.max(0, totalCardCount - initialLearnedCount);
-  const uniqueSeenCardCount = new Set(
-    cards.slice(0, currentIndex).map((c) => c?.card_id).filter(Boolean)
-  ).size;
-  const originalFlowComplete = originalTargetCount > 0 && uniqueSeenCardCount >= originalTargetCount;
+  const originalFlowComplete =
+    sessionTargetCount > 0 &&
+    sessionProgressCount >= sessionTargetCount;
 
   useEffect(() => {
     const fetchCurrentStats = async () => {
@@ -1133,13 +1135,13 @@ export default function SwipeDeckScreen({ route, navigation }) {
           <View style={[styles.deckProgressBox, { flexDirection: 'row' }]}>
             {(() => {
               const currentCardNumber = sessionProgressCount;
-              const allUniqueSeen = currentCardNumber >= totalCardCount;
+              const allUniqueSeen = sessionTargetCount > 0 && currentCardNumber >= sessionTargetCount;
               const currentCardIsReinserted = cards[currentIndex] && leftCountedCardIds.current.has(cards[currentIndex].card_id);
               const hasReinsertToShow = cards
                 .slice(currentIndex + 1)
                 .some((c) => c?.card_id && leftCountedCardIds.current.has(c.card_id));
               const showVaktiGeldi =
-                totalCardCount > 0 && allUniqueSeen && hasReinsertToShow && currentCardIsReinserted;
+                sessionTargetCount > 0 && allUniqueSeen && hasReinsertToShow && currentCardIsReinserted;
               const iconWrapStyle = {
                 borderRadius: moderateScale(10),
                 padding: scale(6),
@@ -1163,7 +1165,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
                       <Iconify icon="fluent:arrow-repeat-all-48-regular" size={moderateScale(18)} color={colors.text} />
                     </View>
                   )}
-                  <Text style={[styles.deckProgressText, { color: colors.text }]}>{currentCardNumber}/{totalCardCount - initialLearnedCount}</Text>
+                  <Text style={[styles.deckProgressText, { color: colors.text }]}>{currentCardNumber}/{sessionTargetCount}</Text>
                 </View>
               );
             })()}

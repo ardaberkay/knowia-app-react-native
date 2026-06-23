@@ -539,6 +539,16 @@ export const startSwipeSession = async ({ deckId, chapterId = null, unassignedOn
   return typeof data === 'string' ? data : data?.session_id;
 };
 
+export const getSwipeSessionQueueCount = async (sessionId) => {
+  if (!sessionId) return 0;
+  const { count, error } = await supabase
+    .from('swipe_session_queue')
+    .select('*', { count: 'exact', head: true })
+    .eq('session_id', sessionId);
+  if (error) throw error;
+  return count || 0;
+};
+
 export const getSwipeSessionNextCards = async ({
   sessionId,
   afterSortKey = null,
