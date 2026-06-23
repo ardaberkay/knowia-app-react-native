@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, Image, Pressable, Platform, BackHandler } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, Pressable, Platform, BackHandler, ScrollView } from 'react-native';
 import Reanimated, {
   useAnimatedStyle,
   useSharedValue,
@@ -11,6 +11,7 @@ import Reanimated, {
   withRepeat,
 } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import Swiper from 'react-native-deck-swiper';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -19,6 +20,8 @@ import {
   getTotalLearnedCardsCount,
   startSwipeSession,
   getSwipeSessionQueueCount,
+  getSwipeSessionCompletionCounts,
+  getChapterFutureReviewSummary,
   getSwipeSessionNextCards,
   recordSwipeSessionSwipe,
   undoLastSwipe,
@@ -26,10 +29,9 @@ import {
 } from '../../services/CardService';
 import { getDeckById } from '../../services/DeckService';
 import { invalidateCache } from '../../services/CacheService';
-import { mergeChapterProgressIntoCache } from '../../services/ChapterService';
+import { listChapters, mergeChapterProgressIntoCache } from '../../services/ChapterService';
 import { useAuth } from '../../contexts/AuthContext';
 import { Iconify } from 'react-native-iconify';
-import home_logo from '../../assets/home_logo.png';
 import { useTranslation } from 'react-i18next';
 import { addFavoriteCard, removeFavoriteCard, getFavoriteCardIds } from '../../services/FavoriteService';
 import LottieView from 'lottie-react-native';
@@ -49,6 +51,14 @@ const learnedRuntimeState = {
   baseLearned: 0,
   deltaLearned: 0,
   lastSyncedAt: 0,
+};
+
+const formatFutureReview = (dateString) => {
+  const minutes = Math.max(1, Math.ceil((new Date(dateString).getTime() - Date.now()) / 60000));
+  if (minutes < 60) return `${minutes} dakika sonra`;
+  const hours = Math.ceil(minutes / 60);
+  if (hours < 24) return `${hours} saat sonra`;
+  return `${Math.ceil(hours / 24)} gün sonra`;
 };
 
 // --- YENİ MİNİ BİLEŞENİMİZ ---
@@ -165,7 +175,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const flippedByIdRef = useRef({});
   const [leftCount, setLeftCount] = useState(0);
   const [rightCount, setRightCount] = useState(0);
-  const [initialLearnedCount, setInitialLearnedCount] = useState(0);
   const [leftHighlight, setLeftHighlight] = useState(false);
   const [rightHighlight, setRightHighlight] = useState(false);
   const swiperRef = useRef(null);
@@ -173,12 +182,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const [undoDisabled, setUndoDisabled] = useState(false);
   const [historyDirections, setHistoryDirections] = useState([]);
   const [totalSwipeCount, setTotalSwipeCount] = useState(0);
-  const [totalCardCount, setTotalCardCount] = useState(0);
   const [sessionTargetCount, setSessionTargetCount] = useState(0);
-  const [remainingCardCount, setRemainingCardCount] = useState(0);
-  const [totalLearningCount, setTotalLearningCount] = useState(0);
-  const [currentLearnedCount, setCurrentLearnedCount] = useState(null);
-  const [currentLearningCount, setCurrentLearningCount] = useState(null);
+  const [completionSummary, setCompletionSummary] = useState(null);
+  const [nextChapter, setNextChapter] = useState(null);
   const [autoPlay, setAutoPlay] = useState(false);
   const autoPlayTimeout = useRef(null);
   const autoPlayFlipTimeout = useRef(null);
@@ -353,6 +359,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
       seenCardIdsRef.current = new Set();
       sessionSeenCardIdsRef.current = new Set();
       setSessionTargetCount(0);
+      setCompletionSummary(null);
+      setNextChapter(null);
       hasMoreCardsRef.current = true;
 
       try {
@@ -436,15 +444,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
         setSessionProgressCount(learningCards.length > 0 ? 1 : 0);
         setCurrentIndex(0);
 
-        const statsChapterId =
-          typeof chapter === 'undefined'
-            ? undefined
-            : (chapter === null ? null : chapter.id);
-
         let globalLearnedCount = getEffectiveLearnedEstimate();
         const shouldInitGlobalLearned = !hasInitializedGlobalLearnedRef.current || learnedRuntimeState.userId !== authUserId;
 
-        const progressCounts = await getChapterProgressCounts(authUserId, deck.id, statsChapterId);
         if (shouldInitGlobalLearned) {
           globalLearnedCount = await getTotalLearnedCardsCount(authUserId);
           learnedRuntimeState.userId = authUserId;
@@ -452,14 +454,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
           learnedRuntimeState.deltaLearned = 0;
           hasInitializedGlobalLearnedRef.current = true;
         }
-        const totalCardsCount = progressCounts.total;
-        const learningCount = progressCounts.learning;
-        const learnedCount = progressCounts.learned;
-
-        setTotalCardCount(totalCardsCount);
-        setTotalLearningCount(learningCount);
-        setInitialLearnedCount(learnedCount);
-        setRemainingCardCount(totalCardsCount - learnedCount);
         estimatedTotalLearnedRef.current = globalLearnedCount;
 
       } catch (error) {
@@ -1014,25 +1008,48 @@ export default function SwipeDeckScreen({ route, navigation }) {
     sessionProgressCount >= sessionTargetCount;
 
   useEffect(() => {
-    const fetchCurrentStats = async () => {
-      if ((cards.length === 0 || currentIndex >= cards.length || originalFlowComplete) && userId && deck?.id) {
-        try {
-    
-          const statsChapterId =
-            typeof chapter === 'undefined'
-              ? undefined
-              : (chapter === null ? null : chapter.id);
-          const { learned, learning } = await getChapterProgressCounts(userId, deck.id, statsChapterId);
+    const isComplete = cards.length === 0 || currentIndex >= cards.length || originalFlowComplete;
+    if (!isComplete || !userId || !deck?.id || !sessionIdRef.current) return;
 
-          setCurrentLearnedCount(learned || 0);
-          setCurrentLearningCount(learning || 0);
-        } catch (error) {
-          console.error('Error fetching current stats:', error);
+    let cancelled = false;
+    const fetchCompletionSummary = async () => {
+      try {
+        const sessionCountsPromise = getSwipeSessionCompletionCounts(sessionIdRef.current, userId);
+        const hasChapterScope = Boolean(chapter?.id);
+        const chapterProgressPromise = hasChapterScope
+          ? getChapterProgressCounts(userId, deck.id, chapter.id)
+          : Promise.resolve(null);
+        const reviewsPromise = hasChapterScope
+          ? getChapterFutureReviewSummary(userId, deck.id, chapter.id)
+          : Promise.resolve({ nearest: null, farthest: null });
+        const chaptersPromise = hasChapterScope
+          ? listChapters(deck.id)
+          : Promise.resolve([]);
+
+        const [sessionCounts, chapterProgress, reviews, chapters] = await Promise.all([
+          sessionCountsPromise,
+          chapterProgressPromise,
+          reviewsPromise,
+          chaptersPromise,
+        ]);
+        if (cancelled) return;
+
+        setCompletionSummary({ sessionCounts, chapterProgress, reviews });
+        if (hasChapterScope) {
+          const chapterIndex = chapters.findIndex(item => item.id === chapter.id);
+          const followingChapter = chapterIndex >= 0 ? chapters[chapterIndex + 1] : null;
+          if (followingChapter) {
+            const nextProgress = await getChapterProgressCounts(userId, deck.id, followingChapter.id);
+            if (!cancelled) setNextChapter({ ...followingChapter, totalCards: nextProgress.total });
+          }
         }
+      } catch (error) {
+        console.error('Error fetching completion summary:', error);
       }
     };
 
-    fetchCurrentStats();
+    fetchCompletionSummary();
+    return () => { cancelled = true; };
   }, [cards.length, currentIndex, originalFlowComplete, userId, deck?.id, chapter?.id]);
 
   if (loading) {
@@ -1053,57 +1070,103 @@ export default function SwipeDeckScreen({ route, navigation }) {
   }
 
   if (cards.length === 0 || currentIndex >= cards.length || originalFlowComplete) {
-    // Kullanıcıya ait güncel sayılar (veritabanından çekilen)
-    // Learned: useEffect'ten gelen güncel sayı, yoksa başlangıç + bu oturumda öğrenilenler
-    const learnedCount = currentLearnedCount !== null
-      ? currentLearnedCount
-      : (initialLearnedCount + rightCount);
-    // Learning: useEffect'ten gelen güncel sayı, yoksa totalLearningCount (fetchCards'tan gelen)
-    const learningCount = currentLearningCount !== null
-      ? currentLearningCount
-      : totalLearningCount;
-    const progress = learnedCount;
+    const sessionCounts = completionSummary?.sessionCounts;
+    const sessionLearned = sessionCounts
+      ? Math.min(sessionCounts.learned || 0, sessionTargetCount)
+      : null;
+    const sessionPlanned = sessionLearned === null
+      ? null
+      : Math.max(0, sessionTargetCount - sessionLearned);
+    const chapterProgress = completionSummary?.chapterProgress;
+    const chapterLearned = chapterProgress?.learned || 0;
+    const chapterUnfinished = chapterProgress ? chapterProgress.total - chapterLearned : 0;
+    const chapterPercent = chapterProgress?.total
+      ? Math.round((chapterLearned / chapterProgress.total) * 100)
+      : 0;
+    const nearestReview = completionSummary?.reviews?.nearest;
+    const farthestReview = completionSummary?.reviews?.farthest;
 
     return (
       <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingBottom: insets.bottom }]}>
-        <View style={{ width: '100%', alignItems: 'center', marginTop: verticalScale(60) }}>
-          <Image source={home_logo} style={{ width: scale(260), height: scale(260), resizeMode: 'cover', fadeDuration: 0 }} />
-          <Text style={[typography.styles.h2, { color: colors.text, textAlign: 'center', marginTop: verticalScale(16), paddingHorizontal: scale(32) }]}>
-            {progress === totalCardCount ? t('swipeDeck.bravo', "Bravo! Tüm Kartları Tamamladın") : t('swipeDeck.learnTime', "Kalan Kartları Öğrenmeye Vakit Var")}
-          </Text>
-          <View style={{ width: scale(72), height: verticalScale(1), backgroundColor: colors.orWhite, borderRadius: moderateScale(2), alignSelf: 'center', marginTop: verticalScale(16), marginBottom: verticalScale(32) }} />
-
-          {/* İstatistik Kartları */}
-          <View style={styles.statsContainer}>
-            {/* Learning Kartlar */}
-            <View style={[styles.statCard, { backgroundColor: colors.cardBackground, borderColor: '#f3a14c' }]}>
-              <View style={[styles.statIconContainer, { backgroundColor: 'rgba(243, 161, 76, 0.1)' }]}>
-                <Iconify icon="mingcute:time-fill" size={moderateScale(24)} color="#f3a14c" />
+        <ScrollView contentContainerStyle={[styles.completionContent, { paddingBottom: insets.bottom + verticalScale(24) }]} showsVerticalScrollIndicator={false}>
+          <View style={styles.completionHero}>
+            <LinearGradient colors={[colors.buttonColor, '#FF6B35']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.completionHeroCard}>
+              <View style={styles.completionHeroIcon}>
+                <Iconify icon="streamline:check-solid" size={moderateScale(28)} color="#FFFFFF" />
               </View>
-              <Text style={[styles.statNumber, { color: colors.text }]}>{learningCount}</Text>
-              <Text style={[styles.statLabel, { color: colors.subtext }]}>{t('swipeDeck.learning', 'Öğreniliyor')}</Text>
+              <Text style={[typography.styles.h2, styles.completionTitle, { color: '#FFFFFF' }]}>Oturum Tamamlandı</Text>
+              <Text style={[styles.completionHeroMetric, { color: '#FFFFFF' }]}>{sessionTargetCount}</Text>
+              <Text style={[typography.styles.body, styles.completionHeroLabel, { color: 'rgba(255,255,255,0.88)' }]}>Kart Çalışıldı</Text>
+              {chapter?.ordinal && <Text style={[typography.styles.caption, styles.completionHeroChapter, { color: 'rgba(255,255,255,0.78)' }]}>Bölüm {chapter.ordinal} Tamamlandı</Text>}
+            </LinearGradient>
+          </View>
+
+          <View style={styles.completionStatGrid}>
+            <View style={[styles.completionStatCard, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
+              <View style={[styles.completionStatIcon, { backgroundColor: '#27AE6020' }]}>
+                <Iconify icon="streamline:check-solid" size={moderateScale(18)} color="#27AE60" />
+              </View>
+              <Text style={[styles.completionStatNumber, { color: colors.text }]}>{sessionLearned ?? '—'}</Text>
+              <Text style={[typography.styles.caption, styles.completionStatLabel, { color: colors.muted }]}>Öğrenildi</Text>
             </View>
-
-            {/* Learned Kartlar */}
-            <View style={[styles.statCard, { backgroundColor: colors.cardBackground, borderColor: '#3e8e41' }]}>
-              <View style={[styles.statIconContainer, { backgroundColor: 'rgba(62, 142, 65, 0.1)' }]}>
-                <Iconify icon="streamline:check-solid" size={moderateScale(20)} color="#3e8e41" />
+            <View style={[styles.completionStatCard, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
+              <View style={[styles.completionStatIcon, { backgroundColor: '#3B82F620' }]}>
+                <Iconify icon="streamline:check-solid" size={moderateScale(18)} color="#3B82F6" />
               </View>
-              <Text style={[styles.statNumber, { color: colors.text }]}>{learnedCount}</Text>
-              <Text style={[styles.statLabel, { color: colors.subtext }]}>{t('swipeDeck.learned', 'Öğrenildi')}</Text>
-            </View>
-
-            {/* Toplam kaydırma */}
-
-            <View style={[styles.statCardWide, { backgroundColor: colors.cardBackground, borderColor: colors.border || '#6b7b8c' }]}>
-              <View style={[styles.statIconContainer, { backgroundColor: 'rgba(107, 123, 140, 0.15)', width: scale(36), height: scale(36), marginBottom: '0' }]}>
-                <Iconify icon="fluent:arrow-repeat-all-48-regular" size={moderateScale(20)} color={colors.text || '#6b7b8c'} />
-              </View>
-              <Text style={[styles.statLabel, { color: colors.subtext }]}>{t('swipeDeck.totalSwipes', 'Toplam kaydırma')}:</Text>
-              <Text style={[styles.statNumber, { color: colors.text, fontSize: moderateScale(24) }]}>{totalSwipeCount}</Text>
+              <Text style={[styles.completionStatNumber, { color: colors.text }]}>{sessionPlanned ?? '—'}</Text>
+              <Text style={[typography.styles.caption, styles.completionStatLabel, { color: colors.muted }]}>Tekrar Planlandı</Text>
             </View>
           </View>
-        </View>
+
+          <View style={styles.completionButtonRow}>
+            <TouchableOpacity style={[styles.completionButton, styles.completionButtonHalf, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, borderWidth: StyleSheet.hairlineWidth }]} onPress={() => navigation.goBack()}>
+              <Text style={[typography.styles.button, { color: colors.text }]}>Geri Dön</Text>
+            </TouchableOpacity>
+            {nextChapter && (
+              <View style={styles.nextChapterWrap}>
+                <TouchableOpacity
+                  style={[styles.completionButton, styles.completionButtonHalf, { backgroundColor: colors.buttonColor }]}
+                  onPress={() => navigation.replace('SwipeDeck', { deck, chapter: nextChapter })}
+                >
+                  <Text style={[typography.styles.button, { color: colors.buttonText }]}>Sonraki Bölüm</Text>
+                  <Iconify icon="streamline:check-solid" size={moderateScale(18)} color={colors.buttonText} style={styles.completionNextIcon} />
+                </TouchableOpacity>
+                <Text style={[styles.nextChapterMeta, { color: colors.muted }]}>Bölüm {nextChapter.ordinal} • {nextChapter.totalCards} kart</Text>
+              </View>
+            )}
+          </View>
+
+          {chapter?.id && (
+            <>
+              <Text style={[typography.styles.subtitle, styles.completionSectionHeader, { color: colors.text }]}>Bölüm</Text>
+              <View style={[styles.completionChapterCard, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
+                <View style={styles.completionChapterTopRow}>
+                  <Text style={[typography.styles.body, { color: colors.text }]}>{chapterProgress ? `${chapterLearned} öğrenildi` : '—'}</Text>
+                  <Text style={[typography.styles.body, { color: colors.muted }]}>{chapterProgress ? `${chapterUnfinished} süreçte` : '—'}</Text>
+                </View>
+                <View style={[styles.completionChapterProgressTrack, { backgroundColor: colors.progressBarSwipe || colors.border }]}>
+                  <View style={[styles.completionChapterProgressFill, { width: `${chapterPercent}%`, backgroundColor: colors.buttonColor }]} />
+                </View>
+                <Text style={[typography.styles.caption, styles.completionChapterPercent, { color: colors.muted }]}>%{chapterPercent} tamamlandı</Text>
+              </View>
+
+              <Text style={[typography.styles.subtitle, styles.completionSectionHeader, { color: colors.text }]}>Tekrarlar</Text>
+              <View style={styles.completionReviewGrid}>
+                <View style={[styles.completionReviewCard, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
+                  <Iconify icon="streamline:check-solid" size={moderateScale(20)} color={colors.buttonColor} />
+                  <Text style={[styles.completionReviewMetric, { color: colors.text }]}>{nearestReview ? formatFutureReview(nearestReview.at) : '—'}</Text>
+                  <Text style={[typography.styles.caption, styles.completionReviewLabel, { color: colors.muted }]}>{nearestReview ? `${nearestReview.count} kart hazır` : 'En yakın tekrar'}</Text>
+                </View>
+                <View style={[styles.completionReviewCard, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
+                  <Iconify icon="streamline:check-solid" size={moderateScale(20)} color={colors.secondary} />
+                  <Text style={[styles.completionReviewMetric, { color: colors.text }]}>{farthestReview ? formatFutureReview(farthestReview.at) : '—'}</Text>
+                  <Text style={[typography.styles.caption, styles.completionReviewLabel, { color: colors.muted }]}>En uzak tekrar</Text>
+                </View>
+              </View>
+            </>
+          )}
+
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -1548,6 +1611,265 @@ const styles = StyleSheet.create({
   loadingText: {
     ...typography.styles.subtitle,
     textAlign: 'center',
+  },
+  completionContent: {
+    width: '100%',
+    alignItems: 'center',
+    paddingHorizontal: scale(16),
+    paddingTop: verticalScale(18),
+  },
+  completionHero: {
+    width: '100%',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  completionHeroCard: {
+    width: '100%',
+    alignItems: 'center',
+    borderRadius: moderateScale(26),
+    paddingTop: verticalScale(28),
+    paddingBottom: verticalScale(54),
+    paddingHorizontal: scale(20),
+    overflow: 'hidden',
+    shadowColor: '#F98A21',
+    shadowOffset: { width: 0, height: verticalScale(8) },
+    shadowOpacity: 0.22,
+    shadowRadius: moderateScale(14),
+    elevation: 5,
+  },
+  completionHeroIcon: {
+    width: scale(56),
+    height: scale(56),
+    borderRadius: moderateScale(28),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    marginBottom: verticalScale(10),
+  },
+  completionTitle: {
+    textAlign: 'center',
+    marginBottom: verticalScale(10),
+  },
+  completionHeroMetric: {
+    fontSize: moderateScale(60),
+    fontWeight: '800',
+    lineHeight: verticalScale(64),
+  },
+  completionHeroLabel: {
+    fontWeight: '700',
+  },
+  completionHeroChapter: {
+    marginTop: verticalScale(8),
+  },
+  completionSectionHeader: {
+    width: '100%',
+    marginBottom: verticalScale(10),
+    fontWeight: '700',
+    paddingHorizontal: scale(4),
+  },
+  completionStatGrid: {
+    width: '100%',
+    flexDirection: 'row',
+    gap: scale(10),
+    paddingHorizontal: scale(12),
+    marginTop: verticalScale(-30),
+    marginBottom: verticalScale(18),
+    zIndex: 2,
+  },
+  completionStatCard: {
+    flex: 1,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: moderateScale(18),
+    padding: scale(14),
+    minHeight: verticalScale(118),
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: verticalScale(2) },
+    shadowOpacity: 0.05,
+    shadowRadius: moderateScale(6),
+    elevation: 1,
+  },
+  completionStatIcon: {
+    width: scale(34),
+    height: scale(34),
+    borderRadius: moderateScale(17),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  completionStatNumber: {
+    fontSize: moderateScale(28),
+    fontWeight: '800',
+    marginTop: verticalScale(8),
+  },
+  completionStatLabel: {
+    marginTop: verticalScale(2),
+    textAlign: 'center',
+  },
+  completionChapterCard: {
+    width: '100%',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: moderateScale(18),
+    padding: scale(18),
+    marginBottom: verticalScale(22),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: verticalScale(2) },
+    shadowOpacity: 0.05,
+    shadowRadius: moderateScale(6),
+    elevation: 1,
+  },
+  completionChapterTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: scale(16),
+  },
+  completionChapterProgressTrack: {
+    height: verticalScale(12),
+    borderRadius: moderateScale(6),
+    overflow: 'hidden',
+    marginTop: verticalScale(16),
+  },
+  completionChapterProgressFill: {
+    height: '100%',
+    borderRadius: moderateScale(6),
+  },
+  completionChapterPercent: {
+    marginTop: verticalScale(8),
+  },
+  completionReviewGrid: {
+    width: '100%',
+    flexDirection: 'row',
+    gap: scale(10),
+    marginBottom: verticalScale(22),
+  },
+  completionReviewCard: {
+    flex: 1,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: moderateScale(18),
+    padding: scale(14),
+    minHeight: verticalScale(106),
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: verticalScale(2) },
+    shadowOpacity: 0.05,
+    shadowRadius: moderateScale(6),
+    elevation: 1,
+  },
+  completionReviewMetric: {
+    fontSize: moderateScale(23),
+    fontWeight: '800',
+    marginTop: verticalScale(10),
+  },
+  completionReviewLabel: {
+    marginTop: verticalScale(2),
+    textAlign: 'center',
+  },
+  completionHeading: {
+    width: '100%',
+    marginTop: verticalScale(14),
+    marginBottom: verticalScale(6),
+  },
+  completionCard: {
+    width: '100%',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: moderateScale(8),
+    padding: scale(12),
+    marginBottom: verticalScale(8),
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: moderateScale(8),
+    elevation: 2,
+  },
+  completionSessionCount: {
+    ...typography.styles.h2,
+    textAlign: 'center',
+  },
+  completionSectionLabel: {
+    ...typography.styles.body,
+    textAlign: 'center',
+    marginTop: verticalScale(2),
+    marginBottom: verticalScale(8),
+  },
+  completionRow: {
+    gap: verticalScale(8),
+  },
+  completionInlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: scale(8),
+  },
+  completionInlineDivider: {
+    width: StyleSheet.hairlineWidth,
+    height: verticalScale(16),
+  },
+  completionProgressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(8),
+    marginTop: verticalScale(10),
+  },
+  completionProgressTrack: {
+    flex: 1,
+    height: verticalScale(8),
+    borderRadius: moderateScale(8),
+    overflow: 'hidden',
+  },
+  completionProgressFill: {
+    height: '100%',
+    borderRadius: moderateScale(8),
+  },
+  completionProgressText: {
+    ...typography.styles.body,
+    fontWeight: '700',
+  },
+  completionReviewTime: {
+    ...typography.styles.h2,
+    marginTop: verticalScale(12),
+    marginBottom: verticalScale(4),
+  },
+  completionButton: {
+    width: '100%',
+    minHeight: verticalScale(52),
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    borderRadius: moderateScale(16),
+    paddingHorizontal: scale(16),
+  },
+  completionButtonRow: {
+    width: '100%',
+    flexDirection: 'row',
+    gap: scale(10),
+    marginTop: verticalScale(4),
+    marginBottom: verticalScale(28),
+  },
+  completionButtonHalf: {
+    flex: 1,
+  },
+  nextChapterButton: {
+    backgroundColor: 'transparent',
+    borderWidth: moderateScale(1),
+  },
+  nextChapterWrap: {
+    flex: 1,
+  },
+  nextChapterMeta: {
+    ...typography.styles.body,
+    textAlign: 'center',
+    marginTop: verticalScale(6),
+  },
+  completionNextIcon: {
+    marginLeft: scale(5),
+  },
+  completionReviewLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: scale(12),
+    paddingTop: verticalScale(8),
   },
   statsContainer: {
     width: '90%',

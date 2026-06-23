@@ -549,6 +549,71 @@ export const getSwipeSessionQueueCount = async (sessionId) => {
   return count || 0;
 };
 
+export const getSwipeSessionCompletionCounts = async (sessionId, userId) => {
+  if (!sessionId || !userId) return { learned: 0, planned: 0 };
+
+  const { data: queueRows, error: queueError } = await supabase
+    .from('swipe_session_queue')
+    .select('card_id')
+    .eq('session_id', sessionId);
+  if (queueError) throw queueError;
+
+  const cardIds = [...new Set((queueRows || []).map(row => row.card_id).filter(Boolean))];
+  if (cardIds.length === 0) return { learned: 0, planned: 0 };
+
+  const { data: progressRows, error: progressError } = await supabase
+    .from('user_card_progress')
+    .select('card_id, status')
+    .eq('user_id', userId)
+    .in('card_id', cardIds);
+  if (progressError) throw progressError;
+
+  const learned = new Set(
+    (progressRows || [])
+      .filter(row => row.status === 'learned')
+      .map(row => row.card_id)
+  ).size;
+
+  return { learned, planned: cardIds.length - learned };
+};
+
+export const getChapterFutureReviewSummary = async (userId, deckId, chapterId) => {
+  if (!userId || !deckId || !chapterId) return { nearest: null, farthest: null };
+
+  let query = supabase
+    .from('user_card_progress')
+    .select('card_id, next_review, cards!inner(id)')
+    .eq('user_id', userId)
+    .neq('status', 'learned')
+    .gt('next_review', new Date().toISOString())
+    .eq('cards.deck_id', deckId)
+    .eq('cards.chapter_id', chapterId);
+
+  const hiddenIds = await getHiddenCardIdsForScope(userId, deckId, chapterId, false, false);
+  if (hiddenIds.length > 0) {
+    query = query.not('card_id', 'in', buildNotInList(hiddenIds));
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const reviewGroups = new Map();
+  (data || []).forEach(({ next_review: nextReview }) => {
+    if (!nextReview) return;
+    reviewGroups.set(nextReview, (reviewGroups.get(nextReview) || 0) + 1);
+  });
+
+  const times = [...reviewGroups.keys()].sort((a, b) => new Date(a) - new Date(b));
+  if (times.length === 0) return { nearest: null, farthest: null };
+
+  const nearestAt = times[0];
+  const farthestAt = times[times.length - 1];
+  return {
+    nearest: { at: nearestAt, count: reviewGroups.get(nearestAt) || 0 },
+    farthest: { at: farthestAt },
+  };
+};
+
 export const getSwipeSessionNextCards = async ({
   sessionId,
   afterSortKey = null,
