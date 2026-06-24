@@ -232,6 +232,9 @@
   "deckDetail": {
     "start": "Başla",
     "addCard": "Kart Ekle",
+    "addCardHintTitle": "İlk kartını ekle",
+    "addCardHintDescription": "Bu butona dokunarak destene ilk kartını ekleyebilirsin.",
+    "addCardHintDismiss": "Anladım",
     "cards": "Kartlar",
     "chapters": "Bölümler",
     "progress": "İlerleme",
@@ -420,7 +423,28 @@
     "note": "Not",
     "learned": "Öğrenildi",
     "learning": "Öğreniliyor",
-    "total": "Toplam"
+    "total": "Toplam",
+    "completion": {
+      "title": "Oturum Tamamlandı!",
+      "cardsStudied": "Kart Çalışıldı",
+      "learned": "Öğrenildi",
+      "reviewPlanned": "Tekrar Planlandı",
+      "chapterProgress": "Bölüm İlerlemesi",
+      "learnedCount": "{{count}} Öğrenildi",
+      "learningCount": "{{count}} Öğrenme Sürecinde",
+      "nearestReview": "En yakın tekrar",
+      "farthestReview": "En uzak tekrar",
+      "cardsReady": "{{count}} kart hazır",
+      "back": "Geri Dön",
+      "nextChapter": "Sonraki Bölüm",
+      "chapterMeta": "Bölüm {{chapter}} • {{count}} kart",
+      "minutesFromNow": "{{count}} dk sonra",
+      "hoursFromNow": "{{count}} sa sonra",
+      "daysFromNow": "{{count}} gün sonra",
+      "noNextChapter": "Sonraki bölüm yok",
+      "emptyTitle": "Bu bölümde şu anda çalışılacak kart yok.",
+      "allLearned": "Tüm kartlar öğrenildi"
+    }
   },
   "login": {
     "error_title": "Hata",

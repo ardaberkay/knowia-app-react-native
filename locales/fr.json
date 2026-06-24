@@ -196,6 +196,9 @@
   "deckDetail": {
     "start": "Lancer",
     "addCard": "Ajouter",
+    "addCardHintTitle": "Ajoutez votre première carte",
+    "addCardHintDescription": "Appuyez sur ce bouton pour ajouter la première carte à votre paquet.",
+    "addCardHintDismiss": "Compris",
     "cards": "Cartes",
     "chapters": "Chapitres",
     "progress": "Progrès",
@@ -377,7 +380,28 @@
     "note": "Note",
     "learned": "Appris",
     "learning": "En cours d'apprentissage",
-    "total": "Total"
+    "total": "Total",
+    "completion": {
+      "title": "Session terminée !",
+      "cardsStudied": "Cartes étudiées",
+      "learned": "Appris",
+      "reviewPlanned": "Révision prévue",
+      "chapterProgress": "Progrès du chapitre",
+      "learnedCount": "{{count}} appris",
+      "learningCount": "{{count}} en cours",
+      "nearestReview": "Prochaine révision",
+      "farthestReview": "Dernière révision",
+      "cardsReady": "{{count}} prêtes",
+      "back": "Retour",
+      "nextChapter": "Chapitre suivant",
+      "chapterMeta": "Chapitre {{chapter}} • {{count}} cartes",
+      "minutesFromNow": "{{count}} min",
+      "hoursFromNow": "{{count}} h",
+      "daysFromNow": "{{count}} jours",
+      "noNextChapter": "Pas de chapitre suivant",
+      "emptyTitle": "Aucune carte à réviser ici.",
+      "allLearned": "Toutes les cartes sont apprises"
+    }
   },
   "login": {
     "error_title": "Erreur",

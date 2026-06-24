@@ -231,6 +231,9 @@
   "deckDetail": {
     "start": "Start",
     "addCard": "Add Card",
+    "addCardHintTitle": "Add your first card",
+    "addCardHintDescription": "Tap this button to add the first card to your deck.",
+    "addCardHintDismiss": "Got it",
     "cards": "Cards",
     "chapters": "Chapters",
     "progress": "Progress",
@@ -415,7 +418,28 @@
     "note": "Note",
     "learned": "Learned",
     "learning": "Learning",
-    "total": "Total"
+    "total": "Total",
+    "completion": {
+      "title": "Session Complete!",
+      "cardsStudied": "Cards Studied",
+      "learned": "Learned",
+      "reviewPlanned": "Review Planned",
+      "chapterProgress": "Chapter Progress",
+      "learnedCount": "{{count}} Learned",
+      "learningCount": "{{count}} In Progress",
+      "nearestReview": "Next review",
+      "farthestReview": "Farthest review",
+      "cardsReady": "{{count}} ready",
+      "back": "Back",
+      "nextChapter": "Next Chapter",
+      "chapterMeta": "Chapter {{chapter}} • {{count}} cards",
+      "minutesFromNow": "{{count}} min",
+      "hoursFromNow": "{{count}} hr",
+      "daysFromNow": "{{count}} days",
+      "noNextChapter": "No next chapter",
+      "emptyTitle": "No cards are due in this chapter.",
+      "allLearned": "All cards learned"
+    }
   },
   "login": {
     "error_title": "Error",

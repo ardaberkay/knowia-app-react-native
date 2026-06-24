@@ -196,6 +196,9 @@
   "deckDetail": {
     "start": "Ir",
     "addCard": "Adicionar",
+    "addCardHintTitle": "Adicione seu primeiro cartão",
+    "addCardHintDescription": "Toque neste botão para adicionar o primeiro cartão ao seu baralho.",
+    "addCardHintDismiss": "Entendi",
     "cards": "Cartões",
     "chapters": "Capítulos",
     "progress": "Progresso",
@@ -377,7 +380,28 @@
     "note": "Nota",
     "learned": "Aprendido",
     "learning": "Aprendendo",
-    "total": "Total"
+    "total": "Total",
+    "completion": {
+      "title": "Sessão concluída!",
+      "cardsStudied": "Cartões estudados",
+      "learned": "Aprendidos",
+      "reviewPlanned": "Revisão agendada",
+      "chapterProgress": "Progresso do capítulo",
+      "learnedCount": "{{count}} aprendidos",
+      "learningCount": "{{count}} em andamento",
+      "nearestReview": "Próxima revisão",
+      "farthestReview": "Última revisão",
+      "cardsReady": "{{count}} prontos",
+      "back": "Voltar",
+      "nextChapter": "Próximo capítulo",
+      "chapterMeta": "Capítulo {{chapter}} • {{count}} cartões",
+      "minutesFromNow": "{{count}} min",
+      "hoursFromNow": "{{count}} h",
+      "daysFromNow": "{{count}} dias",
+      "noNextChapter": "Sem próximo capítulo",
+      "emptyTitle": "Não há cartões para estudar neste capítulo.",
+      "allLearned": "Todos os cartões foram aprendidos"
+    }
   },
   "login": {
     "error_title": "Erro",

@@ -195,6 +195,9 @@
   "deckDetail": {
     "start": "Start",
     "addCard": "Hinzufügen",
+    "addCardHintTitle": "Füge deine erste Karte hinzu",
+    "addCardHintDescription": "Tippe auf diesen Button, um deine erste Karte zum Deck hinzuzufügen.",
+    "addCardHintDismiss": "Verstanden",
     "cards": "Karten",
     "chapters": "Kapitel",
     "progress": "Fortschritt",
@@ -379,7 +382,28 @@
     "note": "Notiz",
     "learned": "Gelernt",
     "learning": "Lernend",
-    "total": "Gesamt"
+    "total": "Gesamt",
+    "completion": {
+      "title": "Sitzung fertig!",
+      "cardsStudied": "Karten geübt",
+      "learned": "Gelernt",
+      "reviewPlanned": "Wiederholung",
+      "chapterProgress": "Kapitelstand",
+      "learnedCount": "{{count}} gelernt",
+      "learningCount": "{{count}} offen",
+      "nearestReview": "Nächste Wiederholung",
+      "farthestReview": "Späteste Wiederholung",
+      "cardsReady": "{{count}} bereit",
+      "back": "Zurück",
+      "nextChapter": "Nächstes Kapitel",
+      "chapterMeta": "Kapitel {{chapter}} • {{count}} Karten",
+      "minutesFromNow": "{{count}} Min.",
+      "hoursFromNow": "{{count}} Std.",
+      "daysFromNow": "{{count}} Tage",
+      "noNextChapter": "Kein weiteres Kapitel",
+      "emptyTitle": "In diesem Kapitel sind keine Karten fällig.",
+      "allLearned": "Alle Karten gelernt"
+    }
   },
   "login": {
     "error_title": "Fehler",

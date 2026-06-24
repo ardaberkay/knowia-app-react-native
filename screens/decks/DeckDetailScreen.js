@@ -44,6 +44,7 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [learnedCardsCount, setLearnedCardsCount] = useState(0);
   const [deckStats, setDeckStats] = useState({ total: 0, learned: 0, learning: 0, new: 0 });
   const [cards, setCards] = useState([]);
+  const [showAddCardHint, setShowAddCardHint] = useState(false);
   const [search, setSearch] = useState('');
   const [filteredCards, setFilteredCards] = useState([]);
   const [favoriteCards, setFavoriteCards] = useState([]);
@@ -1057,6 +1058,54 @@ export default function DeckDetailScreen({ route, navigation }) {
     deck.user_id === currentUserId &&
     !isShared;
 
+  useEffect(() => {
+    // Kartlar bu ekranda performans için tek tek yüklenmiyor; güncel toplam deckStats'tan geliyor.
+    if (deckStats.total > 0) {
+      setShowAddCardHint(false);
+      return;
+    }
+
+    // İlk yükleme tamamlanmadan gösterme; aksi halde dolu destelerde kısa bir flash oluşabilir.
+    if (progressLoading || !showAddCardFab) return;
+
+    let isActive = true;
+    const loadAddCardHint = async () => {
+      try {
+        const seenHint = await AsyncStorage.getItem('knowia_seen_add_card_hint');
+        if (isActive && !seenHint) {
+          setShowAddCardHint(true);
+        }
+      } catch (e) {
+        // Storage okunamasa da yönlendirme uygulama akışını etkilemesin.
+        if (isActive) setShowAddCardHint(false);
+      }
+    };
+
+    loadAddCardHint();
+    return () => {
+      isActive = false;
+    };
+  }, [deckStats.total, progressLoading, showAddCardFab]);
+
+  const handleDismissAddCardHint = async () => {
+    setShowAddCardHint(false);
+    try {
+      await AsyncStorage.setItem('knowia_seen_add_card_hint', 'true');
+    } catch (e) {
+      console.error('Add card hint could not be saved:', e);
+    }
+  };
+
+  const handleAddCard = async () => {
+    if (showAddCardHint) {
+      await handleDismissAddCardHint();
+    }
+    triggerHaptic('light');
+    requestAnimationFrame(() => {
+      navigation.navigate('AddCard', { deck });
+    });
+  };
+
   const scrollContentPaddingBottom = showAddCardFab
     ? insets.bottom + verticalScale(100)
     : verticalScale(screenHeight * 0.10) + insets.bottom;
@@ -1533,22 +1582,68 @@ export default function DeckDetailScreen({ route, navigation }) {
       </ScrollView>
 
       {showAddCardFab && (
-        <AnimatedPressable
+        <>
+          {showAddCardHint && deckStats.total === 0 && (
+            <Pressable
+              accessibilityLabel="Kart ekleme yönlendirmesi"
+              onPress={() => {}}
+              style={styles.addCardHintOverlay}
+            />
+          )}
+
+          {showAddCardHint && deckStats.total === 0 && (
+            <View
+              style={[
+                styles.addCardCoachmark,
+                {
+                  bottom: insets.bottom + verticalScale(102),
+                  backgroundColor: colors.cardBackground,
+                  borderColor: colors.cardBorder,
+                },
+              ]}
+            >
+              <View style={[styles.addCardCoachmarkArrow, { borderTopColor: colors.cardBackground }]} />
+              <Text style={[styles.addCardHintTitle, { color: colors.cardQuestionText || colors.text }]}>
+                {t('deckDetail.addCardHintTitle', 'İlk kartını ekle')}
+              </Text>
+              <Text style={[styles.addCardHintDescription, { color: colors.muted }]}>
+                {t('deckDetail.addCardHintDescription', 'Bu butona dokunarak destene ilk kartını ekleyebilirsin.')}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('deckDetail.addCardHintDismiss', 'Anladım')}
+                onPress={handleDismissAddCardHint}
+                style={({ pressed }) => [styles.addCardHintSecondaryButton, { borderColor: '#F98A21', opacity: pressed ? 0.8 : 1 }]}
+              >
+                <Text style={styles.addCardHintSecondaryButtonText}>{t('deckDetail.addCardHintDismiss', 'Anladım')}</Text>
+              </Pressable>
+            </View>
+          )}
+
+          <AnimatedPressable
           accessibilityRole="button"
           accessibilityLabel={t('deckDetail.addCard', 'Kart Ekle')}
-          style={[styles.addCardFab, addCardFabAnimatedStyle, { bottom: insets.bottom + verticalScale(24) }]}
+          style={[
+            styles.addCardFab,
+            addCardFabAnimatedStyle,
+            {
+              bottom: insets.bottom + verticalScale(24),
+              zIndex: showAddCardHint ? 7 : 3,
+              borderWidth: showAddCardHint ? moderateScale(2) : 0,
+              borderColor: showAddCardHint ? '#FFE1C2' : 'transparent',
+              shadowColor: showAddCardHint ? '#F98A21' : '#000000',
+              shadowOpacity: showAddCardHint ? 0.45 : 0.12,
+              shadowRadius: showAddCardHint ? moderateScale(6) : moderateScale(4),
+              elevation: showAddCardHint ? 3 : 2,
+            },
+          ]}
           onPressIn={() => {
             addCardFabPressed.value = 1;
           }}
           onPressOut={() => {
             addCardFabPressed.value = 0;
           }}
-          onPress={() => {
-            triggerHaptic('light');
-            requestAnimationFrame(() => {
-              navigation.navigate('AddCard', { deck });
-            });
-          }}
+          onPress={handleAddCard}
         >
           <LinearGradient
             colors={['#F98A21', '#FF6B35']}
@@ -1562,7 +1657,8 @@ export default function DeckDetailScreen({ route, navigation }) {
               {t('deckDetail.addCard', 'Kart Ekle')}
             </Text>
           </LinearGradient>
-        </AnimatedPressable>
+          </AnimatedPressable>
+        </>
       )}
 
       <BottomSheetModal
@@ -2009,7 +2105,63 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
   },
-
+  addCardHintOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    zIndex: 4,
+  },
+  addCardCoachmark: {
+    position: 'absolute',
+    right: scale(20),
+    width: scale(280),
+    padding: moderateScale(16),
+    borderRadius: moderateScale(18),
+    borderWidth: StyleSheet.hairlineWidth,
+    zIndex: 6,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: verticalScale(5) },
+    shadowOpacity: 0.28,
+    shadowRadius: moderateScale(12),
+    elevation: 8,
+  },
+  addCardCoachmarkArrow: {
+    position: 'absolute',
+    right: scale(42),
+    bottom: verticalScale(-9),
+    width: 0,
+    height: 0,
+    borderLeftWidth: scale(9),
+    borderRightWidth: scale(9),
+    borderTopWidth: verticalScale(9),
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+  },
+  addCardHintTitle: {
+    fontSize: moderateScale(16),
+    fontWeight: '800',
+    marginBottom: verticalScale(4),
+  },
+  addCardHintDescription: {
+    fontSize: moderateScale(13),
+    lineHeight: verticalScale(18),
+  },
+  addCardHintSecondaryButton: {
+    alignSelf: 'flex-end',
+    marginTop: verticalScale(14),
+    borderWidth: moderateScale(1.5),
+    borderRadius: moderateScale(10),
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(8),
+  },
+  addCardHintSecondaryButtonText: {
+    color: '#F98A21',
+    fontSize: moderateScale(13),
+    fontWeight: '800',
+  },
   // GRADIENT FLOW STYLES - Modern & Eye-catching
   gfHeroBanner: {
     marginBottom: verticalScale(-50),

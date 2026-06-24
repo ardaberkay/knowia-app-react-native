@@ -137,7 +137,9 @@ module.exports = function (api) {
             'fluent:eye-lines-24-filled',
             'gridicons:block',
             'mage:inbox-star',
-            'ci:chevron-left'
+            'ci:chevron-left',
+            'material-symbols:trophy',
+            'lets-icons:clock-fill'
           ],
         },
       ],
