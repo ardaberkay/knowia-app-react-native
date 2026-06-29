@@ -220,7 +220,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const isOwner = userId && deck?.user_id === userId;
   const isAnimatingRef = useRef(false);
   const SESSION_BATCH_LIMIT = 20;
-  const SWIPE_ANIMATION_MS = 500;
+  const SWIPE_ANIMATION_MS = 450;
   const REVIEW_PROMPT_DELAY_MS = 600;
   const PRE_FETCH_THRESHOLD = 5;
   const seenCardIdsRef = useRef(new Set());
