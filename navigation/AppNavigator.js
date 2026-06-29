@@ -196,7 +196,21 @@ export default function AppNavigator() {
         ) : (
           <>
             <Stack.Screen name="MainTabs" component={MainTabs} options={{ freezeOnBlur: true, headerBackButtonDisplayMode: 'minimal' }} />
-            <Stack.Screen name="DeckDetail" component={DeckDetailScreen} options={{ headerShown: true, title: t('tabs.deckInfo', 'Deste Bilgisi'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
+            <Stack.Screen
+              name="DeckDetail"
+              component={DeckDetailScreen}
+              options={{
+                headerShown: true,
+                title: t('tabs.deckInfo', 'Deste Bilgisi'),
+                headerTitleAlign: 'center',
+                headerBackButtonDisplayMode: 'minimal',
+                contentStyle: { backgroundColor: colors.background },
+                ...(Platform.OS === 'android' && {
+                  headerRightContainerStyle: { minWidth: scale(72) },
+                  headerLeftContainerStyle: { minWidth: scale(56) },
+                }),
+              }}
+            />
             <Stack.Screen
               name="Discover"
               component={DiscoverScreen}

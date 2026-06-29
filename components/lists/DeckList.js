@@ -282,7 +282,7 @@ const DeckCard = React.memo(({
         ) : (
           <>
             {showPopularityBadge && deck.popularity_score && deck.popularity_score > 0 ? (
-              <View style={{ position: 'absolute', top: verticalScale(8), left: scale(12), zIndex: 10 }}>
+              <View style={{ position: 'absolute', top: verticalScale(8), right: scale(12), zIndex: 10 }}>
                 <View style={styles.popularityBadge}>
                   <Iconify icon="mdi:fire" size={moderateScale(14)} color="#fff" style={{ marginRight: scale(4) }} />
                   <Text style={styles.popularityBadgeText}>{Math.round(deck.popularity_score)}</Text>

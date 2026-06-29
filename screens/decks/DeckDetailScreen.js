@@ -21,7 +21,7 @@ import * as BlockService from '../../services/BlockService';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import ReportModal from '../../components/modals/ReportModal';
 import { scale, moderateScale, verticalScale, useWindowDimensions } from '../../lib/scaling';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheetModal, BottomSheetFlatList, BottomSheetBackdrop, TouchableOpacity as BSTouchableOpacity } from '@gorhom/bottom-sheet';
@@ -29,13 +29,46 @@ import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-
 
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 
+/** Çıkış animasyonunda opacity/transform sabitlenir; bileşen tipi değişmez (ScrollView remount flash'ı önlenir) */
+function EntranceBlock({ anim, style, children, scaleFrom, translateYFrom = 0, opacityOnly = false }) {
+  const isFocused = useIsFocused();
+
+  if (!isFocused) {
+    return (
+      <Animated.View style={[style, { opacity: 1 }]}>
+        {children}
+      </Animated.View>
+    );
+  }
+
+  const animatedStyle = { opacity: anim };
+  if (!opacityOnly) {
+    const transform = [];
+    if (scaleFrom != null) {
+      transform.push({
+        scale: anim.interpolate({ inputRange: [0, 1], outputRange: [scaleFrom, 1] }),
+      });
+    }
+    if (translateYFrom) {
+      transform.push({
+        translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [translateYFrom, 0] }),
+      });
+    }
+    if (transform.length > 0) {
+      animatedStyle.transform = transform;
+    }
+  }
+  return <Animated.View style={[style, animatedStyle]}>{children}</Animated.View>;
+}
+
 export default function DeckDetailScreen({ route, navigation }) {
   
   const insets = useSafeAreaInsets();
-  const { deck } = route.params;
+  const [deck, setDeck] = useState(() => route.params?.deck);
   const { colors } = useTheme();
   const { session } = useAuth();
   const userId = session?.user?.id;
+  const isFocused = useIsFocused();
   // Favori durumunu route.params'dan al (eğer varsa), yoksa false
   const [isFavorite, setIsFavorite] = useState(deck?.is_favorite || false);
   const [favLoading, setFavLoading] = useState(false);
@@ -63,10 +96,15 @@ export default function DeckDetailScreen({ route, navigation }) {
   const chaptersFetchedRef = useRef(false);
   /** Aynı anda birden fazla fetchChapters; eski cevap state'i güncellemesin */
   const chaptersFetchGenRef = useRef(0);
-  /** Ekran unmount olduysa (stack'ten çıkıldıysa) chapter/progress setState yapılmasın — çıkış animasyonunda flash azaltır */
+  /** Ekran unmount olduysa (stack'ten çıkıldıysa) setState yapılmasın */
   const deckDetailMountedRef = useRef(true);
-  /** useFocusEffect veri yenilemesi: blur sonrası gelen progress cevabı state güncellemesin */
-  const detailFocusRefreshActiveRef = useRef(false);
+  /** Blur sonrası (pop animasyonu dahil) async cevaplar state güncellemesin */
+  const detailScreenActiveRef = useRef(true);
+
+  const canApplyDetailState = useCallback(
+    () => deckDetailMountedRef.current && detailScreenActiveRef.current,
+    []
+  );
 
   useEffect(() => {
     deckDetailMountedRef.current = true;
@@ -74,16 +112,17 @@ export default function DeckDetailScreen({ route, navigation }) {
       deckDetailMountedRef.current = false;
     };
   }, []);
+
   // Session'dan user ID'yi al (eğer varsa)
   const initialUserId = session?.user?.id || null;
   const [currentUserId, setCurrentUserId] = useState(initialUserId);
   // Başlangıçta session varsa ve kullanıcı deste sahibi ise true yap
   const [shareComponentVisible, setShareComponentVisible] = useState(
-    initialUserId ? deck.user_id === initialUserId : false
+    initialUserId ? deck?.user_id === initialUserId : false
   );
-  const [isShared, setIsShared] = useState(deck.is_shared || false);
+  const [isShared, setIsShared] = useState(deck?.is_shared || false);
   const [shareLoading, setShareLoading] = useState(false);
-  const [categoryInfo, setCategoryInfo] = useState(deck.categories || null);
+  const [categoryInfo, setCategoryInfo] = useState(deck?.categories || null);
   const { t } = useTranslation();
   const { showSuccess, showError } = useSnackbarHelpers();
   const nameScrollRef = useRef(null);
@@ -136,12 +175,40 @@ export default function DeckDetailScreen({ route, navigation }) {
   const chapterSheetHeaderApprox = verticalScale(56);
   const moreMenuScaleAnim = useRef(new Animated.Value(0)).current;
 
-  // Animation values for entrance effects
-  const heroAnim = useRef(new Animated.Value(0)).current;
-  const statsAnim = useRef(new Animated.Value(0)).current;
-  const cardsAnim = useRef(new Animated.Value(0)).current;
+  // Animation values for entrance effects (Android: giriş animasyonu kapalı — çıkışta opacity flash riski)
+  const entranceStart = Platform.OS === 'android' ? 1 : 0;
+  const heroAnim = useRef(new Animated.Value(entranceStart)).current;
+  const statsAnim = useRef(new Animated.Value(entranceStart)).current;
+  const cardsAnim = useRef(new Animated.Value(entranceStart)).current;
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const addCardFabPressed = useSharedValue(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      detailScreenActiveRef.current = true;
+      return () => {
+        detailScreenActiveRef.current = false;
+      };
+    }, [])
+  );
+
+  useEffect(() => {
+    const lockExitUi = () => {
+      detailScreenActiveRef.current = false;
+      chapterProgressJobRef.current += 1;
+      chaptersFetchGenRef.current += 1;
+      heroAnim.setValue(1);
+      statsAnim.setValue(1);
+      cardsAnim.setValue(1);
+      chapterSheetModalRef.current?.dismiss();
+    };
+    const beforeRemoveSub = navigation.addListener('beforeRemove', lockExitUi);
+    const blurSub = navigation.addListener('blur', lockExitUi);
+    return () => {
+      beforeRemoveSub();
+      blurSub();
+    };
+  }, [navigation, heroAnim, statsAnim, cardsAnim]);
 
   const addCardFabAnimatedStyle = useAnimatedStyle(() => {
     const springConfig = { mass: 0.5, damping: 30, stiffness: 400 };
@@ -184,16 +251,17 @@ export default function DeckDetailScreen({ route, navigation }) {
     const loadDecksLanguages = async () => {
       try {
         const ids = await getDeckLanguages(deck.id);
+        if (!canApplyDetailState()) return;
         setDecksLanguages(ids);
       } catch (e) {
         console.error('Deste dilleri yüklenemedi:', e);
       }
     };
     loadDecksLanguages();
-  }, [deck.id]);
+  }, [deck.id, canApplyDetailState]);
 
   useEffect(() => {
-    // Staggered entrance animation
+    if (Platform.OS === 'android') return;
     Animated.stagger(verticalScale(120), [
       Animated.spring(heroAnim, {
         toValue: 1,
@@ -214,27 +282,18 @@ export default function DeckDetailScreen({ route, navigation }) {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
-
-  // Swipe ekranına gidip geri dönünce chapter sheet açık kalmasın
-  useEffect(() => {
-    const onBlur = navigation.addListener('blur', () => {
-      setChapterSheetVisible(false);
-    });
-    return () => {
-      onBlur?.();
-    };
-  }, [navigation]);
+  }, [heroAnim, statsAnim, cardsAnim]);
 
   // Initial deck verisi için is_admin_created kontrolü
   useEffect(() => {
     if (deck?.is_admin_created && deck?.profiles) {
-      deck.profiles = {
-        ...deck.profiles,
-        username: 'Knowia',
-        image_url: null, // app_icon.png kullanılacak
-      };
-      route.params.deck = deck;
+      setDeck((prev) => {
+        if (!prev?.profiles) return prev;
+        return {
+          ...prev,
+          profiles: { ...prev.profiles, username: 'Knowia', image_url: null },
+        };
+      });
     }
   }, []); // Sadece mount'ta çalış
 
@@ -274,6 +333,7 @@ export default function DeckDetailScreen({ route, navigation }) {
         // Cache'deki veri çok eski değilse (1 saat içindeyse) kullan
         const cacheAge = Date.now() - (cachedData.timestamp || 0);
         if (cacheAge < 3600000) { // 1 saat
+          if (!canApplyDetailState()) return false;
           setProgress(cachedData.progress || 0);
           setLearnedCardsCount(cachedData.learned || 0);
           setDeckStats(cachedData.stats || { total: deck.card_count || 0, learned: 0, learning: 0, new: deck.card_count || 0 });
@@ -295,7 +355,9 @@ export default function DeckDetailScreen({ route, navigation }) {
         // Cache kullanıldı, arka planda güncel veriyi çek (loading gösterme)
         // setTimeout ile biraz geciktir ki cache önce görünsün
         setTimeout(() => {
-          fetchProgressFromAPI(false); // useCache = false ile API'den çek
+          if (canApplyDetailState()) {
+            fetchProgressFromAPI(false);
+          }
         }, 100);
         return;
       }
@@ -305,13 +367,14 @@ export default function DeckDetailScreen({ route, navigation }) {
     await fetchProgressFromAPI(true);
   };
 
-  const fetchProgressFromAPI = async (showLoading = true, fromFocusRefresh = false) => {
+  const fetchProgressFromAPI = async (showLoading = true) => {
+    if (!canApplyDetailState()) return;
     if (showLoading) {
       setProgressLoading(true);
     }
     try {
       const stats = await getDeckProgressCounts(userId, deck.id);
-      if (fromFocusRefresh && !detailFocusRefreshActiveRef.current) {
+      if (!canApplyDetailState()) {
         if (showLoading) setProgressLoading(false);
         return;
       }
@@ -338,7 +401,7 @@ export default function DeckDetailScreen({ route, navigation }) {
         setProgressLoading(false);
       }
     } catch (e) {
-      if (fromFocusRefresh && !detailFocusRefreshActiveRef.current) {
+      if (!canApplyDetailState()) {
         if (showLoading) setProgressLoading(false);
         return;
       }
@@ -358,8 +421,10 @@ export default function DeckDetailScreen({ route, navigation }) {
       const fetchFavoriteStatus = async () => {
         try {
           const favIds = await getFavoriteDeckIds(session.user.id);
+          if (!canApplyDetailState()) return;
           setIsFavorite(favIds.includes(deck.id));
         } catch (e) {
+          if (!canApplyDetailState()) return;
           setIsFavorite(false);
         }
       };
@@ -381,27 +446,26 @@ export default function DeckDetailScreen({ route, navigation }) {
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
-      detailFocusRefreshActiveRef.current = true;
 
       const run = async () => {
-        await fetchProgressFromAPI(false, true);
-        if (!isActive) return;
+        await fetchProgressFromAPI(false);
+        if (!isActive || !canApplyDetailState()) return;
 
         try {
-          const [deckData, favIds] = await Promise.all([
+          const [freshDeck, favIds] = await Promise.all([
             getDeckById(deck.id),
             userId ? getFavoriteDeckIds(userId) : Promise.resolve([]),
           ]);
-          if (!isActive) return;
+          if (!isActive || !canApplyDetailState()) return;
           const isFav = userId ? favIds.includes(deck.id) : false;
-          if (deckData) {
-            if (deckData.is_admin_created && deckData.profiles) {
-              deckData.profiles = { ...deckData.profiles, username: 'Knowia', image_url: null };
+          if (freshDeck) {
+            if (freshDeck.is_admin_created && freshDeck.profiles) {
+              freshDeck.profiles = { ...freshDeck.profiles, username: 'Knowia', image_url: null };
             }
-            deckData.is_favorite = isFav;
-            route.params.deck = deckData;
-            setCategoryInfo(deckData.categories);
-            setIsShared(deckData.is_shared || false);
+            freshDeck.is_favorite = isFav;
+            setDeck(freshDeck);
+            setCategoryInfo(freshDeck.categories);
+            setIsShared(freshDeck.is_shared || false);
           }
           setIsFavorite(isFav);
         } catch (e) {
@@ -412,9 +476,8 @@ export default function DeckDetailScreen({ route, navigation }) {
       run();
       return () => {
         isActive = false;
-        detailFocusRefreshActiveRef.current = false;
       };
-    }, [deck.id, currentUserId, userId])
+    }, [deck.id, userId, canApplyDetailState])
   );
 
   const onRefresh = useCallback(async () => {
@@ -431,13 +494,14 @@ export default function DeckDetailScreen({ route, navigation }) {
       ]);
   
       if (deckData) {
-        // Deste adı, açıklaması vb. burada güncelleniyor
         if (deckData.is_admin_created && deckData.profiles) {
           deckData.profiles = { ...deckData.profiles, username: 'Knowia', image_url: null };
         }
-        route.params.deck = deckData; // Veriyi navigation'a geri yaz
-        setCategoryInfo(deckData.categories);
-        setIsFavorite(uid ? favDeckIds.includes(deck.id) : false);
+        if (canApplyDetailState()) {
+          setDeck(deckData);
+          setCategoryInfo(deckData.categories);
+          setIsFavorite(uid ? favDeckIds.includes(deck.id) : false);
+        }
       }
   
       // 2. ADIM: İstatistikleri (Toplam, Learned, Learning) güncelle
@@ -454,9 +518,11 @@ export default function DeckDetailScreen({ route, navigation }) {
     } catch (e) {
       console.error('DeckDetail refresh error:', e);
     } finally {
-      setRefreshing(false);
+      if (canApplyDetailState()) {
+        setRefreshing(false);
+      }
     }
-  }, [deck?.id, userId, chapters.length]);
+  }, [deck?.id, userId, chapters.length, canApplyDetailState]);
 
   useEffect(() => {
     if (!search.trim()) {
@@ -474,18 +540,20 @@ export default function DeckDetailScreen({ route, navigation }) {
   useEffect(() => {
     const fetchFavoriteCards = async () => {
       if (!userId) {
-        setFavoriteCards([]);
+        if (canApplyDetailState()) setFavoriteCards([]);
         return;
       }
       try {
         const ids = await getFavoriteCardIds(userId);
+        if (!canApplyDetailState()) return;
         setFavoriteCards(ids);
       } catch (e) {
+        if (!canApplyDetailState()) return;
         setFavoriteCards([]);
       }
     };
     fetchFavoriteCards();
-  }, [deck.id, userId]);
+  }, [deck.id, userId, canApplyDetailState]);
 
   useEffect(() => {
     setFilteredCards(sortCards(cardSort, cards));
@@ -497,12 +565,12 @@ export default function DeckDetailScreen({ route, navigation }) {
     setCurrentUserId(userId);
 
     // Eğer kullanıcı deste sahibi ise share component'i göster, değilse gizle
-    if (userId && deck.user_id === userId) {
+    if (userId && deck?.user_id === userId) {
       setShareComponentVisible(true);
     } else {
       setShareComponentVisible(false);
     }
-  }, [session, deck.user_id]);
+  }, [session, deck?.user_id]);
 
 
   // Son seçilen chapter'ı AsyncStorage'dan yükle
@@ -510,12 +578,12 @@ export default function DeckDetailScreen({ route, navigation }) {
     try {
       const storageKey = `last_selected_chapter_${deck.id}`;
       const savedChapterId = await AsyncStorage.getItem(storageKey);
-      if (!deckDetailMountedRef.current) return;
+      if (!canApplyDetailState()) return;
 
       if (savedChapterId) {
         // Eğer "action" seçiliyse
         if (savedChapterId === 'action') {
-          if (!deckDetailMountedRef.current) return;
+          if (!canApplyDetailState()) return;
           setSelectedChapter(ACTION_CHAPTER);
           return;
         }
@@ -523,18 +591,18 @@ export default function DeckDetailScreen({ route, navigation }) {
         // Kaydedilmiş chapter'ı bul
         const savedChapter = availableChapters.find(ch => ch.id === savedChapterId);
         if (savedChapter) {
-          if (!deckDetailMountedRef.current) return;
+          if (!canApplyDetailState()) return;
           setSelectedChapter(savedChapter);
           return;
         }
       }
 
       // Eğer kayıtlı chapter bulunamazsa veya yoksa: hiçbir seçim yapma (kullanıcı seçsin)
-      if (!deckDetailMountedRef.current) return;
+      if (!canApplyDetailState()) return;
       setSelectedChapter(null);
     } catch (e) {
       console.error('Error loading last selected chapter:', e);
-      if (!deckDetailMountedRef.current) return;
+      if (!canApplyDetailState()) return;
       setSelectedChapter(null);
     }
   };
@@ -567,22 +635,22 @@ export default function DeckDetailScreen({ route, navigation }) {
     const gen = ++chaptersFetchGenRef.current;
     try {
       const data = await listChapters(deck.id);
-      if (gen !== chaptersFetchGenRef.current || !deckDetailMountedRef.current) return;
+      if (gen !== chaptersFetchGenRef.current || !canApplyDetailState()) return;
       const availableChapters = data || [];
       setChapters(availableChapters);
       chaptersFetchedRef.current = true;
 
       // Son seçilen chapter'ı yükle
       await loadLastSelectedChapter(availableChapters);
-      if (gen !== chaptersFetchGenRef.current || !deckDetailMountedRef.current) return;
+      if (gen !== chaptersFetchGenRef.current || !canApplyDetailState()) return;
 
     } catch (e) {
       console.error('Error fetching chapters:', e);
-      if (gen !== chaptersFetchGenRef.current || !deckDetailMountedRef.current) return;
+      if (gen !== chaptersFetchGenRef.current || !canApplyDetailState()) return;
       setChapters([]);
       setSelectedChapter(null);
     }
-  }, [deck?.id, currentUserId]);
+  }, [deck?.id, currentUserId, canApplyDetailState]);
 
   useEffect(() => {
     chaptersFetchedRef.current = false;
@@ -619,10 +687,10 @@ export default function DeckDetailScreen({ route, navigation }) {
     }
 
     const jobId = ++chapterProgressJobRef.current;
-    if (!silent) {
+    if (!silent && canApplyDetailState()) {
       setChapterProgressLoading(true);
     }
-    if (force) {
+    if (force && canApplyDetailState()) {
       setChapterProgressMap(new Map());
       setChapterProgressLoadedCount(0);
       chapterProgressLoadedRef.current = false;
@@ -632,14 +700,14 @@ export default function DeckDetailScreen({ route, navigation }) {
     p = (async () => {
       try {
         const progressMap = await getDeckChaptersProgressRpc(deck.id, currentUserId, force);
-        if (!deckDetailMountedRef.current || chapterProgressJobRef.current !== jobId) return;
+        if (!canApplyDetailState() || chapterProgressJobRef.current !== jobId) return;
         setChapterProgressMap(progressMap);
         setChapterProgressLoadedCount(chapters.length);
         chapterProgressLoadedRef.current = true;
       } catch (e) {
         console.error('Error fetching chapter progress:', e);
       } finally {
-        if (!silent && deckDetailMountedRef.current && chapterProgressJobRef.current === jobId) {
+        if (!silent && canApplyDetailState() && chapterProgressJobRef.current === jobId) {
           setChapterProgressLoading(false);
         }
         if (chapterProgressPromiseRef.current === p) {
@@ -650,7 +718,7 @@ export default function DeckDetailScreen({ route, navigation }) {
 
     chapterProgressPromiseRef.current = p;
     return p;
-  }, [chapters, currentUserId, deck.id]);
+  }, [chapters, currentUserId, deck.id, canApplyDetailState]);
 
   fetchChapterProgressRef.current = fetchChapterProgress;
 
@@ -766,7 +834,7 @@ export default function DeckDetailScreen({ route, navigation }) {
       await updateDeckShare(deck.id, userId, newValue);
 
       setIsShared(newValue);
-      deck.is_shared = newValue;
+      setDeck((prev) => (prev ? { ...prev, is_shared: newValue } : prev));
       Alert.alert(t('common.success', 'Success'), t('deckDetail.shareUpdated', 'Sharing settings updated'));
     } catch (e) {
       Alert.alert(t('common.error', 'Error'), t('deckDetail.shareUpdateError', 'Sharing settings could not be updated'));
@@ -972,11 +1040,18 @@ export default function DeckDetailScreen({ route, navigation }) {
 
   // Header'a ikonları ekle
   React.useLayoutEffect(() => {
+    if (!isFocused) return;
     navigation.setOptions({
       headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(16), paddingHorizontal: scale(8) }}>
-          
-          {/* Favori ikonu - Serbest ve çerçevesiz (hitSlop ile tıklama alanı geniş) */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: scale(16),
+            paddingHorizontal: scale(8),
+            minWidth: scale(72),
+          }}
+        >
           <TouchableOpacity
             onPress={handleToggleFavorite}
             activeOpacity={0.7}
@@ -989,27 +1064,27 @@ export default function DeckDetailScreen({ route, navigation }) {
             />
           </TouchableOpacity>
 
-          {/* More menüsü - Etrafı çerçeveli (Border) ve kendi iç boşluğu (Padding) var */}
-          {currentUserId && (
-            <TouchableOpacity
-              ref={moreMenuRef}
-              onPress={() => {
-                triggerHaptic('selection');
-                requestAnimationFrame(() => {
-                  openMoreMenu();
-                });
-              }}
-              activeOpacity={0.7}
-              hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
-            >
-              <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={moderateScale(24)} color={colors.text} />
-            </TouchableOpacity>
-          )}
-          
+          <View style={{ width: moderateScale(24), alignItems: 'center' }}>
+            {currentUserId ? (
+              <TouchableOpacity
+                ref={moreMenuRef}
+                onPress={() => {
+                  triggerHaptic('selection');
+                  requestAnimationFrame(() => {
+                    openMoreMenu();
+                  });
+                }}
+                activeOpacity={0.7}
+                hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
+              >
+                <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={moderateScale(24)} color={colors.text} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
         </View>
       ),
     });
-  }, [navigation, colors.text, colors.border, isFavorite, favLoading, currentUserId, deck.user_id]);
+  }, [navigation, colors.text, isFavorite, currentUserId, deck?.user_id, isFocused]);
 
   const sortCards = (type, cardsList) => {
     if (type === 'az') {
@@ -1117,17 +1192,18 @@ export default function DeckDetailScreen({ route, navigation }) {
         contentContainerStyle={{ paddingBottom: scrollContentPaddingBottom }}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} colors={[colors.buttonColor]} />
+          isFocused ? (
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} colors={[colors.buttonColor]} />
+          ) : undefined
         }
       >
         {/* GRADIENT FLOW DESIGN - Modern & Eye-catching */}
 
         {/* Hero Gradient Banner */}
-        <Animated.View
-          style={[
-            styles.gfHeroBanner,
-            { opacity: heroAnim, transform: [{ scale: heroAnim.interpolate({ inputRange: [0, 1], outputRange: [1.05, 1] }) }] }
-          ]}
+        <EntranceBlock
+          anim={heroAnim}
+          scaleFrom={1.05}
+          style={styles.gfHeroBanner}
         >
           <LinearGradient
             colors={getCategoryGradient(categoryInfo?.sort_order)}
@@ -1320,20 +1396,20 @@ export default function DeckDetailScreen({ route, navigation }) {
               )
             )}
           </LinearGradient>
-        </Animated.View>
+        </EntranceBlock>
 
         <View style={[styles.gfLearningFlowCard, { borderColor: colors.cardBorder, backgroundColor: colors.cardBackground }]}>
           {/* Progress & Stats Card - Side by Side Layout */}
-          <Animated.View
+          <EntranceBlock
+            anim={statsAnim}
+            translateYFrom={40}
             style={[
               styles.gfProgressCard,
               {
                 backgroundColor: 'transparent',
                 shadowOpacity: 0,
                 elevation: 0,
-                opacity: statsAnim,
-                transform: [{ translateY: statsAnim.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }) }]
-              }
+              },
             ]}
           >
             <View style={styles.gfCardContent}>
@@ -1409,13 +1485,15 @@ export default function DeckDetailScreen({ route, navigation }) {
               </View>
             </View>
             </View>
-          </Animated.View>
+          </EntranceBlock>
 
           <View style={styles.gfLearningFlowDividerWrap}>
             <View style={[styles.gfLearningFlowDivider, { backgroundColor: colors.border }]} />
           </View>
 
-          <Animated.View
+          <EntranceBlock
+            anim={cardsAnim}
+            translateYFrom={24}
             style={[
               styles.gfStudyCard,
               {
@@ -1424,8 +1502,6 @@ export default function DeckDetailScreen({ route, navigation }) {
                 marginHorizontal: 0,
                 marginBottom: 0,
                 padding: 0,
-                opacity: cardsAnim,
-                transform: [{ translateY: cardsAnim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }],
               },
             ]}
           >
@@ -1478,19 +1554,19 @@ export default function DeckDetailScreen({ route, navigation }) {
                 </View>
               </LinearGradient>
             </TouchableOpacity>
-          </Animated.View>
+          </EntranceBlock>
         </View>
 
         {/* Action Buttons - Combined Card */}
-        <Animated.View
+        <EntranceBlock
+          anim={cardsAnim}
+          translateYFrom={30}
           style={[
             styles.gfActionsCard,
             {
               backgroundColor: colors.cardBackground,
               borderColor: colors.cardBorder,
-              opacity: cardsAnim,
-              transform: [{ translateY: cardsAnim.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) }]
-            }
+            },
           ]}
         >
           {/* Cards Button */}
@@ -1533,15 +1609,17 @@ export default function DeckDetailScreen({ route, navigation }) {
             </View>
             <Iconify icon="ion:chevron-forward" size={moderateScale(22)} color={colors.muted} />
           </TouchableOpacity>
-        </Animated.View>
+        </EntranceBlock>
 
 
         {/* Share Card - Modern Toggle */}
         {shareComponentVisible && (
-          <Animated.View
+          <EntranceBlock
+            anim={cardsAnim}
+            opacityOnly
             style={[
               styles.gfShareCard,
-              { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, opacity: cardsAnim }
+              { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder },
             ]}
           >
             <View style={styles.gfShareMainRow}>
@@ -1577,11 +1655,11 @@ export default function DeckDetailScreen({ route, navigation }) {
                 {t('deckDetail.moreInfo', 'Daha fazla bilgi')}
               </Text>
             </TouchableOpacity>
-          </Animated.View>
+          </EntranceBlock>
         )}
       </ScrollView>
 
-      {showAddCardFab && (
+      {isFocused && showAddCardFab && (
         <>
           {showAddCardHint && deckStats.total === 0 && (
             <Pressable
@@ -1667,7 +1745,9 @@ export default function DeckDetailScreen({ route, navigation }) {
         onChange={(idx) => {
           if (idx === -1) {
             autoStartAfterChapterPickRef.current = false;
-            setChapterSheetVisible(false);
+            if (canApplyDetailState()) {
+              setChapterSheetVisible(false);
+            }
           }
         }}
         backdropComponent={renderChapterSheetBackdrop}
@@ -1807,7 +1887,7 @@ export default function DeckDetailScreen({ route, navigation }) {
 
       {/* More Menüsü Modal - sahibi: Düzenle/Sil; sahibi değil: Gizle/Şikayet et */}
       <Modal
-        visible={moreMenuVisible}
+        visible={moreMenuVisible && isFocused}
         transparent
         animationType="none" // OS'in yavaş animasyonunu kapattık
         onRequestClose={() => setMoreMenuVisible(false)}
@@ -1960,7 +2040,7 @@ export default function DeckDetailScreen({ route, navigation }) {
 
       {/* Creator menüsü (kullanıcıyı şikayet et / engelle) */}
       <Modal
-        visible={creatorMenuVisible}
+        visible={creatorMenuVisible && isFocused}
         transparent
         animationType="none" // OS'in yavaş animasyonunu İPTAL ET!
         onRequestClose={() => setCreatorMenuVisible(false)}
@@ -2058,7 +2138,7 @@ export default function DeckDetailScreen({ route, navigation }) {
       </Modal>
 
       <ReportModal
-        visible={reportModalVisible}
+        visible={reportModalVisible && isFocused}
         onClose={() => setReportModalVisible(false)}
         reportType={reportModalType}
         alreadyReportedCodes={reportModalAlreadyCodes}
