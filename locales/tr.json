@@ -444,6 +444,20 @@
       "noNextChapter": "Sonraki bölüm yok",
       "emptyTitle": "Bu bölümde şu anda çalışılacak kart yok.",
       "allLearned": "Tüm kartlar öğrenildi"
+    },
+    "tutorial": {
+      "flipTitle": "Kartı çevir",
+      "flipDescription": "Cevabı tahmin ettikten sonra karta dokunarak arka yüzünü görebilirsin.",
+      "swipeTitle": "Kaydırarak öğren",
+      "swipeDescription": "Tamamen öğrendiğin kartları sağa kaydır. Sık tekrar etmek istediklerini sola kaydır.",
+      "intervalTitle": "Tekrar zamanını seç",
+      "intervalDescription": "Kartı ne kadar iyi bildiğine göre tekrar süresini seç. 15 dakika, 1 saat, 1 gün veya 7 gün sonra yeniden karşına çıksın. Öğrendikçe kartı daha seyrek görmen yeterli olacaktır.",
+      "swipeHintLeft": "Tekrar Et",
+      "swipeHintRight": "Öğrendim",
+      "skip": "Geç",
+      "back": "Geri",
+      "next": "İleri",
+      "done": "Anladım"
     }
   },
   "login": {

@@ -401,6 +401,20 @@
       "noNextChapter": "Sem próximo capítulo",
       "emptyTitle": "Não há cartões para estudar neste capítulo.",
       "allLearned": "Todos os cartões foram aprendidos"
+    },
+    "tutorial": {
+      "flipTitle": "Vire o cartão",
+      "flipDescription": "Depois de tentar responder, toque no cartão para ver o verso.",
+      "swipeTitle": "Aprenda deslizando",
+      "swipeDescription": "Deslize para a direita os cartões aprendidos. Para a esquerda, os que quer revisar mais.",
+      "intervalTitle": "Escolha a revisão",
+      "intervalDescription": "Escolha o tempo conforme você sabe o cartão: 15 minutos, 1 hora, 1 dia ou 7 dias. Quanto melhor aprender, menos vezes precisará vê-lo.",
+      "swipeHintLeft": "Revisar",
+      "swipeHintRight": "Aprendido",
+      "skip": "Pular",
+      "back": "Voltar",
+      "next": "Avançar",
+      "done": "Entendi"
     }
   },
   "login": {

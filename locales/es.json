@@ -401,6 +401,20 @@
       "noNextChapter": "Sin siguiente capítulo",
       "emptyTitle": "No hay tarjetas pendientes en este capítulo.",
       "allLearned": "Todas aprendidas"
+    },
+    "tutorial": {
+      "flipTitle": "Voltea la tarjeta",
+      "flipDescription": "Después de adivinar la respuesta, toca la tarjeta para ver el reverso.",
+      "swipeTitle": "Aprende deslizando",
+      "swipeDescription": "Desliza a la derecha las tarjetas que ya aprendiste. A la izquierda las que quieras repasar más.",
+      "intervalTitle": "Elige cuándo repasar",
+      "intervalDescription": "Elige el tiempo según qué tan bien sabes la tarjeta: 15 minutos, 1 hora, 1 día o 7 días. Mientras más la aprendas, menos seguido tendrás que verla.",
+      "swipeHintLeft": "Repasar",
+      "swipeHintRight": "Aprendida",
+      "skip": "Saltar",
+      "back": "Atrás",
+      "next": "Siguiente",
+      "done": "Entendido"
     }
   },
   "login": {

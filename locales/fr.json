@@ -401,6 +401,20 @@
       "noNextChapter": "Pas de chapitre suivant",
       "emptyTitle": "Aucune carte à réviser ici.",
       "allLearned": "Toutes les cartes sont apprises"
+    },
+    "tutorial": {
+      "flipTitle": "Retournez la carte",
+      "flipDescription": "Après avoir deviné la réponse, touchez la carte pour voir le verso.",
+      "swipeTitle": "Apprenez en glissant",
+      "swipeDescription": "Glissez à droite les cartes apprises. Glissez à gauche celles à revoir plus souvent.",
+      "intervalTitle": "Choisissez le délai",
+      "intervalDescription": "Choisissez le délai selon votre maîtrise : 15 minutes, 1 heure, 1 jour ou 7 jours. Plus vous progressez, moins vous aurez besoin de revoir la carte.",
+      "swipeHintLeft": "Réviser",
+      "swipeHintRight": "Apprise",
+      "skip": "Passer",
+      "back": "Retour",
+      "next": "Suivant",
+      "done": "Compris"
     }
   },
   "login": {

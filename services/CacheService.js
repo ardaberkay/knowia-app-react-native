@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const SWIPE_TUTORIAL_STORAGE_KEY = 'knowia_seen_swipe_tutorial';
+
 // Cache süreleri (milisaniye)
 export const CACHE_DURATIONS = {
   // Referans veriler
@@ -30,6 +32,23 @@ export const CACHE_DURATIONS = {
 
   // Destelerim listesi (mutation: yeni deste, düzenleme, silme, paylaşım)
   MY_DECKS: 7 * 24 * 60 * 60 * 1000,       // 1 hafta
+};
+
+export const hasSeenSwipeTutorial = async () => {
+  try {
+    return (await AsyncStorage.getItem(SWIPE_TUTORIAL_STORAGE_KEY)) === 'true';
+  } catch (error) {
+    console.error('Error getting swipe tutorial state:', error);
+    return false;
+  }
+};
+
+export const markSwipeTutorialSeen = async () => {
+  try {
+    await AsyncStorage.setItem(SWIPE_TUTORIAL_STORAGE_KEY, 'true');
+  } catch (error) {
+    console.error('Error saving swipe tutorial state:', error);
+  }
 };
 
 /**

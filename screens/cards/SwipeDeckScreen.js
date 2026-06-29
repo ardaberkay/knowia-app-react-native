@@ -28,7 +28,7 @@ import {
   endSwipeSession,
 } from '../../services/CardService';
 import { getDeckById } from '../../services/DeckService';
-import { invalidateCache } from '../../services/CacheService';
+import { invalidateCache, hasSeenSwipeTutorial, markSwipeTutorialSeen } from '../../services/CacheService';
 import { listChapters, mergeChapterProgressIntoCache } from '../../services/ChapterService';
 import { useAuth } from '../../contexts/AuthContext';
 import { Iconify } from 'react-native-iconify';
@@ -165,6 +165,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     () => (cards ?? []).slice(currentIndex),
     [cards, currentIndex]
   );
+  const activeCardId = activeCards[0]?.card_id;
 
   useEffect(() => {
     currentIndexRef.current = currentIndex;
@@ -200,7 +201,16 @@ export default function SwipeDeckScreen({ route, navigation }) {
     currentQueueId: null,
   });
   const programmaticSwipeRef = useRef(null);
+  const tutorialOverlayRootRef = useRef(null);
+  const cardTutorialTargetRef = useRef(null);
+  const intervalTutorialTargetRef = useRef(null);
   const { t } = useTranslation();
+  const [showSwipeTutorial, setShowSwipeTutorial] = useState(false);
+  const [swipeTutorialStep, setSwipeTutorialStep] = useState(0);
+  const [firstRenderedCardId, setFirstRenderedCardId] = useState(null);
+  const [cardTargetLayout, setCardTargetLayout] = useState(null);
+  const [intervalTargetLayout, setIntervalTargetLayout] = useState(null);
+  const hasCheckedSwipeTutorialRef = useRef(false);
   const [favoriteIds, setFavoriteIds] = useState(new Set());
   const [categorySortOrder, setCategorySortOrder] = useState(null);
   const [reportModalVisible, setReportModalVisible] = useState(false);
@@ -226,6 +236,93 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const reviewPromptTimeoutRef = useRef(null);
   const hasInitializedGlobalLearnedRef = useRef(false);
   const lastTriggeredMilestoneRef = useRef(null);
+
+  const swipeTutorialSteps = useMemo(() => ([
+    {
+      title: t('swipeDeck.tutorial.flipTitle', 'Kartı çevir'),
+      description: t('swipeDeck.tutorial.flipDescription', 'Cevabı tahmin ettikten sonra karta dokunarak arka yüzünü görebilirsin.'),
+      target: 'card',
+      icon: 'fluent:card-ui-portrait-flip-24-regular',
+    },
+    {
+      title: t('swipeDeck.tutorial.swipeTitle', 'Kaydırarak öğren'),
+      description: t('swipeDeck.tutorial.swipeDescription', 'Tamamen öğrendiğin kartları sağa kaydır. Sık tekrar etmek istediklerini sola kaydır.'),
+      target: 'card',
+      showSwipeHint: true,
+      icon: 'carbon:ibm-event-automation',
+    },
+    {
+      title: t('swipeDeck.tutorial.intervalTitle', 'Tekrar zamanını seç'),
+      description: t('swipeDeck.tutorial.intervalDescription', 'Kartı ne kadar iyi bildiğine göre tekrar süresini seç. 15 dakika, 1 saat, 1 gün veya 7 gün sonra yeniden karşına çıksın. Öğrendikçe kartı daha seyrek görmen yeterli olacaktır.'),
+      target: 'interval',
+      icon: 'hugeicons:chat-delay-01',
+    },
+  ]), [t]);
+
+  const activeTutorialStep = swipeTutorialSteps[swipeTutorialStep] || swipeTutorialSteps[0];
+
+  const measureTutorialTarget = useCallback((ref, setter) => {
+    requestAnimationFrame(() => {
+      if (!ref.current || !tutorialOverlayRootRef.current) return;
+      tutorialOverlayRootRef.current.measureInWindow((rootX, rootY, rootWidth, rootHeight) => {
+        if (!rootWidth || !rootHeight) return;
+        ref.current?.measureInWindow?.((x, y, measuredWidth, measuredHeight) => {
+          if (!measuredWidth || !measuredHeight) return;
+          setter({
+            x: x - rootX,
+            y: y - rootY,
+            width: measuredWidth,
+            height: measuredHeight,
+          });
+        });
+      });
+    });
+  }, []);
+
+  const completeSwipeTutorial = useCallback(async () => {
+    setShowSwipeTutorial(false);
+    await markSwipeTutorialSeen();
+  }, []);
+
+  useEffect(() => {
+    if (activeCardId && firstRenderedCardId === activeCardId) {
+      measureTutorialTarget(cardTutorialTargetRef, setCardTargetLayout);
+    }
+  }, [activeCardId, firstRenderedCardId, width, height, measureTutorialTarget]);
+
+  useEffect(() => {
+    if (activeCards.length > 0) {
+      measureTutorialTarget(intervalTutorialTargetRef, setIntervalTargetLayout);
+    }
+  }, [activeCards.length, width, height, insets.bottom, measureTutorialTarget]);
+
+  useEffect(() => {
+    const hasWorkableCard = activeCards.length > 0 && Boolean(activeCardId);
+    const hasRenderedActiveCard = Boolean(activeCardId) && firstRenderedCardId === activeCardId;
+    const isEmptyOrCompletionState = cards.length === 0 || currentIndex >= cards.length || originalFlowComplete;
+    if (
+      hasCheckedSwipeTutorialRef.current ||
+      loading ||
+      !hasWorkableCard ||
+      !hasRenderedActiveCard ||
+      isEmptyOrCompletionState
+    ) return;
+    hasCheckedSwipeTutorialRef.current = true;
+
+    let isMounted = true;
+    const loadSwipeTutorialState = async () => {
+      const hasSeenTutorial = await hasSeenSwipeTutorial();
+      if (isMounted && !hasSeenTutorial) {
+        setSwipeTutorialStep(0);
+        setShowSwipeTutorial(true);
+      }
+    };
+
+    loadSwipeTutorialState();
+    return () => {
+      isMounted = false;
+    };
+  }, [loading, cards.length, currentIndex, originalFlowComplete, activeCards.length, activeCardId, firstRenderedCardId]);
 
   const getEffectiveLearnedEstimate = useCallback(() => {
     return learnedRuntimeState.baseLearned + learnedRuntimeState.deltaLearned;
@@ -743,6 +840,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
   }, [cards, currentIndex]);
 
   const handleSwipe = useCallback(async (cardIndex, direction) => {
+    if (showSwipeTutorial) {
+      programmaticSwipeRef.current = null;
+      return;
+    }
     if (!cards[cardIndex]) return;
     const card = cards[cardIndex];
     const override = programmaticSwipeRef.current;
@@ -796,9 +897,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
     setTimeout(() => {
       isAnimatingRef.current = false;
     }, SWIPE_ANIMATION_MS);
-  }, [cards, userId, resetFlipForCardId, scheduleReviewCheck, checkDueReinserts]);
+  }, [cards, userId, resetFlipForCardId, scheduleReviewCheck, checkDueReinserts, showSwipeTutorial]);
 
   const handleFlipById = useCallback((cardId) => {
+    if (showSwipeTutorial) return;
     if (!cardId) return;
     const current = !!flippedByIdRef.current[cardId];
     const next = !current;
@@ -813,9 +915,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
       useNativeDriver: true,
       easing: Easing.out(Easing.cubic),
     }).start();
-  }, [getAnimatedValueForCardId]);
+  }, [getAnimatedValueForCardId, showSwipeTutorial]);
 
   const handleSkip = (minutes) => {
+    if (showSwipeTutorial) return;
     if (!cards[currentIndex]) return;
     if (!userId) return;
     programmaticSwipeRef.current = {
@@ -828,6 +931,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
   };
 
   const handleUndo = async () => {
+    if (showSwipeTutorial) return;
     if (undoDisabled || !sessionIdRef.current || !swiperRef.current) return;
 
     setUndoDisabled(true);
@@ -1205,8 +1309,153 @@ export default function SwipeDeckScreen({ route, navigation }) {
     );
   }
 
+  const renderSwipeTutorialOverlay = () => {
+    if (!showSwipeTutorial || !activeTutorialStep) return null;
+
+    const isFirstStep = swipeTutorialStep === 0;
+    const isLastStep = swipeTutorialStep === swipeTutorialSteps.length - 1;
+    const isCardTarget = activeTutorialStep.target === 'card';
+    const targetLayout = isCardTarget ? cardTargetLayout : intervalTargetLayout;
+    const targetPadding = isCardTarget ? scale(10) : scale(6);
+    const targetRadius = isCardTarget ? moderateScale(26) : moderateScale(12);
+    const hasValidTargetLayout =
+      targetLayout &&
+      Number.isFinite(targetLayout.x) &&
+      Number.isFinite(targetLayout.y) &&
+      Number.isFinite(targetLayout.width) &&
+      Number.isFinite(targetLayout.height) &&
+      targetLayout.width > 0 &&
+      targetLayout.height > 0;
+    const spotlightLeft = hasValidTargetLayout ? Math.max(0, targetLayout.x - targetPadding) : 0;
+    const spotlightTop = hasValidTargetLayout ? Math.max(0, targetLayout.y - targetPadding) : 0;
+    const spotlightWidth = hasValidTargetLayout
+      ? Math.min(width - spotlightLeft, targetLayout.width + targetPadding * 2)
+      : 0;
+    const spotlightHeight = hasValidTargetLayout
+      ? Math.min(height - spotlightTop, targetLayout.height + targetPadding * 2)
+      : 0;
+    const shouldUseSpotlight =
+      hasValidTargetLayout &&
+      spotlightWidth > 0 &&
+      spotlightHeight > 0 &&
+      spotlightLeft + spotlightWidth <= width + 1 &&
+      spotlightTop + spotlightHeight <= height + 1;
+    const spotlightRadius = shouldUseSpotlight
+      ? Math.min(targetRadius, spotlightWidth / 2, spotlightHeight / 2)
+      : targetRadius;
+    const cornerCoverRadius = isCardTarget ? Math.min(spotlightRadius, moderateScale(10)) : spotlightRadius;
+    const targetFrameStyle = hasValidTargetLayout ? {
+      top: spotlightTop,
+      left: spotlightLeft,
+      width: spotlightWidth,
+      height: spotlightHeight,
+      borderRadius: spotlightRadius,
+    } : null;
+    const coachmarkPositionStyle = isCardTarget
+      ? {
+        top: targetLayout ? Math.max(verticalScale(54), targetLayout.y - verticalScale(156)) : verticalScale(74),
+        left: scale(18),
+        right: scale(18),
+      }
+      : {
+        left: scale(18),
+        right: scale(18),
+        bottom: targetFrameStyle
+          ? Math.max(verticalScale(24), height - targetFrameStyle.top - verticalScale(60))
+          : verticalScale(144) + insets.bottom,
+      };
+    const swipeDirectionHintPositionStyle = activeTutorialStep.showSwipeHint
+      ? {
+        top: (coachmarkPositionStyle.top ?? verticalScale(74)) + verticalScale(340),
+        left: scale(24),
+        right: scale(24),
+      }
+      : null;
+
+    return (
+      <View style={styles.swipeTutorialOverlay} pointerEvents="auto" onTouchStart={() => {}}>
+        {shouldUseSpotlight ? (
+          <>
+            <View style={[styles.swipeTutorialDimLayer, { top: 0, left: 0, right: 0, height: spotlightTop }]} />
+            <View style={[styles.swipeTutorialDimLayer, { top: spotlightTop, left: 0, width: spotlightLeft, height: spotlightHeight }]} />
+            <View style={[styles.swipeTutorialDimLayer, { top: spotlightTop, left: spotlightLeft + spotlightWidth, right: 0, height: spotlightHeight }]} />
+            <View style={[styles.swipeTutorialDimLayer, { top: spotlightTop + spotlightHeight, left: 0, right: 0, bottom: 0 }]} />
+            <View style={[styles.swipeTutorialCornerCover, { top: spotlightTop, left: spotlightLeft, width: cornerCoverRadius, height: cornerCoverRadius, borderBottomRightRadius: cornerCoverRadius }]} />
+            <View style={[styles.swipeTutorialCornerCover, { top: spotlightTop, left: spotlightLeft + spotlightWidth - cornerCoverRadius, width: cornerCoverRadius, height: cornerCoverRadius, borderBottomLeftRadius: cornerCoverRadius }]} />
+            <View style={[styles.swipeTutorialCornerCover, { top: spotlightTop + spotlightHeight - cornerCoverRadius, left: spotlightLeft, width: cornerCoverRadius, height: cornerCoverRadius, borderTopRightRadius: cornerCoverRadius }]} />
+            <View style={[styles.swipeTutorialCornerCover, { top: spotlightTop + spotlightHeight - cornerCoverRadius, left: spotlightLeft + spotlightWidth - cornerCoverRadius, width: cornerCoverRadius, height: cornerCoverRadius, borderTopLeftRadius: cornerCoverRadius }]} />
+          </>
+        ) : (
+          <View style={styles.swipeTutorialFullDimLayer} />
+        )}
+        {targetFrameStyle && (
+          <View pointerEvents="none" style={[styles.swipeTutorialTargetFrame, targetFrameStyle]} />
+        )}
+        <View style={[styles.swipeTutorialCoachmarkGroup, coachmarkPositionStyle]}>
+          <View style={[styles.swipeTutorialCard, styles.swipeTutorialCardInGroup, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
+            <View style={styles.swipeTutorialStepPill}>
+              <Text style={styles.swipeTutorialStepText}>{swipeTutorialStep + 1}/{swipeTutorialSteps.length}</Text>
+            </View>
+            <View style={styles.swipeTutorialTitleRow}>
+              <Iconify icon={activeTutorialStep.icon} size={moderateScale(20)} color="#F98A21" />
+              <Text style={[styles.swipeTutorialTitle, { color: colors.text }]}>{activeTutorialStep.title}</Text>
+            </View>
+            <Text style={[styles.swipeTutorialDescription, { color: colors.muted }]}>{activeTutorialStep.description}</Text>
+            {isCardTarget ? <View style={styles.swipeTutorialArrowUp} /> : <View style={styles.swipeTutorialArrowDown} />}
+            <View style={styles.swipeTutorialActions}>
+              <Pressable onPress={completeSwipeTutorial} style={styles.swipeTutorialGhostButton}>
+                <Text style={[styles.swipeTutorialGhostText, { color: colors.muted }]}>{t('swipeDeck.tutorial.skip', 'Geç')}</Text>
+              </Pressable>
+              <View style={styles.swipeTutorialNavActions}>
+                <Pressable
+                  disabled={isFirstStep}
+                  onPress={() => setSwipeTutorialStep((step) => Math.max(0, step - 1))}
+                  style={[styles.swipeTutorialBackButton, { borderColor: colors.cardBorder }, isFirstStep && styles.swipeTutorialDisabledButton]}
+                >
+                  <Text style={[styles.swipeTutorialBackText, { color: colors.text }]}>{t('swipeDeck.tutorial.back', 'Geri')}</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    if (isLastStep) {
+                      completeSwipeTutorial();
+                    } else {
+                      setSwipeTutorialStep((step) => Math.min(swipeTutorialSteps.length - 1, step + 1));
+                    }
+                  }}
+                  style={styles.swipeTutorialNextButton}
+                >
+                  <Text style={styles.swipeTutorialNextText}>
+                    {isLastStep ? t('swipeDeck.tutorial.done', 'Anladım') : t('swipeDeck.tutorial.next', 'İleri')}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </View>
+        {activeTutorialStep.showSwipeHint && swipeDirectionHintPositionStyle && (
+          <View pointerEvents="none" style={[styles.swipeTutorialSwipeHint, swipeDirectionHintPositionStyle]}>
+            <View style={[styles.swipeTutorialSwipeBadge, styles.swipeTutorialSwipeBadgeLeft]}>
+              <View style={[styles.swipeTutorialSwipeBadgeGlow, styles.swipeTutorialSwipeBadgeGlowLeft]} />
+              <View style={[styles.swipeTutorialSwipeBadgeContent, styles.swipeTutorialSwipeBadgeContentLeft]}>
+                <Iconify icon="ion:arrow-undo" size={moderateScale(16)} color="#FFFFFF" />
+                <Text style={styles.swipeTutorialSwipeHintText}>{t('swipeDeck.tutorial.swipeHintLeft', 'Tekrar Et')}</Text>
+              </View>
+            </View>
+            <View style={[styles.swipeTutorialSwipeBadge, styles.swipeTutorialSwipeBadgeRight]}>
+              <View style={[styles.swipeTutorialSwipeBadgeGlow, styles.swipeTutorialSwipeBadgeGlowRight]} />
+              <View style={[styles.swipeTutorialSwipeBadgeContent, styles.swipeTutorialSwipeBadgeContentRight]}>
+                <Text style={styles.swipeTutorialSwipeHintText}>{t('swipeDeck.tutorial.swipeHintRight', 'Öğrendim')}</Text>
+                <Iconify icon="ion:arrow-redo" size={moderateScale(16)} color="#FFFFFF" />
+              </View>
+            </View>
+          </View>
+        )}
+      </View>
+    );
+  };
+
   return (
-    <>
+    <View ref={tutorialOverlayRootRef} collapsable={false} style={styles.container}>
       <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background}]}>
         {/* Sayaçlar */}
         <View style={styles.counterRow}>
@@ -1299,43 +1548,61 @@ export default function SwipeDeckScreen({ route, navigation }) {
               const gradientColors = getCategoryColors(categorySortOrder);
               const isPlaceholder = !card || !card.cards;
               return (
-                <SwipeFlipCard
+                <View
                   key={cardId || `placeholder-${i}`}
-                  card={card}
-                  cardId={cardId}
-                  isPlaceholder={isPlaceholder}
-                  cardWidth={CARD_WIDTH}
-                  cardHeight={CARD_HEIGHT}
-                  gradientColors={gradientColors}
-                  cardBackground={colors.cardBackground}
-                  textColor={colors.text}
-                  animatedValue={animatedValue}
-                  onFlip={handleFlipById}
-                  swipeX={i === 0 ? swipeX : null}
-                />
+                  ref={i === 0 ? cardTutorialTargetRef : undefined}
+                  collapsable={false}
+                  onLayout={() => {
+                    if (i === 0 && cardId && firstRenderedCardId !== cardId) {
+                      setFirstRenderedCardId(cardId);
+                      measureTutorialTarget(cardTutorialTargetRef, setCardTargetLayout);
+                    }
+                  }}
+                >
+                  <SwipeFlipCard
+                    card={card}
+                    cardId={cardId}
+                    isPlaceholder={isPlaceholder}
+                    cardWidth={CARD_WIDTH}
+                    cardHeight={CARD_HEIGHT}
+                    gradientColors={gradientColors}
+                    cardBackground={colors.cardBackground}
+                    textColor={colors.text}
+                    animatedValue={animatedValue}
+                    onFlip={handleFlipById}
+                    swipeX={i === 0 ? swipeX : null}
+                  />
+                </View>
               );
             }}
             onSwiping={(x) => {
+              if (showSwipeTutorial) return;
               swipeX.setValue(x);
             }}
             onSwipedAborted={() => {
+              if (showSwipeTutorial) return;
               Animated.spring(swipeX, {
                 toValue: 0,
                 useNativeDriver: true,
               }).start();
             }}
             onSwiped={() => {
+              if (showSwipeTutorial) return;
               setCurrentIndex((prev) => prev + 1);
               swipeX.setValue(0);
             }}
             onSwipedLeft={() => {
+              if (showSwipeTutorial) return;
               triggerHaptic('selection');
               handleSwipe(currentIndexRef.current, 'left');
             }}
             onSwipedRight={() => {
+              if (showSwipeTutorial) return;
               triggerHaptic('light');
               handleSwipe(currentIndexRef.current, 'right');
             }}
+            disableLeftSwipe={showSwipeTutorial}
+            disableRightSwipe={showSwipeTutorial}
             disableTopSwipe={true}
             disableBottomSwipe={true}
             stackSize={2}
@@ -1357,7 +1624,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
         {/* Yatay birleşik butonlar */}
         {/* Yatay birleşik butonlar */}
         <View style={{ paddingBottom: insets.bottom }}>
-        <View style={[styles.horizontalButtonRow, { backgroundColor: colors.buttonColor }]}>
+        <View
+          ref={intervalTutorialTargetRef}
+          collapsable={false}
+          onLayout={() => measureTutorialTarget(intervalTutorialTargetRef, setIntervalTargetLayout)}
+          style={[styles.horizontalButtonRow, { backgroundColor: colors.buttonColor }]}
+        >
 
           <AnimatedTimeButton
             onPress={() => handleSkip(15)}
@@ -1403,7 +1675,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
         {/* Auto play butonu */}
         <TouchableOpacity
           style={[styles.autoPlayButton, { paddingBottom: insets.bottom }]}
-          onPress={() => setAutoPlay((prev) => !prev)}
+          onPress={() => {
+            if (showSwipeTutorial) return;
+            setAutoPlay((prev) => !prev);
+          }}
         >
           {autoPlay ? (
             <Iconify icon="material-symbols:pause-rounded" size={moderateScale(32)} color={colors.orWhite} />
@@ -1437,6 +1712,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
           </Reanimated.View>
         </View>
       </SafeAreaView>
+      {renderSwipeTutorialOverlay()}
       <ReportModal
         visible={reportModalVisible}
         onClose={() => { setReportModalVisible(false); setReportCardId(null); }}
@@ -1444,13 +1720,234 @@ export default function SwipeDeckScreen({ route, navigation }) {
         alreadyReportedCodes={reportModalAlreadyCodes}
         onSubmit={handleReportModalSubmit}
       />
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  swipeTutorialOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+    zIndex: 9999,
+    elevation: 9999,
+  },
+  swipeTutorialFullDimLayer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    zIndex: 0,
+    elevation: 0,
+  },
+  swipeTutorialDimLayer: {
+    position: 'absolute',
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    zIndex: 0,
+    elevation: 0,
+  },
+  swipeTutorialCornerCover: {
+    position: 'absolute',
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    zIndex: 0,
+    elevation: 0,
+  },
+  swipeTutorialTargetFrame: {
+    position: 'absolute',
+    borderWidth: moderateScale(2),
+    borderColor: '#F98A21',
+    backgroundColor: 'transparent',
+    shadowColor: '#F98A21',
+    shadowOpacity: 0.5,
+    shadowRadius: moderateScale(10),
+    shadowOffset: { width: 0, height: 0 },
+    zIndex: 1,
+    elevation: 10000,
+  },
+  swipeTutorialCoachmarkGroup: {
+    position: 'absolute',
+    zIndex: 2,
+    elevation: 10001,
+  },
+  swipeTutorialCard: {
+    position: 'absolute',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: moderateScale(22),
+    padding: scale(18),
+    shadowColor: '#000',
+    shadowOpacity: 0.22,
+    shadowRadius: moderateScale(16),
+    shadowOffset: { width: 0, height: verticalScale(8) },
+    zIndex: 2,
+    elevation: 10001,
+  },
+  swipeTutorialCardInGroup: {
+    position: 'relative',
+  },
+  swipeTutorialStepPill: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(4),
+    borderRadius: moderateScale(999),
+    backgroundColor: 'rgba(249,138,33,0.14)',
+    marginBottom: verticalScale(10),
+  },
+  swipeTutorialStepText: {
+    ...typography.styles.caption,
+    color: '#F98A21',
+    fontWeight: '700',
+  },
+  swipeTutorialTitle: {
+    ...typography.styles.subtitle,
+    fontWeight: '800',
+    flex: 1,
+  },
+  swipeTutorialTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(8),
+    marginBottom: verticalScale(6),
+  },
+  swipeTutorialDescription: {
+    ...typography.styles.body,
+    lineHeight: moderateScale(21),
+  },
+  swipeTutorialSwipeHint: {
+    position: 'absolute',
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    gap: scale(10),
+    zIndex: 2,
+    elevation: 10001,
+  },
+  swipeTutorialSwipeBadge: {
+    width: scale(148),
+    minHeight: verticalScale(34),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F98A21',
+    overflow: 'hidden',
+    shadowColor: '#F98A21',
+    shadowOpacity: 0.28,
+    shadowRadius: moderateScale(6),
+    shadowOffset: { width: 0, height: verticalScale(3) },
+    elevation: 6,
+  },
+  swipeTutorialSwipeBadgeLeft: {
+    borderTopLeftRadius: moderateScale(28),
+    borderBottomLeftRadius: moderateScale(10),
+    borderTopRightRadius: moderateScale(16),
+    borderBottomRightRadius: moderateScale(26),
+    transform: [{ skewX: '-5deg' }],
+  },
+  swipeTutorialSwipeBadgeRight: {
+    borderTopLeftRadius: moderateScale(16),
+    borderBottomLeftRadius: moderateScale(26),
+    borderTopRightRadius: moderateScale(28),
+    borderBottomRightRadius: moderateScale(10),
+    transform: [{ skewX: '5deg' }],
+  },
+  swipeTutorialSwipeBadgeGlow: {
+    position: 'absolute',
+    width: scale(34),
+    height: scale(34),
+    borderRadius: moderateScale(17),
+    backgroundColor: 'rgba(255,255,255,0.14)',
+  },
+  swipeTutorialSwipeBadgeGlowLeft: {
+    left: scale(-12),
+    top: verticalScale(-8),
+  },
+  swipeTutorialSwipeBadgeGlowRight: {
+    right: scale(-12),
+    top: verticalScale(-8),
+  },
+  swipeTutorialSwipeBadgeContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: scale(6),
+    paddingVertical: verticalScale(5),
+    paddingHorizontal: scale(8),
+  },
+  swipeTutorialSwipeBadgeContentLeft: {
+    transform: [{ skewX: '5deg' }],
+  },
+  swipeTutorialSwipeBadgeContentRight: {
+    transform: [{ skewX: '-5deg' }],
+  },
+  swipeTutorialSwipeHintText: {
+    ...typography.styles.caption,
+    textAlign: 'center',
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  swipeTutorialArrowDown: {
+    position: 'absolute',
+    bottom: verticalScale(-10),
+    alignSelf: 'center',
+    width: 0,
+    height: 0,
+    borderLeftWidth: scale(10),
+    borderRightWidth: scale(10),
+    borderTopWidth: verticalScale(10),
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: '#F98A21',
+  },
+  swipeTutorialArrowUp: {
+    position: 'absolute',
+    bottom: verticalScale(-10),
+    alignSelf: 'center',
+    width: scale(18),
+    height: scale(18),
+    borderRadius: moderateScale(4),
+    backgroundColor: '#F98A21',
+    transform: [{ rotate: '45deg' }],
+  },
+  swipeTutorialActions: {
+    marginTop: verticalScale(16),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: scale(12),
+  },
+  swipeTutorialGhostButton: {
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(4),
+  },
+  swipeTutorialGhostText: {
+    ...typography.styles.button,
+    fontWeight: '700',
+  },
+  swipeTutorialNavActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(8),
+  },
+  swipeTutorialBackButton: {
+    borderWidth: moderateScale(1),
+    borderRadius: moderateScale(12),
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(14),
+  },
+  swipeTutorialDisabledButton: {
+    opacity: 0.42,
+  },
+  swipeTutorialBackText: {
+    ...typography.styles.button,
+    fontWeight: '700',
+  },
+  swipeTutorialNextButton: {
+    borderRadius: moderateScale(12),
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(16),
+    backgroundColor: '#F98A21',
+  },
+  swipeTutorialNextText: {
+    ...typography.styles.button,
+    color: '#FFFFFF',
+    fontWeight: '800',
   },
   card: {
     borderRadius: moderateScale(26),

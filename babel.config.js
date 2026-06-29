@@ -139,7 +139,11 @@ module.exports = function (api) {
             'mage:inbox-star',
             'ci:chevron-left',
             'material-symbols:trophy',
-            'lets-icons:clock-fill'
+            'lets-icons:clock-fill',
+            'ion:arrow-undo',
+            'ion:arrow-redo',
+            'carbon:ibm-event-automation',
+            'hugeicons:chat-delay-01'
           ],
         },
       ],

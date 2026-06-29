@@ -403,6 +403,20 @@
       "noNextChapter": "Kein weiteres Kapitel",
       "emptyTitle": "In diesem Kapitel sind keine Karten fällig.",
       "allLearned": "Alle Karten gelernt"
+    },
+    "tutorial": {
+      "flipTitle": "Karte umdrehen",
+      "flipDescription": "Wenn du die Antwort erraten hast, tippe auf die Karte und sieh dir die Rückseite an.",
+      "swipeTitle": "Mit Wischen lernen",
+      "swipeDescription": "Wische gelernte Karten nach rechts. Karten, die du öfter wiederholen möchtest, nach links.",
+      "intervalTitle": "Wiederholzeit wählen",
+      "intervalDescription": "Wähle je nach Sicherheit eine Wiederholzeit: 15 Minuten, 1 Stunde, 1 Tag oder 7 Tage. Je besser du die Karte kannst, desto seltener musst du sie sehen.",
+      "swipeHintLeft": "Wiederholen",
+      "swipeHintRight": "Gelernt",
+      "skip": "Überspringen",
+      "back": "Zurück",
+      "next": "Weiter",
+      "done": "Verstanden"
     }
   },
   "login": {

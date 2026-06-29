@@ -439,6 +439,20 @@
       "noNextChapter": "No next chapter",
       "emptyTitle": "No cards are due in this chapter.",
       "allLearned": "All cards learned"
+    },
+    "tutorial": {
+      "flipTitle": "Flip the card",
+      "flipDescription": "After guessing the answer, tap the card to see the back.",
+      "swipeTitle": "Learn by swiping",
+      "swipeDescription": "Swipe right for cards you have learned. Swipe left for cards you want to review more often.",
+      "intervalTitle": "Choose review time",
+      "intervalDescription": "Choose a review time based on how well you know the card: 15 minutes, 1 hour, 1 day, or 7 days. As you learn it better, you can review it less often.",
+      "swipeHintLeft": "Review Again",
+      "swipeHintRight": "Learned",
+      "skip": "Skip",
+      "back": "Back",
+      "next": "Next",
+      "done": "Got it"
     }
   },
   "login": {
