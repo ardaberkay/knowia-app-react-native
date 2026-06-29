@@ -225,6 +225,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const PRE_FETCH_THRESHOLD = 5;
   const seenCardIdsRef = useRef(new Set());
   const sessionSeenCardIdsRef = useRef(new Set());
+  const sessionProgressCountRef = useRef(0);
+  const historyStateSnapshotsRef = useRef([]);
   const [sessionProgressCount, setSessionProgressCount] = useState(0);
   const isFetchingMoreRef = useRef(false);
   const lastDueCheckAtRef = useRef(Date.now());
@@ -455,6 +457,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
       setLeftCount(0);
       seenCardIdsRef.current = new Set();
       sessionSeenCardIdsRef.current = new Set();
+      sessionProgressCountRef.current = 0;
+      historyStateSnapshotsRef.current = [];
+      leftCountedCardIds.current = new Set();
+      historyLeftCardIds.current = [];
       setSessionTargetCount(0);
       setCompletionSummary(null);
       setNextChapter(null);
@@ -538,7 +544,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
         sessionSeenCardIdsRef.current = learningCards[0]?.card_id
           ? new Set([learningCards[0].card_id])
           : new Set();
-        setSessionProgressCount(learningCards.length > 0 ? 1 : 0);
+        const initialProgressCount = learningCards.length > 0 ? 1 : 0;
+        sessionProgressCountRef.current = initialProgressCount;
+        setSessionProgressCount(initialProgressCount);
         setCurrentIndex(0);
 
         let globalLearnedCount = getEffectiveLearnedEstimate();
@@ -576,7 +584,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       if (statsChapterId === undefined) {
         invalidateCache(`progress_chapters_${deck.id}_${authUserId}`);
       } else {
-        mergeChapterProgressIntoCache(deck.id, authUserId, statsChapterId).catch(() => {});
+        mergeChapterProgressIntoCache(deck.id, authUserId, statsChapterId).catch(() => { });
       }
     };
   }, [deck?.id, authUserId, chapter]);
@@ -852,12 +860,22 @@ export default function SwipeDeckScreen({ route, navigation }) {
     programmaticSwipeRef.current = null;
     const swipedCardId = card.card_id;
     setTimeout(() => resetFlipForCardId(swipedCardId), SWIPE_ANIMATION_MS);
+    historyStateSnapshotsRef.current.push({
+      sessionSeenCardIds: new Set(sessionSeenCardIdsRef.current),
+      sessionProgressCount: sessionProgressCountRef.current,
+      leftCountedCardIds: new Set(leftCountedCardIds.current),
+      historyLeftCardIds: [...historyLeftCardIds.current],
+    });
     sessionSeenCardIdsRef.current.add(swipedCardId);
     const nextCard = cards[cardIndex + 1];
     if (nextCard?.card_id) {
       sessionSeenCardIdsRef.current.add(nextCard.card_id);
     }
-    setSessionProgressCount(sessionSeenCardIdsRef.current.size);
+    const nextProgressCount = sessionTargetCount > 0
+      ? Math.min(sessionTargetCount, sessionSeenCardIdsRef.current.size)
+      : sessionSeenCardIdsRef.current.size;
+    sessionProgressCountRef.current = nextProgressCount;
+    setSessionProgressCount(nextProgressCount);
     if (!userId) return;
     isAnimatingRef.current = true;
     setHistory((prev) => [...prev, cardIndex]);
@@ -897,7 +915,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     setTimeout(() => {
       isAnimatingRef.current = false;
     }, SWIPE_ANIMATION_MS);
-  }, [cards, userId, resetFlipForCardId, scheduleReviewCheck, checkDueReinserts, showSwipeTutorial]);
+  }, [cards, userId, sessionTargetCount, resetFlipForCardId, scheduleReviewCheck, checkDueReinserts, showSwipeTutorial]);
 
   const handleFlipById = useCallback((cardId) => {
     if (showSwipeTutorial) return;
@@ -932,7 +950,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
   const handleUndo = async () => {
     if (showSwipeTutorial) return;
-    if (undoDisabled || !sessionIdRef.current || !swiperRef.current) return;
+    if (undoDisabled || history.length === 0 || !sessionIdRef.current || !swiperRef.current) return;
 
     setUndoDisabled(true);
 
@@ -951,10 +969,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
       }
 
       if ((lastDirection === 'left' || lastDirection === 'skip') && undoneCard) {
-        if (lastDirection === 'left') {
-          historyLeftCardIds.current.pop();
-        }
-        leftCountedCardIds.current.delete(undoneCard.card_id);
         setLeftCount((c) => Math.max(0, c - 1));
       } else if (lastDirection === 'right') {
         learnedRuntimeState.deltaLearned = Math.max(0, learnedRuntimeState.deltaLearned - 1);
@@ -963,6 +977,14 @@ export default function SwipeDeckScreen({ route, navigation }) {
       }
 
       if (lastDirection) {
+        const previousState = historyStateSnapshotsRef.current.pop();
+        if (previousState) {
+          sessionSeenCardIdsRef.current = new Set(previousState.sessionSeenCardIds);
+          sessionProgressCountRef.current = previousState.sessionProgressCount;
+          leftCountedCardIds.current = new Set(previousState.leftCountedCardIds);
+          historyLeftCardIds.current = [...previousState.historyLeftCardIds];
+          setSessionProgressCount(previousState.sessionProgressCount);
+        }
         setTotalSwipeCount((c) => Math.max(0, c - 1));
         setHistory((prev) => prev.slice(0, -1));
         setHistoryDirections((prev) => prev.slice(0, -1));
@@ -1008,15 +1030,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
       seenCardIdsRef.current = new Set(learningCards.map(c => c.card_id));
       flippedByIdRef.current = {};
       hasMoreCardsRef.current = learningCards.length > 0;
-
-      const advancedToCard = cards[lastIndex + 1];
-      if (advancedToCard?.card_id) {
-        sessionSeenCardIdsRef.current.delete(advancedToCard.card_id);
-      }
-      if (undoneCard?.card_id) {
-        sessionSeenCardIdsRef.current.add(undoneCard.card_id);
-      }
-      setSessionProgressCount(Math.max(1, sessionSeenCardIdsRef.current.size));
 
       const lastFetchedCard = learningCards[learningCards.length - 1];
       if (lastFetchedCard) {
@@ -1252,37 +1265,37 @@ export default function SwipeDeckScreen({ route, navigation }) {
           </View>
 
           <View style={[styles.completionChapterCard, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
-                <View style={styles.completionChapterHeader}>
-                  <View style={styles.completionChapterTitleRow}>
-                    <Iconify icon="streamline-flex:module-puzzle-2" size={moderateScale(20)} color={colors.buttonColor} />
-                    <Text style={[typography.styles.subtitle, { color: colors.text }]}>{t('swipeDeck.completion.chapterProgress', 'Bölüm İlerlemesi')}</Text>
-                  </View>
-                  <Text style={[styles.completionChapterProgressValue, { color: colors.buttonColor }]}>{chapterProgress ? `%${chapterPercent}` : '--'}</Text>
+            <View style={styles.completionChapterHeader}>
+              <View style={styles.completionChapterTitleRow}>
+                <Iconify icon="streamline-flex:module-puzzle-2" size={moderateScale(20)} color={colors.buttonColor} />
+                <Text style={[typography.styles.subtitle, { color: colors.text }]}>{t('swipeDeck.completion.chapterProgress', 'Bölüm İlerlemesi')}</Text>
+              </View>
+              <Text style={[styles.completionChapterProgressValue, { color: colors.buttonColor }]}>{chapterProgress ? `%${chapterPercent}` : '--'}</Text>
+            </View>
+            <View style={[styles.completionChapterProgressTrack, { backgroundColor: colors.progressBarSwipe || colors.border }]}>
+              <View style={[styles.completionChapterProgressFill, { width: `${chapterProgress ? chapterPercent : 0}%`, backgroundColor: colors.buttonColor }]} />
+            </View>
+            <View style={styles.completionChapterMetrics}>
+              <Text style={[typography.styles.body, { color: colors.text }]}>{chapterProgress ? `• ${t('swipeDeck.completion.learnedCount', { count: chapterLearned, defaultValue: `${chapterLearned} Öğrenildi` })}` : '—'}</Text>
+              <Text style={[typography.styles.body, { color: colors.muted }]}>{chapterProgress ? `• ${t('swipeDeck.completion.learningCount', { count: chapterUnfinished, defaultValue: `${chapterUnfinished} Öğrenme Sürecinde` })}` : '—'}</Text>
+            </View>
+            <View style={[styles.completionChapterDivider, { backgroundColor: colors.border }]} />
+            <View style={styles.completionReviewGrid}>
+              <View style={styles.completionReviewItem}>
+                <Iconify icon="lets-icons:clock-fill" size={moderateScale(22)} color={colors.buttonColor} />
+                <View style={styles.completionReviewTextGroup}>
+                  <Text style={[styles.completionReviewMetric, { color: colors.text }]}>{nearestReview ? formatFutureReview(nearestReview.at, t) : '—'}</Text>
+                  <Text style={[typography.styles.caption, styles.completionReviewLabel, { color: colors.muted }]}>{nearestReview ? t('swipeDeck.completion.cardsReady', { count: nearestReview.count, defaultValue: `${nearestReview.count} kart hazır` }) : t('swipeDeck.completion.nearestReview', 'En yakın tekrar')}</Text>
                 </View>
-                <View style={[styles.completionChapterProgressTrack, { backgroundColor: colors.progressBarSwipe || colors.border }]}>
-                  <View style={[styles.completionChapterProgressFill, { width: `${chapterProgress ? chapterPercent : 0}%`, backgroundColor: colors.buttonColor }]} />
+              </View>
+              <View style={styles.completionReviewItem}>
+                <Iconify icon="solar:calendar-bold" size={moderateScale(22)} color={colors.secondary} />
+                <View style={styles.completionReviewTextGroup}>
+                  <Text style={[styles.completionReviewMetric, { color: colors.text }]}>{farthestReview ? formatFutureReview(farthestReview.at, t) : '—'}</Text>
+                  <Text style={[typography.styles.caption, styles.completionReviewLabel, { color: colors.muted }]}>{t('swipeDeck.completion.farthestReview', 'En uzak tekrar')}</Text>
                 </View>
-                <View style={styles.completionChapterMetrics}>
-                  <Text style={[typography.styles.body, { color: colors.text }]}>{chapterProgress ? `• ${t('swipeDeck.completion.learnedCount', { count: chapterLearned, defaultValue: `${chapterLearned} Öğrenildi` })}` : '—'}</Text>
-                  <Text style={[typography.styles.body, { color: colors.muted }]}>{chapterProgress ? `• ${t('swipeDeck.completion.learningCount', { count: chapterUnfinished, defaultValue: `${chapterUnfinished} Öğrenme Sürecinde` })}` : '—'}</Text>
-                </View>
-                <View style={[styles.completionChapterDivider, { backgroundColor: colors.border }]} />
-                <View style={styles.completionReviewGrid}>
-                  <View style={styles.completionReviewItem}>
-                    <Iconify icon="lets-icons:clock-fill" size={moderateScale(22)} color={colors.buttonColor} />
-                    <View style={styles.completionReviewTextGroup}>
-                      <Text style={[styles.completionReviewMetric, { color: colors.text }]}>{nearestReview ? formatFutureReview(nearestReview.at, t) : '—'}</Text>
-                      <Text style={[typography.styles.caption, styles.completionReviewLabel, { color: colors.muted }]}>{nearestReview ? t('swipeDeck.completion.cardsReady', { count: nearestReview.count, defaultValue: `${nearestReview.count} kart hazır` }) : t('swipeDeck.completion.nearestReview', 'En yakın tekrar')}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.completionReviewItem}>
-                    <Iconify icon="solar:calendar-bold" size={moderateScale(22)} color={colors.secondary} />
-                    <View style={styles.completionReviewTextGroup}>
-                      <Text style={[styles.completionReviewMetric, { color: colors.text }]}>{farthestReview ? formatFutureReview(farthestReview.at, t) : '—'}</Text>
-                      <Text style={[typography.styles.caption, styles.completionReviewLabel, { color: colors.muted }]}>{t('swipeDeck.completion.farthestReview', 'En uzak tekrar')}</Text>
-                    </View>
-                  </View>
-                </View>
+              </View>
+            </View>
           </View>
 
           <View style={styles.completionCtaArea}>
@@ -1373,7 +1386,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       : null;
 
     return (
-      <View style={styles.swipeTutorialOverlay} pointerEvents="auto" onTouchStart={() => {}}>
+      <View style={styles.swipeTutorialOverlay} pointerEvents="auto" onTouchStart={() => { }}>
         {shouldUseSpotlight ? (
           <>
             <View style={[styles.swipeTutorialDimLayer, { top: 0, left: 0, right: 0, height: spotlightTop }]} />
@@ -1456,7 +1469,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
   return (
     <View ref={tutorialOverlayRootRef} collapsable={false} style={styles.container}>
-      <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background}]}>
+      <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Sayaçlar */}
         <View style={styles.counterRow}>
           <Reanimated.View
@@ -1537,135 +1550,135 @@ export default function SwipeDeckScreen({ route, navigation }) {
         </View>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', marginTop: verticalScale(8), overflow: 'hidden' }}>
           {activeCards.length > 0 && (
-          <Swiper
-            key={activeCards[0]?.card_id ?? `deck-${currentIndex}`}
-            ref={swiperRef}
-            cards={activeCards}
-            keyExtractor={(card) => card?.card_id ?? card?.queue_id}
-            renderCard={(card, i) => {
-              const cardId = card?.card_id;
-              const animatedValue = cardId ? getAnimatedValueForCardId(cardId) : null;
-              const gradientColors = getCategoryColors(categorySortOrder);
-              const isPlaceholder = !card || !card.cards;
-              return (
-                <View
-                  key={cardId || `placeholder-${i}`}
-                  ref={i === 0 ? cardTutorialTargetRef : undefined}
-                  collapsable={false}
-                  onLayout={() => {
-                    if (i === 0 && cardId && firstRenderedCardId !== cardId) {
-                      setFirstRenderedCardId(cardId);
-                      measureTutorialTarget(cardTutorialTargetRef, setCardTargetLayout);
-                    }
-                  }}
-                >
-                  <SwipeFlipCard
-                    card={card}
-                    cardId={cardId}
-                    isPlaceholder={isPlaceholder}
-                    cardWidth={CARD_WIDTH}
-                    cardHeight={CARD_HEIGHT}
-                    gradientColors={gradientColors}
-                    cardBackground={colors.cardBackground}
-                    textColor={colors.text}
-                    animatedValue={animatedValue}
-                    onFlip={handleFlipById}
-                    swipeX={i === 0 ? swipeX : null}
-                  />
-                </View>
-              );
-            }}
-            onSwiping={(x) => {
-              if (showSwipeTutorial) return;
-              swipeX.setValue(x);
-            }}
-            onSwipedAborted={() => {
-              if (showSwipeTutorial) return;
-              Animated.spring(swipeX, {
-                toValue: 0,
-                useNativeDriver: true,
-              }).start();
-            }}
-            onSwiped={() => {
-              if (showSwipeTutorial) return;
-              setCurrentIndex((prev) => prev + 1);
-              swipeX.setValue(0);
-            }}
-            onSwipedLeft={() => {
-              if (showSwipeTutorial) return;
-              triggerHaptic('selection');
-              handleSwipe(currentIndexRef.current, 'left');
-            }}
-            onSwipedRight={() => {
-              if (showSwipeTutorial) return;
-              triggerHaptic('light');
-              handleSwipe(currentIndexRef.current, 'right');
-            }}
-            disableLeftSwipe={showSwipeTutorial}
-            disableRightSwipe={showSwipeTutorial}
-            disableTopSwipe={true}
-            disableBottomSwipe={true}
-            stackSize={2}
-            showSecondCard={true}
-            swipeBackCard={false}
-            backgroundColor={colors.background}
-            stackSeparation={0}
-            useViewOverflow={Platform.OS === 'ios' ? false : true}
-            stackScale={1}
-            cardHorizontalMargin={CARD_HORIZONTAL_MARGIN}
-            containerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
-            cardStyle={{ width: CARD_WIDTH, height: CARD_HEIGHT, alignSelf: 'center', justifyContent: 'center' }}
-            stackAnimationFriction={100}
-            stackAnimationTension={100}
-            swipeAnimationDuration={SWIPE_ANIMATION_MS}
-          />
+            <Swiper
+              key={activeCards[0]?.card_id ?? `deck-${currentIndex}`}
+              ref={swiperRef}
+              cards={activeCards}
+              keyExtractor={(card) => card?.card_id ?? card?.queue_id}
+              renderCard={(card, i) => {
+                const cardId = card?.card_id;
+                const animatedValue = cardId ? getAnimatedValueForCardId(cardId) : null;
+                const gradientColors = getCategoryColors(categorySortOrder);
+                const isPlaceholder = !card || !card.cards;
+                return (
+                  <View
+                    key={cardId || `placeholder-${i}`}
+                    ref={i === 0 ? cardTutorialTargetRef : undefined}
+                    collapsable={false}
+                    onLayout={() => {
+                      if (i === 0 && cardId && firstRenderedCardId !== cardId) {
+                        setFirstRenderedCardId(cardId);
+                        measureTutorialTarget(cardTutorialTargetRef, setCardTargetLayout);
+                      }
+                    }}
+                  >
+                    <SwipeFlipCard
+                      card={card}
+                      cardId={cardId}
+                      isPlaceholder={isPlaceholder}
+                      cardWidth={CARD_WIDTH}
+                      cardHeight={CARD_HEIGHT}
+                      gradientColors={gradientColors}
+                      cardBackground={colors.cardBackground}
+                      textColor={colors.text}
+                      animatedValue={animatedValue}
+                      onFlip={handleFlipById}
+                      swipeX={i === 0 ? swipeX : null}
+                    />
+                  </View>
+                );
+              }}
+              onSwiping={(x) => {
+                if (showSwipeTutorial) return;
+                swipeX.setValue(x);
+              }}
+              onSwipedAborted={() => {
+                if (showSwipeTutorial) return;
+                Animated.spring(swipeX, {
+                  toValue: 0,
+                  useNativeDriver: true,
+                }).start();
+              }}
+              onSwiped={() => {
+                if (showSwipeTutorial) return;
+                setCurrentIndex((prev) => prev + 1);
+                swipeX.setValue(0);
+              }}
+              onSwipedLeft={() => {
+                if (showSwipeTutorial) return;
+                triggerHaptic('selection');
+                handleSwipe(currentIndexRef.current, 'left');
+              }}
+              onSwipedRight={() => {
+                if (showSwipeTutorial) return;
+                triggerHaptic('light');
+                handleSwipe(currentIndexRef.current, 'right');
+              }}
+              disableLeftSwipe={showSwipeTutorial}
+              disableRightSwipe={showSwipeTutorial}
+              disableTopSwipe={true}
+              disableBottomSwipe={true}
+              stackSize={2}
+              showSecondCard={true}
+              swipeBackCard={false}
+              backgroundColor={colors.background}
+              stackSeparation={0}
+              useViewOverflow={Platform.OS === 'ios' ? false : true}
+              stackScale={1}
+              cardHorizontalMargin={CARD_HORIZONTAL_MARGIN}
+              containerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+              cardStyle={{ width: CARD_WIDTH, height: CARD_HEIGHT, alignSelf: 'center', justifyContent: 'center' }}
+              stackAnimationFriction={100}
+              stackAnimationTension={100}
+              swipeAnimationDuration={SWIPE_ANIMATION_MS}
+            />
           )}
         </View>
         {/* Yatay birleşik butonlar */}
         {/* Yatay birleşik butonlar */}
         <View style={{ paddingBottom: insets.bottom }}>
-        <View
-          ref={intervalTutorialTargetRef}
-          collapsable={false}
-          onLayout={() => measureTutorialTarget(intervalTutorialTargetRef, setIntervalTargetLayout)}
-          style={[styles.horizontalButtonRow, { backgroundColor: colors.buttonColor }]}
-        >
+          <View
+            ref={intervalTutorialTargetRef}
+            collapsable={false}
+            onLayout={() => measureTutorialTarget(intervalTutorialTargetRef, setIntervalTargetLayout)}
+            style={[styles.horizontalButtonRow, { backgroundColor: colors.buttonColor }]}
+          >
 
-          <AnimatedTimeButton
-            onPress={() => handleSkip(15)}
-            icon="material-symbols:repeat-rounded"
-            text={t('swipeDeck.minutes', "15 dk")}
-            buttonStyle={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]}
-            textStyle={styles.horizontalButtonText}
-            iconColor={colors.buttonText}
-          />
+            <AnimatedTimeButton
+              onPress={() => handleSkip(15)}
+              icon="material-symbols:repeat-rounded"
+              text={t('swipeDeck.minutes', "15 dk")}
+              buttonStyle={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]}
+              textStyle={styles.horizontalButtonText}
+              iconColor={colors.buttonText}
+            />
 
-          <AnimatedTimeButton
-            onPress={() => handleSkip(60)}
-            icon="mingcute:time-line"
-            text={t('swipeDeck.hours', "1 sa")}
-            buttonStyle={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]}
-            textStyle={styles.horizontalButtonText}
-            iconColor={colors.buttonText}
-          />
+            <AnimatedTimeButton
+              onPress={() => handleSkip(60)}
+              icon="mingcute:time-line"
+              text={t('swipeDeck.hours', "1 sa")}
+              buttonStyle={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]}
+              textStyle={styles.horizontalButtonText}
+              iconColor={colors.buttonText}
+            />
 
-          <AnimatedTimeButton
-            onPress={() => handleSkip(24 * 60)}
-            icon="solar:calendar-broken"
-            text={t('swipeDeck.days', "1 gün")}
-            buttonStyle={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]}
-            textStyle={styles.horizontalButtonText}
-            iconColor={colors.buttonText}
-          />
+            <AnimatedTimeButton
+              onPress={() => handleSkip(24 * 60)}
+              icon="solar:calendar-broken"
+              text={t('swipeDeck.days', "1 gün")}
+              buttonStyle={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]}
+              textStyle={styles.horizontalButtonText}
+              iconColor={colors.buttonText}
+            />
 
-          <AnimatedTimeButton
-            onPress={() => handleSkip(7 * 24 * 60)}
-            icon="solar:star-broken"
-            text={t('swipeDeck.sevenDays', "7 gün")}
-            buttonStyle={styles.horizontalButton} // Son butonda sağ çizgi yok
-            textStyle={styles.horizontalButtonText}
-            iconColor={colors.buttonText}
-          />
+            <AnimatedTimeButton
+              onPress={() => handleSkip(7 * 24 * 60)}
+              icon="solar:star-broken"
+              text={t('swipeDeck.sevenDays', "7 gün")}
+              buttonStyle={styles.horizontalButton} // Son butonda sağ çizgi yok
+              textStyle={styles.horizontalButtonText}
+              iconColor={colors.buttonText}
+            />
           </View>
         </View>
         {/* Geri alma butonu */}
