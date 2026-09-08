@@ -9,17 +9,20 @@ import ProfileAvatarButton from './ProfileAvatarButton';
 export default function StandardCustomAppBar({
   title,
   showLogo = false,
+  isHeroBackground = false,
 }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+
+  const textColor = isHeroBackground ? '#FFFFFF' : colors.text;
 
   return (
     <View
       style={[
         styles.header,
         {
-          backgroundColor: colors.appbar,
-          borderBottomColor: colors.border,
+          backgroundColor: isHeroBackground ? 'transparent' : colors.appbar,
+          borderBottomColor: isHeroBackground ? 'transparent' : colors.border,
           paddingTop: insets.top,
         },
       ]}
@@ -35,14 +38,14 @@ export default function StandardCustomAppBar({
             <Text
               style={[
                 typography.styles.body,
-                { color: colors.text, fontSize: moderateScale(24), letterSpacing: moderateScale(-1) },
+                { color: textColor, fontSize: moderateScale(24), letterSpacing: moderateScale(-1) },
               ]}
             >
               Knowia
             </Text>
           </View>
         ) : (
-          <Text style={[typography.styles.subtitle, styles.titleText, { color: colors.text, fontSize: moderateScale(22) }]}>
+          <Text style={[typography.styles.subtitle, styles.titleText, { color: textColor, fontSize: moderateScale(22) }]}>
             {title}
           </Text>
         )}
@@ -57,21 +60,17 @@ export default function StandardCustomAppBar({
 
 const styles = StyleSheet.create({
   header: {
-    paddingHorizontal: scale(12),
-    paddingBottom: verticalScale(10),
+    paddingHorizontal: scale(14),
+    paddingBottom: verticalScale(8),
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     position: 'relative',
     width: '100%',
     minHeight: verticalScale(44),
-  },
-  headerAvatarAbsolute: {
-    position: 'absolute',
-    right: scale(-24),
   },
   logoImage: {
     width: scale(44),

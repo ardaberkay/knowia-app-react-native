@@ -66,14 +66,11 @@ function ProfileAvatarButton({ compact = false }) {
 
 const styles = StyleSheet.create({
   profileAvatarButton: {
-    marginLeft: scale(12),
-    marginRight: scale(24),
     width: scale(47),
     height: scale(47),
     borderRadius: moderateScale(22),
     overflow: 'hidden',
     alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: 'transparent',
   },
   profileAvatar: {

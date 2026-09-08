@@ -445,7 +445,8 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
-      <StandardCustomAppBar showLogo />
+      <StandardCustomAppBar showLogo isHeroBackground />
+      
       <ScrollView
         style={[styles.content, { backgroundColor: colors.background }]}
         contentContainerStyle={{ paddingBottom: insets.bottom + verticalScale(120)}}
@@ -459,6 +460,7 @@ export default function HomeScreen() {
           />
         }
       >
+        
         {renderPopularDecksCard()}
         {Object.keys(DECK_CATEGORIES).map((category, index) => (
           <React.Fragment key={`category-${category}`}>
