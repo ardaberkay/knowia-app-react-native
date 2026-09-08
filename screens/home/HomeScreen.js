@@ -201,57 +201,77 @@ export default function HomeScreen() {
     setFavoriteDecks(decks || []);
   };
 
-
-  const renderPopularDecksCard = () => {
+  const renderHeroHeader = () => {
+    const config = {
+      gradient: ['#ffa726', '#ff6b35'],
+    };
+  
     return (
-      <View style={[styles.popularDecksCard, {
-        backgroundColor: colors.homeCardBackground, borderColor: colors.cardBorder,
-        borderWidth: 1,
-      }]}>
-        {/* Başlık - Tam genişlik, kendi satırında */}
-        <View style={styles.popularDecksTitleContainer}>
-          <Iconify icon="fluent:arrow-trending-sparkle-24-filled" size={moderateScale(26)} color="#F98A21" style={{ marginRight: scale(6) }} />
-          <Text style={[typography.styles.h2, { color: colors.text, flex: 1 }]}>
-            {t('home.popularDecks', 'Popüler Desteler')}
-          </Text>
-        </View>
-
-        {/* Açıklama metni + Buton (sol) ve Görsel (sağ) */}
-        <View style={styles.popularDecksContent}>
-          <View style={styles.popularDecksTextContainer}>
-            <Text style={[typography.styles.caption, { color: colors.muted, marginBottom: verticalScale(12), marginTop: verticalScale(8), lineHeight: moderateScale(20) }]}>
-              {t('home.popularDecksSubtitle', 'En popüler ve trend destelerle bilginizi pekiştirin')}
-            </Text>
-            <TouchableOpacity
-              style={styles.exploreButton}
-              activeOpacity={0.8}
-              onPress={() => {
-                navigation.navigate('Discover');
-              }}
-            >
-              <LinearGradient
-                colors={['#F98A21', '#FF6B35']}
-                locations={[0, 0.99]}
-                style={styles.gradientButton}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
+      <View style={styles.heroHeaderContainer}>
+        <LinearGradient
+          colors={[
+            ...config.gradient,
+            ...config.gradient.slice().reverse(),
+          ]}
+          style={styles.heroHeader}
+          start={{ x: 1, y: 0.1 }}
+          end={{ x: 0, y: 1 }}
+        >
+          <StandardCustomAppBar
+            showLogo
+            isHeroBackground
+          />
+  
+          <View style={styles.heroContent}>
+            <View style={styles.heroTextContent}>
+              <View style={styles.heroTitleRow}>
+                <Iconify
+                  icon="fluent:arrow-trending-sparkle-24-filled"
+                  size={24}
+                  color="#FFFFFF"
+                />
+  
+                <Text style={styles.heroTitle}>
+                  Keşfet ve öğren
+                </Text>
+              </View>
+  
+              <Text style={styles.heroSubtitle}>
+                {t(
+                  'home.popularDecksSubtitle',
+                  'En popüler ve trend destelerle bilginizi pekiştirin'
+                )}
+              </Text>
+  
+              <TouchableOpacity
+                style={styles.heroButton}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('Discover')}
               >
-                <Text style={styles.exploreButtonText}>
+                <Iconify
+                  icon="streamline:trending-content-remix"
+                  size={17}
+                  color="#ff6b35"
+                />
+  
+                <Text style={styles.heroButtonText}>
                   {t('home.exploreButton', 'Keşfet')}
                 </Text>
-                <Iconify icon="streamline:trending-content-remix" size={moderateScale(16)} color="#FFFFFF" style={{ marginLeft: scale(6) }} />
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.popularDecksImageContainer}>
+  
+                <Iconify
+                  icon="material-symbols:arrow-forward-ios-rounded"
+                  size={16}
+                  color="#ff6b35"
+                />
+              </TouchableOpacity>
+            </View>
+  
             <Image
               source={require('../../assets/item.webp')}
-              style={styles.popularDecksImage}
-              resizeMode="contain"
-              fadeDuration={0}
+              style={styles.heroIllustration}
             />
           </View>
-        </View>
+        </LinearGradient>
       </View>
     );
   };
@@ -445,11 +465,10 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
-      <StandardCustomAppBar showLogo isHeroBackground />
-      
+
       <ScrollView
         style={[styles.content, { backgroundColor: colors.background }]}
-        contentContainerStyle={{ paddingBottom: insets.bottom + verticalScale(120)}}
+        contentContainerStyle={{ paddingBottom: insets.bottom + verticalScale(120) }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -460,8 +479,7 @@ export default function HomeScreen() {
           />
         }
       >
-        
-        {renderPopularDecksCard()}
+        {renderHeroHeader()}
         {Object.keys(DECK_CATEGORIES).map((category, index) => (
           <React.Fragment key={`category-${category}`}>
             {renderDeckSection(category)}
@@ -481,8 +499,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContentContainer: {
-  paddingBottom: '35%',
-},
+    paddingBottom: '35%',
+  },
   sectionHeaderGradient: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -542,68 +560,6 @@ const styles = StyleSheet.create({
     minHeight: verticalScale(180),
     overflow: 'hidden',
   },
-  popularDecksCard: {
-    borderRadius: moderateScale(44),
-    marginHorizontal: scale(10),
-    marginVertical: verticalScale(8),
-    marginTop: verticalScale(16),
-    paddingHorizontal: scale(20),
-    paddingVertical: verticalScale(10),
-    minHeight: verticalScale(150),
-    overflow: 'hidden',
-    paddingBottom: verticalScale(6),
-    paddingTop: verticalScale(20),
-  },
-  popularDecksTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%', // Tam genişlik
-  },
-  popularDecksContent: {
-    flexDirection: 'row',
-    alignItems: 'flex-start', // Açıklama metni ve görsel üstten hizalı
-  },
-  popularDecksTextContainer: {
-    flex: 1,
-    marginRight: scale(2),
-  },
-  popularDecksImageContainer: {
-    width: moderateScale(160, 0.3), // Görsel boyutu optimize edildi
-    height: moderateScale(160, 0.3),
-    flexShrink: 0, // Görsel küçülmesin
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  popularDecksImage: {
-    width: moderateScale(160, 0.3), // Görsel boyutu optimize edildi
-    height: moderateScale(160, 0.3),
-    top: verticalScale(-20),
-  },
-  exploreButton: {
-    borderRadius: moderateScale(99),
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: moderateScale(1) },
-    shadowOpacity: 0.05,
-    shadowRadius: moderateScale(2),
-    elevation: 1,
-    alignSelf: 'flex-start',
-    minWidth: moderateScale(160, 0.3), // Buton genişliği optimize edildi
-  },
-  gradientButton: {
-    paddingVertical: moderateScale(10, 0.3), // Buton padding optimize edildi
-    paddingHorizontal: moderateScale(20, 0.3),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: moderateScale(99),
-  },
-  exploreButtonText: {
-    fontSize: moderateScale(17, 0.3), // Buton text boyutu optimize edildi
-    fontWeight: '500',
-    color: '#FFFFFF',
-    paddingVertical: moderateScale(4, 0.3),
-  },
   emptyDeckCard: {
     borderRadius: moderateScale(18),
     marginRight: scale(10),
@@ -622,5 +578,81 @@ const styles = StyleSheet.create({
     height: scale(64),
     borderRadius: moderateScale(32),
     // Kenarlık (borderWidth) yok, sadece arka plan rengi ile ayrışacak
+  },
+  heroHeaderContainer: {
+    width: '100%',
+    borderBottomRightRadius: 36,
+    borderBottomLeftRadius: 36,
+    marginBottom: verticalScale(24)
+  },
+  heroHeader: {
+    width: '100%',
+    minHeight: verticalScale(215),
+    borderBottomRightRadius: 36,
+    borderBottomLeftRadius: 36,
+  },
+  
+  heroContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: verticalScale(8),
+    paddingBottom: verticalScale(24),
+    justifyContent: 'center',
+  },
+  
+  heroTextContent: {
+    maxWidth: 225,
+    zIndex: 2,
+  },
+  
+  heroTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: verticalScale(8),
+  },
+  
+  heroTitle: {
+    flexShrink: 1,
+    marginLeft: 8,
+    fontSize: moderateScale(23),
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: -0.3,
+  },
+  
+  heroSubtitle: {
+    fontSize: moderateScale(14),
+    lineHeight: moderateScale(20),
+    fontWeight: '400',
+    color: 'rgba(255, 255, 255, 0.9)',
+  },
+  
+  heroButton: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: verticalScale(16),
+    marginLeft: verticalScale(8),
+    paddingHorizontal: 16,
+    height: verticalScale(40),
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+  },
+  
+  heroButtonText: {
+    marginHorizontal: 7,
+    fontSize: moderateScale(14),
+    fontWeight: '600',
+    color: '#ff6b35',
+  },
+  
+  heroIllustration: {
+    position: 'absolute',
+    right: 8,
+    bottom: -verticalScale(40),
+    width: moderateScale(180),
+    height: moderateScale(180),
+    resizeMode: 'contain',
   },
 }); 
