@@ -205,7 +205,7 @@ export default function HomeScreen() {
     const config = {
       gradient: ['#ffa726', '#ff6b35'],
     };
-  
+
     return (
       <View style={styles.heroHeaderContainer}>
         <LinearGradient
@@ -221,7 +221,7 @@ export default function HomeScreen() {
             showLogo
             isHeroBackground
           />
-  
+
           <View style={styles.heroContent}>
             <View style={styles.heroTextContent}>
               <View style={styles.heroTitleRow}>
@@ -230,19 +230,19 @@ export default function HomeScreen() {
                   size={24}
                   color="#FFFFFF"
                 />
-  
+
                 <Text style={styles.heroTitle}>
                   Keşfet ve öğren
                 </Text>
               </View>
-  
+
               <Text style={styles.heroSubtitle}>
                 {t(
                   'home.popularDecksSubtitle',
                   'En popüler ve trend destelerle bilginizi pekiştirin'
                 )}
               </Text>
-  
+
               <TouchableOpacity
                 style={styles.heroButton}
                 activeOpacity={0.8}
@@ -253,11 +253,11 @@ export default function HomeScreen() {
                   size={17}
                   color="#ff6b35"
                 />
-  
+
                 <Text style={styles.heroButtonText}>
                   {t('home.exploreButton', 'Keşfet')}
                 </Text>
-  
+
                 <Iconify
                   icon="material-symbols:arrow-forward-ios-rounded"
                   size={16}
@@ -265,7 +265,7 @@ export default function HomeScreen() {
                 />
               </TouchableOpacity>
             </View>
-  
+
             <Image
               source={require('../../assets/item.webp')}
               style={styles.heroIllustration}
@@ -284,6 +284,7 @@ export default function HomeScreen() {
     const limitedDecks = categoryDecks || []; // Tüm desteler gösterilecek
     const isCategoryLoading = loading || categoryDecks === undefined;
     const isInProgressSection = category === 'inProgressDecks';
+    const isDefaultDecksSection = category === 'defaultDecks';
     const activeDeckCount = isInProgressSection
       ? (totalActiveDeckCount ?? categoryDecks?.length ?? 0)
       : (categoryDecks?.length || 0);
@@ -313,16 +314,32 @@ export default function HomeScreen() {
     };
 
     const showEndIcon = hasMoreDecks;
+    const SectionWrapper = isInProgressSection
+      ? AnimatedPressable
+      : View;
 
+    const HeaderWrapper = isInProgressSection ? View : TouchableOpacity;
     return (
-      <AnimatedPressable
-        onPress={handleSeeAll}
-        style={[styles.glassCard, {
-          backgroundColor: colors.homeCardBackground, borderColor: colors.cardBorder,
-          borderWidth: 1,
-        }]}
+      <SectionWrapper
+        {...(isInProgressSection
+          ? {
+            onPress: handleSeeAll,
+            style: [
+              styles.glassCard,
+              {
+                backgroundColor: colors.homeCardBackground,
+                borderColor: colors.cardBorder,
+                borderWidth: 1,
+              },
+            ],
+          }
+          : {
+            style: styles.deckSection,
+          })}
       >
-        <View style={styles.sectionHeaderGradient}>
+        <HeaderWrapper onPress={handleSeeAll} activeOpacity={0.9} style={[styles.sectionHeaderGradient, isDefaultDecksSection && styles.hairlineBorder, {
+          marginHorizontal: isInProgressSection ? 0 : 8,
+        }]}>
           <View style={styles.sectionHeaderLeft}>
             <Iconify
               icon={getCategoryIcon(category)}
@@ -346,12 +363,12 @@ export default function HomeScreen() {
           <View>
             <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(20)} color="#007AFF" />
           </View>
-        </View>
+        </HeaderWrapper>
         {isCategoryLoading ? (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.decksContainer}
+            contentContainerStyle={[styles.decksContainer, { paddingLeft: isInProgressSection ? 0 : 8 }]}
             decelerationRate="fast"
             snapToInterval={emptyDeckCardDimensions.width + scale(10)}
             snapToAlignment="start"
@@ -404,7 +421,7 @@ export default function HomeScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.decksContainer}
+            contentContainerStyle={[styles.decksContainer, { paddingLeft: isInProgressSection ? 0 : 8, paddingRight: isInProgressSection ? 0 : 0 }]}
             decelerationRate="fast"
             snapToInterval={emptyDeckCardDimensions.width + scale(10)}
             snapToAlignment="start"
@@ -459,7 +476,7 @@ export default function HomeScreen() {
             )}
           </ScrollView>
         )}
-      </AnimatedPressable>
+      </SectionWrapper>
     );
   };
 
@@ -509,10 +526,16 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(12),
     paddingVertical: verticalScale(8),
   },
+  hairlineBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255, 255, 255, 0.10)',
+    borderRadius: 99
+  },
   sectionHeaderLeft: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    marginHorizontal: 12
   },
   sectionTitleBlock: {
     flex: 1,
@@ -555,7 +578,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(40),
     marginHorizontal: scale(10),
     marginVertical: verticalScale(8),
-    paddingHorizontal: scale(20),
+    paddingHorizontal: scale(10),
     paddingVertical: verticalScale(10),
     minHeight: verticalScale(180),
     overflow: 'hidden',
@@ -591,7 +614,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 36,
     borderBottomLeftRadius: 36,
   },
-  
+
   heroContent: {
     flex: 1,
     paddingHorizontal: 20,
@@ -599,18 +622,18 @@ const styles = StyleSheet.create({
     paddingBottom: verticalScale(24),
     justifyContent: 'center',
   },
-  
+
   heroTextContent: {
     maxWidth: 225,
     zIndex: 2,
   },
-  
+
   heroTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: verticalScale(8),
   },
-  
+
   heroTitle: {
     flexShrink: 1,
     marginLeft: 8,
@@ -619,14 +642,14 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: -0.3,
   },
-  
+
   heroSubtitle: {
     fontSize: moderateScale(14),
     lineHeight: moderateScale(20),
     fontWeight: '400',
     color: 'rgba(255, 255, 255, 0.9)',
   },
-  
+
   heroButton: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
@@ -639,14 +662,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: '#FFFFFF',
   },
-  
+
   heroButtonText: {
     marginHorizontal: 7,
     fontSize: moderateScale(14),
     fontWeight: '600',
     color: '#ff6b35',
   },
-  
+
   heroIllustration: {
     position: 'absolute',
     right: 8,
@@ -655,4 +678,7 @@ const styles = StyleSheet.create({
     height: moderateScale(180),
     resizeMode: 'contain',
   },
+  deckSection: {
+    width: '100%'
+  }
 }); 
