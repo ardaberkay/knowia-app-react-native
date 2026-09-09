@@ -15,6 +15,7 @@ import { updateLastActiveAt, updateNotificationPreference } from '../../services
 import { registerForPushNotificationsAsync } from '../../services/NotificationService';
 import * as Notifications from 'expo-notifications';
 import DeckSkeleton from '../../components/skeleton/DeckSkeleton';
+import CommunityDeckSkeleton from '../../components/skeleton/CommunityDeckSkeleton';
 import { useTranslation } from 'react-i18next';
 import DeckCard from '../../components/ui/DeckUi';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -397,18 +398,28 @@ export default function HomeScreen() {
           </View>
         </HeaderWrapper>
         {isCategoryLoading ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={[styles.decksContainer, { paddingLeft: isInProgressSection ? 0 : 10 }]}
-            decelerationRate="fast"
-            snapToInterval={emptyDeckCardDimensions.width + scale(10)}
-            snapToAlignment="start"
-          >
-            {[...Array(4)].map((_, i) => (
-              <DeckSkeleton key={i} progressMode={isInProgressSection} />
-            ))}
-          </ScrollView>
+          isCommunityDecksSection ? (
+            // Topluluk Desteleri için Dikey Skeleton Dizilimi
+            <View style={styles.verticalCommunitySkeletonContainer}>
+              {[...Array(3)].map((_, i) => (
+                <CommunityDeckSkeleton key={i} />
+              ))}
+            </View>
+          ) : (
+            // Diğer kategoriler için mevcut Yatay Skeleton
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={[styles.decksContainer, { paddingLeft: isInProgressSection ? 0 : 10 }]}
+              decelerationRate="fast"
+              snapToInterval={emptyDeckCardDimensions.width + scale(10)}
+              snapToAlignment="start"
+            >
+              {[...Array(4)].map((_, i) => (
+                <DeckSkeleton key={i} progressMode={isInProgressSection} />
+              ))}
+            </ScrollView>
+          )
         ) : !loading && categoryDecks !== undefined && limitedDecks.length === 0 ? (
           <ScrollView
             horizontal

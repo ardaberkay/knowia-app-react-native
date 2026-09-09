@@ -210,7 +210,7 @@ const CommunityDeckCard = ({
                             style={[typography.styles.caption, styles.metaText]}
                             numberOfLines={1}
                         >
-                            {deck.card_count || 0} t('home.cardCount', 'Kart')
+                            {deck.card_count || 0} {t('home.cardCount', 'Kart')}
                         </Text>
                         <Text style={[styles.separatorDot, { width: 4, height: 4 }]}></Text>
                         <Iconify
@@ -223,7 +223,7 @@ const CommunityDeckCard = ({
                             style={[typography.styles.caption, styles.metaText]}
                             numberOfLines={1}
                         >
-                            {chapter_count || 0} t('home.chapterCount', 'Bölüm')
+                            {chapter_count || 0} {t('home.chapterCount', 'Bölüm')}
                         </Text>
                     </View>
                 </View>
