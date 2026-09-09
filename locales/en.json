@@ -106,7 +106,9 @@
     "exploreButton": "Explore",
     "inProgressDecksDescription": "Reinforce your knowledge with the decks you're studying",
     "defaultDecksDescription": "Start learning quickly with ready made decks",
-    "communityDecksDescription": "Discover and share community decks"
+    "communityDecksDescription": "Discover and share community decks",
+    "cardCount": "Card",
+    "chapterCount": "Chapter"
   },
   "create": {
     "name": "Deck Name",

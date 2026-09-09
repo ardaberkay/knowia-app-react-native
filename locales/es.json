@@ -102,7 +102,9 @@
     "exploreButton": "Explorar",
     "inProgressDecksDescription": "Refuerza tu conocimiento con las barajas que estás estudiando",
     "defaultDecksDescription": "Comienza a aprender rápidamente con barajas listas",
-    "communityDecksDescription": "Descubre y comparte barajas de la comunidad"
+    "communityDecksDescription": "Descubre y comparte barajas de la comunidad",
+    "cardCount": "Tarjeta",
+    "chapterCount": "Capítulo"
   },
   "create": {
     "name": "Nombre Del Mazo",

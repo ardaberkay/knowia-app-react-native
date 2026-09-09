@@ -103,7 +103,9 @@
     "exploreButton": "Explorar",
     "inProgressDecksDescription": "Reforce seu conhecimento com os baralhos que você está estudando",
     "defaultDecksDescription": "Comece a aprender rapidamente com baralhos prontos",
-    "communityDecksDescription": "Descubra e compartilhe baralhos da comunidade"
+    "communityDecksDescription": "Descubra e compartilhe baralhos da comunidade",
+    "cardCount": "Cartão",
+    "chapterCount": "Capítulo"
   },
   "create": {
     "name": "Nome do deck",

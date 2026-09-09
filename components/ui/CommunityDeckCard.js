@@ -5,6 +5,7 @@ import MaskedView from '@react-native-masked-view/masked-view';
 import { Iconify } from 'react-native-iconify';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { triggerHaptic } from '../../lib/hapticManager';
+import { useTranslation } from 'react-i18next';
 
 // --- MaskedView ile Pürüzsüz Fade-Out Yapan Metin Bileşeni ---
 const FadeText = ({ text, style, maxWidth = '100%', maxChars = 14 }) => {
@@ -60,7 +61,7 @@ const CommunityDeckCard = ({
 }) => {
     const [localFavorite, setLocalFavorite] = useState(isFavorite);
     const chapter_count = deck.chapter_count;
-
+    const { t } = useTranslation();
     useEffect(() => {
         setLocalFavorite(isFavorite);
     }, [isFavorite]);
@@ -209,7 +210,7 @@ const CommunityDeckCard = ({
                             style={[typography.styles.caption, styles.metaText]}
                             numberOfLines={1}
                         >
-                            {deck.card_count || 0} kart
+                            {deck.card_count || 0} t('home.cardCount', 'Kart')
                         </Text>
                         <Text style={[styles.separatorDot, { width: 4, height: 4 }]}></Text>
                         <Iconify
@@ -222,7 +223,7 @@ const CommunityDeckCard = ({
                             style={[typography.styles.caption, styles.metaText]}
                             numberOfLines={1}
                         >
-                            {chapter_count || 0} bölüm
+                            {chapter_count || 0} t('home.chapterCount', 'Bölüm')
                         </Text>
                     </View>
                 </View>

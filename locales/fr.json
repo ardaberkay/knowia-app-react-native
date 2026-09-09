@@ -103,7 +103,9 @@
     "exploreButton": "Explorer",
     "inProgressDecksDescription": "Renforcez vos connaissances avec les paquets que vous étudiez",
     "defaultDecksDescription": "Commencez à apprendre rapidement avec des paquets prêts à l'emploi",
-    "communityDecksDescription": "Découvrez et partagez les paquets communautaires"
+    "communityDecksDescription": "Découvrez et partagez les paquets communautaires",
+    "cardCount": "Carte",
+    "chapterCount": "Chapitre"
   },
   "create": {
     "name": "Nom du deck",

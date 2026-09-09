@@ -103,7 +103,9 @@
     "exploreButton": "Entdecken",
     "inProgressDecksDescription": "Festige dein Wissen mit aktiven Decks",
     "defaultDecksDescription": "Schnell starten mit fertigen Decks",
-    "communityDecksDescription": "Community Decks entdecken und teilen"
+    "communityDecksDescription": "Community Decks entdecken und teilen",
+    "cardCount": "Karte",
+    "chapterCount": "Kapitel"
   },
   "create": {
     "name": "Deckname",

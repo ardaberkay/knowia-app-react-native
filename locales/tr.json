@@ -106,7 +106,9 @@
     "exploreButton": "Keşfet",
     "inProgressDecksDescription": "Çalıştığınız destelerle bilginizi pekiştirin",
     "defaultDecksDescription": "Hazır destelerle hızlıca öğrenmeye başlayın",
-    "communityDecksDescription": "Topluluk destelerini keşfedin ve paylaşın"
+    "communityDecksDescription": "Topluluk destelerini keşfedin ve paylaşın",
+    "cardCount": "Kart",
+    "chapterCount": "Bölüm"
   },
   "create": {
     "name": "Deste Adı",
