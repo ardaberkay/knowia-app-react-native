@@ -62,7 +62,7 @@ function EntranceBlock({ anim, style, children, scaleFrom, translateYFrom = 0, o
 }
 
 export default function DeckDetailScreen({ route, navigation }) {
-  
+
   const insets = useSafeAreaInsets();
   const [deck, setDeck] = useState(() => route.params?.deck);
   const { colors } = useTheme();
@@ -151,7 +151,7 @@ export default function DeckDetailScreen({ route, navigation }) {
   /** Aynı anda iki fetch (prefetch + sheet açılışı) çakışmasın */
   const chapterProgressPromiseRef = useRef(null);
   /** onRefresh gibi üstte tanımlı callback'ler güncel fetchChapterProgress'e erişsin */
-  const fetchChapterProgressRef = useRef(async () => {});
+  const fetchChapterProgressRef = useRef(async () => { });
   const chapterSheetModalRef = useRef(null);
   /** Başlat’a basıldığında bölüm yoksa sheet açılır; ilk seçimde doğrudan çalışmaya git */
   const autoStartAfterChapterPickRef = useRef(false);
@@ -485,14 +485,14 @@ export default function DeckDetailScreen({ route, navigation }) {
     setRefreshing(true);
     try {
       const uid = userId;
-  
+
       // 1. ADIM: Sadece temel bilgileri çek (Hafif istekler)
       const [deckData, favDeckIds, langIds] = await Promise.all([
         getDeckById(deck.id, true),
         uid ? getFavoriteDeckIds(uid, true) : Promise.resolve([]),
         getDeckLanguages(deck.id),
       ]);
-  
+
       if (deckData) {
         if (deckData.is_admin_created && deckData.profiles) {
           deckData.profiles = { ...deckData.profiles, username: 'Knowia', image_url: null };
@@ -503,7 +503,7 @@ export default function DeckDetailScreen({ route, navigation }) {
           setIsFavorite(uid ? favDeckIds.includes(deck.id) : false);
         }
       }
-  
+
       // 2. ADIM: İstatistikleri (Toplam, Learned, Learning) güncelle
       // Bu fonksiyon getDeckProgressCounts'u çağırır ve hafiftir.
       await fetchProgressFromAPI(false);
@@ -1042,6 +1042,10 @@ export default function DeckDetailScreen({ route, navigation }) {
   React.useLayoutEffect(() => {
     if (!isFocused) return;
     navigation.setOptions({
+      headerTransparent: true,
+      headerStyle: { backgroundColor: 'transparent' },
+      headerTintColor: '#FFFFFF',
+      title: '',
       headerRight: () => (
         <View
           style={{
@@ -1110,6 +1114,8 @@ export default function DeckDetailScreen({ route, navigation }) {
     };
     return icons[sortOrder] || "hugeicons:language-skill";
   };
+
+
 
   // Kategori rengine göre renk belirle (colors.js'deki categoryColors'dan ilk rengi al)
   const getCategoryColor = (sortOrder) => {
@@ -1186,7 +1192,7 @@ export default function DeckDetailScreen({ route, navigation }) {
     : verticalScale(screenHeight * 0.10) + insets.bottom;
 
   return (
-    <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background}}>
+    <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
 
       <ScrollView
         contentContainerStyle={{ paddingBottom: scrollContentPaddingBottom }}
@@ -1209,22 +1215,21 @@ export default function DeckDetailScreen({ route, navigation }) {
             colors={getCategoryGradient(categoryInfo?.sort_order)}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.gfHeroGradient}
+            style={[styles.gfHeroGradient, { paddingTop: insets.top + verticalScale(60) }]}
           >
             {/* Decorative Elements */}
             <View style={styles.gfHeroDecor}>
-              <View style={[styles.gfDecorCircle, styles.gfDecorCircle1]} />
-              <View style={[styles.gfDecorCircle, styles.gfDecorCircle2]} />
+              <View style={[styles.gfDecorCircle, styles.gfDecorCircle1, { backgroundColor: null }]}>
+                <Iconify icon={getCategoryIcon(categoryInfo?.sort_order)} size={moderateScale(260)} color="rgba(255,255,255,0.08)" style={{
+                  transform: categoryInfo?.sort_order === 4 ? [{ scaleX: -1 }] : []
+                }} />
+              </View>
               <View style={[styles.gfDecorCircle, styles.gfDecorCircle3]} />
+              <View style={[styles.gfDecorCircle, styles.gfDecorCircle2]} />
             </View>
 
             {/* Category Badge */}
-            <View style={styles.gfCategoryBadge}>
-              <Iconify icon={getCategoryIcon(categoryInfo?.sort_order)} size={moderateScale(18)} color="#fff" />
-              <Text style={styles.gfCategoryText}>
-                {t(`categories.${categoryInfo?.sort_order}`) || categoryInfo?.name || t('common.category', 'Kategori')}
-              </Text>
-            </View>
+
 
             {/* Title - Scrollable if overflows */}
             <View style={styles.gfTitleContainer}>
@@ -1413,77 +1418,77 @@ export default function DeckDetailScreen({ route, navigation }) {
             ]}
           >
             <View style={styles.gfCardContent}>
-            {/* Left Side - Progress Ring */}
-            <View style={styles.gfProgressSide}>
-              <View style={[styles.gfProgressGlow, { backgroundColor: getCategoryColor(categoryInfo?.sort_order) + '15' }]} />
-              <CircularProgress
-                progress={progress}
-                size={scale(170)}
-                strokeWidth={moderateScale(17)}
-                showText={true}
-                shouldAnimate={!progressLoading}
-                fullCircle={true}
-              />
-            </View>
+              {/* Left Side - Progress Ring */}
+              <View style={styles.gfProgressSide}>
+                <View style={[styles.gfProgressGlow, { backgroundColor: getCategoryColor(categoryInfo?.sort_order) + '15' }]} />
+                <CircularProgress
+                  progress={progress}
+                  size={scale(170)}
+                  strokeWidth={moderateScale(17)}
+                  showText={true}
+                  shouldAnimate={!progressLoading}
+                  fullCircle={true}
+                />
+              </View>
 
-            {/* Right Side - Stats */}
-            <View style={styles.gfStatsSide}>
-              {/* Total Cards - Top Badge with Gradient */}
-              <LinearGradient
-                colors={getCategoryGradient(categoryInfo?.sort_order)}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.gfTotalBadgeGradient}
-              >
-                <Iconify icon="ri:stack-fill" size={moderateScale(18)} color="#fff" />
-                <View style={styles.gfTotalBadgeTextWrap}>
-                  <Text style={styles.gfTotalBadgeNumber}>{deckStats.total}</Text>
-                  <Text style={styles.gfTotalBadgeLabel}>{t('deckDetail.cards', 'Kart')}</Text>
-                </View>
-              </LinearGradient>
-
-              {/* Stats List */}
-              <View style={styles.gfStatsListVertical}>
-                <View style={styles.gfStatRowItem}>
-                  <LinearGradient
-                    colors={['#27AE60', '#2ECC71']}
-                    style={styles.gfStatRowIcon}
-                  >
-                    <Iconify icon="dashicons:welcome-learn-more" size={18} color="#fff" />
-                  </LinearGradient>
-                  <View style={styles.gfStatRowText}>
-                    <Text style={[styles.gfStatRowValue, { color: colors.cardQuestionText }]}>{deckStats.learned}</Text>
-                    <Text style={[styles.gfStatRowLabel, { color: colors.muted }]}>{t('deckDetail.learned', 'Öğrenildi')}</Text>
+              {/* Right Side - Stats */}
+              <View style={styles.gfStatsSide}>
+                {/* Total Cards - Top Badge with Gradient */}
+                <LinearGradient
+                  colors={getCategoryGradient(categoryInfo?.sort_order)}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.gfTotalBadgeGradient}
+                >
+                  <Iconify icon="ri:stack-fill" size={moderateScale(18)} color="#fff" />
+                  <View style={styles.gfTotalBadgeTextWrap}>
+                    <Text style={styles.gfTotalBadgeNumber}>{deckStats.total}</Text>
+                    <Text style={styles.gfTotalBadgeLabel}>{t('deckDetail.cards', 'Kart')}</Text>
                   </View>
-                </View>
+                </LinearGradient>
 
-                <View style={styles.gfStatRowItem}>
-                  <LinearGradient
-                    colors={['#F98A21', '#FF6B35']}
-                    style={styles.gfStatRowIcon}
-                  >
-                    <Iconify icon="mdi:fire" size={moderateScale(18)} color="#fff" />
-                  </LinearGradient>
-                  <View style={styles.gfStatRowText}>
-                    <Text style={[styles.gfStatRowValue, { color: colors.cardQuestionText }]}>{deckStats.learning}</Text>
-                    <Text style={[styles.gfStatRowLabel, { color: colors.muted }]}>{t('deckDetail.learning', 'Öğreniliyor')}</Text>
+                {/* Stats List */}
+                <View style={styles.gfStatsListVertical}>
+                  <View style={styles.gfStatRowItem}>
+                    <LinearGradient
+                      colors={['#27AE60', '#2ECC71']}
+                      style={styles.gfStatRowIcon}
+                    >
+                      <Iconify icon="dashicons:welcome-learn-more" size={18} color="#fff" />
+                    </LinearGradient>
+                    <View style={styles.gfStatRowText}>
+                      <Text style={[styles.gfStatRowValue, { color: colors.cardQuestionText }]}>{deckStats.learned}</Text>
+                      <Text style={[styles.gfStatRowLabel, { color: colors.muted }]}>{t('deckDetail.learned', 'Öğrenildi')}</Text>
+                    </View>
                   </View>
-                </View>
 
-                <View style={styles.gfStatRowItem}>
-                  <LinearGradient
-                    colors={[colors.secondary, colors.secondary + 'CC']}
-                    style={styles.gfStatRowIcon}
-                  >
-                    <Iconify icon="basil:eye-closed-outline" size={moderateScale(18)} color="#fff" />
-                  </LinearGradient>
-                  <View style={styles.gfStatRowText}>
-                    <Text style={[styles.gfStatRowValue, { color: colors.cardQuestionText }]}>{deckStats.new}</Text>
-                    <Text style={[styles.gfStatRowLabel, { color: colors.muted }]}>{t('deckDetail.new', 'Yeni')}</Text>
+                  <View style={styles.gfStatRowItem}>
+                    <LinearGradient
+                      colors={['#F98A21', '#FF6B35']}
+                      style={styles.gfStatRowIcon}
+                    >
+                      <Iconify icon="mdi:fire" size={moderateScale(18)} color="#fff" />
+                    </LinearGradient>
+                    <View style={styles.gfStatRowText}>
+                      <Text style={[styles.gfStatRowValue, { color: colors.cardQuestionText }]}>{deckStats.learning}</Text>
+                      <Text style={[styles.gfStatRowLabel, { color: colors.muted }]}>{t('deckDetail.learning', 'Öğreniliyor')}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.gfStatRowItem}>
+                    <LinearGradient
+                      colors={[colors.secondary, colors.secondary + 'CC']}
+                      style={styles.gfStatRowIcon}
+                    >
+                      <Iconify icon="basil:eye-closed-outline" size={moderateScale(18)} color="#fff" />
+                    </LinearGradient>
+                    <View style={styles.gfStatRowText}>
+                      <Text style={[styles.gfStatRowValue, { color: colors.cardQuestionText }]}>{deckStats.new}</Text>
+                      <Text style={[styles.gfStatRowLabel, { color: colors.muted }]}>{t('deckDetail.new', 'Yeni')}</Text>
+                    </View>
                   </View>
                 </View>
               </View>
-            </View>
             </View>
           </EntranceBlock>
 
@@ -1664,7 +1669,7 @@ export default function DeckDetailScreen({ route, navigation }) {
           {showAddCardHint && deckStats.total === 0 && (
             <Pressable
               accessibilityLabel="Kart ekleme yönlendirmesi"
-              onPress={() => {}}
+              onPress={() => { }}
               style={styles.addCardHintOverlay}
             />
           )}
@@ -1699,42 +1704,42 @@ export default function DeckDetailScreen({ route, navigation }) {
           )}
 
           <AnimatedPressable
-          accessibilityRole="button"
-          accessibilityLabel={t('deckDetail.addCard', 'Kart Ekle')}
-          style={[
-            styles.addCardFab,
-            addCardFabAnimatedStyle,
-            {
-              bottom: insets.bottom + verticalScale(24),
-              zIndex: showAddCardHint ? 7 : 3,
-              borderWidth: showAddCardHint ? moderateScale(2) : 0,
-              borderColor: showAddCardHint ? '#FFE1C2' : 'transparent',
-              shadowColor: showAddCardHint ? '#F98A21' : '#000000',
-              shadowOpacity: showAddCardHint ? 0.45 : 0.12,
-              shadowRadius: showAddCardHint ? moderateScale(6) : moderateScale(4),
-              elevation: showAddCardHint ? 3 : 2,
-            },
-          ]}
-          onPressIn={() => {
-            addCardFabPressed.value = 1;
-          }}
-          onPressOut={() => {
-            addCardFabPressed.value = 0;
-          }}
-          onPress={handleAddCard}
-        >
-          <LinearGradient
-            colors={['#F98A21', '#FF6B35']}
-            locations={[0, 0.99]}
-            style={styles.addCardFabGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
+            accessibilityRole="button"
+            accessibilityLabel={t('deckDetail.addCard', 'Kart Ekle')}
+            style={[
+              styles.addCardFab,
+              addCardFabAnimatedStyle,
+              {
+                bottom: insets.bottom + verticalScale(24),
+                zIndex: showAddCardHint ? 7 : 3,
+                borderWidth: showAddCardHint ? moderateScale(2) : 0,
+                borderColor: showAddCardHint ? '#FFE1C2' : 'transparent',
+                shadowColor: showAddCardHint ? '#F98A21' : '#000000',
+                shadowOpacity: showAddCardHint ? 0.45 : 0.12,
+                shadowRadius: showAddCardHint ? moderateScale(6) : moderateScale(4),
+                elevation: showAddCardHint ? 3 : 2,
+              },
+            ]}
+            onPressIn={() => {
+              addCardFabPressed.value = 1;
+            }}
+            onPressOut={() => {
+              addCardFabPressed.value = 0;
+            }}
+            onPress={handleAddCard}
           >
-            <Iconify icon="ic:round-plus" size={moderateScale(26)} color="#FFFFFF" />
-            <Text style={styles.addCardFabLabel} numberOfLines={1}>
-              {t('deckDetail.addCard', 'Kart Ekle')}
-            </Text>
-          </LinearGradient>
+            <LinearGradient
+              colors={['#F98A21', '#FF6B35']}
+              locations={[0, 0.99]}
+              style={styles.addCardFabGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <Iconify icon="ic:round-plus" size={moderateScale(26)} color="#FFFFFF" />
+              <Text style={styles.addCardFabLabel} numberOfLines={1}>
+                {t('deckDetail.addCard', 'Kart Ekle')}
+              </Text>
+            </LinearGradient>
           </AnimatedPressable>
         </>
       )}
@@ -2245,9 +2250,9 @@ const styles = StyleSheet.create({
   // GRADIENT FLOW STYLES - Modern & Eye-catching
   gfHeroBanner: {
     marginBottom: verticalScale(-50),
+
   },
   gfHeroGradient: {
-    paddingTop: verticalScale(20),
     paddingBottom: verticalScale(80),
     paddingHorizontal: scale(24),
     borderBottomLeftRadius: moderateScale(48),
@@ -2269,26 +2274,26 @@ const styles = StyleSheet.create({
   gfDecorCircle1: {
     width: scale(200),
     height: scale(200),
-    top: verticalScale(-60),
-    right: scale(-40),
+    top: verticalScale(-80),
+    left: scale(-80),
   },
   gfDecorCircle2: {
-    width: scale(120),
-    height: scale(120),
-    bottom: verticalScale(20),
-    left: scale(-30),
+    width: scale(110),
+    height: scale(110),
+    bottom: verticalScale(12),
+    right: scale(-30),
   },
   gfDecorCircle3: {
-    width: scale(80),
-    height: scale(80),
-    top: verticalScale(60),
-    right: scale(80),
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    width: scale(40),
+    height: scale(40),
+    top: verticalScale(88),
+    right: scale(100),
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   gfCategoryBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     alignSelf: 'flex-start',
     paddingVertical: verticalScale(10),
     paddingHorizontal: scale(16),

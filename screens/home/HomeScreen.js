@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDecksByCategory } from '../../services/DeckService';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useScrollToTop } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
 import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
@@ -97,12 +97,15 @@ export default function HomeScreen() {
   const notificationSetupDoneRef = useRef(false);
   const processingDecksRef = useRef(new Set());
   const { t } = useTranslation();
+  const scrollViewRef = useRef(null);
 
   const DECK_CATEGORIES = {
     inProgressDecks: t('home.inProgressDecks', 'Çalıştığım Desteler'),
     defaultDecks: t('home.defaultDecks', 'Hazır Desteler'),
     communityDecks: t('home.communityDecks', 'Topluluk Desteleri'),
   };
+
+  useScrollToTop(scrollViewRef);
 
   useEffect(() => {
     loadDecks();
@@ -534,6 +537,7 @@ export default function HomeScreen() {
     <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
 
       <ScrollView
+        ref={scrollViewRef}
         style={[styles.content, { backgroundColor: colors.background }]}
         contentContainerStyle={{ paddingBottom: insets.bottom + verticalScale(120) }}
         showsVerticalScrollIndicator={false}
