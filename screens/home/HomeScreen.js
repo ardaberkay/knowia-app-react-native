@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import DeckCard from '../../components/ui/DeckUi';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import StandardCustomAppBar from '../../components/layout/StandardCustomAppBar';
+import CommunityDeckCard from '../../components/ui/CommunityDeckCard';
 
 
 // Kategoriye göre ikon seçen yardımcı fonksiyon
@@ -93,7 +94,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const decksLoadedRef = useRef(false);
   const notificationSetupDoneRef = useRef(false);
-
+  const processingDecksRef = useRef(new Set());
   const { t } = useTranslation();
 
   const DECK_CATEGORIES = {
@@ -120,7 +121,9 @@ export default function HomeScreen() {
         Object.keys(DECK_CATEGORIES).map(async (category) => {
           try {
             // Anasayfada 10 deste göster, 11. kayıt varsa devam işareti göster.
-            const result = await getDecksByCategory(userId, category, { limit: 10, includeHasMore: true });
+            const limit = category === 'communityDecks' ? 3 : 10;
+            const community = category === 'communityDecks';
+            const result = await getDecksByCategory(userId, category, { limit, includeHasMore: !community });
             decksData[category] = result || { decks: [], hasMore: false };
           } catch (err) {
             console.error(`Error loading ${category}:`, err);
@@ -187,11 +190,40 @@ export default function HomeScreen() {
     navigation.navigate('DeckDetail', { deck });
   };
 
-  const handleAddFavoriteDeck = async (deckId) => {
+  const handleToggleFavorite = async (deckId) => {
     if (!userId) return;
-    await addFavoriteDeck(userId, deckId);
-    const decks = await getFavoriteDecks(userId);
-    setFavoriteDecks(decks || []);
+
+    // 1. Hızlı tıklama kilidi: Bu deste için işlem sürüyorsa ikinci tıklamayı yoksay
+    if (processingDecksRef.current.has(deckId)) return;
+
+    // Kilidi koy
+    processingDecksRef.current.add(deckId);
+
+    try {
+      // 2. Mevcut favori durumunu kontrol et
+      const isFavorite = favoriteDecks.some((fav) => {
+        if (typeof fav === 'object' && fav !== null) {
+          return fav.id === deckId || fav.deck_id === deckId;
+        }
+        return fav === deckId;
+      });
+
+      // 3. Duruma göre ekle veya çıkar
+      if (isFavorite) {
+        await removeFavoriteDeck(userId, deckId);
+      } else {
+        await addFavoriteDeck(userId, deckId);
+      }
+
+      // 4. Güncel listeyi çekip state'e yaz
+      const decks = await getFavoriteDecks(userId);
+      setFavoriteDecks(decks || []);
+    } catch (error) {
+      console.error('Favori işlemi sırasında hata oluştu:', error);
+    } finally {
+      // 5. İşlem bittiğinde kilidi kaldır
+      processingDecksRef.current.delete(deckId);
+    }
   };
 
   const handleRemoveFavoriteDeck = async (deckId) => {
@@ -269,6 +301,8 @@ export default function HomeScreen() {
             <Image
               source={require('../../assets/item.webp')}
               style={styles.heroIllustration}
+              fadeDuration={0}
+
             />
           </View>
         </LinearGradient>
@@ -285,6 +319,7 @@ export default function HomeScreen() {
     const isCategoryLoading = loading || categoryDecks === undefined;
     const isInProgressSection = category === 'inProgressDecks';
     const isDefaultDecksSection = category === 'defaultDecks';
+    const isCommunityDecksSection = category === 'communityDecks';
     const activeDeckCount = isInProgressSection
       ? (totalActiveDeckCount ?? categoryDecks?.length ?? 0)
       : (categoryDecks?.length || 0);
@@ -314,10 +349,7 @@ export default function HomeScreen() {
     };
 
     const showEndIcon = hasMoreDecks;
-    const SectionWrapper = isInProgressSection
-      ? AnimatedPressable
-      : View;
-
+    const SectionWrapper = isInProgressSection ? AnimatedPressable : View;
     const HeaderWrapper = isInProgressSection ? View : TouchableOpacity;
     return (
       <SectionWrapper
@@ -337,7 +369,7 @@ export default function HomeScreen() {
             style: styles.deckSection,
           })}
       >
-        <HeaderWrapper onPress={handleSeeAll} activeOpacity={0.9} style={[styles.sectionHeaderGradient, isDefaultDecksSection && styles.hairlineBorder, {
+        <HeaderWrapper onPress={handleSeeAll} activeOpacity={0.9} style={[styles.sectionHeaderGradient, !isInProgressSection && styles.hairlineBorder, {
           marginHorizontal: isInProgressSection ? 0 : 8,
         }]}>
           <View style={styles.sectionHeaderLeft}>
@@ -368,7 +400,7 @@ export default function HomeScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={[styles.decksContainer, { paddingLeft: isInProgressSection ? 0 : 8 }]}
+            contentContainerStyle={[styles.decksContainer, { paddingLeft: isInProgressSection ? 0 : 10 }]}
             decelerationRate="fast"
             snapToInterval={emptyDeckCardDimensions.width + scale(10)}
             snapToAlignment="start"
@@ -419,9 +451,9 @@ export default function HomeScreen() {
           </ScrollView>
         ) : (
           <ScrollView
-            horizontal
+            horizontal={!isCommunityDecksSection}
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={[styles.decksContainer, { paddingLeft: isInProgressSection ? 0 : 8, paddingRight: isInProgressSection ? 0 : 0 }]}
+            contentContainerStyle={[styles.decksContainer, { paddingLeft: isInProgressSection ? 0 : 10, paddingRight: isInProgressSection ? 0 : 0 }]}
             decelerationRate="fast"
             snapToInterval={emptyDeckCardDimensions.width + scale(10)}
             snapToAlignment="start"
@@ -439,7 +471,21 @@ export default function HomeScreen() {
                 }
                 : deck;
 
-              return (
+              const isFav = favoriteDecks.some(
+                (fav) => (fav.id || fav.deck_id || fav) === deck.id
+              );
+
+              return isCommunityDecksSection ? (
+                <CommunityDeckCard
+                  key={`community-deck-${deck.id}`}
+                  deck={modifiedDeck}
+                  colors={colors}
+                  typography={typography}
+                  onPress={handleDeckPress}
+                  isFavorite={isFav}
+                  onToggleFavorite={() => handleToggleFavorite(deck.id)}
+                />
+              ) : (
                 <DeckCard
                   key={`deck-${deck.id}`}
                   deck={modifiedDeck}
@@ -447,15 +493,8 @@ export default function HomeScreen() {
                   typography={typography}
                   variant={category === 'inProgressDecks' ? 'inProgress' : 'default'}
                   onPress={handleDeckPress}
-                  onToggleFavorite={async (deckId) => {
-                    const isFavorite = favoriteDecks.some(fav => fav.id === deckId);
-                    if (isFavorite) {
-                      await handleRemoveFavoriteDeck(deckId);
-                    } else {
-                      await handleAddFavoriteDeck(deckId);
-                    }
-                  }}
-                  isFavorite={favoriteDecks.some(fav => fav.id === deck.id)}
+                  isFavorite={isFav}
+                  onToggleFavorite={() => handleToggleFavorite(deck.id)}
                 />
               );
             })}
@@ -679,6 +718,7 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   deckSection: {
-    width: '100%'
+    width: '100%',
+    marginVertical: 8
   }
 }); 

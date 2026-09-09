@@ -3,7 +3,7 @@ import { getCachedBlockedAndHidden, filterDecksByBlockAndHide } from './BlockSer
 import { invalidateCache, cacheData, getCachedData, CACHE_DURATIONS } from './CacheService';
 import { getFavoriteDeckIds } from './FavoriteService';
 
-const DECK_LIST_SELECT = 'id, name, to_name, description, card_count, user_id, category_id, is_shared, is_admin_created, shared_at, updated_at, created_at, profiles:profiles(username, image_url), categories:categories(id, name, sort_order), decks_languages(language_id)';
+const DECK_LIST_SELECT = 'id, name, to_name, description, card_count, user_id, category_id, is_shared, is_admin_created, shared_at, updated_at, created_at, profiles:profiles(username, image_url), categories:categories(id, name, sort_order), decks_languages(language_id), chapters:chapters(count)';
 
 // Oluşturma/güncelleme sonrası dönüş için kullanılan select (tekil deck).
 const DECK_SELECT_SINGLE = 'id, name, to_name, description, card_count, user_id, category_id, is_shared, is_admin_created, shared_at, updated_at, created_at, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)';
@@ -278,7 +278,7 @@ export const getDecksByCategory = async (userId, category, options = false) => {
     throw error;
   }
 
-  let resultData = data || [];
+  let resultData = (data || []).map((deck) => ({...deck, chapter_count: deck.chapters?.[0]?.count || 0}));
   let hasMore = false;
   if (includeHasMore && typeof limit === 'number' && limit > 0) {
     hasMore = resultData.length > limit;

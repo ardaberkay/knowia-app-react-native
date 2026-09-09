@@ -284,7 +284,7 @@ export const removeFavoriteCard = async (userId, cardId) => {
 
 // Favori Deste Ekle
 export const addFavoriteDeck = async (userId, deckId) => {
-  const { error } = await supabase.from('favorite_decks').insert({ user_id: userId, deck_id: deckId });
+  const { error } = await supabase.from('favorite_decks').upsert({ user_id: userId, deck_id: deckId }, { onConflict: 'user_id, deck_id', ignoreDuplicates: true });
   if (error) throw error;
   await invalidateCache(`fav_deck_ids_${userId}`);
   await invalidateCache(`fav_decks_${userId}`);
