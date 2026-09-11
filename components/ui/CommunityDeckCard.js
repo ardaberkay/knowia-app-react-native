@@ -1,55 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import MaskedView from '@react-native-masked-view/masked-view';
 import { Iconify } from 'react-native-iconify';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { useTranslation } from 'react-i18next';
 
-// --- MaskedView ile Pürüzsüz Fade-Out Yapan Metin Bileşeni ---
-const FadeText = ({ text, style, maxWidth = '100%', maxChars = 14 }) => {
-    if (!text) return null;
-
-    const shouldShowFade = text.length > maxChars;
-
-    if (!shouldShowFade) {
-        return (
-            <Text
-                style={[style, { maxWidth }]}
-                numberOfLines={1}
-                ellipsizeMode="clip"
-            >
-                {text}
-            </Text>
-        );
-    }
-
-    // Kelime kırılmalarını engellemek için normal boşlukları bölünemez boşluk (\u00A0) yapıyoruz
-    const singleLineText = text.replace(/ /g, '\u00A0');
-
-    return (
-        <MaskedView
-            style={[{ flexDirection: 'row' }, maxWidth ? { maxWidth } : null]}
-            maskElement={
-                <LinearGradient
-                    colors={['black', 'black', 'transparent']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0.96, y: 0 }}
-                    style={styles.maskGradient}
-                />
-            }
-        >
-            <Text
-                style={[style, { flexShrink: 0 }]}
-                numberOfLines={1}
-                ellipsizeMode="clip"
-            >
-                {singleLineText}
-            </Text>
-        </MaskedView>
-    );
-};
 
 const CommunityDeckCard = ({
     deck,
@@ -115,7 +71,7 @@ const CommunityDeckCard = ({
                 <View style={styles.iconBadgeContainer}>
                     <Iconify
                         icon={categoryIcon}
-                        size={scale(30)}
+                        size={scale(34)}
                         color="#FFFFFF"
                     />
                 </View>
@@ -135,12 +91,11 @@ const CommunityDeckCard = ({
                                 }
                                 style={styles.userAvatar}
                             />
-                            <FadeText
-                                text={username}
-                                style={[typography.styles.caption, styles.usernameText]}
-                                maxWidth="80%"
-                                maxChars={14}
-                            />
+                            <Text style={[typography.styles.caption, styles.usernameText]}
+                                numberOfLines={2}
+                                ellipsizeMode="tail">
+                                {username}
+                            </Text>
                         </View>
 
                         <TouchableOpacity
@@ -164,37 +119,26 @@ const CommunityDeckCard = ({
 
                     {/* Orta Satır: MaskedView Tabanlı Başlık Alanı */}
                     <View style={styles.titleBlock}>
-                        {!deck.to_name ? (
-                            /* --- DURUM 1: Sadece 'name' var --- */
-                            /* to_name olmadığı için name çok daha uzun karakter tolere edebilir */
-                            <FadeText
-                                text={deck.name}
-                                style={[typography.styles.h3, styles.mainTitle]}
-                                maxWidth="100%"
-                                maxChars={20}
-                            />
-                        ) : (
-                            /* --- DURUM 2: Hem 'name' hem 'to_name' var --- */
-                            <View style={styles.dualTitleWrapper}>
-                                {/* name: Kartın %50'sine kadar genişler, sığmazsa maske ile erir */}
-                                <FadeText
-                                    text={deck.name}
-                                    style={[typography.styles.h3, styles.mainTitle]}
-                                    maxWidth="50%"
-                                    maxChars={16}
-                                />
+                        <Text
+                            style={[typography.styles.h3, styles.mainTitle]}
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                        >
+                            {deck.name}
+                        </Text>
 
-                                {/* İki metin arasındaki ayraç */}
+                        {deck.to_name && (
+                            <>
                                 <Text style={styles.separatorDot}></Text>
 
-                                {/* to_name: Kalan %45 alanda gösterilir, sığmazsa kartın en sağında erir */}
-                                <FadeText
-                                    text={deck.to_name}
+                                <Text
                                     style={[typography.styles.h3, styles.subTitle]}
-                                    maxWidth="45%"
-                                    maxChars={20}
-                                />
-                            </View>
+                                    numberOfLines={1}
+                                    ellipsizeMode="tail"
+                                >
+                                    {deck.to_name}
+                                </Text>
+                            </>
                         )}
                     </View>
 
@@ -247,14 +191,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderRadius: moderateScale(20),
         paddingHorizontal: scale(12),
-        paddingVertical: verticalScale(10),
-        height: verticalScale(100),
+        paddingVertical: verticalScale(7),
+        height: verticalScale(120),
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.15)',
     },
     iconBadgeContainer: {
-        width: scale(52),
-        height: scale(52),
+        width: scale(60),
+        height: scale(60),
         borderRadius: moderateScale(14),
         backgroundColor: 'rgba(255, 255, 255, 0.18)',
         borderWidth: 1,
@@ -298,10 +242,11 @@ const styles = StyleSheet.create({
         height: verticalScale(22),
         justifyContent: 'center',
         width: '100%',
+        transform: [{ translateY: -verticalScale(5) }],
+
     },
     dualTitleWrapper: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        flexDirection: 'flex-start',
         width: '100%',
     },
     mainTitle: {
@@ -315,10 +260,10 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
     },
     separatorDot: {
-        width: scale(8),
-        height: scale(3),
+        width: scale(28),
+        height: StyleSheet.hairlineWidth,
         borderRadius: scale(2),
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        backgroundColor: 'rgba(255, 255, 255, 0.5)',
         marginHorizontal: scale(8),
         marginTop: scale(2)
     },

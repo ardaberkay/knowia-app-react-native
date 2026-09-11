@@ -7,12 +7,13 @@ import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { triggerHaptic } from '../../lib/hapticManager';
+import CommunityDeckCard from '../ui/CommunityDeckCard';
 
 // --- FADE TEXT BİLEŞENİ ---
 // --- ŞEFFAFLIK DÖNÜŞTÜRÜCÜ (Hex -> Rgba) ---
 const applyAlpha = (colorStr, alpha) => {
   if (!colorStr) return `rgba(255, 255, 255, ${alpha})`;
-  
+
   // Eğer renk kodu #FFFFFF gibi HEX formatındaysa
   if (colorStr.startsWith('#')) {
     let hex = colorStr.replace('#', '');
@@ -22,7 +23,7 @@ const applyAlpha = (colorStr, alpha) => {
     const b = parseInt(hex.substring(4, 6), 16) || 255;
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
-  
+
   // Eğer renk kodu zaten rgb formatındaysa
   if (colorStr.startsWith('rgb')) {
     const match = colorStr.match(/\d+(\.\d+)?/g);
@@ -30,33 +31,33 @@ const applyAlpha = (colorStr, alpha) => {
       return `rgba(${match[0]}, ${match[1]}, ${match[2]}, ${alpha})`;
     }
   }
-  return colorStr; 
+  return colorStr;
 };
 
 // --- FADE TEXT BİLEŞENİ (BOŞLUK VE KAYBOLMA SORUNU ÇÖZÜLMÜŞ HALİ) ---
 const FadeText = ({ text, style, maxChars = 15 }) => {
   if (!text) return null;
-  
+
   const shouldFade = text.length > maxChars;
-  
+
   if (!shouldFade) {
     return <Text style={style} numberOfLines={1} ellipsizeMode="tail">{text}</Text>;
   }
-  
-  const fadeLength = 4; 
+
+  const fadeLength = 4;
   const visibleLength = maxChars - fadeLength;
   const visibleText = text.substring(0, visibleLength);
   const fadeText = text.substring(visibleLength, maxChars);
-  
+
   const opacities = [0.7, 0.5, 0.3, 0.1];
   const flatStyle = Array.isArray(style) ? Object.assign({}, ...style.filter(Boolean)) : (style || {});
   const isCentered = flatStyle.textAlign === 'center';
-  
+
   // Temadan gelen ana yazı rengini alıyoruz (Yoksa varsayılan beyaz)
   const textColor = flatStyle.color || '#FFFFFF';
-  
+
   return (
-    <View style={{ 
+    <View style={{
       width: '100%',
       alignItems: isCentered ? 'center' : 'flex-start',
     }}>
@@ -65,8 +66,8 @@ const FadeText = ({ text, style, maxChars = 15 }) => {
       <Text style={style} numberOfLines={1} ellipsizeMode="clip">
         {visibleText}
         {fadeText.split('').map((char, index) => (
-          <Text 
-            key={index} 
+          <Text
+            key={index}
             // Android Opacity Bug'ını aşmak için rengi rgba'ya çevirip uyguluyoruz
             style={{ color: applyAlpha(textColor, opacities[index] || 0.1) }}
           >
@@ -86,12 +87,12 @@ const getInProgressGradient = (percent) => {
 };
 
 // --- OPTIMISTIC DECK CARD BİLEŞENİ ---
-const DeckCard = React.memo(({ 
-  deck, 
-  onPress, 
-  onToggleFavorite, 
-  isInitiallyFavorite, 
-  colors, 
+const DeckCard = React.memo(({
+  deck,
+  onPress,
+  onToggleFavorite,
+  isInitiallyFavorite,
+  colors,
   showPopularityBadge,
   progressMode = false,
   cardStyle,
@@ -114,9 +115,9 @@ const DeckCard = React.memo(({
   }, [isInitiallyFavorite]);
 
   const handleFavoritePress = () => {
-    triggerHaptic('medium'); 
-    setLocalFavorite(!localFavorite); 
-    onToggleFavorite(deck.id); 
+    triggerHaptic('medium');
+    setLocalFavorite(!localFavorite);
+    onToggleFavorite(deck.id);
   };
 
   // İsim Bölümünü Render Eden Akıllı Fonksiyon
@@ -126,8 +127,8 @@ const DeckCard = React.memo(({
     // 1. Durum: Eğer kart Yatay (Single) ise her halükarda Fade (Uzun limitli) uygula
     if (!isVertical) {
       return (
-        <FadeText 
-          text={text} 
+        <FadeText
+          text={text}
           style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(18), fontWeight: '800', textAlign: 'center' }]}
           maxChars={30}
         />
@@ -140,8 +141,8 @@ const DeckCard = React.memo(({
     if (isSingleWord) {
       // TEK KELİME: İkiye bölme, tek satırda tut ve Fade uygula
       return (
-        <FadeText 
-          text={text} 
+        <FadeText
+          text={text}
           style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(16), fontWeight: '800', textAlign: 'center' }]}
           maxChars={15} // Dikey kartlar için 15 harf idealdir
         />
@@ -149,8 +150,8 @@ const DeckCard = React.memo(({
     } else {
       // ÇOKLU KELİME (CÜMLE): 2 satır hakkını ver, sığmazsa tail uygula
       return (
-        <Text 
-          numberOfLines={2} 
+        <Text
+          numberOfLines={2}
           ellipsizeMode="tail"
           textBreakStrategy="simple"
           style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(16), fontWeight: '800', textAlign: 'center', width: '100%' }]}
@@ -238,17 +239,17 @@ const DeckCard = React.memo(({
         <View style={[styles.deckProfileRow, isVertical ? {} : { top: verticalScale(8), bottom: 'auto' }]}>
           <Image
             source={
-              deck.is_admin_created 
+              deck.is_admin_created
                 ? require('../../assets/app_icon.png')
-                : deck.profiles?.image_url 
-                  ? { uri: deck.profiles.image_url } 
+                : deck.profiles?.image_url
+                  ? { uri: deck.profiles.image_url }
                   : require('../../assets/avatar_default.webp')
             }
             style={styles.deckProfileAvatar}
           />
           <View style={{ flex: 1, marginRight: scale(4) }}>
-            <FadeText 
-              text={deck.profiles?.username || 'Kullanıcı'} 
+            <FadeText
+              text={deck.profiles?.username || 'Kullanıcı'}
               style={[typography.styles.body, styles.deckProfileUsername]}
               maxChars={isVertical ? 15 : 16}
             />
@@ -311,13 +312,13 @@ const DeckCard = React.memo(({
         {/* HIZLANDIRILMIŞ FAVORİ BUTONU */}
         <TouchableOpacity
           style={{ position: 'absolute', bottom: verticalScale(8), right: scale(10), zIndex: 10, backgroundColor: colors.iconBackground, padding: moderateScale(8), borderRadius: 999 }}
-          onPress={handleFavoritePress} 
+          onPress={handleFavoritePress}
           activeOpacity={0.7}
         >
           <Iconify
-            icon={localFavorite ? 'solar:heart-bold' : 'solar:heart-broken'} 
+            icon={localFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
             size={moderateScale(isVertical ? 21 : 22)}
-            color={localFavorite ? '#F98A21' : colors.headText} 
+            color={localFavorite ? '#F98A21' : colors.headText}
           />
         </TouchableOpacity>
 
@@ -360,16 +361,16 @@ const DeckList = ({
   const { t } = useTranslation();
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
-  
+
   const deckCardDimensions = useMemo(() => {
-    const verticalHeight = isTablet ? height * 0.24 : height * 0.28;
+    const verticalHeight = isTablet ? height * 0.24 : height * 0.27;
     const horizontalHeight = isTablet ? height * 0.20 : height * 0.23;
     return { verticalHeight, horizontalHeight };
   }, [height, isTablet]);
-  
+
   const DECK_CARD_VERTICAL_HEIGHT = deckCardDimensions.verticalHeight;
   const DECK_CARD_HORIZONTAL_HEIGHT = deckCardDimensions.horizontalHeight;
-  
+
   const categoryIconDimensions = useMemo(() => {
     const verticalIconSize = isTablet ? scale(200) : scale(150);
     const verticalIconLeft = isTablet ? -verticalIconSize / 2 : scale(-75);
@@ -377,12 +378,12 @@ const DeckList = ({
     const horizontalIconLeft = -horizontalIconSize / 2;
     return { verticalIconSize, verticalIconLeft, horizontalIconSize, horizontalIconLeft };
   }, [isTablet]);
-  
+
   const isFavorite = (deck) =>
     deck.is_favorite === true || (Array.isArray(favoriteDecks) && favoriteDecks.includes(deck.id));
 
   const responsiveSpacing = useMemo(() => ({
-    cardMargin: scale(5),
+    cardMargin: scale(6),
     listPaddingHorizontal: scale(12),
     listPaddingVertical: verticalScale(5),
   }), []);
@@ -409,125 +410,203 @@ const DeckList = ({
   };
 
   const rows = useMemo(() => {
+    if (!Array.isArray(decks) || decks.length === 0) {
+      return [];
+    }
+  
+    const prepareDeck = (deck) => ({
+      ...deck,
+      gradientColors: getCategoryColors(deck.categories?.sort_order),
+      categoryIcon: getCategoryIcon(deck.categories?.sort_order),
+    });
+  
     const builtRows = [];
     let i = 0;
-    const total = decks.length;
-
-    while (i < total) {
-      const remaining = total - i;
-
-      if (remaining >= 3) {
-        const wouldLeaveOne = (total - (i + 3)) === 1;
-        const first = decks[i];
-        const second = decks[i + 1];
-        builtRows.push({ 
-          type: 'double', 
-          items: [first, second].filter(Boolean).map(deck => ({
-            ...deck,
-            gradientColors: getCategoryColors(deck.categories?.sort_order),
-            categoryIcon: getCategoryIcon(deck.categories?.sort_order)
-          }))
+  
+    while (i < decks.length) {
+      const remaining = decks.length - i;
+  
+      if (remaining >= 5) {
+        builtRows.push({
+          type: 'double',
+          items: [
+            prepareDeck(decks[i]),
+            prepareDeck(decks[i + 1]),
+          ],
         });
+  
         i += 2;
-        if (!wouldLeaveOne) {
-          const singleDeck = decks[i];
-          builtRows.push({ 
-            type: 'single', 
-            item: {
-              ...singleDeck,
-              gradientColors: getCategoryColors(singleDeck.categories?.sort_order),
-              categoryIcon: getCategoryIcon(singleDeck.categories?.sort_order)
-            }
-          });
-          i += 1;
-        }
+  
+        builtRows.push({
+          type: 'triple',
+          items: [
+            prepareDeck(decks[i]),
+            prepareDeck(decks[i + 1]),
+            prepareDeck(decks[i + 2]),
+          ],
+        });
+  
+        i += 3;
         continue;
       }
-
+  
+      if (remaining === 4) {
+        builtRows.push({
+          type: 'double',
+          items: [
+            prepareDeck(decks[i]),
+            prepareDeck(decks[i + 1]),
+          ],
+        });
+  
+        i += 2;
+  
+        builtRows.push({
+          type: 'triple',
+          items: [
+            prepareDeck(decks[i]),
+            prepareDeck(decks[i + 1]),
+          ],
+        });
+  
+        i += 2;
+        continue;
+      }
+  
+      if (remaining === 3) {
+        builtRows.push({
+          type: 'triple',
+          items: [
+            prepareDeck(decks[i]),
+            prepareDeck(decks[i + 1]),
+            prepareDeck(decks[i + 2]),
+          ],
+        });
+  
+        i += 3;
+        continue;
+      }
+  
       if (remaining === 2) {
-        const first = decks[i];
-        const second = decks[i + 1];
-        builtRows.push({ 
-          type: 'double', 
-          items: [first, second].filter(Boolean).map(deck => ({
-            ...deck,
-            gradientColors: getCategoryColors(deck.categories?.sort_order),
-            categoryIcon: getCategoryIcon(deck.categories?.sort_order)
-          }))
+        builtRows.push({
+          type: 'double',
+          items: [
+            prepareDeck(decks[i]),
+            prepareDeck(decks[i + 1]),
+          ],
         });
+  
         i += 2;
         continue;
       }
-
-      const singleDeck = decks[i];
-      builtRows.push({ 
-        type: 'singleVertical', 
-        item: {
-          ...singleDeck,
-          gradientColors: getCategoryColors(singleDeck.categories?.sort_order),
-          categoryIcon: getCategoryIcon(singleDeck.categories?.sort_order)
-        }
+  
+      builtRows.push({
+        type: 'double',
+        items: [prepareDeck(decks[i])],
       });
+  
       i += 1;
     }
-
+  
     return builtRows;
-  }, [decks]);
+  }, [decks, colors]);
 
-  const renderSingleVerticalRow = (row) => {
-    return renderDoubleRow({ ...row, items: [row.item] });
-  };
 
   const renderDoubleRow = (row) => (
-    <View style={[styles.deckList, styles.deckRow, { paddingHorizontal: responsiveSpacing.listPaddingHorizontal, paddingVertical: responsiveSpacing.listPaddingVertical }]}>
-      {row.items.map((deck, idx) => (
-        <DeckCard
-          key={`${deck.id}_${idx}`}
-          deck={deck}
-          onPress={() => onPressDeck(deck)}
-          onToggleFavorite={onToggleFavorite}
-          isInitiallyFavorite={isFavorite(deck)}
-          colors={colors}
-          showPopularityBadge={showPopularityBadge}
-          progressMode={progressMode}
-          cardStyle={styles.deckCardVertical}
-          height={DECK_CARD_VERTICAL_HEIGHT}
-          marginStyle={idx === 0 ? { marginRight: responsiveSpacing.cardMargin } : { marginLeft: responsiveSpacing.cardMargin }}
-          iconDimensions={categoryIconDimensions}
-          isVertical={true}
-        />
-      ))}
+    <View
+      style={[
+        styles.deckList,
+        styles.deckRow,
+        {
+          paddingHorizontal: responsiveSpacing.listPaddingHorizontal,
+          paddingVertical: responsiveSpacing.listPaddingVertical,
+        },
+      ]}
+    >
+      {row.items.map((deck, idx) => {
+        console.log('ABOUT TO RENDER DECK:', deck.name);
+  
+        return (
+          <DeckCard
+            key={`${deck.id}_${idx}`}
+            deck={deck}
+            onPress={() => onPressDeck(deck)}
+            onToggleFavorite={onToggleFavorite}
+            isInitiallyFavorite={isFavorite(deck)}
+            colors={colors}
+            showPopularityBadge={showPopularityBadge}
+            progressMode={progressMode}
+            cardStyle={styles.deckCardVertical}
+            height={DECK_CARD_VERTICAL_HEIGHT}
+            marginStyle={
+              idx === 0
+                ? { marginRight: responsiveSpacing.cardMargin }
+                : { marginLeft: responsiveSpacing.cardMargin }
+            }
+            iconDimensions={categoryIconDimensions}
+            isVertical={true}
+          />
+        );
+      })}
+  
       {row.items.length === 1 && (
-        <View style={{ flex: 1, marginLeft: responsiveSpacing.cardMargin }} />
+        <View
+          style={{
+            flex: 1,
+            marginLeft: responsiveSpacing.cardMargin,
+          }}
+        />
       )}
     </View>
   );
 
-  const renderSingleRow = (row) => (
-    <View style={[styles.deckList, { paddingHorizontal: responsiveSpacing.listPaddingHorizontal, paddingVertical: responsiveSpacing.listPaddingVertical }]}>
-      <DeckCard
-        deck={row.item}
-        onPress={() => onPressDeck(row.item)}
-        onToggleFavorite={onToggleFavorite}
-        isInitiallyFavorite={isFavorite(row.item)}
-        colors={colors}
-        showPopularityBadge={showPopularityBadge}
-        progressMode={progressMode}
-        cardStyle={styles.deckCardHorizontal}
-        height={DECK_CARD_HORIZONTAL_HEIGHT}
-        marginStyle={{}}
-        iconDimensions={categoryIconDimensions}
-        isVertical={false}
-      />
+  const renderTripleRow = (row) => (
+    <View
+      style={[
+        styles.communityList,
+
+      ]}
+    >
+      {row.items.map((deck) => (
+        <CommunityDeckCard
+          key={deck.id}
+          deck={deck}
+          colors={colors}
+          typography={typography}
+          onPress={onPressDeck}
+          onToggleFavorite={onToggleFavorite}
+          isFavorite={isFavorite(deck)}
+        />
+      ))}
     </View>
   );
 
-  const renderListItem = React.useCallback(({ item: row }) => {
-    if (row.type === 'singleVertical') return renderSingleVerticalRow(row);
-    if (row.type === 'single' && rows.length === 1) return renderSingleVerticalRow(row);
-    if (row.type === 'double') return renderDoubleRow(row);
-    return renderSingleRow(row);
-  }, [rows, colors, favoriteDecks, decks]);
+
+  const renderListItem = React.useCallback(
+    ({ item: row }) => {
+      console.log('ROW TYPE:', row.type);
+  
+      if (row.type === 'double') {
+        return renderDoubleRow(row);
+      }
+  
+      if (row.type === 'triple') {
+        console.log('TRIPLE ROW ITEMS:', row.items);
+        
+        return renderTripleRow(row);
+      }
+  
+      return null;
+    },
+    [
+      colors,
+      typography,
+      favoriteDecks,
+      decks,
+      onToggleFavorite,
+      onPressDeck,
+    ]
+  );
 
   return (
     <FlatList
@@ -535,10 +614,10 @@ const DeckList = ({
       keyExtractor={(_, idx) => `row_${idx}`}
       contentContainerStyle={{ paddingBottom: contentPaddingBottom, paddingTop: contentPaddingTop }}
       ListHeaderComponent={ListHeaderComponent}
-      removeClippedSubviews={true} 
-      initialNumToRender={6} 
-      maxToRenderPerBatch={4} 
-      windowSize={5} 
+      removeClippedSubviews={true}
+      initialNumToRender={6}
+      maxToRenderPerBatch={4}
+      windowSize={5}
       renderItem={renderListItem}
       ListEmptyComponent={(
         <View style={styles.noDecksEmpty}>
@@ -711,7 +790,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: verticalScale(20),
   },
-    noDecksEmpty: {
+  noDecksEmpty: {
     height: verticalScale(200),
     borderRadius: moderateScale(18),
     justifyContent: 'center',
@@ -727,9 +806,9 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     justifyContent: 'center',
-    alignItems: 'flex-start', 
-    zIndex: 0, 
-    overflow: 'hidden', 
+    alignItems: 'flex-start',
+    zIndex: 0,
+    overflow: 'hidden',
   },
   categoryIconStyle: {
     opacity: 0.8,
@@ -770,6 +849,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: moderateScale(14),
   },
+  communityList: {
+    marginTop: verticalScale(16),
+    marginBottom: verticalScale(8),
+    marginHorizontal: scale(2)
+  }
 });
 
 export default React.memo(DeckList);
