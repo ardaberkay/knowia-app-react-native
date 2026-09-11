@@ -68,6 +68,7 @@ export default function CategoryDeckListScreen({ route }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const PAGE_SIZE = 50;
   const fetchGenRef = useRef(0);
+  const isProgressDeck = category === 'inProgressDecks';
 
   useEffect(() => {
     getLanguages().then(setAllLanguages);
@@ -333,6 +334,7 @@ export default function CategoryDeckListScreen({ route }) {
       {renderFixedHeader()}
 
       <View style={[styles.listContainer, { backgroundColor: colors.background }]}>
+        
         <DeckList
           decks={visibleDecks}
           favoriteDecks={favoriteDecks}

@@ -220,7 +220,7 @@ const DeckCard = ({
           ) : null}
         </View>
 
-        {/* HIZLANDIRILMIŞ FAVORİ BUTONU */}
+        {/* Progress */}
         {isInProgressVariant && (
           <View style={styles.progressBadgeContainer}>
             <View style={[styles.deckCountBadge, styles.progressBottomBadge]}>
