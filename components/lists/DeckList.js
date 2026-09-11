@@ -1,356 +1,580 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl, Image, ActivityIndicator } from 'react-native';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
+
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  RefreshControl,
+  Image,
+  ActivityIndicator,
+} from 'react-native';
+
 import { LinearGradient } from 'expo-linear-gradient';
+
 import { Iconify } from 'react-native-iconify';
+
 import { useTheme } from '../../theme/theme';
+
 import { typography } from '../../theme/typography';
+
 import { useTranslation } from 'react-i18next';
-import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
+
+import {
+  scale,
+  moderateScale,
+  verticalScale,
+  useWindowDimensions,
+  getIsTablet,
+} from '../../lib/scaling';
+
 import { triggerHaptic } from '../../lib/hapticManager';
+
 import CommunityDeckCard from '../ui/CommunityDeckCard';
 
-// --- FADE TEXT BİLEŞENİ ---
-// --- ŞEFFAFLIK DÖNÜŞTÜRÜCÜ (Hex -> Rgba) ---
-const applyAlpha = (colorStr, alpha) => {
-  if (!colorStr) return `rgba(255, 255, 255, ${alpha})`;
-
-  // Eğer renk kodu #FFFFFF gibi HEX formatındaysa
-  if (colorStr.startsWith('#')) {
-    let hex = colorStr.replace('#', '');
-    if (hex.length === 3) hex = hex.split('').map(x => x + x).join('');
-    const r = parseInt(hex.substring(0, 2), 16) || 255;
-    const g = parseInt(hex.substring(2, 4), 16) || 255;
-    const b = parseInt(hex.substring(4, 6), 16) || 255;
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  }
-
-  // Eğer renk kodu zaten rgb formatındaysa
-  if (colorStr.startsWith('rgb')) {
-    const match = colorStr.match(/\d+(\.\d+)?/g);
-    if (match && match.length >= 3) {
-      return `rgba(${match[0]}, ${match[1]}, ${match[2]}, ${alpha})`;
-    }
-  }
-  return colorStr;
-};
-
-// --- FADE TEXT BİLEŞENİ (BOŞLUK VE KAYBOLMA SORUNU ÇÖZÜLMÜŞ HALİ) ---
-const FadeText = ({ text, style, maxChars = 15 }) => {
-  if (!text) return null;
-
-  const shouldFade = text.length > maxChars;
-
-  if (!shouldFade) {
-    return <Text style={style} numberOfLines={1} ellipsizeMode="tail">{text}</Text>;
-  }
-
-  const fadeLength = 4;
-  const visibleLength = maxChars - fadeLength;
-  const visibleText = text.substring(0, visibleLength);
-  const fadeText = text.substring(visibleLength, maxChars);
-
-  const opacities = [0.7, 0.5, 0.3, 0.1];
-  const flatStyle = Array.isArray(style) ? Object.assign({}, ...style.filter(Boolean)) : (style || {});
-  const isCentered = flatStyle.textAlign === 'center';
-
-  // Temadan gelen ana yazı rengini alıyoruz (Yoksa varsayılan beyaz)
-  const textColor = flatStyle.color || '#FFFFFF';
-
-  return (
-    <View style={{
-      width: '100%',
-      alignItems: isCentered ? 'center' : 'flex-start',
-    }}>
-      {/* İç içe Text: Boşluk ve kopukluk sorununu (kerning) çözer. 
-      */}
-      <Text style={style} numberOfLines={1} ellipsizeMode="clip">
-        {visibleText}
-        {fadeText.split('').map((char, index) => (
-          <Text
-            key={index}
-            // Android Opacity Bug'ını aşmak için rengi rgba'ya çevirip uyguluyoruz
-            style={{ color: applyAlpha(textColor, opacities[index] || 0.1) }}
-          >
-            {char}
-          </Text>
-        ))}
-      </Text>
-    </View>
-  );
-};
-
 const getInProgressGradient = (percent) => {
-  if (percent >= 75) return ['#FFCC70', '#FF7505', '#D74400'];
-  if (percent >= 50) return ['#FFC888', '#FB7A0E', '#E0500A'];
-  if (percent >= 25) return ['#FFC2A0', '#F28E2C', '#D45E16'];
+  if (percent >= 75) {
+    return ['#FFCC70', '#FF7505', '#D74400'];
+  }
+
+  if (percent >= 50) {
+    return ['#FFC888', '#FB7A0E', '#E0500A'];
+  }
+
+  if (percent >= 25) {
+    return ['#FFC2A0', '#F28E2C', '#D45E16'];
+  }
+
   return ['#FFB890', '#EA8F48', '#C66E30'];
 };
 
-// --- OPTIMISTIC DECK CARD BİLEŞENİ ---
-const DeckCard = React.memo(({
-  deck,
-  onPress,
-  onToggleFavorite,
-  isInitiallyFavorite,
-  colors,
-  showPopularityBadge,
-  progressMode = false,
-  cardStyle,
-  height,
-  marginStyle,
-  iconDimensions,
-  isVertical = true
-}) => {
-  const [localFavorite, setLocalFavorite] = useState(isInitiallyFavorite);
-  const progressValue = Math.max(0, Math.min(1, Number(deck?.deckProgress?.progress || 0)));
-  const progressPercent = Math.round(progressValue * 100);
-  const isProgressCompleted = progressPercent >= 100;
-  const isProgressNearComplete = progressPercent >= 75 && progressPercent < 100;
-  const progressChipOverlap = scale(11);
-  const progressFillMinWidth = progressPercent > 0 ? scale(4) : 0;
-  const inProgressGradient = getInProgressGradient(progressPercent);
+const DeckCard = React.memo(
+  ({
+    deck,
+    onPress,
+    onToggleFavorite,
+    isInitiallyFavorite,
+    colors,
+    variant = 'favorite',
+    gradientColors,
+    categoryIcon,
+    cardStyle,
+    height,
+    marginStyle,
+    iconDimensions,
+    showPopularityBadge = false,
+    onDeleteDeck,
+  }) => {
+    const [localFavorite, setLocalFavorite] = useState(
+      isInitiallyFavorite
+    );
 
-  useEffect(() => {
-    setLocalFavorite(isInitiallyFavorite);
-  }, [isInitiallyFavorite]);
+    const progressValue = Math.max(
+      0,
+      Math.min(
+        1,
+        Number(deck?.deckProgress?.progress || 0)
+      )
+    );
 
-  const handleFavoritePress = () => {
-    triggerHaptic('medium');
-    setLocalFavorite(!localFavorite);
-    onToggleFavorite(deck.id);
-  };
+    const progressPercent = Math.round(
+      progressValue * 100
+    );
 
-  // İsim Bölümünü Render Eden Akıllı Fonksiyon
-  const renderDeckText = (text) => {
-    if (!text) return null;
+    const isProgressCompleted =
+      progressPercent >= 100;
 
-    // 1. Durum: Eğer kart Yatay (Single) ise her halükarda Fade (Uzun limitli) uygula
-    if (!isVertical) {
-      return (
-        <FadeText
-          text={text}
-          style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(18), fontWeight: '800', textAlign: 'center' }]}
-          maxChars={30}
-        />
-      );
-    }
+    const isProgressNearComplete =
+      progressPercent >= 75 &&
+      progressPercent < 100;
 
-    // 2. Durum: Kart Dikey (Double) ise kelimenin yapısına bak
-    const isSingleWord = !text.trim().includes(' '); // İçinde boşluk yoksa tek kelimedir
+    const progressChipOverlap = scale(11);
 
-    if (isSingleWord) {
-      // TEK KELİME: İkiye bölme, tek satırda tut ve Fade uygula
-      return (
-        <FadeText
-          text={text}
-          style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(16), fontWeight: '800', textAlign: 'center' }]}
-          maxChars={15} // Dikey kartlar için 15 harf idealdir
-        />
-      );
-    } else {
-      // ÇOKLU KELİME (CÜMLE): 2 satır hakkını ver, sığmazsa tail uygula
+    const progressFillMinWidth =
+      progressPercent > 0 ? scale(4) : 0;
+
+    const inProgressGradient =
+      getInProgressGradient(progressPercent);
+
+    useEffect(() => {
+      setLocalFavorite(isInitiallyFavorite);
+    }, [isInitiallyFavorite]);
+
+    const handleFavoritePress = () => {
+      triggerHaptic('medium');
+
+      setLocalFavorite((prev) => !prev);
+
+      onToggleFavorite(deck.id);
+    };
+
+    const handleDeletePress = () => {
+      triggerHaptic('medium');
+
+      if (onDeleteDeck) {
+        onDeleteDeck(deck.id);
+      }
+    };
+
+    const renderDeckText = (text) => {
+      if (!text) {
+        return null;
+      }
+
+      const isSingleWord =
+        !text.trim().includes(' ');
+
+      if (isSingleWord) {
+        return (
+          <Text
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={[
+              typography.styles.body,
+              {
+                color: colors.headText,
+                fontSize: moderateScale(16),
+                fontWeight: '800',
+                textAlign: 'center',
+              },
+            ]}
+          >
+            {text}
+          </Text>
+        );
+      }
+
       return (
         <Text
           numberOfLines={2}
           ellipsizeMode="tail"
           textBreakStrategy="simple"
-          style={[typography.styles.body, { color: colors.headText, fontSize: moderateScale(16), fontWeight: '800', textAlign: 'center', width: '100%' }]}
+          style={[
+            typography.styles.body,
+            {
+              color: colors.headText,
+              fontSize: moderateScale(16),
+              fontWeight: '800',
+              textAlign: 'center',
+              width: '100%',
+            },
+          ]}
         >
           {text}
         </Text>
       );
-    }
-  };
+    };
 
-  const renderProgressBadge = () => (
-    <View style={[styles.deckCountBadge, styles.progressBottomBadge]}>
-      <View style={[
-        styles.progressPercentChip,
-        isProgressNearComplete && styles.progressPercentChipNearComplete,
-        isProgressCompleted && styles.progressPercentChipCompleted,
-      ]}>
-        <LinearGradient
-          colors={isProgressCompleted ? ['#FFCC70', '#FF7505', '#D74400'] : inProgressGradient}
-          locations={[0, 0.45, 1]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.progressPercentChipGradient}
+    const renderCardCountBadge = () => (
+      <View style={styles.deckCountBadge}>
+        <Iconify
+          icon="ri:stack-fill"
+          size={moderateScale(18)}
+          color="#fff"
+          style={{ marginRight: scale(3) }}
         />
-        <View style={styles.progressPercentChipInner}>
-          {isProgressCompleted ? (
-            <Iconify
-              icon="streamline:check-solid"
-              size={moderateScale(16)}
-              color="#FFFFFF"
-            />
-          ) : (
-            <>
-              <Text style={styles.progressPercentChipNumber}>{progressPercent}</Text>
-              <Text style={styles.progressPercentSign}>%</Text>
-            </>
-          )}
-        </View>
-      </View>
-      <View style={styles.progressBarRow}>
-        <View style={{ width: progressChipOverlap }} />
-        <View style={styles.progressBottomTrack}>
-          <View
-            style={[
-              styles.progressBottomFill,
-              isProgressCompleted && styles.progressBottomFillCompleted,
-              {
-                width: `${progressPercent}%`,
-                minWidth: progressFillMinWidth,
-              },
-            ]}
-          />
-        </View>
-      </View>
-    </View>
-  );
 
-  const progressContainerStyle = isVertical
-    ? { position: 'absolute', bottom: verticalScale(16), left: scale(16), right: scale(60), zIndex: 10 }
-    : { position: 'absolute', bottom: verticalScale(16), left: scale(16), maxWidth: scale(200), zIndex: 10 };
+        <Text
+          style={[
+            typography.styles.body,
+            {
+              color: '#fff',
+              fontWeight: 'bold',
+              fontSize: moderateScale(16),
+            },
+          ]}
+        >
+          {deck.card_count || 0}
+        </Text>
+      </View>
+    );
 
-  return (
-    <TouchableOpacity
-      activeOpacity={0.93}
-      onPress={onPress}
-      style={[cardStyle, { height }, marginStyle]}
-    >
-      <LinearGradient
-        colors={deck.gradientColors}
-        start={{ x: 0, y: 1 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.deckGradient}
+    const renderProgressBadge = () => (
+      <View
+        style={[
+          styles.deckCountBadge,
+          styles.progressBottomBadge,
+        ]}
       >
-        {/* Background Category Icon */}
-        <View style={[styles.backgroundCategoryIcon, { left: isVertical ? iconDimensions.verticalIconLeft : iconDimensions.horizontalIconLeft, top: isVertical ? undefined : verticalScale(1) }]}>
-          <Iconify
-            icon={deck.categoryIcon}
-            size={isVertical ? iconDimensions.verticalIconSize : iconDimensions.horizontalIconSize}
-            color="rgba(0, 0, 0, 0.1)"
-            style={styles.categoryIconStyle}
-          />
-        </View>
-
-        {/* Profile Section */}
-        <View style={[styles.deckProfileRow, isVertical ? {} : { top: verticalScale(8), bottom: 'auto' }]}>
-          <Image
-            source={
-              deck.is_admin_created
-                ? require('../../assets/app_icon.png')
-                : deck.profiles?.image_url
-                  ? { uri: deck.profiles.image_url }
-                  : require('../../assets/avatar_default.webp')
+        <View
+          style={[
+            styles.progressPercentChip,
+            isProgressNearComplete &&
+            styles.progressPercentChipNearComplete,
+            isProgressCompleted &&
+            styles.progressPercentChipCompleted,
+          ]}
+        >
+          <LinearGradient
+            colors={
+              isProgressCompleted
+                ? [
+                  '#FFCC70',
+                  '#FF7505',
+                  '#D74400',
+                ]
+                : inProgressGradient
             }
-            style={styles.deckProfileAvatar}
-          />
-          <View style={{ flex: 1, marginRight: scale(4) }}>
-            <FadeText
-              text={deck.profiles?.username || 'Kullanıcı'}
-              style={[typography.styles.body, styles.deckProfileUsername]}
-              maxChars={isVertical ? 15 : 16}
-            />
-          </View>
-        </View>
-
-        {/* Badge Bölümleri */}
-        {isVertical ? (
-          <View
+            locations={[0, 0.45, 1]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
             style={
-              progressMode
-                ? progressContainerStyle
-                : { position: 'absolute', bottom: verticalScale(12), left: scale(12), flexDirection: 'column', alignItems: 'flex-start' }
+              styles.progressPercentChipGradient
             }
+          />
+
+          <View
+            style={styles.progressPercentChipInner}
           >
-            {showPopularityBadge && deck.popularity_score && deck.popularity_score > 0 ? (
-              <View style={[styles.popularityBadge, { marginBottom: verticalScale(6) }]}>
-                <Iconify icon="mdi:fire" size={moderateScale(14)} color="#fff" style={{ marginRight: scale(4) }} />
-                <Text style={styles.popularityBadgeText}>{Math.round(deck.popularity_score)}</Text>
-              </View>
-            ) : null}
-            {progressMode ? (
-              renderProgressBadge()
+            {isProgressCompleted ? (
+              <Iconify
+                icon="streamline:check-solid"
+                size={moderateScale(16)}
+                color="#FFFFFF"
+              />
             ) : (
-              <View style={styles.deckCountBadge}>
-                <Iconify icon="ri:stack-fill" size={moderateScale(18)} color="#fff" style={{ marginRight: scale(3) }} />
-                <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(16) }]}>{deck.card_count || 0}</Text>
-              </View>
+              <>
+                <Text
+                  style={
+                    styles.progressPercentChipNumber
+                  }
+                >
+                  {progressPercent}
+                </Text>
+
+                <Text
+                  style={styles.progressPercentSign}
+                >
+                  %
+                </Text>
+              </>
             )}
           </View>
-        ) : (
-          <>
-            {showPopularityBadge && deck.popularity_score && deck.popularity_score > 0 ? (
-              <View style={{ position: 'absolute', top: verticalScale(8), right: scale(12), zIndex: 10 }}>
-                <View style={styles.popularityBadge}>
-                  <Iconify icon="mdi:fire" size={moderateScale(14)} color="#fff" style={{ marginRight: scale(4) }} />
-                  <Text style={styles.popularityBadgeText}>{Math.round(deck.popularity_score)}</Text>
-                </View>
+        </View>
+
+        <View style={styles.progressBarRow}>
+          <View
+            style={{
+              width: progressChipOverlap,
+            }}
+          />
+
+          <View
+            style={styles.progressBottomTrack}
+          >
+            <View
+              style={[
+                styles.progressBottomFill,
+                isProgressCompleted &&
+                styles.progressBottomFillCompleted,
+                {
+                  width: `${progressPercent}%`,
+                  minWidth: progressFillMinWidth,
+                },
+              ]}
+            />
+          </View>
+        </View>
+      </View>
+    );
+
+    /*
+     * VARIANT:
+     *
+     * inProgress
+     *   - profile
+     *   - progress
+     *   - favorite
+     *
+     * myDecks
+     *   - card count
+     *   - delete
+     *   - progress
+     *   - favorite
+     *
+     * favorite
+     *   - profile
+     *   - card count
+     *   - favorite
+     */
+
+    const showProfile =
+      variant === 'inProgress' ||
+      variant === 'favorite';
+
+    const showProgress =
+      variant === 'inProgress' ||
+      variant === 'myDecks';
+
+    const showCardCount =
+      variant === 'myDecks' ||
+      variant === 'favorite';
+
+    const showDelete =
+      variant === 'myDecks';
+
+    const cardCountPositionStyle =
+      variant === 'myDecks'
+        ? styles.cardCountTopLeft
+        : styles.cardCountBottomLeft;
+
+    return (
+      <TouchableOpacity
+        activeOpacity={0.93}
+        onPress={onPress}
+        style={[
+          cardStyle,
+          {
+            height,
+          },
+          marginStyle,
+        ]}
+      >
+        <LinearGradient
+          colors={gradientColors}
+          start={{ x: 0, y: 1 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.deckGradient}
+        >
+          {/* Background Category Icon */}
+          <View
+            style={[
+              styles.backgroundCategoryIcon,
+              {
+                left:
+                  iconDimensions.verticalIconLeft,
+              },
+            ]}
+          >
+            <Iconify
+              icon={categoryIcon}
+              size={
+                iconDimensions.verticalIconSize
+              }
+              color="rgba(0, 0, 0, 0.1)"
+              style={styles.categoryIconStyle}
+            />
+          </View>
+
+          {/* Profile */}
+          {showProfile && (
+            <View
+              style={styles.deckProfileRow}
+            >
+              <Image
+                source={
+                  deck.is_admin_created
+                    ? require('../../assets/app_icon.png')
+                    : deck.profiles?.image_url
+                      ? {
+                        uri: deck.profiles
+                          .image_url,
+                      }
+                      : require('../../assets/avatar_default.webp')
+                }
+                style={
+                  styles.deckProfileAvatar
+                }
+              />
+
+              <View
+                style={{
+                  flex: 1,
+                  marginRight: scale(4),
+                }}
+              >
+                <Text
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                  style={[
+                    typography.styles.body,
+                    styles.deckProfileUsername,
+                  ]}
+                >
+                  {deck.profiles?.username ||
+                    'Kullanıcı'}
+                </Text>
               </View>
-            ) : null}
+            </View>
+          )}
+
+          {/* Delete */}
+          {showDelete &&
+            onDeleteDeck && (
+              <TouchableOpacity
+                style={[
+                  styles.deckDeleteButton,
+                  {
+                    backgroundColor:
+                      colors.iconBackground,
+                  },
+                ]}
+                onPress={
+                  handleDeletePress
+                }
+                activeOpacity={0.7}
+              >
+                <Iconify
+                  icon="mdi:garbage"
+                  size={moderateScale(21)}
+                  color="#E74C3C"
+                />
+              </TouchableOpacity>
+            )}
+
+          {/* Popularity */}
+          {showPopularityBadge && (
+            <View
+              style={{
+                position: 'absolute',
+                bottom: verticalScale(12) + scale(22) + verticalScale(6),
+                left: scale(12),
+                zIndex: 10,
+                flexDirection: 'row',
+                alignItems: 'center',
+              }}
+            >
+              <View style={styles.popularityBadge}>
+                <Iconify
+                  icon="mdi:fire"
+                  size={moderateScale(14)}
+                  color="#fff"
+                  style={{ marginRight: scale(4) }}
+                />
+
+                <Text style={styles.popularityBadgeText}>
+                  {Math.max(
+                    1,
+                    Math.round(Number(deck?.popularity_score) || 0)
+                  )}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Bottom Left - Progress */}
+          {showProgress && (
             <View
               style={
-                progressMode
-                  ? progressContainerStyle
-                  : { position: 'absolute', bottom: verticalScale(10), left: scale(12) }
+                styles.progressContainer
               }
             >
-              {progressMode ? (
-                renderProgressBadge()
-              ) : (
-                <View style={styles.deckCountBadge}>
-                  <Iconify icon="ri:stack-fill" size={moderateScale(18)} color="#fff" style={{ marginRight: scale(4) }} />
-                  <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: moderateScale(16) }]}>{deck.card_count || 0}</Text>
-                </View>
-              )}
+              {renderProgressBadge()}
             </View>
-          </>
-        )}
-
-        {/* HIZLANDIRILMIŞ FAVORİ BUTONU */}
-        <TouchableOpacity
-          style={{ position: 'absolute', bottom: verticalScale(8), right: scale(10), zIndex: 10, backgroundColor: colors.iconBackground, padding: moderateScale(8), borderRadius: 999 }}
-          onPress={handleFavoritePress}
-          activeOpacity={0.7}
-        >
-          <Iconify
-            icon={localFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
-            size={moderateScale(isVertical ? 21 : 22)}
-            color={localFavorite ? '#F98A21' : colors.headText}
-          />
-        </TouchableOpacity>
-
-        {/* İsim Bölümü */}
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', paddingHorizontal: scale(12) }}>
-          {deck.to_name ? (
-            <>
-              {renderDeckText(deck.name)}
-              <View style={{ width: scale(isVertical ? 60 : 70), height: moderateScale(2), backgroundColor: colors.divider, borderRadius: moderateScale(1), marginVertical: verticalScale(isVertical ? 8 : 10) }} />
-              {renderDeckText(deck.to_name)}
-            </>
-          ) : (
-            renderDeckText(deck.name)
           )}
-        </View>
-      </LinearGradient>
-    </TouchableOpacity>
-  );
-});
 
-// --- ANA BİLEŞEN ---
+          {/* Bottom Left - Card Count */}
+          {showCardCount && (
+            <View
+              style={[
+                styles.cardCountContainer,
+                cardCountPositionStyle,
+              ]}
+            >
+              {renderCardCountBadge()}
+            </View>
+          )}
+
+          {/* Favorite */}
+          <TouchableOpacity
+            style={[
+              styles.favoriteButton,
+              {
+                backgroundColor:
+                  colors.iconBackground,
+              },
+            ]}
+            onPress={
+              handleFavoritePress
+            }
+            activeOpacity={0.7}
+          >
+            <Iconify
+              icon={
+                localFavorite
+                  ? 'solar:heart-bold'
+                  : 'solar:heart-broken'
+              }
+              size={moderateScale(21)}
+              color={
+                localFavorite
+                  ? '#F98A21'
+                  : colors.headText
+              }
+            />
+          </TouchableOpacity>
+
+          {/* Deck Name */}
+          <View
+            style={{
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: '100%',
+              paddingHorizontal: scale(12),
+            }}
+          >
+            {deck.to_name ? (
+              <>
+                {renderDeckText(deck.name)}
+
+                <View
+                  style={{
+                    width: scale(60),
+                    height: moderateScale(2),
+                    backgroundColor:
+                      colors.divider,
+                    borderRadius:
+                      moderateScale(1),
+                    marginVertical:
+                      verticalScale(8),
+                  }}
+                />
+
+                {renderDeckText(
+                  deck.to_name
+                )}
+              </>
+            ) : (
+              renderDeckText(deck.name)
+            )}
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  }
+);
+
 const DeckList = ({
   decks,
   favoriteDecks,
   onToggleFavorite,
   onPressDeck,
+  onDeleteDeck,
   ListHeaderComponent,
+
   refreshing = false,
   onRefresh,
+
   showPopularityBadge = false,
-  progressMode = false,
-  loading = false,
+
+  /*
+   * double
+   *   2 - 2 - 2 - 2...
+   *
+   * pattern
+   *   2 - 3 - 2 - 3...
+   */
+  layoutMode = 'double',
+
+  /*
+   * inProgress
+   * myDecks
+   * favorite
+   */
+  cardVariant = 'favorite',
+
   loadingMore = false,
   contentPaddingTop = 0,
   contentPaddingBottom = '10%',
@@ -358,381 +582,664 @@ const DeckList = ({
   onEndReached,
 }) => {
   const { colors } = useTheme();
+
   const { t } = useTranslation();
-  const { width, height } = useWindowDimensions();
+
+  const { height } = useWindowDimensions();
+
   const isTablet = getIsTablet();
 
-  const deckCardDimensions = useMemo(() => {
-    const verticalHeight = isTablet ? height * 0.24 : height * 0.27;
-    const horizontalHeight = isTablet ? height * 0.20 : height * 0.23;
-    return { verticalHeight, horizontalHeight };
-  }, [height, isTablet]);
+  const deckCardDimensions =
+    useMemo(() => {
+      const verticalHeight = isTablet
+        ? height * 0.24
+        : height * 0.27;
 
-  const DECK_CARD_VERTICAL_HEIGHT = deckCardDimensions.verticalHeight;
-  const DECK_CARD_HORIZONTAL_HEIGHT = deckCardDimensions.horizontalHeight;
+      return {
+        verticalHeight,
+      };
+    }, [height, isTablet]);
 
-  const categoryIconDimensions = useMemo(() => {
-    const verticalIconSize = isTablet ? scale(200) : scale(150);
-    const verticalIconLeft = isTablet ? -verticalIconSize / 2 : scale(-75);
-    const horizontalIconSize = isTablet ? scale(180) : scale(140);
-    const horizontalIconLeft = -horizontalIconSize / 2;
-    return { verticalIconSize, verticalIconLeft, horizontalIconSize, horizontalIconLeft };
-  }, [isTablet]);
+  const DECK_CARD_VERTICAL_HEIGHT =
+    deckCardDimensions.verticalHeight;
 
-  const isFavorite = (deck) =>
-    deck.is_favorite === true || (Array.isArray(favoriteDecks) && favoriteDecks.includes(deck.id));
+  const categoryIconDimensions =
+    useMemo(() => {
+      const verticalIconSize = isTablet
+        ? scale(200)
+        : scale(150);
 
-  const responsiveSpacing = useMemo(() => ({
-    cardMargin: scale(6),
-    listPaddingHorizontal: scale(12),
-    listPaddingVertical: verticalScale(5),
-  }), []);
+      const verticalIconLeft = isTablet
+        ? -verticalIconSize / 2
+        : scale(-75);
 
-  const getCategoryColors = (sortOrder) => {
-    if (colors.categoryColors && colors.categoryColors[sortOrder]) {
-      return colors.categoryColors[sortOrder];
-    }
-    return ['#6F8EAD', '#3F5E78'];
-  };
+      return {
+        verticalIconSize,
+        verticalIconLeft,
+      };
+    }, [isTablet]);
 
-  const getCategoryIcon = (sortOrder) => {
-    const icons = {
-      1: "hugeicons:language-skill",
-      2: "clarity:atom-solid",
-      3: "mdi:math-compass",
-      4: "game-icons:tied-scroll",
-      5: "arcticons:world-geography-alt",
-      6: "map:museum",
-      7: "ic:outline-self-improvement",
-      8: "streamline-ultimate:module-puzzle-2-bold"
-    };
-    return icons[sortOrder] || "hugeicons:language-skill";
-  };
+  const responsiveSpacing = useMemo(
+    () => ({
+      cardMargin: scale(6),
+      listPaddingHorizontal: scale(12),
+      listPaddingVertical: verticalScale(5),
+    }),
+    []
+  );
+
+  const isFavorite = useCallback(
+    (deck) =>
+      deck.is_favorite === true ||
+      (Array.isArray(favoriteDecks) &&
+        favoriteDecks.includes(deck.id)),
+    [favoriteDecks]
+  );
+
+  const getCategoryColors = useCallback(
+    (sortOrder) => {
+      if (
+        colors.categoryColors &&
+        colors.categoryColors[sortOrder]
+      ) {
+        return colors.categoryColors[
+          sortOrder
+        ];
+      }
+
+      return ['#6F8EAD', '#3F5E78'];
+    },
+    [colors]
+  );
+
+  const getCategoryIcon = useCallback(
+    (sortOrder) => {
+      const icons = {
+        1: 'hugeicons:language-skill',
+        2: 'clarity:atom-solid',
+        3: 'mdi:math-compass',
+        4: 'game-icons:tied-scroll',
+        5: 'arcticons:world-geography-alt',
+        6: 'map:museum',
+        7: 'ic:outline-self-improvement',
+        8: 'streamline-ultimate:module-puzzle-2-bold',
+      };
+
+      return (
+        icons[sortOrder] ||
+        'hugeicons:language-skill'
+      );
+    },
+    []
+  );
 
   const rows = useMemo(() => {
-    if (!Array.isArray(decks) || decks.length === 0) {
+    if (
+      !Array.isArray(decks) ||
+      decks.length === 0
+    ) {
       return [];
     }
-  
+
     const prepareDeck = (deck) => ({
       ...deck,
-      gradientColors: getCategoryColors(deck.categories?.sort_order),
-      categoryIcon: getCategoryIcon(deck.categories?.sort_order),
+
+      gradientColors:
+        getCategoryColors(
+          deck.categories?.sort_order
+        ),
+
+      categoryIcon:
+        getCategoryIcon(
+          deck.categories?.sort_order
+        ),
     });
-  
+
     const builtRows = [];
-    let i = 0;
-    let isDouble = true;
-  
-    while (i < decks.length) {
-      const rowSize = isDouble ? 2 : 3;
-      const remaining = decks.length - i;
-      const actualSize = Math.min(rowSize, remaining);
-  
-      builtRows.push({
-        type: isDouble ? 'double' : 'triple',
-        items: decks
-          .slice(i, i + actualSize)
-          .map(prepareDeck),
-      });
-  
-      i += actualSize;
-      isDouble = !isDouble;
+
+    /*
+     * 2 - 2 - 2 - 2...
+     */
+    if (layoutMode === 'double') {
+      for (
+        let i = 0;
+        i < decks.length;
+        i += 2
+      ) {
+        builtRows.push({
+          type: 'double',
+          items: decks
+            .slice(i, i + 2)
+            .map(prepareDeck),
+        });
+      }
+
+      return builtRows;
     }
-  
+
+    /*
+     * 2 - 3 - 2 - 3...
+     */
+    const pattern = [2, 3];
+
+    let currentIndex = 0;
+    let patternIndex = 0;
+
+    while (
+      currentIndex < decks.length
+    ) {
+      const rowSize =
+        pattern[
+        patternIndex %
+        pattern.length
+        ];
+
+      const rowItems = decks
+        .slice(
+          currentIndex,
+          currentIndex + rowSize
+        )
+        .map(prepareDeck);
+
+      builtRows.push({
+        type:
+          rowSize === 2
+            ? 'double'
+            : 'triple',
+        items: rowItems,
+      });
+
+      currentIndex += rowSize;
+      patternIndex += 1;
+    }
+
     return builtRows;
-  }, [decks, colors]);
+  }, [
+    decks,
+    layoutMode,
+    getCategoryColors,
+    getCategoryIcon,
+  ]);
 
+  const renderDoubleRow = useCallback(
+    (row) => (
+      <View
+        style={[
+          styles.deckList,
+          styles.deckRow,
+          {
+            paddingHorizontal:
+              responsiveSpacing.listPaddingHorizontal,
 
-  const renderDoubleRow = (row) => (
-    <View
-      style={[
-        styles.deckList,
-        styles.deckRow,
-        {
-          paddingHorizontal: responsiveSpacing.listPaddingHorizontal,
-          paddingVertical: responsiveSpacing.listPaddingVertical,
-        },
-      ]}
-    >
-      {row.items.map((deck, idx) => {
-        console.log('ABOUT TO RENDER DECK:', deck.name);
-  
-        return (
-          <DeckCard
-            key={`${deck.id}_${idx}`}
-            deck={deck}
-            onPress={() => onPressDeck(deck)}
-            onToggleFavorite={onToggleFavorite}
-            isInitiallyFavorite={isFavorite(deck)}
-            colors={colors}
-            showPopularityBadge={showPopularityBadge}
-            progressMode={progressMode}
-            cardStyle={styles.deckCardVertical}
-            height={DECK_CARD_VERTICAL_HEIGHT}
-            marginStyle={
-              idx === 0
-                ? { marginRight: responsiveSpacing.cardMargin }
-                : { marginLeft: responsiveSpacing.cardMargin }
-            }
-            iconDimensions={categoryIconDimensions}
-            isVertical={true}
+            paddingVertical:
+              responsiveSpacing.listPaddingVertical,
+          },
+        ]}
+      >
+        {row.items.map(
+          (deck, idx) => (
+            <DeckCard
+              key={`${deck.id}_${idx}`}
+              deck={deck}
+              onPress={() =>
+                onPressDeck(deck)
+              }
+              onToggleFavorite={
+                onToggleFavorite
+              }
+              isInitiallyFavorite={
+                isFavorite(deck)
+              }
+              colors={colors}
+              variant={cardVariant}
+              gradientColors={
+                deck.gradientColors
+              }
+              categoryIcon={
+                deck.categoryIcon
+              }
+              cardStyle={
+                styles.deckCardVertical
+              }
+              height={
+                DECK_CARD_VERTICAL_HEIGHT
+              }
+              marginStyle={
+                row.items.length === 1
+                  ? undefined
+                  : idx === 0
+                    ? {
+                      marginRight:
+                        responsiveSpacing.cardMargin,
+                    }
+                    : {
+                      marginLeft:
+                        responsiveSpacing.cardMargin,
+                    }
+              }
+              iconDimensions={
+                categoryIconDimensions
+              }
+              showPopularityBadge={
+                showPopularityBadge
+              }
+              onDeleteDeck={
+                onDeleteDeck
+              }
+            />
+          )
+        )}
+
+        {row.items.length === 1 && (
+          <View
+            style={{
+              flex: 1,
+              marginLeft:
+                responsiveSpacing.cardMargin,
+            }}
           />
-        );
-      })}
-  
-      {row.items.length === 1 && (
-        <View
-          style={{
-            flex: 1,
-            marginLeft: responsiveSpacing.cardMargin,
-          }}
-        />
-      )}
-    </View>
-  );
-
-  const renderTripleRow = (row) => (
-    <View
-      style={[
-        styles.communityList,
-
-      ]}
-    >
-      {row.items.map((deck) => (
-        <CommunityDeckCard
-          key={deck.id}
-          deck={deck}
-          colors={colors}
-          typography={typography}
-          onPress={onPressDeck}
-          onToggleFavorite={onToggleFavorite}
-          isFavorite={isFavorite(deck)}
-        />
-      ))}
-    </View>
-  );
-
-
-  const renderListItem = React.useCallback(
-    ({ item: row }) => {
-      console.log('ROW TYPE:', row.type);
-  
-      if (row.type === 'double') {
-        return renderDoubleRow(row);
-      }
-  
-      if (row.type === 'triple') {
-        console.log('TRIPLE ROW ITEMS:', row.items);
-        
-        return renderTripleRow(row);
-      }
-  
-      return null;
-    },
+        )}
+      </View>
+    ),
     [
-      colors,
-      typography,
-      favoriteDecks,
-      decks,
-      onToggleFavorite,
+      responsiveSpacing,
       onPressDeck,
+      onToggleFavorite,
+      isFavorite,
+      colors,
+      cardVariant,
+      DECK_CARD_VERTICAL_HEIGHT,
+      categoryIconDimensions,
+      showPopularityBadge,
+      onDeleteDeck,
     ]
   );
+
+  const renderTripleRow = useCallback(
+    (row) => (
+      <View
+        style={styles.communityList}
+      >
+        {row.items.map((deck) => (
+          <CommunityDeckCard
+            key={deck.id}
+            deck={deck}
+            colors={colors}
+            typography={typography}
+            onPress={onPressDeck}
+            onToggleFavorite={
+              onToggleFavorite
+            }
+            isFavorite={isFavorite(deck)}
+          />
+        ))}
+      </View>
+    ),
+    [
+      colors,
+      onPressDeck,
+      onToggleFavorite,
+      isFavorite,
+    ]
+  );
+
+  const renderListItem =
+    useCallback(
+      ({ item: row }) => {
+        if (row.type === 'double') {
+          return renderDoubleRow(
+            row
+          );
+        }
+
+        if (row.type === 'triple') {
+          return renderTripleRow(
+            row
+          );
+        }
+
+        return null;
+      },
+      [
+        renderDoubleRow,
+        renderTripleRow,
+      ]
+    );
 
   return (
     <FlatList
       data={rows}
-      keyExtractor={(_, idx) => `row_${idx}`}
-      contentContainerStyle={{ paddingBottom: contentPaddingBottom, paddingTop: contentPaddingTop }}
-      ListHeaderComponent={ListHeaderComponent}
+      keyExtractor={(_, idx) =>
+        `row_${idx}`
+      }
+      contentContainerStyle={{
+        paddingBottom:
+          contentPaddingBottom,
+        paddingTop:
+          contentPaddingTop,
+      }}
+      ListHeaderComponent={
+        ListHeaderComponent
+      }
       removeClippedSubviews={true}
       initialNumToRender={6}
       maxToRenderPerBatch={4}
       windowSize={5}
       renderItem={renderListItem}
-      ListEmptyComponent={(
-        <View style={styles.noDecksEmpty}>
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      ListEmptyComponent={
+        <View
+          style={styles.noDecksEmpty}
+        >
+          <View
+            style={{
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
             <Image
               source={require('../../assets/deckbg.webp')}
-              style={{ position: 'absolute', alignSelf: 'center', width: moderateScale(300, 0.3), height: moderateScale(300, 0.3), opacity: 0.2 }}
+              style={{
+                position: 'absolute',
+                alignSelf: 'center',
+                width: moderateScale(
+                  300,
+                  0.3
+                ),
+                height: moderateScale(
+                  300,
+                  0.3
+                ),
+                opacity: 0.2,
+              }}
               resizeMode="contain"
             />
           </View>
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <Text style={[typography.styles.body, { color: colors.border, textAlign: 'center', fontSize: moderateScale(16), marginTop: verticalScale(20) }]}>
-              {t('discover.noDecks', 'Deste Bulunamadı')}
+
+          <View
+            style={{
+              flex: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <Text
+              style={[
+                typography.styles.body,
+                {
+                  color:
+                    colors.border,
+                  textAlign: 'center',
+                  fontSize:
+                    moderateScale(16),
+                  marginTop:
+                    verticalScale(20),
+                },
+              ]}
+            >
+              {t(
+                'discover.noDecks',
+                'Deste Bulunamadı'
+              )}
             </Text>
           </View>
         </View>
-      )}
-      showsVerticalScrollIndicator={false}
-      onScrollBeginDrag={onScrollBeginDrag}
-      onEndReached={onEndReached}
-      onEndReachedThreshold={onEndReached ? 0.5 : undefined}
-      ListFooterComponent={loadingMore ? (
-        <View style={{ paddingVertical: verticalScale(16), alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator size="small" color={colors.text} />
-        </View>
-      ) : null}
+      }
+      showsVerticalScrollIndicator={
+        false
+      }
+      onScrollBeginDrag={
+        onScrollBeginDrag
+      }
+      onEndReached={
+        onEndReached
+      }
+      onEndReachedThreshold={
+        onEndReached
+          ? 0.5
+          : undefined
+      }
+      ListFooterComponent={
+        loadingMore ? (
+          <View
+            style={{
+              paddingVertical:
+                verticalScale(16),
+              alignItems: 'center',
+              justifyContent:
+                'center',
+            }}
+          >
+            <ActivityIndicator
+              size="small"
+              color={
+                colors.text
+              }
+            />
+          </View>
+        ) : null
+      }
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          tintColor={colors.text}
-          colors={[colors.buttonColor]}
+          tintColor={
+            colors.text
+          }
+          colors={[
+            colors.buttonColor,
+          ]}
         />
       }
     />
   );
-}
+};
 
 const styles = StyleSheet.create({
-  deckList: {
-  },
+  deckList: {},
+
   deckRow: {
     flexDirection: 'row',
   },
+
   deckCardVertical: {
     flex: 1,
-    borderRadius: moderateScale(18),
+    borderRadius:
+      moderateScale(18),
     overflow: 'hidden',
   },
-  deckCardHorizontal: {
-    borderRadius: moderateScale(18),
-    overflow: 'hidden',
-  },
+
   deckGradient: {
     flex: 1,
-    borderRadius: moderateScale(18),
+    borderRadius:
+      moderateScale(18),
     padding: scale(16),
     justifyContent: 'center',
   },
+
   deckCountBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F98A21',
-    borderRadius: moderateScale(14),
-    paddingHorizontal: scale(8),
-    paddingVertical: verticalScale(2),
+    borderRadius:
+      moderateScale(14),
+    paddingHorizontal:
+      scale(8),
+    paddingVertical:
+      verticalScale(2),
     marginRight: scale(2),
   },
+
+  progressContainer: {
+    position: 'absolute',
+    bottom:
+      verticalScale(16),
+    left: scale(16),
+    right: scale(60),
+    zIndex: 10,
+  },
+
+  cardCountContainer: {
+    position: 'absolute',
+    zIndex: 10,
+  },
+
+  cardCountTopLeft: {
+    top: verticalScale(10),
+    left: scale(10),
+  },
+
+  cardCountBottomLeft: {
+    bottom: verticalScale(12),
+    left: scale(12),
+  },
+
   progressBottomBadge: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    borderRadius: moderateScale(999),
+    borderRadius:
+      moderateScale(999),
     paddingLeft: scale(24),
     paddingRight: scale(6),
-    paddingVertical: verticalScale(6),
+    paddingVertical:
+      verticalScale(6),
     overflow: 'visible',
   },
+
   progressBarRow: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     minWidth: 0,
   },
+
   progressPercentChip: {
     width: scale(40),
     height: scale(40),
-    borderRadius: moderateScale(999),
+    borderRadius:
+      moderateScale(999),
     backgroundColor: '#F98A21',
     position: 'absolute',
     left: scale(-8),
     top: '50%',
-    transform: [{ translateY: -scale(20) }],
+    transform: [
+      {
+        translateY:
+          -scale(20),
+      },
+    ],
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 2,
     overflow: 'hidden',
-    borderWidth: moderateScale(1.5),
-    borderColor: 'rgba(255, 255, 255, 0.38)',
+    borderWidth:
+      moderateScale(1.5),
+    borderColor:
+      'rgba(255, 255, 255, 0.38)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: verticalScale(2) },
+    shadowOffset: {
+      width: 0,
+      height: verticalScale(2),
+    },
     shadowOpacity: 0.22,
-    shadowRadius: moderateScale(4),
+    shadowRadius:
+      moderateScale(4),
     elevation: 3,
   },
+
   progressPercentChipGradient: {
     position: 'absolute',
     top: -scale(2),
     left: -scale(2),
     right: -scale(2),
     bottom: -scale(2),
-    borderRadius: moderateScale(999),
+    borderRadius:
+      moderateScale(999),
   },
+
   progressPercentChipInner: {
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'center',
     zIndex: 1,
   },
+
   progressPercentChipNumber: {
     color: '#FFFFFF',
     fontWeight: '800',
-    fontSize: moderateScale(15.5),
-    letterSpacing: moderateScale(-0.38),
+    fontSize:
+      moderateScale(15.5),
+    letterSpacing:
+      moderateScale(-0.38),
   },
+
   progressPercentSign: {
-    fontSize: moderateScale(10.25),
+    fontSize:
+      moderateScale(10.25),
     fontWeight: '700',
-    color: 'rgba(255, 255, 255, 0.92)',
+    color:
+      'rgba(255, 255, 255, 0.92)',
     marginLeft: 0,
-    marginBottom: verticalScale(2),
+    marginBottom:
+      verticalScale(2),
   },
+
   progressBottomTrack: {
     flex: 1,
     minWidth: 0,
-    height: verticalScale(4),
-    borderRadius: moderateScale(999),
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    height:
+      verticalScale(4),
+    borderRadius:
+      moderateScale(999),
+    backgroundColor:
+      'rgba(255, 255, 255, 0.22)',
     overflow: 'hidden',
     marginRight: scale(2),
   },
+
   progressBottomFill: {
     height: '100%',
-    borderRadius: moderateScale(999),
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius:
+      moderateScale(999),
+    backgroundColor:
+      'rgba(255, 255, 255, 0.95)',
   },
+
   progressBottomFillCompleted: {
     backgroundColor: '#FFFFFF',
   },
+
   progressPercentChipNearComplete: {
     shadowColor: '#FB7B0B',
-    shadowOffset: { width: 0, height: 0 },
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
     shadowOpacity: 0.45,
-    shadowRadius: moderateScale(7),
+    shadowRadius:
+      moderateScale(7),
     elevation: 4,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
+    borderColor:
+      'rgba(255, 255, 255, 0.45)',
   },
+
   progressPercentChipCompleted: {
     shadowColor: '#FF7505',
-    shadowOffset: { width: 0, height: 0 },
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
     shadowOpacity: 0.9,
-    shadowRadius: moderateScale(12),
+    shadowRadius:
+      moderateScale(12),
     elevation: 7,
-    borderColor: 'rgba(255, 255, 255, 0.6)',
+    borderColor:
+      'rgba(255, 255, 255, 0.6)',
   },
-  emptyText: {
-    fontSize: moderateScale(14),
-    textAlign: 'center',
-    marginTop: verticalScale(20),
-  },
-  noDecksEmpty: {
-    height: verticalScale(200),
-    borderRadius: moderateScale(18),
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: scale(16),
-    backgroundColor: 'transparent',
-    flexDirection: 'column',
-    gap: verticalScale(10),
-    marginTop: verticalScale(150),
-  },
+
   backgroundCategoryIcon: {
     position: 'absolute',
     width: '100%',
@@ -742,9 +1249,11 @@ const styles = StyleSheet.create({
     zIndex: 0,
     overflow: 'hidden',
   },
+
   categoryIconStyle: {
     opacity: 0.8,
   },
+
   deckProfileRow: {
     position: 'absolute',
     flexDirection: 'row',
@@ -753,39 +1262,105 @@ const styles = StyleSheet.create({
     top: verticalScale(8),
     left: scale(10),
   },
+
   deckProfileAvatar: {
     width: scale(32),
     height: verticalScale(32),
     borderRadius: 99,
     marginRight: scale(6),
   },
+
   deckProfileUsername: {
-    fontSize: moderateScale(15),
+    fontSize:
+      moderateScale(15),
     color: '#BDBDBD',
     fontWeight: '700',
     width: '95%',
   },
+
+  favoriteButton: {
+    position: 'absolute',
+    bottom:
+      verticalScale(8),
+    right: scale(10),
+    zIndex: 10,
+    padding:
+      moderateScale(8),
+    borderRadius: 999,
+  },
+
+  deckDeleteButton: {
+    position: 'absolute',
+    top:
+      verticalScale(10),
+    right: scale(10),
+    zIndex: 10,
+    padding:
+      moderateScale(8),
+    borderRadius: 999,
+  },
+
+  popularityContainer: {
+    position: 'absolute',
+    bottom:
+      verticalScale(12),
+    left: scale(12),
+    zIndex: 10,
+  },
+
   popularityBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: scale(7),
-    paddingVertical: verticalScale(2),
+    paddingHorizontal:
+      scale(7),
+    paddingVertical:
+      verticalScale(2),
     borderRadius: 99,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    borderWidth: moderateScale(1),
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-    backdropFilter: 'blur(10px)',
+    backgroundColor:
+      'rgba(255, 255, 255, 0.25)',
+    borderWidth:
+      moderateScale(1),
+    borderColor:
+      'rgba(255, 255, 255, 0.4)',
+    backdropFilter:
+      'blur(10px)',
   },
+
   popularityBadgeText: {
     color: '#fff',
     fontWeight: '700',
-    fontSize: moderateScale(14),
+    fontSize:
+      moderateScale(14),
   },
+
+  noDecksEmpty: {
+    height:
+      verticalScale(200),
+    borderRadius:
+      moderateScale(18),
+    justifyContent:
+      'center',
+    alignItems: 'center',
+    marginHorizontal:
+      scale(16),
+    backgroundColor:
+      'transparent',
+    flexDirection:
+      'column',
+    gap:
+      verticalScale(10),
+    marginTop:
+      verticalScale(150),
+  },
+
   communityList: {
-    marginTop: verticalScale(16),
-    marginBottom: verticalScale(8),
-    marginHorizontal: scale(2)
-  }
+    marginTop:
+      verticalScale(16),
+    marginBottom:
+      verticalScale(8),
+    marginHorizontal:
+      scale(2),
+  },
 });
 
 export default React.memo(DeckList);

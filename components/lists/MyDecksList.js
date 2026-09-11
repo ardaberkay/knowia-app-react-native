@@ -1,5 +1,4 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-
 import {
   View,
   Text,
@@ -11,14 +10,11 @@ import {
   Keyboard,
   Platform,
 } from 'react-native';
-
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
-
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
-
 import {
   scale,
   moderateScale,
@@ -26,7 +22,6 @@ import {
   useWindowDimensions,
   getIsTablet,
 } from '../../lib/scaling';
-
 import { triggerHaptic } from '../../lib/hapticManager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 

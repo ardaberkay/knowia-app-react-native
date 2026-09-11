@@ -512,12 +512,18 @@ export default function DiscoverScreen() {
             favoriteDecks={[]}
             onToggleFavorite={handleToggleFavorite}
             onPressDeck={handleDeckPress}
+            cardVariant="favorite"
+            layoutMode="double"
             onScrollBeginDrag={() => Keyboard.dismiss()}
             refreshing={refreshing}
             onRefresh={handleRefresh}
             showPopularityBadge={activeTab === 'trend'}
             contentPaddingTop={verticalScale(20)}
-            contentPaddingBottom={Platform.OS === 'android' ? insets.bottom + verticalScale(72) : '10%'}
+            contentPaddingBottom={
+              Platform.OS === 'android'
+                ? insets.bottom + verticalScale(72)
+                : '10%'
+            }
           />
         )}
       </View>

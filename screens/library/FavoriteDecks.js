@@ -192,7 +192,7 @@ export default function FavoriteDecks() {
           <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100, 0.3), height: verticalScale(100, 0.3), marginTop: verticalScale(-65) }} />
         </View>
       ) : favoriteDecks.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: verticalScale(-150)}}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: verticalScale(-150) }}>
           <Image
             source={require('../../assets/deckbg.webp')}
             style={{ width: scale(300), height: verticalScale(300), opacity: 0.2 }}
@@ -206,33 +206,75 @@ export default function FavoriteDecks() {
       ) : (
         <DeckList
           decks={favoriteDecks}
-          favoriteDecks={favoriteDecks.map(d => d.id)}
+          favoriteDecks={favoriteDecks.map((d) => d.id)}
           onToggleFavorite={async (deckId) => {
-            if (favoriteDecks.some(d => d.id === deckId)) {
+            if (
+              favoriteDecks.some(
+                (d) => d.id === deckId
+              )
+            ) {
               await handleRemoveFavoriteDeck(deckId);
             } else {
               await handleAddFavoriteDeck(deckId);
             }
           }}
-          onPressDeck={(deck) => navigation.navigate('DeckDetail', { deck })}
-          ListHeaderComponent={(
-            <View style={{ backgroundColor: colors.background, marginVertical: verticalScale(8) }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(10), width: '95%', alignSelf: 'center' }}>
+          onPressDeck={(deck) =>
+            navigation.navigate('DeckDetail', { deck })
+          }
+          ListHeaderComponent={
+            <View
+              style={{
+                backgroundColor: colors.background,
+                marginVertical: verticalScale(8),
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: scale(10),
+                  width: '95%',
+                  alignSelf: 'center',
+                }}
+              >
                 <SearchBar
                   value={query}
                   onChangeText={setQuery}
-                  placeholder={t('common.searchPlaceholder', 'Favori destelerde ara...')}
+                  placeholder={t(
+                    'common.searchPlaceholder',
+                    'Favori destelerde ara...'
+                  )}
                   style={{ flex: 1 }}
                 />
-                <FilterModalButton onPress={() => setFilterModalVisible(true)} />
+
+                <FilterModalButton
+                  onPress={() =>
+                    setFilterModalVisible(true)
+                  }
+                />
               </View>
             </View>
-          )}
+          }
           refreshing={loading}
-          onRefresh={() => fetchFavorites({ forceRefresh: true, pageOverride: 0, append: false })}
-          onEndReached={hasMore ? loadMoreFavorites : undefined}
+          onRefresh={() =>
+            fetchFavorites({
+              forceRefresh: true,
+              pageOverride: 0,
+              append: false,
+            })
+          }
+          onEndReached={
+            hasMore ? loadMoreFavorites : undefined
+          }
           loadingMore={loadingMore}
-          contentPaddingBottom={Platform.OS === 'android' ? insets.bottom + verticalScale(72) : '10%'}
+          layoutMode="double"
+          cardVariant="favorite"
+          showPopularityBadge={false}
+          contentPaddingBottom={
+            Platform.OS === 'android'
+              ? insets.bottom + verticalScale(72)
+              : '10%'
+          }
         />
       )}
 

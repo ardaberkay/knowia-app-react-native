@@ -334,22 +334,39 @@ export default function CategoryDeckListScreen({ route }) {
       {renderFixedHeader()}
 
       <View style={[styles.listContainer, { backgroundColor: colors.background }]}>
-        
+
         <DeckList
           decks={visibleDecks}
           favoriteDecks={favoriteDecks}
           onToggleFavorite={handleToggleFavorite}
           onPressDeck={handleDeckPress}
-          progressMode={category === 'inProgressDecks'}
-          onScrollBeginDrag={() => Keyboard.dismiss()}
+          cardVariant={
+            isProgressDeck
+              ? 'inProgress'
+              : 'favorite'
+          }
+          layoutMode={
+            isProgressDeck
+              ? 'double'
+              : 'pattern'
+          }
+          onScrollBeginDrag={() =>
+            Keyboard.dismiss()
+          }
           onEndReached={loadMoreDecks}
           refreshing={refreshing}
           onRefresh={handleRefresh}
           showPopularityBadge={false}
-          loading={loading}
           loadingMore={loadingMore}
-          contentPaddingTop={verticalScale(20)}
-          contentPaddingBottom={Platform.OS === 'android' ? insets.bottom + verticalScale(72) : '10%'}
+          contentPaddingTop={
+            verticalScale(20)
+          }
+          contentPaddingBottom={
+            Platform.OS === 'android'
+              ? insets.bottom +
+              verticalScale(72)
+              : '10%'
+          }
         />
       </View>
 

@@ -9,11 +9,11 @@ import { triggerHaptic } from '../../lib/hapticManager'; // Titreşim yöneticim
 
 const FadeText = ({ text, style, maxWidth = 120, maxChars = 15 }) => {
   const shouldShowFade = text && text.length > maxChars;
-  
+
   if (!shouldShowFade) {
     return (
-      <Text 
-        style={[style, { maxWidth }]} 
+      <Text
+        style={[style, { maxWidth }]}
         numberOfLines={1}
         ellipsizeMode="clip" // Kısa metinlerde normal davranışı koruyoruz
       >
@@ -21,11 +21,11 @@ const FadeText = ({ text, style, maxWidth = 120, maxChars = 15 }) => {
       </Text>
     );
   }
-  
+
   // SİHİRLİ DOKUNUŞ: Normal boşlukları "bölünemez boşluk" ile değiştiriyoruz.
   // RN bunu tek bir kelime sanıp jilet gibi "clip" yapacak, kelimeyi bütün olarak yutmayacak.
   const singleLineText = text.replace(/ /g, '\u00A0');
-  
+
   return (
     <MaskedView
       style={[styles.maskedView, { maxWidth, flexDirection: 'row' }]}
@@ -38,8 +38,8 @@ const FadeText = ({ text, style, maxWidth = 120, maxChars = 15 }) => {
         />
       }
     >
-      <Text 
-        style={[style, { flexShrink: 0 }]} 
+      <Text
+        style={[style, { flexShrink: 0 }]}
         numberOfLines={1}
         ellipsizeMode="clip" // Tail riskinden kurtulduk, tekrar "clip" kullanıyoruz!
       >
@@ -71,7 +71,7 @@ const DeckCard = ({
 }) => {
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
-  
+
   // --- OPTIMISTIC UI: Lokal State ---
   const [localFavorite, setLocalFavorite] = useState(isFavorite);
 
@@ -145,7 +145,7 @@ const DeckCard = ({
       />
     );
   };
-  
+
   return (
     <View style={[styles.deckCardModern, { width: DECK_CARD_WIDTH, height: DECK_CARD_HEIGHT }]}>
       <TouchableOpacity
@@ -154,141 +154,141 @@ const DeckCard = ({
         onPress={() => onPress(deck)}
         activeOpacity={0.7}
       >
-      <LinearGradient
-        colors={gradientColors}
-        start={{ x: 0, y: 1 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.deckCardGradient}
-      >
-        {/* Background Category Icon */}
-        <View style={styles.backgroundCategoryIcon}>
-          <Iconify
-            icon={categoryIcon}
-            size={scale(120)}
-            color="rgba(0, 0, 0, 0.1)"
-            style={styles.categoryIconStyle}
-          />
-        </View>
-        <View style={styles.deckCardContentModern}>
-          <View style={styles.deckProfileRow}>
-            <Image
-              source={
-                deck.is_admin_created
-                  ? require('../../assets/app_icon.png')
-                  : deck.profiles?.image_url
-                    ? { uri: deck.profiles.image_url }
-                    : require('../../assets/avatar_default.webp')
-              }
-              style={styles.deckProfileAvatar}
-            />
-            <FadeText
-              text={deck.profiles?.username || 'Kullanıcı'}
-              style={[typography.styles.body, styles.deckProfileUsername]}
-              maxWidth={'75%'}
-              maxChars={12}
-            />
-          </View>
-          <View style={styles.centerContentContainer}>
-            <View style={styles.deckHeaderModern}>
-              {deck.to_name ? (
-                <>
-                  {renderDeckTitle(deck.name)}
-                  <View style={{ width: scale(60), height: moderateScale(2), backgroundColor: colors.divider, borderRadius: moderateScale(1), marginVertical: verticalScale(10) }} />
-                  {renderDeckTitle(deck.to_name)}
-                </>
-              ) : (
-                renderDeckTitle(deck.name)
-              )}
-            </View>
-          </View>
-          {!isInProgressVariant ? (
-            <View style={styles.deckStatsModern}>
-              {/* Popularity Badge */}
-              {showPopularityBadge && deck.popularity_score && deck.popularity_score > 0 && (
-                <View style={[styles.popularityBadge, { backgroundColor: 'rgba(255, 255, 255, 0.25)' }]}>
-                  <Iconify icon="mdi:fire" size={moderateScale(12)} color="#fff" style={{ marginRight: scale(3) }} />
-                  <Text style={[styles.popularityBadgeText, { color: '#fff' }]}>
-                    {Math.round(deck.popularity_score)}
-                  </Text>
-                </View>
-              )}
-              <View style={styles.deckCountBadge}>
-                <Iconify icon="ri:stack-fill" size={moderateScale(15)} color="#fff" style={{ marginRight: scale(3) }} />
-                <Text style={[typography.styles.body, styles.deckCountBadgeText]}>{deck.card_count || 0}</Text>
-              </View>
-            </View>
-          ) : null}
-        </View>
-
-        {/* Progress */}
-        {isInProgressVariant && (
-          <View style={styles.progressBadgeContainer}>
-            <View style={[styles.deckCountBadge, styles.progressBottomBadge]}>
-              <View style={[
-                styles.progressPercentChip,
-                isProgressNearComplete && styles.progressPercentChipNearComplete,
-                isProgressCompleted && styles.progressPercentChipCompleted,
-              ]}>
-                <LinearGradient
-                  colors={isProgressCompleted ? ['#FFCC70', '#FF7505', '#D74400'] : inProgressGradient}
-                  locations={[0, 0.45, 1]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.progressPercentChipGradient}
-                />
-                <View style={styles.progressPercentChipInner}>
-                  {isProgressCompleted ? (
-                    <Iconify
-                      icon="streamline:check-solid"
-                      size={moderateScale(16)}
-                      color="#FFFFFF"
-                    />
-                  ) : (
-                    <>
-                      <Text style={styles.progressPercentChipNumber}>{progressPercent}</Text>
-                      <Text style={styles.progressPercentSign}>%</Text>
-                    </>
-                  )}
-                </View>
-              </View>
-              <View style={styles.progressBarRow}>
-                <View style={{ width: progressChipOverlap }} />
-                <View style={styles.progressBottomTrack}>
-                  <View
-                    style={[
-                      styles.progressBottomFill,
-                      isProgressCompleted && styles.progressBottomFillCompleted,
-                      {
-                        width: `${progressPercent}%`,
-                        minWidth: progressFillMinWidth,
-                      },
-                    ]}
-                  />
-                </View>
-              </View>
-            </View>
-          </View>
-        )}
-        <TouchableOpacity
-          style={{
-            position: 'absolute',
-            bottom: verticalScale(8),
-            right: scale(8),
-            backgroundColor: colors.iconBackground,
-            padding: moderateScale(5),
-            borderRadius: 999,
-            zIndex: 10,
-          }}
-          onPress={handleFavoritePress} // YENİ FONKSİYONUMUZA BAĞLADIK
-          activeOpacity={0.7}
+        <LinearGradient
+          colors={gradientColors}
+          start={{ x: 0, y: 1 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.deckCardGradient}
         >
-          <Iconify
-            icon={localFavorite ? 'solar:heart-bold' : 'solar:heart-broken'} // ARTIK LOKAL STATE'İ DİNLİYOR
-            size={moderateScale(20)}
-            color={localFavorite ? '#F98A21' : colors.headText} // ARTIK LOKAL STATE'İ DİNLİYOR
-          />
-        </TouchableOpacity>
-      </LinearGradient>
+          {/* Background Category Icon */}
+          <View style={styles.backgroundCategoryIcon}>
+            <Iconify
+              icon={categoryIcon}
+              size={scale(120)}
+              color="rgba(0, 0, 0, 0.1)"
+              style={styles.categoryIconStyle}
+            />
+          </View>
+          <View style={styles.deckCardContentModern}>
+            <View style={styles.deckProfileRow}>
+              <Image
+                source={
+                  deck.is_admin_created
+                    ? require('../../assets/app_icon.png')
+                    : deck.profiles?.image_url
+                      ? { uri: deck.profiles.image_url }
+                      : require('../../assets/avatar_default.webp')
+                }
+                style={styles.deckProfileAvatar}
+              />
+              <FadeText
+                text={deck.profiles?.username || 'Kullanıcı'}
+                style={[typography.styles.body, styles.deckProfileUsername]}
+                maxWidth={'75%'}
+                maxChars={12}
+              />
+            </View>
+            <View style={styles.centerContentContainer}>
+              <View style={styles.deckHeaderModern}>
+                {deck.to_name ? (
+                  <>
+                    {renderDeckTitle(deck.name)}
+                    <View style={{ width: scale(60), height: moderateScale(2), backgroundColor: colors.divider, borderRadius: moderateScale(1), marginVertical: verticalScale(10) }} />
+                    {renderDeckTitle(deck.to_name)}
+                  </>
+                ) : (
+                  renderDeckTitle(deck.name)
+                )}
+              </View>
+            </View>
+            {!isInProgressVariant ? (
+              <View style={styles.deckStatsModern}>
+                {/* Popularity Badge */}
+                {showPopularityBadge && deck.popularity_score && deck.popularity_score > 0 && (
+                  <View style={[styles.popularityBadge, { backgroundColor: 'rgba(255, 255, 255, 0.25)' }]}>
+                    <Iconify icon="mdi:fire" size={moderateScale(12)} color="#fff" style={{ marginRight: scale(3) }} />
+                    <Text style={[styles.popularityBadgeText, { color: '#fff' }]}>
+                      {Math.round(deck.popularity_score)}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.deckCountBadge}>
+                  <Iconify icon="ri:stack-fill" size={moderateScale(15)} color="#fff" style={{ marginRight: scale(3) }} />
+                  <Text style={[typography.styles.body, styles.deckCountBadgeText]}>{deck.card_count || 0}</Text>
+                </View>
+              </View>
+            ) : null}
+          </View>
+
+          {/* Progress */}
+          {isInProgressVariant && (
+            <View style={styles.progressBadgeContainer}>
+              <View style={[styles.deckCountBadge, styles.progressBottomBadge]}>
+                <View style={[
+                  styles.progressPercentChip,
+                  isProgressNearComplete && styles.progressPercentChipNearComplete,
+                  isProgressCompleted && styles.progressPercentChipCompleted,
+                ]}>
+                  <LinearGradient
+                    colors={isProgressCompleted ? ['#FFCC70', '#FF7505', '#D74400'] : inProgressGradient}
+                    locations={[0, 0.45, 1]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.progressPercentChipGradient}
+                  />
+                  <View style={styles.progressPercentChipInner}>
+                    {isProgressCompleted ? (
+                      <Iconify
+                        icon="streamline:check-solid"
+                        size={moderateScale(16)}
+                        color="#FFFFFF"
+                      />
+                    ) : (
+                      <>
+                        <Text style={styles.progressPercentChipNumber}>{progressPercent}</Text>
+                        <Text style={styles.progressPercentSign}>%</Text>
+                      </>
+                    )}
+                  </View>
+                </View>
+                <View style={styles.progressBarRow}>
+                  <View style={{ width: progressChipOverlap }} />
+                  <View style={styles.progressBottomTrack}>
+                    <View
+                      style={[
+                        styles.progressBottomFill,
+                        isProgressCompleted && styles.progressBottomFillCompleted,
+                        {
+                          width: `${progressPercent}%`,
+                          minWidth: progressFillMinWidth,
+                        },
+                      ]}
+                    />
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
+          <TouchableOpacity
+            style={{
+              position: 'absolute',
+              bottom: verticalScale(8),
+              right: scale(8),
+              backgroundColor: colors.iconBackground,
+              padding: moderateScale(5),
+              borderRadius: 999,
+              zIndex: 10,
+            }}
+            onPress={handleFavoritePress} // YENİ FONKSİYONUMUZA BAĞLADIK
+            activeOpacity={0.7}
+          >
+            <Iconify
+              icon={localFavorite ? 'solar:heart-bold' : 'solar:heart-broken'} // ARTIK LOKAL STATE'İ DİNLİYOR
+              size={moderateScale(20)}
+              color={localFavorite ? '#F98A21' : colors.headText} // ARTIK LOKAL STATE'İ DİNLİYOR
+            />
+          </TouchableOpacity>
+        </LinearGradient>
       </TouchableOpacity>
     </View>
   );
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(14),
     color: '#BDBDBD',
     fontWeight: '700',
- 
+
   },
   backgroundCategoryIcon: {
     position: 'absolute',

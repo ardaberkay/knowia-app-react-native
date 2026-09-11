@@ -21,7 +21,7 @@ import SearchBar from '../../components/tools/SearchBar';
 import FilterIcon from '../../components/modals/CardFilterIcon';
 import CardListItem from '../../components/lists/CardList';
 import LottieView from 'lottie-react-native';
-import MyDecksList from '../../components/lists/MyDecksList';
+import DeckList from '../../components/lists/DeckList';
 import MyDecksSkeleton from '../../components/skeleton/MyDecksSkeleton';
 import CardDetailView from '../../components/layout/CardDetailView';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
@@ -859,46 +859,88 @@ export default function LibraryScreen() {
           {loading ? (
             <MyDecksSkeleton ListHeaderComponent={myDecksListHeader} />
           ) : (
-            <MyDecksList
-              decks={filteredMyDecks}
-              onToggleFavorite={async (deckId) => {
-                if ((filteredMyDecks.find(d => d.id === deckId) || {}).is_favorite) {
-                  await handleRemoveFavoriteDeck(deckId);
-                } else {
-                  await handleAddFavoriteDeck(deckId);
-                }
-              }}
-              onDeleteDeck={handleDeleteDeck}
-              onPressDeck={(deck) => navigation.navigate('DeckDetail', { deck })}
-              ListHeaderComponent={myDecksListHeader}
-              refreshing={myDecksRefreshing}
-              onRefresh={() => fetchMyDecks(true)}
-              onEndReached={myDecksHasMore ? async () => {
-                if (!userId || myDecksLoadingMore || !myDecksHasMore) return;
-                setMyDecksLoadingMore(true);
-                try {
-                  const nextPage = myDecksPage + 1;
-                  const decks = await getDecksByCategory(userId, 'myDecks', {
-                    page: nextPage,
-                    limit: MY_DECKS_PAGE_SIZE,
-                  });
-                  const safeDecks = decks || [];
-                  if (safeDecks.length === 0) {
-                    setMyDecksHasMore(false);
-                  } else {
-                    setMyDecks(prev => [...prev, ...safeDecks]);
-                    setMyDecksPage(nextPage);
-                    if (safeDecks.length < MY_DECKS_PAGE_SIZE) {
+            <DeckList
+            decks={filteredMyDecks}
+            favoriteDecks={[]}
+            onToggleFavorite={async (deckId) => {
+              if (
+                (filteredMyDecks.find(
+                  (d) => d.id === deckId
+                ) || {}).is_favorite
+              ) {
+                await handleRemoveFavoriteDeck(deckId);
+              } else {
+                await handleAddFavoriteDeck(deckId);
+              }
+            }}
+            onDeleteDeck={handleDeleteDeck}
+            onPressDeck={(deck) =>
+              navigation.navigate('DeckDetail', { deck })
+            }
+            ListHeaderComponent={myDecksListHeader}
+            refreshing={myDecksRefreshing}
+            onRefresh={() => fetchMyDecks(true)}
+            onEndReached={
+              myDecksHasMore
+                ? async () => {
+                    if (
+                      !userId ||
+                      myDecksLoadingMore ||
+                      !myDecksHasMore
+                    ) {
+                      return;
+                    }
+          
+                    setMyDecksLoadingMore(true);
+          
+                    try {
+                      const nextPage = myDecksPage + 1;
+          
+                      const decks = await getDecksByCategory(
+                        userId,
+                        'myDecks',
+                        {
+                          page: nextPage,
+                          limit: MY_DECKS_PAGE_SIZE,
+                        }
+                      );
+          
+                      const safeDecks = decks || [];
+          
+                      if (safeDecks.length === 0) {
+                        setMyDecksHasMore(false);
+                      } else {
+                        setMyDecks((prev) => [
+                          ...prev,
+                          ...safeDecks,
+                        ]);
+          
+                        setMyDecksPage(nextPage);
+          
+                        if (
+                          safeDecks.length <
+                          MY_DECKS_PAGE_SIZE
+                        ) {
+                          setMyDecksHasMore(false);
+                        }
+                      }
+                    } catch {
                       setMyDecksHasMore(false);
+                    } finally {
+                      setMyDecksLoadingMore(false);
                     }
                   }
-                } catch {
-                  setMyDecksHasMore(false);
-                } finally {
-                  setMyDecksLoadingMore(false);
-                }
-              } : undefined}
-            />
+                : undefined}
+            cardVariant="myDecks"
+            layoutMode="double"
+            showPopularityBadge={false}
+            loadingMore={myDecksLoadingMore}
+            contentPaddingBottom={
+              Platform.OS === 'android'
+                ? insets.bottom + verticalScale(72)
+                : '10%'
+            }
+          />
           )}
         </View>
         {/* Page 1: Favorites */}
