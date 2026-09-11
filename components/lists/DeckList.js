@@ -422,90 +422,22 @@ const DeckList = ({
   
     const builtRows = [];
     let i = 0;
+    let isDouble = true;
   
     while (i < decks.length) {
+      const rowSize = isDouble ? 2 : 3;
       const remaining = decks.length - i;
-  
-      if (remaining >= 5) {
-        builtRows.push({
-          type: 'double',
-          items: [
-            prepareDeck(decks[i]),
-            prepareDeck(decks[i + 1]),
-          ],
-        });
-  
-        i += 2;
-  
-        builtRows.push({
-          type: 'triple',
-          items: [
-            prepareDeck(decks[i]),
-            prepareDeck(decks[i + 1]),
-            prepareDeck(decks[i + 2]),
-          ],
-        });
-  
-        i += 3;
-        continue;
-      }
-  
-      if (remaining === 4) {
-        builtRows.push({
-          type: 'double',
-          items: [
-            prepareDeck(decks[i]),
-            prepareDeck(decks[i + 1]),
-          ],
-        });
-  
-        i += 2;
-  
-        builtRows.push({
-          type: 'triple',
-          items: [
-            prepareDeck(decks[i]),
-            prepareDeck(decks[i + 1]),
-          ],
-        });
-  
-        i += 2;
-        continue;
-      }
-  
-      if (remaining === 3) {
-        builtRows.push({
-          type: 'triple',
-          items: [
-            prepareDeck(decks[i]),
-            prepareDeck(decks[i + 1]),
-            prepareDeck(decks[i + 2]),
-          ],
-        });
-  
-        i += 3;
-        continue;
-      }
-  
-      if (remaining === 2) {
-        builtRows.push({
-          type: 'double',
-          items: [
-            prepareDeck(decks[i]),
-            prepareDeck(decks[i + 1]),
-          ],
-        });
-  
-        i += 2;
-        continue;
-      }
+      const actualSize = Math.min(rowSize, remaining);
   
       builtRows.push({
-        type: 'double',
-        items: [prepareDeck(decks[i])],
+        type: isDouble ? 'double' : 'triple',
+        items: decks
+          .slice(i, i + actualSize)
+          .map(prepareDeck),
       });
   
-      i += 1;
+      i += actualSize;
+      isDouble = !isDouble;
     }
   
     return builtRows;

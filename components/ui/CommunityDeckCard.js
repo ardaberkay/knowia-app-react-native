@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderRadius: moderateScale(20),
         paddingHorizontal: scale(12),
-        paddingVertical: verticalScale(7),
+        paddingVertical: verticalScale(8),
         height: verticalScale(120),
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.15)',
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
         height: verticalScale(22),
         justifyContent: 'center',
         width: '100%',
-        transform: [{ translateY: -verticalScale(5) }],
+        transform: [{ translateY: -verticalScale(4) }],
 
     },
     dualTitleWrapper: {
@@ -267,14 +267,6 @@ const styles = StyleSheet.create({
         marginHorizontal: scale(8),
         marginTop: scale(2)
     },
-
-    // --- Fade Maske Stili ---
-    maskGradient: {
-        flex: 1,
-        width: '100%',
-        height: '100%',
-    },
-
     bottomRow: {
         flexDirection: 'row',
         alignItems: 'center',

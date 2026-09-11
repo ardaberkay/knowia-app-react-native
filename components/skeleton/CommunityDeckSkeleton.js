@@ -121,75 +121,94 @@ export default function CommunityDeckSkeleton() {
 
 const styles = StyleSheet.create({
     touchableWrapper: {
-        width: '100%',
-        paddingHorizontal: scale(16),
-        marginBottom: verticalScale(12),
+        marginHorizontal: scale(8),
+        marginBottom: verticalScale(10),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 6,
+        elevation: 3,
     },
+
     cardGradient: {
         flexDirection: 'row',
         alignItems: 'center',
         borderRadius: moderateScale(20),
         paddingHorizontal: scale(12),
-        paddingVertical: verticalScale(10),
-        height: verticalScale(100),
+        paddingVertical: verticalScale(7),
+        height: verticalScale(120),
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.05)',
+        borderColor: 'rgba(255, 255, 255, 0.15)',
     },
+
     iconBadgeContainer: {
-        width: scale(52),
-        height: scale(52),
+        width: scale(60),
+        height: scale(60),
     },
+
     contentContainer: {
         flex: 1,
         marginLeft: scale(12),
         height: '100%',
         justifyContent: 'space-between',
     },
+
     topRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
     },
+
     userBlock: {
         flexDirection: 'row',
         alignItems: 'center',
         flex: 1,
         marginRight: scale(10),
     },
+
     userAvatar: {
-        width: scale(22),
-        height: scale(22),
-        marginRight: scale(6),
+        width: scale(24),
+        height: scale(24),
+        marginRight: scale(5),
     },
+
     usernameSkeleton: {
         width: scale(80),
         height: verticalScale(12),
     },
+
     favoriteButtonSkeleton: {
-        width: scale(28),
-        height: scale(28),
+        width: scale(30),
+        height: scale(30),
     },
+
     titleBlock: {
         height: verticalScale(22),
         justifyContent: 'center',
         width: '100%',
+        transform: [{ translateY: -verticalScale(5) }],
     },
+
     titleSkeleton: {
         width: '70%',
         height: verticalScale(16),
     },
+
     bottomRow: {
         flexDirection: 'row',
         alignItems: 'center',
     },
+
     metricSkeletonShort: {
         width: scale(45),
         height: verticalScale(12),
     },
+
     metricSkeletonLong: {
         width: scale(55),
         height: verticalScale(12),
     },
+
     separatorDot: {
         width: scale(4),
         height: scale(4),
