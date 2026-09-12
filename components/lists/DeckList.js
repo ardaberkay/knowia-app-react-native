@@ -1,5 +1,4 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-
 import {
   View,
   Text,
@@ -10,17 +9,11 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
-
 import { LinearGradient } from 'expo-linear-gradient';
-
 import { Iconify } from 'react-native-iconify';
-
 import { useTheme } from '../../theme/theme';
-
 import { typography } from '../../theme/typography';
-
 import { useTranslation } from 'react-i18next';
-
 import {
   scale,
   moderateScale,
@@ -28,10 +21,9 @@ import {
   useWindowDimensions,
   getIsTablet,
 } from '../../lib/scaling';
-
 import { triggerHaptic } from '../../lib/hapticManager';
-
 import CommunityDeckCard from '../ui/CommunityDeckCard';
+import Svg, { Path } from 'react-native-svg';
 
 const getInProgressGradient = (percent) => {
   if (percent >= 75) {
@@ -84,7 +76,7 @@ const DeckCard = React.memo(
 
     const isProgressCompleted =
       progressPercent >= 100;
-
+    const chapterCount = deck.chapter_count || 0;
     const isProgressNearComplete =
       progressPercent >= 75 &&
       progressPercent < 100;
@@ -166,29 +158,85 @@ const DeckCard = React.memo(
       );
     };
 
-    const renderCardCountBadge = () => (
-      <View style={styles.deckCountBadge}>
-        <Iconify
-          icon="ri:stack-fill"
-          size={moderateScale(18)}
-          color="#fff"
-          style={{ marginRight: scale(3) }}
-        />
+    const renderCardCountBadge = () => {
+      if (variant === 'myDecks') {
+        return (
+          <View style={styles.myDecksBadge}>
+            <Svg
+              width={scale(165)}
+              height={verticalScale(36)}
+              viewBox="0 0 165 36"
+              style={StyleSheet.absoluteFill}
+            >
+              <Path
+                d="
+              M 0 0
+              H 165
+              C 162 11, 153 23, 140 31
+              C 136 34, 131 35, 124 35
+              H 41
+              C 34 35, 29 34, 25 31
+              C 12 23, 3 11, 0 0
+              Z
+            "
+                fill="#FF8D1A"
+              />
+            </Svg>
+            <View style={styles.myDecksBadgeContent}>
+              <Iconify
+                icon="ri:stack-fill"
+                size={moderateScale(17)}
+                color="#fff"
+                style={{ marginRight: scale(3) }}
+              />
 
-        <Text
-          style={[
-            typography.styles.body,
-            {
-              color: '#fff',
-              fontWeight: 'bold',
-              fontSize: moderateScale(16),
-            },
-          ]}
-        >
-          {deck.card_count || 0}
-        </Text>
-      </View>
-    );
+              <Text style={styles.myDecksBadgeText}>
+                {deck.card_count || 0}
+              </Text>
+
+              <View style={styles.myDecksDivider} />
+
+              <Iconify
+                icon="streamline-flex:module-puzzle-2"
+                size={moderateScale(15)}
+                color="#fff"
+                style={{ marginRight: scale(3) }}
+              />
+
+              <Text style={styles.myDecksBadgeText}>
+                {deck.chapter_count || 0}
+              </Text>
+            </View>
+          </View>
+        );
+      }
+      // NORMAL DECKLER — mevcut yapın aynen
+      return (
+        <View style={styles.deckCountBadge}>
+          <View style={styles.cardCountContent}>
+            <Iconify
+              icon="ri:stack-fill"
+              size={moderateScale(18)}
+              color="#fff"
+              style={{ marginRight: scale(3) }}
+            />
+
+            <Text
+              style={[
+                typography.styles.body,
+                {
+                  color: '#fff',
+                  fontWeight: 'bold',
+                  fontSize: moderateScale(16),
+                },
+              ]}
+            >
+              {deck.card_count || 0}
+            </Text>
+          </View>
+        </View>
+      );
+    };
 
     const renderProgressBadge = () => (
       <View
@@ -1061,15 +1109,57 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F98A21',
-    borderRadius:
-      moderateScale(14),
-    paddingHorizontal:
-      scale(8),
-    paddingVertical:
-      verticalScale(2),
+    borderRadius: moderateScale(14),
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(2),
     marginRight: scale(2),
   },
+  cardCountContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  myDecksBadge: {
+    width: scale(165),
+    height: verticalScale(36),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
+  myDecksBadgeContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
+
+  myDecksBadgeText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: moderateScale(16),
+  },
+
+  myDecksDivider: {
+    width: 1,
+    height: verticalScale(20),
+    backgroundColor: 'rgba(255,255,255,0.45)',
+    marginHorizontal: scale(9),
+  },
+  chapterCountContainer: {
+    marginLeft: scale(7),
+    alignSelf: 'stretch',
+    paddingHorizontal: scale(7),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: scale(99),
+    gap: scale(2)
+  },
+  chapterCountText: {
+    color: '#fff',
+    fontSize: moderateScale(13),
+    fontWeight: '600',
+  },
   progressContainer: {
     position: 'absolute',
     bottom:
@@ -1082,11 +1172,11 @@ const styles = StyleSheet.create({
   cardCountContainer: {
     position: 'absolute',
     zIndex: 10,
+
   },
 
   cardCountTopLeft: {
-    top: verticalScale(10),
-    left: scale(10),
+    top: verticalScale(0), left: 0, right: 0, alignItems: 'center',
   },
 
   cardCountBottomLeft: {

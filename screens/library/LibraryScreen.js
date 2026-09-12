@@ -183,7 +183,7 @@ export default function LibraryScreen() {
   const myDecksCardTopMargin = useMemo(() => {
     const androidExtraTop = Platform.OS === 'android' ? insets.top + verticalScale(-32) : 0;
     if (isTablet) return height * 0.01 + androidExtraTop;
-    return height * 0.18 + androidExtraTop;
+    return height * 0.18
   }, [height, isTablet, insets.top]);
 
   const myDecksSearchContainerTopMargin = useMemo(() => {
@@ -431,33 +431,6 @@ export default function LibraryScreen() {
     }
   }, [userId, favoriteDecks]);
 
-  // Deste silme fonksiyonu
-  const handleDeleteDeck = (deckId) => {
-    Alert.alert(
-      t('library.deleteConfirmation', 'Bu işlemi geri alamazsınız. Emin misiniz?'),
-      t('library.deleteConfirm', 'Deste Silinsin mi?'),
-      [
-        { text: t('library.cancel', 'İptal'), style: 'cancel' },
-        {
-          text: t('library.delete', 'Sil'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteDeck(deckId);
-
-              setMyDecks(prev => prev.filter(deck => deck.id !== deckId));
-              setFavoriteDecks(prev => prev.filter(deck => deck.id !== deckId));
-              setActiveDeckMenuId(null);
-
-              showSuccess(t('library.deleteDeckSuccess', 'Deste başarıyla silindi'));
-            } catch (e) {
-              showError(t('library.deleteDeckError', 'Deste silinemedi'));
-            }
-          }
-        }
-      ]
-    );
-  };
 
   // Kart silme fonksiyonu (favorite cards için)
   const handleDeleteCard = async (cardId) => {
@@ -834,7 +807,6 @@ export default function LibraryScreen() {
                   await handleAddFavoriteDeck(deckId);
                 }
               }}
-              onDeleteDeck={handleDeleteDeck}
               onPressDeck={(deck) =>
                 navigation.navigate('DeckDetail', { deck })
               }
