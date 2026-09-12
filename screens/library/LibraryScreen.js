@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions,  Alert, Animated, ScrollView, Image, Keyboard, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, Alert, Animated, ScrollView, Image, Keyboard, Platform } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
@@ -119,46 +119,7 @@ const MyDecksListHeaderCard = React.memo(function MyDecksListHeaderCard({
   );
 });
 
-const myDecksListHeaderStyles = StyleSheet.create({
-  myDecksCardContainer: {
-    borderRadius: moderateScale(36),
-    overflow: 'hidden',
-    marginHorizontal: scale(10),
-    marginVertical: verticalScale(8),
-    paddingHorizontal: scale(20),
-    paddingVertical: verticalScale(8),
-    minHeight: verticalScale(180),
-    paddingBottom: verticalScale(16),
-  },
-  myDecksContent: {
-    flexDirection: 'row',
-  },
-  myDecksTextContainer: {
-    flex: 1,
-    marginRight: scale(15),
-    gap: verticalScale(5),
-  },
-  myDecksTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: '5%',
-  },
-  myDecksImageContainer: {
-    width: moderateScale(150, 0.3),
-    height: moderateScale(150, 0.3),
-    marginTop: verticalScale(20),
-  },
-  myDecksImage: {
-    width: moderateScale(160, 0.3),
-    height: moderateScale(160, 0.3),
-  },
-  myDecksSearchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: scale(10),
-    paddingTop: verticalScale(12),
-  },
-});
+
 
 export default function LibraryScreen() {
   const { colors, isDarkMode } = useTheme();
@@ -220,9 +181,9 @@ export default function LibraryScreen() {
   }, [width, height]);
 
   const myDecksCardTopMargin = useMemo(() => {
-    const androidExtraTop = Platform.OS === 'android' ? insets.top + verticalScale(-16) : 0;
+    const androidExtraTop = Platform.OS === 'android' ? insets.top + verticalScale(-32) : 0;
     if (isTablet) return height * 0.01 + androidExtraTop;
-    return height * 0.08 + androidExtraTop;
+    return height * 0.18 + androidExtraTop;
   }, [height, isTablet, insets.top]);
 
   const myDecksSearchContainerTopMargin = useMemo(() => {
@@ -860,29 +821,29 @@ export default function LibraryScreen() {
             <MyDecksSkeleton ListHeaderComponent={myDecksListHeader} />
           ) : (
             <DeckList
-            decks={filteredMyDecks}
-            favoriteDecks={[]}
-            onToggleFavorite={async (deckId) => {
-              if (
-                (filteredMyDecks.find(
-                  (d) => d.id === deckId
-                ) || {}).is_favorite
-              ) {
-                await handleRemoveFavoriteDeck(deckId);
-              } else {
-                await handleAddFavoriteDeck(deckId);
+              decks={filteredMyDecks}
+              favoriteDecks={[]}
+              onToggleFavorite={async (deckId) => {
+                if (
+                  (filteredMyDecks.find(
+                    (d) => d.id === deckId
+                  ) || {}).is_favorite
+                ) {
+                  await handleRemoveFavoriteDeck(deckId);
+                } else {
+                  await handleAddFavoriteDeck(deckId);
+                }
+              }}
+              onDeleteDeck={handleDeleteDeck}
+              onPressDeck={(deck) =>
+                navigation.navigate('DeckDetail', { deck })
               }
-            }}
-            onDeleteDeck={handleDeleteDeck}
-            onPressDeck={(deck) =>
-              navigation.navigate('DeckDetail', { deck })
-            }
-            ListHeaderComponent={myDecksListHeader}
-            refreshing={myDecksRefreshing}
-            onRefresh={() => fetchMyDecks(true)}
-            onEndReached={
-              myDecksHasMore
-                ? async () => {
+              ListHeaderComponent={myDecksListHeader}
+              refreshing={myDecksRefreshing}
+              onRefresh={() => fetchMyDecks(true)}
+              onEndReached={
+                myDecksHasMore
+                  ? async () => {
                     if (
                       !userId ||
                       myDecksLoadingMore ||
@@ -890,12 +851,12 @@ export default function LibraryScreen() {
                     ) {
                       return;
                     }
-          
+
                     setMyDecksLoadingMore(true);
-          
+
                     try {
                       const nextPage = myDecksPage + 1;
-          
+
                       const decks = await getDecksByCategory(
                         userId,
                         'myDecks',
@@ -904,9 +865,9 @@ export default function LibraryScreen() {
                           limit: MY_DECKS_PAGE_SIZE,
                         }
                       );
-          
+
                       const safeDecks = decks || [];
-          
+
                       if (safeDecks.length === 0) {
                         setMyDecksHasMore(false);
                       } else {
@@ -914,9 +875,9 @@ export default function LibraryScreen() {
                           ...prev,
                           ...safeDecks,
                         ]);
-          
+
                         setMyDecksPage(nextPage);
-          
+
                         if (
                           safeDecks.length <
                           MY_DECKS_PAGE_SIZE
@@ -930,17 +891,17 @@ export default function LibraryScreen() {
                       setMyDecksLoadingMore(false);
                     }
                   }
-                : undefined}
-            cardVariant="myDecks"
-            layoutMode="double"
-            showPopularityBadge={false}
-            loadingMore={myDecksLoadingMore}
-            contentPaddingBottom={
-              Platform.OS === 'android'
-                ? insets.bottom + verticalScale(72)
-                : '10%'
-            }
-          />
+                  : undefined}
+              cardVariant="myDecks"
+              layoutMode="double"
+              showPopularityBadge={false}
+              loadingMore={myDecksLoadingMore}
+              contentPaddingBottom={
+                Platform.OS === 'android'
+                  ? insets.bottom + verticalScale(72)
+                  : '10%'
+              }
+            />
           )}
         </View>
         {/* Page 1: Favorites */}
@@ -1530,4 +1491,45 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-}); 
+});
+
+const myDecksListHeaderStyles = StyleSheet.create({
+  myDecksCardContainer: {
+    borderRadius: moderateScale(36),
+    overflow: 'hidden',
+    marginHorizontal: scale(10),
+    marginVertical: verticalScale(8),
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(8),
+    minHeight: verticalScale(180),
+    paddingBottom: verticalScale(16),
+  },
+  myDecksContent: {
+    flexDirection: 'row',
+  },
+  myDecksTextContainer: {
+    flex: 1,
+    marginRight: scale(15),
+    gap: verticalScale(5),
+  },
+  myDecksTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: '5%',
+  },
+  myDecksImageContainer: {
+    width: moderateScale(150, 0.3),
+    height: moderateScale(150, 0.3),
+    marginTop: verticalScale(20),
+  },
+  myDecksImage: {
+    width: moderateScale(160, 0.3),
+    height: moderateScale(160, 0.3),
+  },
+  myDecksSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(10),
+    paddingTop: verticalScale(12),
+  },
+});
