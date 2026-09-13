@@ -185,7 +185,7 @@ const DeckCard = React.memo(
             <View style={styles.myDecksBadgeContent}>
               <Iconify
                 icon="ri:stack-fill"
-                size={moderateScale(17)}
+                size={moderateScale(16)}
                 color="#fff"
                 style={{ marginRight: scale(3) }}
               />
@@ -198,7 +198,7 @@ const DeckCard = React.memo(
 
               <Iconify
                 icon="streamline-flex:module-puzzle-2"
-                size={moderateScale(15)}
+                size={moderateScale(16)}
                 color="#fff"
                 style={{ marginRight: scale(3) }}
               />
@@ -438,7 +438,7 @@ const DeckCard = React.memo(
                   ellipsizeMode="tail"
                   style={[
                     typography.styles.body,
-                    styles.deckProfileUsername, 
+                    styles.deckProfileUsername,
                   ]}
                 >
                   {deck.profiles?.username ||
@@ -1118,7 +1118,7 @@ const styles = StyleSheet.create({
   myDecksBadgeText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: moderateScale(16),
+    fontSize: moderateScale(15),
   },
 
   myDecksDivider: {

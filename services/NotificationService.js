@@ -15,57 +15,75 @@ const version = Constants.expoConfig?.version;
  * @param {string} userId - Supabase profil tablosundaki kullanıcı id'si
  * @returns {Promise<string|null>} - Expo push token veya null
  */
+
 export async function registerForPushNotificationsAsync(userId) {
   let token = null;
+
   if (!userId) return null;
 
-  // Sadece gerçek cihazda çalışır, emulator/simülatörde çalışmaz!
+  // Gerçek cihaz değilse push notification kurulumu yapma.
+  // Bu bir hata değil.
   if (!Device.isDevice) {
-    Alert.alert(
-      i18n.t('common.error', 'Hata'),
-      i18n.t('notifications.errorMessageNotificationDevice', 'Push bildirimleri için gerçek bir cihaz gereklidir.')
-    );
-    return null;
-  }
-
-  // Bildirim izni kontrolü ve isteği
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-  if (finalStatus !== 'granted') {
-    Alert.alert(
-      i18n.t('common.error', 'Hata'),
-      i18n.t('notifications.errorMessageNotification', 'Push bildirim izni verilmedi!') +
-        ' ' +
-        i18n.t('notifications.openSettingsHint', 'Açmak için Ayarlar\'a gidin.'),
-      [
-        { text: i18n.t('common.cancel', 'İptal'), style: 'cancel' },
-        { text: i18n.t('notifications.openSettings', 'Ayarlar'), onPress: () => Linking.openSettings() },
-      ]
-    );
     return null;
   }
 
   try {
-    const options = projectId ? { projectId } : {};
-    token = (await Notifications.getExpoPushTokenAsync(options)).data;
-  } catch (e) {
-    if (__DEV__) {
-      console.warn('Push token alınamadı (dev build veya push yapılandırması eksik olabilir):', e?.message || e);
+    // Mevcut izin durumunu kontrol et
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
+
+    let finalStatus = existingStatus;
+
+    // Daha önce izin verilmemişse izin iste
+    if (existingStatus !== 'granted') {
+      const { status } =
+        await Notifications.requestPermissionsAsync();
+
+      finalStatus = status;
     }
+
+    // Kullanıcı izin vermediyse sessizce çık.
+    // Bu bir hata değildir.
+    if (finalStatus !== 'granted') {
+      return null;
+    }
+
+    // Expo Push Token al
+    const options = projectId ? { projectId } : {};
+
+    token = (
+      await Notifications.getExpoPushTokenAsync(options)
+    ).data;
+
+    // Token sahipliğini backend'de yönet
+    const { error } = await supabase.rpc(
+      'claim_push_token',
+      {
+        p_token: token,
+      }
+    );
+
+    if (error) {
+      if (__DEV__) {
+        console.warn(
+          'Push token claim edilemedi:',
+          error.message
+        );
+      }
+
+      return null;
+    }
+
+    return token;
+  } catch (e) {
+    // Gerçek teknik hatalar burada yakalanır.
+    if (__DEV__) {
+      console.warn(
+        'Push notification kurulumu başarısız:',
+        e?.message || e
+      );
+    }
+
     return null;
   }
-
-  // Token sahipliğini backend RPC ile yönet (RLS + unique index çakışmasını önler)
-  const { error } = await supabase.rpc('claim_push_token', { p_token: token });
-
-  if (error) {
-    console.error('Push token claim edilemedi:', error.message);
-    return null;
-  }
-
-  return token;
-} 
+}

@@ -161,22 +161,24 @@ export default function HomeScreen() {
       if (decksLoadedRef.current) {
         loadInProgressDecks();
       }
+
       if (!userId) return;
+
       (async () => {
         await updateLastActiveAt(userId);
+
         if (notificationSetupDoneRef.current) return;
         notificationSetupDoneRef.current = true;
-        const { status } = await Notifications.getPermissionsAsync();
-        if (status === 'granted') {
-          await registerForPushNotificationsAsync(userId);
+
+        const token = await registerForPushNotificationsAsync(userId);
+
+        if (token) {
           await updateNotificationPreference(userId, true);
-        } else {
-          const token = await registerForPushNotificationsAsync(userId);
-          if (token) await updateNotificationPreference(userId, true);
         }
       })();
     }, [loadInProgressDecks, userId])
   );
+
 
   const onRefresh = async () => {
     try {
