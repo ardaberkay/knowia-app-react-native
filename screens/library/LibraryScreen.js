@@ -76,7 +76,6 @@ const MyDecksListHeaderCard = React.memo(function MyDecksListHeaderCard({
   cardBorder,
   textColor,
   mutedColor,
-  cardTopMargin,
   searchTopMargin,
   query,
   onQueryChange,
@@ -84,7 +83,7 @@ const MyDecksListHeaderCard = React.memo(function MyDecksListHeaderCard({
 }) {
   const { t } = useTranslation();
   return (
-    <View style={[myDecksListHeaderStyles.myDecksCardContainer, { backgroundColor: cardBackground, marginTop: cardTopMargin, borderColor: cardBorder, borderWidth: 1 }]}>
+    <View style={[myDecksListHeaderStyles.myDecksCardContainer, { backgroundColor: cardBackground, borderColor: cardBorder, borderWidth: 1 }]}>
       <View style={myDecksListHeaderStyles.myDecksContent}>
         <View style={myDecksListHeaderStyles.myDecksTextContainer}>
           <View style={myDecksListHeaderStyles.myDecksTitleContainer}>
@@ -140,6 +139,7 @@ export default function LibraryScreen() {
   const pagerRef = useRef(null);
   const tabScroll = useRef(new Animated.Value(0)).current; // 0 -> MyDecks, 1 -> Favorites
   const [pillWidth, setPillWidth] = useState(() => Dimensions.get('window').width * 0.59);
+  const [headerOverlayHeight, setHeaderOverlayHeight] = useState(0);
   const [favSlideIndex, setFavSlideIndex] = useState(0);
   const [favCardsQuery, setFavCardsQuery] = useState('');
   const [favCardsSort, setFavCardsSort] = useState('original');
@@ -180,11 +180,16 @@ export default function LibraryScreen() {
     return isTablet ? '25%' : '48%'; // Tablet: %5, diğerleri: %48
   }, [width, height]);
 
-  const myDecksCardTopMargin = useMemo(() => {
-    const androidExtraTop = Platform.OS === 'android' ? insets.top + verticalScale(-32) : 0;
-    if (isTablet) return height * 0.01 + androidExtraTop;
-    return height * 0.18
-  }, [height, isTablet, insets.top]);
+  const myDecksListPaddingTop = useMemo(() => {
+    const overlayFallback = isTablet ? height * 0.12 : height * 0.18;
+    const overlayHeight = headerOverlayHeight > 0 ? headerOverlayHeight : overlayFallback;
+    return overlayHeight + verticalScale(8);
+  }, [headerOverlayHeight, height, isTablet]);
+
+  const onHeaderOverlayLayout = useCallback((e) => {
+    const nextHeight = e.nativeEvent.layout.height;
+    setHeaderOverlayHeight((prev) => (prev === nextHeight ? prev : nextHeight));
+  }, []);
 
   const myDecksSearchContainerTopMargin = useMemo(() => {
     if (isTablet) return verticalScale(12);
@@ -684,7 +689,6 @@ export default function LibraryScreen() {
         cardBorder={colors.cardBorder}
         textColor={colors.text}
         mutedColor={colors.muted}
-        cardTopMargin={myDecksCardTopMargin}
         searchTopMargin={myDecksSearchContainerTopMargin}
         query={myDecksQuery}
         onQueryChange={setMyDecksQuery}
@@ -696,7 +700,6 @@ export default function LibraryScreen() {
       colors.cardBorder,
       colors.text,
       colors.muted,
-      myDecksCardTopMargin,
       myDecksSearchContainerTopMargin,
       myDecksQuery,
       openMyDecksFilterModal,
@@ -719,12 +722,11 @@ export default function LibraryScreen() {
         <View
           style={[styles.segmentedControlInner, { paddingTop: Platform.OS === 'android' ? insets.top + verticalScale(8) : insets.top, backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground, borderColor: colors.cardBorder, borderWidth: 1, shadowColor: colors.shadowColor, shadowOpacity: colors.shadowOpacity, shadowRadius: colors.shadowRadius, shadowOffset: colors.shadowOffset, elevation: colors.elevation }]}
           pointerEvents="box-none"
+          onLayout={onHeaderOverlayLayout}
         >
           {/* Header Content */}
           <View style={styles.headerContent}>
-            <View style={styles.headerAvatarAbsolute}>
-              <ProfileAvatarButton />
-            </View>
+  
           </View>
           <View
             style={[styles.pillContainer, { borderColor: colors.pillBorder || '#444444', backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.3)' }]}
@@ -791,7 +793,7 @@ export default function LibraryScreen() {
         {/* Page 0: My Decks */}
         <View key="myDecks" style={{ flex: 1 }}>
           {loading ? (
-            <MyDecksSkeleton ListHeaderComponent={myDecksListHeader} />
+            <MyDecksSkeleton ListHeaderComponent={myDecksListHeader} contentPaddingTop={myDecksListPaddingTop} />
           ) : (
             <DeckList
               decks={filteredMyDecks}
@@ -868,9 +870,11 @@ export default function LibraryScreen() {
               layoutMode="double"
               showPopularityBadge={false}
               loadingMore={myDecksLoadingMore}
+              contentPaddingTop={myDecksListPaddingTop}
+              progressViewOffset={headerOverlayHeight}
               contentPaddingBottom={
                 Platform.OS === 'android'
-                  ? insets.bottom + verticalScale(72)
+                  ? insets.bottom + verticalScale(120)
                   : '10%'
               }
             />
@@ -1245,15 +1249,6 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     height: '100%',
-  },
-  headerAvatarAbsolute: {
-    position: 'absolute',
-    right: scale(-36),
-    top: 0,
-    height: verticalScale(44),
-    justifyContent: 'center',
-  },
-  headerLeft: {
   },
   headerTitle: {
     fontSize: moderateScale(18),

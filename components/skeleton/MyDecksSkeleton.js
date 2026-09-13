@@ -83,7 +83,7 @@ const ShimmerBox = ({ children, style, delay = 0, isDarkMode = false, borderRadi
   );
 };
 
-export default function MyDecksSkeleton({ ListHeaderComponent }) {
+export default function MyDecksSkeleton({ ListHeaderComponent, contentPaddingTop }) {
   const { colors, isDarkMode } = useTheme();
 
   const { width, height } = useWindowDimensions();
@@ -109,7 +109,7 @@ export default function MyDecksSkeleton({ ListHeaderComponent }) {
   const bgColor = isDarkMode ? '#222' : '#ececec';
   const lineColor = isDarkMode ? '#333' : '#ddd';
 
-  const listTopClearance = useMemo(() => height * 0.11, [height]);
+  const listTopClearance = contentPaddingTop != null ? contentPaddingTop : height * 0.11;
 
   const listHeader =
     ListHeaderComponent == null

@@ -430,6 +430,7 @@ const DeckCard = React.memo(
                 style={{
                   flex: 1,
                   marginRight: scale(4),
+                  paddingRight: showPopularityBadge ? scale(30) : 0,
                 }}
               >
                 <Text
@@ -437,7 +438,7 @@ const DeckCard = React.memo(
                   ellipsizeMode="tail"
                   style={[
                     typography.styles.body,
-                    styles.deckProfileUsername,
+                    styles.deckProfileUsername, 
                   ]}
                 >
                   {deck.profiles?.username ||
@@ -473,34 +474,21 @@ const DeckCard = React.memo(
 
           {/* Popularity */}
           {showPopularityBadge && (
-            <View
-              style={{
-                position: 'absolute',
-                bottom: verticalScale(12) + scale(22) + verticalScale(6),
-                left: scale(12),
-                zIndex: 10,
-                flexDirection: 'row',
-                alignItems: 'center',
-              }}
-            >
-              <View style={styles.popularityBadge}>
-                <Iconify
-                  icon="mdi:fire"
-                  size={moderateScale(14)}
-                  color="#fff"
-                  style={{ marginRight: scale(4) }}
-                />
+            <View style={styles.popularityBadge}>
+              <Iconify
+                icon="mdi:fire"
+                size={moderateScale(14)}
+                color="#fff"
+              />
 
-                <Text style={styles.popularityBadgeText}>
-                  {Math.max(
-                    1,
-                    Math.round(Number(deck?.popularity_score) || 0)
-                  )}
-                </Text>
-              </View>
+              <Text style={styles.popularityBadgeText}>
+                {Math.max(
+                  1,
+                  Math.round(Number(deck?.popularity_score) || 0)
+                )}
+              </Text>
             </View>
           )}
-
           {/* Bottom Left - Progress */}
           {showProgress && (
             <View
@@ -601,10 +589,8 @@ const DeckList = ({
   onPressDeck,
   onDeleteDeck,
   ListHeaderComponent,
-
   refreshing = false,
   onRefresh,
-
   showPopularityBadge = false,
 
   /*
@@ -615,26 +601,22 @@ const DeckList = ({
    *   2 - 3 - 2 - 3...
    */
   layoutMode = 'double',
-
   /*
    * inProgress
    * myDecks
    * favorite
    */
   cardVariant = 'favorite',
-
   loadingMore = false,
   contentPaddingTop = 0,
   contentPaddingBottom = '10%',
+  progressViewOffset = 0,
   onScrollBeginDrag,
   onEndReached,
 }) => {
   const { colors } = useTheme();
-
   const { t } = useTranslation();
-
   const { height } = useWindowDimensions();
-
   const isTablet = getIsTablet();
 
   const deckCardDimensions =
@@ -1071,6 +1053,7 @@ const DeckList = ({
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
+          progressViewOffset={progressViewOffset}
           tintColor={
             colors.text
           }
@@ -1399,30 +1382,40 @@ const styles = StyleSheet.create({
   },
 
   popularityBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+
+    width: scale(62),
+    height: verticalScale(28),
+
+    backgroundColor: '#FF6B35',
+
+    borderBottomLeftRadius: moderateScale(14),
+
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal:
-      scale(7),
-    paddingVertical:
-      verticalScale(2),
-    borderRadius: 99,
-    backgroundColor:
-      'rgba(255, 255, 255, 0.25)',
-    borderWidth:
-      moderateScale(1),
-    borderColor:
-      'rgba(255, 255, 255, 0.4)',
-    backdropFilter:
-      'blur(10px)',
+    justifyContent: 'center',
+
+    zIndex: 20,
+
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
   },
 
   popularityBadgeText: {
     color: '#fff',
+    fontSize: moderateScale(12),
     fontWeight: '700',
-    fontSize:
-      moderateScale(14),
+    marginLeft: scale(4),
+    textAlign: 'center',
   },
-
   noDecksEmpty: {
     height:
       verticalScale(200),
