@@ -66,8 +66,6 @@ const AnimatedTimeButton = ({ onPress, icon, text, buttonStyle, textStyle, iconC
   const isPressed = useSharedValue(0);
 
   const animatedStyle = useAnimatedStyle(() => {
-    // Easing kullanmıyoruz, sadece duration veriyoruz. 
-    // Reanimated kendi pürüzsüz varsayılan easing'ini kullanacak.
     const timingConfig = { duration: 150 };
 
     return {
@@ -102,12 +100,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const { session } = useAuth();
   const authUserId = session?.user?.id;
   const insets = useSafeAreaInsets();
-  // useWindowDimensions hook'u - ekran döndürme desteği
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
 
-  // Responsive kart boyutları - useMemo ile optimize edilmiş
-  // Hibrit yaklaşım: scale() (dp bazlı) + ekran boyutu sınırları (fiziksel boyut kontrolü)
   const cardDimensions = useMemo(() => {
     const { CARD } = RESPONSIVE_CONSTANTS;
 
@@ -133,7 +128,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
       return Math.min(idealHeight, maxHeight);
     };
 
-    // Yatay margin hesaplama - sağ ve sol boşlukları eşit yap
     const getCardHorizontalMargin = (cardWidth) => {
       const remainingSpace = width - cardWidth;
       return remainingSpace / 2;
@@ -154,7 +148,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const CARD_WIDTH = cardDimensions.width;
   const CARD_HEIGHT = cardDimensions.height;
   const CARD_HORIZONTAL_MARGIN = cardDimensions.horizontalMargin;
-  const CARD_ASPECT_RATIO = RESPONSIVE_CONSTANTS.CARD.ASPECT_RATIO;
 
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -189,8 +182,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const [autoPlay, setAutoPlay] = useState(false);
   const autoPlayTimeout = useRef(null);
   const autoPlayFlipTimeout = useRef(null);
-  const leftCountedCardIds = useRef(new Set()); // Sola veya butonla bir kez sayılmış kartlar; reinsert sonrası tekrar sayılmasın
-  const historyLeftCardIds = useRef([]); // Undo için: son left kaydın card_id
+  const leftCountedCardIds = useRef(new Set());
+  const historyLeftCardIds = useRef([]);
   const sessionIdRef = useRef(null);
   const paginationCursorRef = useRef({
     afterSortKey: null,
@@ -393,12 +386,15 @@ export default function SwipeDeckScreen({ route, navigation }) {
     }
   }, [userId, reportCardId, t, showSuccess, showError]);
 
-  // Header'a favori ve (deste sahibi değilse) şikayet butonunu ekle
   useEffect(() => {
     const currentCard = cards[currentIndex];
     const isCurrentCardFavorite = currentCard ? favoriteIds.has(currentCard.card_id) : false;
 
     navigation.setOptions({
+      headerTransparent: true,
+      headerStyle: { backgroundColor: 'transparent' },
+      headerTintColor: '#FFFFFF',
+      title: '',
       headerRight: () => {
         if (loading || !currentCard) return null;
         return (
@@ -434,21 +430,17 @@ export default function SwipeDeckScreen({ route, navigation }) {
     });
   }, [navigation, cards, currentIndex, favoriteIds, colors.buttonColor, colors.text, toggleFavorite, loading, isOwner, openReportCardModal]);
 
-  // Kategoriye göre renkleri al (Supabase sort_order kullanarak)
   const getCategoryColors = (sortOrder) => {
     if (colors.categoryColors && colors.categoryColors[sortOrder]) {
       return colors.categoryColors[sortOrder];
     }
-    // Varsayılan renkler (Tarih kategorisi - sort_order: 4)
     return ['#A88D6B', '#7A5F3A'];
   };
 
-  // Sayaç kutuları için renkler
-  const leftInactiveColor = '#f3a14c'; // Bir tık daha koyu turuncu
-  const leftActiveColor = colors.buttonColor; // Tema turuncusu
-  const rightInactiveColor = '#6faa72'; // Bir tık daha koyu yeşil
-  const rightActiveColor = '#3e8e41'; // Bir tık daha koyu aktif renk
-
+  const leftInactiveColor = '#f3a14c';
+  const leftActiveColor = colors.buttonColor;
+  const rightInactiveColor = '#6faa72';
+  const rightActiveColor = '#3e8e41';
 
   useEffect(() => {
     const fetchCards = async () => {
@@ -468,12 +460,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
       try {
         setUserId(authUserId);
-        // Swipe modunda:
-        // - chapter === undefined -> Tüm kartlar (chapter filtresi yok)
-        // - chapter === null      -> Sadece atanmamış kartlar
-        // - chapter.id            -> Belirli bölüm
         const chapterId = typeof chapter === 'undefined'
-          ? null // getCardsToLearn için "tümü" senaryosunda chapter_id parametresi null gidiyor
+          ? null
           : (chapter === null ? null : chapter.id);
         const unassignedOnly = chapter === null;
 
@@ -571,7 +559,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
     fetchCards();
   }, [deck.id, chapter?.id]);
 
-  // Swipe çıkışı: tek bölümde cache'i merge et; tüm deste modunda chapters progress cache'ini sıfırla
   useEffect(() => {
     return () => {
       if (reviewPromptTimeoutRef.current) clearTimeout(reviewPromptTimeoutRef.current);
@@ -666,19 +653,17 @@ export default function SwipeDeckScreen({ route, navigation }) {
     ? Math.min(100, (sessionProgressCount / sessionTargetCount) * 100)
     : 0;
 
-  // Reanimated stili
   const animatedProgressStyle = useAnimatedStyle(() => {
     return {
-      // currentProgress değiştiğinde genişlik 300ms içinde yumuşakça değişir
       width: withTiming(`${currentProgress}%`, { duration: 300 }),
     };
   });
 
-  const shimmerTranslate = useSharedValue(-1); // -1 (en sol) ile 2 (en sağ) arası
+  const shimmerTranslate = useSharedValue(-1);
 
   useEffect(() => {
     shimmerTranslate.value = withRepeat(
-      withTiming(2, { duration: 2000 }), // 2 saniyede barı boydan boya geçer
+      withTiming(2, { duration: 2000 }),
       -1,
       false
     );
@@ -686,7 +671,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
   const shimmerStyle = useAnimatedStyle(() => {
     return {
-      // left değerini barın genişliğine göre (yüzdesel) oranlıyoruz
       left: `${shimmerTranslate.value * 100}%`,
     };
   });
@@ -1071,7 +1055,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
         await addFavoriteCard(userId, cardId);
       }
     } catch (e) {
-      // Hata olursa UI'ı geri al
       setFavoriteIds((prev) => {
         const next = new Set(prev);
         if (next.has(cardId)) {
@@ -1084,7 +1067,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
     }
   }, [userId, favoriteIds]);
 
-  // Auto play fonksiyonu
   useEffect(() => {
     if (!autoPlay) return;
     if (currentIndex >= cards.length) {
@@ -1092,19 +1074,15 @@ export default function SwipeDeckScreen({ route, navigation }) {
       return;
     }
 
-
-    // Önce kartın ön yüzünü göster (2000ms)
-    // Sonra flip yap
     autoPlayFlipTimeout.current = setTimeout(() => {
       const cardId = cards[currentIndex]?.card_id;
       if (cardId) handleFlipById(cardId);
-      // Flip sonrası arka yüzü göster (2000ms), sonra swipe yap
       autoPlayTimeout.current = setTimeout(() => {
         if (swiperRef.current) {
           swiperRef.current.swipeLeft();
         }
-      }, 1600); // arka yüzü gösterme süresi
-    }, 1600); // ön yüzü gösterme süresi
+      }, 1600);
+    }, 1600);
 
     return () => {
       if (autoPlayTimeout.current) clearTimeout(autoPlayTimeout.current);
@@ -1112,7 +1090,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
     };
   }, [autoPlay, currentIndex, cards, handleFlipById]);
 
-  // Auto play durdurucu (kartlar bittiğinde veya ekran değişirse)
   useEffect(() => {
     return () => {
       if (autoPlayTimeout.current) clearTimeout(autoPlayTimeout.current);
@@ -1468,240 +1445,244 @@ export default function SwipeDeckScreen({ route, navigation }) {
   };
 
   return (
-    <View ref={tutorialOverlayRootRef} collapsable={false} style={styles.container}>
-      <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
-        {/* Sayaçlar */}
-        <View style={styles.counterRow}>
-          <Reanimated.View
-            // layout={LinearTransition.springify()} yerine bunu yazıyoruz:
-            layout={LinearTransition.duration(100)}
-            style={[
-              styles.counterBoxLeft,
-              { backgroundColor: leftHighlight ? leftActiveColor : leftInactiveColor },
-              animatedLeftBadge
-            ]}
-          >
-            {leftHighlight ? (
-              <Reanimated.View key="icon-l" entering={FadeIn.duration(50)} exiting={null}>
-                <Iconify icon="mingcute:time-fill" size={moderateScale(18)} color="#fff" />
-              </Reanimated.View>
-            ) : (
-              <Reanimated.View key="text-l" entering={FadeIn.duration(250)} exiting={null}>
-                <Text style={styles.counterText}>{leftCount}</Text>
-              </Reanimated.View>
-            )}
-          </Reanimated.View>
-          <View style={[styles.deckProgressBox, { flexDirection: 'row' }]}>
-            {(() => {
-              const currentCardNumber = sessionProgressCount;
-              const allUniqueSeen = sessionTargetCount > 0 && currentCardNumber >= sessionTargetCount;
-              const currentCardIsReinserted = cards[currentIndex] && leftCountedCardIds.current.has(cards[currentIndex].card_id);
-              const hasReinsertToShow = cards
-                .slice(currentIndex + 1)
-                .some((c) => c?.card_id && leftCountedCardIds.current.has(c.card_id));
-              const showVaktiGeldi =
-                sessionTargetCount > 0 && allUniqueSeen && hasReinsertToShow && currentCardIsReinserted;
-              const iconWrapStyle = {
-                borderRadius: moderateScale(10),
-                padding: scale(6),
-                backgroundColor: colors.cardBackground || 'rgba(128,128,128,0.15)',
-                marginRight: scale(10),
-              };
-              if (showVaktiGeldi) {
-                return (
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <View style={iconWrapStyle}>
-                      <Iconify icon="fluent:arrow-repeat-all-48-regular" size={moderateScale(22)} color={colors.text} />
-                    </View>
-                    <Text style={[styles.deckProgressText, { color: colors.text }]}>{t('swipeDeck.vaktiGeldi', 'Vakti Geldi')}</Text>
-                  </View>
-                );
-              }
+    <View
+      ref={tutorialOverlayRootRef}
+      collapsable={false}
+      style={[
+        styles.container,
+        {
+          paddingBottom: insets.bottom,
+          backgroundColor: colors.background,
+          marginTop: '20%'
+        }
+      ]}
+    >
+      {/* 1. Üst Sayaç Alanı */}
+      <View style={[styles.counterRow, { zIndex: 10, elevation: 10, backgroundColor: 'transparent' }]}>
+        <Reanimated.View
+          layout={LinearTransition.duration(100)}
+          style={[
+            styles.counterBoxLeft,
+            { backgroundColor: leftHighlight ? leftActiveColor : leftInactiveColor },
+            animatedLeftBadge
+          ]}
+        >
+          {leftHighlight ? (
+            <Reanimated.View key="icon-l" entering={FadeIn.duration(50)} exiting={null}>
+              <Iconify icon="mingcute:time-fill" size={moderateScale(18)} color="#fff" />
+            </Reanimated.View>
+          ) : (
+            <Reanimated.View key="text-l" entering={FadeIn.duration(250)} exiting={null}>
+              <Text style={styles.counterText}>{leftCount}</Text>
+            </Reanimated.View>
+          )}
+        </Reanimated.View>
+
+        <View style={[styles.deckProgressBox, { flexDirection: 'row' }]}>
+          {(() => {
+            const currentCardNumber = sessionProgressCount;
+            const allUniqueSeen = sessionTargetCount > 0 && currentCardNumber >= sessionTargetCount;
+            const currentCardIsReinserted = cards[currentIndex] && leftCountedCardIds.current.has(cards[currentIndex].card_id);
+            const hasReinsertToShow = cards
+              .slice(currentIndex + 1)
+              .some((c) => c?.card_id && leftCountedCardIds.current.has(c.card_id));
+            const showVaktiGeldi =
+              sessionTargetCount > 0 && allUniqueSeen && hasReinsertToShow && currentCardIsReinserted;
+            const iconWrapStyle = {
+              borderRadius: moderateScale(10),
+              padding: scale(6),
+              backgroundColor: colors.cardBackground || 'rgba(128,128,128,0.15)',
+              marginRight: scale(10),
+            };
+            if (showVaktiGeldi) {
               return (
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  {currentCardIsReinserted && (
-                    <View style={iconWrapStyle}>
-                      <Iconify icon="fluent:arrow-repeat-all-48-regular" size={moderateScale(18)} color={colors.text} />
-                    </View>
-                  )}
-                  <Text style={[styles.deckProgressText, { color: colors.text }]}>{currentCardNumber}/{sessionTargetCount}</Text>
+                  <View style={iconWrapStyle}>
+                    <Iconify icon="fluent:arrow-repeat-all-48-regular" size={moderateScale(22)} color={colors.text} />
+                  </View>
+                  <Text style={[styles.deckProgressText, { color: colors.text }]}>{t('swipeDeck.vaktiGeldi', 'Vakti Geldi')}</Text>
                 </View>
               );
-            })()}
-          </View>
-          <Reanimated.View
-            layout={LinearTransition.duration(100)}
-            style={[
-              styles.counterBoxRight,
-              { backgroundColor: rightHighlight ? rightActiveColor : rightInactiveColor },
-              animatedRightBadge
-            ]}
-          >
-            {rightHighlight ? (
-              <Reanimated.View key="icon-r" entering={FadeIn.duration(50)} exiting={null}>
-                <Iconify icon="streamline:check-solid" size={moderateScale(16)} color="#fff" />
-              </Reanimated.View>
-            ) : (
-              <Reanimated.View key="text-r" entering={FadeIn.duration(250)} exiting={null}>
-                <Text style={styles.counterText}>{rightCount}</Text>
-              </Reanimated.View>
-            )}
-          </Reanimated.View>
-        </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', marginTop: verticalScale(8), overflow: 'hidden' }}>
-          {activeCards.length > 0 && (
-            <Swiper
-              key={activeCards[0]?.card_id ?? `deck-${currentIndex}`}
-              ref={swiperRef}
-              cards={activeCards}
-              keyExtractor={(card) => card?.card_id ?? card?.queue_id}
-              renderCard={(card, i) => {
-                const cardId = card?.card_id;
-                const animatedValue = cardId ? getAnimatedValueForCardId(cardId) : null;
-                const gradientColors = getCategoryColors(categorySortOrder);
-                const isPlaceholder = !card || !card.cards;
-                return (
-                  <View
-                    key={cardId || `placeholder-${i}`}
-                    ref={i === 0 ? cardTutorialTargetRef : undefined}
-                    collapsable={false}
-                    onLayout={() => {
-                      if (i === 0 && cardId && firstRenderedCardId !== cardId) {
-                        setFirstRenderedCardId(cardId);
-                        measureTutorialTarget(cardTutorialTargetRef, setCardTargetLayout);
-                      }
-                    }}
-                  >
-                    <SwipeFlipCard
-                      card={card}
-                      cardId={cardId}
-                      isPlaceholder={isPlaceholder}
-                      cardWidth={CARD_WIDTH}
-                      cardHeight={CARD_HEIGHT}
-                      gradientColors={gradientColors}
-                      cardBackground={colors.cardBackground}
-                      textColor={colors.text}
-                      animatedValue={animatedValue}
-                      onFlip={handleFlipById}
-                      swipeX={i === 0 ? swipeX : null}
-                    />
+            }
+            return (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {currentCardIsReinserted && (
+                  <View style={iconWrapStyle}>
+                    <Iconify icon="fluent:arrow-repeat-all-48-regular" size={moderateScale(18)} color={colors.text} />
                   </View>
-                );
-              }}
-              onSwiping={(x) => {
-                if (showSwipeTutorial) return;
-                swipeX.setValue(x);
-              }}
-              onSwipedAborted={() => {
-                if (showSwipeTutorial) return;
-                Animated.spring(swipeX, {
-                  toValue: 0,
-                  useNativeDriver: true,
-                }).start();
-              }}
-              onSwiped={() => {
-                if (showSwipeTutorial) return;
-                setCurrentIndex((prev) => prev + 1);
-                swipeX.setValue(0);
-              }}
-              onSwipedLeft={() => {
-                if (showSwipeTutorial) return;
-                triggerHaptic('selection');
-                handleSwipe(currentIndexRef.current, 'left');
-              }}
-              onSwipedRight={() => {
-                if (showSwipeTutorial) return;
-                triggerHaptic('light');
-                handleSwipe(currentIndexRef.current, 'right');
-              }}
-              disableLeftSwipe={showSwipeTutorial}
-              disableRightSwipe={showSwipeTutorial}
-              disableTopSwipe={true}
-              disableBottomSwipe={true}
-              stackSize={2}
-              showSecondCard={true}
-              swipeBackCard={false}
-              backgroundColor={colors.background}
-              stackSeparation={0}
-              useViewOverflow={Platform.OS === 'ios' ? false : true}
-              stackScale={1}
-              cardHorizontalMargin={CARD_HORIZONTAL_MARGIN}
-              containerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
-              cardStyle={{ width: CARD_WIDTH, height: CARD_HEIGHT, alignSelf: 'center', justifyContent: 'center' }}
-              stackAnimationFriction={100}
-              stackAnimationTension={100}
-              swipeAnimationDuration={SWIPE_ANIMATION_MS}
-            />
-          )}
+                )}
+                <Text style={[styles.deckProgressText, { color: colors.text }]}>{currentCardNumber}/{sessionTargetCount}</Text>
+              </View>
+            );
+          })()}
         </View>
-        {/* Yatay birleşik butonlar */}
-        {/* Yatay birleşik butonlar */}
-        <View style={{ paddingBottom: insets.bottom }}>
-          <View
-            ref={intervalTutorialTargetRef}
-            collapsable={false}
-            onLayout={() => measureTutorialTarget(intervalTutorialTargetRef, setIntervalTargetLayout)}
-            style={[styles.horizontalButtonRow, { backgroundColor: colors.buttonColor }]}
-          >
 
-            <AnimatedTimeButton
-              onPress={() => handleSkip(15)}
-              icon="material-symbols:repeat-rounded"
-              text={t('swipeDeck.minutes', "15 dk")}
-              buttonStyle={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]}
-              textStyle={styles.horizontalButtonText}
-              iconColor={colors.buttonText}
-            />
-
-            <AnimatedTimeButton
-              onPress={() => handleSkip(60)}
-              icon="mingcute:time-line"
-              text={t('swipeDeck.hours', "1 sa")}
-              buttonStyle={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]}
-              textStyle={styles.horizontalButtonText}
-              iconColor={colors.buttonText}
-            />
-
-            <AnimatedTimeButton
-              onPress={() => handleSkip(24 * 60)}
-              icon="solar:calendar-broken"
-              text={t('swipeDeck.days', "1 gün")}
-              buttonStyle={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]}
-              textStyle={styles.horizontalButtonText}
-              iconColor={colors.buttonText}
-            />
-
-            <AnimatedTimeButton
-              onPress={() => handleSkip(7 * 24 * 60)}
-              icon="solar:star-broken"
-              text={t('swipeDeck.sevenDays', "7 gün")}
-              buttonStyle={styles.horizontalButton} // Son butonda sağ çizgi yok
-              textStyle={styles.horizontalButtonText}
-              iconColor={colors.buttonText}
-            />
-          </View>
-        </View>
-        {/* Geri alma butonu */}
-        <TouchableOpacity style={[styles.undoButton, undoDisabled && { opacity: 0.5 }, { paddingBottom: insets.bottom }]} onPress={handleUndo} disabled={undoDisabled}>
-          <Iconify icon="lets-icons:refund-back" size={moderateScale(28)} color={colors.orWhite} />
-        </TouchableOpacity>
-        {/* Auto play butonu */}
-        <TouchableOpacity
-          style={[styles.autoPlayButton, { paddingBottom: insets.bottom }]}
-          onPress={() => {
-            if (showSwipeTutorial) return;
-            setAutoPlay((prev) => !prev);
-          }}
+        <Reanimated.View
+          layout={LinearTransition.duration(100)}
+          style={[
+            styles.counterBoxRight,
+            { backgroundColor: rightHighlight ? rightActiveColor : rightInactiveColor },
+            animatedRightBadge
+          ]}
         >
-          {autoPlay ? (
-            <Iconify icon="material-symbols:pause-rounded" size={moderateScale(32)} color={colors.orWhite} />
+          {rightHighlight ? (
+            <Reanimated.View key="icon-r" entering={FadeIn.duration(50)} exiting={null}>
+              <Iconify icon="streamline:check-solid" size={moderateScale(16)} color="#fff" />
+            </Reanimated.View>
           ) : (
-            <Iconify icon="streamline:button-play-solid" size={moderateScale(20)} color={colors.orWhite} />
+            <Reanimated.View key="text-r" entering={FadeIn.duration(250)} exiting={null}>
+              <Text style={styles.counterText}>{rightCount}</Text>
+            </Reanimated.View>
           )}
-        </TouchableOpacity>
-        {/* Progress Bar (undoButton'un hemen üstünde) */}
-        <View style={[styles.progressBarContainer, { backgroundColor: colors.progressBarSwipe, overflow: 'hidden', marginBottom: insets.bottom }]}>
-          {/* Ana Dolgu Barı */}
+        </Reanimated.View>
+      </View>
+
+      {/* 2. Orta Swiper Alanı */}
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          width: '100%',
+          marginVertical: verticalScale(8),
+          zIndex: 1,
+          elevation: 1,
+          overflow: 'visible',
+        }}
+      >
+        {activeCards.length > 0 && (
+          <Swiper
+            key={activeCards[0]?.queue_id ? `deck-${activeCards[0].queue_id}-${currentIndex}` : `deck-${activeCards[0]?.card_id || 'empty'}-${currentIndex}`}
+            ref={swiperRef}
+            cards={activeCards}
+            keyExtractor={(card, index) => card?.queue_id ? `${card.queue_id}_${index}` : `${card?.card_id || 'card'}_${index}`}
+            renderCard={(card, i) => {
+              const cardId = card?.card_id;
+              const animatedValue = cardId ? getAnimatedValueForCardId(cardId) : null;
+              const gradientColors = getCategoryColors(categorySortOrder);
+              const isPlaceholder = !card || !card.cards;
+              const cardKey = card?.queue_id ? `${card.queue_id}_${i}` : `${cardId || 'placeholder'}_${i}_${currentIndex}`;
+              return (
+                <View
+                  key={cardKey}
+                  ref={i === 0 ? cardTutorialTargetRef : undefined}
+                  collapsable={false}
+                  onLayout={() => {
+                    if (i === 0 && cardId && firstRenderedCardId !== cardId) {
+                      setFirstRenderedCardId(cardId);
+                      measureTutorialTarget(cardTutorialTargetRef, setCardTargetLayout);
+                    }
+                  }}
+                >
+                  <SwipeFlipCard
+                    card={card}
+                    cardId={cardId}
+                    isPlaceholder={isPlaceholder}
+                    cardWidth={CARD_WIDTH}
+                    cardHeight={CARD_HEIGHT}
+                    gradientColors={gradientColors}
+                    cardBackground={colors.cardBackground}
+                    textColor={colors.text}
+                    animatedValue={animatedValue}
+                    onFlip={handleFlipById}
+                    swipeX={i === 0 ? swipeX : null}
+                  />
+                </View>
+              );
+            }}
+            onSwiping={(x) => {
+              if (showSwipeTutorial) return;
+              swipeX.setValue(x);
+            }}
+            onSwipedAborted={() => {
+              if (showSwipeTutorial) return;
+              Animated.spring(swipeX, {
+                toValue: 0,
+                useNativeDriver: true,
+              }).start();
+            }}
+            onSwiped={() => {
+              if (showSwipeTutorial) return;
+              setCurrentIndex((prev) => prev + 1);
+              swipeX.setValue(0);
+            }}
+            onSwipedLeft={() => {
+              if (showSwipeTutorial) return;
+              triggerHaptic('selection');
+              handleSwipe(currentIndexRef.current, 'left');
+            }}
+            onSwipedRight={() => {
+              if (showSwipeTutorial) return;
+              triggerHaptic('light');
+              handleSwipe(currentIndexRef.current, 'right');
+            }}
+            disableLeftSwipe={showSwipeTutorial}
+            disableRightSwipe={showSwipeTutorial}
+            disableTopSwipe={true}
+            disableBottomSwipe={true}
+            stackSize={2}
+            showSecondCard={true}
+            swipeBackCard={false}
+            stackSeparation={0}
+            backgroundColor='transparent'
+            useViewOverflow={true}
+            stackScale={1}
+            cardHorizontalMargin={CARD_HORIZONTAL_MARGIN}
+            containerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+            cardStyle={{ width: CARD_WIDTH, height: CARD_HEIGHT, alignSelf: 'center', justifyContent: 'center' }}
+            stackAnimationFriction={100}
+            stackAnimationTension={100}
+            swipeAnimationDuration={SWIPE_ANIMATION_MS}
+          />
+        )}
+      </View>
+
+      {/* 3. Alt Kontroller */}
+      <View style={{ width: '100%', zIndex: 10, elevation: 10, backgroundColor: 'transparent', gap: 20}}>
+        <View
+          ref={intervalTutorialTargetRef}
+          collapsable={false}
+          onLayout={() => measureTutorialTarget(intervalTutorialTargetRef, setIntervalTargetLayout)}
+          style={[styles.horizontalButtonRow, { backgroundColor: colors.buttonColor }]}
+        >
+          <AnimatedTimeButton
+            onPress={() => handleSkip(15)}
+            icon="material-symbols:repeat-rounded"
+            text={t('swipeDeck.minutes', "15 dk")}
+            buttonStyle={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]}
+            textStyle={styles.horizontalButtonText}
+            iconColor={colors.buttonText}
+          />
+
+          <AnimatedTimeButton
+            onPress={() => handleSkip(60)}
+            icon="mingcute:time-line"
+            text={t('swipeDeck.hours', "1 sa")}
+            buttonStyle={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]}
+            textStyle={styles.horizontalButtonText}
+            iconColor={colors.buttonText}
+          />
+
+          <AnimatedTimeButton
+            onPress={() => handleSkip(24 * 60)}
+            icon="solar:calendar-broken"
+            text={t('swipeDeck.days', "1 gün")}
+            buttonStyle={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]}
+            textStyle={styles.horizontalButtonText}
+            iconColor={colors.buttonText}
+          />
+
+          <AnimatedTimeButton
+            onPress={() => handleSkip(7 * 24 * 60)}
+            icon="solar:star-broken"
+            text={t('swipeDeck.sevenDays', "7 gün")}
+            buttonStyle={styles.horizontalButton}
+            textStyle={styles.horizontalButtonText}
+            iconColor={colors.buttonText}
+          />
+        </View>
+
+        <View style={[styles.progressBarContainer, { backgroundColor: colors.progressBarSwipe }]}>
           <Reanimated.View
             style={[
               styles.progressBarFill,
@@ -1709,22 +1690,46 @@ export default function SwipeDeckScreen({ route, navigation }) {
               animatedProgressStyle
             ]}
           >
-            {/* Parlama Katmanı (Barın içinde hareket eder) */}
             <Reanimated.View
               style={[
                 {
                   position: 'absolute',
                   top: 0,
                   bottom: 0,
-                  width: '50%', // Barın yarısı kadar bir parlama alanı
-                  backgroundColor: 'rgba(255, 255, 255, 0.3)', // Hafif beyaz parlama
+                  width: '50%',
+                  backgroundColor: 'rgba(255, 255, 255, 0.3)',
                 },
                 shimmerStyle
               ]}
             />
           </Reanimated.View>
         </View>
-      </SafeAreaView>
+
+        <View style={[styles.buttonContainer]}>
+          <TouchableOpacity
+            style={[styles.iconButton, undoDisabled && { opacity: 0.5 }]}
+            onPress={handleUndo}
+            disabled={undoDisabled}
+          >
+            <Iconify icon="lets-icons:refund-back" size={moderateScale(28)} color={colors.orWhite} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => {
+              if (showSwipeTutorial) return;
+              setAutoPlay((prev) => !prev);
+            }}
+          >
+            {autoPlay ? (
+              <Iconify icon="material-symbols:pause-rounded" size={moderateScale(30)} color={colors.orWhite} />
+            ) : (
+              <Iconify icon="streamline:button-play-solid" size={moderateScale(22)} color={colors.orWhite} />
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+
       {renderSwipeTutorialOverlay()}
       <ReportModal
         visible={reportModalVisible}
@@ -1983,7 +1988,6 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'contain',
     borderRadius: moderateScale(24),
-
   },
   counterRow: {
     position: 'absolute',
@@ -1992,7 +1996,6 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 10,
     padding: scale(16),
-    paddingBottom: verticalScale(100),
     height: verticalScale(36),
   },
   counterBoxLeft: {
@@ -2044,20 +2047,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     borderRadius: moderateScale(12),
     overflow: 'hidden',
-    backgroundColor: '#fff8f0',
-    boxSizing: 'border-box',
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: moderateScale(8),
-    elevation: 4,
-    ...Platform.select({
-      ios: {
-        marginBottom: verticalScale(84),
-      },
-      android: {
-        marginBottom: verticalScale(94),
-      },
-    })
   },
   horizontalButton: {
     flex: 1,
@@ -2072,19 +2061,19 @@ const styles = StyleSheet.create({
   horizontalButtonText: {
     ...typography.styles.button,
   },
-  undoButton: {
-    position: 'absolute',
-    left: scale(24),
-    bottom: verticalScale(24),
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  iconButton: {
     width: scale(48),
     height: scale(48),
-
-    alignItems: 'center',
+    borderRadius: moderateScale(24),
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.10,
-    shadowRadius: moderateScale(6),
-    elevation: 4,
+    alignItems: 'center',
+    backgroundColor: 'transparent',
     zIndex: 30,
   },
   deckProgressBox: {
@@ -2106,34 +2095,12 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     height: verticalScale(3),
     borderRadius: moderateScale(8),
-    marginBottom: verticalScale(8),
-    position: 'absolute',
-    ...Platform.select({
-      ios: {
-        bottom: verticalScale(60),
-      },
-      android: {
-        bottom: verticalScale(68),
-      },
-    }),
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
     borderRadius: moderateScale(8),
     transition: 'width 0.3s',
-  },
-  autoPlayButton: {
-    position: 'absolute',
-    right: scale(24),
-    bottom: verticalScale(24),
-    width: scale(48),
-    height: scale(48),
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 30,
-    borderRadius: moderateScale(24),
-    backgroundColor: 'transparent',
   },
   loadingContainer: {
     flex: 1,
@@ -2567,4 +2534,4 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(14),
     fontWeight: '500',
   },
-}); 
+});
