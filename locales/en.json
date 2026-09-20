@@ -455,6 +455,12 @@
       "back": "Back",
       "next": "Next",
       "done": "Got it"
+    },
+    "swipe": {
+      "tapLearn": "Tap!\nFlip & Learn",
+      "swipeRight": "Swipe Right!\nI Knew It",
+      "swipeLeft": "Swipe Left!\nReview Again",
+      "chooseTime": "Choose When to Review.."
     }
   },
   "login": {

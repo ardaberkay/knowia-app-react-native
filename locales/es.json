@@ -417,6 +417,12 @@
       "back": "Atrás",
       "next": "Siguiente",
       "done": "Entendido"
+    },
+    "swipe": {
+      "tapLearn": "Toca\nGira y Aprende",
+      "swipeRight": "Derecha\nLo sabía",
+      "swipeLeft": "Izquierda\nRepasar",
+      "chooseTime": "Elige cuándo repasar.."
     }
   },
   "login": {

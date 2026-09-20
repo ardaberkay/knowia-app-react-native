@@ -1096,11 +1096,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
       if (autoPlayFlipTimeout.current) clearTimeout(autoPlayFlipTimeout.current);
     };
   }, []);
+
   const texts = [
-    'Tıkla, Çevir ve Öğren',
-    'Sağa Kaydır, Bildim',
-    'Sola Kaydır, Tekrar Et',
-    'Tekrar Zamanını Seç',
+    t('swipeDeck.swipe.tapLearn', 'Tıkla!\nÇevir ve Öğren'),
+    t('swipeDeck.swipe.swipeRight', 'Sağa Kaydır!\nBildim'),
+    t('swipeDeck.swipe.swipeLeft', 'Sola Kaydır!\nTekrar Et'),
+    t('swipeDeck.swipe.chooseTime', 'Tekrar Zamanını Seç..'),
   ];
 
   const translateX = useSharedValue(0);
@@ -1754,7 +1755,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
             <Iconify icon="lets-icons:refund-back" size={moderateScale(28)} color={colors.orWhite} />
           </TouchableOpacity>
           <Reanimated.Text style={[animatedStyle, {
-            color: colors.text, ...typography.styles.caption,
+            color: '#8A8A8A', ...typography.styles.caption, textAlign: 'center', fontWeight: '900'
           }]}>
             {texts[textIndex]}
           </Reanimated.Text>

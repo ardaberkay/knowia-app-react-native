@@ -460,6 +460,12 @@
       "back": "Geri",
       "next": "İleri",
       "done": "Anladım"
+    },
+    "swipe": {
+      "tapLearn": "Tıkla!\nÇevir ve Öğren",
+      "swipeRight": "Sağa Kaydır!\nBildim",
+      "swipeLeft": "Sola Kaydır!\nTekrar Et",
+      "chooseTime": "Tekrar Zamanını Seç.."
     }
   },
   "login": {
