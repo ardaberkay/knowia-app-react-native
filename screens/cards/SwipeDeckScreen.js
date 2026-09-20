@@ -1710,7 +1710,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
             style={[styles.iconButton, undoDisabled && { opacity: 0.5 }]}
             onPress={handleUndo}
             disabled={undoDisabled}
-          >
+            hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
+            >
             <Iconify icon="lets-icons:refund-back" size={moderateScale(28)} color={colors.orWhite} />
           </TouchableOpacity>
 
@@ -1720,6 +1721,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
               if (showSwipeTutorial) return;
               setAutoPlay((prev) => !prev);
             }}
+            hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
           >
             {autoPlay ? (
               <Iconify icon="material-symbols:pause-rounded" size={moderateScale(30)} color={colors.orWhite} />
@@ -2066,6 +2068,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: 'transparent',
+    paddingHorizontal: scale(12)
   },
   iconButton: {
     width: scale(48),
