@@ -1096,7 +1096,46 @@ export default function SwipeDeckScreen({ route, navigation }) {
       if (autoPlayFlipTimeout.current) clearTimeout(autoPlayFlipTimeout.current);
     };
   }, []);
+  const texts = [
+    'Tıkla, Çevir ve Öğren',
+    'Sağa Kaydır, Bildim',
+    'Sola Kaydır, Tekrar Et',
+    'Tekrar Zamanını Seç',
+  ];
 
+  const translateX = useSharedValue(0);
+  const opacity = useSharedValue(1);
+  const [textIndex, setTextIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Eski text'i çıkar
+      opacity.value = withTiming(0, { duration: 250 });
+      translateX.value = withTiming(-15, { duration: 250 });
+
+      // Text'i JS tarafında değiştir
+      setTimeout(() => {
+        setTextIndex((prev) => (prev + 1) % texts.length);
+
+        // Yeni text sağdan gelsin
+        translateX.value = 15;
+
+        opacity.value = withTiming(1, { duration: 300 });
+        translateX.value = withTiming(0, { duration: 300 });
+      }, 250);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [
+      {
+        translateX: translateX.value,
+      },
+    ],
+  }));
   const originalFlowComplete =
     sessionTargetCount > 0 &&
     sessionProgressCount >= sessionTargetCount;
@@ -1638,7 +1677,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       </View>
 
       {/* 3. Alt Kontroller */}
-      <View style={{ width: '100%', zIndex: 10, elevation: 10, backgroundColor: 'transparent', gap: 20}}>
+      <View style={{ width: '100%', zIndex: 10, elevation: 10, backgroundColor: 'transparent', gap: 20 }}>
         <View
           ref={intervalTutorialTargetRef}
           collapsable={false}
@@ -1711,10 +1750,14 @@ export default function SwipeDeckScreen({ route, navigation }) {
             onPress={handleUndo}
             disabled={undoDisabled}
             hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
-            >
+          >
             <Iconify icon="lets-icons:refund-back" size={moderateScale(28)} color={colors.orWhite} />
           </TouchableOpacity>
-
+          <Reanimated.Text style={[animatedStyle, {
+            color: colors.text, ...typography.styles.caption,
+          }]}>
+            {texts[textIndex]}
+          </Reanimated.Text>
           <TouchableOpacity
             style={styles.iconButton}
             onPress={() => {
