@@ -61,7 +61,7 @@ function MainTabs() {
         tabBarInactiveTintColor: colors.subtext,
         tabBarHideOnKeyboard: true,
         tabBarStyle: {
-          display: 'none', // Varsayılan tab bar'ı gizle, custom tab bar kullanacağız
+          display: 'none',
         },
         headerStyle: {
           backgroundColor: colors.tabBarBackground,
@@ -110,7 +110,7 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: t('tabs.home', 'Anasayfa'), tabBarLabel: t('tabs.home', 'Anasayfa') }} />
-      <Tab.Screen name="Create" component={CreateScreen} options={{ tabBarLabel: t('tabs.create', 'Oluştur'), title: t('tabs.create', 'Oluştur'), headerShown: false }} />
+      <Tab.Screen name="Create" component={CreateScreen} options={{ tabBarLabel: t('tabs.create', 'Oluştur'), title: '', headerShown: false }} />
       <Tab.Screen
         name="Library"
         component={LibraryScreen}

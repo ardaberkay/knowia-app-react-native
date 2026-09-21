@@ -270,7 +270,10 @@ export default function HomeScreen() {
                 />
 
                 <Text style={styles.heroTitle}>
-                  Keşfet ve öğren
+                  {t(
+                    'home.popularDecksTitle',
+                    'Keşfet ve öğren'
+                  )}
                 </Text>
               </View>
 
