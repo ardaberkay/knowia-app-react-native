@@ -1,18 +1,16 @@
-import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, Pressable, Platform, BackHandler, ScrollView } from 'react-native';
+import React, { memo, useEffect, useState, useCallback, useRef, useMemo, useLayoutEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, Platform, BackHandler, ScrollView, Image } from 'react-native';
 import Reanimated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withSequence,
-  LinearTransition,
-  FadeIn,
   withTiming,
   withRepeat,
+  interpolate,
+  interpolateColor,
 } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Swiper from 'react-native-deck-swiper';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import {
@@ -41,11 +39,13 @@ import * as BlockService from '../../services/BlockService';
 import ReportModal from '../../components/modals/ReportModal';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import SwipeFlipCard from '../../components/layout/SwipeFlipCard';
+import SwipeCardDeck from '../../components/layout/SwipeCardDeck';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { maybePromptForReview, getReviewMilestones } from '../../services/ReviewPromptService';
 
 // Eğer henüz yoksa AnimatedPressable'ı oluştur (önceki sayfalardaki gibi)
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
+
 const learnedRuntimeState = {
   userId: null,
   baseLearned: 0,
@@ -61,7 +61,7 @@ const formatFutureReview = (dateString, t) => {
   return t('swipeDeck.completion.daysFromNow', { count: Math.ceil(hours / 24), defaultValue: `${Math.ceil(hours / 24)} gün sonra` });
 };
 
-// --- YENİ MİNİ BİLEŞENİMİZ ---
+// --- Alt kontrol butonu ---
 const AnimatedTimeButton = ({ onPress, icon, text, buttonStyle, textStyle, iconColor }) => {
   const isPressed = useSharedValue(0);
 
@@ -93,6 +93,117 @@ const AnimatedTimeButton = ({ onPress, icon, text, buttonStyle, textStyle, iconC
     </AnimatedPressable>
   );
 };
+
+const AnimatedActionPressable = Reanimated.createAnimatedComponent(Pressable);
+const ACTION_ENTRANCE_OFFSET = verticalScale(8);
+
+const SwipeCardActions = memo(function SwipeCardActions({
+  cardId,
+  cardWidth,
+  isFavorite,
+  favoriteColor,
+  onFavoritePress,
+  swipeX,
+  flipProgress,
+  entranceProgress,
+  entranceOpacity,
+}) {
+  // This timeline intentionally mirrors SwipeFlipCard.contentEntranceStyle.
+  // The action row is outside the ScrollView/face content, but it uses the
+  // exact same shared entrance/fade values as the card content.
+  const actionEntranceStyle = useAnimatedStyle(() => {
+    const x = swipeX?.value ?? 0;
+    const labelDistance = Math.max(80, cardWidth * 0.28);
+    const fadeStart = labelDistance * 0.55;
+    const fadeEnd = labelDistance * 0.68;
+    const swipeFade = interpolate(
+      Math.abs(x),
+      [fadeStart, fadeEnd],
+      [1, 0],
+      'clamp'
+    );
+
+    const entrance = entranceProgress?.value ?? 1;
+    const opacity = entranceOpacity?.value ?? 1;
+
+    return {
+      opacity: opacity * swipeFade,
+      transform: [
+        { translateY: (1 - entrance) * ACTION_ENTRANCE_OFFSET },
+        { scale: 0.96 + (0.04 * entrance) },
+      ],
+    };
+  }, [cardWidth, entranceOpacity, entranceProgress, swipeX]);
+
+  // The action row itself never participates in the card content ScrollView.
+  // Only the visual heart faces use the same Y-axis flip timeline as the card.
+  const frontFlipStyle = useAnimatedStyle(() => ({
+    transform: [
+      { perspective: 1200 },
+      { rotateY: `${180 * (flipProgress?.value ?? 0)}deg` },
+    ],
+  }), [flipProgress]);
+
+  const backFlipStyle = useAnimatedStyle(() => ({
+    transform: [
+      { perspective: 1200 },
+      { rotateY: `${180 + (180 * (flipProgress?.value ?? 0))}deg` },
+    ],
+  }), [flipProgress]);
+
+  const handlePress = useCallback(() => {
+    triggerHaptic('medium');
+    onFavoritePress?.(cardId);
+  }, [cardId, onFavoritePress]);
+
+  const favoriteIcon = isFavorite ? 'solar:heart-bold' : 'solar:heart-broken';
+  const favoriteIconColor = isFavorite ? favoriteColor : '#FFF7ED';
+
+  return (
+    <View
+      pointerEvents="box-none"
+      style={styles.cardActionRow}
+    >
+      <AnimatedActionPressable
+        accessibilityRole="button"
+        accessibilityLabel={isFavorite ? 'Favorilerden kaldır' : 'Favorilere ekle'}
+        onPress={handlePress}
+        hitSlop={{
+          top: scale(10),
+          bottom: scale(10),
+          left: scale(10),
+          right: scale(10),
+        }}
+        style={[styles.cardActionButton, actionEntranceStyle]}
+      >
+        <Reanimated.View
+          pointerEvents="none"
+          style={styles.cardActionIconStage}
+        >
+          <Reanimated.View
+            style={[styles.cardActionIconFace, styles.cardActionIconFrontFace, frontFlipStyle]}
+          >
+            <Iconify
+              icon={favoriteIcon}
+              size={moderateScale(25)}
+              color={favoriteIconColor}
+            />
+          </Reanimated.View>
+
+          <Reanimated.View
+            style={[styles.cardActionIconFace, styles.cardActionIconBackFace, backFlipStyle]}
+          >
+            <Iconify
+              icon={favoriteIcon}
+              size={moderateScale(25)}
+              color={favoriteIconColor}
+            />
+          </Reanimated.View>
+        </Reanimated.View>
+      </AnimatedActionPressable>
+    </View>
+  );
+});
 
 export default function SwipeDeckScreen({ route, navigation }) {
   const { deck, chapter } = route.params || {};
@@ -144,34 +255,44 @@ export default function SwipeDeckScreen({ route, navigation }) {
     };
   }, [width, height, isTablet]);
 
-  const swipeX = useRef(new Animated.Value(0)).current;
   const CARD_WIDTH = cardDimensions.width;
   const CARD_HEIGHT = cardDimensions.height;
-  const CARD_HORIZONTAL_MARGIN = cardDimensions.horizontalMargin;
 
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentIndexRef = useRef(0);
+  const pendingIncomingCardsRef = useRef([]);
+  const cardsRef = useRef([]);
 
-  const activeCards = useMemo(
-    () => (cards ?? []).slice(currentIndex),
-    [cards, currentIndex]
-  );
-  const activeCardId = activeCards[0]?.card_id;
+  const prefetchCardImages = useCallback((list) => {
+    if (!Array.isArray(list)) return;
+    list.slice(0, 4).forEach((card) => {
+      const uri = card?.cards?.image;
+      if (uri) Image.prefetch(uri).catch(() => { });
+    });
+  }, []);
+
+  const activeCardId = cards[currentIndex]?.card_id;
+  const activeCardsLength = Math.max(0, cards.length - currentIndex);
+
+  useEffect(() => {
+    prefetchCardImages(cards.slice(currentIndex, currentIndex + 4));
+  }, [currentIndex, prefetchCardImages]);
 
   useEffect(() => {
     currentIndexRef.current = currentIndex;
   }, [currentIndex]);
 
+  useEffect(() => {
+    cardsRef.current = cards;
+  }, [cards]);
+
   const [userId, setUserId] = useState(null);
-  const animatedValuesById = useRef({});
-  const flippedByIdRef = useRef({});
   const [leftCount, setLeftCount] = useState(0);
   const [rightCount, setRightCount] = useState(0);
-  const [leftHighlight, setLeftHighlight] = useState(false);
-  const [rightHighlight, setRightHighlight] = useState(false);
-  const swiperRef = useRef(null);
+  const swipeDeckRef = useRef(null);
+  const activeFlipRef = useRef(null);
   const [history, setHistory] = useState([]);
   const [undoDisabled, setUndoDisabled] = useState(false);
   const [historyDirections, setHistoryDirections] = useState([]);
@@ -193,7 +314,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
     currentSortKey: null,
     currentQueueId: null,
   });
-  const programmaticSwipeRef = useRef(null);
   const tutorialOverlayRootRef = useRef(null);
   const cardTutorialTargetRef = useRef(null);
   const intervalTutorialTargetRef = useRef(null);
@@ -280,19 +400,24 @@ export default function SwipeDeckScreen({ route, navigation }) {
   }, []);
 
   useEffect(() => {
-    if (activeCardId && firstRenderedCardId === activeCardId) {
-      measureTutorialTarget(cardTutorialTargetRef, setCardTargetLayout);
+    // The tutorial only needs the initial top card. Measuring/rebinding this
+    // ref after every swipe makes the card subtree participate in parent
+    // reconciliation for no visual reason.
+    if (currentIndex !== 0 || !activeCardId) return;
+    if (firstRenderedCardId !== activeCardId) {
+      setFirstRenderedCardId(activeCardId);
     }
-  }, [activeCardId, firstRenderedCardId, width, height, measureTutorialTarget]);
+    measureTutorialTarget(cardTutorialTargetRef, setCardTargetLayout);
+  }, [currentIndex, activeCardId, firstRenderedCardId, width, height, measureTutorialTarget]);
 
   useEffect(() => {
-    if (activeCards.length > 0) {
+    if (activeCardsLength > 0) {
       measureTutorialTarget(intervalTutorialTargetRef, setIntervalTargetLayout);
     }
-  }, [activeCards.length, width, height, insets.bottom, measureTutorialTarget]);
+  }, [activeCardsLength, width, height, insets.bottom, measureTutorialTarget]);
 
   useEffect(() => {
-    const hasWorkableCard = activeCards.length > 0 && Boolean(activeCardId);
+    const hasWorkableCard = activeCardsLength > 0 && Boolean(activeCardId);
     const hasRenderedActiveCard = Boolean(activeCardId) && firstRenderedCardId === activeCardId;
     const isEmptyOrCompletionState = cards.length === 0 || currentIndex >= cards.length || originalFlowComplete;
     if (
@@ -317,7 +442,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     return () => {
       isMounted = false;
     };
-  }, [loading, cards.length, currentIndex, originalFlowComplete, activeCards.length, activeCardId, firstRenderedCardId]);
+  }, [loading, cards.length, currentIndex, originalFlowComplete, activeCardsLength, activeCardId, firstRenderedCardId]);
 
   const getEffectiveLearnedEstimate = useCallback(() => {
     return learnedRuntimeState.baseLearned + learnedRuntimeState.deltaLearned;
@@ -386,32 +511,44 @@ export default function SwipeDeckScreen({ route, navigation }) {
     }
   }, [userId, reportCardId, t, showSuccess, showError]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const currentCard = cards[currentIndex];
-    const isCurrentCardFavorite = currentCard ? favoriteIds.has(currentCard.card_id) : false;
 
     navigation.setOptions({
+      // Header her zaman layout'ta kalsın.
+      // Böylece loading -> swipe geçişinde ekran yüksekliği değişmez.
+      headerShown: true,
+
+      // Görsel AppBar yok.
       headerTransparent: true,
-      headerStyle: { backgroundColor: 'transparent' },
+      headerStyle: {
+        backgroundColor: 'transparent',
+      },
       headerTintColor: '#FFFFFF',
       title: '',
+
+      // Loading sırasında geri oku gizle.
+      // Normal swipe ekranında navigator'ın kendi geri oku geri gelir.
+      headerLeft: loading
+        ? () => null
+        : undefined,
+
+      // Loading sırasında sağdaki araçları gizle.
+      // Kart hazır olduğunda normal araçlar görünür.
       headerRight: () => {
-        if (loading || !currentCard) return null;
+        if (loading || !currentCard) {
+          return null;
+        }
+
         return (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(16), paddingHorizontal: scale(8) }}>
-            <TouchableOpacity
-              onPress={() => {
-                triggerHaptic('medium');
-                toggleFavorite(currentCard.card_id);
-              }}
-              hitSlop={{ top: scale(15), bottom: scale(15), left: scale(8), right: scale(8) }}
-            >
-              <Iconify
-                icon={isCurrentCardFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
-                size={moderateScale(26)}
-                color={isCurrentCardFavorite ? colors.buttonColor : colors.text}
-              />
-            </TouchableOpacity>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: scale(16),
+              paddingHorizontal: scale(8),
+            }}
+          >
             {!isOwner && (
               <TouchableOpacity
                 onPress={() => {
@@ -419,16 +556,32 @@ export default function SwipeDeckScreen({ route, navigation }) {
                   openReportCardModal();
                 }}
                 activeOpacity={0.7}
-                hitSlop={{ top: scale(15), bottom: scale(15), left: scale(8), right: scale(8) }}
+                hitSlop={{
+                  top: scale(15),
+                  bottom: scale(15),
+                  left: scale(8),
+                  right: scale(8),
+                }}
               >
-                <Iconify icon="ic:round-report-problem" size={moderateScale(24)} color='#FED7AA' />
+                <Iconify
+                  icon="ic:round-report-problem"
+                  size={moderateScale(24)}
+                  color="#FED7AA"
+                />
               </TouchableOpacity>
             )}
           </View>
         );
       },
     });
-  }, [navigation, cards, currentIndex, favoriteIds, colors.buttonColor, colors.text, toggleFavorite, loading, isOwner, openReportCardModal]);
+  }, [
+    navigation,
+    cards,
+    currentIndex,
+    loading,
+    isOwner,
+    openReportCardModal,
+  ]);
 
   const getCategoryColors = (sortOrder) => {
     if (colors.categoryColors && colors.categoryColors[sortOrder]) {
@@ -519,7 +672,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
           }
         }));
 
+        cardsRef.current = learningCards;
         setCards(learningCards);
+        prefetchCardImages(learningCards);
+        currentIndexRef.current = 0;
         const lastFetchedCard = learningCards[learningCards.length - 1];
         if (lastFetchedCard) {
           paginationCursorRef.current = {
@@ -528,7 +684,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
           };
         }
         seenCardIdsRef.current = new Set(learningCards.map(c => c.card_id));
-        flippedByIdRef.current = {};
         sessionSeenCardIdsRef.current = learningCards[0]?.card_id
           ? new Set([learningCards[0].card_id])
           : new Set();
@@ -631,23 +786,97 @@ export default function SwipeDeckScreen({ route, navigation }) {
     return () => sub.remove();
   }, []);
 
-  const leftScale = useSharedValue(1);
-  const rightScale = useSharedValue(1);
+  // A single UI-thread shared value mirrors the active card's horizontal swipe.
+  // During the gesture we never preview the next numeric value: the relevant
+  // counter shows its existing icon instead, while the real number stays hidden.
+  // When the swipe finishes, only the real React count changes. No second
+  // post-swipe counter animation is triggered.
+  const activeSwipeX = useSharedValue(0);
+  const counterSwipeDistance = Math.max(scale(90), CARD_WIDTH * 0.28);
+
+  // The swipe itself drives the counter color/icon. After the swipe has
+  // committed, the new numeric value gets one small, separate pop so the
+  // count feels updated without relying on the old highlight animation.
+  const leftCounterPop = useSharedValue(1);
+  const rightCounterPop = useSharedValue(1);
 
   useEffect(() => {
-    if (leftCount > 0) {
-      leftScale.value = withSequence(withSpring(1.05), withSpring(1));
-    }
-  }, [leftCount]);
+    if (leftCount <= 0) return;
+    // Quick pop: overshoot, dip slightly, then settle. This is intentionally
+    // punchier than the previous grow -> pause -> shrink feeling.
+    leftCounterPop.value = withSequence(
+      withTiming(1.11, { duration: 45 }),
+      withTiming(1, { duration: 65 })
+    );
+  }, [leftCount, leftCounterPop]);
 
   useEffect(() => {
-    if (rightCount > 0) {
-      rightScale.value = withSequence(withSpring(1.05), withSpring(1));
-    }
-  }, [rightCount]);
+    if (rightCount <= 0) return;
+    rightCounterPop.value = withSequence(
+      withTiming(1.11, { duration: 45 }),
+      withTiming(1, { duration: 65 })
+    );
+  }, [rightCount, rightCounterPop]);
 
-  const animatedLeftBadge = useAnimatedStyle(() => ({ transform: [{ scale: leftScale.value }] }));
-  const animatedRightBadge = useAnimatedStyle(() => ({ transform: [{ scale: rightScale.value }] }));
+  const animatedLeftCounterPop = useAnimatedStyle(() => ({
+    transform: [{ scale: leftCounterPop.value }],
+  }));
+
+  const animatedRightCounterPop = useAnimatedStyle(() => ({
+    transform: [{ scale: rightCounterPop.value }],
+  }));
+
+  const animatedLeftCounter = useAnimatedStyle(() => {
+    const progress = Math.min(1, Math.max(0, -activeSwipeX.value / Math.max(1, counterSwipeDistance)));
+    return {
+      backgroundColor: interpolateColor(
+        progress,
+        [0, 1],
+        [leftInactiveColor, leftActiveColor]
+      ),
+    };
+  }, [counterSwipeDistance, leftActiveColor, leftInactiveColor]);
+
+  const animatedRightCounter = useAnimatedStyle(() => {
+    const progress = Math.min(1, Math.max(0, activeSwipeX.value / Math.max(1, counterSwipeDistance)));
+    return {
+      backgroundColor: interpolateColor(
+        progress,
+        [0, 1],
+        [rightInactiveColor, rightActiveColor]
+      ),
+    };
+  }, [counterSwipeDistance, rightActiveColor, rightInactiveColor]);
+
+  const animatedLeftCount = useAnimatedStyle(() => {
+    const progress = Math.min(1, Math.max(0, -activeSwipeX.value / Math.max(1, counterSwipeDistance)));
+    return {
+      opacity: interpolate(progress, [0, 0.14, 0.28], [1, 0.5, 0], 'clamp'),
+    };
+  }, [counterSwipeDistance]);
+
+  const animatedRightCount = useAnimatedStyle(() => {
+    const progress = Math.min(1, Math.max(0, activeSwipeX.value / Math.max(1, counterSwipeDistance)));
+    return {
+      opacity: interpolate(progress, [0, 0.14, 0.28], [1, 0.5, 0], 'clamp'),
+    };
+  }, [counterSwipeDistance]);
+
+  const animatedLeftIcon = useAnimatedStyle(() => {
+    const progress = Math.min(1, Math.max(0, -activeSwipeX.value / Math.max(1, counterSwipeDistance)));
+    return {
+      opacity: interpolate(progress, [0, 0.10, 0.30], [0, 0.28, 1], 'clamp'),
+      transform: [{ scale: interpolate(progress, [0, 0.16, 0.34], [0.78, 0.94, 1], 'clamp') }],
+    };
+  }, [counterSwipeDistance]);
+
+  const animatedRightIcon = useAnimatedStyle(() => {
+    const progress = Math.min(1, Math.max(0, activeSwipeX.value / Math.max(1, counterSwipeDistance)));
+    return {
+      opacity: interpolate(progress, [0, 0.10, 0.30], [0, 0.28, 1], 'clamp'),
+      transform: [{ scale: interpolate(progress, [0, 0.16, 0.34], [0.78, 0.94, 1], 'clamp') }],
+    };
+  }, [counterSwipeDistance]);
 
   const currentProgress = sessionTargetCount > 0
     ? Math.min(100, (sessionProgressCount / sessionTargetCount) * 100)
@@ -675,20 +904,90 @@ export default function SwipeDeckScreen({ route, navigation }) {
     };
   });
 
-  const getAnimatedValueForCardId = useCallback((cardId) => {
-    if (!cardId) return null;
-    if (!animatedValuesById.current[cardId]) {
-      animatedValuesById.current[cardId] = new Animated.Value(0);
-    }
-    return animatedValuesById.current[cardId];
+  const normalizeIncomingCards = useCallback((incomingCards) => {
+    if (!Array.isArray(incomingCards) || incomingCards.length === 0) return [];
+
+    const unique = new Map();
+    incomingCards.forEach((card) => {
+      const key = card?.queue_id != null
+        ? String(card.queue_id)
+        : String(card?.card_id || '');
+      if (!key || unique.has(key)) return;
+      unique.set(key, card);
+    });
+    return [...unique.values()];
   }, []);
 
-  const resetFlipForCardId = useCallback((cardId) => {
-    if (!cardId) return;
-    flippedByIdRef.current[cardId] = false;
-    const v = getAnimatedValueForCardId(cardId);
-    if (v) v.setValue(0);
-  }, [getAnimatedValueForCardId]);
+  const mergeIncomingCardsNow = useCallback((incomingCards) => {
+    const normalized = normalizeIncomingCards(incomingCards);
+    if (normalized.length === 0) return;
+
+    const prev = cardsRef.current;
+    const activeIndex = Math.min(Math.max(currentIndexRef.current, 0), prev.length - 1);
+    const safeActiveIndex = prev.length > 0 ? activeIndex : -1;
+    const consumed = safeActiveIndex >= 0 ? prev.slice(0, safeActiveIndex + 1) : [];
+    const upcoming = safeActiveIndex >= 0 ? prev.slice(safeActiveIndex + 1) : [...prev];
+
+    const upcomingKeys = new Set(
+      upcoming
+        .map((c) => c?.queue_id != null ? String(c.queue_id) : String(c?.card_id || ''))
+        .filter(Boolean)
+    );
+    const keysToMerge = new Set();
+
+    const cardsToMerge = normalized.filter((c) => {
+      const key = c?.queue_id != null ? String(c.queue_id) : String(c?.card_id || '');
+      if (!key || upcomingKeys.has(key) || keysToMerge.has(key)) return false;
+      keysToMerge.add(key);
+      return true;
+    });
+
+    // Never reorder the already-visible queue. In particular, keep the
+    // immediate next card protected so an async fetch/reinsert cannot swap
+    // the card underneath the active one for a frame. New cards are appended
+    // after the existing upcoming queue.
+    const protectedNext = upcoming.slice(0, 1);
+    const remainingUpcoming = upcoming.slice(1);
+    const mergedUpcoming = [...protectedNext, ...remainingUpcoming, ...cardsToMerge];
+
+    const merged = [...consumed, ...mergedUpcoming];
+    cardsRef.current = merged;
+    setCards(merged);
+    prefetchCardImages(merged);
+  }, [normalizeIncomingCards, prefetchCardImages]);
+
+  const commitIncomingCards = useCallback((incomingCards) => {
+    const normalized = normalizeIncomingCards(incomingCards);
+    if (normalized.length === 0) return;
+
+    if (isAnimatingRef.current) {
+      const current = normalizeIncomingCards(pendingIncomingCardsRef.current);
+      const existing = new Set(
+        current.map((c) => c?.queue_id != null ? String(c.queue_id) : String(c?.card_id || '')).filter(Boolean)
+      );
+      pendingIncomingCardsRef.current = [
+        ...current,
+        ...normalized.filter((c) => {
+          const key = c?.queue_id != null ? String(c.queue_id) : String(c?.card_id || '');
+          if (!key || existing.has(key)) return false;
+          existing.add(key);
+          return true;
+        }),
+      ];
+      return;
+    }
+
+    mergeIncomingCardsNow(normalized);
+  }, [mergeIncomingCardsNow, normalizeIncomingCards]);
+
+  const flushPendingIncomingCards = useCallback(() => {
+    if (isAnimatingRef.current) return;
+    if (pendingIncomingCardsRef.current.length === 0) return;
+
+    const pending = pendingIncomingCardsRef.current;
+    pendingIncomingCardsRef.current = [];
+    mergeIncomingCardsNow(pending);
+  }, [mergeIncomingCardsNow]);
 
   const fetchMoreCards = useCallback(async () => {
     if (isFetchingMoreRef.current || !userId || !sessionIdRef.current || !hasMoreCardsRef.current) return;
@@ -704,9 +1003,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
       });
       lastDueCheckAtRef.current = Date.now();
 
+      const activeIndex = currentIndexRef.current;
       const upcomingQueueIds = new Set(
-        cards
-          .slice(currentIndex + 1)
+        cardsRef.current
+          .slice(activeIndex + 1)
           .map(c => c?.queue_id)
           .filter(Boolean)
       );
@@ -729,6 +1029,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
             chapter_id: card.chapter_id,
           }
         }));
+
       if (newCards.length > 0) {
         newCards.forEach(c => seenCardIdsRef.current.add(c.card_id));
         const lastFetchedCard = newCards[newCards.length - 1];
@@ -736,21 +1037,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
           afterSortKey: lastFetchedCard.sort_key,
           afterQueueId: lastFetchedCard.queue_id,
         };
-        setCards(prev => {
-          const consumed = prev.slice(0, currentIndex + 1);
-          const upcoming = prev.slice(currentIndex + 1);
-          const upcomingQueueIdsForMerge = new Set(
-            upcoming.map(c => c?.queue_id).filter(Boolean)
-          );
-          const cardsToMerge = newCards.filter(c => !upcomingQueueIdsForMerge.has(c.queue_id));
-          const mergedUpcoming = [...upcoming, ...cardsToMerge].sort((a, b) => {
-            const sortA = Number(a.sort_key ?? 0);
-            const sortB = Number(b.sort_key ?? 0);
-            if (sortA !== sortB) return sortA - sortB;
-            return String(a.queue_id ?? '').localeCompare(String(b.queue_id ?? ''));
-          });
-          return [...consumed, ...mergedUpcoming];
-        });
+        commitIncomingCards(newCards);
       } else if (moreCards.length === 0) {
         hasMoreCardsRef.current = false;
       }
@@ -759,7 +1046,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     } finally {
       isFetchingMoreRef.current = false;
     }
-  }, [userId, cards, currentIndex]);
+  }, [userId, commitIncomingCards]);
 
   const checkDueReinserts = useCallback(async () => {
     if (isDueCheckingRef.current) return;
@@ -780,9 +1067,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
       lastDueCheckAtRef.current = Date.now();
 
+      const activeIndex = currentIndexRef.current;
       const upcomingQueueIds = new Set(
-        cards
-          .slice(currentIndex + 1)
+        cardsRef.current
+          .slice(activeIndex + 1)
           .map(c => c?.queue_id)
           .filter(Boolean)
       );
@@ -808,60 +1096,77 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
       if (newCards.length > 0) {
         newCards.forEach(c => seenCardIdsRef.current.add(c.card_id));
-        setCards(prev => {
-          const consumed = prev.slice(0, currentIndex + 1);
-          const upcoming = prev.slice(currentIndex + 1);
-          const upcomingQueueIdsForMerge = new Set(
-            upcoming.map(c => c?.queue_id).filter(Boolean)
-          );
-          const cardsToMerge = newCards.filter(c => !upcomingQueueIdsForMerge.has(c.queue_id));
-          const mergedUpcoming = [...upcoming, ...cardsToMerge].sort((a, b) => {
-            const sortA = Number(a.sort_key ?? 0);
-            const sortB = Number(b.sort_key ?? 0);
-            if (sortA !== sortB) return sortA - sortB;
-            return String(a.queue_id ?? '').localeCompare(String(b.queue_id ?? ''));
-          });
-          return [...consumed, ...mergedUpcoming];
-        });
+        commitIncomingCards(newCards);
       }
     } catch (error) {
       console.error('Error checking due reinserts:', error);
     } finally {
       isDueCheckingRef.current = false;
     }
-  }, [cards, currentIndex]);
+  }, [commitIncomingCards]);
 
-  const handleSwipe = useCallback(async (cardIndex, direction) => {
-    if (showSwipeTutorial) {
-      programmaticSwipeRef.current = null;
-      return;
-    }
-    if (!cards[cardIndex]) return;
-    const card = cards[cardIndex];
-    const override = programmaticSwipeRef.current;
-    const actualDirection = override?.direction || direction;
-    const actualSkipMinutes = override?.skipMinutes ?? null;
-    programmaticSwipeRef.current = null;
+  const handleSwipe = useCallback(async (cardIndex, direction, meta = null) => {
+    if (showSwipeTutorial) return;
+
+    const sourceCards = cardsRef.current;
+    const card = sourceCards[cardIndex];
+    if (!card) return;
+
+    const actualDirection = meta?.type === 'skip' ? 'skip' : direction;
+    const actualSkipMinutes = meta?.skipMinutes ?? null;
     const swipedCardId = card.card_id;
-    setTimeout(() => resetFlipForCardId(swipedCardId), SWIPE_ANIMATION_MS);
+
+    // The custom deck has already completed the off-screen animation.
+    // Only now does React advance the logical index, so the preview card
+    // becomes active without a second swiper/index reconciliation step.
+    const nextIndex = cardIndex + 1;
+    currentIndexRef.current = nextIndex;
+    setCurrentIndex(nextIndex);
+    isAnimatingRef.current = false;
+
+    if (actualDirection === 'left') {
+      triggerHaptic('selection');
+    } else if (actualDirection === 'right') {
+      triggerHaptic('light');
+    }
+
     historyStateSnapshotsRef.current.push({
       sessionSeenCardIds: new Set(sessionSeenCardIdsRef.current),
       sessionProgressCount: sessionProgressCountRef.current,
       leftCountedCardIds: new Set(leftCountedCardIds.current),
       historyLeftCardIds: [...historyLeftCardIds.current],
     });
+
     sessionSeenCardIdsRef.current.add(swipedCardId);
-    const nextCard = cards[cardIndex + 1];
+    const nextCard = sourceCards[cardIndex + 1];
     if (nextCard?.card_id) {
       sessionSeenCardIdsRef.current.add(nextCard.card_id);
     }
+
     const nextProgressCount = sessionTargetCount > 0
       ? Math.min(sessionTargetCount, sessionSeenCardIdsRef.current.size)
       : sessionSeenCardIdsRef.current.size;
     sessionProgressCountRef.current = nextProgressCount;
     setSessionProgressCount(nextProgressCount);
+
+    // Update the visible counter immediately when the swipe commits.
+    // Do this before the async server write so the icon never falls back to
+    // the previous number for a frame after the card leaves.
+    if (actualDirection === 'right') {
+      setRightCount((prev) => prev + 1);
+      learnedRuntimeState.deltaLearned += 1;
+      estimatedTotalLearnedRef.current += 1;
+      scheduleReviewCheck({ delayMs: REVIEW_PROMPT_DELAY_MS, requireMilestoneHit: true });
+    } else if (actualDirection === 'left' || actualDirection === 'skip') {
+      if (actualDirection === 'left') {
+        historyLeftCardIds.current.push(card.card_id);
+      }
+      leftCountedCardIds.current.add(card.card_id);
+      setLeftCount((prev) => prev + 1);
+    }
+
     if (!userId) return;
-    isAnimatingRef.current = true;
+
     setHistory((prev) => [...prev, cardIndex]);
     setHistoryDirections((prev) => [...prev, actualDirection]);
     setTotalSwipeCount((prev) => prev + 1);
@@ -869,6 +1174,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       currentSortKey: card.sort_key,
       currentQueueId: card.queue_id,
     };
+
     try {
       await recordSwipeSessionSwipe({
         sessionId: sessionIdRef.current,
@@ -879,62 +1185,46 @@ export default function SwipeDeckScreen({ route, navigation }) {
     } catch (error) {
       console.error('Failed to record swipe session swipe:', error);
     }
-    if (actualDirection === 'right') {
-      setRightCount((prev) => prev + 1);
-      learnedRuntimeState.deltaLearned += 1;
-      estimatedTotalLearnedRef.current += 1;
-      setRightHighlight(true);
-      setTimeout(() => setRightHighlight(false), 400);
-      scheduleReviewCheck({ delayMs: REVIEW_PROMPT_DELAY_MS, requireMilestoneHit: true });
-    } else if (actualDirection === 'left' || actualDirection === 'skip') {
-      if (actualDirection === 'left') {
-        historyLeftCardIds.current.push(card.card_id);
-      }
-      leftCountedCardIds.current.add(card.card_id);
-      setLeftCount((prev) => prev + 1);
-      setLeftHighlight(true);
-      setTimeout(() => setLeftHighlight(false), 400);
-    }
+
     checkDueReinserts();
-    setTimeout(() => {
-      isAnimatingRef.current = false;
-    }, SWIPE_ANIMATION_MS);
-  }, [cards, userId, sessionTargetCount, resetFlipForCardId, scheduleReviewCheck, checkDueReinserts, showSwipeTutorial]);
+    requestAnimationFrame(() => {
+      flushPendingIncomingCards();
+    });
+  }, [
+    checkDueReinserts,
+    flushPendingIncomingCards,
+    scheduleReviewCheck,
+    sessionTargetCount,
+    showSwipeTutorial,
+    userId,
+  ]);
 
-  const handleFlipById = useCallback((cardId) => {
+  const handleSwipeStart = useCallback(() => {
     if (showSwipeTutorial) return;
-    if (!cardId) return;
-    const current = !!flippedByIdRef.current[cardId];
-    const next = !current;
-    flippedByIdRef.current[cardId] = next;
+    isAnimatingRef.current = true;
+  }, [showSwipeTutorial]);
 
-    const v = getAnimatedValueForCardId(cardId);
-    if (!v) return;
+  const handleSwipeCancelled = useCallback(() => {
+    isAnimatingRef.current = false;
+  }, []);
 
-    Animated.timing(v, {
-      toValue: next ? 1 : 0,
-      duration: 280,
-      useNativeDriver: true,
-      easing: Easing.out(Easing.cubic),
-    }).start();
-  }, [getAnimatedValueForCardId, showSwipeTutorial]);
+  const handleCardTap = useCallback(() => {
+    if (showSwipeTutorial || loading || isAnimatingRef.current) return;
+    activeFlipRef.current?.flip?.();
+  }, [loading, showSwipeTutorial]);
 
-  const handleSkip = (minutes) => {
+  const handleSkip = useCallback((minutes) => {
     if (showSwipeTutorial) return;
-    if (!cards[currentIndex]) return;
+    if (isAnimatingRef.current) return;
+    if (!cardsRef.current[currentIndexRef.current]) return;
     if (!userId) return;
-    programmaticSwipeRef.current = {
-      direction: 'skip',
-      skipMinutes: minutes,
-    };
-    if (swiperRef.current) {
-      swiperRef.current.swipeLeft();
-    }
-  };
+    swipeDeckRef.current?.swipeLeft({ type: 'skip', skipMinutes: minutes });
+  }, [showSwipeTutorial, userId]);
 
   const handleUndo = async () => {
     if (showSwipeTutorial) return;
-    if (undoDisabled || history.length === 0 || !sessionIdRef.current || !swiperRef.current) return;
+    if (undoDisabled || history.length === 0 || !sessionIdRef.current) return;
+    if (isAnimatingRef.current) return;
 
     setUndoDisabled(true);
 
@@ -946,10 +1236,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
       const result = await undoLastSwipe({ sessionId: sessionIdRef.current });
       if (result?.success === false && result?.reason === 'empty_stack') {
         return;
-      }
-
-      if (undoneCard) {
-        resetFlipForCardId(undoneCard.card_id);
       }
 
       if ((lastDirection === 'left' || lastDirection === 'skip') && undoneCard) {
@@ -974,14 +1260,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
         setHistoryDirections((prev) => prev.slice(0, -1));
       }
 
-      paginationCursorRef.current = {
-        afterSortKey: null,
-        afterQueueId: null,
-      };
-      currentPositionCursorRef.current = {
-        currentSortKey: null,
-        currentQueueId: null,
-      };
+      paginationCursorRef.current = { afterSortKey: null, afterQueueId: null };
+      currentPositionCursorRef.current = { currentSortKey: null, currentQueueId: null };
 
       const freshCards = await getSwipeSessionNextCards({
         sessionId: sessionIdRef.current,
@@ -1009,10 +1289,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
         }
       }));
 
+      cardsRef.current = learningCards;
       setCards(learningCards);
+      prefetchCardImages(learningCards);
+      currentIndexRef.current = 0;
       setCurrentIndex(0);
       seenCardIdsRef.current = new Set(learningCards.map(c => c.card_id));
-      flippedByIdRef.current = {};
       hasMoreCardsRef.current = learningCards.length > 0;
 
       const lastFetchedCard = learningCards[learningCards.length - 1];
@@ -1022,12 +1304,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
           afterQueueId: lastFetchedCard.queue_id,
         };
       }
-
-      requestAnimationFrame(() => {
-        if (swiperRef.current) {
-          swiperRef.current.jumpToCardIndex(0);
-        }
-      });
     } catch (error) {
       console.error('Failed to undo swipe session action:', error);
     } finally {
@@ -1036,6 +1312,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
       }, 350);
     }
   };
+
+  const handleSwipeCommitted = useCallback((cardIndex, direction, meta) => {
+    handleSwipe(cardIndex, direction, meta);
+  }, [handleSwipe]);
 
   const toggleFavorite = useCallback(async (cardId) => {
     if (!userId) return;
@@ -1075,11 +1355,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
     }
 
     autoPlayFlipTimeout.current = setTimeout(() => {
-      const cardId = cards[currentIndex]?.card_id;
-      if (cardId) handleFlipById(cardId);
+      activeFlipRef.current?.flip?.();
       autoPlayTimeout.current = setTimeout(() => {
-        if (swiperRef.current) {
-          swiperRef.current.swipeLeft();
+        if (!isAnimatingRef.current) {
+          swipeDeckRef.current?.swipeLeft();
         }
       }, 1600);
     }, 1600);
@@ -1088,7 +1367,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       if (autoPlayTimeout.current) clearTimeout(autoPlayTimeout.current);
       if (autoPlayFlipTimeout.current) clearTimeout(autoPlayFlipTimeout.current);
     };
-  }, [autoPlay, currentIndex, cards, handleFlipById]);
+  }, [autoPlay, currentIndex, cards.length]);
 
   useEffect(() => {
     return () => {
@@ -1186,6 +1465,71 @@ export default function SwipeDeckScreen({ route, navigation }) {
     return () => { cancelled = true; };
   }, [cards.length, currentIndex, originalFlowComplete, userId, deck?.id, chapter?.id]);
 
+  const renderSwipeCard = useCallback((card, {
+    isActive,
+    swipeX,
+    flipProgress,
+    entranceProgress,
+    entranceOpacity,
+  } = {}) => {
+    const cardId = card?.card_id;
+    const gradientColors = getCategoryColors(categorySortOrder);
+    const isPlaceholder = !card || !card.cards;
+
+    return (
+      <View
+        ref={isActive ? cardTutorialTargetRef : undefined}
+        collapsable={false}
+        style={styles.swiperRenderCardWrapper}
+      >
+        <SwipeFlipCard
+          ref={isActive ? activeFlipRef : undefined}
+          card={card}
+          cardId={cardId}
+          isPlaceholder={isPlaceholder}
+          isActive={Boolean(isActive)}
+          cardWidth={CARD_WIDTH}
+          cardHeight={CARD_HEIGHT}
+          gradientColors={gradientColors}
+          cardBackground={colors.cardBackground}
+          textColor={colors.text}
+          swipeX={swipeX}
+          flipProgress={flipProgress}
+          entranceProgress={entranceProgress}
+          entranceOpacity={entranceOpacity}
+          leftSwipeAccentColor={leftActiveColor}
+          rightSwipeAccentColor={rightActiveColor}
+        />
+      </View>
+    );
+  }, [CARD_HEIGHT, CARD_WIDTH, categorySortOrder, colors.cardBackground, colors.text, getCategoryColors, leftActiveColor, rightActiveColor]);
+
+  const renderSwipeCardActions = useCallback((card, params = {}) => {
+    const {
+      isActive,
+      swipeX,
+      flipProgress,
+      entranceProgress,
+      entranceOpacity,
+    } = params;
+
+    if (!isActive || !card?.card_id) return null;
+
+    return (
+      <SwipeCardActions
+        cardId={card.card_id}
+        cardWidth={CARD_WIDTH}
+        isFavorite={favoriteIds.has(card.card_id)}
+        favoriteColor={colors.buttonColor}
+        onFavoritePress={toggleFavorite}
+        swipeX={swipeX}
+        flipProgress={flipProgress}
+        entranceProgress={entranceProgress}
+        entranceOpacity={entranceOpacity}
+      />
+    );
+  }, [CARD_WIDTH, colors.buttonColor, favoriteIds, toggleFavorite]);
+
   if (loading) {
     return (
       <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
@@ -1255,7 +1599,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     }
 
     return (
-      <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingBottom: insets.bottom }]}>
+      <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingBottom: insets.bottom, paddingTop: insets.top + scale(50) }]}>
         <ScrollView contentContainerStyle={[styles.completionContent, { paddingBottom: insets.bottom + verticalScale(24) }]} showsVerticalScrollIndicator={false}>
           <View style={styles.completionHero}>
             <LinearGradient colors={[colors.buttonColor, '#FF6B35']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.completionHeroCard}>
@@ -1500,22 +1844,20 @@ export default function SwipeDeckScreen({ route, navigation }) {
       {/* 1. Üst Sayaç Alanı */}
       <View style={[styles.counterRow, { zIndex: 10, elevation: 10, backgroundColor: 'transparent' }]}>
         <Reanimated.View
-          layout={LinearTransition.duration(100)}
           style={[
             styles.counterBoxLeft,
-            { backgroundColor: leftHighlight ? leftActiveColor : leftInactiveColor },
-            animatedLeftBadge
+            animatedLeftCounter,
+            animatedLeftCounterPop,
           ]}
         >
-          {leftHighlight ? (
-            <Reanimated.View key="icon-l" entering={FadeIn.duration(50)} exiting={null}>
+          <View style={{ position: 'relative', minWidth: scale(18), minHeight: moderateScale(20), alignItems: 'center', justifyContent: 'center' }}>
+            <Reanimated.Text style={[styles.counterText, animatedLeftCount]}>
+              {leftCount}
+            </Reanimated.Text>
+            <Reanimated.View pointerEvents="none" style={[styles.counterIconOverlay, animatedLeftIcon]}>
               <Iconify icon="mingcute:time-fill" size={moderateScale(18)} color="#fff" />
             </Reanimated.View>
-          ) : (
-            <Reanimated.View key="text-l" entering={FadeIn.duration(250)} exiting={null}>
-              <Text style={styles.counterText}>{leftCount}</Text>
-            </Reanimated.View>
-          )}
+          </View>
         </Reanimated.View>
 
         <View style={[styles.deckProgressBox, { flexDirection: 'row' }]}>
@@ -1558,121 +1900,55 @@ export default function SwipeDeckScreen({ route, navigation }) {
         </View>
 
         <Reanimated.View
-          layout={LinearTransition.duration(100)}
           style={[
             styles.counterBoxRight,
-            { backgroundColor: rightHighlight ? rightActiveColor : rightInactiveColor },
-            animatedRightBadge
+            animatedRightCounter,
+            animatedRightCounterPop,
           ]}
         >
-          {rightHighlight ? (
-            <Reanimated.View key="icon-r" entering={FadeIn.duration(50)} exiting={null}>
+          <View style={{ position: 'relative', minWidth: scale(18), minHeight: moderateScale(20), alignItems: 'center', justifyContent: 'center' }}>
+            <Reanimated.Text style={[styles.counterText, animatedRightCount]}>
+              {rightCount}
+            </Reanimated.Text>
+            <Reanimated.View pointerEvents="none" style={[styles.counterIconOverlay, animatedRightIcon]}>
               <Iconify icon="streamline:check-solid" size={moderateScale(16)} color="#fff" />
             </Reanimated.View>
-          ) : (
-            <Reanimated.View key="text-r" entering={FadeIn.duration(250)} exiting={null}>
-              <Text style={styles.counterText}>{rightCount}</Text>
-            </Reanimated.View>
-          )}
+          </View>
         </Reanimated.View>
       </View>
 
-      {/* 2. Orta Swiper Alanı */}
+      {/* 2. Orta kart alanı */}
       <View
         style={{
           flex: 1,
           justifyContent: 'center',
           alignItems: 'center',
           width: '100%',
-          marginVertical: verticalScale(8),
+          marginTop: verticalScale(40),
           zIndex: 1,
           elevation: 1,
           overflow: 'visible',
         }}
       >
-        {activeCards.length > 0 && (
-          <Swiper
-            key={activeCards[0]?.queue_id ? `deck-${activeCards[0].queue_id}-${currentIndex}` : `deck-${activeCards[0]?.card_id || 'empty'}-${currentIndex}`}
-            ref={swiperRef}
-            cards={activeCards}
-            keyExtractor={(card, index) => card?.queue_id ? `${card.queue_id}_${index}` : `${card?.card_id || 'card'}_${index}`}
-            renderCard={(card, i) => {
-              const cardId = card?.card_id;
-              const animatedValue = cardId ? getAnimatedValueForCardId(cardId) : null;
-              const gradientColors = getCategoryColors(categorySortOrder);
-              const isPlaceholder = !card || !card.cards;
-              const cardKey = card?.queue_id ? `${card.queue_id}_${i}` : `${cardId || 'placeholder'}_${i}_${currentIndex}`;
-              return (
-                <View
-                  key={cardKey}
-                  ref={i === 0 ? cardTutorialTargetRef : undefined}
-                  collapsable={false}
-                  onLayout={() => {
-                    if (i === 0 && cardId && firstRenderedCardId !== cardId) {
-                      setFirstRenderedCardId(cardId);
-                      measureTutorialTarget(cardTutorialTargetRef, setCardTargetLayout);
-                    }
-                  }}
-                >
-                  <SwipeFlipCard
-                    card={card}
-                    cardId={cardId}
-                    isPlaceholder={isPlaceholder}
-                    cardWidth={CARD_WIDTH}
-                    cardHeight={CARD_HEIGHT}
-                    gradientColors={gradientColors}
-                    cardBackground={colors.cardBackground}
-                    textColor={colors.text}
-                    animatedValue={animatedValue}
-                    onFlip={handleFlipById}
-                    swipeX={i === 0 ? swipeX : null}
-                  />
-                </View>
-              );
-            }}
-            onSwiping={(x) => {
-              if (showSwipeTutorial) return;
-              swipeX.setValue(x);
-            }}
-            onSwipedAborted={() => {
-              if (showSwipeTutorial) return;
-              Animated.spring(swipeX, {
-                toValue: 0,
-                useNativeDriver: true,
-              }).start();
-            }}
-            onSwiped={() => {
-              if (showSwipeTutorial) return;
-              setCurrentIndex((prev) => prev + 1);
-              swipeX.setValue(0);
-            }}
-            onSwipedLeft={() => {
-              if (showSwipeTutorial) return;
-              triggerHaptic('selection');
-              handleSwipe(currentIndexRef.current, 'left');
-            }}
-            onSwipedRight={() => {
-              if (showSwipeTutorial) return;
-              triggerHaptic('light');
-              handleSwipe(currentIndexRef.current, 'right');
-            }}
-            disableLeftSwipe={showSwipeTutorial}
-            disableRightSwipe={showSwipeTutorial}
-            disableTopSwipe={true}
-            disableBottomSwipe={true}
-            stackSize={2}
-            showSecondCard={true}
-            swipeBackCard={false}
-            stackSeparation={0}
-            backgroundColor='transparent'
-            useViewOverflow={true}
-            stackScale={1}
-            cardHorizontalMargin={CARD_HORIZONTAL_MARGIN}
-            containerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
-            cardStyle={{ width: CARD_WIDTH, height: CARD_HEIGHT, alignSelf: 'center', justifyContent: 'center' }}
-            stackAnimationFriction={100}
-            stackAnimationTension={100}
+        {cards.length > 0 && currentIndex < cards.length && !originalFlowComplete && (
+          <SwipeCardDeck
+            ref={swipeDeckRef}
+            cards={cards}
+            currentIndex={currentIndex}
+            disabled={showSwipeTutorial || loading}
+            cardWidth={CARD_WIDTH}
+            cardHeight={CARD_HEIGHT}
+            renderCard={renderSwipeCard}
+            renderCardActions={renderSwipeCardActions}
+            activeSwipeX={activeSwipeX}
+            onSwipeStart={handleSwipeStart}
+            onSwiped={handleSwipeCommitted}
+            onSwipeCancelled={handleSwipeCancelled}
+            onCardTap={handleCardTap}
+            swipeThreshold={Math.max(scale(90), CARD_WIDTH * 0.28)}
+            velocityThreshold={900}
             swipeAnimationDuration={SWIPE_ANIMATION_MS}
+            maxRotation={9}
           />
         )}
       </View>
@@ -1791,6 +2067,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  swiperRenderCardWrapper: {
+    width: '100%',
+    height: '100%',
   },
   swipeTutorialOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -2013,28 +2293,53 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '800',
   },
-  card: {
-    borderRadius: moderateScale(26),
-    padding: scale(24),
+
+
+  // Dedicated action row. It stays outside the scrollable card content.
+  cardActionRow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: verticalScale(64),
+    zIndex: 300,
+    elevation: 300,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingHorizontal: scale(12),
+  },
+  cardActionButton: {
+    width: scale(40),
+    height: scale(40),
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#fff',
-    shadowOffset: { width: 0, height: verticalScale(-10) },
-    shadowOpacity: 5,
-    shadowRadius: moderateScale(4),
+    borderRadius: moderateScale(20),
   },
-  imageContainer: {
-    width: '100%',
-    justifyContent: 'center',
+  cardActionIconStage: {
+    width: scale(40),
+    height: scale(40),
     alignItems: 'center',
-    marginBottom: verticalScale(22),
+    justifyContent: 'center',
+    position: 'relative',
   },
-  cardImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'contain',
-    borderRadius: moderateScale(24),
+  cardActionIconFace: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: scale(40),
+    height: scale(40),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backfaceVisibility: 'hidden',
   },
+  cardActionIconFrontFace: {
+    zIndex: 2,
+  },
+  cardActionIconBackFace: {
+    zIndex: 1,
+  },
+
   counterRow: {
     position: 'absolute',
     top: 0,
@@ -2079,6 +2384,11 @@ const styles = StyleSheet.create({
     elevation: 2,
     borderTopLeftRadius: moderateScale(18),
     borderBottomLeftRadius: moderateScale(18),
+  },
+  counterIconOverlay: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   counterText: {
     ...typography.styles.button,
@@ -2250,51 +2560,12 @@ const styles = StyleSheet.create({
     height: verticalScale(36),
     backgroundColor: 'rgba(255,255,255,0.35)',
   },
-  completionSectionHeader: {
-    width: '100%',
-    marginBottom: verticalScale(10),
-    fontWeight: '700',
-    paddingHorizontal: scale(4),
-  },
-  completionStatGrid: {
-    width: '100%',
-    flexDirection: 'row',
-    gap: scale(10),
-    paddingHorizontal: scale(12),
-    marginTop: verticalScale(-30),
-    marginBottom: verticalScale(18),
-    zIndex: 2,
-  },
-  completionStatCard: {
-    flex: 1,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: moderateScale(18),
-    padding: scale(14),
-    minHeight: verticalScale(118),
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: verticalScale(2) },
-    shadowOpacity: 0.05,
-    shadowRadius: moderateScale(6),
-    elevation: 1,
-  },
-  completionStatIcon: {
-    width: scale(34),
-    height: scale(34),
-    borderRadius: moderateScale(17),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  completionStatNumber: {
-    fontSize: moderateScale(28),
-    fontWeight: '800',
-    marginTop: verticalScale(8),
-  },
-  completionStatLabel: {
-    marginTop: verticalScale(2),
-    textAlign: 'center',
-  },
+
+
+
+
+
+
   emptyCompletionContent: {
     flex: 1,
     width: '100%',
@@ -2358,9 +2629,7 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: moderateScale(6),
   },
-  completionChapterPercent: {
-    marginTop: verticalScale(7),
-  },
+
   completionChapterMetrics: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -2388,20 +2657,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  completionReviewCard: {
-    flex: 1,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: moderateScale(18),
-    padding: scale(14),
-    minHeight: verticalScale(106),
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: verticalScale(2) },
-    shadowOpacity: 0.05,
-    shadowRadius: moderateScale(6),
-    elevation: 1,
-  },
+
   completionReviewMetric: {
     fontSize: moderateScale(20),
     fontWeight: '800',
@@ -2411,70 +2667,18 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(1),
     textAlign: 'center',
   },
-  completionHeading: {
-    width: '100%',
-    marginTop: verticalScale(14),
-    marginBottom: verticalScale(6),
-  },
-  completionCard: {
-    width: '100%',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: moderateScale(8),
-    padding: scale(12),
-    marginBottom: verticalScale(8),
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: moderateScale(8),
-    elevation: 2,
-  },
-  completionSessionCount: {
-    ...typography.styles.h2,
-    textAlign: 'center',
-  },
-  completionSectionLabel: {
-    ...typography.styles.body,
-    textAlign: 'center',
-    marginTop: verticalScale(2),
-    marginBottom: verticalScale(8),
-  },
-  completionRow: {
-    gap: verticalScale(8),
-  },
-  completionInlineRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: scale(8),
-  },
-  completionInlineDivider: {
-    width: StyleSheet.hairlineWidth,
-    height: verticalScale(16),
-  },
-  completionProgressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: scale(8),
-    marginTop: verticalScale(10),
-  },
-  completionProgressTrack: {
-    flex: 1,
-    height: verticalScale(8),
-    borderRadius: moderateScale(8),
-    overflow: 'hidden',
-  },
-  completionProgressFill: {
-    height: '100%',
-    borderRadius: moderateScale(8),
-  },
-  completionProgressText: {
-    ...typography.styles.body,
-    fontWeight: '700',
-  },
-  completionReviewTime: {
-    ...typography.styles.h2,
-    marginTop: verticalScale(12),
-    marginBottom: verticalScale(4),
-  },
+
+
+
+
+
+
+
+
+
+
+
+
   completionButton: {
     width: '100%',
     minHeight: verticalScale(52),
@@ -2499,13 +2703,8 @@ const styles = StyleSheet.create({
     flex: 1,
     width: undefined,
   },
-  nextChapterButton: {
-    backgroundColor: 'transparent',
-    borderWidth: moderateScale(1),
-  },
-  nextChapterWrap: {
-    flex: 1,
-  },
+
+
   nextChapterMeta: {
     ...typography.styles.body,
     textAlign: 'center',
@@ -2519,66 +2718,11 @@ const styles = StyleSheet.create({
   completionNextMetaSpacer: {
     flex: 1,
   },
-  completionReviewLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: scale(12),
-    paddingTop: verticalScale(8),
-  },
-  statsContainer: {
-    width: '90%',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: scale(16),
-    marginTop: verticalScale(8),
-  },
-  statCard: {
-    width: '45%',
-    alignItems: 'center',
-    padding: scale(20),
-    borderRadius: moderateScale(16),
-    borderWidth: moderateScale(2),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: verticalScale(2) },
-    shadowOpacity: 0.1,
-    shadowRadius: moderateScale(8),
-    elevation: 3,
-  },
-  statCardWide: {
-    width: '95%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: verticalScale(10),
-    borderRadius: moderateScale(16),
-    borderWidth: moderateScale(1),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: verticalScale(2) },
-    shadowOpacity: 0.1,
-    shadowRadius: moderateScale(8),
-    elevation: 3,
-    flexDirection: 'row',
-    gap: scale(10),
-  },
-  statIconContainer: {
-    width: scale(48),
-    height: scale(48),
-    borderRadius: moderateScale(24),
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
-    marginBottom: verticalScale(12),
-  },
-  statNumber: {
-    ...typography.styles.h2,
-    fontSize: moderateScale(32),
-    fontWeight: '700',
-    marginBottom: verticalScale(4),
-  },
-  statLabel: {
-    ...typography.styles.subtitle,
-    fontSize: moderateScale(14),
-    fontWeight: '500',
-  },
+
+
+
+
+
+
+
 });
