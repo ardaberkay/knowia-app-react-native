@@ -1177,16 +1177,22 @@ export default function DeckDetailScreen({ route, navigation }) {
     }
   };
 
-  const handleAddCard = async () => {
+  const handleAddCard = () => {
+    // 1. İpucu varsa arka planda kapatmayı başlat (await ETMEDEN)
     if (showAddCardHint) {
-      await handleDismissAddCardHint();
+      handleDismissAddCardHint();
     }
+
+    // 2. Buton animasyon durumunu sıfırla
+    addCardFabPressed.value = 0;
+
+    // 3. Anında geri bildirim ver ve sayfaya geç
     triggerHaptic('light');
     requestAnimationFrame(() => {
       navigation.navigate('AddCard', { deck });
     });
   };
-
+  
   const scrollContentPaddingBottom = showAddCardFab
     ? insets.bottom + verticalScale(100)
     : verticalScale(screenHeight * 0.10) + insets.bottom;

@@ -89,15 +89,9 @@ export default function DiscoverDecksSkeleton() {
   const { width, height } = useWindowDimensions();
   const isTablet = getIsTablet();
   
-  const deckSkeletonDimensions = useMemo(() => {
-    const verticalHeight = isTablet ? height * 0.24 : height * 0.28;
-    const horizontalHeight = isTablet ? height * 0.20 : height * 0.23;
-    
-    return { verticalHeight, horizontalHeight };
+  const deckSkeletonHeight = useMemo(() => {
+    return isTablet ? height * 0.24 : height * 0.28;
   }, [height, isTablet]);
-  
-  const DECK_SKELETON_VERTICAL_HEIGHT = deckSkeletonDimensions.verticalHeight;
-  const DECK_SKELETON_HORIZONTAL_HEIGHT = deckSkeletonDimensions.horizontalHeight;
   
   const responsiveSpacing = useMemo(() => ({
     cardMargin: scale(5),
@@ -109,124 +103,86 @@ export default function DiscoverDecksSkeleton() {
   const bgColor = isDarkMode ? '#222' : '#ececec';
   const lineColor = isDarkMode ? '#333' : '#ddd';
 
+  // 2-2-2 Izgara yapısı için satırlar
+  const rows = [1, 2, 3];
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ paddingBottom: '10%', paddingTop: verticalScale(20) }}
       showsVerticalScrollIndicator={false}
     >
-      {[1, 2, 3, 4].map((rowIndex) => (
-        <View key={`skeleton_row_${rowIndex}`}>
-          
-          {/* --- DOUBLE ROW (DİKEY KARTLAR) --- */}
-          <View style={[skeletonStyles.deckList, skeletonStyles.deckRow, { paddingHorizontal: responsiveSpacing.listPaddingHorizontal, paddingVertical: responsiveSpacing.listPaddingVertical }]}>
-            {[0, 1].map((cardIndex) => (
-              <View
-                key={`skeleton_double_${rowIndex}_${cardIndex}`}
-                style={[
-                  skeletonStyles.deckCardVertical,
-                  { height: DECK_SKELETON_VERTICAL_HEIGHT, backgroundColor: bgColor },
-                  cardIndex === 0 ? { marginRight: responsiveSpacing.cardMargin } : { marginLeft: responsiveSpacing.cardMargin }
-                ]}
-              >
-                <View style={skeletonStyles.deckGradient}>
-                  
-                  {/* Üst Kısım: Profil (Sola Dayalı) */}
-                  <View style={skeletonStyles.topRowStart}>
-                    <View style={skeletonStyles.profileRow}>
-                      <ShimmerBox delay={rowIndex * 100 + cardIndex * 50} isDarkMode={isDarkMode} borderRadius={99} screenWidth={SCREEN_WIDTH}>
-                        <View style={[skeletonStyles.avatarSmall, { backgroundColor: lineColor }]} />
-                      </ShimmerBox>
-                      <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 20} isDarkMode={isDarkMode} borderRadius={moderateScale(7)} screenWidth={SCREEN_WIDTH}>
-                        <View style={[skeletonStyles.nameSmall, { backgroundColor: lineColor }]} />
-                      </ShimmerBox>
-                    </View>
-                  </View>
-                  
-                  {/* Orta Kısım: Başlıklar ve Çizgi (Ortalanmış) */}
-                  <View style={skeletonStyles.centerRow}>
-                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 40} isDarkMode={isDarkMode} borderRadius={moderateScale(8)} screenWidth={SCREEN_WIDTH}>
-                      <View style={[skeletonStyles.title, { backgroundColor: lineColor }]} />
-                    </ShimmerBox>
-                    
-                    {/* DİKKAT: İnce Çizgiden Shimmer Kaldırıldı */}
-                    <View style={[skeletonStyles.divider, { backgroundColor: lineColor }]} />
-                    
-                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 80} isDarkMode={isDarkMode} borderRadius={moderateScale(8)} screenWidth={SCREEN_WIDTH}>
-                      <View style={[skeletonStyles.subtitle, { backgroundColor: lineColor }]} />
-                    </ShimmerBox>
-                  </View>
-                  
-                  {/* Alt Kısım: Rozetler Solda, Favori Sağda */}
-                  <View style={skeletonStyles.bottomRowBetween}>
-                    <View style={skeletonStyles.badgeColumn}>
-                      <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 100} isDarkMode={isDarkMode} borderRadius={99} style={{ marginBottom: verticalScale(6) }} screenWidth={SCREEN_WIDTH}>
-                        <View style={[skeletonStyles.badgePop, { backgroundColor: lineColor }]} />
-                      </ShimmerBox>
-                      <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 110} isDarkMode={isDarkMode} borderRadius={moderateScale(14)} screenWidth={SCREEN_WIDTH}>
-                        <View style={[skeletonStyles.badgeCount, { backgroundColor: lineColor }]} />
-                      </ShimmerBox>
-                    </View>
-                    
-                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 120} isDarkMode={isDarkMode} borderRadius={999} screenWidth={SCREEN_WIDTH}>
-                      <View style={[skeletonStyles.favIcon, { backgroundColor: lineColor }]} />
-                    </ShimmerBox>
-                  </View>
-
-                </View>
-              </View>
-            ))}
-          </View>
-          
-          {/* --- SINGLE ROW (YATAY KART) --- */}
-          <View style={[skeletonStyles.deckList, { paddingHorizontal: responsiveSpacing.listPaddingHorizontal, paddingVertical: responsiveSpacing.listPaddingVertical }]}>
-            <View style={[skeletonStyles.deckCardHorizontal, { height: DECK_SKELETON_HORIZONTAL_HEIGHT, backgroundColor: bgColor }]}>
+      {rows.map((rowIndex) => (
+        <View 
+          key={`skeleton_row_${rowIndex}`}
+          style={[
+            skeletonStyles.deckRow, 
+            { 
+              paddingHorizontal: responsiveSpacing.listPaddingHorizontal, 
+              paddingVertical: responsiveSpacing.listPaddingVertical 
+            }
+          ]}
+        >
+          {[0, 1].map((cardIndex) => (
+            <View
+              key={`skeleton_card_${rowIndex}_${cardIndex}`}
+              style={[
+                skeletonStyles.deckCardVertical,
+                { height: deckSkeletonHeight, backgroundColor: bgColor },
+                cardIndex === 0 ? { marginRight: responsiveSpacing.cardMargin } : { marginLeft: responsiveSpacing.cardMargin }
+              ]}
+            >
               <View style={skeletonStyles.deckGradient}>
                 
-                {/* Üst Kısım: Popülerlik Rozeti Solda, Favori Sağda */}
-                <View style={skeletonStyles.topRowBetween}>
-                  <ShimmerBox delay={rowIndex * 100 + 240} isDarkMode={isDarkMode} borderRadius={99} screenWidth={SCREEN_WIDTH}>
-                    <View style={[skeletonStyles.badgePop, { backgroundColor: lineColor }]} />
-                  </ShimmerBox>
-                  
-                  <ShimmerBox delay={rowIndex * 100 + 250} isDarkMode={isDarkMode} borderRadius={999} screenWidth={SCREEN_WIDTH}>
-                    <View style={[skeletonStyles.favIcon, { backgroundColor: lineColor }]} />
-                  </ShimmerBox>
-                </View>
-                
-                {/* Orta Kısım: Başlıklar ve Çizgi (Ortalanmış) */}
-                <View style={skeletonStyles.centerRow}>
-                  <ShimmerBox delay={rowIndex * 100 + 260} isDarkMode={isDarkMode} borderRadius={moderateScale(9)} screenWidth={SCREEN_WIDTH}>
-                    <View style={[skeletonStyles.titleLarge, { backgroundColor: lineColor }]} />
-                  </ShimmerBox>
-                  
-                  {/* DİKKAT: İnce Çizgiden Shimmer Kaldırıldı */}
-                  <View style={[skeletonStyles.dividerLarge, { backgroundColor: lineColor }]} />
-                  
-                  <ShimmerBox delay={rowIndex * 100 + 300} isDarkMode={isDarkMode} borderRadius={moderateScale(9)} screenWidth={SCREEN_WIDTH}>
-                    <View style={[skeletonStyles.subtitleLarge, { backgroundColor: lineColor }]} />
-                  </ShimmerBox>
-                </View>
-                
-                {/* Alt Kısım: Profil Solda, Kart Sayısı Sağda */}
-                <View style={skeletonStyles.bottomRowBetween}>
+                {/* Mutlak Konumlandırılmış Popülerlik Rozeti Skeleton (Sağ Üst Köşe) */}
+                <ShimmerBox
+                  delay={rowIndex * 100 + cardIndex * 50 + 30}
+                  isDarkMode={isDarkMode}
+                  style={skeletonStyles.popularityBadgeWrapper}
+                  screenWidth={SCREEN_WIDTH}
+                >
+                  <View style={[skeletonStyles.popularityBadge, { backgroundColor: lineColor }]} />
+                </ShimmerBox>
+
+                {/* Üst Kısım: Profil (Sola Dayalı) */}
+                <View style={skeletonStyles.topRowStart}>
                   <View style={skeletonStyles.profileRow}>
-                    <ShimmerBox delay={rowIndex * 100 + 200} isDarkMode={isDarkMode} borderRadius={99} screenWidth={SCREEN_WIDTH}>
+                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50} isDarkMode={isDarkMode} borderRadius={99} screenWidth={SCREEN_WIDTH}>
                       <View style={[skeletonStyles.avatarSmall, { backgroundColor: lineColor }]} />
                     </ShimmerBox>
-                    <ShimmerBox delay={rowIndex * 100 + 220} isDarkMode={isDarkMode} borderRadius={moderateScale(7)} screenWidth={SCREEN_WIDTH}>
-                      <View style={[skeletonStyles.nameLarge, { backgroundColor: lineColor }]} />
+                    <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 20} isDarkMode={isDarkMode} borderRadius={moderateScale(7)} screenWidth={SCREEN_WIDTH}>
+                      <View style={[skeletonStyles.nameSmall, { backgroundColor: lineColor }]} />
                     </ShimmerBox>
                   </View>
+                </View>
+
+                {/* Orta Kısım: Başlıklar ve Ayırıcı Çizgi */}
+                <View style={skeletonStyles.centerRow}>
+                  <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 40} isDarkMode={isDarkMode} borderRadius={moderateScale(8)} screenWidth={SCREEN_WIDTH}>
+                    <View style={[skeletonStyles.title, { backgroundColor: lineColor }]} />
+                  </ShimmerBox>
                   
-                  <ShimmerBox delay={rowIndex * 100 + 320} isDarkMode={isDarkMode} borderRadius={moderateScale(14)} screenWidth={SCREEN_WIDTH}>
-                    <View style={[skeletonStyles.badgeCountLarge, { backgroundColor: lineColor }]} />
+                  <View style={[skeletonStyles.divider, { backgroundColor: lineColor }]} />
+                  
+                  <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 80} isDarkMode={isDarkMode} borderRadius={moderateScale(8)} screenWidth={SCREEN_WIDTH}>
+                    <View style={[skeletonStyles.subtitle, { backgroundColor: lineColor }]} />
+                  </ShimmerBox>
+                </View>
+
+                {/* Alt Kısım: Sol Rozet / Sayaç ve Sağ Favori Butonu */}
+                <View style={skeletonStyles.bottomRowBetween}>
+                  <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 110} isDarkMode={isDarkMode} borderRadius={moderateScale(14)} screenWidth={SCREEN_WIDTH}>
+                    <View style={[skeletonStyles.badgeCount, { backgroundColor: lineColor }]} />
+                  </ShimmerBox>
+                  
+                  <ShimmerBox delay={rowIndex * 100 + cardIndex * 50 + 120} isDarkMode={isDarkMode} borderRadius={999} screenWidth={SCREEN_WIDTH}>
+                    <View style={[skeletonStyles.favIcon, { backgroundColor: lineColor }]} />
                   </ShimmerBox>
                 </View>
 
               </View>
             </View>
-          </View>
+          ))}
         </View>
       ))}
     </ScrollView>
@@ -234,7 +190,6 @@ export default function DiscoverDecksSkeleton() {
 }
 
 const skeletonStyles = StyleSheet.create({
-  deckList: {},
   deckRow: {
     flexDirection: 'row',
   },
@@ -242,27 +197,33 @@ const skeletonStyles = StyleSheet.create({
     flex: 1,
     borderRadius: moderateScale(18),
     overflow: 'hidden',
-  },
-  deckCardHorizontal: {
-    borderRadius: moderateScale(18),
-    overflow: 'hidden',
+    position: 'relative', // Mutlak rozet konumlandırması için
   },
   deckGradient: {
     flex: 1,
     padding: scale(12),
-    justifyContent: 'space-between', // Absolute yerine Flexbox ile yukarı, ortaya ve aşağıya dağıtır
+    justifyContent: 'space-between',
   },
   
-  // Flex Layout Sınıfları
+  // Popülerlik Rozeti (Birebir orjinal stillerinizle eşleşti)
+  popularityBadgeWrapper: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    zIndex: 20,
+    borderBottomLeftRadius: moderateScale(14),
+  },
+  popularityBadge: {
+    width: scale(62),
+    height: verticalScale(28),
+    borderBottomLeftRadius: moderateScale(14),
+  },
+
+  // Layout Hizamaları
   topRowStart: {
     flexDirection: 'row',
     justifyContent: 'flex-start',
-    width: '100%',
-  },
-  topRowBetween: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     width: '100%',
   },
   centerRow: {
@@ -277,85 +238,48 @@ const skeletonStyles = StyleSheet.create({
     width: '100%',
   },
   
-  // İç Eleman Gruplamaları
+  // İç Elemanlar
   profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    maxWidth: '65%', // Sağ üstteki rozetin altına girmemesi için genişlik sınırı
   },
-  badgeColumn: {
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-  },
-
-  // Ortak Boyutlar
   avatarSmall: {
-    width: scale(32),
-    height: scale(32),
+    width: scale(28),
+    height: scale(28),
     borderRadius: 99,
     marginRight: scale(6),
   },
   nameSmall: {
-    width: scale(85),
-    height: moderateScale(15),
-    borderRadius: moderateScale(7),
-  },
-  nameLarge: {
-    width: scale(95),
-    height: moderateScale(15),
-    borderRadius: moderateScale(7),
+    width: scale(60),
+    height: moderateScale(13),
+    borderRadius: moderateScale(6),
   },
   title: {
     width: scale(80),
     height: moderateScale(16),
     borderRadius: moderateScale(8),
   },
-  titleLarge: {
-    width: scale(140),
-    height: moderateScale(18),
-    borderRadius: moderateScale(9),
-  },
   subtitle: {
-    width: scale(70),
-    height: moderateScale(16),
-    borderRadius: moderateScale(8),
-  },
-  subtitleLarge: {
-    width: scale(120),
-    height: moderateScale(18),
-    borderRadius: moderateScale(9),
-  },
-  badgePop: {
-    width: scale(50),
-    height: verticalScale(24),
-    borderRadius: 99,
+    width: scale(65),
+    height: moderateScale(14),
+    borderRadius: moderateScale(7),
   },
   badgeCount: {
-    width: scale(60),
-    height: verticalScale(28),
-    borderRadius: moderateScale(14),
-  },
-  badgeCountLarge: {
-    width: scale(65),
-    height: verticalScale(28),
-    borderRadius: moderateScale(14),
+    width: scale(55),
+    height: verticalScale(24),
+    borderRadius: moderateScale(12),
   },
   favIcon: {
-    width: moderateScale(37),
-    height: moderateScale(37),
+    width: moderateScale(32),
+    height: moderateScale(32),
     borderRadius: 999,
   },
   divider: {
-    width: scale(60),
+    width: scale(50),
     height: moderateScale(2),
     borderRadius: moderateScale(1),
     marginVertical: verticalScale(8),
     opacity: 0.5,
   },
-  dividerLarge: {
-    width: scale(70),
-    height: moderateScale(2),
-    borderRadius: moderateScale(1),
-    marginVertical: verticalScale(10),
-    opacity: 0.5,
-  }
 });

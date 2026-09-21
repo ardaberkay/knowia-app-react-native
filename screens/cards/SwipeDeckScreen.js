@@ -2718,11 +2718,4 @@ const styles = StyleSheet.create({
   completionNextMetaSpacer: {
     flex: 1,
   },
-
-
-
-
-
-
-
 });

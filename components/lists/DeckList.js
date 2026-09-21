@@ -326,27 +326,6 @@ const DeckCard = React.memo(
         </View>
       </View>
     );
-
-    /*
-     * VARIANT:
-     *
-     * inProgress
-     *   - profile
-     *   - progress
-     *   - favorite
-     *
-     * myDecks
-     *   - card count
-     *   - delete
-     *   - progress
-     *   - favorite
-     *
-     * favorite
-     *   - profile
-     *   - card count
-     *   - favorite
-     */
-
     const showProfile =
       variant === 'inProgress' ||
       variant === 'favorite';
@@ -592,20 +571,7 @@ const DeckList = ({
   refreshing = false,
   onRefresh,
   showPopularityBadge = false,
-
-  /*
-   * double
-   *   2 - 2 - 2 - 2...
-   *
-   * pattern
-   *   2 - 3 - 2 - 3...
-   */
   layoutMode = 'double',
-  /*
-   * inProgress
-   * myDecks
-   * favorite
-   */
   cardVariant = 'favorite',
   loadingMore = false,
   contentPaddingTop = 0,
@@ -1380,25 +1346,18 @@ const styles = StyleSheet.create({
     left: scale(12),
     zIndex: 10,
   },
-
   popularityBadge: {
     position: 'absolute',
     top: 0,
     right: 0,
-
     width: scale(62),
     height: verticalScale(28),
-
     backgroundColor: '#FF6B35',
-
     borderBottomLeftRadius: moderateScale(14),
-
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-
     zIndex: 20,
-
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
