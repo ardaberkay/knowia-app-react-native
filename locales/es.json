@@ -403,7 +403,8 @@
       "daysFromNow": "{{count}} días",
       "noNextChapter": "Sin siguiente capítulo",
       "emptyTitle": "No hay tarjetas pendientes en este capítulo.",
-      "allLearned": "Todas aprendidas"
+      "allLearned": "Todas aprendidas",
+      "totalSwipes": "Total deslices"
     },
     "tutorial": {
       "flipTitle": "Voltea la tarjeta",

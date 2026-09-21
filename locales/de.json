@@ -405,7 +405,8 @@
       "daysFromNow": "{{count}} Tage",
       "noNextChapter": "Kein weiteres Kapitel",
       "emptyTitle": "In diesem Kapitel sind keine Karten fällig.",
-      "allLearned": "Alle Karten gelernt"
+      "allLearned": "Alle Karten gelernt",
+      "totalSwipes": "Swipes gesamt"
     },
     "tutorial": {
       "flipTitle": "Karte umdrehen",

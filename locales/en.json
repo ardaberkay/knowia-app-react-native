@@ -441,7 +441,8 @@
       "daysFromNow": "{{count}} days",
       "noNextChapter": "No next chapter",
       "emptyTitle": "No cards are due in this chapter.",
-      "allLearned": "All cards learned"
+      "allLearned": "All cards learned",
+      "totalSwipes": "Total Swipes"
     },
     "tutorial": {
       "flipTitle": "Flip the card",

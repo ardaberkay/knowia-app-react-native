@@ -446,7 +446,8 @@
       "daysFromNow": "{{count}} gün sonra",
       "noNextChapter": "Sonraki bölüm yok",
       "emptyTitle": "Bu bölümde şu anda çalışılacak kart yok.",
-      "allLearned": "Tüm kartlar öğrenildi"
+      "allLearned": "Tüm kartlar öğrenildi",
+      "totalSwipes": "Toplam Kaydırma"
     },
     "tutorial": {
       "flipTitle": "Kartı çevir",

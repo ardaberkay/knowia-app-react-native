@@ -403,7 +403,8 @@
       "daysFromNow": "{{count}} jours",
       "noNextChapter": "Pas de chapitre suivant",
       "emptyTitle": "Aucune carte à réviser ici.",
-      "allLearned": "Toutes les cartes sont apprises"
+      "allLearned": "Toutes les cartes sont apprises",
+      "totalSwipes": "Swipes totaux"
     },
     "tutorial": {
       "flipTitle": "Retournez la carte",

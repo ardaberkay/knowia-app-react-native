@@ -403,7 +403,8 @@
       "daysFromNow": "{{count}} dias",
       "noNextChapter": "Sem próximo capítulo",
       "emptyTitle": "Não há cartões para estudar neste capítulo.",
-      "allLearned": "Todos os cartões foram aprendidos"
+      "allLearned": "Todos os cartões foram aprendidos",
+      "totalSwipes": "Deslizes totais"
     },
     "tutorial": {
       "flipTitle": "Vire o cartão",

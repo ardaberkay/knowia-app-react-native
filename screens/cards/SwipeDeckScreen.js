@@ -1171,9 +1171,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
     const nextProgressCount = sessionProgressKey && !isAlreadyCountedInSession
       ? Math.min(
-          sessionTargetCount > 0 ? sessionTargetCount : Number.MAX_SAFE_INTEGER,
-          sessionCountedCardKeysRef.current.size,
-        )
+        sessionTargetCount > 0 ? sessionTargetCount : Number.MAX_SAFE_INTEGER,
+        sessionCountedCardKeysRef.current.size,
+      )
       : sessionProgressCountRef.current;
 
     sessionProgressCountRef.current = nextProgressCount;
@@ -1267,8 +1267,13 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
     setUndoDisabled(true);
 
+    // Keep the local deck intact. Swiping advances currentIndex; it does not
+    // remove cards from `cards`, so the server-side undo only needs the UI to
+    // move back to the historical index. Re-fetching the whole queue here was
+    // desynchronizing the mounted SwipeCardDeck slots and could leave a blank
+    // card after repeated Undo operations.
     const lastIndex = history[history.length - 1];
-    const undoneCard = cards[lastIndex];
+    const undoneCard = cardsRef.current[lastIndex] || cards[lastIndex];
     const lastDirection = historyDirections[historyDirections.length - 1];
 
     try {
@@ -1299,48 +1304,19 @@ export default function SwipeDeckScreen({ route, navigation }) {
         setHistoryDirections((prev) => prev.slice(0, -1));
       }
 
-      paginationCursorRef.current = { afterSortKey: null, afterQueueId: null };
-      currentPositionCursorRef.current = { currentSortKey: null, currentQueueId: null };
+      // Do NOT call getSwipeSessionNextCards() here and do NOT replace `cards`.
+      // The current deck already contains the undone card. Moving currentIndex
+      // back makes that exact existing card active again and lets
+      // SwipeCardDeck's currentIndex effect reset its animation state safely.
+      if (undoneCard && lastIndex >= 0 && lastIndex < cardsRef.current.length) {
+        currentIndexRef.current = lastIndex;
+        setCurrentIndex(lastIndex);
 
-      const freshCards = await getSwipeSessionNextCards({
-        sessionId: sessionIdRef.current,
-        afterSortKey: null,
-        afterQueueId: null,
-        currentSortKey: null,
-        currentQueueId: null,
-        limit: SESSION_BATCH_LIMIT,
-      });
-
-      const learningCards = freshCards.map(card => ({
-        queue_id: card.queue_id,
-        sort_key: card.sort_key,
-        card_id: card.card_id,
-        status: card.status || 'new',
-        next_review: card.next_review || new Date().toISOString(),
-        cards: {
-          id: card.card_id,
-          question: card.question,
-          answer: card.answer,
-          image: card.image,
-          example: card.example,
-          note: card.note,
-          chapter_id: card.chapter_id,
-        }
-      }));
-
-      cardsRef.current = learningCards;
-      setCards(learningCards);
-      prefetchCardImages(learningCards);
-      currentIndexRef.current = 0;
-      setCurrentIndex(0);
-      seenCardIdsRef.current = new Set(learningCards.map(c => c.card_id));
-      hasMoreCardsRef.current = learningCards.length > 0;
-
-      const lastFetchedCard = learningCards[learningCards.length - 1];
-      if (lastFetchedCard) {
-        paginationCursorRef.current = {
-          afterSortKey: lastFetchedCard.sort_key,
-          afterQueueId: lastFetchedCard.queue_id,
+        // The user is now looking at the undone card. Keep the backend cursor
+        // aligned with that card; the next normal swipe updates it again.
+        currentPositionCursorRef.current = {
+          currentSortKey: undoneCard.sort_key ?? null,
+          currentQueueId: undoneCard.queue_id ?? null,
         };
       }
     } catch (error) {
@@ -1614,7 +1590,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
             <Text style={[typography.styles.h2, styles.emptyCompletionTitle, { color: colors.text }]}>{t('swipeDeck.completion.emptyTitle', 'Bu bölümde şu anda çalışılacak kart yok.')}</Text>
             <View style={[styles.emptyCompletionInfo, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
               <Text style={[styles.completionReviewMetric, { color: colors.text }]}>{nearestReview ? formatFutureReview(nearestReview.at, t) : '—'}</Text>
-                  <Text style={[typography.styles.caption, styles.completionReviewLabel, { color: colors.muted }]}>{nearestReview ? t('swipeDeck.completion.cardsReady', { count: nearestReview.count, defaultValue: `${nearestReview.count} kart hazır` }) : t('swipeDeck.completion.nearestReview', 'En yakın tekrar')}</Text>
+              <Text style={[typography.styles.caption, styles.completionReviewLabel, { color: colors.muted }]}>{nearestReview ? t('swipeDeck.completion.cardsReady', { count: nearestReview.count, defaultValue: `${nearestReview.count} kart hazır` }) : t('swipeDeck.completion.nearestReview', 'En yakın tekrar')}</Text>
             </View>
             <View style={styles.completionCtaArea}>
               <View style={styles.completionButtonRow}>
@@ -1654,13 +1630,34 @@ export default function SwipeDeckScreen({ route, navigation }) {
               </View>
               <View style={styles.completionHeroSessionStats}>
                 <View style={styles.completionHeroSessionStat}>
-                  <Text style={styles.completionHeroSessionNumber}>{sessionLearned ?? '—'}</Text>
-                  <Text style={styles.completionHeroSessionLabel}>{t('swipeDeck.completion.learned', 'Öğrenildi')}</Text>
+                  <Text style={styles.completionHeroSessionNumber}>
+                    {sessionLearned ?? '—'}
+                  </Text>
+                  <Text style={styles.completionHeroSessionLabel}>
+                    {t('swipeDeck.completion.learned', 'Öğrenildi')}
+                  </Text>
                 </View>
+
                 <View style={styles.completionHeroSessionDivider} />
+
                 <View style={styles.completionHeroSessionStat}>
-                  <Text style={styles.completionHeroSessionNumber}>{sessionPlanned ?? '—'}</Text>
-                  <Text style={styles.completionHeroSessionLabel}>{t('swipeDeck.completion.reviewPlanned', 'Tekrar Planlandı')}</Text>
+                  <Text style={styles.completionHeroSessionNumber}>
+                    {sessionPlanned ?? '—'}
+                  </Text>
+                  <Text style={styles.completionHeroSessionLabel}>
+                    {t('swipeDeck.completion.reviewPlanned', 'Tekrar Planlandı')}
+                  </Text>
+                </View>
+
+                <View style={styles.completionHeroSessionDivider} />
+
+                <View style={styles.completionHeroSessionStat}>
+                  <Text style={styles.completionHeroSessionNumber}>
+                    {totalSwipeCount ?? '—'}
+                  </Text>
+                  <Text style={styles.completionHeroSessionLabel}>
+                    {t('swipeDeck.completion.totalSwipes', 'Toplam Kaydırma')}
+                  </Text>
                 </View>
               </View>
             </LinearGradient>
@@ -1911,9 +1908,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
               : true;
             const currentCardNumber = sessionTargetCount > 0
               ? Math.min(
-                  sessionTargetCount,
-                  sessionProgressCount + (activeCardAlreadyCounted ? 0 : 1),
-                )
+                sessionTargetCount,
+                sessionProgressCount + (activeCardAlreadyCounted ? 0 : 1),
+              )
               : sessionProgressCount;
 
             const allOriginalCardsCompleted =
