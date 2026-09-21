@@ -149,6 +149,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [selectedCards, setSelectedCards] = useState(new Set());
+  const selectedCardsRef = useRef(new Set());
   const [showChapterModal, setShowChapterModal] = useState(false);
   const [moveLoading, setMoveLoading] = useState(false);
   const [moreMenuVisible, setMoreMenuVisible] = useState(false);
@@ -576,44 +577,84 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
   const handleToggleCardSelection = useCallback((cardId) => {
     triggerHaptic('light');
+
     setSelectedCards((prevSelected) => {
-      // Mevcut Set'in kopyasını al (Immutable yapı)
       const newSelected = new Set(prevSelected);
+
       if (newSelected.has(cardId)) {
         newSelected.delete(cardId);
       } else {
         newSelected.add(cardId);
       }
-      return newSelected; // Yeni Set referansı state'e atanır
+
+      // State'ten bağımsız olarak daima son seçimi tut
+      selectedCardsRef.current = newSelected;
+
+      return newSelected;
     });
-  }, []); // Bağımlılık dizisi boş, çünkü set-state fonksiyonu kullanıyoruz
+  }, []);
 
   const handleSelectAll = () => {
     if (selectedCards.size === filteredCards.length) {
+      selectedCardsRef.current = new Set();
       setSelectedCards(new Set());
     } else {
-      setSelectedCards(new Set(filteredCards.map(c => c.id)));
+      const allSelected = new Set(filteredCards.map(c => c.id));
+
+      selectedCardsRef.current = allSelected;
+      setSelectedCards(allSelected);
     }
   };
 
   const handleMoveToChapter = async (targetChapterId) => {
-    if (selectedCards.size === 0) {
-      showError(t('chapterCards.noCardsSelected', 'Lütfen en az bir kart seçin.'));
+    // Modal içinden gelen callback eski render'a ait olsa bile
+    // her zaman güncel seçimi ref'ten al.
+    const cardIds = Array.from(selectedCardsRef.current);
+
+    if (cardIds.length === 0) {
+      showError(
+        t(
+          'chapterCards.noCardsSelected',
+          'Lütfen en az bir kart seçin.'
+        )
+      );
       return;
     }
+
     setMoveLoading(true);
+
     try {
-      const cardIds = Array.from(selectedCards);
-      await updateCardsChapter(cardIds, targetChapterId, deck.id, currentUserId);
+      await updateCardsChapter(
+        cardIds,
+        targetChapterId,
+        deck.id,
+        currentUserId
+      );
 
-      showSuccess(t('chapterCards.cardsMoved', '{{count}} kart bölüme taşındı.', { count: selectedCards.size }));
+      showSuccess(
+        t(
+          'chapterCards.cardsMoved',
+          '{{count}} kart bölüme taşındı.',
+          { count: cardIds.length }
+        )
+      );
 
+      // Başarılı taşıma sonrası temizle
+      selectedCardsRef.current = new Set();
       setSelectedCards(new Set());
+
       setEditMode(false);
       setShowChapterModal(false);
+
       await fetchChapterCards();
     } catch (e) {
-      showError(e.message || t('chapterCards.moveError', 'Kartlar taşınamadı.'));
+      showError(
+        e.message ||
+        t(
+          'chapterCards.moveError',
+          'Kartlar taşınamadı.'
+        )
+      );
     } finally {
       setMoveLoading(false);
     }
@@ -983,11 +1024,9 @@ export default function ChapterCardsScreen({ route, navigation }) {
       <ChapterSelector
         isVisible={showChapterModal}
         onClose={() => {
+          // Modal kapanırken seçimi SAKIN temizleme.
+          // Seçim sadece taşıma başarıyla bittikten sonra temizlenecek.
           setShowChapterModal(false);
-          if (!moveLoading) {
-            setSelectedCards(new Set());
-            setEditMode(false);
-          }
         }}
         chapters={chapters}
         progressMap={progressMap}
