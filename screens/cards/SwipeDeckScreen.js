@@ -337,7 +337,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const REVIEW_PROMPT_DELAY_MS = 600;
   const PRE_FETCH_THRESHOLD = 5;
   const seenCardIdsRef = useRef(new Set());
-  const sessionSeenCardIdsRef = useRef(new Set());
+  const sessionCountedCardKeysRef = useRef(new Set());
   const sessionProgressCountRef = useRef(0);
   const historyStateSnapshotsRef = useRef([]);
   const [sessionProgressCount, setSessionProgressCount] = useState(0);
@@ -601,7 +601,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       setRightCount(0);
       setLeftCount(0);
       seenCardIdsRef.current = new Set();
-      sessionSeenCardIdsRef.current = new Set();
+      sessionCountedCardKeysRef.current = new Set();
       sessionProgressCountRef.current = 0;
       historyStateSnapshotsRef.current = [];
       leftCountedCardIds.current = new Set();
@@ -684,12 +684,11 @@ export default function SwipeDeckScreen({ route, navigation }) {
           };
         }
         seenCardIdsRef.current = new Set(learningCards.map(c => c.card_id));
-        sessionSeenCardIdsRef.current = learningCards[0]?.card_id
-          ? new Set([learningCards[0].card_id])
-          : new Set();
-        const initialProgressCount = learningCards.length > 0 ? 1 : 0;
-        sessionProgressCountRef.current = initialProgressCount;
-        setSessionProgressCount(initialProgressCount);
+        // Do not count the initially visible card as completed progress.
+        // The header can still show 1/N separately from the completion counter.
+        sessionCountedCardKeysRef.current = new Set();
+        sessionProgressCountRef.current = 0;
+        setSessionProgressCount(0);
         setCurrentIndex(0);
 
         let globalLearnedCount = getEffectiveLearnedEstimate();
@@ -904,6 +903,14 @@ export default function SwipeDeckScreen({ route, navigation }) {
     };
   });
 
+  // Original-session progress is keyed ONLY by card_id.
+  // A reinsert may receive a new queue_id, but it is still the same card.
+  // Therefore queue_id must never determine whether progress advances.
+  const getSessionProgressCardKey = useCallback((card) => {
+    if (!card?.card_id) return null;
+    return `card:${String(card.card_id)}`;
+  }, []);
+
   const normalizeIncomingCards = useCallback((incomingCards) => {
     if (!Array.isArray(incomingCards) || incomingCards.length === 0) return [];
 
@@ -957,6 +964,13 @@ export default function SwipeDeckScreen({ route, navigation }) {
   }, [normalizeIncomingCards, prefetchCardImages]);
 
   const commitIncomingCards = useCallback((incomingCards) => {
+    // Never mutate the visible queue after the original session reaches N/N.
+    // Late network responses/reinsert checks can otherwise append cards to a
+    // completed mount even though the completion screen is already active.
+    if (sessionTargetCount > 0 && sessionProgressCountRef.current >= sessionTargetCount) {
+      return;
+    }
+
     const normalized = normalizeIncomingCards(incomingCards);
     if (normalized.length === 0) return;
 
@@ -978,18 +992,24 @@ export default function SwipeDeckScreen({ route, navigation }) {
     }
 
     mergeIncomingCardsNow(normalized);
-  }, [mergeIncomingCardsNow, normalizeIncomingCards]);
+  }, [mergeIncomingCardsNow, normalizeIncomingCards, sessionTargetCount]);
 
   const flushPendingIncomingCards = useCallback(() => {
+    if (sessionTargetCount > 0 && sessionProgressCountRef.current >= sessionTargetCount) {
+      // Completed mounts must not reveal delayed reinserts.
+      pendingIncomingCardsRef.current = [];
+      return;
+    }
     if (isAnimatingRef.current) return;
     if (pendingIncomingCardsRef.current.length === 0) return;
 
     const pending = pendingIncomingCardsRef.current;
     pendingIncomingCardsRef.current = [];
     mergeIncomingCardsNow(pending);
-  }, [mergeIncomingCardsNow]);
+  }, [mergeIncomingCardsNow, sessionTargetCount]);
 
   const fetchMoreCards = useCallback(async () => {
+    if (sessionTargetCount > 0 && sessionProgressCountRef.current >= sessionTargetCount) return;
     if (isFetchingMoreRef.current || !userId || !sessionIdRef.current || !hasMoreCardsRef.current) return;
     isFetchingMoreRef.current = true;
     try {
@@ -1046,9 +1066,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
     } finally {
       isFetchingMoreRef.current = false;
     }
-  }, [userId, commitIncomingCards]);
+  }, [userId, commitIncomingCards, sessionTargetCount]);
 
   const checkDueReinserts = useCallback(async () => {
+    if (sessionTargetCount > 0 && sessionProgressCountRef.current >= sessionTargetCount) return;
     if (isDueCheckingRef.current) return;
     if (!sessionIdRef.current) return;
     if (isFetchingMoreRef.current) return;
@@ -1103,7 +1124,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     } finally {
       isDueCheckingRef.current = false;
     }
-  }, [commitIncomingCards]);
+  }, [commitIncomingCards, sessionTargetCount]);
 
   const handleSwipe = useCallback(async (cardIndex, direction, meta = null) => {
     if (showSwipeTutorial) return;
@@ -1131,23 +1152,40 @@ export default function SwipeDeckScreen({ route, navigation }) {
     }
 
     historyStateSnapshotsRef.current.push({
-      sessionSeenCardIds: new Set(sessionSeenCardIdsRef.current),
+      sessionCountedCardKeys: new Set(sessionCountedCardKeysRef.current),
       sessionProgressCount: sessionProgressCountRef.current,
       leftCountedCardIds: new Set(leftCountedCardIds.current),
       historyLeftCardIds: [...historyLeftCardIds.current],
     });
 
-    sessionSeenCardIdsRef.current.add(swipedCardId);
-    const nextCard = sourceCards[cardIndex + 1];
-    if (nextCard?.card_id) {
-      sessionSeenCardIdsRef.current.add(nextCard.card_id);
+    // Only the first swipe of a queue entry advances the original-session
+    // progress. Reinserted cards keep the same key, so they do not advance it.
+    const sessionProgressKey = getSessionProgressCardKey(card);
+    const isAlreadyCountedInSession = sessionProgressKey
+      ? sessionCountedCardKeysRef.current.has(sessionProgressKey)
+      : false;
+
+    if (sessionProgressKey && !isAlreadyCountedInSession) {
+      sessionCountedCardKeysRef.current.add(sessionProgressKey);
     }
 
-    const nextProgressCount = sessionTargetCount > 0
-      ? Math.min(sessionTargetCount, sessionSeenCardIdsRef.current.size)
-      : sessionSeenCardIdsRef.current.size;
+    const nextProgressCount = sessionProgressKey && !isAlreadyCountedInSession
+      ? Math.min(
+          sessionTargetCount > 0 ? sessionTargetCount : Number.MAX_SAFE_INTEGER,
+          sessionCountedCardKeysRef.current.size,
+        )
+      : sessionProgressCountRef.current;
+
     sessionProgressCountRef.current = nextProgressCount;
     setSessionProgressCount(nextProgressCount);
+
+    if (sessionTargetCount > 0 && nextProgressCount >= sessionTargetCount) {
+      // N/N is the terminal point for this mount. Any reinserted cards already
+      // present in the local array remain inaccessible because the render path
+      // switches to the completion screen immediately.
+      hasMoreCardsRef.current = false;
+      pendingIncomingCardsRef.current = [];
+    }
 
     // Update the visible counter immediately when the swipe commits.
     // Do this before the async server write so the icon never falls back to
@@ -1193,6 +1231,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
   }, [
     checkDueReinserts,
     flushPendingIncomingCards,
+    getSessionProgressCardKey,
     scheduleReviewCheck,
     sessionTargetCount,
     showSwipeTutorial,
@@ -1249,7 +1288,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       if (lastDirection) {
         const previousState = historyStateSnapshotsRef.current.pop();
         if (previousState) {
-          sessionSeenCardIdsRef.current = new Set(previousState.sessionSeenCardIds);
+          sessionCountedCardKeysRef.current = new Set(previousState.sessionCountedCardKeys);
           sessionProgressCountRef.current = previousState.sessionProgressCount;
           leftCountedCardIds.current = new Set(previousState.leftCountedCardIds);
           historyLeftCardIds.current = [...previousState.historyLeftCardIds];
@@ -1416,6 +1455,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
       },
     ],
   }));
+  // N/N is a hard boundary for this mounted swipe session.
+  // Reinserted cards may exist in the local queue, but once every original
+  // session card has been completed they must never become visible again.
+  // A fresh mount starts a new swipe session and can fetch them again then.
   const originalFlowComplete =
     sessionTargetCount > 0 &&
     sessionProgressCount >= sessionTargetCount;
@@ -1548,13 +1591,11 @@ export default function SwipeDeckScreen({ route, navigation }) {
   }
 
   if (cards.length === 0 || currentIndex >= cards.length || originalFlowComplete) {
-    const sessionCounts = completionSummary?.sessionCounts;
-    const sessionLearned = sessionCounts
-      ? Math.min(sessionCounts.learned || 0, sessionTargetCount)
-      : null;
-    const sessionPlanned = sessionLearned === null
-      ? null
-      : Math.max(0, sessionTargetCount - sessionLearned);
+    // The backend session summary can lag behind the UI write. The right
+    // counter is the authoritative in-session "learned" value for the
+    // completion screen because it is updated at swipe commit time.
+    const sessionLearned = rightCount;
+    const sessionPlanned = Math.max(0, sessionTargetCount - sessionLearned);
     const chapterProgress = completionSummary?.chapterProgress;
     const chapterLearned = chapterProgress?.learned || 0;
     const chapterUnfinished = chapterProgress ? chapterProgress.total - chapterLearned : 0;
@@ -1572,8 +1613,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
             <Text style={styles.emptyCompletionIcon}>📚</Text>
             <Text style={[typography.styles.h2, styles.emptyCompletionTitle, { color: colors.text }]}>{t('swipeDeck.completion.emptyTitle', 'Bu bölümde şu anda çalışılacak kart yok.')}</Text>
             <View style={[styles.emptyCompletionInfo, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
-              <Text style={[typography.styles.caption, { color: colors.muted }]}>{t('swipeDeck.completion.nearestReview', 'En yakın tekrar')}</Text>
-              <Text style={[typography.styles.subtitle, styles.emptyCompletionTime, { color: colors.text }]}>{nearestReview ? formatFutureReview(nearestReview.at, t) : t('swipeDeck.completion.allLearned', 'Tüm kartlar öğrenildi')}</Text>
+              <Text style={[styles.completionReviewMetric, { color: colors.text }]}>{nearestReview ? formatFutureReview(nearestReview.at, t) : '—'}</Text>
+                  <Text style={[typography.styles.caption, styles.completionReviewLabel, { color: colors.muted }]}>{nearestReview ? t('swipeDeck.completion.cardsReady', { count: nearestReview.count, defaultValue: `${nearestReview.count} kart hazır` }) : t('swipeDeck.completion.nearestReview', 'En yakın tekrar')}</Text>
             </View>
             <View style={styles.completionCtaArea}>
               <View style={styles.completionButtonRow}>
@@ -1862,14 +1903,36 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
         <View style={[styles.deckProgressBox, { flexDirection: 'row' }]}>
           {(() => {
-            const currentCardNumber = sessionProgressCount;
-            const allUniqueSeen = sessionTargetCount > 0 && currentCardNumber >= sessionTargetCount;
-            const currentCardIsReinserted = cards[currentIndex] && leftCountedCardIds.current.has(cards[currentIndex].card_id);
-            const hasReinsertToShow = cards
-              .slice(currentIndex + 1)
-              .some((c) => c?.card_id && leftCountedCardIds.current.has(c.card_id));
+            // Header position remains 1-based for the currently visible card,
+            // while sessionProgressCount remains the real 0..N completion count.
+            const activeProgressKey = getSessionProgressCardKey(cards[currentIndex]);
+            const activeCardAlreadyCounted = activeProgressKey
+              ? sessionCountedCardKeysRef.current.has(activeProgressKey)
+              : true;
+            const currentCardNumber = sessionTargetCount > 0
+              ? Math.min(
+                  sessionTargetCount,
+                  sessionProgressCount + (activeCardAlreadyCounted ? 0 : 1),
+                )
+              : sessionProgressCount;
+
+            const allOriginalCardsCompleted =
+              sessionTargetCount > 0 && sessionProgressCount >= sessionTargetCount;
+
+            const activeCardIsReinserted =
+              Boolean(cards[currentIndex]?.card_id) &&
+              leftCountedCardIds.current.has(cards[currentIndex].card_id);
+
+            const hasReinsertToShow =
+              activeCardIsReinserted ||
+              cards
+                .slice(currentIndex + 1)
+                .some((c) => c?.card_id && leftCountedCardIds.current.has(c.card_id));
+
             const showVaktiGeldi =
-              sessionTargetCount > 0 && allUniqueSeen && hasReinsertToShow && currentCardIsReinserted;
+              sessionTargetCount > 0 &&
+              allOriginalCardsCompleted &&
+              activeCardIsReinserted;
             const iconWrapStyle = {
               borderRadius: moderateScale(10),
               padding: scale(6),
@@ -1888,7 +1951,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
             }
             return (
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                {currentCardIsReinserted && (
+                {activeCardIsReinserted && (
                   <View style={iconWrapStyle}>
                     <Iconify icon="fluent:arrow-repeat-all-48-regular" size={moderateScale(18)} color={colors.text} />
                   </View>
