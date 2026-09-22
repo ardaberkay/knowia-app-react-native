@@ -875,7 +875,7 @@ export default function LibraryScreen() {
               contentPaddingBottom={
                 Platform.OS === 'android'
                   ? insets.bottom + verticalScale(120)
-                  : '10%'
+                  : '35%'
               }
             />
           )}

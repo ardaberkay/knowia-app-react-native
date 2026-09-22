@@ -232,13 +232,6 @@ export default function HomeScreen() {
     }
   };
 
-  const handleRemoveFavoriteDeck = async (deckId) => {
-    if (!userId) return;
-    await removeFavoriteDeck(userId, deckId);
-    const decks = await getFavoriteDecks(userId);
-    setFavoriteDecks(decks || []);
-  };
-
   const renderHeroHeader = () => {
     const config = {
       gradient: ['#ffa726', '#ff6b35'],
@@ -306,15 +299,15 @@ export default function HomeScreen() {
                 />
               </TouchableOpacity>
             </View>
-
-            <Image
-              source={require('../../assets/item.webp')}
-              style={styles.heroIllustration}
-              fadeDuration={0}
-
-            />
           </View>
         </LinearGradient>
+
+        {/* Görsel artık LinearGradient'in dışında */}
+        <Image
+          source={require('../../assets/item.webp')}
+          style={styles.heroIllustration}
+          fadeDuration={0}
+        />
       </View>
     );
   };
@@ -437,36 +430,64 @@ export default function HomeScreen() {
             snapToInterval={emptyDeckCardDimensions.width + scale(10)}
             snapToAlignment="start"
           >
-            <TouchableOpacity
-              onPress={handleEmptyDeckPress}
-              activeOpacity={0.6}
-              style={[
-                styles.emptyDeckCard,
-                {
-                  width: emptyDeckCardDimensions.width,
-                  height: emptyDeckCardDimensions.height,
-                  backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)', // Çok hafif transparan arka plan
-                  borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)',
-                }
-              ]}
-            >
-              <View style={styles.emptyDeckCardContent}>
-                <View style={[
-                  styles.emptyDeckPlusContainer,
+            <View style={styles.emptyDeckPromptRow}>
+              <TouchableOpacity
+                onPress={handleEmptyDeckPress}
+                activeOpacity={0.6}
+                style={[
+                  styles.emptyDeckCard,
                   {
-                    backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)', // Border yerine hafif bir dolgu
-                  }
-                ]}>
-                  <Iconify
-                    icon="ic:round-plus"
-                    size={moderateScale(40)}
-                    // İkon rengini temanın ana rengi (primary) yaparsan çok daha "tıklamaya davetkar" durur. 
-                    // Şimdilik senin gri tonunu biraz daha canlandırarak bıraktım:
-                    color={isDarkMode ? 'rgba(200, 200, 200, 0.8)' : 'rgba(100, 100, 100, 0.8)'}
-                  />
+                    width: emptyDeckCardDimensions.width,
+                    height: emptyDeckCardDimensions.height,
+                    backgroundColor: isDarkMode
+                      ? 'rgba(255, 255, 255, 0.03)'
+                      : 'rgba(0, 0, 0, 0.02)',
+                    borderColor: isDarkMode
+                      ? 'rgba(255, 255, 255, 0.2)'
+                      : 'rgba(0, 0, 0, 0.15)',
+                  },
+                ]}
+              >
+                <View style={styles.emptyDeckCardContent}>
+                  <View
+                    style={[
+                      styles.emptyDeckPlusContainer,
+                      {
+                        backgroundColor: isDarkMode
+                          ? 'rgba(255, 255, 255, 0.08)'
+                          : 'rgba(0, 0, 0, 0.05)',
+                      },
+                    ]}
+                  >
+                    <Iconify
+                      icon="ic:round-plus"
+                      size={moderateScale(40)}
+                      color={
+                        isDarkMode
+                          ? 'rgba(200, 200, 200, 0.8)'
+                          : 'rgba(100, 100, 100, 0.8)'
+                      }
+                    />
+                  </View>
                 </View>
+              </TouchableOpacity>
+
+              <View style={styles.emptyDeckPromptText}>
+                <Text style={styles.emptyDeckPromptTitle}>
+                  {t(
+                    'home.emptyHeadTitle',
+                    'Hemen başla!'
+                  )} 🚀
+                </Text>
+
+                <Text style={styles.emptyDeckPromptDescription}>
+                  {t(
+                    'home.emptySubtitle',
+                    'Hazır ve topluluk destelerinden sana uygun olanı seç veya kendi desteni oluştur. Öğrenmeye şimdi başla!'
+                  )}
+                </Text>
               </View>
-            </TouchableOpacity>
+            </View>
           </ScrollView>
         ) : (
           <ScrollView
@@ -661,11 +682,42 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(32),
     // Kenarlık (borderWidth) yok, sadece arka plan rengi ile ayrışacak
   },
+  emptyDeckPromptRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: scale(20),
+  },
+
+  emptyDeckPromptText: {
+    width: scale(190),
+    marginLeft: scale(16),
+    textAlign: 'center',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+
+  emptyDeckPromptTitle: {
+    fontSize: moderateScale(17),
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: verticalScale(6),
+
+  },
+
+  emptyDeckPromptDescription: {
+    fontSize: moderateScale(13),
+    lineHeight: moderateScale(19),
+    fontWeight: '400',
+    color:
+      'rgba(255, 255, 255, 0.65)',
+    textAlign: 'center',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
   heroHeaderContainer: {
     width: '100%',
-    borderBottomRightRadius: 36,
-    borderBottomLeftRadius: 36,
-    marginBottom: verticalScale(24)
+    position: 'relative',
+    marginBottom: verticalScale(24),
   },
   heroHeader: {
     width: '100%',
@@ -683,7 +735,7 @@ const styles = StyleSheet.create({
   },
 
   heroTextContent: {
-    maxWidth: 225,
+    maxWidth: '55%',
     zIndex: 2,
   },
 

@@ -109,7 +109,9 @@
     "defaultDecksDescription": "Hazır destelerle hızlıca öğrenmeye başlayın",
     "communityDecksDescription": "Topluluk destelerini keşfedin ve paylaşın",
     "cardCount": "Kart",
-    "chapterCount": "Bölüm"
+    "chapterCount": "Bölüm",
+    "emptyHeadTitle": "Hemen başla!",
+    "emptySubtitle": "Hazır ve topluluk destelerinden sana uygun olanı seç veya kendi desteni oluştur. Öğrenmeye şimdi başla!"
   },
   "create": {
     "name": "Deste Adı",

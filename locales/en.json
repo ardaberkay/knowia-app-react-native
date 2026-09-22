@@ -109,7 +109,9 @@
     "defaultDecksDescription": "Start learning quickly with ready made decks",
     "communityDecksDescription": "Discover and share community decks",
     "cardCount": "Card",
-    "chapterCount": "Chapter"
+    "chapterCount": "Chapter",
+    "emptyHeadTitle": "Start now!",
+    "emptySubtitle": "Choose a ready-made or community deck, or create your own. Start learning now!"
   },
   "create": {
     "name": "Deck Name",

@@ -106,7 +106,9 @@
     "defaultDecksDescription": "Schnell starten mit fertigen Decks",
     "communityDecksDescription": "Community Decks entdecken und teilen",
     "cardCount": "Karte",
-    "chapterCount": "Kapitel"
+    "chapterCount": "Kapitel",
+    "emptyHeadTitle": "Jetzt starten!",
+    "emptySubtitle": "Wähle ein fertiges oder Community-Deck oder erstelle dein eigenes. Starte jetzt!"
   },
   "create": {
     "name": "Deckname",

@@ -105,7 +105,9 @@
     "defaultDecksDescription": "Comienza a aprender rápidamente con barajas listas",
     "communityDecksDescription": "Descubre y comparte barajas de la comunidad",
     "cardCount": "Tarjeta",
-    "chapterCount": "Capítulo"
+    "chapterCount": "Capítulo",
+    "emptyHeadTitle": "¡Empieza ya!",
+    "emptySubtitle": "Elige un mazo listo o de la comunidad, o crea el tuyo. ¡Empieza a aprender!"
   },
   "create": {
     "name": "Nombre Del Mazo",

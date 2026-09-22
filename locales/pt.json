@@ -106,7 +106,9 @@
     "defaultDecksDescription": "Comece a aprender rapidamente com baralhos prontos",
     "communityDecksDescription": "Descubra e compartilhe baralhos da comunidade",
     "cardCount": "Cartão",
-    "chapterCount": "Capítulo"
+    "chapterCount": "Capítulo",
+    "emptyHeadTitle": "Começa já!",
+    "emptySubtitle": "Escolhe um baralho pronto ou da comunidade, ou cria o teu. Começa a aprender!"
   },
   "create": {
     "name": "Nome do deck",

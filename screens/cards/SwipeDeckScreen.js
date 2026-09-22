@@ -1875,7 +1875,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
         {
           paddingBottom: insets.bottom,
           backgroundColor: colors.background,
-          marginTop: '20%'
+          marginTop: '22%'
         }
       ]}
     >
@@ -2014,7 +2014,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       </View>
 
       {/* 3. Alt Kontroller */}
-      <View style={{ width: '100%', zIndex: 10, elevation: 10, backgroundColor: 'transparent', gap: 20 }}>
+      <View style={{ width: '100%', zIndex: 10, elevation: 10, backgroundColor: 'transparent', gap: 16 }}>
         <View
           ref={intervalTutorialTargetRef}
           collapsable={false}
@@ -2482,7 +2482,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: 'transparent',
-    paddingHorizontal: scale(12)
+    paddingHorizontal: scale(12),
   },
   iconButton: {
     width: scale(48),

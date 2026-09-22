@@ -106,7 +106,9 @@
     "defaultDecksDescription": "Commencez à apprendre rapidement avec des paquets prêts à l'emploi",
     "communityDecksDescription": "Découvrez et partagez les paquets communautaires",
     "cardCount": "Carte",
-    "chapterCount": "Chapitre"
+    "chapterCount": "Chapitre",
+    "emptyHeadTitle": "Commencez maintenant !",
+    "emptySubtitle": "Choisissez un deck prêt à l’emploi ou communautaire, ou créez le vôtre. Apprenez dès maintenant !"
   },
   "create": {
     "name": "Nom du deck",
