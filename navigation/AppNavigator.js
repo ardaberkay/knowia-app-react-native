@@ -86,8 +86,8 @@ function MainTabs() {
           let homeIcon;
           if (route.name === 'Home') {
             homeIcon = focused ? 'solar:home-smile-bold' : 'solar:home-angle-broken';
-          } else if (route.name === 'Create') {
-            homeIcon = focused ? 'fluent:note-add-20-filled' : 'fluent:note-add-20-regular';
+          } else if (route.name === 'DiscoverTab') {
+            homeIcon = focused ? 'solar:compass-bold' : 'solar:compass-broken';
           } else if (route.name === 'Library') {
             homeIcon = focused ? 'solar:library-bold-duotone' : 'solar:library-line-duotone';
           } else if (route.name === 'Profile') {
@@ -110,7 +110,7 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: t('tabs.home', 'Anasayfa'), tabBarLabel: t('tabs.home', 'Anasayfa') }} />
-      <Tab.Screen name="Create" component={CreateScreen} options={{ tabBarLabel: t('tabs.create', 'Oluştur'), title: '', headerShown: false }} />
+      <Tab.Screen name="DiscoverTab" component={DiscoverScreen} options={{ tabBarLabel: t('tabs.discover', 'Keşfet'), title: '', headerShown: false }} />
       <Tab.Screen
         name="Library"
         component={LibraryScreen}
@@ -248,6 +248,17 @@ export default function AppNavigator() {
                 },
                 headerTintColor: '#fff', // Geri butonu beyaz olsun
               })}
+            />
+            <Stack.Screen
+              name="CreateDeck"
+              component={CreateScreen}
+              options={{
+                headerShown: true,
+                title: t('tabs.createDeck', 'Deste Oluştur'),
+                headerTitleAlign: 'center',
+                headerBackButtonDisplayMode: 'minimal',
+                contentStyle: { backgroundColor: colors.background },
+              }}
             />
             <Stack.Screen name="SwipeDeck" component={SwipeDeckScreen} options={{ headerShown: true, headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', gestureEnabled: false }} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: t('tabs.profileEdit', 'Profili Düzenle'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />

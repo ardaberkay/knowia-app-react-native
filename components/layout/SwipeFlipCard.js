@@ -9,7 +9,6 @@ import React, {
 } from 'react';
 import {
   Image,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -36,6 +35,18 @@ const PERSPECTIVE = 1200;
 const ENTRANCE_OFFSET = verticalScale(8);
 const ENTRANCE_SCALE = 0.96;
 
+// '#RRGGBB' / '#RGB' -> 'rgba(r,g,b,a)'. Falls back to the input for other formats.
+function withAlpha(color, alpha) {
+  if (typeof color !== 'string' || color[0] !== '#') return color;
+  let hex = color.slice(1);
+  if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
+  if (hex.length !== 6 && hex.length !== 8) return color;
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 const SwipeFlipCard = forwardRef(function SwipeFlipCardImpl({
   card,
   cardId,
@@ -53,9 +64,32 @@ const SwipeFlipCard = forwardRef(function SwipeFlipCardImpl({
   flipProgress: externalFlipProgress = null,
   entranceProgress: externalEntranceProgress = null,
   entranceOpacity: externalEntranceOpacity = null,
+  onBackOverflowChange,
+  reversed = false,
 }, ref) {
   const { t } = useTranslation();
+  // Reverse mode: answer on the front, question (+ image) on the back.
+  const frontText = reversed ? card?.cards?.answer : card?.cards?.question;
+  const frontImage = reversed ? null : card?.cards?.image;
+  const backPrimaryText = reversed ? card?.cards?.question : card?.cards?.answer;
+  const backImage = reversed ? card?.cards?.image : null;
   const [isFlipped, setIsFlipped] = useState(false);
+  // Back face is not scrollable (scrolling fights the swipe/tap gestures).
+  // Instead we measure whether the content fits and let the parent show a
+  // "see more" affordance that opens the full content.
+  const [backViewportHeight, setBackViewportHeight] = useState(0);
+  const [backContentHeight, setBackContentHeight] = useState(0);
+  const isBackOverflowing = backViewportHeight > 0 && backContentHeight > backViewportHeight + 1;
+
+  useEffect(() => {
+    if (isPlaceholder || !cardId) return;
+    onBackOverflowChange?.(cardId, isBackOverflowing);
+  }, [cardId, isBackOverflowing, isPlaceholder, onBackOverflowChange]);
+
+  const backFadeColors = useMemo(() => {
+    const base = gradientColors?.[gradientColors.length - 1] || '#7A5F3A';
+    return [withAlpha(base, 0), withAlpha(base, 0.92), base];
+  }, [gradientColors]);
   // The deck owns these shared values when the card is rendered inside the
   // swipe stack, allowing the card and its action row to animate together.
   // Local values remain as a safe fallback for standalone usage.
@@ -258,10 +292,10 @@ const SwipeFlipCard = forwardRef(function SwipeFlipCardImpl({
     typography.styles.h2,
     {
       color: textColor,
-      marginBottom: card?.cards?.image ? verticalScale(16) : 0,
+      marginBottom: frontImage ? verticalScale(16) : 0,
       textAlign: 'center',
     },
-  ], [card?.cards?.image, textColor]);
+  ], [frontImage, textColor]);
 
   const answerTextStyle = useMemo(() => [
     typography.styles.h2,
@@ -330,10 +364,10 @@ const SwipeFlipCard = forwardRef(function SwipeFlipCardImpl({
               <View
                 style={[
                   styles.frontContent,
-                  { justifyContent: card?.cards?.image ? 'flex-start' : 'center' },
+                  { justifyContent: frontImage ? 'flex-start' : 'center' },
                 ]}
               >
-                {card?.cards?.image ? (
+                {frontImage ? (
                   <View
                     style={[
                       styles.imageContainer,
@@ -344,7 +378,7 @@ const SwipeFlipCard = forwardRef(function SwipeFlipCardImpl({
                     ]}
                   >
                     <Image
-                      source={{ uri: card.cards.image }}
+                      source={{ uri: frontImage }}
                       style={styles.cardImage}
                       fadeDuration={0}
                     />
@@ -352,7 +386,7 @@ const SwipeFlipCard = forwardRef(function SwipeFlipCardImpl({
                 ) : null}
 
                 <MathText
-                  value={card?.cards?.question}
+                  value={frontText}
                   style={questionTextStyle}
                   forceText
                 />
@@ -382,21 +416,40 @@ const SwipeFlipCard = forwardRef(function SwipeFlipCardImpl({
         />
 
         <Reanimated.View pointerEvents="box-none" style={[styles.faceContent, contentEntranceStyle]}>
-          <ScrollView
-            contentContainerStyle={styles.backScrollContent}
-            showsVerticalScrollIndicator={false}
-            nestedScrollEnabled
-            removeClippedSubviews={false}
-            style={styles.scroll}
+          <View style={styles.backPadding}>
+          <View
+            style={[
+              styles.backViewport,
+              { justifyContent: isBackOverflowing ? 'flex-start' : 'center' },
+            ]}
+            onLayout={(e) => setBackViewportHeight(e.nativeEvent.layout.height)}
           >
-            <View style={styles.backContent}>
+            <View
+              style={styles.backContent}
+              onLayout={(e) => setBackContentHeight(e.nativeEvent.layout.height)}
+            >
               <View style={styles.answerSection}>
                 <Pill
-                  label={t('swipeDeck.answer', 'Answer')}
-                  icon={<Iconify icon="uil:comment-alt-check" size={moderateScale(18)} color="#fff" />}
+                  label={reversed ? t('cardDetail.question', 'Soru') : t('swipeDeck.answer', 'Answer')}
+                  icon={
+                    <Iconify
+                      icon={reversed ? 'uil:comment-alt-question' : 'uil:comment-alt-check'}
+                      size={moderateScale(18)}
+                      color="#fff"
+                    />
+                  }
                 />
+                {backImage ? (
+                  <View style={[styles.backImageContainer, { height: cardHeight * 0.3 }]}>
+                    <Image
+                      source={{ uri: backImage }}
+                      style={styles.cardImage}
+                      fadeDuration={0}
+                    />
+                  </View>
+                ) : null}
                 <MathText
-                  value={card?.cards?.answer}
+                  value={backPrimaryText}
                   forceText
                   style={answerTextStyle}
                 />
@@ -442,7 +495,16 @@ const SwipeFlipCard = forwardRef(function SwipeFlipCardImpl({
                 </>
               ) : null}
             </View>
-          </ScrollView>
+          </View>
+          </View>
+          {isBackOverflowing ? (
+            <LinearGradient
+              pointerEvents="none"
+              colors={backFadeColors}
+              locations={[0, 0.6, 1]}
+              style={styles.backFade}
+            />
+          ) : null}
         </Reanimated.View>
 
         <Reanimated.View
@@ -491,6 +553,8 @@ function areEqual(prev, next) {
   if (prev.cardBackground !== next.cardBackground) return false;
   if (prev.textColor !== next.textColor) return false;
   if (prev.onFlip !== next.onFlip) return false;
+  if (prev.onBackOverflowChange !== next.onBackOverflowChange) return false;
+  if (prev.reversed !== next.reversed) return false;
   if (prev.swipeX !== next.swipeX) return false;
   if (prev.leftSwipeAccentColor !== next.leftSwipeAccentColor) return false;
   if (prev.rightSwipeAccentColor !== next.rightSwipeAccentColor) return false;
@@ -584,15 +648,28 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  scroll: {
+  backPadding: {
     flex: 1,
     width: '100%',
-  },backScrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
     paddingHorizontal: scale(24),
     paddingTop: verticalScale(32),
     paddingBottom: verticalScale(24),
+  },
+  backViewport: {
+    flex: 1,
+    width: '100%',
+    overflow: 'hidden',
+  },
+  backImageContainer: {
+    width: '100%',
+    marginBottom: verticalScale(8),
+  },
+  backFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: verticalScale(110),
   },
   frontPressable: {
     flex: 1,

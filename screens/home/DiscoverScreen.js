@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Platform, Image, Animated, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
@@ -15,8 +15,14 @@ import { typography } from '../../theme/typography';
 import { LinearGradient } from 'expo-linear-gradient';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 
+// How far the list is pulled up under the hero (see styles.listContainer).
+const HERO_OVERLAP = verticalScale(16);
+
 export default function DiscoverScreen() {
   const navigation = useNavigation();
+  // Rendered both as a bottom tab ("DiscoverTab", tab bar visible) and as a
+  // pushed stack screen ("Discover", no tab bar).
+  const isTab = useRoute().name === 'DiscoverTab';
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { session } = useAuth();
@@ -287,7 +293,10 @@ export default function DiscoverScreen() {
 
   const renderFixedHeader = () => {
     const headerHeight = Platform.OS === 'ios' ? insets.top + 44 : 56;
-    const headerPaddingTop = headerHeight + verticalScale(50);
+    // As a tab there is no transparent native header/back button above it.
+    const headerPaddingTop = isTab
+      ? insets.top + verticalScale(24)
+      : headerHeight + verticalScale(50);
 
     return (
       <View style={[
@@ -518,11 +527,15 @@ export default function DiscoverScreen() {
             refreshing={refreshing}
             onRefresh={handleRefresh}
             showPopularityBadge={activeTab === 'trend'}
-            contentPaddingTop={verticalScale(20)}
+            // listContainer sits HERO_OVERLAP under the hero (rounded corners
+            // over content). Add it back plus the same visible gap as Library's
+            // "Destelerim", and push the refresh spinner below the hero edge.
+            contentPaddingTop={HERO_OVERLAP + verticalScale(14)}
+            progressViewOffset={HERO_OVERLAP}
             contentPaddingBottom={
               Platform.OS === 'android'
-                ? insets.bottom + verticalScale(72)
-                : '10%'
+                ? insets.bottom + verticalScale(isTab ? 120 : 72)
+                : (isTab ? '30%' : '10%')
             }
           />
         )}
@@ -544,7 +557,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     flex: 1,
-    marginTop: verticalScale(-16),
+    marginTop: -HERO_OVERLAP,
   },
   timeFilterWrapper: {
     paddingHorizontal: scale(16),

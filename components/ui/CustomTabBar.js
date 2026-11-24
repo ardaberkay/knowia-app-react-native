@@ -131,8 +131,8 @@ function getIconName(routeName, isFocused) {
   switch (routeName) {
     case 'Home':
       return isFocused ? 'solar:home-smile-bold' : 'solar:home-angle-broken';
-    case 'Create':
-      return isFocused ? 'fluent:note-add-20-filled' : 'fluent:note-add-20-regular';
+    case 'DiscoverTab':
+      return isFocused ? 'solar:compass-bold' : 'solar:compass-broken';
     case 'Library':
       return isFocused ? 'solar:library-bold-duotone' : 'solar:library-line-duotone';
     case 'Profile':

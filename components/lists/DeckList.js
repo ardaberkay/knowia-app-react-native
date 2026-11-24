@@ -579,6 +579,7 @@ const DeckList = ({
   progressViewOffset = 0,
   onScrollBeginDrag,
   onEndReached,
+  renderLeadingItem = null,
 }) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -697,16 +698,19 @@ const DeckList = ({
      * 2 - 2 - 2 - 2...
      */
     if (layoutMode === 'double') {
+      // Optional leading cell (e.g. "create deck" card) occupies the first slot.
+      const cells = renderLeadingItem
+        ? [{ __leading: true, id: '__leading' }, ...decks.map(prepareDeck)]
+        : decks.map(prepareDeck);
+
       for (
         let i = 0;
-        i < decks.length;
+        i < cells.length;
         i += 2
       ) {
         builtRows.push({
           type: 'double',
-          items: decks
-            .slice(i, i + 2)
-            .map(prepareDeck),
+          items: cells.slice(i, i + 2),
         });
       }
 
@@ -752,6 +756,7 @@ const DeckList = ({
     return builtRows;
   }, [
     decks,
+    renderLeadingItem,
     layoutMode,
     getCategoryColors,
     getCategoryIcon,
@@ -773,7 +778,24 @@ const DeckList = ({
         ]}
       >
         {row.items.map(
-          (deck, idx) => (
+          (deck, idx) => deck.__leading ? (
+            <React.Fragment key="__leading">
+              {/* Same cardStyle / height / margin rules as DeckCard so the
+                  leading cell is pixel-identical in size to deck cards. */}
+              {renderLeadingItem({
+                height: DECK_CARD_VERTICAL_HEIGHT,
+                style: [
+                  styles.deckCardVertical,
+                  { height: DECK_CARD_VERTICAL_HEIGHT },
+                  row.items.length === 1
+                    ? undefined
+                    : idx === 0
+                      ? { marginRight: responsiveSpacing.cardMargin }
+                      : { marginLeft: responsiveSpacing.cardMargin },
+                ],
+              })}
+            </React.Fragment>
+          ) : (
             <DeckCard
               key={`${deck.id}_${idx}`}
               deck={deck}
@@ -838,6 +860,7 @@ const DeckList = ({
       </View>
     ),
     [
+      renderLeadingItem,
       responsiveSpacing,
       onPressDeck,
       onToggleFavorite,

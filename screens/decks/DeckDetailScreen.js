@@ -26,6 +26,13 @@ import { triggerHaptic } from '../../lib/hapticManager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheetModal, BottomSheetFlatList, BottomSheetBackdrop, TouchableOpacity as BSTouchableOpacity } from '@gorhom/bottom-sheet';
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import HeroPullBackdrop from '../../components/layout/HeroPullBackdrop';
+
+// Hero gradient direction (colours come from the deck's category).
+const HERO_GRADIENT_START = { x: 0, y: 0 };
+const HERO_GRADIENT_END = { x: 1, y: 1 };
+// Category watermark size in the hero.
+const HERO_ICON_SIZE = moderateScale(240);
 
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 
@@ -180,6 +187,19 @@ export default function DeckDetailScreen({ route, navigation }) {
   const heroAnim = useRef(new Animated.Value(entranceStart)).current;
   const statsAnim = useRef(new Animated.Value(entranceStart)).current;
   const cardsAnim = useRef(new Animated.Value(entranceStart)).current;
+
+  // Pull-to-refresh backdrop (see HeroPullBackdrop): measured hero size + a
+  // native scroll offset.
+  const [heroSize, setHeroSize] = useState(null);
+  const onHeroLayout = useCallback((e) => {
+    const { width: w, height: h } = e.nativeEvent.layout;
+    setHeroSize((prev) => (prev && Math.abs(prev.w - w) < 0.5 && Math.abs(prev.h - h) < 0.5 ? prev : { w, h }));
+  }, []);
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const onScroll = useMemo(
+    () => Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true }),
+    [scrollY]
+  );
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const addCardFabPressed = useSharedValue(0);
 
@@ -1044,6 +1064,10 @@ export default function DeckDetailScreen({ route, navigation }) {
     navigation.setOptions({
       headerTransparent: true,
       headerStyle: { backgroundColor: 'transparent' },
+      // iOS 26 draws a soft scroll-edge shadow under a transparent nav bar.
+      // The hero already starts under the bar, so the band would split the
+      // hero from the pull-to-refresh backdrop. Hide it at the top only.
+      scrollEdgeEffects: { top: 'hidden', bottom: 'automatic', left: 'automatic', right: 'automatic' },
       headerTintColor: '#FFFFFF',
       title: '',
       headerRight: () => (
@@ -1197,15 +1221,32 @@ export default function DeckDetailScreen({ route, navigation }) {
     ? insets.bottom + verticalScale(100)
     : verticalScale(screenHeight * 0.10) + insets.bottom;
 
+  const heroGradientColors = getCategoryGradient(categoryInfo?.sort_order);
   return (
     <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
+      <HeroPullBackdrop
+        scrollY={scrollY}
+        heroSize={heroSize}
+        colors={heroGradientColors}
+        start={HERO_GRADIENT_START}
+        end={HERO_GRADIENT_END}
+      />
 
-      <ScrollView
+      <Animated.ScrollView
         contentContainerStyle={{ paddingBottom: scrollContentPaddingBottom }}
         showsVerticalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         refreshControl={
           isFocused ? (
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} colors={[colors.buttonColor]} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#FFFFFF"
+              colors={[colors.buttonColor]}
+              // The hero starts under the status bar; keep the spinner below it.
+              progressViewOffset={insets.top}
+            />
           ) : undefined
         }
       >
@@ -1218,15 +1259,19 @@ export default function DeckDetailScreen({ route, navigation }) {
           style={styles.gfHeroBanner}
         >
           <LinearGradient
-            colors={getCategoryGradient(categoryInfo?.sort_order)}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+            colors={heroGradientColors}
+            start={HERO_GRADIENT_START}
+            end={HERO_GRADIENT_END}
             style={[styles.gfHeroGradient, { paddingTop: insets.top + verticalScale(60) }]}
+            onLayout={onHeroLayout}
           >
-            {/* Decorative Elements */}
-            <View style={styles.gfHeroDecor}>
-              <View style={[styles.gfDecorCircle, styles.gfDecorCircle1, { backgroundColor: null }]}>
-                <Iconify icon={getCategoryIcon(categoryInfo?.sort_order)} size={moderateScale(260)} color="rgba(255,255,255,0.08)" style={{
+            {/* Decorative Elements. Nothing touches the hero's top edge, so the
+                pull-to-refresh stretch never reveals a clipped shape: the
+                category watermark bleeds off the right edge only, balanced by a
+                circle bleeding off the bottom-left. */}
+            <View style={styles.gfHeroDecor} pointerEvents="none">
+              <View style={styles.gfDecorIcon}>
+                <Iconify icon={getCategoryIcon(categoryInfo?.sort_order)} size={HERO_ICON_SIZE} color="rgba(255,255,255,0.08)" style={{
                   transform: categoryInfo?.sort_order === 4 ? [{ scaleX: -1 }] : []
                 }} />
               </View>
@@ -1668,7 +1713,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             </TouchableOpacity>
           </EntranceBlock>
         )}
-      </ScrollView>
+      </Animated.ScrollView>
 
       {isFocused && showAddCardFab && (
         <>
@@ -2272,28 +2317,36 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
+  // Category watermark: ~47% off the right edge, centred on the hero's visible
+  // area (its bottom 50px sits under the stats cards, see gfHeroBanner).
+  gfDecorIcon: {
+    position: 'absolute',
+    width: HERO_ICON_SIZE,
+    height: HERO_ICON_SIZE,
+    right: -HERO_ICON_SIZE * 0.47,
+    top: '50%',
+    marginTop: -HERO_ICON_SIZE / 2 - verticalScale(25),
+  },
   gfDecorCircle: {
     position: 'absolute',
     borderRadius: 999,
     backgroundColor: 'rgba(255,255,255,0.1)',
   },
-  gfDecorCircle1: {
-    width: scale(200),
-    height: scale(200),
-    top: verticalScale(-80),
-    left: scale(-80),
-  },
+  // Bottom-left counterweight to the right-edge watermark. It bleeds off the
+  // left edge and sits just above the stats-card overlap.
   gfDecorCircle2: {
     width: scale(110),
     height: scale(110),
-    bottom: verticalScale(12),
-    right: scale(-30),
+    bottom: verticalScale(56),
+    left: scale(-40),
   },
+  // Small partner to gfDecorCircle2, diagonally up-right of it with a clear gap,
+  // so the left side reads as one pair and the right side as the watermark.
   gfDecorCircle3: {
     width: scale(40),
     height: scale(40),
-    top: verticalScale(88),
-    right: scale(100),
+    bottom: verticalScale(155),
+    left: scale(75),
     backgroundColor: 'rgba(255,255,255,0.06)',
   },
   gfCategoryBadge: {

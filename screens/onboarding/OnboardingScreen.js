@@ -9,7 +9,6 @@ import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { OnboardingFinishContext } from '../../contexts/OnboardingFinishContext';
-import { Iconify } from 'react-native-iconify';
 
 const SLIDE_COUNT = 4;
 
@@ -205,11 +204,11 @@ export default function OnboardingScreen({ navigation, route }) {
               ]}
             >
               {[
-                { label: t('swipeDeck.minutes', '15 dk'), icon: 'material-symbols:repeat-rounded' },
-                { label: t('swipeDeck.hours', '1 sa'), icon: 'mingcute:time-line' },
-                { label: t('swipeDeck.days', '1 gün'), icon: 'solar:calendar-broken' },
-                { label: t('swipeDeck.sevenDays', '7 gün'), icon: 'solar:star-broken' },
-              ].map(({ label, icon }, i) => (
+                { emoji: '😣', label: t('swipeDeck.levelHard', 'Zor'), time: t('swipeDeck.minutes', '15 dk') },
+                { emoji: '🤔', label: t('swipeDeck.levelOkay', 'Orta'), time: t('swipeDeck.hours', '1 sa') },
+                { emoji: '🙂', label: t('swipeDeck.levelGood', 'İyi'), time: t('swipeDeck.days', '1 gün') },
+                { emoji: '😎', label: t('swipeDeck.levelEasy', 'Kolay'), time: t('swipeDeck.sevenDays', '7 gün') },
+              ].map(({ emoji, label, time }, i) => (
                 <View
                   key={i}
                   style={[
@@ -217,8 +216,11 @@ export default function OnboardingScreen({ navigation, route }) {
                     i < 3 && styles.previewButtonDivider,
                   ]}
                 >
-                  <Iconify icon={icon} size={moderateScale(18)} color={colors.buttonText} style={{ marginRight: scale(4) }} />
-                  <Text style={[styles.previewButtonText, { color: colors.buttonText }]}>{label}</Text>
+                  <Text style={{ fontSize: moderateScale(20), marginRight: scale(4) }} allowFontScaling={false}>{emoji}</Text>
+                  <View style={{ flexShrink: 1, alignItems: 'flex-start' }}>
+                    <Text style={[styles.previewButtonText, { color: colors.buttonText }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{label}</Text>
+                    <Text style={{ fontFamily: 'Inter', fontSize: moderateScale(10), color: colors.buttonText, opacity: 0.85 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{time}</Text>
+                  </View>
                 </View>
               ))}
             </Animated.View>

@@ -1,5 +1,7 @@
 import React, { memo, useEffect, useState, useCallback, useRef, useMemo, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Pressable, Platform, BackHandler, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, Platform, BackHandler, ScrollView, Image, Modal } from 'react-native';
+import MathText from '../../components/ui/MathText';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Reanimated, {
   useAnimatedStyle,
   useSharedValue,
@@ -62,7 +64,7 @@ const formatFutureReview = (dateString, t) => {
 };
 
 // --- Alt kontrol butonu ---
-const AnimatedTimeButton = ({ onPress, icon, text, buttonStyle, textStyle, iconColor }) => {
+const AnimatedTimeButton = ({ onPress, emoji, label, time, buttonStyle, textColor }) => {
   const isPressed = useSharedValue(0);
 
   const animatedStyle = useAnimatedStyle(() => {
@@ -88,8 +90,25 @@ const AnimatedTimeButton = ({ onPress, icon, text, buttonStyle, textStyle, iconC
         });
       }}
     >
-      <Iconify icon={icon} size={moderateScale(20)} color={iconColor} style={{ marginRight: scale(6) }} />
-      <Text style={[textStyle, { color: iconColor }]}>{text}</Text>
+      <Text style={styles.timeButtonEmoji} allowFontScaling={false}>{emoji}</Text>
+      <View style={styles.timeButtonTextColumn}>
+        <Text
+          style={[styles.timeButtonLabel, { color: textColor }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+        >
+          {label}
+        </Text>
+        <Text
+          style={[styles.timeButtonTime, { color: textColor }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+        >
+          {time}
+        </Text>
+      </View>
     </AnimatedPressable>
   );
 };
@@ -107,6 +126,11 @@ const SwipeCardActions = memo(function SwipeCardActions({
   flipProgress,
   entranceProgress,
   entranceOpacity,
+  showMore = false,
+  isFlipped = false,
+  showMoreLabel,
+  onShowMorePress,
+  showMoreTextColor = '#1C1C1C',
 }) {
   // This timeline intentionally mirrors SwipeFlipCard.contentEntranceStyle.
   // The action row is outside the ScrollView/face content, but it uses the
@@ -151,6 +175,26 @@ const SwipeCardActions = memo(function SwipeCardActions({
     ],
   }), [flipProgress]);
 
+  // "See more" lives on the back face only: fade it in with the second half
+  // of the flip so it never shows on the question side.
+  const showMoreStyle = useAnimatedStyle(() => {
+    const x = swipeX?.value ?? 0;
+    const labelDistance = Math.max(80, cardWidth * 0.28);
+    const swipeFade = interpolate(
+      Math.abs(x),
+      [labelDistance * 0.55, labelDistance * 0.68],
+      [1, 0],
+      'clamp'
+    );
+    const flipVisible = interpolate(flipProgress?.value ?? 0, [0.5, 1], [0, 1], 'clamp');
+    return { opacity: flipVisible * swipeFade * (entranceOpacity?.value ?? 1) };
+  }, [cardWidth, entranceOpacity, flipProgress, swipeX]);
+
+  const handleShowMorePress = useCallback(() => {
+    triggerHaptic('light');
+    onShowMorePress?.(cardId);
+  }, [cardId, onShowMorePress]);
+
   const handlePress = useCallback(() => {
     triggerHaptic('medium');
     onFavoritePress?.(cardId);
@@ -160,6 +204,7 @@ const SwipeCardActions = memo(function SwipeCardActions({
   const favoriteIconColor = isFavorite ? favoriteColor : '#FFF7ED';
 
   return (
+    <>
     <View
       pointerEvents="box-none"
       style={styles.cardActionRow}
@@ -202,6 +247,25 @@ const SwipeCardActions = memo(function SwipeCardActions({
         </Reanimated.View>
       </AnimatedActionPressable>
     </View>
+
+      {showMore ? (
+        <View
+          pointerEvents={isFlipped ? 'box-none' : 'none'}
+          style={styles.showMoreRow}
+        >
+          <AnimatedActionPressable
+            accessibilityRole="button"
+            accessibilityLabel={showMoreLabel}
+            onPress={handleShowMorePress}
+            hitSlop={{ top: scale(8), bottom: scale(8), left: scale(8), right: scale(8) }}
+            style={[styles.showMoreButton, showMoreStyle]}
+          >
+            <Text style={[styles.showMoreText, { color: showMoreTextColor }]}>{showMoreLabel}</Text>
+            <Iconify icon="flowbite:caret-down-solid" size={moderateScale(14)} color={showMoreTextColor} />
+          </AnimatedActionPressable>
+        </View>
+      ) : null}
+    </>
   );
 });
 
@@ -326,6 +390,63 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const hasCheckedSwipeTutorialRef = useRef(false);
   const [favoriteIds, setFavoriteIds] = useState(new Set());
   const [categorySortOrder, setCategorySortOrder] = useState(null);
+  // Back-face "see more": which cards overflow, which one is flipped, and the
+  // card whose full content is open in the sheet.
+  const [backOverflowIds, setBackOverflowIds] = useState(() => new Set());
+  const [flippedCardId, setFlippedCardId] = useState(null);
+  const [expandedCard, setExpandedCard] = useState(null);
+  const handleBackOverflowChange = useCallback((id, overflowing) => {
+    setBackOverflowIds((prev) => {
+      if (prev.has(id) === overflowing) return prev;
+      const next = new Set(prev);
+      if (overflowing) next.add(id); else next.delete(id);
+      return next;
+    });
+  }, []);
+  const handleCardFlip = useCallback((id, flipped) => {
+    setFlippedCardId((prev) => (flipped ? id : (prev === id ? null : prev)));
+  }, []);
+  // Reverse mode (answer first). Swipes still count toward normal progress.
+  // Remembered per deck on this device.
+  const [isReversed, setIsReversed] = useState(false);
+  const reverseStorageKey = deck?.id ? `swipe_reverse_${deck.id}` : null;
+  useEffect(() => {
+    if (!reverseStorageKey) return;
+    let cancelled = false;
+    AsyncStorage.getItem(reverseStorageKey)
+      .then((v) => { if (!cancelled) setIsReversed(v === 'true'); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [reverseStorageKey]);
+  const toggleReversed = useCallback(() => {
+    setIsReversed((prev) => {
+      const next = !prev;
+      if (reverseStorageKey) {
+        AsyncStorage.setItem(reverseStorageKey, next ? 'true' : 'false').catch(() => {});
+      }
+      return next;
+    });
+  }, [reverseStorageKey]);
+
+  // App bar overflow (kebab) menu.
+  const moreMenuRef = useRef(null);
+  const [moreMenuVisible, setMoreMenuVisible] = useState(false);
+  const [moreMenuPos, setMoreMenuPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const openMoreMenu = useCallback(() => {
+    if (moreMenuRef.current?.measureInWindow) {
+      moreMenuRef.current.measureInWindow((x, y, w, h) => {
+        setMoreMenuPos({ x, y, width: w, height: h });
+        setMoreMenuVisible(true);
+      });
+    } else {
+      setMoreMenuVisible(true);
+    }
+  }, []);
+
+  const handleShowMore = useCallback((id) => {
+    const card = cardsRef.current.find((c) => c?.card_id === id);
+    if (card) setExpandedCard(card);
+  }, []);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [reportModalAlreadyCodes, setReportModalAlreadyCodes] = useState([]);
   const [reportCardId, setReportCardId] = useState(null);
@@ -549,27 +670,43 @@ export default function SwipeDeckScreen({ route, navigation }) {
               paddingHorizontal: scale(8),
             }}
           >
-            {!isOwner && (
+            {isReversed ? (
               <TouchableOpacity
                 onPress={() => {
-                  triggerHaptic('light');
-                  openReportCardModal();
+                  triggerHaptic('selection');
+                  toggleReversed();
                 }}
                 activeOpacity={0.7}
-                hitSlop={{
-                  top: scale(15),
-                  bottom: scale(15),
-                  left: scale(8),
-                  right: scale(8),
-                }}
+                hitSlop={{ top: scale(15), bottom: scale(15), left: scale(8), right: scale(8) }}
+                accessibilityRole="button"
+                accessibilityLabel={t('swipeDeck.reverseActive', 'Ters mod: önce cevap')}
+                style={styles.reverseBadge}
               >
-                <Iconify
-                  icon="ic:round-report-problem"
-                  size={moderateScale(24)}
-                  color="#FED7AA"
-                />
+                <Iconify icon="material-symbols:swap-vert-rounded" size={moderateScale(18)} color="#FFFFFF" />
               </TouchableOpacity>
-            )}
+            ) : null}
+            <TouchableOpacity
+              ref={moreMenuRef}
+              collapsable={false}
+              onPress={() => {
+                triggerHaptic('selection');
+                requestAnimationFrame(openMoreMenu);
+              }}
+              activeOpacity={0.7}
+              hitSlop={{
+                top: scale(15),
+                bottom: scale(15),
+                left: scale(8),
+                right: scale(8),
+              }}
+              accessibilityRole="button"
+            >
+              <Iconify
+                icon="iconamoon:menu-kebab-vertical-bold"
+                size={moderateScale(24)}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
           </View>
         );
       },
@@ -579,8 +716,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
     cards,
     currentIndex,
     loading,
-    isOwner,
-    openReportCardModal,
+    openMoreMenu,
+    isReversed,
+    toggleReversed,
+    t,
   ]);
 
   const getCategoryColors = (sortOrder) => {
@@ -1143,6 +1282,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     const nextIndex = cardIndex + 1;
     currentIndexRef.current = nextIndex;
     setCurrentIndex(nextIndex);
+    setFlippedCardId(null);
     isAnimatingRef.current = false;
 
     if (actualDirection === 'left') {
@@ -1266,6 +1406,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     if (isAnimatingRef.current) return;
 
     setUndoDisabled(true);
+    setFlippedCardId(null);
 
     // Keep the local deck intact. Swiping advances currentIndex; it does not
     // remove cards from `cards`, so the server-side undo only needs the UI to
@@ -1518,10 +1659,13 @@ export default function SwipeDeckScreen({ route, navigation }) {
           entranceOpacity={entranceOpacity}
           leftSwipeAccentColor={leftActiveColor}
           rightSwipeAccentColor={rightActiveColor}
+          onFlip={handleCardFlip}
+          onBackOverflowChange={handleBackOverflowChange}
+          reversed={isReversed}
         />
       </View>
     );
-  }, [CARD_HEIGHT, CARD_WIDTH, categorySortOrder, colors.cardBackground, colors.text, getCategoryColors, leftActiveColor, rightActiveColor]);
+  }, [CARD_HEIGHT, CARD_WIDTH, categorySortOrder, colors.cardBackground, colors.text, getCategoryColors, handleBackOverflowChange, handleCardFlip, isReversed, leftActiveColor, rightActiveColor]);
 
   const renderSwipeCardActions = useCallback((card, params = {}) => {
     const {
@@ -1545,9 +1689,14 @@ export default function SwipeDeckScreen({ route, navigation }) {
         flipProgress={flipProgress}
         entranceProgress={entranceProgress}
         entranceOpacity={entranceOpacity}
+        showMore={backOverflowIds.has(card.card_id)}
+        isFlipped={flippedCardId === card.card_id}
+        showMoreLabel={t('swipeDeck.showMore', 'Devamını gör')}
+        onShowMorePress={handleShowMore}
+        showMoreTextColor={colors.buttonColor}
       />
     );
-  }, [CARD_WIDTH, colors.buttonColor, favoriteIds, toggleFavorite]);
+  }, [CARD_WIDTH, backOverflowIds, colors.buttonColor, favoriteIds, flippedCardId, handleShowMore, t, toggleFavorite]);
 
   if (loading) {
     return (
@@ -2023,38 +2172,38 @@ export default function SwipeDeckScreen({ route, navigation }) {
         >
           <AnimatedTimeButton
             onPress={() => handleSkip(15)}
-            icon="material-symbols:repeat-rounded"
-            text={t('swipeDeck.minutes', "15 dk")}
+            emoji="😣"
+            label={t('swipeDeck.levelHard', 'Zor')}
+            time={t('swipeDeck.minutes', '15 dk')}
             buttonStyle={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]}
-            textStyle={styles.horizontalButtonText}
-            iconColor={colors.buttonText}
+            textColor={colors.buttonText}
           />
 
           <AnimatedTimeButton
             onPress={() => handleSkip(60)}
-            icon="mingcute:time-line"
-            text={t('swipeDeck.hours', "1 sa")}
+            emoji="🤔"
+            label={t('swipeDeck.levelOkay', 'Orta')}
+            time={t('swipeDeck.hours', '1 sa')}
             buttonStyle={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]}
-            textStyle={styles.horizontalButtonText}
-            iconColor={colors.buttonText}
+            textColor={colors.buttonText}
           />
 
           <AnimatedTimeButton
             onPress={() => handleSkip(24 * 60)}
-            icon="solar:calendar-broken"
-            text={t('swipeDeck.days', "1 gün")}
+            emoji="🙂"
+            label={t('swipeDeck.levelGood', 'İyi')}
+            time={t('swipeDeck.days', '1 gün')}
             buttonStyle={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]}
-            textStyle={styles.horizontalButtonText}
-            iconColor={colors.buttonText}
+            textColor={colors.buttonText}
           />
 
           <AnimatedTimeButton
             onPress={() => handleSkip(7 * 24 * 60)}
-            icon="solar:star-broken"
-            text={t('swipeDeck.sevenDays', "7 gün")}
+            emoji="😎"
+            label={t('swipeDeck.levelEasy', 'Kolay')}
+            time={t('swipeDeck.sevenDays', '7 gün')}
             buttonStyle={styles.horizontalButton}
-            textStyle={styles.horizontalButtonText}
-            iconColor={colors.buttonText}
+            textColor={colors.buttonText}
           />
         </View>
 
@@ -2120,6 +2269,119 @@ export default function SwipeDeckScreen({ route, navigation }) {
         alreadyReportedCodes={reportModalAlreadyCodes}
         onSubmit={handleReportModalSubmit}
       />
+
+      <Modal
+        visible={moreMenuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMoreMenuVisible(false)}
+      >
+        <Pressable style={{ flex: 1 }} onPress={() => setMoreMenuVisible(false)}>
+          <View
+            style={[
+              styles.moreMenu,
+              {
+                top: (Platform.OS === 'android'
+                  ? moreMenuPos.y + moreMenuPos.height + insets.top
+                  : moreMenuPos.y + moreMenuPos.height) + verticalScale(8),
+                backgroundColor: colors.cardBackground,
+                borderColor: colors.cardBorder || colors.border,
+              },
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.moreMenuItem}
+              activeOpacity={0.6}
+              onPress={() => {
+                triggerHaptic('selection');
+                setMoreMenuVisible(false);
+                toggleReversed();
+              }}
+            >
+              <Iconify icon="material-symbols:swap-vert-rounded" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
+              <Text style={[typography.styles.body, { color: colors.text }]}>
+                {isReversed ? t('swipeDeck.reverseOff', 'Normal çalış') : t('swipeDeck.reverseOn', 'Ters çevir')}
+              </Text>
+            </TouchableOpacity>
+
+            {!isOwner ? (
+              <>
+                <View style={[styles.moreMenuDivider, { backgroundColor: colors.border }]} />
+                <TouchableOpacity
+                  style={styles.moreMenuItem}
+                  activeOpacity={0.6}
+                  onPress={() => {
+                    triggerHaptic('light');
+                    setMoreMenuVisible(false);
+                    requestAnimationFrame(openReportCardModal);
+                  }}
+                >
+                  <Iconify icon="ic:round-report-problem" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
+                  <Text style={[typography.styles.body, { color: colors.text }]}>
+                    {t('moderation.reportCard', 'Kartı şikayet et')}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : null}
+          </View>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        visible={Boolean(expandedCard)}
+        animationType="slide"
+        presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'}
+        onRequestClose={() => setExpandedCard(null)}
+      >
+        <View style={[styles.expandedSheet, { backgroundColor: colors.background }]}>
+          <View style={[styles.expandedHeader, { borderBottomColor: colors.border, paddingTop: Platform.OS === 'ios' ? verticalScale(14) : insets.top + verticalScale(14) }]}>
+            <Text style={[typography.styles.subtitle, { color: colors.text, flex: 1 }]} numberOfLines={1}>
+              {isReversed ? t('cardDetail.question', 'Soru') : t('swipeDeck.answer', 'Cevap')}
+            </Text>
+            <Pressable
+              onPress={() => setExpandedCard(null)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityRole="button"
+              accessibilityLabel={t('cardDetail.close', 'Kapat')}
+            >
+              <Iconify icon="material-symbols:close-rounded" size={moderateScale(26)} color={colors.text} />
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={[styles.expandedContent, { paddingBottom: insets.bottom + verticalScale(40) }]}>
+            {expandedCard?.cards?.question ? (
+              <>
+                <Text style={[styles.expandedSectionLabel, { color: colors.muted, marginTop: 0 }]}>
+                  {t('cardDetail.question', 'Soru')}
+                </Text>
+                <MathText value={expandedCard.cards.question} forceText style={[typography.styles.body, { color: colors.subtext }]} />
+              </>
+            ) : null}
+
+            <Text style={[styles.expandedSectionLabel, { color: colors.buttonColor }]}>
+              {t('swipeDeck.answer', 'Cevap')}
+            </Text>
+            <MathText value={expandedCard?.cards?.answer} forceText style={[typography.styles.h2, { color: colors.text }]} />
+
+            {expandedCard?.cards?.example ? (
+              <>
+                <Text style={[styles.expandedSectionLabel, { color: colors.buttonColor }]}>
+                  {t('swipeDeck.example', 'Örnek')}
+                </Text>
+                <MathText value={expandedCard.cards.example} forceText style={[typography.styles.body, { color: colors.text }]} />
+              </>
+            ) : null}
+
+            {expandedCard?.cards?.note ? (
+              <>
+                <Text style={[styles.expandedSectionLabel, { color: colors.buttonColor }]}>
+                  {t('swipeDeck.note', 'Not')}
+                </Text>
+                <MathText value={expandedCard.cards.note} forceText style={[typography.styles.body, { color: colors.text, fontStyle: 'italic' }]} />
+              </>
+            ) : null}
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -2356,6 +2618,81 @@ const styles = StyleSheet.create({
 
 
   // Dedicated action row. It stays outside the scrollable card content.
+  reverseBadge: {
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(4),
+    borderRadius: moderateScale(12),
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+  },
+  moreMenu: {
+    position: 'absolute',
+    right: scale(16),
+    minWidth: scale(180),
+    borderRadius: moderateScale(14),
+    paddingVertical: verticalScale(6),
+    borderWidth: moderateScale(1),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  moreMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: verticalScale(12),
+    paddingHorizontal: scale(16),
+  },
+  moreMenuDivider: {
+    height: StyleSheet.hairlineWidth,
+    marginVertical: verticalScale(4),
+  },
+  showMoreRow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: verticalScale(16),
+    zIndex: 300,
+    elevation: 300,
+    alignItems: 'center',
+  },
+  showMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(6),
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: scale(16),
+    borderRadius: moderateScale(20),
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+  },
+  showMoreText: {
+    ...typography.styles.button,
+    fontSize: moderateScale(14),
+  },
+  expandedSheet: {
+    flex: 1,
+  },
+  expandedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(14),
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  expandedContent: {
+    paddingHorizontal: scale(20),
+    paddingTop: verticalScale(16),
+    paddingBottom: verticalScale(40),
+  },
+  expandedSectionLabel: {
+    ...typography.styles.button,
+    fontSize: moderateScale(13),
+    marginTop: verticalScale(18),
+    marginBottom: verticalScale(6),
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   cardActionRow: {
     position: 'absolute',
     top: 0,
@@ -2469,13 +2806,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: verticalScale(16),
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(4),
     backgroundColor: 'transparent',
     borderRightWidth: 0,
     borderColor: '#e0e0e0',
   },
   horizontalButtonText: {
     ...typography.styles.button,
+  },
+  timeButtonEmoji: {
+    fontSize: moderateScale(24),
+    marginRight: scale(5),
+  },
+  timeButtonTextColumn: {
+    flexShrink: 1,
+    alignItems: 'flex-start',
+  },
+  timeButtonLabel: {
+    ...typography.styles.button,
+    fontSize: moderateScale(14),
+    lineHeight: moderateScale(17),
+  },
+  timeButtonTime: {
+    fontFamily: 'Inter',
+    fontSize: moderateScale(11),
+    lineHeight: moderateScale(14),
+    opacity: 0.85,
   },
   buttonContainer: {
     flexDirection: 'row',

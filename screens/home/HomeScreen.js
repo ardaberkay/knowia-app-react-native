@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import DeckCard from '../../components/ui/DeckUi';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import StandardCustomAppBar from '../../components/layout/StandardCustomAppBar';
+import HeroPullBackdrop from '../../components/layout/HeroPullBackdrop';
 import CommunityDeckCard from '../../components/ui/CommunityDeckCard';
 
 
@@ -68,6 +69,12 @@ const AnimatedPressable = ({ onPress, children, style }) => {
   );
 };
 
+// Hero gradient (evenly spaced stops) and its direction in unit coordinates.
+const HERO_GRADIENT_COLORS = ['#ffa726', '#ff6b35', '#ff6b35', '#ffa726'];
+const HERO_GRADIENT_START = { x: 1, y: 0.1 };
+const HERO_GRADIENT_END = { x: 0, y: 1 };
+
+
 export default function HomeScreen() {
   const { session } = useAuth();
   const userId = session?.user?.id;
@@ -88,6 +95,19 @@ export default function HomeScreen() {
     return { width: cardWidth, height: cardHeight };
   }, [width, isTablet]);
 
+  // Measured hero size: the pull-to-refresh backdrop continues the hero's top
+  // row, whose colours depend on the hero's aspect ratio.
+  const [heroSize, setHeroSize] = useState(null);
+  const onHeroLayout = useCallback((e) => {
+    const { width: w, height: h } = e.nativeEvent.layout;
+    setHeroSize((prev) => (prev && Math.abs(prev.w - w) < 0.5 && Math.abs(prev.h - h) < 0.5 ? prev : { w, h }));
+  }, []);
+  // Drives HeroPullBackdrop natively from the ScrollView's offset.
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const onScroll = useMemo(
+    () => Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true }),
+    [scrollY]
+  );
   const [decks, setDecks] = useState({});
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState(null);
@@ -233,20 +253,14 @@ export default function HomeScreen() {
   };
 
   const renderHeroHeader = () => {
-    const config = {
-      gradient: ['#ffa726', '#ff6b35'],
-    };
-
     return (
       <View style={styles.heroHeaderContainer}>
         <LinearGradient
-          colors={[
-            ...config.gradient,
-            ...config.gradient.slice().reverse(),
-          ]}
+          colors={HERO_GRADIENT_COLORS}
           style={styles.heroHeader}
-          start={{ x: 1, y: 0.1 }}
-          end={{ x: 0, y: 1 }}
+          start={HERO_GRADIENT_START}
+          end={HERO_GRADIENT_END}
+          onLayout={onHeroLayout}
         >
           <StandardCustomAppBar
             showLogo
@@ -280,7 +294,7 @@ export default function HomeScreen() {
               <TouchableOpacity
                 style={styles.heroButton}
                 activeOpacity={0.8}
-                onPress={() => navigation.navigate('Discover')}
+                onPress={() => navigation.navigate('DiscoverTab')}
               >
                 <Iconify
                   icon="streamline:trending-content-remix"
@@ -561,18 +575,29 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
+      <HeroPullBackdrop
+        scrollY={scrollY}
+        heroSize={heroSize}
+        colors={HERO_GRADIENT_COLORS}
+        start={HERO_GRADIENT_START}
+        end={HERO_GRADIENT_END}
+      />
 
-      <ScrollView
+      <Animated.ScrollView
         ref={scrollViewRef}
-        style={[styles.content, { backgroundColor: colors.background }]}
+        style={styles.content}
         contentContainerStyle={{ paddingBottom: insets.bottom + verticalScale(120) }}
         showsVerticalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={colors.text}
+            tintColor="#FFFFFF"
             colors={[colors.buttonColor]}
+            // The hero starts under the status bar; keep the spinner below it.
+            progressViewOffset={insets.top}
           />
         }
       >
@@ -582,7 +607,7 @@ export default function HomeScreen() {
             {renderDeckSection(category)}
           </React.Fragment>
         ))}
-      </ScrollView>
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }

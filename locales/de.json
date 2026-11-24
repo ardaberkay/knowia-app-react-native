@@ -46,6 +46,10 @@
     "unhideError": "Aktion fehlgeschlagen"
   },
   "library": {
+"favoritesShortSubtitle": "Deine Lieblingsdecks und -karten an einem Ort.",
+"newDeck": "Neues Deck",
+"newDeckSubtitle": "Erstelle dein eigenes Deck",
+"myDecksShortSubtitle": "Erstelle, bearbeite und lerne deine eigenen Decks.",
     "all": "Alle",
     "decks": "Decks",
     "cards": "Karten",
@@ -178,6 +182,7 @@
     "apply": "Anwenden"
   },
   "tabs": {
+"discover": "Entdecken",
     "home": "Start",
     "create": "Erstellen",
     "library": "Bibliothek",
@@ -379,6 +384,14 @@
     "hours": "1 Std",
     "days": "1 Tag",
     "sevenDays": "7 Tage",
+    "levelHard": "Schwer",
+    "levelOkay": "Mittel",
+    "levelGood": "Gut",
+    "levelEasy": "Leicht",
+    "showMore": "Mehr anzeigen",
+    "reverseOn": "Karten umdrehen",
+    "reverseOff": "Normal lernen",
+    "reverseActive": "Umgekehrt: Antwort zuerst",
     "bravo": "Bravo! Du hast alle Karten abgeschlossen",
     "learnTime": "Zeit, die verbleibenden Karten zu lernen",
     "loading": "Karten werden geladen...",

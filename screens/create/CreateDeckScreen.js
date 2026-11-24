@@ -20,7 +20,6 @@ import DeckLanguageModal from '../../components/modals/DeckLanguageModal';
 import BadgeText from '../../components/tools/BadgeText';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import StandardCustomAppBar from '../../components/layout/StandardCustomAppBar';
 
 export default function CreateScreen() {
   const { session } = useAuth();
@@ -157,7 +156,9 @@ export default function CreateScreen() {
         languageIds: selectedLanguage,
       });
       resetForm();
-      navigation.navigate('DeckDetail', { deck: data });
+      // Now a pushed stack screen: replace so "back" from the new deck
+      // returns to Library instead of an empty create form.
+      navigation.replace('DeckDetail', { deck: data });
     } catch (e) {
       showError(e.message || t('create.error', 'Deste oluşturulamadı.'));
     } finally {
@@ -169,7 +170,6 @@ export default function CreateScreen() {
 
   return (
     <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
-      <StandardCustomAppBar title={t('tabs.create', 'Oluştur')} />
       <KeyboardAwareScrollView
         style={{flex: 1}}
         contentContainerStyle={[styles.formContainer]}

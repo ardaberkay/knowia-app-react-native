@@ -49,6 +49,10 @@
     "unknownDeck": "Bu deste"
   },
   "library": {
+"favoritesShortSubtitle": "Beğendiğin desteler ve kartlar tek yerde.",
+"newDeck": "Yeni Deste",
+"newDeckSubtitle": "Kendi desteni oluştur",
+"myDecksShortSubtitle": "Kendi destelerini oluştur, düzenle ve çalış.",
     "all": "Tümü",
     "decks": "Desteler",
     "cards": "Kartlar",
@@ -215,6 +219,7 @@
     }
   },
   "tabs": {
+"discover": "Keşfet",
     "home": "Anasayfa",
     "create": "Oluştur",
     "library": "Kitaplığım",
@@ -420,6 +425,14 @@
     "hours": "1 sa",
     "days": "1 gün",
     "sevenDays": "7 gün",
+    "levelHard": "Zor",
+    "levelOkay": "Orta",
+    "levelGood": "İyi",
+    "levelEasy": "Kolay",
+    "showMore": "Devamını gör",
+    "reverseOn": "Ters çevir",
+    "reverseOff": "Normal çalış",
+    "reverseActive": "Ters mod: önce cevap",
     "bravo": "Bravo! Tüm Kartları Tamamladın",
     "learnTime": "Kalan Kartları Öğrenmeye Vakit Var",
     "loading": "Kartlar Yükleniyor...",

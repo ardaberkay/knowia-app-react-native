@@ -46,6 +46,10 @@
     "unhideError": "Falha na operação"
   },
   "library": {
+"favoritesShortSubtitle": "Seus baralhos e cartões favoritos em um só lugar.",
+"newDeck": "Novo baralho",
+"newDeckSubtitle": "Crie seu próprio baralho",
+"myDecksShortSubtitle": "Crie, edite e estude seus próprios baralhos.",
     "all": "Tudo",
     "decks": "Baralhos",
     "cards": "Cartões",
@@ -181,6 +185,7 @@
     "selected": "Selecionado"
   },
   "tabs": {
+"discover": "Descobrir",
     "home": "Início",
     "create": "Criar",
     "library": "Coleção",
@@ -377,6 +382,14 @@
     "hours": "1 hora",
     "days": "1 dia",
     "sevenDays": "7 dias",
+    "levelHard": "Difícil",
+    "levelOkay": "Médio",
+    "levelGood": "Bom",
+    "levelEasy": "Fácil",
+    "showMore": "Ver mais",
+    "reverseOn": "Inverter cartões",
+    "reverseOff": "Estudar normal",
+    "reverseActive": "Modo inverso: resposta primeiro",
     "bravo": "Bravo! Você completou todos os cartões",
     "learnTime": "Hora de aprender os cartões restantes",
     "loading": "Carregando cartões...",

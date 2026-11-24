@@ -49,6 +49,10 @@
     "unknownDeck": "This deck"
   },
   "library": {
+"favoritesShortSubtitle": "Your favorite decks and cards in one place.",
+"newDeck": "New Deck",
+"newDeckSubtitle": "Create your own deck",
+"myDecksShortSubtitle": "Create, edit and study your own decks.",
     "all": "All",
     "decks": "Decks",
     "cards": "Cards",
@@ -214,6 +218,7 @@
     }
   },
   "tabs": {
+"discover": "Discover",
     "home": "Home",
     "create": "Create",
     "library": "Library",
@@ -415,6 +420,14 @@
     "hours": "1 hour",
     "days": "1 day",
     "sevenDays": "7 days",
+    "levelHard": "Hard",
+    "levelOkay": "Okay",
+    "levelGood": "Good",
+    "levelEasy": "Easy",
+    "showMore": "See more",
+    "reverseOn": "Reverse cards",
+    "reverseOff": "Study normally",
+    "reverseActive": "Reverse mode: answer first",
     "bravo": "Bravo! You've completed all cards",
     "learnTime": "Time to learn the remaining cards",
     "loading": "Cards are loading...",

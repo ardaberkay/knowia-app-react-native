@@ -45,6 +45,10 @@
     "unhideError": "Error en la operación"
   },
   "library": {
+"favoritesShortSubtitle": "Tus mazos y tarjetas favoritos en un solo lugar.",
+"newDeck": "Nuevo mazo",
+"newDeckSubtitle": "Crea tu propio mazo",
+"myDecksShortSubtitle": "Crea, edita y estudia tus propios mazos.",
     "all": "Todo",
     "decks": "Barajas",
     "cards": "Tarjetas",
@@ -181,6 +185,7 @@
     "selected": "Seleccionado"
   },
   "tabs": {
+"discover": "Descubrir",
     "home": "Inicio",
     "create": "Crear",
     "library": "Colección",
@@ -377,6 +382,14 @@
     "hours": "1 hora",
     "days": "1 día",
     "sevenDays": "7 días",
+    "levelHard": "Difícil",
+    "levelOkay": "Regular",
+    "levelGood": "Bien",
+    "levelEasy": "Fácil",
+    "showMore": "Ver más",
+    "reverseOn": "Invertir tarjetas",
+    "reverseOff": "Estudiar normal",
+    "reverseActive": "Modo inverso: respuesta primero",
     "bravo": "¡Bravo! Has completado todas las tarjetas",
     "learnTime": "Tiempo para aprender las tarjetas restantes",
     "loading": "Cargando tarjetas...",

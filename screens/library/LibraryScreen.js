@@ -17,6 +17,10 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import PagerView from 'react-native-pager-view';
+import LibraryHeader from '../../components/layout/LibraryHeader';
+
+// Native-driven page scroll events → smooth segmented control / header.
+const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 import SearchBar from '../../components/tools/SearchBar';
 import FilterIcon from '../../components/modals/CardFilterIcon';
 import CardListItem from '../../components/lists/CardList';
@@ -70,6 +74,12 @@ const FadeText = ({ text, style, maxChars = 15 }) => {
   );
 };
 
+const MY_DECKS_SEARCH_THRESHOLD = 10;
+// The pager is pulled up under the hero by this much (same as Discover) so list
+// content scrolls behind the hero's rounded bottom corners. Lists add it back
+// as top padding and offset their refresh spinner by it.
+const HERO_OVERLAP = verticalScale(16);
+
 /** Aynı ekranda inline fonksiyon kullanılırsa her render'da yeni component tipi oluşur; liste yenilenince header (Image) yeniden mount olur. */
 const MyDecksListHeaderCard = React.memo(function MyDecksListHeaderCard({
   cardBackground,
@@ -82,29 +92,10 @@ const MyDecksListHeaderCard = React.memo(function MyDecksListHeaderCard({
   onOpenFilter,
 }) {
   const { t } = useTranslation();
+  // Intro text + illustration now live in the LibraryHeader hero; the list
+  // header only carries search + filter.
   return (
-    <View style={[myDecksListHeaderStyles.myDecksCardContainer, { backgroundColor: cardBackground, borderColor: cardBorder, borderWidth: 1 }]}>
-      <View style={myDecksListHeaderStyles.myDecksContent}>
-        <View style={myDecksListHeaderStyles.myDecksTextContainer}>
-          <View style={myDecksListHeaderStyles.myDecksTitleContainer}>
-            <Iconify icon="ph:cards-fill" size={moderateScale(26)} color="#F98A21" style={{ marginRight: scale(6) }} />
-            <Text style={[typography.styles.h2, { color: textColor }]}>
-              {t('library.myDecksHeading', 'Destelerim')}
-            </Text>
-          </View>
-          <Text style={[typography.styles.caption, { color: mutedColor, lineHeight: moderateScale(22), marginRight: scale(3) }]}>
-            {t('library.myDecksSubtitle', ' Oluşturduğun destelerle kendi öğrenme yolculuğunu tasarla; keşfet, pekiştir ve hedeflerine doğru ilerle')}
-          </Text>
-        </View>
-        <View style={myDecksListHeaderStyles.myDecksImageContainer}>
-          <Image
-            source={require('../../assets/mydecks_item.webp')}
-            style={myDecksListHeaderStyles.myDecksImage}
-            resizeMode="contain"
-            fadeDuration={0}
-          />
-        </View>
-      </View>
+    <View style={myDecksListHeaderStyles.myDecksCardContainer}>
       <View style={[myDecksListHeaderStyles.myDecksSearchContainer, { marginTop: searchTopMargin }]}>
         <SearchBar
           value={query}
@@ -137,9 +128,15 @@ export default function LibraryScreen() {
   const [activeDeckMenuId, setActiveDeckMenuId] = useState(null);
   const { t } = useTranslation();
   const pagerRef = useRef(null);
-  const tabScroll = useRef(new Animated.Value(0)).current; // 0 -> MyDecks, 1 -> Favorites
-  const [pillWidth, setPillWidth] = useState(() => Dimensions.get('window').width * 0.59);
-  const [headerOverlayHeight, setHeaderOverlayHeight] = useState(0);
+  // Pager scroll position (native driver): progress = position + offset,
+  // 0 -> MyDecks, 1 -> Favorites. Drives the header + segmented control.
+  const pagePosition = useRef(new Animated.Value(0)).current;
+  const pageOffset = useRef(new Animated.Value(0)).current;
+  const pagerProgress = useMemo(() => Animated.add(pagePosition, pageOffset), [pagePosition, pageOffset]);
+  const onPageScroll = useMemo(() => Animated.event(
+    [{ nativeEvent: { position: pagePosition, offset: pageOffset } }],
+    { useNativeDriver: true }
+  ), [pagePosition, pageOffset]);
   const [favSlideIndex, setFavSlideIndex] = useState(0);
   const [favCardsQuery, setFavCardsQuery] = useState('');
   const [favCardsSort, setFavCardsSort] = useState('original');
@@ -174,22 +171,10 @@ export default function LibraryScreen() {
   const cardAspectRatio = 120 / 168;
   const cardHeight = cardWidth / cardAspectRatio;
 
-  // Responsive favorites sekmesi ScrollView paddingTop - useMemo ile optimize edilmiş
-  const favoritesScrollViewPaddingTop = useMemo(() => {
-    const isTablet = getIsTablet();
-    return isTablet ? '25%' : '48%'; // Tablet: %5, diğerleri: %48
-  }, [width, height]);
-
-  const myDecksListPaddingTop = useMemo(() => {
-    const overlayFallback = isTablet ? height * 0.12 : height * 0.18;
-    const overlayHeight = headerOverlayHeight > 0 ? headerOverlayHeight : overlayFallback;
-    return overlayHeight + verticalScale(8);
-  }, [headerOverlayHeight, height, isTablet]);
-
-  const onHeaderOverlayLayout = useCallback((e) => {
-    const nextHeight = e.nativeEvent.layout.height;
-    setHeaderOverlayHeight((prev) => (prev === nextHeight ? prev : nextHeight));
-  }, []);
+  // The header is now a normal (non-overlay) block above the pager, so the
+  // pages only need a small top gap instead of clearing an absolute overlay.
+  const favoritesScrollViewPaddingTop = HERO_OVERLAP + verticalScale(16);
+  const myDecksListPaddingTop = HERO_OVERLAP + verticalScale(4);
 
   const myDecksSearchContainerTopMargin = useMemo(() => {
     if (isTablet) return verticalScale(12);
@@ -284,11 +269,8 @@ export default function LibraryScreen() {
     if (pagerRef.current && typeof pagerRef.current.setPage === 'function') {
       pagerRef.current.setPage(pageIndex);
     }
-    // When switching to favorites, set loading immediately to avoid UI flash
-    if (pageIndex === 1 && !favoritesFetched) {
-      setFavoritesLoading(true);
-    }
-    setActiveTab(pageIndex === 0 ? 'myDecks' : 'favorites');
+    // activeTab is updated in onPageSelected (after the page settles) so the
+    // whole screen doesn't re-render while the pager is animating.
   };
 
   const fetchMyDecks = useCallback(
@@ -398,6 +380,31 @@ export default function LibraryScreen() {
         fetchFavorites(true);
       }
     }, [favoritesFetched])
+  );
+
+  // Deck creation now starts from this screen (CreateDeck stack screen), so
+  // re-read "my decks" silently when coming back. createDeck/delete invalidate
+  // the mydecks cache, so this hits the network only when something changed.
+  const hasFocusedOnceRef = useRef(false);
+  const myDecksPageRef = useRef(0);
+  myDecksPageRef.current = myDecksPage;
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasFocusedOnceRef.current) {
+        hasFocusedOnceRef.current = true;
+        return;
+      }
+      if (!userId || myDecksPageRef.current > 0) return;
+      let cancelled = false;
+      getDecksByCategory(userId, 'myDecks', { page: 0, limit: MY_DECKS_PAGE_SIZE })
+        .then((decks) => {
+          if (cancelled || !decks) return;
+          setMyDecks(decks);
+          setMyDecksHasMore(decks.length >= MY_DECKS_PAGE_SIZE);
+        })
+        .catch(() => {});
+      return () => { cancelled = true; };
+    }, [userId])
   );
 
   // Favoriler sekmesindeki birleşik liste kaldırıldı
@@ -682,8 +689,69 @@ export default function LibraryScreen() {
 
   const openMyDecksFilterModal = useCallback(() => setMyDecksFilterModalVisible(true), []);
 
+  // First cell of "Destelerim" grid: always-visible "create deck" card
+  // (deck creation moved here from the tab bar). Hidden while searching.
+  const renderCreateDeckCard = useCallback(({ style }) => (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={() => {
+        triggerHaptic('selection');
+        navigation.navigate('CreateDeck');
+      }}
+      style={style}
+      accessibilityRole="button"
+      accessibilityLabel={t('tabs.createDeck', 'Deste Oluştur')}
+    >
+      {/* Reads as an "empty deck": same cell shape as the deck cards, a ⊕
+          badge where deck cards keep their corner action, illustration, then
+          title + hint. The whole card is the button. */}
+      <View
+        style={[
+          createCardStyles.surface,
+          { backgroundColor: colors.cardBackground, borderColor: isDarkMode ? '#4A4A4A' : colors.border },
+        ]}
+      >
+        <View style={[createCardStyles.plusBadge, { backgroundColor: colors.buttonColor }]}>
+          <Iconify icon="ic:round-plus" size={moderateScale(22)} color="#FFFFFF" />
+        </View>
+        <View style={createCardStyles.imageWrap}>
+          <Image
+            source={require('../../assets/create_deck_item.webp')}
+            style={createCardStyles.image}
+            resizeMode="contain"
+            fadeDuration={0}
+          />
+        </View>
+        <Text
+          style={[createCardStyles.title, { color: colors.text }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
+        >
+          {t('library.newDeck', 'Yeni Deste')}
+        </Text>
+        <Text
+          style={[createCardStyles.subtitle, { color: colors.muted }]}
+          numberOfLines={2}
+        >
+          {t('library.newDeckSubtitle', 'Kendi desteni oluştur')}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  ), [colors.buttonColor, colors.cardBackground, colors.border, colors.text, colors.muted, isDarkMode, navigation, t]);
+
+  // Search + filter only earn their space once the library is big enough to
+  // need them. Keep them visible while any query/filter is active so the user
+  // can always clear it, even if the result count drops below the threshold.
+  const showMyDecksSearch =
+    myDecks.length >= MY_DECKS_SEARCH_THRESHOLD ||
+    !!myDecksQuery?.trim() ||
+    myDecksSelectedCategories.length > 0 ||
+    selectedLanguages.length > 0 ||
+    myDecksSort !== 'default';
+
   const myDecksListHeader = useMemo(
-    () => (
+    () => showMyDecksSearch ? (
       <MyDecksListHeaderCard
         cardBackground={colors.cardBackground}
         cardBorder={colors.cardBorder}
@@ -694,8 +762,11 @@ export default function LibraryScreen() {
         onQueryChange={setMyDecksQuery}
         onOpenFilter={openMyDecksFilterModal}
       />
+    ) : (
+      <View style={{ height: verticalScale(10) }} />
     ),
     [
+      showMyDecksSearch,
       colors.cardBackground,
       colors.cardBorder,
       colors.text,
@@ -716,66 +787,12 @@ export default function LibraryScreen() {
 
 
   return (
-    <SafeAreaView edges={['left', 'right']} style={[styles.container]}>
-      {/* Header + Pill Tabs - Hafif saydam arka plan (BlurView kaldırıldı, geçişte dim sorununu önlemek için) */}
-      <View style={[styles.segmentedControlContainer, { top: 0 }]} pointerEvents="box-none">
-        <View
-          style={[styles.segmentedControlInner, { paddingTop: Platform.OS === 'android' ? insets.top + verticalScale(8) : insets.top, backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground, borderColor: colors.cardBorder, borderWidth: 1, shadowColor: colors.shadowColor, shadowOpacity: colors.shadowOpacity, shadowRadius: colors.shadowRadius, shadowOffset: colors.shadowOffset, elevation: colors.elevation }]}
-          pointerEvents="box-none"
-          onLayout={onHeaderOverlayLayout}
-        >
-          {/* Header Content */}
-          <View style={styles.headerContent}>
-  
-          </View>
-          <View
-            style={[styles.pillContainer, { borderColor: colors.pillBorder || '#444444', backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.3)' }]}
-            onLayout={(e) => setPillWidth(e.nativeEvent.layout.width)}
-          >
-            <View style={styles.pillIndicatorWrapper}>
-              <Animated.View
-                pointerEvents="none"
-                style={[
-                  styles.pillIndicator,
-                  {
-                    width: (pillWidth > 0 ? (pillWidth - 4) / 2 : 0),
-                    transform: [
-                      {
-                        translateX: tabScroll.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0, (pillWidth > 0 ? (pillWidth - 4) / 2 : 0)],
-                          extrapolate: 'clamp',
-                        })
-                      }
-                    ],
-                    backgroundColor: colors.buttonColor || '#F98A21',
-                  }
-                ]}
-              />
-            </View>
-            <TouchableOpacity style={[styles.pillTab, { width: '50%' }]} activeOpacity={0.8} onPress={() => {
-              triggerHaptic('selection');
-              handleSetPage(0);
-            }}>
-              <Text style={[styles.pillLabel, { color: activeTab === 'myDecks' ? '#FFFFFF' : (colors.border || '#666') }]}>
-                {t('library.myDecks', 'Destelerim')}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.pillTab, { width: '50%' }]} activeOpacity={0.8} onPress={() => {
-              triggerHaptic('selection');
-              handleSetPage(1);
-            }}>
-              <Text style={[styles.pillLabel, { color: activeTab === 'favorites' ? '#FFFFFF' : (colors.border || '#666') }]}>
-                {t('library.favorites', 'Favorilerim')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+    <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
+      <LibraryHeader progress={pagerProgress} onTabPress={handleSetPage} />
       {/* PagerView: 0 - MyDecks, 1 - Favorites */}
-      <PagerView
+      <AnimatedPagerView
         ref={pagerRef}
-        style={{ flex: 1, backgroundColor: colors.background }}
+        style={{ flex: 1, marginTop: -HERO_OVERLAP, backgroundColor: colors.background }}
         initialPage={activeTab === 'myDecks' ? 0 : 1}
         onPageSelected={(e) => {
           const index = e.nativeEvent.position;
@@ -785,10 +802,7 @@ export default function LibraryScreen() {
           }
           setActiveTab(index === 0 ? 'myDecks' : 'favorites');
         }}
-        onPageScroll={(e) => {
-          const { position, offset } = e.nativeEvent;
-          tabScroll.setValue(position + offset);
-        }}
+        onPageScroll={onPageScroll}
       >
         {/* Page 0: My Decks */}
         <View key="myDecks" style={{ flex: 1 }}>
@@ -813,6 +827,7 @@ export default function LibraryScreen() {
                 navigation.navigate('DeckDetail', { deck })
               }
               ListHeaderComponent={myDecksListHeader}
+              renderLeadingItem={myDecksQuery?.trim() ? null : renderCreateDeckCard}
               refreshing={myDecksRefreshing}
               onRefresh={() => fetchMyDecks(true)}
               onEndReached={
@@ -871,7 +886,7 @@ export default function LibraryScreen() {
               showPopularityBadge={false}
               loadingMore={myDecksLoadingMore}
               contentPaddingTop={myDecksListPaddingTop}
-              progressViewOffset={headerOverlayHeight}
+              progressViewOffset={HERO_OVERLAP}
               contentPaddingBottom={
                 Platform.OS === 'android'
                   ? insets.bottom + verticalScale(120)
@@ -1120,7 +1135,7 @@ export default function LibraryScreen() {
             </ScrollView>
           )}
         </View>
-      </PagerView>
+      </AnimatedPagerView>
 
       {/* Card Detail Modal */}
       {/* Card Detail Modal */}
@@ -1230,71 +1245,6 @@ export default function LibraryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  segmentedControlContainer: {
-    width: '100%',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-  },
-  segmentedControlInner: {
-    paddingHorizontal: scale(24),
-    paddingBottom: '16%',
-    borderBottomEndRadius: moderateScale(70),
-    borderBottomStartRadius: moderateScale(70),
-    overflow: 'hidden',
-
-  },
-  headerContent: {
-    height: '100%',
-  },
-  headerTitle: {
-    fontSize: moderateScale(18),
-    fontWeight: '700',
-    flex: 1,
-    textAlign: 'center',
-    marginTop: scale(20),
-  },
-
-  pillContainer: {
-    borderWidth: 1,
-    borderColor: '#444444',
-    height: '100%',
-    marginHorizontal: '17%',
-    borderRadius: moderateScale(25),
-    overflow: 'hidden',
-    flexDirection: 'row',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  pillIndicatorWrapper: {
-    position: 'absolute',
-    left: moderateScale(2),
-    top: moderateScale(2),
-    bottom: moderateScale(2),
-    right: moderateScale(2),
-    overflow: 'hidden',
-    borderRadius: moderateScale(23),
-
-  },
-  pillIndicator: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    borderRadius: moderateScale(23),
-
-  },
-  pillTab: {
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pillLabel: {
-    fontSize: moderateScale(16),
-    fontWeight: '700',
   },
   favoriteSliderWrapper: {
     marginBottom: verticalScale(12),
@@ -1460,43 +1410,62 @@ const styles = StyleSheet.create({
   },
 });
 
-const myDecksListHeaderStyles = StyleSheet.create({
-  myDecksCardContainer: {
-    borderRadius: moderateScale(36),
-    overflow: 'hidden',
-    marginHorizontal: scale(10),
-    marginVertical: verticalScale(8),
-    paddingHorizontal: scale(20),
-    paddingVertical: verticalScale(8),
-    minHeight: verticalScale(180),
-    paddingBottom: verticalScale(16),
-  },
-  myDecksContent: {
-    flexDirection: 'row',
-  },
-  myDecksTextContainer: {
+const createCardStyles = StyleSheet.create({
+  surface: {
     flex: 1,
-    marginRight: scale(15),
-    gap: verticalScale(5),
+    borderRadius: moderateScale(18),
+    borderWidth: 1,
+    padding: scale(12),
   },
-  myDecksTitleContainer: {
-    flexDirection: 'row',
+  imageWrap: {
+    flex: 1,
     alignItems: 'center',
-    marginTop: '5%',
+    justifyContent: 'center',
+    // Nudged down so the illustration clears the corner tab.
+    marginTop: verticalScale(6),
   },
-  myDecksImageContainer: {
-    width: moderateScale(150, 0.3),
-    height: moderateScale(150, 0.3),
-    marginTop: verticalScale(20),
+  image: {
+    width: '85%',
+    height: '85%',
   },
-  myDecksImage: {
-    width: moderateScale(160, 0.3),
-    height: moderateScale(160, 0.3),
+  // Corner tab fused into the card's top-right corner: covers the 1px border
+  // (-1 offsets), shares the card's outer 18 radius, rounds only its inner
+  // bottom-left corner.
+  plusBadge: {
+    position: 'absolute',
+    top: -1,
+    right: -1,
+    zIndex: 1,
+    width: moderateScale(36),
+    height: moderateScale(36),
+    borderTopRightRadius: moderateScale(18),
+    borderBottomLeftRadius: moderateScale(20),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    ...typography.styles.button,
+    fontSize: moderateScale(16),
+    textAlign: 'center',
+  },
+  subtitle: {
+    ...typography.styles.caption,
+    textAlign: 'center',
+    marginTop: verticalScale(2),
+    marginBottom: verticalScale(4),
+  },
+});
+
+const myDecksListHeaderStyles = StyleSheet.create({
+  // Aligned with DeckList's grid padding (listPaddingHorizontal = scale(12)).
+  myDecksCardContainer: {
+    paddingHorizontal: scale(12),
+    paddingTop: verticalScale(10),
+    paddingBottom: verticalScale(14),
   },
   myDecksSearchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: scale(10),
-    paddingTop: verticalScale(12),
   },
 });

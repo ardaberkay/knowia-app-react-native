@@ -46,6 +46,10 @@
     "unhideError": "Échec de l'opération"
   },
   "library": {
+"favoritesShortSubtitle": "Tes decks et cartes favoris au même endroit.",
+"newDeck": "Nouveau deck",
+"newDeckSubtitle": "Crée ton propre deck",
+"myDecksShortSubtitle": "Crée, modifie et étudie tes propres decks.",
     "all": "Tout",
     "decks": "Paquets",
     "cards": "Cartes",
@@ -181,6 +185,7 @@
     "selected": "Sélectionné"
   },
   "tabs": {
+"discover": "Découvrir",
     "home": "Accueil",
     "create": "Créer",
     "library": "Bibliothèque",
@@ -377,6 +382,14 @@
     "hours": "1 heure",
     "days": "1 jour",
     "sevenDays": "7 jours",
+    "levelHard": "Dur",
+    "levelOkay": "Moyen",
+    "levelGood": "Bien",
+    "levelEasy": "Facile",
+    "showMore": "Voir plus",
+    "reverseOn": "Inverser les cartes",
+    "reverseOff": "Étudier normalement",
+    "reverseActive": "Mode inversé : réponse d’abord",
     "bravo": "Bravo ! Vous avez complété toutes les cartes",
     "learnTime": "Temps pour apprendre les cartes restantes",
     "loading": "Chargement des cartes...",
