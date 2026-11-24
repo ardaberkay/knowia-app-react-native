@@ -143,7 +143,23 @@
     "language": "İçerik Dili",
     "selectLanguage": "Dil Seç",
     "languageHeading": "İçerik Dili",
-    "languageSub": "Destenin içerik dillerini seçin (Maksimum 2)"
+    "languageSub": "Önce kartın ön yüzündeki dili seç. Arka yüz başka bir dildeyse onu da seç.",
+
+    "languageFront": "Ön yüz",
+
+    "languageBack": "Arka yüz",
+
+    "languageBackEmpty": "Ön yüzle aynı · isteğe bağlı",
+
+    "languagePick": "Dil seç",
+
+    "languageSwap": "Yerlerini değiştir",
+
+    "languageBoth": "Ön ve arka yüz",
+
+    "languageExample": "Örnek: ön yüz İngilizce “apple”, arka yüz Türkçe “elma”",
+
+    "requiredLanguage": "Lütfen kartın ön yüzündeki dili seç."
   },
   "common": {
     "error": "Bir hata oluştu",
@@ -430,6 +446,10 @@
     "levelGood": "İyi",
     "levelEasy": "Kolay",
     "showMore": "Devamını gör",
+
+    "speak": "Sesli oku",
+
+    "stopSpeaking": "Okumayı durdur",
     "reverseOn": "Ters çevir",
     "reverseOff": "Normal çalış",
     "reverseActive": "Ters mod: önce cevap",

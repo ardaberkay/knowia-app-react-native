@@ -1957,10 +1957,8 @@ export default function DeckDetailScreen({ route, navigation }) {
             style={{
               position: 'absolute',
               right: scale(20),
-              // Android'de aradaki farkı tam olarak safe area boşluğu ile kapatıyoruz
-              top: Platform.OS === 'android'
-                ? moreMenuPos.y + moreMenuPos.height + verticalScale(4) + insets.top
-                : moreMenuPos.y + moreMenuPos.height + verticalScale(8),
+              // Right under the nav bar. Measuring the header button is unreliable (iOS 26 bar items).
+              top: insets.top + (Platform.OS === 'ios' ? 44 : 56) + verticalScale(6),
               minWidth: scale(160),
               backgroundColor: colors.cardBackground,
               borderRadius: moderateScale(14),

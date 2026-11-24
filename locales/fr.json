@@ -139,7 +139,23 @@
     "language": "Langue",
     "selectLanguage": "Choisir la langue",
     "languageHeading": "Langue du contenu",
-    "languageSub": "Choisir langues du deck (Max. 2)"
+    "languageSub": "Choisis d’abord la langue du recto des cartes. Si le verso est dans une autre langue, choisis-la aussi.",
+
+    "languageFront": "Recto",
+
+    "languageBack": "Verso",
+
+    "languageBackEmpty": "Comme le recto · facultatif",
+
+    "languagePick": "Choisir la langue",
+
+    "languageSwap": "Inverser",
+
+    "languageBoth": "Recto et verso",
+
+    "languageExample": "Exemple : recto en anglais « apple », verso en français « pomme »",
+
+    "requiredLanguage": "Choisis la langue du recto des cartes."
   },
   "common": {
     "error": "Une erreur s'est produite",
@@ -387,6 +403,10 @@
     "levelGood": "Bien",
     "levelEasy": "Facile",
     "showMore": "Voir plus",
+
+    "speak": "Lire à voix haute",
+
+    "stopSpeaking": "Arrêter la lecture",
     "reverseOn": "Inverser les cartes",
     "reverseOff": "Étudier normalement",
     "reverseActive": "Mode inversé : réponse d’abord",

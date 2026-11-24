@@ -139,7 +139,23 @@
     "language": "Inhaltssprache",
     "selectLanguage": "Sprache wählen",
     "languageHeading": "Inhaltssprache",
-    "languageSub": "Decksprachen wählen (Max. 2)"
+    "languageSub": "Wähle zuerst die Sprache der Kartenvorderseite. Ist die Rückseite in einer anderen Sprache, wähle auch diese.",
+
+    "languageFront": "Vorderseite",
+
+    "languageBack": "Rückseite",
+
+    "languageBackEmpty": "Wie Vorderseite · optional",
+
+    "languagePick": "Sprache wählen",
+
+    "languageSwap": "Tauschen",
+
+    "languageBoth": "Vorder- und Rückseite",
+
+    "languageExample": "Beispiel: Vorderseite Englisch „apple“, Rückseite Deutsch „Apfel“",
+
+    "requiredLanguage": "Bitte wähle die Sprache der Kartenvorderseite."
   },
   "common": {
     "error": "Ein Fehler ist aufgetreten",
@@ -389,6 +405,10 @@
     "levelGood": "Gut",
     "levelEasy": "Leicht",
     "showMore": "Mehr anzeigen",
+
+    "speak": "Vorlesen",
+
+    "stopSpeaking": "Vorlesen stoppen",
     "reverseOn": "Karten umdrehen",
     "reverseOff": "Normal lernen",
     "reverseActive": "Umgekehrt: Antwort zuerst",

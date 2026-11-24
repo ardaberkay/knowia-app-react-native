@@ -53,6 +53,10 @@ export default {
       permissions: [
         "android.permission.DETECT_SCREEN_CAPTURE"
       ],
+      // expo-audio is only used for read-aloud playback; never ask for the mic.
+      blockedPermissions: [
+        "android.permission.RECORD_AUDIO"
+      ],
       intentFilters: [
         {
           action: "VIEW",
@@ -79,6 +83,18 @@ export default {
       "expo-notifications",
       "expo-sharing",
       "expo-web-browser",
+      // Only used to let card read-aloud (expo-speech) play in silent mode.
+      // No background audio and no recording. The microphone string is only
+      // there because the library binary contains recording APIs, which App
+      // Store Connect flags when the key is missing. It is never requested.
+      [
+        "expo-audio",
+        {
+          microphonePermission: "Knowia does not record audio. This permission is never requested.",
+          enableBackgroundPlayback: false,
+          recordAudioAndroid: false
+        }
+      ],
       "./plugins/withAndroidKeyboardMode"
     ],
     extra: {

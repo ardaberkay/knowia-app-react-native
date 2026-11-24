@@ -16,7 +16,7 @@ import UndoButton from '../../components/tools/UndoButton';
 import CreateButton from '../../components/tools/CreateButton';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
-import DeckLanguageModal from '../../components/modals/DeckLanguageModal';
+import DeckLanguageModal, { DeckLanguageField } from '../../components/modals/DeckLanguageModal';
 import BadgeText from '../../components/tools/BadgeText';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -64,10 +64,6 @@ export default function CreateScreen() {
   }, []);
 
 
-  const selectedLang = languages.filter(l =>
-    selectedLanguage?.includes(l.id)
-  );
-
   React.useEffect(() => {
     const loadLanguages = async () => {
       try {
@@ -80,10 +76,6 @@ export default function CreateScreen() {
     loadLanguages();
   }, []);
 
-  const getDeckLanguageName = (language) => {
-    const translation = t(`languages.${language.sort_order}`, null);
-    return translation;
-  };
 
 
   const getCategoryIcon = (sortOrder) => {
@@ -142,8 +134,8 @@ export default function CreateScreen() {
       showError(t('create.requiredCategory', 'Lütfen bir kategori seçin.'));
       return;
     }
-    if (!selectedLanguage) {
-      showError(t('create.requiredLanguage', 'Lütfen desteyle ilgili bir dil seçin.'));
+    if (!selectedLanguage || selectedLanguage.length === 0) {
+      showError(t('create.requiredLanguage', 'Lütfen kartın ön yüzündeki dili seç.'));
       return;
     }
     setLoading(true);
@@ -444,34 +436,21 @@ export default function CreateScreen() {
                 </View>
             </View>
 
-            <TouchableOpacity
-              style={[styles.categorySelector, { borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
-              accessibilityLabel={t('create.selectLanguage', 'Dil Seç')}
+            <DeckLanguageField
+              languages={languages}
+              selectedLanguage={selectedLanguage}
               onPress={() => {
                 Keyboard.dismiss();
                 triggerHaptic('selection');
                 requestAnimationFrame(() => {
-                setDeckLanguageModalVisible(true);
+                  setDeckLanguageModalVisible(true);
                 });
               }}
-            >
-              <View style={styles.categoryRow}>
-                <Text
-                  style={[
-                    styles.categoryText,
-                    typography.styles.body,
-                    { color: selectedLang?.length > 0 ? colors.text : colors.muted },
-                  ]}
-                >
-                  {selectedLang?.length > 0 ? ` ${selectedLang.map(l => getDeckLanguageName(l)).join(' | ')}` : ` ${t('create.selectLanguage', 'Dil seç')}`}
-                </Text>
-              </View>
-              <Iconify
-                icon="flowbite:caret-down-solid"
-                size={moderateScale(20)}
-                color={colors.muted}
-              />
-            </TouchableOpacity>
+              onSwap={() => {
+                triggerHaptic('selection');
+                setSelectedLanguage((prev) => (prev.length === 2 ? [prev[1], prev[0]] : prev));
+              }}
+            />
           </View>
 
           <View
@@ -516,18 +495,7 @@ export default function CreateScreen() {
         onClose={() => setDeckLanguageModalVisible(false)}
         languages={languages}
         selectedLanguage={selectedLanguage}
-        onSelectLanguage={(languageId) => {
-          setSelectedLanguage(prev => {
-            if (prev.includes(languageId)) {
-              return prev.filter(id => id !== languageId);
-            }
-            if (prev.length >= 2) {
-              return prev;
-            }
-            return [...prev, languageId];
-          });
-        }}
-
+        onChange={setSelectedLanguage}
       />
     </SafeAreaView>
   );

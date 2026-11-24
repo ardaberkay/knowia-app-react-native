@@ -142,7 +142,23 @@
     "language": "Content Language",
     "selectLanguage": "Select Language",
     "languageHeading": "Content Language",
-    "languageSub": "Select deck content languages (Max. 2)"
+    "languageSub": "First pick the language on the front of the cards. If the back is in another language, pick that too.",
+
+    "languageFront": "Front",
+
+    "languageBack": "Back",
+
+    "languageBackEmpty": "Same as front · optional",
+
+    "languagePick": "Select language",
+
+    "languageSwap": "Swap",
+
+    "languageBoth": "Front and back",
+
+    "languageExample": "Example: front in Spanish “manzana”, back in English “apple”",
+
+    "requiredLanguage": "Please select the language on the front of the cards."
   },
   "common": {
     "error": "An error occurred",
@@ -425,6 +441,10 @@
     "levelGood": "Good",
     "levelEasy": "Easy",
     "showMore": "See more",
+
+    "speak": "Read aloud",
+
+    "stopSpeaking": "Stop reading",
     "reverseOn": "Reverse cards",
     "reverseOff": "Study normally",
     "reverseActive": "Reverse mode: answer first",

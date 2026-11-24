@@ -139,7 +139,23 @@
     "language": "Idioma",
     "selectLanguage": "Selecionar idioma",
     "languageHeading": "Idioma do conteúdo",
-    "languageSub": "Escolha idiomas do baralho (Máx. 2)"
+    "languageSub": "Primeiro escolha o idioma da frente dos cartões. Se o verso estiver em outro idioma, escolha-o também.",
+
+    "languageFront": "Frente",
+
+    "languageBack": "Verso",
+
+    "languageBackEmpty": "Igual à frente · opcional",
+
+    "languagePick": "Escolher idioma",
+
+    "languageSwap": "Trocar",
+
+    "languageBoth": "Frente e verso",
+
+    "languageExample": "Exemplo: frente em inglês “apple”, verso em português “maçã”",
+
+    "requiredLanguage": "Escolha o idioma da frente dos cartões."
   },
   "common": {
     "error": "Ocorreu um erro",
@@ -387,6 +403,10 @@
     "levelGood": "Bom",
     "levelEasy": "Fácil",
     "showMore": "Ver mais",
+
+    "speak": "Ler em voz alta",
+
+    "stopSpeaking": "Parar a leitura",
     "reverseOn": "Inverter cartões",
     "reverseOff": "Estudar normal",
     "reverseActive": "Modo inverso: resposta primeiro",

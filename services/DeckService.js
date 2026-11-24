@@ -8,6 +8,18 @@ const DECK_LIST_SELECT = 'id, name, to_name, description, card_count, user_id, c
 // Oluşturma/güncelleme sonrası dönüş için kullanılan select (tekil deck).
 const DECK_SELECT_SINGLE = 'id, name, to_name, description, card_count, user_id, category_id, is_shared, is_admin_created, shared_at, updated_at, created_at, profiles:profiles(username, image_url), categories:categories(id, name, sort_order)';
 
+// decks_languages.side: 'front' | 'back' | null. The order of a languageIds
+// array is the side: [front, back]. A single language reads on both sides;
+// null = legacy row or filter-only language (not used for speech).
+const SIDE_ORDER = { front: 0, back: 1 };
+const sideRank = (side) => (side in SIDE_ORDER ? SIDE_ORDER[side] : 2);
+const toLanguageRelations = (deckId, languageIds) =>
+  languageIds.slice(0, 2).map((languageId, index) => ({
+    deck_id: deckId,
+    language_id: languageId,
+    side: index === 0 ? 'front' : 'back',
+  }));
+
 export const getDecksByCategory = async (userId, category, options = false) => {
   // options hem eski boolean forceRefresh çağrılarını hem de yeni { forceRefresh, page, limit } yapısını destekler
   let forceRefresh = false;
@@ -481,13 +493,9 @@ export const createDeck = async (userId, payload) => {
   if (error) throw error;
 
   if (languageIds.length > 0) {
-    const relations = languageIds.map((languageId) => ({
-      deck_id: data.id,
-      language_id: languageId,
-    }));
     const { error: deckLangError } = await supabase
       .from('decks_languages')
-      .insert(relations);
+      .insert(toLanguageRelations(data.id, languageIds));
     if (deckLangError) throw deckLangError;
   }
 
@@ -522,13 +530,9 @@ export const updateDeck = async (deckId, userId, payload) => {
   if (deleteError) throw deleteError;
 
   if (languageIds.length > 0) {
-    const relations = languageIds.map((languageId) => ({
-      deck_id: deckId,
-      language_id: languageId,
-    }));
     const { error: deckLangError } = await supabase
       .from('decks_languages')
-      .insert(relations);
+      .insert(toLanguageRelations(deckId, languageIds));
     if (deckLangError) throw deckLangError;
   }
 
@@ -544,10 +548,55 @@ export const updateDeck = async (deckId, userId, payload) => {
 export const getDeckLanguages = async (deckId) => {
   const { data, error } = await supabase
     .from('decks_languages')
-    .select('language_id')
+    .select('language_id, side')
     .eq('deck_id', deckId);
   if (error) throw error;
-  return (data || []).map((row) => row.language_id);
+  // Front first, then back, then side-less rows: callers treat the order as
+  // [front, back] (e.g. the edit screen's language picker).
+  return (data || [])
+    .slice()
+    .sort((a, b) => sideRank(a.side) - sideRank(b.side))
+    .map((row) => row.language_id);
+};
+
+/**
+ * Speech languages of a deck's two card faces, as lowercase codes ('en').
+ *
+ * - front: the 'front' row. Legacy decks with no side info fall back to the
+ *   first language that isn't the app language (language decks are usually
+ *   "foreign word → its meaning"), else the first one.
+ * - back: the 'back' row, else the front language.
+ * Both are null when the deck has no languages (caller uses the app language).
+ *
+ * @param {string} deckId
+ * @param {string} [appLanguage] - current UI language code, for the legacy fallback
+ * @returns {Promise<{ front: string|null, back: string|null }>}
+ */
+export const getDeckSpeechLanguages = async (deckId, appLanguage) => {
+  const { data, error } = await supabase
+    .from('decks_languages')
+    .select('side, languages(language_code)')
+    .eq('deck_id', deckId);
+  if (error) throw error;
+
+  const rows = (data || [])
+    .map((row) => ({ side: row.side, code: row.languages?.language_code?.toLowerCase() || null }))
+    .filter((row) => row.code);
+  if (rows.length === 0) return { front: null, back: null };
+
+  let front = rows.find((row) => row.side === 'front')?.code || null;
+  let back = rows.find((row) => row.side === 'back')?.code || null;
+
+  if (!front && !rows.some((row) => row.side)) {
+    const app = (appLanguage || '').toLowerCase().slice(0, 2);
+    const foreign = rows.find((row) => row.code !== app);
+    front = (foreign || rows[0]).code;
+    const other = rows.find((row) => row.code !== front);
+    back = other ? other.code : null;
+  }
+
+  front = front || rows[0].code;
+  return { front, back: back || front };
 };
 
 const TAB_TO_SORT_BY = {

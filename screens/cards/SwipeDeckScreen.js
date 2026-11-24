@@ -27,7 +27,15 @@ import {
   undoLastSwipe,
   endSwipeSession,
 } from '../../services/CardService';
-import { getDeckById } from '../../services/DeckService';
+import { getDeckById, getDeckSpeechLanguages } from '../../services/DeckService';
+// expo-speech / expo-audio are native modules. Builds made before they were
+// added (and OTA updates landing on them) don't have the native side, and the
+// module throws on import, so load them defensively: no Speech = no speaker
+// button; no audio module = speech still works, just muted in silent mode.
+let Speech = null;
+try { Speech = require('expo-speech'); } catch { Speech = null; }
+let ExpoAudio = null;
+try { ExpoAudio = require('expo-audio'); } catch { ExpoAudio = null; }
 import { invalidateCache, hasSeenSwipeTutorial, markSwipeTutorialSeen } from '../../services/CacheService';
 import { listChapters, mergeChapterProgressIntoCache } from '../../services/ChapterService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -113,6 +121,49 @@ const AnimatedTimeButton = ({ onPress, emoji, label, time, buttonStyle, textColo
   );
 };
 
+// languages.language_code ('en') -> a voice locale. The region picks the voice
+// that matches the flag shown in the app (Portugal, not Brazil).
+const SPEECH_LOCALES = {
+  tr: 'tr-TR', en: 'en-US', de: 'de-DE', es: 'es-ES', fr: 'fr-FR', pt: 'pt-PT', ar: 'ar-SA',
+};
+const toSpeechLocale = (code) => {
+  const base = (code || '').toLowerCase().slice(0, 2);
+  return SPEECH_LOCALES[base] || base || undefined;
+};
+
+// Slightly slower than the system default: easier to follow while learning.
+const SPEECH_RATE = 0.9;
+
+// Best installed voice for a locale. expo-speech reports iOS Premium voices as
+// "Default", so rank by the identifier (com.apple.voice.premium|enhanced|
+// compact.<locale>.<Name>). Novelty/eloquence voices are skipped. An exact
+// locale beats the same base language (en-US over en-GB).
+const voiceRank = (identifier = '') => {
+  if (identifier.includes('.premium.')) return 3;
+  if (identifier.includes('.enhanced.')) return 2;
+  return 1;
+};
+const isNoveltyVoice = (identifier = '') =>
+  identifier.includes('speech.synthesis') || identifier.includes('eloquence');
+const pickBestVoice = (voices, locale) => {
+  if (!locale || !voices?.length) return undefined;
+  const base = locale.slice(0, 2).toLowerCase();
+  const candidates = voices.filter((v) =>
+    !isNoveltyVoice(v.identifier) && (v.language || '').toLowerCase().startsWith(base));
+  if (candidates.length === 0) return undefined;
+  const score = (v) => voiceRank(v.identifier) * 10 + ((v.language || '').toLowerCase() === locale.toLowerCase() ? 1 : 0);
+  return candidates.reduce((best, v) => (score(v) > score(best) ? v : best)).identifier;
+};
+
+// Card text as plain speech: drop LaTeX delimiters/commands so formulas don't
+// get read out as "dollar backslash frac".
+const stripForSpeech = (text) => (text || '')
+  .replace(/\$+/g, ' ')
+  .replace(/\\[a-zA-Z]+/g, ' ')
+  .replace(/[{}]/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+
 const AnimatedActionPressable = Reanimated.createAnimatedComponent(Pressable);
 const ACTION_ENTRANCE_OFFSET = verticalScale(8);
 
@@ -131,6 +182,10 @@ const SwipeCardActions = memo(function SwipeCardActions({
   showMoreLabel,
   onShowMorePress,
   showMoreTextColor = '#1C1C1C',
+  onSpeakPress,
+  isSpeaking = false,
+  speakLabel,
+  stopSpeakingLabel,
 }) {
   // This timeline intentionally mirrors SwipeFlipCard.contentEntranceStyle.
   // The action row is outside the ScrollView/face content, but it uses the
@@ -200,6 +255,16 @@ const SwipeCardActions = memo(function SwipeCardActions({
     onFavoritePress?.(cardId);
   }, [cardId, onFavoritePress]);
 
+  const handleSpeakPress = useCallback(() => {
+    triggerHaptic('light');
+    onSpeakPress?.(cardId);
+  }, [cardId, onSpeakPress]);
+
+  // Speaker (top-left): same two-face flip as the heart, so it turns with the
+  // card. It looks the same while speaking; tapping again stops.
+  const speakIcon = 'solar:volume-loud-bold';
+  const speakIconColor = '#FFF7ED';
+
   const favoriteIcon = isFavorite ? 'solar:heart-bold' : 'solar:heart-broken';
   const favoriteIconColor = isFavorite ? favoriteColor : '#FFF7ED';
 
@@ -209,6 +274,37 @@ const SwipeCardActions = memo(function SwipeCardActions({
       pointerEvents="box-none"
       style={styles.cardActionRow}
     >
+      {onSpeakPress ? (
+        <AnimatedActionPressable
+          accessibilityRole="button"
+          accessibilityLabel={isSpeaking ? stopSpeakingLabel : speakLabel}
+          onPress={handleSpeakPress}
+          hitSlop={{
+            top: scale(10),
+            bottom: scale(10),
+            left: scale(10),
+            right: scale(10),
+          }}
+          style={[styles.cardActionButton, actionEntranceStyle]}
+        >
+          <Reanimated.View
+            pointerEvents="none"
+            style={styles.cardActionIconStage}
+          >
+            <Reanimated.View
+              style={[styles.cardActionIconFace, styles.cardActionIconFrontFace, frontFlipStyle]}
+            >
+              <Iconify icon={speakIcon} size={moderateScale(25)} color={speakIconColor} />
+            </Reanimated.View>
+            <Reanimated.View
+              style={[styles.cardActionIconFace, styles.cardActionIconBackFace, backFlipStyle]}
+            >
+              <Iconify icon={speakIcon} size={moderateScale(25)} color={speakIconColor} />
+            </Reanimated.View>
+          </Reanimated.View>
+        </AnimatedActionPressable>
+      ) : <View />}
+
       <AnimatedActionPressable
         accessibilityRole="button"
         accessibilityLabel={isFavorite ? 'Favorilerden kaldır' : 'Favorilere ekle'}
@@ -381,7 +477,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const tutorialOverlayRootRef = useRef(null);
   const cardTutorialTargetRef = useRef(null);
   const intervalTutorialTargetRef = useRef(null);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [showSwipeTutorial, setShowSwipeTutorial] = useState(false);
   const [swipeTutorialStep, setSwipeTutorialStep] = useState(0);
   const [firstRenderedCardId, setFirstRenderedCardId] = useState(null);
@@ -427,6 +523,97 @@ export default function SwipeDeckScreen({ route, navigation }) {
       return next;
     });
   }, [reverseStorageKey]);
+
+  // Text-to-speech: only on an explicit tap of the card's speaker button.
+  // Each face reads in its own deck language (decks_languages.side); the back
+  // falls back to the front language, a deck with no language to the app's.
+  const [speechLangs, setSpeechLangs] = useState({ front: null, back: null });
+  const [speakingCardId, setSpeakingCardId] = useState(null);
+  useEffect(() => {
+    if (!deck?.id) return;
+    let cancelled = false;
+    getDeckSpeechLanguages(deck.id, i18n.language)
+      .then((langs) => { if (!cancelled) setSpeechLangs(langs); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [deck?.id, i18n.language]);
+
+  // Installed voices, loaded once; the best one per language is picked on use.
+  const voicesRef = useRef([]);
+  useEffect(() => {
+    if (!Speech) return;
+    Speech.getAvailableVoicesAsync()
+      .then((voices) => { voicesRef.current = voices || []; })
+      .catch(() => {});
+  }, []);
+
+  // Audio session: speak even with the ring/silent switch on (user-started
+  // playback), and only duck other apps' audio (e.g. music) while speaking.
+  // The session is released after each utterance so their volume comes back.
+  const audioModeReadyRef = useRef(false);
+  const activateSpeechAudio = useCallback(async () => {
+    if (!ExpoAudio) return;
+    try {
+      if (!audioModeReadyRef.current) {
+        await ExpoAudio.setAudioModeAsync({ playsInSilentMode: true, interruptionMode: 'duckOthers' });
+        audioModeReadyRef.current = true;
+      }
+      await ExpoAudio.setIsAudioActiveAsync(true);
+    } catch {
+      // Without the session the system default applies (muted in silent mode).
+    }
+  }, []);
+  const releaseSpeechAudio = useCallback(() => {
+    ExpoAudio?.setIsAudioActiveAsync(false).catch(() => {});
+  }, []);
+
+  const stopSpeaking = useCallback(() => {
+    Speech?.stop();
+    setSpeakingCardId(null);
+  }, []);
+
+  // A new card, a flip, reverse-mode toggle or leaving the screen ends speech.
+  useEffect(() => { stopSpeaking(); }, [currentIndex, flippedCardId, isReversed, stopSpeaking]);
+  useEffect(() => () => {
+    Speech?.stop();
+    ExpoAudio?.setIsAudioActiveAsync(false).catch(() => {});
+  }, []);
+
+  const handleSpeak = useCallback((id) => {
+    if (!Speech) return;
+    if (speakingCardId === id) {
+      stopSpeaking();
+      return;
+    }
+    const card = cardsRef.current.find((c) => c?.card_id === id)?.cards;
+    if (!card) return;
+
+    // Which face is showing, and which deck side it holds (reverse mode
+    // puts the answer, i.e. the back-side content, on the front face).
+    const showingBack = flippedCardId === id;
+    const isBackContent = showingBack !== isReversed;
+    const text = stripForSpeech(isBackContent ? card.answer : card.question);
+    if (!text) return;
+    const code = (isBackContent ? speechLangs.back : speechLangs.front) || i18n.language;
+    const locale = toSpeechLocale(code);
+
+    Speech.stop();
+    setSpeakingCardId(id);
+    const done = () => {
+      setSpeakingCardId((prev) => (prev === id ? null : prev));
+      releaseSpeechAudio();
+    };
+    activateSpeechAudio().then(() => {
+      Speech.speak(text, {
+        language: locale,
+        voice: pickBestVoice(voicesRef.current, locale),
+        rate: SPEECH_RATE,
+        onDone: done,
+        onStopped: done,
+        onError: done,
+      });
+    });
+  }, [activateSpeechAudio, flippedCardId, i18n.language, isReversed, releaseSpeechAudio, speakingCardId, speechLangs, stopSpeaking]);
 
   // App bar overflow (kebab) menu.
   const moreMenuRef = useRef(null);
@@ -702,7 +889,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
               accessibilityRole="button"
             >
               <Iconify
-                icon="iconamoon:menu-kebab-vertical-bold"
+                icon="iconamoon:menu-kebab-horizontal-bold"
                 size={moderateScale(24)}
                 color="#FFFFFF"
               />
@@ -1694,9 +1881,13 @@ export default function SwipeDeckScreen({ route, navigation }) {
         showMoreLabel={t('swipeDeck.showMore', 'Devamını gör')}
         onShowMorePress={handleShowMore}
         showMoreTextColor={colors.buttonColor}
+        onSpeakPress={Speech ? handleSpeak : undefined}
+        isSpeaking={speakingCardId === card.card_id}
+        speakLabel={t('swipeDeck.speak', 'Sesli oku')}
+        stopSpeakingLabel={t('swipeDeck.stopSpeaking', 'Okumayı durdur')}
       />
     );
-  }, [CARD_WIDTH, backOverflowIds, colors.buttonColor, favoriteIds, flippedCardId, handleShowMore, t, toggleFavorite]);
+  }, [CARD_WIDTH, backOverflowIds, colors.buttonColor, favoriteIds, flippedCardId, handleShowMore, handleSpeak, speakingCardId, t, toggleFavorite]);
 
   if (loading) {
     return (
@@ -2281,9 +2472,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
             style={[
               styles.moreMenu,
               {
-                top: (Platform.OS === 'android'
-                  ? moreMenuPos.y + moreMenuPos.height + insets.top
-                  : moreMenuPos.y + moreMenuPos.height) + verticalScale(8),
+                // Right under the nav bar. Measuring the header button is unreliable (iOS 26 bar items).
+                top: insets.top + (Platform.OS === 'ios' ? 44 : 56) + verticalScale(6),
                 backgroundColor: colors.cardBackground,
                 borderColor: colors.cardBorder || colors.border,
               },
@@ -2703,7 +2893,8 @@ const styles = StyleSheet.create({
     elevation: 300,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    // Speaker on the left, favourite on the right.
+    justifyContent: 'space-between',
     paddingHorizontal: scale(12),
   },
   cardActionButton: {

@@ -16,7 +16,7 @@ import CreateButton from '../../components/tools/CreateButton';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import BadgeText from '../../components/tools/BadgeText';
-import DeckLanguageModal from '../../components/modals/DeckLanguageModal';
+import DeckLanguageModal, { DeckLanguageField } from '../../components/modals/DeckLanguageModal';
 import { triggerHaptic } from '../../lib/hapticManager';
 
 export default function DeckEditScreen() {
@@ -38,10 +38,6 @@ export default function DeckEditScreen() {
   const { showSuccess, showError } = useSnackbarHelpers();
   const deckCategory = deck.categories || null;
 
-  const selectedLang = languages.filter(l =>
-    selectedLanguage?.includes(l.id)
-  );
-
   React.useEffect(() => {
     const loadLanguages = async () => {
       try {
@@ -53,11 +49,6 @@ export default function DeckEditScreen() {
     };
     loadLanguages();
   }, []);
-
-  const getDeckLanguageName = (language) => {
-    const translation = t(`languages.${language.sort_order}`, null);
-    return translation;
-  };
 
 
   // Kategori ikonunu sort_order değerine göre al
@@ -117,8 +108,8 @@ export default function DeckEditScreen() {
       showError(t("create.requiredCategory", "Lütfen bir kategori seçin."));
       return;
     }
-    if (!selectedLanguage) {
-      showError(t("create.requiredLanguage", "Lütfen desteyle ilgili bir dil seçin."));
+    if (!selectedLanguage || selectedLanguage.length === 0) {
+      showError(t("create.requiredLanguage", "Lütfen kartın ön yüzündeki dili seç."));
       return;
     }
     setLoading(true);
@@ -409,36 +400,21 @@ export default function DeckEditScreen() {
             </View>
           </View>
 
-          <TouchableOpacity
-            style={[styles.categorySelector, { borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
-            accessibilityLabel={t('create.selectLanguage', 'Dil Seç')}
-            onPress={() =>
-              {
+          <DeckLanguageField
+            languages={languages}
+            selectedLanguage={selectedLanguage}
+            onPress={() => {
               Keyboard.dismiss();
               triggerHaptic('selection');
               requestAnimationFrame(() => {
                 setDeckLanguageModalVisible(true);
               });
             }}
-          >
-            <View style={styles.categoryRow}>
-              <Text
-                style={[
-                  styles.categoryText,
-                  typography.styles.body,
-                  { color: selectedLang?.length > 0 ? colors.text : colors.muted },
-                ]}
-              >
-                {selectedLang?.length > 0 ? ` ${selectedLang.map(l => getDeckLanguageName(l)).join(' | ')}` : ` ${t('create.selectLanguage', 'Dil seç')}`}
-              </Text>
-              
-            </View>
-            <Iconify
-              icon="flowbite:caret-down-solid"
-              size={moderateScale(20)}
-              color={colors.muted}
-            />
-          </TouchableOpacity>
+            onSwap={() => {
+              triggerHaptic('selection');
+              setSelectedLanguage((prev) => (prev.length === 2 ? [prev[1], prev[0]] : prev));
+            }}
+          />
         </View>
         <View style={styles.buttonRowModern}>
           <UndoButton
@@ -471,18 +447,7 @@ export default function DeckEditScreen() {
         onClose={() => setDeckLanguageModalVisible(false)}
         languages={languages}
         selectedLanguage={selectedLanguage}
-        onSelectLanguage={(languageId) => {
-          setSelectedLanguage(prev => {
-            if (prev.includes(languageId)) {
-              return prev.filter(id => id !== languageId);
-            }
-            if (prev.length >= 2) {
-              return prev;
-            }
-            return [...prev, languageId];
-          });
-        }}
-
+        onChange={setSelectedLanguage}
       />
     </SafeAreaView>
   );

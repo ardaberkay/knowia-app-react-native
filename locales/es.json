@@ -138,7 +138,23 @@
     "language": "Idioma",
     "selectLanguage": "Seleccionar idioma",
     "languageHeading": "Idioma del contenido",
-    "languageSub": "Elige idiomas del mazo (Máx. 2)",
+    "languageSub": "Primero elige el idioma del anverso de las tarjetas. Si el reverso está en otro idioma, elígelo también.",
+
+    "languageFront": "Anverso",
+
+    "languageBack": "Reverso",
+
+    "languageBackEmpty": "Igual que el anverso · opcional",
+
+    "languagePick": "Elegir idioma",
+
+    "languageSwap": "Intercambiar",
+
+    "languageBoth": "Anverso y reverso",
+
+    "languageExample": "Ejemplo: anverso en inglés “apple”, reverso en español “manzana”",
+
+    "requiredLanguage": "Elige el idioma del anverso de las tarjetas.",
     "haptics": "Vibraciones"
   },
   "common": {
@@ -387,6 +403,10 @@
     "levelGood": "Bien",
     "levelEasy": "Fácil",
     "showMore": "Ver más",
+
+    "speak": "Leer en voz alta",
+
+    "stopSpeaking": "Dejar de leer",
     "reverseOn": "Invertir tarjetas",
     "reverseOff": "Estudiar normal",
     "reverseActive": "Modo inverso: respuesta primero",
