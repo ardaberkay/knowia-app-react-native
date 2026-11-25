@@ -726,6 +726,18 @@
     "tip": "Dica: Depois de criar o cartão, você pode editá lo ou excluí lo a qualquer momento."
   },
   "discover": {
+    "tabs": {
+      "trend": "Tendência",
+      "popular": "Popular",
+      "liked": "Mais gostados",
+      "new": "Novo"
+    },
+    "time": {
+      "all": "Tudo",
+      "year": "Anual",
+      "month": "Mensal",
+      "week": "Semanal"
+    },
     "trend": "Tendência",
     "trending": "Tendência",
     "trendingSubtitle": "Baralhos mais populares agora",

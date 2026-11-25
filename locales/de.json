@@ -728,6 +728,18 @@
     "tip": "Tipp: Nach dem Erstellen kannst du die Karte jederzeit bearbeiten oder löschen."
   },
   "discover": {
+    "tabs": {
+      "trend": "Trend",
+      "popular": "Beliebt",
+      "liked": "Favorisiert",
+      "new": "Neu"
+    },
+    "time": {
+      "all": "Gesamt",
+      "year": "Jährlich",
+      "month": "Monatlich",
+      "week": "Wöchentlich"
+    },
     "trend": "Trend",
     "trending": "Trend",
     "trendingSubtitle": "Derzeit beliebteste Decks",

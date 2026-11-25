@@ -726,6 +726,18 @@
     "tip": "Consejo: Después de crear la tarjeta, puedes editarla o eliminarla en cualquier momento."
   },
   "discover": {
+    "tabs": {
+      "trend": "Tendencia",
+      "popular": "Popular",
+      "liked": "Más gustados",
+      "new": "Nuevo"
+    },
+    "time": {
+      "all": "Todo",
+      "year": "Anual",
+      "month": "Mensual",
+      "week": "Semanal"
+    },
     "trend": "Tendencia",
     "trending": "Tendencia",
     "trendingSubtitle": "Barajas más populares ahora",

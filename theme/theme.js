@@ -11,11 +11,16 @@ export const ThemeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [loading, setLoading] = useState(true);
 
+  // Dark mode only for now: the light palette needs a redesign, so the
+  // setting is hidden and a saved 'light' preference is ignored. To bring
+  // light mode back, read 'theme_preference' here again and restore the
+  // switch in SettingsScreen.
+  const LIGHT_MODE_ENABLED = false;
+
   useEffect(() => {
-    // İlk açılışta sadece localden oku
     const fetchTheme = async () => {
       try {
-        const localPref = await AsyncStorage.getItem('theme_preference');
+        const localPref = LIGHT_MODE_ENABLED ? await AsyncStorage.getItem('theme_preference') : null;
         const pref = localPref === 'light' ? 'light' : 'dark'; // default dark
         setThemePreference(pref);
         setIsDarkMode(pref === 'dark');

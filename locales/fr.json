@@ -726,6 +726,18 @@
     "tip": "Astuce: Après avoir créé la carte, vous pouvez la modifier ou la supprimer à tout moment."
   },
   "discover": {
+    "tabs": {
+      "trend": "Tendance",
+      "popular": "Populaire",
+      "liked": "Plus aimés",
+      "new": "Nouveau"
+    },
+    "time": {
+      "all": "Tout",
+      "year": "Annuel",
+      "month": "Mensuel",
+      "week": "Hebdo"
+    },
     "trend": "Tendance",
     "trending": "Tendance",
     "trendingSubtitle": "Paquets les plus populaires en ce moment",

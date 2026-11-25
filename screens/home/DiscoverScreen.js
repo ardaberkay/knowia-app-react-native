@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Platform, Image, Animated, Keyboard } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Platform, Animated, Keyboard, Modal, Pressable } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
 import DeckList from '../../components/lists/DeckList';
@@ -12,16 +12,59 @@ import { getDiscoverDecks } from '../../services/DeckService';
 import { addFavoriteDeck, removeFavoriteDeck } from '../../services/FavoriteService';
 import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
-import { LinearGradient } from 'expo-linear-gradient';
-import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
+import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import { triggerHaptic } from '../../lib/hapticManager';
 
-// How far the list is pulled up under the hero (see styles.listContainer).
-const HERO_OVERLAP = verticalScale(16);
+// Tabs. `key` is the DeckService tab (it maps to get_discover_decks' sort):
+//  trend     -> 'popular'       time-decayed score (favourites + people + starts)
+//  unique    -> 'unique_starts' how many different people studied it
+//  favorites -> 'favorites'     how many people favourited it
+//  new       -> 'new'           newest first
+// Only "Popüler" and "Beğenilen" take a time window; Trend weighs time itself.
+const TABS = [
+  { key: 'trend', labelKey: 'discover.tabs.trend', fallback: 'Trend', color: '#8B7CF6', icon: 'fluent:arrow-trending-sparkle-24-filled' },
+  { key: 'unique', labelKey: 'discover.tabs.popular', fallback: 'Popüler', color: '#FF6B35', icon: 'mdi:fire' },
+  { key: 'favorites', labelKey: 'discover.tabs.liked', fallback: 'Beğenilen', color: '#F5576C', icon: 'solar:heart-bold' },
+  { key: 'new', labelKey: 'discover.tabs.new', fallback: 'Yeni', color: '#2EC4A6', icon: 'mdi:cards' },
+];
+const TABS_WITH_TIME_FILTER = new Set(['unique', 'favorites']);
+// Rolling windows on the server: year = 365d, month = 30d, week = 7d.
+const TIME_FILTERS = [
+  { key: 'all', labelKey: 'discover.time.all', fallback: 'Tümü' },
+  { key: 'year', labelKey: 'discover.time.year', fallback: 'Yıllık' },
+  { key: 'month', labelKey: 'discover.time.month', fallback: 'Aylık' },
+  { key: 'week', labelKey: 'discover.time.week', fallback: 'Haftalık' },
+];
+// Card badge per tab: what the list is ranked by.
+const BADGE_BY_TAB = { trend: 'trend', unique: 'people', favorites: 'likes' };
+
+const TITLE_HEIGHT = verticalScale(52);
+const CHIPS_HEIGHT = verticalScale(52);
+// Softer than Profile's glow (0.26).
+const GLOW_STRENGTH = 0.18;
+
+// One radial light per tab colour, stacked; the selected tab's layer is shown.
+function GlowLayer({ id, color, opacity, height }) {
+  return (
+    <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { height, opacity }]}>
+      <Svg width="100%" height="100%">
+        <Defs>
+          <RadialGradient id={id} cx="50%" cy="0%" rx="70%" ry="100%" fx="50%" fy="0%">
+            <Stop offset="0" stopColor={color} stopOpacity={GLOW_STRENGTH} />
+            <Stop offset="0.5" stopColor={color} stopOpacity={GLOW_STRENGTH * 0.4} />
+            <Stop offset="1" stopColor={color} stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${id})`} />
+      </Svg>
+    </Animated.View>
+  );
+}
 
 export default function DiscoverScreen() {
   const navigation = useNavigation();
-  // Rendered both as a bottom tab ("DiscoverTab", tab bar visible) and as a
-  // pushed stack screen ("Discover", no tab bar).
+  // Rendered both as a bottom tab ("DiscoverTab", own title) and as a pushed
+  // stack screen ("Discover", under a transparent native header).
   const isTab = useRoute().name === 'DiscoverTab';
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -29,152 +72,87 @@ export default function DiscoverScreen() {
   const userId = session?.user?.id;
   const insets = useSafeAreaInsets();
 
-  // useWindowDimensions hook'u - ekran döndürme desteği
-  const { width, height } = useWindowDimensions();
-  const isTablet = getIsTablet();
-
-  const HERO_CARD_WIDTH = useMemo(() => {
-    return width - scale(32);
-  }, [width]);
-
-  const heroDimensions = useMemo(() => ({
-    iconSize: scale(64),
-    iconBorderRadius: moderateScale(32),
-    iconBorderWidth: moderateScale(2),
-    iconInnerSize: moderateScale(28),
-    titleFontSize: moderateScale(28),
-    subtitleFontSize: moderateScale(15),
-    subtitleLineHeight: moderateScale(20),
-    heroContentMarginRight: scale(16),
-    heroGradientPadding: moderateScale(24),
-    heroGradientMinHeight: verticalScale(140),
-    titleMarginBottom: verticalScale(6),
-    heroCarouselPaddingHorizontal: scale(16),
-    paginationDotHeight: verticalScale(8),
-    paginationDotWidth: scale(8),
-    paginationDotActiveWidth: scale(24),
-    paginationGap: scale(6),
-    paginationMarginTop: verticalScale(12),
-    timeFilterWrapperPadding: scale(16),
-    timeFilterWrapperMarginBottom: verticalScale(8),
-    searchRowGap: scale(12),
-    searchRowPadding: scale(16),
-    searchRowMarginTop: verticalScale(8),
-    fixedHeaderPaddingTop: verticalScale(12),
-    fixedHeaderPaddingBottom: verticalScale(12),
-  }), []);
-
   const [activeTab, setActiveTab] = useState('trend');
   const [timeFilter, setTimeFilter] = useState('all');
+  // Trend and Yeni always load "all": the window only applies to the others.
+  const effectiveTimeFilter = TABS_WITH_TIME_FILTER.has(activeTab) ? timeFilter : 'all';
   const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [loadedTabs, setLoadedTabs] = useState(new Set());
-  const [decksMap, setDecksMap] = useState({ trend: [], favorites: [], starts: [], unique: [], new: [] });
-  const heroScrollRef = useRef(null);
-  const scrollX = useRef(new Animated.Value(0)).current;
+  const [decksMap, setDecksMap] = useState({ trend: [], unique: [], favorites: [], new: [] });
   const loadDecksTimeoutRef = useRef(null);
-  const isRefreshingRef = useRef(false);
 
-  const previousTimeFilterRef = useRef(timeFilter);
+  const previousTimeFilterRef = useRef(effectiveTimeFilter);
   const previousActiveTabRef = useRef(activeTab);
   const isInitialMount = useRef(true);
 
-  useEffect(() => {
-    // Tab veya timeFilter değişti mi kontrol et
-    const tabChanged = previousActiveTabRef.current !== activeTab;
-    const timeFilterChanged = previousTimeFilterRef.current !== timeFilter;
-
-    // İlk mount'ta veya tab değiştiyse veya timeFilter değiştiyse yükle
-    if (isInitialMount.current || tabChanged || timeFilterChanged) {
-      // timeFilter değiştiğinde o tab'ı loadedTabs'tan kaldır
-      if (timeFilterChanged && !isInitialMount.current) {
-        setLoadedTabs(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(activeTab);
-          return newSet;
-        });
-      }
-
-      if (loadDecksTimeoutRef.current) {
-        clearTimeout(loadDecksTimeoutRef.current);
-      }
-
-      if (isInitialMount.current) {
-        // İlk açılışta debounce yok, hemen yükle
-        loadDecks();
-      } else {
-        // Tab/filtre değişiminde debounce: hızlı geçişlerde gereksiz çağrıları önle
-        loadDecksTimeoutRef.current = setTimeout(() => {
-          loadDecks();
-          loadDecksTimeoutRef.current = null;
-        }, 150);
-      }
-
-      isInitialMount.current = false;
-    }
-
-    previousActiveTabRef.current = activeTab;
-    previousTimeFilterRef.current = timeFilter;
-
-    // Cleanup: Component unmount olduğunda timeout'u temizle
-    return () => {
-      if (loadDecksTimeoutRef.current) {
-        clearTimeout(loadDecksTimeoutRef.current);
-        loadDecksTimeoutRef.current = null;
-      }
-    };
-  }, [timeFilter, activeTab, loadDecks]);
-
-  useEffect(() => {
-    if (heroScrollRef.current) {
-      heroScrollRef.current.scrollTo({
-        x: tabKeys.indexOf(activeTab) * HERO_CARD_WIDTH,
-        animated: false,
-      });
-    }
-  }, []);
-
-  const loadFreshData = useCallback(async (showLoadingIndicator = true, forceRefresh = false) => {
+  const loadFreshData = useCallback(async (forceRefresh = false) => {
     try {
-      if (showLoadingIndicator) {
-        setLoading(true);
-      }
-
-      const decks = await getDiscoverDecks(userId, activeTab, timeFilter, 50, forceRefresh);
+      const decks = await getDiscoverDecks(userId, activeTab, effectiveTimeFilter, 50, forceRefresh);
       setDecksMap(prev => ({ ...prev, [activeTab]: decks || [] }));
     } catch (error) {
       console.error('Error loading decks:', error);
       setDecksMap(prev => ({ ...prev, [activeTab]: [] }));
     } finally {
-      setLoading(false);
       setLoadedTabs(prev => new Set([...prev, activeTab]));
     }
-  }, [activeTab, timeFilter, userId]);
+  }, [activeTab, effectiveTimeFilter, userId]);
 
   const loadDecks = useCallback(async (forceRefresh = false) => {
     if (loadDecksTimeoutRef.current) {
       clearTimeout(loadDecksTimeoutRef.current);
       loadDecksTimeoutRef.current = null;
     }
-    // Bu tab için zaten veri varsa skeleton gösterme, arka planda güncelle
-    const hasDataForTab = loadedTabs.has(activeTab) && (decksMap[activeTab]?.length ?? 0) > 0;
-    const showLoading = forceRefresh ? true : !hasDataForTab;
-    await loadFreshData(showLoading, forceRefresh);
-  }, [loadFreshData, activeTab, loadedTabs, decksMap]);
+    await loadFreshData(forceRefresh);
+  }, [loadFreshData]);
 
-  const currentDecks = useMemo(() => {
-    return decksMap[activeTab] || [];
-  }, [activeTab, decksMap]);
+  useEffect(() => {
+    const tabChanged = previousActiveTabRef.current !== activeTab;
+    const timeFilterChanged = previousTimeFilterRef.current !== effectiveTimeFilter;
+
+    if (isInitialMount.current || tabChanged || timeFilterChanged) {
+      // A new time window invalidates this tab's list (show the skeleton).
+      if (timeFilterChanged && !tabChanged && !isInitialMount.current) {
+        setLoadedTabs(prev => {
+          const next = new Set(prev);
+          next.delete(activeTab);
+          return next;
+        });
+      }
+      if (loadDecksTimeoutRef.current) clearTimeout(loadDecksTimeoutRef.current);
+      if (isInitialMount.current) {
+        loadDecks();
+      } else {
+        // Debounce quick tab/filter changes.
+        loadDecksTimeoutRef.current = setTimeout(() => {
+          loadDecks();
+          loadDecksTimeoutRef.current = null;
+        }, 150);
+      }
+      isInitialMount.current = false;
+    }
+
+    previousActiveTabRef.current = activeTab;
+    previousTimeFilterRef.current = effectiveTimeFilter;
+
+    return () => {
+      if (loadDecksTimeoutRef.current) {
+        clearTimeout(loadDecksTimeoutRef.current);
+        loadDecksTimeoutRef.current = null;
+      }
+    };
+  }, [effectiveTimeFilter, activeTab, loadDecks]);
 
   const displayDecks = useMemo(() => {
-    return currentDecks.map((deck) => {
-      // ... admin created mantığın (Knowia) aynen kalsın
+    let decks = decksMap[activeTab] || [];
+    // "Beğenilen" lists only decks someone (other than the owner) favourited.
+    if (activeTab === 'favorites') decks = decks.filter((deck) => Number(deck.favorite_count) > 0);
+    return decks.map((deck) => {
       if (deck.is_admin_created) {
         return { ...deck, profiles: { ...deck.profiles, username: 'Knowia', image_url: null } };
       }
       return deck;
     });
-  }, [currentDecks]);
+  }, [activeTab, decksMap]);
 
   const handleDeckPress = (deck) => {
     navigation.navigate('DeckDetail', { deck });
@@ -183,20 +161,17 @@ export default function DiscoverScreen() {
   const handleToggleFavorite = async (deckId) => {
     try {
       if (!userId) return;
-
-      const deck = currentDecks.find(d => d.id === deckId);
+      const deck = (decksMap[activeTab] || []).find(d => d.id === deckId);
       const isFavorite = deck?.is_favorite === true;
-
       const updateDeckInLists = (nextFav) => {
         setDecksMap(prev => {
           const updated = {};
           for (const key of Object.keys(prev)) {
-            updated[key] = prev[key].map(d => d.id === deckId ? { ...d, is_favorite: nextFav } : d);
+            updated[key] = prev[key].map(d => (d.id === deckId ? { ...d, is_favorite: nextFav } : d));
           }
           return updated;
         });
       };
-
       if (isFavorite) {
         await removeFavoriteDeck(userId, deckId);
         updateDeckInLists(false);
@@ -211,310 +186,166 @@ export default function DiscoverScreen() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    isRefreshingRef.current = true;
     try {
-      await loadDecks(true); // forceRefresh = true; desteler zaten is_favorite ile geliyor
+      await loadDecks(true);
     } catch (error) {
       console.error('Error refreshing:', error);
     } finally {
       setRefreshing(false);
-      isRefreshingRef.current = false;
     }
   };
 
-  const handleSetPage = useCallback((pageIndex) => {
-    const tabs = ['trend', 'favorites', 'starts', 'unique', 'new'];
-    if (tabs[pageIndex] && tabs[pageIndex] !== activeTab) {
-      heroScrollRef.current?.scrollTo({
-        x: pageIndex * HERO_CARD_WIDTH,
-        animated: true,
-      });
-      setActiveTab(tabs[pageIndex]);
-    }
-  }, [activeTab, HERO_CARD_WIDTH]);
+  // ─── Header ───
+  // Tab: own "Keşfet" title that scrolls away; the chip row stays pinned.
+  // Stack: the native header shows the title, so only the chips are drawn.
+  const nativeHeaderHeight = Platform.OS === 'ios' ? insets.top + 44 : 56;
+  const topInset = isTab ? insets.top : nativeHeaderHeight;
+  const titleHeight = isTab ? TITLE_HEIGHT : 0;
+  const headerHeight = topInset + titleHeight + CHIPS_HEIGHT;
 
-  const handleMomentumScrollEnd = useCallback((event) => {
-    const offsetX = event.nativeEvent.contentOffset.x;
-    const pageIndex = Math.round(offsetX / HERO_CARD_WIDTH);
-    const tabKeys = ['trend', 'favorites', 'starts', 'unique', 'new'];
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const handleScroll = useMemo(
+    () => Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true }),
+    [scrollY]
+  );
+  // All native-driven: the header slides up by the title's height, the title
+  // and glow fade out, and a solid background fades in under the chips so the
+  // list never shows through.
+  const collapse = Math.max(1, titleHeight);
+  const headerTranslate = scrollY.interpolate({ inputRange: [0, collapse], outputRange: [0, -titleHeight], extrapolate: 'clamp' });
+  const titleOpacity = scrollY.interpolate({ inputRange: [0, collapse * 0.7], outputRange: [1, 0], extrapolate: 'clamp' });
+  const glowFade = scrollY.interpolate({ inputRange: [0, collapse * 1.5], outputRange: [1, 0], extrapolate: 'clamp' });
+  const solidOpacity = scrollY.interpolate({ inputRange: [0, collapse], outputRange: [0, 1], extrapolate: 'clamp' });
 
-    if (pageIndex >= 0 && pageIndex < tabKeys.length) {
-      setActiveTab(tabKeys[pageIndex]);
-    }
-  }, [HERO_CARD_WIDTH]);
+  // Glow colour follows the selected tab (cross-fade, native driver).
+  const tabIndex = TABS.findIndex((tab) => tab.key === activeTab);
+  const tabAnim = useRef(new Animated.Value(Math.max(0, tabIndex))).current;
+  useEffect(() => {
+    Animated.timing(tabAnim, { toValue: Math.max(0, tabIndex), duration: 280, useNativeDriver: true }).start();
+  }, [tabAnim, tabIndex]);
 
-  const timeFilters = [
-    { key: 'all', label: t('discover.all', 'Tümü'), icon: 'solar:infinity-bold' },
-    { key: 'today', label: t('discover.daily', 'Bugün'), icon: 'solar:sun-bold' },
-    { key: 'week', label: t('discover.weekly', 'Hafta'), icon: 'solar:calendar-minimalistic-bold' },
-    { key: 'month', label: t('discover.monthly', 'Ay'), icon: 'solar:calendar-bold' },
-    { key: 'year', label: t('discover.yearly', 'Yıl'), icon: 'solar:calendar-bold' },
-  ];
-
-  const tabConfigs = {
-    trend: {
-      title: t('discover.trending', 'Trend'),
-      subtitle: t('discover.trendingSubtitle', 'Şu an en popüler desteler'),
-      icon: 'fluent:arrow-trending-sparkle-24-filled',
-      gradient: ['#667eea', '#764ba2'],
-      accentColor: '#f093fb',
-    },
-    favorites: {
-      title: t('discover.mostFavorited', 'Favoriler'),
-      subtitle: t('discover.mostFavoritedSubtitle', 'En çok favorilenen desteler'),
-      icon: 'solar:heart-bold',
-      gradient: ['#f093fb', '#f5576c'],
-      accentColor: '#ff6b9d',
-    },
-    starts: {
-      title: t('discover.mostStarted', 'Popüler'),
-      subtitle: t('discover.mostStartedSubtitle', 'En çok başlatılan desteler'),
-      icon: 'mdi:fire',
-      gradient: ['#fee140', '#fa709a'],
-      accentColor: '#ff6b35',
-    },
-    unique: {
-      title: t('discover.mostUnique', 'Yaygın'),
-      subtitle: t('discover.mostUniqueSubtitle', 'En geniş kullanıcı kitlesine sahip desteler'),
-      icon: 'fluent:people-community-20-filled',
-      gradient: ['#00f2fe', '#4facfe'],
-      accentColor: '#6f8ead',
-    },
-    new: {
-      title: t('discover.newDecks', 'Yeni'),
-      subtitle: t('discover.newSubtitle', 'Yeni eklenen desteler'),
-      icon: 'mdi:cards',
-      gradient: ['#38f9d7', '#43e97b'],
-      accentColor: '#6f8ead',
-    },
+  const handleTabPress = (key) => {
+    if (key === activeTab) return;
+    triggerHaptic('selection');
+    setActiveTab(key);
   };
 
-  const tabKeys = ['trend', 'favorites', 'starts', 'unique', 'new'];
+  // Time window menu (a small dropdown under the pill).
+  const pillRef = useRef(null);
+  const [timeMenu, setTimeMenu] = useState(null); // { right, top } in window coords, or null
+  const openTimeMenu = () => {
+    triggerHaptic('selection');
+    pillRef.current?.measureInWindow((x, y, width, height) => {
+      setTimeMenu({ right: x + width, top: y + height + verticalScale(6) });
+    });
+  };
+  const selectTimeFilter = (key) => {
+    triggerHaptic('selection');
+    setTimeMenu(null);
+    setTimeFilter(key);
+  };
+  const activeTime = TIME_FILTERS.find((f) => f.key === timeFilter) || TIME_FILTERS[0];
+  const showTimePill = TABS_WITH_TIME_FILTER.has(activeTab);
 
-  const renderFixedHeader = () => {
-    const headerHeight = Platform.OS === 'ios' ? insets.top + 44 : 56;
-    // As a tab there is no transparent native header/back button above it.
-    const headerPaddingTop = isTab
-      ? insets.top + verticalScale(24)
-      : headerHeight + verticalScale(50);
+  const renderTimePill = () => (
+    <Pressable
+      ref={pillRef}
+      onPress={openTimeMenu}
+      hitSlop={8}
+      style={({ pressed }) => [
+        styles.timePill,
+        { backgroundColor: 'rgba(255, 255, 255, 0.08)', opacity: pressed ? 0.7 : 1 },
+      ]}
+    >
+      <Iconify icon="solar:calendar-minimalistic-bold" size={moderateScale(14)} color={colors.muted} />
+      <Text style={[styles.timePillText, { color: colors.text }]} numberOfLines={1}>
+        {t(activeTime.labelKey, activeTime.fallback)}
+      </Text>
+      <Iconify icon="flowbite:caret-down-solid" size={moderateScale(12)} color={colors.muted} />
+    </Pressable>
+  );
 
-    return (
-      <View style={[
-        styles.fixedHeaderContainer,
-        {
-          backgroundColor: colors.cardBackground,
-          paddingTop: headerPaddingTop,
-          paddingBottom: heroDimensions.fixedHeaderPaddingBottom,
-        }
-      ]}>
-        <View style={styles.heroCarouselContainer}>
-          <Animated.ScrollView
-            ref={heroScrollRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={handleMomentumScrollEnd}
-            onScroll={Animated.event(
-              [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-              { useNativeDriver: false }
-            )}
-            scrollEventThrottle={16}
-            contentContainerStyle={[
-              styles.heroCarouselContent,
-              { paddingHorizontal: heroDimensions.heroCarouselPaddingHorizontal }
-            ]}
-            decelerationRate="fast"
-            snapToInterval={HERO_CARD_WIDTH}
-            snapToAlignment="start"
-          >
-            {tabKeys.map((tabKey) => {
-              const config = tabConfigs[tabKey];
-              return (
-                <View key={tabKey} style={[styles.modernHeroCard, { width: HERO_CARD_WIDTH }]}>
-                  <LinearGradient
-                    colors={[...config.gradient, ...config.gradient.slice().reverse()]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={[
-                      styles.modernHeroGradient,
-                      {
-                        padding: heroDimensions.heroGradientPadding,
-                        minHeight: heroDimensions.heroGradientMinHeight,
-                        borderRadius: moderateScale(24),
-                      }
-                    ]}
-                  >
-                    <View style={styles.modernHeroContent}>
-                      <View style={[styles.modernHeroIconContainer, { marginRight: heroDimensions.heroContentMarginRight }]}>
-                        <View style={[
-                          styles.modernIconCircle,
-                          {
-                            width: heroDimensions.iconSize,
-                            height: heroDimensions.iconSize,
-                            borderRadius: heroDimensions.iconBorderRadius,
-                            borderWidth: heroDimensions.iconBorderWidth,
-                            backgroundColor: config.accentColor + '20',
-                          }
-                        ]}>
-                          <Iconify icon={config.icon} size={heroDimensions.iconInnerSize} color="#fff" />
-                        </View>
-                      </View>
-                      <View style={styles.modernHeroTextContainer}>
-                        <Text style={[
-                          styles.modernHeroTitle,
-                          {
-                            fontSize: heroDimensions.titleFontSize,
-                            marginBottom: heroDimensions.titleMarginBottom,
-                          }
-                        ]}>
-                          {config.title}
-                        </Text>
-                        <Text style={[
-                          styles.modernHeroSubtitle,
-                          {
-                            fontSize: heroDimensions.subtitleFontSize,
-                            lineHeight: heroDimensions.subtitleLineHeight,
-                          }
-                        ]}>
-                          {config.subtitle}
-                        </Text>
-                      </View>
-                    </View>
-                  </LinearGradient>
-                </View>
-              );
-            })}
-          </Animated.ScrollView>
+  const renderHeader = () => (
+    <Animated.View
+      pointerEvents="box-none"
+      style={[styles.header, { height: headerHeight, transform: [{ translateY: headerTranslate }] }]}
+    >
+      {/* Solid background, visible once the list scrolls under the header. */}
+      <Animated.View
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, { backgroundColor: colors.background, opacity: solidOpacity }]}
+      />
+      {/* Soft light from the top, tinted by the selected tab. */}
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: glowFade }]}>
+        {TABS.map((tab, i) => (
+          <GlowLayer
+            key={tab.key}
+            id={`discoverGlow_${tab.key}`}
+            color={tab.color}
+            height={headerHeight + verticalScale(40)}
+            opacity={tabAnim.interpolate({ inputRange: [i - 1, i, i + 1], outputRange: [0, 1, 0], extrapolate: 'clamp' })}
+          />
+        ))}
+      </Animated.View>
 
-          <View style={[
-            styles.paginationContainer,
-            {
-              gap: heroDimensions.paginationGap,
-              marginTop: heroDimensions.paginationMarginTop,
-            }
-          ]}>
-            {tabKeys.map((tabKey, idx) => {
-              const config = tabConfigs[tabKey];
-              const inputRange = tabKeys.map((_, i) => i * HERO_CARD_WIDTH);
+      <View style={{ height: topInset }} />
 
-              const dotWidth = scrollX.interpolate({
-                inputRange,
-                outputRange: tabKeys.map((_, i) =>
-                  i === idx ? heroDimensions.paginationDotActiveWidth : heroDimensions.paginationDotWidth
-                ),
-                extrapolate: 'clamp',
-              });
+      {/* Title row: "Keşfet" and, on the right, the time window (Popüler /
+          Beğenilen only). It scrolls away with the title. */}
+      {isTab ? (
+        <Animated.View style={[styles.titleRow, { height: titleHeight, opacity: titleOpacity }]}>
+          <Text style={[styles.title, { color: colors.text }]}>{t('tabs.discover', 'Keşfet')}</Text>
+          {showTimePill ? renderTimePill() : null}
+        </Animated.View>
+      ) : null}
 
-              const dotColor = scrollX.interpolate({
-                inputRange,
-                outputRange: tabKeys.map((_, i) =>
-                  i === idx ? config.accentColor : colors.border
-                ),
-                extrapolate: 'clamp',
-              });
+      <View style={[styles.chipsRow, { height: CHIPS_HEIGHT }]}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipsContent}
+          style={{ flex: 1 }}
+        >
+          {TABS.map((tab) => {
+            const selected = tab.key === activeTab;
+            // Pressable, not TouchableOpacity: TouchableOpacity can stay at
+            // its pressed opacity when its style changes during the press.
+            return (
+              <Pressable
+                key={tab.key}
+                onPress={() => handleTabPress(tab.key)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected }}
+                style={({ pressed }) => [
+                  styles.chip,
+                  selected
+                    ? { backgroundColor: tab.color }
+                    : { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <Iconify icon={tab.icon} size={moderateScale(15)} color={selected ? '#FFFFFF' : colors.muted} />
+                <Text style={[styles.chipText, { color: selected ? '#FFFFFF' : colors.text }]}>
+                  {t(tab.labelKey, tab.fallback)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
 
-              return (
-                <TouchableOpacity
-                  key={tabKey}
-                  onPress={() => handleSetPage(idx)}
-                  activeOpacity={0.7}
-                >
-                  <Animated.View
-                    style={[
-                      styles.paginationDot,
-                      {
-                        width: dotWidth,
-                        backgroundColor: dotColor,
-                        height: heroDimensions.paginationDotHeight,
-                      }
-                    ]}
-                  />
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
-        {(() => {
-          const inputRange = tabKeys.map((_, i) => i * HERO_CARD_WIDTH);
-          const animatedAccentColor = scrollX.interpolate({
-            inputRange,
-            outputRange: tabKeys.map(key => tabConfigs[key]?.accentColor || colors.buttonColor),
-            extrapolate: 'clamp',
-          });
-          const newTabIndex = tabKeys.indexOf('new');
-          const collapseRange = [(newTabIndex - 1) * HERO_CARD_WIDTH, newTabIndex * HERO_CARD_WIDTH];
-          const timeFilterOpacity = scrollX.interpolate({
-            inputRange: collapseRange,
-            outputRange: [1, 0],
-            extrapolate: 'clamp',
-          });
-          const timeFilterMaxHeight = scrollX.interpolate({
-            inputRange: collapseRange,
-            outputRange: [verticalScale(60), 0],
-            extrapolate: 'clamp',
-          });
-          const timeFilterMarginBottom = scrollX.interpolate({
-            inputRange: collapseRange,
-            outputRange: [heroDimensions.timeFilterWrapperMarginBottom, 0],
-            extrapolate: 'clamp',
-          });
-
-          return (
-            <Animated.View
-              style={{
-                paddingHorizontal: heroDimensions.timeFilterWrapperPadding,
-                marginBottom: timeFilterMarginBottom,
-                opacity: timeFilterOpacity,
-                maxHeight: timeFilterMaxHeight,
-                overflow: 'hidden',
-              }}
-              pointerEvents={activeTab === 'new' ? 'none' : 'auto'}
-            >
-              <View style={[styles.timeFilterSegmentedContainer, { backgroundColor: colors.background }]}>
-                {timeFilters.map((filter) => {
-                  const isActive = timeFilter === filter.key;
-
-                  return (
-                    <TouchableOpacity
-                      key={filter.key}
-                      onPress={() => setTimeFilter(filter.key)}
-                      style={[styles.timeFilterSegment, { overflow: 'hidden' }]}
-                      activeOpacity={0.7}
-                    >
-                      {isActive && (
-                        <Animated.View
-                          style={[
-                            styles.timeFilterSegmentActiveBg,
-                            { backgroundColor: animatedAccentColor },
-                          ]}
-                        />
-                      )}
-                      <Iconify icon={filter.icon} size={moderateScale(16)} color={isActive ? '#fff' : colors.subtext} />
-                      <Text style={[
-                        styles.timeFilterSegmentText,
-                        { color: isActive ? '#fff' : colors.text, fontWeight: isActive ? '700' : '500' }
-                      ]}>
-                        {filter.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </Animated.View>
-          );
-        })()}
-
+        {/* Pushed-screen variant has no title row: the pill sits here. */}
+        {!isTab && showTimePill ? renderTimePill() : null}
       </View>
-    );
-  };
+    </Animated.View>
+  );
 
   return (
     <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
-      {renderFixedHeader()}
-
-      <View style={[styles.listContainer, { backgroundColor: colors.background }]}>
+      <View style={styles.listContainer}>
         {!loadedTabs.has(activeTab) ? (
-          <DiscoverDecksSkeleton />
+          <View style={{ paddingTop: headerHeight + verticalScale(8), flex: 1 }}>
+            <DiscoverDecksSkeleton />
+          </View>
         ) : (
           <DeckList
             decks={displayDecks}
@@ -524,14 +355,12 @@ export default function DiscoverScreen() {
             cardVariant="favorite"
             layoutMode="double"
             onScrollBeginDrag={() => Keyboard.dismiss()}
+            onScroll={handleScroll}
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            showPopularityBadge={activeTab === 'trend'}
-            // listContainer sits HERO_OVERLAP under the hero (rounded corners
-            // over content). Add it back plus the same visible gap as Library's
-            // "Destelerim", and push the refresh spinner below the hero edge.
-            contentPaddingTop={HERO_OVERLAP + verticalScale(14)}
-            progressViewOffset={HERO_OVERLAP}
+            showPopularityBadge={BADGE_BY_TAB[activeTab] || false}
+            contentPaddingTop={headerHeight + verticalScale(8)}
+            progressViewOffset={headerHeight}
             contentPaddingBottom={
               Platform.OS === 'android'
                 ? insets.bottom + verticalScale(isTab ? 120 : 72)
@@ -541,6 +370,46 @@ export default function DiscoverScreen() {
         )}
       </View>
 
+      {renderHeader()}
+
+      <Modal visible={Boolean(timeMenu)} transparent animationType="fade" onRequestClose={() => setTimeMenu(null)}>
+        <Pressable style={{ flex: 1 }} onPress={() => setTimeMenu(null)}>
+          {timeMenu ? (
+            <View
+              style={[
+                styles.timeMenu,
+                {
+                  // Right-aligned under the pill.
+                  top: timeMenu.top,
+                  left: Math.max(scale(14), timeMenu.right - scale(170)),
+                  backgroundColor: colors.cardBackground,
+                  borderColor: colors.cardBorder || colors.border,
+                },
+              ]}
+            >
+              {TIME_FILTERS.map((filter, index) => {
+                const selected = filter.key === timeFilter;
+                return (
+                  <TouchableOpacity
+                    key={filter.key}
+                    activeOpacity={0.6}
+                    onPress={() => selectTimeFilter(filter.key)}
+                    style={[
+                      styles.timeMenuItem,
+                      index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+                    ]}
+                  >
+                    <Text style={[typography.styles.body, { color: selected ? colors.buttonColor : colors.text, flex: 1 }]}>
+                      {t(filter.labelKey, filter.fallback)}
+                    </Text>
+                    {selected ? <Iconify icon="hugeicons:tick-01" size={moderateScale(18)} color={colors.buttonColor} /> : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ) : null}
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -549,131 +418,77 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  fixedHeaderContainer: {
-    zIndex: 10,
-    borderBottomLeftRadius: moderateScale(36),
-    borderBottomRightRadius: moderateScale(36),
-    // paddingTop, paddingBottom dinamik olarak uygulanacak
-  },
   listContainer: {
     flex: 1,
-    marginTop: -HERO_OVERLAP,
   },
-  timeFilterWrapper: {
-    paddingHorizontal: scale(16),
-    marginBottom: verticalScale(8),
-  },
-  timeFilterSegmentedContainer: {
-    flexDirection: 'row',
-    borderRadius: moderateScale(16),
-    padding: moderateScale(4),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: verticalScale(2) },
-    shadowOpacity: 0.08,
-    shadowRadius: moderateScale(8),
-    elevation: 3,
-  },
-  timeFilterSegment: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: verticalScale(10),
-    paddingHorizontal: scale(8),
-    borderRadius: moderateScale(12),
-    gap: scale(4),
-  },
-  timeFilterSegmentActive: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: verticalScale(4) },
-    shadowOpacity: 0.2,
-    shadowRadius: moderateScale(8),
-    elevation: 4,
-  },
-  timeFilterSegmentActiveBg: {
+  header: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    bottom: 0,
-    borderRadius: moderateScale(12),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: verticalScale(4) },
-    shadowOpacity: 0.2,
-    shadowRadius: moderateScale(8),
-    elevation: 4,
+    zIndex: 10,
   },
-  timeFilterSegmentText: {
-    fontSize: moderateScale(12),
-    fontWeight: '500',
-    letterSpacing: -0.2,
-  },
-  heroCarouselContainer: {
-    marginBottom: verticalScale(12),
-  },
-  heroCarouselContent: {
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: scale(16),
   },
-  paginationContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: verticalScale(12),
-    gap: scale(6),
-  },
-  paginationDot: {
-    height: verticalScale(8),
-    borderRadius: moderateScale(4),
-  },
-  modernHeroCard: {
-    marginBottom: verticalScale(8),
-    borderRadius: moderateScale(24),
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: verticalScale(8) },
-    shadowOpacity: 0.15,
-    shadowRadius: moderateScale(16),
-    elevation: 8,
-  },
-  modernHeroGradient: {
-    padding: moderateScale(24),
-    minHeight: verticalScale(140),
-    justifyContent: 'center',
-  },
-  modernHeroContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modernHeroIconContainer: {
-    marginRight: scale(16),
-  },
-  modernIconCircle: {
-    width: scale(64),
-    height: scale(64),
-    borderRadius: moderateScale(32),
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: moderateScale(2),
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  modernHeroTextContainer: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  modernHeroTitle: {
-    ...typography.styles.h2,
-    color: '#fff',
+  title: {
     fontSize: moderateScale(28),
-    fontWeight: '900',
-    marginBottom: verticalScale(6),
+    fontWeight: '800',
     letterSpacing: -0.5,
   },
-  modernHeroSubtitle: {
-    ...typography.styles.caption,
-    color: 'rgba(255, 255, 255, 0.85)',
-    fontSize: moderateScale(15),
-    fontWeight: '500',
-    lineHeight: verticalScale(20),
+  chipsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: scale(14),
+  },
+  chipsContent: {
+    alignItems: 'center',
+    gap: scale(8),
+    paddingHorizontal: scale(14),
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(6),
+    height: moderateScale(36),
+    paddingHorizontal: scale(14),
+    borderRadius: 999,
+  },
+  chipText: {
+    fontSize: moderateScale(14),
+    fontWeight: '700',
+  },
+  timePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(5),
+    height: moderateScale(34),
+    paddingHorizontal: scale(12),
+    borderRadius: 999,
+  },
+  timePillText: {
+    fontSize: moderateScale(13),
+    fontWeight: '600',
+  },
+  timeMenu: {
+    position: 'absolute',
+    width: scale(170),
+    borderRadius: moderateScale(14),
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+  timeMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(12),
   },
 });

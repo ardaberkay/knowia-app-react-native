@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  FlatList,
+  Animated,
   RefreshControl,
   Image,
   ActivityIndicator,
@@ -41,6 +41,18 @@ const getInProgressGradient = (percent) => {
   return ['#FFB890', '#EA8F48', '#C66E30'];
 };
 
+// Badge in the card's top-right corner showing what Discover sorts by.
+// Returns { icon, value } or null (counts of 0 show no badge).
+function getRankingBadge(mode, deck) {
+  if (!mode) return null;
+  if (mode === true || mode === 'trend') {
+    return { icon: 'mdi:fire', value: Math.max(1, Math.round(Number(deck?.popularity_score) || 0)) };
+  }
+  const count = Number(mode === 'likes' ? deck?.favorite_count : deck?.unique_started_count) || 0;
+  if (count <= 0) return null;
+  return { icon: mode === 'likes' ? 'solar:heart-bold' : 'fluent:people-community-20-filled', value: count };
+}
+
 const DeckCard = React.memo(
   ({
     deck,
@@ -61,6 +73,10 @@ const DeckCard = React.memo(
     const [localFavorite, setLocalFavorite] = useState(
       isInitiallyFavorite
     );
+
+    // showPopularityBadge: true / 'trend' = popularity score, 'likes' =
+    // favourite count, 'people' = how many people studied it.
+    const badge = getRankingBadge(showPopularityBadge, deck);
 
     const progressValue = Math.max(
       0,
@@ -409,7 +425,7 @@ const DeckCard = React.memo(
                 style={{
                   flex: 1,
                   marginRight: scale(4),
-                  paddingRight: showPopularityBadge ? scale(30) : 0,
+                  paddingRight: badge ? scale(30) : 0,
                 }}
               >
                 <Text
@@ -451,20 +467,17 @@ const DeckCard = React.memo(
               </TouchableOpacity>
             )}
 
-          {/* Popularity */}
-          {showPopularityBadge && (
+          {/* Ranking badge: what the list is sorted by (see BADGE_MODES). */}
+          {badge && (
             <View style={styles.popularityBadge}>
               <Iconify
-                icon="mdi:fire"
+                icon={badge.icon}
                 size={moderateScale(14)}
                 color="#fff"
               />
 
               <Text style={styles.popularityBadgeText}>
-                {Math.max(
-                  1,
-                  Math.round(Number(deck?.popularity_score) || 0)
-                )}
+                {badge.value}
               </Text>
             </View>
           )}
@@ -578,6 +591,8 @@ const DeckList = ({
   contentPaddingBottom = '10%',
   progressViewOffset = 0,
   onScrollBeginDrag,
+  // Optional Animated.event (native driver), e.g. for a collapsing header.
+  onScroll,
   onEndReached,
   renderLeadingItem = null,
 }) => {
@@ -926,8 +941,12 @@ const DeckList = ({
     );
 
   return (
-    <FlatList
+    // Animated.FlatList behaves like FlatList; it also accepts a native
+    // Animated.event as onScroll.
+    <Animated.FlatList
       data={rows}
+      onScroll={onScroll}
+      scrollEventThrottle={onScroll ? 16 : undefined}
       keyExtractor={(_, idx) =>
         `row_${idx}`
       }

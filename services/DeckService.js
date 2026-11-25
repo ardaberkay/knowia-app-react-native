@@ -624,11 +624,13 @@ const transformRpcDeck = (d) => ({
   decks_languages: (d.language_ids || []).map(id => ({ language_id: id })),
   popularity_score: d.popularity_score,
   favorite_count: d.favorite_count,
+  unique_started_count: d.unique_started_count,
 });
 
 export const getDiscoverDecks = async (userId, tab = 'trend', timeFilter = 'all', limit = 50, forceRefresh = false) => {
   const sortBy = TAB_TO_SORT_BY[tab] || 'popular';
-  const cacheKey = `discover_${tab}_${timeFilter}`;
+  // v2: get_discover_decks v2 ranking + unique_started_count (drop older caches).
+  const cacheKey = `discover_v2_${tab}_${timeFilter}`;
 
   if (!forceRefresh) {
     const cached = await getCachedData(cacheKey, CACHE_DURATIONS.DISCOVER);

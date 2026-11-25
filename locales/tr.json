@@ -762,6 +762,18 @@
     "tip": "İpucu: Kart oluşturduktan sonra istediğiniz zaman düzenleyebilir veya silebilirsiniz."
   },
   "discover": {
+    "tabs": {
+      "trend": "Trend",
+      "popular": "Popüler",
+      "liked": "Beğenilen",
+      "new": "Yeni"
+    },
+    "time": {
+      "all": "Tümü",
+      "year": "Yıllık",
+      "month": "Aylık",
+      "week": "Haftalık"
+    },
     "trend": "Trend",
     "trending": "Trend",
     "trendingSubtitle": "Şu an en popüler desteler",

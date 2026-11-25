@@ -23,22 +23,16 @@ const LANGUAGE_FLAGS = {
   de: ['twemoji:flag-germany', 'German'],
 };
 
-/** Profile › Settings: dark mode, language, haptics, notifications. */
+/**
+ * Profile › Settings: language, haptics, notifications.
+ * (The dark mode switch is hidden while the app is dark-only; see theme.js.)
+ */
 export default function SettingsScreen() {
-  const { colors, toggleTheme, themePreference } = useTheme();
+  const { colors } = useTheme();
   const { t, i18n } = useTranslation();
   const { session } = useAuth();
   const authUserId = session?.user?.id;
   const { profile: contextProfile } = useProfile();
-
-  // Dark mode: the switch moves at once; the theme change follows after its animation.
-  const [localThemeDark, setLocalThemeDark] = useState(themePreference === 'dark');
-  useEffect(() => { setLocalThemeDark(themePreference === 'dark'); }, [themePreference]);
-  const handleThemeToggle = (value) => {
-    triggerHaptic('light');
-    setLocalThemeDark(value);
-    setTimeout(() => { toggleTheme(); }, 50);
-  };
 
   // Haptics
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
@@ -99,18 +93,6 @@ export default function SettingsScreen() {
   });
 
   const items = [
-    {
-      key: 'theme',
-      label: t('profile.night_mode'),
-      right: (
-        <Switch
-          value={localThemeDark}
-          onValueChange={handleThemeToggle}
-          disabled={themePreference === 'system'}
-          {...switchProps(localThemeDark)}
-        />
-      ),
-    },
     {
       key: 'language',
       label: t('profile.language'),

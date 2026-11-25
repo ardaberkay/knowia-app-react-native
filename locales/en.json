@@ -763,6 +763,18 @@
     "tip": "Tip: After creating the card, you can edit or delete it anytime you want."
   },
   "discover": {
+    "tabs": {
+      "trend": "Trending",
+      "popular": "Popular",
+      "liked": "Most liked",
+      "new": "New"
+    },
+    "time": {
+      "all": "All time",
+      "year": "Yearly",
+      "month": "Monthly",
+      "week": "Weekly"
+    },
     "trend": "Trend",
     "trending": "Trend",
     "trendingSubtitle": "Most popular decks right now",
