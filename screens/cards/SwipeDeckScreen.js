@@ -1,12 +1,8 @@
-import React, { memo, useEffect, useState, useCallback, useRef, useMemo, useLayoutEffect } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo, useLayoutEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Pressable, Platform, BackHandler, ScrollView, Image, Modal, useWindowDimensions } from 'react-native';
 import { Text, MAX_FONT_SIZE_MULTIPLIER } from '../../components/ui/AppText';
-import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
-import { Gesture, GestureDetector, ScrollView as GHScrollView } from 'react-native-gesture-handler';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Reanimated, {
-  runOnJS,
-  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
   withSequence,
@@ -52,8 +48,21 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import * as BlockService from '../../services/BlockService';
 import ReportModal from '../../components/modals/ReportModal';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
-import SwipeFlipCard, { Pill, SectionDivider } from '../../components/layout/SwipeFlipCard';
-import SwipeCardDeck from '../../components/layout/SwipeCardDeck';
+import SwipeFlipCard, { Pill, SectionDivider, SwipeCardActions } from '../../components/layout/SwipeFlipCard';
+import { SwipeCardStage } from '../../components/layout/SwipeCardDeck';
+import VoiceSettingsSheet from '../../components/modals/VoiceSettingsSheet';
+import {
+  LANGUAGE_SORT_ORDER,
+  LEGACY_RATE_INDEX_TO_RATE,
+  SPEECH_RATE,
+  SPEECH_RATES,
+  TTS_PREFS_KEY,
+  VOICE_SAMPLES,
+  pickBestVoice,
+  stripForSpeech,
+  toSpeechLocale,
+  voicesForLocale,
+} from '../../lib/speech';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { maybePromptForReview, getReviewMilestones } from '../../services/ReviewPromptService';
 
@@ -124,642 +133,6 @@ const AnimatedTimeButton = ({ onPress, label, time, buttonStyle, textColor }) =>
   );
 };
 
-// Swipe card: fixed 2:3 portrait ratio; width is capped by the screen and,
-// on tablets, by an absolute maximum.
-const CARD_ASPECT_RATIO = 1.5;
-const CARD_MAX_WIDTH_RATIO = 0.88;
-const CARD_MAX_WIDTH = 440;
-// Minimum breathing room (total, top + bottom) between the card and the
-// counters / bottom controls when the card is height-limited.
-const CARD_AREA_VERTICAL_GAP = 16;
-
-// languages.language_code ('en') -> a voice locale. The region picks the voice
-// that matches the flag shown in the app (Portugal, not Brazil).
-const SPEECH_LOCALES = {
-  tr: 'tr-TR', en: 'en-US', de: 'de-DE', es: 'es-ES', fr: 'fr-FR', pt: 'pt-PT', ar: 'ar-SA',
-};
-const toSpeechLocale = (code) => {
-  const base = (code || '').toLowerCase().slice(0, 2);
-  return SPEECH_LOCALES[base] || base || undefined;
-};
-
-// Slightly slower than the system default: easier to follow while learning.
-const SPEECH_RATE = 0.9;
-// Voice settings sheet (kebab menu): a 5-step reading speed and a chosen voice
-// per language. Stored on the device; a voice applies to every deck in that
-// language. A missing or uninstalled voice falls back to the best one.
-// 0.9 is the recommended default (the system's 1.0 feels fast for learning).
-const SPEECH_RATES = [0.5, 0.75, SPEECH_RATE, 1.0, 1.25];
-// Earlier 3-option setting (slow / normal / fast), mapped onto the new steps.
-const LEGACY_RATE_INDEX_TO_RATE = [0.75, SPEECH_RATE, 1.0];
-const TTS_PREFS_KEY = 'tts_prefs_v1';
-// languages.<sort_order> holds the localized language names.
-const LANGUAGE_SORT_ORDER = { tr: 1, en: 2, de: 3, es: 4, fr: 5, pt: 6, ar: 7 };
-const VOICE_SAMPLES = {
-  tr: 'Merhaba! Kartlarını bu sesle okuyacağım.',
-  en: 'Hello! I will read your cards in this voice.',
-  de: 'Hallo! Ich lese deine Karten mit dieser Stimme vor.',
-  es: '¡Hola! Leeré tus tarjetas con esta voz.',
-  fr: 'Bonjour ! Je lirai tes cartes avec cette voix.',
-  pt: 'Olá! Vou ler os teus cartões com esta voz.',
-  ar: 'مرحبًا! سأقرأ بطاقاتك بهذا الصوت.',
-};
-
-// Best installed voice for a locale. expo-speech reports iOS Premium voices as
-// "Default", so rank by the identifier (com.apple.voice.premium|enhanced|
-// compact.<locale>.<Name>). Novelty/eloquence voices are skipped. An exact
-// locale beats the same base language (en-US over en-GB).
-const voiceRank = (identifier = '') => {
-  if (identifier.includes('.premium.')) return 3;
-  if (identifier.includes('.enhanced.')) return 2;
-  return 1;
-};
-const isNoveltyVoice = (identifier = '') =>
-  identifier.includes('speech.synthesis') || identifier.includes('eloquence');
-// Installed voices for a locale's language, best first (quality, then the
-// exact locale, then name).
-const voicesForLocale = (voices, locale) => {
-  if (!locale || !voices?.length) return [];
-  const base = locale.slice(0, 2).toLowerCase();
-  const exact = locale.toLowerCase();
-  const score = (v) => voiceRank(v.identifier) * 10 + ((v.language || '').toLowerCase() === exact ? 1 : 0);
-  return voices
-    .filter((v) => !isNoveltyVoice(v.identifier) && (v.language || '').toLowerCase().startsWith(base))
-    .sort((a, b) => (score(b) - score(a)) || (a.name || '').localeCompare(b.name || ''));
-};
-const pickBestVoice = (voices, locale) => voicesForLocale(voices, locale)[0]?.identifier;
-
-// Card text as plain speech: drop LaTeX delimiters/commands so formulas don't
-// get read out as "dollar backslash frac".
-const stripForSpeech = (text) => (text || '')
-  .replace(/\$+/g, ' ')
-  .replace(/\\[a-zA-Z]+/g, ' ')
-  .replace(/[{}]/g, ' ')
-  .replace(/\s+/g, ' ')
-  .trim();
-
-// Stepped speed bar for the voice sheet: tap a stop or drag along the track.
-// The thumb snaps to the nearest stop on the UI thread (light haptic per
-// stop); the value is committed to React when the finger lifts.
-const RATE_THUMB = 24;
-const RATE_LABEL_WIDTH = 56;
-const formatRate = (rate) => `${Number.isInteger(rate) ? rate.toFixed(0) : rate}×`;
-const RateStepBar = memo(function RateStepBar({
-  steps,
-  value,
-  recommended,
-  recommendedLabel,
-  onChange,
-  accentColor,
-  trackColor,
-  textColor,
-  mutedColor,
-}) {
-  // Everything is laid out in percentages of the track, so the bar is drawn
-  // in its final place on the first frame (nothing jumps while the sheet
-  // opens). The measured width is only used to map a touch to a stop.
-  const [trackWidth, setTrackWidth] = useState(0);
-  const count = steps.length;
-  const lastIndex = Math.max(1, count - 1);
-  const index = Math.max(0, steps.indexOf(value));
-  const stepWidth = count > 1 ? trackWidth / (count - 1) : 0;
-  const pad = RATE_THUMB / 2;
-  const pct = (i) => `${(i / lastIndex) * 100}%`;
-
-  // 0..1 along the track. Starts at the current stop: no entrance animation.
-  const progress = useSharedValue(index / lastIndex);
-  const activeIndex = useSharedValue(index);
-  useEffect(() => {
-    activeIndex.value = index;
-    progress.value = withTiming(index / lastIndex, { duration: 160 });
-  }, [activeIndex, index, lastIndex, progress]);
-
-  const commit = useCallback((i) => {
-    const next = steps[i];
-    if (next != null && next !== value) onChange?.(next);
-  }, [onChange, steps, value]);
-
-  const gesture = useMemo(() => {
-    const snapTo = (x) => {
-      'worklet';
-      if (stepWidth <= 0) return;
-      const i = Math.min(count - 1, Math.max(0, Math.round((x - pad) / stepWidth)));
-      if (i !== activeIndex.value) {
-        activeIndex.value = i;
-        runOnJS(triggerHaptic)('selection');
-      }
-      progress.value = withTiming(i / lastIndex, { duration: 90 });
-    };
-    // A tap picks a stop; a drag only takes over once it is clearly
-    // horizontal, so a vertical swipe that starts on the bar still scrolls
-    // the sheet.
-    const tap = Gesture.Tap()
-      .maxDuration(400)
-      .onEnd((e, success) => {
-        'worklet';
-        if (!success) return;
-        snapTo(e.x);
-        runOnJS(commit)(activeIndex.value);
-      });
-    const pan = Gesture.Pan()
-      .activeOffsetX([-8, 8])
-      .failOffsetY([-10, 10])
-      .onStart((e) => { 'worklet'; snapTo(e.x); })
-      .onUpdate((e) => { 'worklet'; snapTo(e.x); })
-      .onEnd(() => { 'worklet'; runOnJS(commit)(activeIndex.value); });
-    return Gesture.Race(pan, tap);
-  }, [activeIndex, commit, count, lastIndex, pad, progress, stepWidth]);
-
-  const fillStyle = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
-  const thumbStyle = useAnimatedStyle(() => ({ left: `${progress.value * 100}%` }));
-
-  return (
-    <View>
-      <GestureDetector gesture={gesture}>
-        <View
-          style={[styles.rateBar, { paddingHorizontal: pad }]}
-          onLayout={(e) => setTrackWidth(Math.max(0, e.nativeEvent.layout.width - RATE_THUMB))}
-        >
-          {/* Track layer: spans exactly the stops, from the first to the last. */}
-          <View pointerEvents="none" style={[styles.rateTrackLayer, { left: pad, right: pad }]}>
-            <View style={[styles.rateTrack, { backgroundColor: trackColor }]} />
-            <Reanimated.View style={[styles.rateTrack, styles.rateFill, { backgroundColor: accentColor }, fillStyle]} />
-            {steps.map((step, i) => (
-              <View
-                key={step}
-                style={[
-                  styles.rateDot,
-                  { left: pct(i), backgroundColor: i <= index ? accentColor : trackColor },
-                ]}
-              />
-            ))}
-            <Reanimated.View style={[styles.rateThumb, { borderColor: accentColor }, thumbStyle]} />
-          </View>
-        </View>
-      </GestureDetector>
-      <View style={[styles.rateLabels, { marginHorizontal: pad }]}>
-        {steps.map((step, i) => {
-          const selected = i === index;
-          return (
-            <View key={step} style={[styles.rateLabel, { left: pct(i) }]}>
-              <Text style={[styles.rateLabelText, { color: selected ? accentColor : textColor, fontWeight: selected ? '700' : '500' }]}>
-                {formatRate(step)}
-              </Text>
-              {step === recommended ? (
-                <Text style={[styles.rateLabelHint, { color: mutedColor }]} numberOfLines={1}>
-                  {recommendedLabel}
-                </Text>
-              ) : null}
-            </View>
-          );
-        })}
-      </View>
-    </View>
-  );
-});
-
-// One row of the voice list. Memoized: picking a voice re-renders only the
-// rows whose selection changed.
-const VoiceRow = memo(function VoiceRow({ row, selected, first, base, locale, onSelect, colors }) {
-  return (
-    <Pressable
-      onPress={() => onSelect(base, row.identifier, locale)}
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      style={({ pressed }) => [
-        styles.voiceRow,
-        !first && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-        pressed && { opacity: 0.6 },
-      ]}
-    >
-      <View style={{ flex: 1 }}>
-        <Text style={[typography.styles.body, { color: colors.text }]} numberOfLines={1}>
-          {row.label}
-        </Text>
-        {row.tags ? (
-          <Text style={[styles.voiceRowTags, { color: colors.muted }]} numberOfLines={1}>
-            {row.tags}
-          </Text>
-        ) : null}
-      </View>
-      {selected ? (
-        <Iconify icon="hugeicons:tick-01" size={22} color={colors.buttonColor} />
-      ) : (
-        <Iconify icon="streamline:button-play-solid" size={14} color={colors.muted} />
-      )}
-    </Pressable>
-  );
-});
-
-// Voice settings sheet (gorhom, like the app's other pickers). A separate
-// memoized component so re-renders of the swipe screen (speech state,
-// counters, ...) never redraw it. Fixed height: no content measuring or
-// resizing while the voice list loads.
-const VoiceSettingsSheet = memo(function VoiceSettingsSheet({
-  sheetRef,
-  sections,
-  rate,
-  chosenVoices,
-  onSelectVoice,
-  onRateChange,
-  onDismiss,
-  colors,
-  isDarkMode,
-  bottomInset,
-}) {
-  const { t } = useTranslation();
-  const snapPoints = useMemo(() => ['75%'], []);
-  const close = useCallback(() => sheetRef?.current?.dismiss(), [sheetRef]);
-  const renderBackdrop = useCallback((props) => (
-    <BottomSheetBackdrop
-      {...props}
-      disappearsOnIndex={-1}
-      appearsOnIndex={0}
-      pressBehavior="close"
-      opacity={0.5}
-    />
-  ), []);
-
-  // Row labels/tags are built once per voice list, not on every render.
-  // Voices of the deck's own region (e.g. en-US) are listed directly; other
-  // accents (en-GB, en-AU, ...) sit behind a collapsible "other accents" row.
-  // If the region has no voice at all, every voice is listed directly.
-  const sectionRows = useMemo(() => sections.map((section) => {
-    const region = (section.locale || '').toLowerCase();
-    const voiceRows = section.voices.map((v, i) => {
-      const tags = [];
-      if (Platform.OS === 'ios') {
-        const rank = voiceRank(v.identifier);
-        if (rank === 3) tags.push(t('swipeDeck.voice.premium', 'Premium'));
-        else if (rank === 2) tags.push(t('swipeDeck.voice.enhanced', 'Gelişmiş'));
-      } else {
-        tags.push((v.identifier || '').includes('network')
-          ? t('swipeDeck.voice.online', 'Çevrimiçi')
-          : t('swipeDeck.voice.offline', 'Cihazda'));
-      }
-      if (v.language) tags.push(v.language);
-      return {
-        identifier: v.identifier,
-        // Android voice names are raw ids (tr-tr-x-tmc-network).
-        label: Platform.OS === 'ios' && v.name
-          ? v.name
-          : t('swipeDeck.voice.voiceN', { n: i + 1, defaultValue: `Ses ${i + 1}` }),
-        tags: tags.join(' · '),
-        local: (v.language || '').replace('_', '-').toLowerCase() === region,
-      };
-    });
-    const hasLocal = voiceRows.some((row) => row.local);
-    return {
-      ...section,
-      mainRows: [
-        { identifier: null, label: t('swipeDeck.voice.auto', 'Otomatik (en iyi ses)'), tags: '' },
-        ...voiceRows.filter((row) => !hasLocal || row.local),
-      ],
-      otherRows: hasLocal ? voiceRows.filter((row) => !row.local) : [],
-    };
-  }), [sections, t]);
-
-  // Which sections show their other accents. Until toggled, a section opens
-  // them only when the chosen voice is one of them.
-  const [accentsOpen, setAccentsOpen] = useState({});
-  const toggleAccents = useCallback((base, open) => {
-    triggerHaptic('selection');
-    setAccentsOpen((prev) => ({ ...prev, [base]: !open }));
-  }, []);
-
-  return (
-    <BottomSheetModal
-      ref={sheetRef}
-      index={0}
-      snapPoints={snapPoints}
-      enableDynamicSizing={false}
-      onDismiss={onDismiss}
-      backdropComponent={renderBackdrop}
-      backgroundStyle={{ backgroundColor: colors.background, borderRadius: 44 }}
-      handleIndicatorStyle={{ backgroundColor: isDarkMode ? '#555' : '#CCC' }}
-      enableContentPanningGesture={false}
-    >
-      <View style={styles.voiceSheetHeader}>
-        <Text style={[typography.styles.h2, { color: colors.text, flex: 1 }]} numberOfLines={1}>
-          {t('swipeDeck.voice.settings', 'Ses ayarları')}
-        </Text>
-        <TouchableOpacity
-          onPress={close}
-          hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-          accessibilityRole="button"
-          accessibilityLabel={t('cardDetail.close', 'Kapat')}
-          style={styles.voiceSheetClose}
-        >
-          <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
-        </TouchableOpacity>
-      </View>
-      {/* A plain (gesture-handler) ScrollView rather than BottomSheetScrollView:
-          content panning is off, and gorhom's scroll tracking made the iOS
-          bounce-back jitter. This keeps the native bounce. */}
-      <GHScrollView
-        style={styles.voiceSheetScroll}
-        contentContainerStyle={[styles.voiceSheetContent, { paddingBottom: bottomInset + 32 }]}
-      >
-        <View style={styles.voiceRateHeader}>
-          <Text style={[styles.voiceSectionTitle, { color: colors.muted, marginTop: 0, marginBottom: 0 }]}>
-            {t('swipeDeck.voice.rate', 'Okuma hızı')}
-          </Text>
-          <Text style={[styles.voiceRateValue, { color: colors.buttonColor }]}>
-            {formatRate(rate)}
-          </Text>
-        </View>
-        <RateStepBar
-          steps={SPEECH_RATES}
-          value={rate}
-          recommended={SPEECH_RATE}
-          recommendedLabel={t('swipeDeck.voice.recommended', 'önerilen')}
-          onChange={onRateChange}
-          accentColor={colors.buttonColor}
-          trackColor={colors.border}
-          textColor={colors.text}
-          mutedColor={colors.muted}
-        />
-
-        {sectionRows.map((section) => {
-          const chosen = chosenVoices[section.base];
-          const chosenInstalled = Boolean(chosen) && section.voices.some((v) => v.identifier === chosen);
-          const chosenIsOther = chosenInstalled && section.otherRows.some((row) => row.identifier === chosen);
-          const othersOpen = accentsOpen[section.base] ?? chosenIsOther;
-          const renderRow = (row, first) => (
-            <VoiceRow
-              key={row.identifier || 'auto'}
-              row={row}
-              selected={row.identifier ? row.identifier === chosen : !chosenInstalled}
-              first={first}
-              base={section.base}
-              locale={section.locale}
-              onSelect={onSelectVoice}
-              colors={colors}
-            />
-          );
-          return (
-            <View key={section.base}>
-              <Text style={[styles.voiceSectionTitle, { color: colors.muted }]}>
-                {`${section.title} · ${section.sideLabel}`}
-              </Text>
-              <View style={[styles.voiceList, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
-                {section.mainRows.map((row, index) => renderRow(row, index === 0))}
-                {section.otherRows.length ? (
-                  <Pressable
-                    onPress={() => toggleAccents(section.base, othersOpen)}
-                    accessibilityRole="button"
-                    accessibilityState={{ expanded: othersOpen }}
-                    style={({ pressed }) => [
-                      styles.voiceRow,
-                      { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-                      pressed && { opacity: 0.6 },
-                    ]}
-                  >
-                    <Text style={[typography.styles.body, { color: colors.buttonColor, flex: 1 }]} numberOfLines={1}>
-                      {t('swipeDeck.voice.otherAccents', {
-                        count: section.otherRows.length,
-                        defaultValue: `Diğer aksanlar (${section.otherRows.length})`,
-                      })}
-                    </Text>
-                    <Iconify
-                      icon={othersOpen ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'}
-                      size={16}
-                      color={colors.buttonColor}
-                    />
-                  </Pressable>
-                ) : null}
-                {othersOpen ? section.otherRows.map((row) => renderRow(row, false)) : null}
-              </View>
-              {section.voices.length === 0 ? (
-                <Text style={[styles.voiceHint, { color: colors.muted }]}>
-                  {t('swipeDeck.voice.noVoices', 'Bu dil için cihazda yüklü ses bulunamadı.')}
-                </Text>
-              ) : null}
-            </View>
-          );
-        })}
-
-        <Text style={[styles.voiceHint, { color: colors.muted }]}>
-          {Platform.OS === 'ios'
-            ? t('swipeDeck.voice.iosHint', 'Daha doğal sesler için: Ayarlar › Erişilebilirlik › Seslendirilen İçerik › Sesler bölümünden Gelişmiş veya Premium sesleri indirebilirsin.')
-            : t('swipeDeck.voice.androidHint', 'Daha fazla ses için: Ayarlar › Erişilebilirlik › Metin okuma çıkışı bölümünden ses verilerini yükleyebilirsin.')}
-        </Text>
-      </GHScrollView>
-    </BottomSheetModal>
-  );
-});
-
-const AnimatedActionPressable = Reanimated.createAnimatedComponent(Pressable);
-const ACTION_ENTRANCE_OFFSET = 8;
-
-const SwipeCardActions = memo(function SwipeCardActions({
-  cardId,
-  cardWidth,
-  isFavorite,
-  favoriteColor,
-  onFavoritePress,
-  swipeX,
-  flipProgress,
-  entranceProgress,
-  entranceOpacity,
-  showMore = false,
-  showMoreLabel,
-  onShowMorePress,
-  showMoreTextColor = '#1C1C1C',
-  onSpeakPress,
-  isSpeaking = false,
-  speakLabel,
-  stopSpeakingLabel,
-}) {
-  // This timeline intentionally mirrors SwipeFlipCard.contentEntranceStyle.
-  // The action row is outside the ScrollView/face content, but it uses the
-  // exact same shared entrance/fade values as the card content.
-  const actionEntranceStyle = useAnimatedStyle(() => {
-    const x = swipeX?.value ?? 0;
-    const labelDistance = Math.max(80, cardWidth * 0.28);
-    const fadeStart = labelDistance * 0.55;
-    const fadeEnd = labelDistance * 0.68;
-    const swipeFade = interpolate(
-      Math.abs(x),
-      [fadeStart, fadeEnd],
-      [1, 0],
-      'clamp'
-    );
-
-    const entrance = entranceProgress?.value ?? 1;
-    const opacity = entranceOpacity?.value ?? 1;
-
-    return {
-      opacity: opacity * swipeFade,
-      transform: [
-        { translateY: (1 - entrance) * ACTION_ENTRANCE_OFFSET },
-        { scale: 0.96 + (0.04 * entrance) },
-      ],
-    };
-  }, [cardWidth, entranceOpacity, entranceProgress, swipeX]);
-
-  // The action row itself never participates in the card content ScrollView.
-  // Only the visual heart faces use the same Y-axis flip timeline as the card.
-  const frontFlipStyle = useAnimatedStyle(() => ({
-    transform: [
-      { perspective: 1200 },
-      { rotateY: `${180 * (flipProgress?.value ?? 0)}deg` },
-    ],
-  }), [flipProgress]);
-
-  const backFlipStyle = useAnimatedStyle(() => ({
-    transform: [
-      { perspective: 1200 },
-      { rotateY: `${180 + (180 * (flipProgress?.value ?? 0))}deg` },
-    ],
-  }), [flipProgress]);
-
-  // "See more" lives on the back face only: fade it in with the second half
-  // of the flip so it never shows on the question side.
-  const showMoreStyle = useAnimatedStyle(() => {
-    const x = swipeX?.value ?? 0;
-    const labelDistance = Math.max(80, cardWidth * 0.28);
-    const swipeFade = interpolate(
-      Math.abs(x),
-      [labelDistance * 0.55, labelDistance * 0.68],
-      [1, 0],
-      'clamp'
-    );
-    const flipVisible = interpolate(flipProgress?.value ?? 0, [0.5, 1], [0, 1], 'clamp');
-    return { opacity: flipVisible * swipeFade * (entranceOpacity?.value ?? 1) };
-  }, [cardWidth, entranceOpacity, flipProgress, swipeX]);
-
-  // "See more" only takes touches on the back face. This small row learns the
-  // side from flipProgress when the flip passes halfway; nothing else renders.
-  const [backShowing, setBackShowing] = useState(false);
-  useAnimatedReaction(
-    () => (flipProgress?.value ?? 0) >= 0.5,
-    (isBack, wasBack) => {
-      if (showMore && isBack !== wasBack) runOnJS(setBackShowing)(isBack);
-    },
-    [flipProgress, showMore]
-  );
-
-  const handleShowMorePress = useCallback(() => {
-    triggerHaptic('light');
-    onShowMorePress?.(cardId);
-  }, [cardId, onShowMorePress]);
-
-  const handlePress = useCallback(() => {
-    triggerHaptic('medium');
-    onFavoritePress?.(cardId);
-  }, [cardId, onFavoritePress]);
-
-  const handleSpeakPress = useCallback(() => {
-    triggerHaptic('light');
-    onSpeakPress?.(cardId);
-  }, [cardId, onSpeakPress]);
-
-  // Speaker (top-left): same two-face flip as the heart, so it turns with the
-  // card. It looks the same while speaking; tapping again stops.
-  const speakIcon = 'solar:volume-loud-bold';
-  const speakIconColor = '#FFF7ED';
-
-  const favoriteIcon = isFavorite ? 'solar:heart-bold' : 'solar:heart-broken';
-  const favoriteIconColor = isFavorite ? favoriteColor : '#FFF7ED';
-
-  return (
-    <>
-    <View
-      pointerEvents="box-none"
-      style={styles.cardActionRow}
-    >
-      {onSpeakPress ? (
-        <AnimatedActionPressable
-          accessibilityRole="button"
-          accessibilityLabel={isSpeaking ? stopSpeakingLabel : speakLabel}
-          onPress={handleSpeakPress}
-          hitSlop={{
-            top: 10,
-            bottom: 10,
-            left: 10,
-            right: 10,
-          }}
-          style={[styles.cardActionButton, actionEntranceStyle]}
-        >
-          <Reanimated.View
-            pointerEvents="none"
-            style={styles.cardActionIconStage}
-          >
-            <Reanimated.View
-              style={[styles.cardActionIconFace, styles.cardActionIconFrontFace, frontFlipStyle]}
-            >
-              <Iconify icon={speakIcon} size={25} color={speakIconColor} />
-            </Reanimated.View>
-            <Reanimated.View
-              style={[styles.cardActionIconFace, styles.cardActionIconBackFace, backFlipStyle]}
-            >
-              <Iconify icon={speakIcon} size={25} color={speakIconColor} />
-            </Reanimated.View>
-          </Reanimated.View>
-        </AnimatedActionPressable>
-      ) : <View />}
-
-      <AnimatedActionPressable
-        accessibilityRole="button"
-        accessibilityLabel={isFavorite ? 'Favorilerden kaldır' : 'Favorilere ekle'}
-        onPress={handlePress}
-        hitSlop={{
-          top: 10,
-          bottom: 10,
-          left: 10,
-          right: 10,
-        }}
-        style={[styles.cardActionButton, actionEntranceStyle]}
-      >
-        <Reanimated.View
-          pointerEvents="none"
-          style={styles.cardActionIconStage}
-        >
-          <Reanimated.View
-            style={[styles.cardActionIconFace, styles.cardActionIconFrontFace, frontFlipStyle]}
-          >
-            <Iconify
-              icon={favoriteIcon}
-              size={25}
-              color={favoriteIconColor}
-            />
-          </Reanimated.View>
-
-          <Reanimated.View
-            style={[styles.cardActionIconFace, styles.cardActionIconBackFace, backFlipStyle]}
-          >
-            <Iconify
-              icon={favoriteIcon}
-              size={25}
-              color={favoriteIconColor}
-            />
-          </Reanimated.View>
-        </Reanimated.View>
-      </AnimatedActionPressable>
-    </View>
-
-      {showMore ? (
-        <View
-          pointerEvents={backShowing ? 'box-none' : 'none'}
-          style={styles.showMoreRow}
-        >
-          <AnimatedActionPressable
-            accessibilityRole="button"
-            accessibilityLabel={showMoreLabel}
-            onPress={handleShowMorePress}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            style={[styles.showMoreButton, showMoreStyle]}
-          >
-            <Text style={[styles.showMoreText, { color: showMoreTextColor }]}>{showMoreLabel}</Text>
-            <Iconify icon="flowbite:caret-down-solid" size={14} color={showMoreTextColor} />
-          </AnimatedActionPressable>
-        </View>
-      ) : null}
-    </>
-  );
-});
-
 export default function SwipeDeckScreen({ route, navigation }) {
   const { deck, chapter } = route.params || {};
   const { colors, isDarkMode } = useTheme();
@@ -769,25 +142,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const headerHeight = useHeaderHeight();
   const { width, height } = useWindowDimensions();
 
-  // The card always keeps its 2:3 portrait ratio and is as big as fits: at most
-  // 88% of the screen width (capped for tablets) and the measured height of
-  // the card area between the counters and the bottom controls. On short
-  // screens it shrinks as a whole instead of getting squashed.
-  const [cardArea, setCardArea] = useState(null);
-  const onCardAreaLayout = useCallback((e) => {
-    const { width: w, height: h } = e.nativeEvent.layout;
-    setCardArea((prev) => (prev && Math.abs(prev.w - w) < 1 && Math.abs(prev.h - h) < 1 ? prev : { w, h }));
-  }, []);
-  const cardDimensions = useMemo(() => {
-    const maxWidth = Math.min(width * CARD_MAX_WIDTH_RATIO, CARD_MAX_WIDTH);
-    const cardWidth = cardArea
-      ? Math.min(maxWidth, (cardArea.h - CARD_AREA_VERTICAL_GAP) / CARD_ASPECT_RATIO)
-      : maxWidth;
-    return { width: cardWidth, height: cardWidth * CARD_ASPECT_RATIO };
-  }, [width, cardArea]);
-
-  const CARD_WIDTH = cardDimensions.width;
-  const CARD_HEIGHT = cardDimensions.height;
+  // The card size is measured and owned by SwipeCardStage (so measuring never
+  // re-renders this screen). The counters' swipe worklets read its width here.
+  const cardWidthValue = useSharedValue(0);
 
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1638,7 +995,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
   // When the swipe finishes, only the real React count changes. No second
   // post-swipe counter animation is triggered.
   const activeSwipeX = useSharedValue(0);
-  const counterSwipeDistance = Math.max(90, CARD_WIDTH * 0.28);
 
   // The swipe itself drives the counter color/icon. After the swipe has
   // committed, the new numeric value gets one small, separate pop so the
@@ -1673,7 +1029,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
   }));
 
   const animatedLeftCounter = useAnimatedStyle(() => {
-    const progress = Math.min(1, Math.max(0, -activeSwipeX.value / Math.max(1, counterSwipeDistance)));
+    const progress = Math.min(1, Math.max(0, -activeSwipeX.value / Math.max(90, cardWidthValue.value * 0.28)));
     return {
       backgroundColor: interpolateColor(
         progress,
@@ -1681,10 +1037,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
         [leftInactiveColor, leftActiveColor]
       ),
     };
-  }, [counterSwipeDistance, leftActiveColor, leftInactiveColor]);
+  }, [cardWidthValue, leftActiveColor, leftInactiveColor]);
 
   const animatedRightCounter = useAnimatedStyle(() => {
-    const progress = Math.min(1, Math.max(0, activeSwipeX.value / Math.max(1, counterSwipeDistance)));
+    const progress = Math.min(1, Math.max(0, activeSwipeX.value / Math.max(90, cardWidthValue.value * 0.28)));
     return {
       backgroundColor: interpolateColor(
         progress,
@@ -1692,37 +1048,37 @@ export default function SwipeDeckScreen({ route, navigation }) {
         [rightInactiveColor, rightActiveColor]
       ),
     };
-  }, [counterSwipeDistance, rightActiveColor, rightInactiveColor]);
+  }, [cardWidthValue, rightActiveColor, rightInactiveColor]);
 
   const animatedLeftCount = useAnimatedStyle(() => {
-    const progress = Math.min(1, Math.max(0, -activeSwipeX.value / Math.max(1, counterSwipeDistance)));
+    const progress = Math.min(1, Math.max(0, -activeSwipeX.value / Math.max(90, cardWidthValue.value * 0.28)));
     return {
       opacity: interpolate(progress, [0, 0.14, 0.28], [1, 0.5, 0], 'clamp'),
     };
-  }, [counterSwipeDistance]);
+  }, [cardWidthValue]);
 
   const animatedRightCount = useAnimatedStyle(() => {
-    const progress = Math.min(1, Math.max(0, activeSwipeX.value / Math.max(1, counterSwipeDistance)));
+    const progress = Math.min(1, Math.max(0, activeSwipeX.value / Math.max(90, cardWidthValue.value * 0.28)));
     return {
       opacity: interpolate(progress, [0, 0.14, 0.28], [1, 0.5, 0], 'clamp'),
     };
-  }, [counterSwipeDistance]);
+  }, [cardWidthValue]);
 
   const animatedLeftIcon = useAnimatedStyle(() => {
-    const progress = Math.min(1, Math.max(0, -activeSwipeX.value / Math.max(1, counterSwipeDistance)));
+    const progress = Math.min(1, Math.max(0, -activeSwipeX.value / Math.max(90, cardWidthValue.value * 0.28)));
     return {
       opacity: interpolate(progress, [0, 0.10, 0.30], [0, 0.28, 1], 'clamp'),
       transform: [{ scale: interpolate(progress, [0, 0.16, 0.34], [0.78, 0.94, 1], 'clamp') }],
     };
-  }, [counterSwipeDistance]);
+  }, [cardWidthValue]);
 
   const animatedRightIcon = useAnimatedStyle(() => {
-    const progress = Math.min(1, Math.max(0, activeSwipeX.value / Math.max(1, counterSwipeDistance)));
+    const progress = Math.min(1, Math.max(0, activeSwipeX.value / Math.max(90, cardWidthValue.value * 0.28)));
     return {
       opacity: interpolate(progress, [0, 0.10, 0.30], [0, 0.28, 1], 'clamp'),
       transform: [{ scale: interpolate(progress, [0, 0.16, 0.34], [0.78, 0.94, 1], 'clamp') }],
     };
-  }, [counterSwipeDistance]);
+  }, [cardWidthValue]);
 
   const currentProgress = sessionTargetCount > 0
     ? Math.min(100, (sessionProgressCount / sessionTargetCount) * 100)
@@ -2346,6 +1702,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
     flipProgress,
     entranceProgress,
     entranceOpacity,
+    cardWidth,
+    cardHeight,
   } = {}) => {
     const cardId = card?.card_id;
     const gradientColors = getCategoryColors(categorySortOrder);
@@ -2362,8 +1720,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
           cardId={cardId}
           isPlaceholder={isPlaceholder}
           isActive={Boolean(isActive)}
-          cardWidth={CARD_WIDTH}
-          cardHeight={CARD_HEIGHT}
+          cardWidth={cardWidth}
+          cardHeight={cardHeight}
           gradientColors={gradientColors}
           cardBackground={colors.cardBackground}
           textColor={colors.text}
@@ -2378,7 +1736,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
         />
       </View>
     );
-  }, [CARD_HEIGHT, CARD_WIDTH, categorySortOrder, colors.cardBackground, colors.text, getCategoryColors, handleBackOverflowChange, isReversed, leftActiveColor, rightActiveColor]);
+  }, [categorySortOrder, colors.cardBackground, colors.text, getCategoryColors, handleBackOverflowChange, isReversed, leftActiveColor, rightActiveColor]);
 
   const renderSwipeCardActions = useCallback((card, params = {}) => {
     const {
@@ -2387,6 +1745,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       flipProgress,
       entranceProgress,
       entranceOpacity,
+      cardWidth,
     } = params;
 
     if (!isActive || !card?.card_id) return null;
@@ -2394,7 +1753,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     return (
       <SwipeCardActions
         cardId={card.card_id}
-        cardWidth={CARD_WIDTH}
+        cardWidth={cardWidth}
         isFavorite={favoriteIds.has(card.card_id)}
         favoriteColor={colors.buttonColor}
         onFavoritePress={toggleFavorite}
@@ -2412,7 +1771,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
         stopSpeakingLabel={t('swipeDeck.stopSpeaking', 'Okumayı durdur')}
       />
     );
-  }, [CARD_WIDTH, backOverflowIds, colors.buttonColor, favoriteIds, handleShowMore, handleSpeak, speakingCardId, t, toggleFavorite]);
+  }, [backOverflowIds, colors.buttonColor, favoriteIds, handleShowMore, handleSpeak, speakingCardId, t, toggleFavorite]);
 
   if (loading) {
     return (
@@ -2865,42 +2224,25 @@ export default function SwipeDeckScreen({ route, navigation }) {
       </View>
 
       {/* 2. Orta kart alanı */}
-      <View
-        onLayout={onCardAreaLayout}
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          width: '100%',
-          marginTop: 40,
-          zIndex: 1,
-          elevation: 1,
-          overflow: 'visible',
-        }}
-      >
-        {/* Rendered once the area is measured, so the card never jumps size. */}
-        {cardArea && cards.length > 0 && currentIndex < cards.length && !originalFlowComplete && (
-          <SwipeCardDeck
-            ref={swipeDeckRef}
-            cards={cards}
-            currentIndex={currentIndex}
-            disabled={showSwipeTutorial || loading}
-            cardWidth={CARD_WIDTH}
-            cardHeight={CARD_HEIGHT}
-            renderCard={renderSwipeCard}
-            renderCardActions={renderSwipeCardActions}
-            activeSwipeX={activeSwipeX}
-            onSwipeStart={handleSwipeStart}
-            onSwiped={handleSwipeCommitted}
-            onSwipeCancelled={handleSwipeCancelled}
-            onCardFlip={handleCardFlip}
-            swipeThreshold={Math.max(90, CARD_WIDTH * 0.28)}
-            velocityThreshold={900}
-            swipeAnimationDuration={SWIPE_ANIMATION_MS}
-            maxRotation={9}
-          />
-        )}
-      </View>
+      <SwipeCardStage
+        ref={swipeDeckRef}
+        style={styles.cardStage}
+        showDeck={cards.length > 0 && currentIndex < cards.length && !originalFlowComplete}
+        cardWidthValue={cardWidthValue}
+        cards={cards}
+        currentIndex={currentIndex}
+        disabled={showSwipeTutorial || loading}
+        renderCard={renderSwipeCard}
+        renderCardActions={renderSwipeCardActions}
+        activeSwipeX={activeSwipeX}
+        onSwipeStart={handleSwipeStart}
+        onSwiped={handleSwipeCommitted}
+        onSwipeCancelled={handleSwipeCancelled}
+        onCardFlip={handleCardFlip}
+        velocityThreshold={900}
+        swipeAnimationDuration={SWIPE_ANIMATION_MS}
+        maxRotation={9}
+      />
 
       {/* 3. Alt Kontroller */}
       <View style={{ width: '100%', zIndex: 10, elevation: 10, backgroundColor: 'transparent', gap: 16 }}>
@@ -3200,6 +2542,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  cardStage: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    marginTop: 40,
+    zIndex: 1,
+    elevation: 1,
+    overflow: 'visible',
+  },
   swiperRenderCardWrapper: {
     width: '100%',
     height: '100%',
@@ -3457,28 +2809,6 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     marginVertical: 4,
   },
-  showMoreRow: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 16,
-    zIndex: 300,
-    elevation: 300,
-    alignItems: 'center',
-  },
-  showMoreButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
-  },
-  showMoreText: {
-    ...typography.styles.button,
-    fontSize: 14,
-  },
   expandedSheet: {
     flex: 1,
   },
@@ -3500,133 +2830,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 0,
     paddingBottom: 40,
-  },
-  voiceSheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(150, 150, 150, 0.2)',
-  },
-  voiceSheetClose: {
-    backgroundColor: 'rgba(150, 150, 150, 0.1)',
-    padding: 6,
-    borderRadius: 99,
-  },
-  voiceSheetScroll: {
-    flex: 1,
-  },
-  voiceSheetContent: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  voiceRateHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  voiceRateValue: {
-    ...typography.styles.button,
-    fontSize: 15,
-  },
-  rateBar: {
-    height: 44,
-    justifyContent: 'center',
-  },
-  rateTrackLayer: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-  },
-  rateTrack: {
-    height: 4,
-    borderRadius: 2,
-  },
-  rateFill: {
-    position: 'absolute',
-    left: 0,
-    top: '50%',
-    marginTop: -2,
-  },
-  rateDot: {
-    position: 'absolute',
-    top: '50%',
-    marginTop: -4,
-    marginLeft: -4,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  rateThumb: {
-    position: 'absolute',
-    top: '50%',
-    marginTop: -RATE_THUMB / 2,
-    marginLeft: -RATE_THUMB / 2,
-    width: RATE_THUMB,
-    height: RATE_THUMB,
-    borderRadius: RATE_THUMB / 2,
-    borderWidth: 2,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 2,
-  },
-  rateLabels: {
-    height: 34,
-  },
-  rateLabel: {
-    position: 'absolute',
-    top: 0,
-    marginLeft: -RATE_LABEL_WIDTH / 2,
-    width: RATE_LABEL_WIDTH,
-    alignItems: 'center',
-  },
-  rateLabelText: {
-    fontFamily: 'Inter',
-    fontSize: 13,
-  },
-  rateLabelHint: {
-    fontFamily: 'Inter',
-    fontSize: 10,
-    marginTop: 1,
-  },
-  voiceSectionTitle: {
-    ...typography.styles.button,
-    fontSize: 13,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginTop: 24,
-    marginBottom: 8,
-  },
-  voiceList: {
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
-  },
-  voiceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  voiceRowTags: {
-    fontFamily: 'Inter',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  voiceHint: {
-    fontFamily: 'Inter',
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: 12,
   },
   // "Show more" sheet card, mirroring SwipeFlipCard's back face.
   expandedCard: {
@@ -3666,51 +2869,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontStyle: 'italic',
   },
-  cardActionRow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 64,
-    zIndex: 300,
-    elevation: 300,
-    flexDirection: 'row',
-    alignItems: 'center',
-    // Speaker on the left, favourite on the right.
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-  },
-  cardActionButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 20,
-  },
-  cardActionIconStage: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  cardActionIconFace: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backfaceVisibility: 'hidden',
-  },
-  cardActionIconFrontFace: {
-    zIndex: 2,
-  },
-  cardActionIconBackFace: {
-    zIndex: 1,
-  },
-
   counterRow: {
     position: 'absolute',
     top: 0,
@@ -3723,7 +2881,7 @@ const styles = StyleSheet.create({
   counterBoxLeft: {
     position: 'absolute',
     left: -30,
-    top: 16,
+    top: 0,
     minWidth: 80,
     paddingLeft: 30,
     paddingRight: 12,
@@ -3741,7 +2899,7 @@ const styles = StyleSheet.create({
   counterBoxRight: {
     position: 'absolute',
     right: -30,
-    top: 16,
+    top: 0,
     minWidth: 80,
     paddingLeft: 12,
     paddingRight: 30,
@@ -3813,6 +2971,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'transparent',
     paddingHorizontal: 12,
+    // The 48px touch targets hold ~28px icons: pull the row up by that empty
+    // space so the gap above the icons looks the same as the one above the bar.
+    marginTop: -10,
   },
   iconButton: {
     width: 48,
@@ -3827,7 +2988,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    top: 16,
+    top: 0,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 8,

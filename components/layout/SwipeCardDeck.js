@@ -4,10 +4,12 @@ import React, {
     useCallback,
     useEffect,
     useImperativeHandle,
+    useLayoutEffect,
     useMemo,
     useRef,
+    useState,
   } from 'react';
-  import { StyleSheet, View } from 'react-native';
+  import { StyleSheet, View, useWindowDimensions } from 'react-native';
   import { Gesture, GestureDetector } from 'react-native-gesture-handler';
   import Reanimated, {
     cancelAnimation,
@@ -50,6 +52,7 @@ import React, {
     velocityThreshold,
     swipeAnimationDuration,
     maxRotation,
+    skipEntrance = false,
   }, ref) {
     const translateX = useSharedValue(0);
     const translateY = useSharedValue(0);
@@ -59,8 +62,12 @@ import React, {
     // Shared by the card and its action row so the favorite controls use the
     // exact same entrance/exit and flip timeline as the card itself.
     const flipProgress = useSharedValue(0);
-    const entranceProgress = useSharedValue(0);
-    const entranceOpacity = useSharedValue(0);
+    // The card shown when the screen opens is already in place on its first
+    // frame (a spring there reads as the screen glitching); every card after
+    // it gets the entrance animation. Only read on mount.
+    const instantEntranceRef = useRef(skipEntrance);
+    const entranceProgress = useSharedValue(skipEntrance ? 1 : 0);
+    const entranceOpacity = useSharedValue(skipEntrance ? 1 : 0);
   
     const reset = useCallback(() => {
       cancelAnimation(translateX);
@@ -81,6 +88,7 @@ import React, {
     useEffect(() => {
       // The layer is keyed by card id at the parent level, so this runs only
       // when this physical React layer receives a truly different card.
+      if (instantEntranceRef.current) return;
       reset();
     }, [card?.card_id, reset]);
   
@@ -89,8 +97,16 @@ import React, {
       cancelAnimation(entranceOpacity);
   
       if (!isActive || !card) {
+        instantEntranceRef.current = false;
         entranceProgress.value = 0;
         entranceOpacity.value = 0;
+        return;
+      }
+
+      if (instantEntranceRef.current) {
+        instantEntranceRef.current = false;
+        entranceProgress.value = 1;
+        entranceOpacity.value = 1;
         return;
       }
   
@@ -318,6 +334,8 @@ import React, {
       flipProgress,
       entranceProgress,
       entranceOpacity,
+      cardWidth,
+      cardHeight,
     });
   
     // Actions deliberately stay outside GestureDetector. They are still inside
@@ -331,6 +349,8 @@ import React, {
           flipProgress,
           entranceProgress,
           entranceOpacity,
+          cardWidth,
+          cardHeight,
         })
       : null;
   
@@ -403,6 +423,10 @@ import React, {
   }, ref) {
     const activeIndexRef = useRef(currentIndex);
     const transitionLockRef = useRef(false);
+    // True only during the deck's first render: its first active card skips
+    // the entrance animation.
+    const isFirstRenderRef = useRef(true);
+    useEffect(() => { isFirstRenderRef.current = false; }, []);
     const layerRefs = useRef(new Map());
   
     useEffect(() => {
@@ -523,6 +547,7 @@ import React, {
               velocityThreshold={velocityThreshold}
               swipeAnimationDuration={swipeAnimationDuration}
               maxRotation={maxRotation}
+              skipEntrance={isFirstRenderRef.current && isActive}
             />
           );
         })}
@@ -531,6 +556,73 @@ import React, {
   });
   
   SwipeCardDeck.displayName = 'SwipeCardDeck';
+
+  // Swipe card: fixed 2:3 portrait ratio, as big as fits: at most 88% of the
+  // window width (capped for tablets) and the height of the stage minus a
+  // little breathing room. On short screens it shrinks as a whole.
+  const CARD_ASPECT_RATIO = 1.5;
+  const CARD_MAX_WIDTH_RATIO = 0.88;
+  const CARD_MAX_WIDTH = 440;
+  const CARD_AREA_VERTICAL_GAP = 16;
+  const MIN_SWIPE_THRESHOLD = 90;
+  const SWIPE_THRESHOLD_RATIO = 0.28;
+
+  // The area the deck lives in. It measures itself and sizes the card, so the
+  // screen around it never re-renders for that. On the New Architecture the
+  // first measurement is read synchronously in a layout effect, before the
+  // first paint: the card appears together with the screen, already at its
+  // final size (no empty first frame, no jump). onLayout keeps it in sync if
+  // the area later changes (window resize, split view).
+  export const SwipeCardStage = memo(forwardRef(function SwipeCardStage({
+    style,
+    showDeck = true,
+    cardWidthValue,
+    ...deckProps
+  }, ref) {
+    const { width: windowWidth } = useWindowDimensions();
+    const stageRef = useRef(null);
+    const [area, setArea] = useState(null);
+
+    const applyArea = useCallback((w, h) => {
+      if (!(w > 0) || !(h > 0)) return;
+      setArea((prev) => (prev && Math.abs(prev.w - w) < 1 && Math.abs(prev.h - h) < 1 ? prev : { w, h }));
+    }, []);
+
+    useLayoutEffect(() => {
+      const rect = stageRef.current?.getBoundingClientRect?.();
+      if (rect) applyArea(rect.width, rect.height);
+    }, [applyArea]);
+
+    const handleLayout = useCallback((e) => {
+      const { width: w, height: h } = e.nativeEvent.layout;
+      applyArea(w, h);
+    }, [applyArea]);
+
+    const size = useMemo(() => {
+      if (!area) return null;
+      const maxWidth = Math.min(windowWidth * CARD_MAX_WIDTH_RATIO, CARD_MAX_WIDTH);
+      const width = Math.max(0, Math.min(maxWidth, (area.h - CARD_AREA_VERTICAL_GAP) / CARD_ASPECT_RATIO));
+      return { width, height: width * CARD_ASPECT_RATIO };
+    }, [area, windowWidth]);
+
+    useEffect(() => {
+      if (cardWidthValue && size) cardWidthValue.value = size.width;
+    }, [cardWidthValue, size]);
+
+    return (
+      <View ref={stageRef} collapsable={false} onLayout={handleLayout} style={style}>
+        {size && showDeck ? (
+          <SwipeCardDeck
+            ref={ref}
+            {...deckProps}
+            cardWidth={size.width}
+            cardHeight={size.height}
+            swipeThreshold={Math.max(MIN_SWIPE_THRESHOLD, size.width * SWIPE_THRESHOLD_RATIO)}
+          />
+        ) : null}
+      </View>
+    );
+  }));
   
   const styles = StyleSheet.create({
     deck: {

@@ -1,10 +1,11 @@
 import React, {
   memo,
+  useCallback,
   useEffect,
   useMemo,
   useState,
 } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Text, MAX_FONT_SIZE_MULTIPLIER } from '../ui/AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
@@ -14,12 +15,15 @@ import Reanimated, {
   Easing,
   interpolate,
   interpolateColor,
+  runOnJS,
+  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { typography } from '../../theme/typography';
+import { triggerHaptic } from '../../lib/hapticManager';
 
 const PERSPECTIVE = 1200;
 const ENTRANCE_OFFSET = 8;
@@ -575,7 +579,288 @@ function areEqual(prev, next) {
   );
 }
 
+
+// Speaker / favourite / "see more" controls drawn on top of the active card.
+// They sit outside the card's gesture surface (so a press never flips the
+// card) but follow its entrance, swipe fade and flip timeline.
+const AnimatedActionPressable = Reanimated.createAnimatedComponent(Pressable);
+const ACTION_ENTRANCE_OFFSET = 8;
+
+export const SwipeCardActions = memo(function SwipeCardActions({
+  cardId,
+  cardWidth,
+  isFavorite,
+  favoriteColor,
+  onFavoritePress,
+  swipeX,
+  flipProgress,
+  entranceProgress,
+  entranceOpacity,
+  showMore = false,
+  showMoreLabel,
+  onShowMorePress,
+  showMoreTextColor = '#1C1C1C',
+  onSpeakPress,
+  isSpeaking = false,
+  speakLabel,
+  stopSpeakingLabel,
+}) {
+  // This timeline intentionally mirrors SwipeFlipCard.contentEntranceStyle.
+  // The action row is outside the ScrollView/face content, but it uses the
+  // exact same shared entrance/fade values as the card content.
+  const actionEntranceStyle = useAnimatedStyle(() => {
+    const x = swipeX?.value ?? 0;
+    const labelDistance = Math.max(80, cardWidth * 0.28);
+    const fadeStart = labelDistance * 0.55;
+    const fadeEnd = labelDistance * 0.68;
+    const swipeFade = interpolate(
+      Math.abs(x),
+      [fadeStart, fadeEnd],
+      [1, 0],
+      'clamp'
+    );
+
+    const entrance = entranceProgress?.value ?? 1;
+    const opacity = entranceOpacity?.value ?? 1;
+
+    return {
+      opacity: opacity * swipeFade,
+      transform: [
+        { translateY: (1 - entrance) * ACTION_ENTRANCE_OFFSET },
+        { scale: 0.96 + (0.04 * entrance) },
+      ],
+    };
+  }, [cardWidth, entranceOpacity, entranceProgress, swipeX]);
+
+  // The action row itself never participates in the card content ScrollView.
+  // Only the visual heart faces use the same Y-axis flip timeline as the card.
+  const frontFlipStyle = useAnimatedStyle(() => ({
+    transform: [
+      { perspective: 1200 },
+      { rotateY: `${180 * (flipProgress?.value ?? 0)}deg` },
+    ],
+  }), [flipProgress]);
+
+  const backFlipStyle = useAnimatedStyle(() => ({
+    transform: [
+      { perspective: 1200 },
+      { rotateY: `${180 + (180 * (flipProgress?.value ?? 0))}deg` },
+    ],
+  }), [flipProgress]);
+
+  // "See more" lives on the back face only: fade it in with the second half
+  // of the flip so it never shows on the question side.
+  const showMoreStyle = useAnimatedStyle(() => {
+    const x = swipeX?.value ?? 0;
+    const labelDistance = Math.max(80, cardWidth * 0.28);
+    const swipeFade = interpolate(
+      Math.abs(x),
+      [labelDistance * 0.55, labelDistance * 0.68],
+      [1, 0],
+      'clamp'
+    );
+    const flipVisible = interpolate(flipProgress?.value ?? 0, [0.5, 1], [0, 1], 'clamp');
+    return { opacity: flipVisible * swipeFade * (entranceOpacity?.value ?? 1) };
+  }, [cardWidth, entranceOpacity, flipProgress, swipeX]);
+
+  // "See more" only takes touches on the back face. This small row learns the
+  // side from flipProgress when the flip passes halfway; nothing else renders.
+  const [backShowing, setBackShowing] = useState(false);
+  useAnimatedReaction(
+    () => (flipProgress?.value ?? 0) >= 0.5,
+    (isBack, wasBack) => {
+      if (showMore && isBack !== wasBack) runOnJS(setBackShowing)(isBack);
+    },
+    [flipProgress, showMore]
+  );
+
+  const handleShowMorePress = useCallback(() => {
+    triggerHaptic('light');
+    onShowMorePress?.(cardId);
+  }, [cardId, onShowMorePress]);
+
+  const handlePress = useCallback(() => {
+    triggerHaptic('medium');
+    onFavoritePress?.(cardId);
+  }, [cardId, onFavoritePress]);
+
+  const handleSpeakPress = useCallback(() => {
+    triggerHaptic('light');
+    onSpeakPress?.(cardId);
+  }, [cardId, onSpeakPress]);
+
+  // Speaker (top-left): same two-face flip as the heart, so it turns with the
+  // card. It looks the same while speaking; tapping again stops.
+  const speakIcon = 'solar:volume-loud-bold';
+  const speakIconColor = '#FFF7ED';
+
+  const favoriteIcon = isFavorite ? 'solar:heart-bold' : 'solar:heart-broken';
+  const favoriteIconColor = isFavorite ? favoriteColor : '#FFF7ED';
+
+  return (
+    <>
+    <View
+      pointerEvents="box-none"
+      style={styles.cardActionRow}
+    >
+      {onSpeakPress ? (
+        <AnimatedActionPressable
+          accessibilityRole="button"
+          accessibilityLabel={isSpeaking ? stopSpeakingLabel : speakLabel}
+          onPress={handleSpeakPress}
+          hitSlop={{
+            top: 10,
+            bottom: 10,
+            left: 10,
+            right: 10,
+          }}
+          style={[styles.cardActionButton, actionEntranceStyle]}
+        >
+          <Reanimated.View
+            pointerEvents="none"
+            style={styles.cardActionIconStage}
+          >
+            <Reanimated.View
+              style={[styles.cardActionIconFace, styles.cardActionIconFrontFace, frontFlipStyle]}
+            >
+              <Iconify icon={speakIcon} size={25} color={speakIconColor} />
+            </Reanimated.View>
+            <Reanimated.View
+              style={[styles.cardActionIconFace, styles.cardActionIconBackFace, backFlipStyle]}
+            >
+              <Iconify icon={speakIcon} size={25} color={speakIconColor} />
+            </Reanimated.View>
+          </Reanimated.View>
+        </AnimatedActionPressable>
+      ) : <View />}
+
+      <AnimatedActionPressable
+        accessibilityRole="button"
+        accessibilityLabel={isFavorite ? 'Favorilerden kaldır' : 'Favorilere ekle'}
+        onPress={handlePress}
+        hitSlop={{
+          top: 10,
+          bottom: 10,
+          left: 10,
+          right: 10,
+        }}
+        style={[styles.cardActionButton, actionEntranceStyle]}
+      >
+        <Reanimated.View
+          pointerEvents="none"
+          style={styles.cardActionIconStage}
+        >
+          <Reanimated.View
+            style={[styles.cardActionIconFace, styles.cardActionIconFrontFace, frontFlipStyle]}
+          >
+            <Iconify
+              icon={favoriteIcon}
+              size={25}
+              color={favoriteIconColor}
+            />
+          </Reanimated.View>
+
+          <Reanimated.View
+            style={[styles.cardActionIconFace, styles.cardActionIconBackFace, backFlipStyle]}
+          >
+            <Iconify
+              icon={favoriteIcon}
+              size={25}
+              color={favoriteIconColor}
+            />
+          </Reanimated.View>
+        </Reanimated.View>
+      </AnimatedActionPressable>
+    </View>
+
+      {showMore ? (
+        <View
+          pointerEvents={backShowing ? 'box-none' : 'none'}
+          style={styles.showMoreRow}
+        >
+          <AnimatedActionPressable
+            accessibilityRole="button"
+            accessibilityLabel={showMoreLabel}
+            onPress={handleShowMorePress}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={[styles.showMoreButton, showMoreStyle]}
+          >
+            <Text style={[styles.showMoreText, { color: showMoreTextColor }]}>{showMoreLabel}</Text>
+            <Iconify icon="flowbite:caret-down-solid" size={14} color={showMoreTextColor} />
+          </AnimatedActionPressable>
+        </View>
+      ) : null}
+    </>
+  );
+});
+
 const styles = StyleSheet.create({
+  showMoreRow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 16,
+    zIndex: 300,
+    elevation: 300,
+    alignItems: 'center',
+  },
+  showMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+  },
+  showMoreText: {
+    ...typography.styles.button,
+    fontSize: 14,
+  },
+  cardActionRow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 64,
+    zIndex: 300,
+    elevation: 300,
+    flexDirection: 'row',
+    alignItems: 'center',
+    // Speaker on the left, favourite on the right.
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+  },
+  cardActionButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+  },
+  cardActionIconStage: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  cardActionIconFace: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backfaceVisibility: 'hidden',
+  },
+  cardActionIconFrontFace: {
+    zIndex: 2,
+  },
+  cardActionIconBackFace: {
+    zIndex: 1,
+  },
   card: {
     borderRadius: 26,
     alignItems: 'center',
