@@ -1,11 +1,22 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { TouchableOpacity, View, Image, Text, StyleSheet } from 'react-native';
+import { TouchableOpacity, View, Image, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from './AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
 import MaskedView from '@react-native-masked-view/masked-view';
-import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
-import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 import { triggerHaptic } from '../../lib/hapticManager'; // Titreşim yöneticimizi ekledik
+
+// Deck cards are always portrait rectangles: 140 wide (at most 36% of the
+// screen on narrow phones) with a fixed 1:1.4 ratio, so they never turn square.
+const DECK_CARD_MAX_WIDTH = 140;
+const DECK_CARD_ASPECT_RATIO = 1.4;
+export const useDeckCardSize = () => {
+  const { width } = useWindowDimensions();
+  return useMemo(() => {
+    const cardWidth = Math.min(DECK_CARD_MAX_WIDTH, width * 0.36);
+    return { width: cardWidth, height: cardWidth * DECK_CARD_ASPECT_RATIO };
+  }, [width]);
+};
 
 const FadeText = ({ text, style, maxWidth = 120, maxChars = 15 }) => {
   const shouldShowFade = text && text.length > maxChars;
@@ -69,8 +80,7 @@ const DeckCard = ({
   showPopularityBadge = false,
   variant = 'default',
 }) => {
-  const { width, height } = useWindowDimensions();
-  const isTablet = getIsTablet();
+  const { width: DECK_CARD_WIDTH, height: DECK_CARD_HEIGHT } = useDeckCardSize();
 
   // --- OPTIMISTIC UI: Lokal State ---
   const [localFavorite, setLocalFavorite] = useState(isFavorite);
@@ -88,18 +98,6 @@ const DeckCard = ({
   };
   // -----------------------------------
 
-  const deckCardDimensions = useMemo(() => {
-    const { DECK_CARD } = RESPONSIVE_CONSTANTS;
-    const scaledWidth = scale(DECK_CARD.REFERENCE_WIDTH);
-    const maxWidth = isTablet ? width * 0.20 : width * 0.36;
-    const cardWidth = Math.min(scaledWidth, maxWidth);
-    const cardHeight = cardWidth * DECK_CARD.ASPECT_RATIO;
-
-    return { width: cardWidth, height: cardHeight };
-  }, [width, isTablet]);
-
-  const DECK_CARD_WIDTH = deckCardDimensions.width;
-  const DECK_CARD_HEIGHT = deckCardDimensions.height;
 
   const getCategoryColors = (sortOrder) => {
     if (colors.categoryColors && colors.categoryColors[sortOrder]) {
@@ -131,8 +129,8 @@ const DeckCard = ({
   const isProgressNearComplete = progressPercent >= 75 && progressPercent < 100;
   const inProgressGradient = getInProgressGradient(progressPercent);
   // Chip slightly bigger; overlap'i dengeleyip düşük % görünürlüğünü koruyoruz.
-  const progressChipOverlap = scale(11);
-  const progressFillMinWidth = progressPercent > 0 ? scale(4) : 0;
+  const progressChipOverlap = 11;
+  const progressFillMinWidth = progressPercent > 0 ? 4 : 0;
 
   const renderDeckTitle = (text) => {
     if (!text) return null;
@@ -164,7 +162,7 @@ const DeckCard = ({
           <View style={styles.backgroundCategoryIcon}>
             <Iconify
               icon={categoryIcon}
-              size={scale(120)}
+              size={120}
               color="rgba(0, 0, 0, 0.1)"
               style={styles.categoryIconStyle}
             />
@@ -193,7 +191,7 @@ const DeckCard = ({
                 {deck.to_name ? (
                   <>
                     {renderDeckTitle(deck.name)}
-                    <View style={{ width: scale(60), height: moderateScale(2), backgroundColor: colors.divider, borderRadius: moderateScale(1), marginVertical: verticalScale(10) }} />
+                    <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10 }} />
                     {renderDeckTitle(deck.to_name)}
                   </>
                 ) : (
@@ -206,14 +204,14 @@ const DeckCard = ({
                 {/* Popularity Badge */}
                 {showPopularityBadge && deck.popularity_score && deck.popularity_score > 0 && (
                   <View style={[styles.popularityBadge, { backgroundColor: 'rgba(255, 255, 255, 0.25)' }]}>
-                    <Iconify icon="mdi:fire" size={moderateScale(12)} color="#fff" style={{ marginRight: scale(3) }} />
+                    <Iconify icon="mdi:fire" size={12} color="#fff" style={{ marginRight: 3 }} />
                     <Text style={[styles.popularityBadgeText, { color: '#fff' }]}>
                       {Math.round(deck.popularity_score)}
                     </Text>
                   </View>
                 )}
                 <View style={styles.deckCountBadge}>
-                  <Iconify icon="ri:stack-fill" size={moderateScale(15)} color="#fff" style={{ marginRight: scale(3) }} />
+                  <Iconify icon="ri:stack-fill" size={15} color="#fff" style={{ marginRight: 3 }} />
                   <Text style={[typography.styles.body, styles.deckCountBadgeText]}>{deck.card_count || 0}</Text>
                 </View>
               </View>
@@ -240,7 +238,7 @@ const DeckCard = ({
                     {isProgressCompleted ? (
                       <Iconify
                         icon="streamline:check-solid"
-                        size={moderateScale(16)}
+                        size={16}
                         color="#FFFFFF"
                       />
                     ) : (
@@ -272,10 +270,10 @@ const DeckCard = ({
           <TouchableOpacity
             style={{
               position: 'absolute',
-              bottom: verticalScale(8),
-              right: scale(8),
+              bottom: 8,
+              right: 8,
               backgroundColor: colors.iconBackground,
-              padding: moderateScale(5),
+              padding: 5,
               borderRadius: 999,
               zIndex: 10,
             }}
@@ -284,7 +282,7 @@ const DeckCard = ({
           >
             <Iconify
               icon={localFavorite ? 'solar:heart-bold' : 'solar:heart-broken'} // ARTIK LOKAL STATE'İ DİNLİYOR
-              size={moderateScale(20)}
+              size={20}
               color={localFavorite ? '#F98A21' : colors.headText} // ARTIK LOKAL STATE'İ DİNLİYOR
             />
           </TouchableOpacity>
@@ -297,19 +295,19 @@ const DeckCard = ({
 const styles = StyleSheet.create({
   deckCardModern: {
     backgroundColor: 'transparent',
-    borderRadius: moderateScale(18),
-    marginRight: scale(10),
-    marginBottom: verticalScale(8),
+    borderRadius: 18,
+    marginRight: 10,
+    marginBottom: 8,
     overflow: 'hidden', // Taşan kısımları gizle
   },
   touchableContainer: {
     flex: 1,
-    borderRadius: moderateScale(18),
+    borderRadius: 18,
   },
   deckCardGradient: {
     flex: 1,
-    borderRadius: moderateScale(18),
-    padding: scale(8),
+    borderRadius: 18,
+    padding: 8,
     justifyContent: 'space-between',
   },
   deckCardContentModern: {
@@ -320,8 +318,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: verticalScale(8),
-    paddingBottom: verticalScale(8),
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   deckHeaderModern: {
     alignItems: 'center',
@@ -329,7 +327,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   deckTitleModern: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     fontWeight: '700',
     color: '#F98A21',
     maxWidth: '95%',
@@ -338,66 +336,66 @@ const styles = StyleSheet.create({
   deckStatsModern: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: verticalScale(-18),
-    left: scale(2),
-    bottom: verticalScale(1),
+    marginTop: -18,
+    left: 2,
+    bottom: 1,
   },
   deckCountBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F98A21',
-    borderRadius: moderateScale(12),
-    paddingHorizontal: scale(8),
-    paddingVertical: verticalScale(2),
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
   deckCountBadgeText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: moderateScale(15),
+    fontSize: 15,
   },
   popularityBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: scale(8),
-    paddingVertical: verticalScale(4),
-    borderRadius: moderateScale(12),
-    marginRight: scale(6),
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
   },
   popularityBadgeText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: moderateScale(12),
+    fontSize: 12,
   },
   deckProfileRow: {
     position: 'absolute',
     flexDirection: 'row',
     alignItems: 'center',
     zIndex: 10,
-    maxWidth: scale(120),
+    maxWidth: 120,
   },
   deckProfileAvatar: {
-    width: scale(27),
-    height: verticalScale(27),
-    borderRadius: moderateScale(11),
-    marginRight: scale(6),
+    width: 27,
+    height: 27,
+    borderRadius: 11,
+    marginRight: 6,
   },
   deckProfileUsername: {
-    fontSize: moderateScale(14),
+    fontSize: 14,
     color: '#BDBDBD',
     fontWeight: '700',
 
   },
   backgroundCategoryIcon: {
     position: 'absolute',
-    left: scale(-60), // İkonun yarısının taşması için
+    left: -60, // İkonun yarısının taşması için
     width: '100%',
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 0, // En altta kalması için
     overflow: 'hidden', // Taşan kısmı gizle
-    top: verticalScale(5)
+    top: 5
   },
   categoryIconStyle: {
     // Subtle background effect için
@@ -420,9 +418,9 @@ const styles = StyleSheet.create({
   },
   progressBadgeContainer: {
     position: 'absolute',
-    left: scale(16),
-    right: scale(46),
-    bottom: verticalScale(14),
+    left: 16,
+    right: 46,
+    bottom: 14,
     zIndex: 10,
   },
   progressBottomBadge: {
@@ -431,10 +429,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    borderRadius: moderateScale(999),
-    paddingLeft: scale(24),
-    paddingRight: scale(6),
-    paddingVertical: verticalScale(6),
+    borderRadius: 999,
+    paddingLeft: 24,
+    paddingRight: 6,
+    paddingVertical: 6,
     overflow: 'visible',
   },
   progressBarRow: {
@@ -444,33 +442,33 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   progressPercentChip: {
-    width: scale(40),
-    height: scale(40),
-    borderRadius: moderateScale(999),
+    width: 40,
+    height: 40,
+    borderRadius: 999,
     backgroundColor: '#F98A21',
     position: 'absolute',
-    left: scale(-8),
+    left: -8,
     top: '50%',
-    transform: [{ translateY: -scale(20) }],
+    transform: [{ translateY: -20 }],
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 2,
     overflow: 'hidden',
-    borderWidth: moderateScale(1.5),
+    borderWidth: 1.5,
     borderColor: 'rgba(255, 255, 255, 0.38)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: verticalScale(2) },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.22,
-    shadowRadius: moderateScale(4),
+    shadowRadius: 4,
     elevation: 3,
   },
   progressPercentChipGradient: {
     position: 'absolute',
-    top: -scale(2),
-    left: -scale(2),
-    right: -scale(2),
-    bottom: -scale(2),
-    borderRadius: moderateScale(999),
+    top: -2,
+    left: -2,
+    right: -2,
+    bottom: -2,
+    borderRadius: 999,
   },
   progressPercentChipInner: {
     flexDirection: 'row',
@@ -481,28 +479,28 @@ const styles = StyleSheet.create({
   progressPercentChipNumber: {
     color: '#FFFFFF',
     fontWeight: '800',
-    fontSize: moderateScale(14.5),
-    letterSpacing: moderateScale(-0.38),
+    fontSize: 14.5,
+    letterSpacing: -0.38,
   },
   progressPercentSign: {
-    fontSize: moderateScale(9.75),
+    fontSize: 9.75,
     fontWeight: '700',
     color: 'rgba(255, 255, 255, 0.92)',
     marginLeft: 0,
-    marginBottom: verticalScale(2),
+    marginBottom: 2,
   },
   progressBottomTrack: {
     flex: 1,
     minWidth: 0,
-    height: verticalScale(4),
-    borderRadius: moderateScale(999),
+    height: 4,
+    borderRadius: 999,
     backgroundColor: 'rgba(255, 255, 255, 0.22)',
     overflow: 'hidden',
-    marginRight: scale(2),
+    marginRight: 2,
   },
   progressBottomFill: {
     height: '100%',
-    borderRadius: moderateScale(999),
+    borderRadius: 999,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
   },
   progressBottomFillCompleted: {
@@ -512,7 +510,7 @@ const styles = StyleSheet.create({
     shadowColor: '#FB7B0B',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.45,
-    shadowRadius: moderateScale(7),
+    shadowRadius: 7,
     elevation: 4,
     borderColor: 'rgba(255, 255, 255, 0.45)',
   },
@@ -520,7 +518,7 @@ const styles = StyleSheet.create({
     shadowColor: '#FF7505',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.9,
-    shadowRadius: moderateScale(12),
+    shadowRadius: 12,
     elevation: 7,
     borderColor: 'rgba(255, 255, 255, 0.6)',
   },

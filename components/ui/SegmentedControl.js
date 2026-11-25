@@ -1,6 +1,6 @@
 import React, { memo, useCallback, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
-import { moderateScale, scale, verticalScale } from '../../lib/scaling';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from './AppText';
 import { typography } from '../../theme/typography';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { Iconify } from 'react-native-iconify';
@@ -26,7 +26,7 @@ function SegmentContent({ segment, color }) {
   return (
     <View style={styles.segmentContent}>
       {segment.icon ? (
-        <Iconify icon={segment.icon} size={moderateScale(16)} color={color} />
+        <Iconify icon={segment.icon} size={16} color={color} />
       ) : null}
       <Text style={[styles.label, { color }]} numberOfLines={1}>
         {segment.label}
@@ -136,9 +136,9 @@ function SegmentedControl({
   );
 }
 
-const TRACK_PADDING = scale(4);
+const TRACK_PADDING = 4;
 const TRACK_BORDER = 1;
-const DEFAULT_HEIGHT = verticalScale(44);
+const DEFAULT_HEIGHT = 44;
 // Underline indicator width as a share of one segment.
 const INDICATOR_RATIO = 0.5;
 const INDICATOR_HEIGHT = 3;
@@ -176,11 +176,11 @@ const styles = StyleSheet.create({
   segmentContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(6),
+    gap: 6,
   },
   label: {
     ...typography.styles.button,
-    fontSize: moderateScale(15),
+    fontSize: 15,
     flexShrink: 1,
   },
   labelOverlay: {

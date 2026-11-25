@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Text } from '../ui/AppText';
 import { useTheme } from '../../theme/theme';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { useTranslation } from 'react-i18next';
 
 export default function BadgeText({ required }) {
@@ -25,12 +25,12 @@ const styles = StyleSheet.create({
     badgeContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: scale(8),
-        paddingVertical: verticalScale(4),
-        borderRadius: moderateScale(6),
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
     },
     badgeText: {
-        fontSize: moderateScale(11),
+        fontSize: 11,
         fontWeight: '600',
     },
 });

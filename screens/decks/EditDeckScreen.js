@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Keyboard } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Keyboard } from 'react-native';
+import { Text, TextInput } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { getCategories } from '../../services/CategoryService';
@@ -14,7 +15,6 @@ import CategorySelector from '../../components/modals/CategorySelector';
 import UndoButton from '../../components/tools/UndoButton';
 import CreateButton from '../../components/tools/CreateButton';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import BadgeText from '../../components/tools/BadgeText';
 import DeckLanguageModal, { DeckLanguageField } from '../../components/modals/DeckLanguageModal';
 import { triggerHaptic } from '../../lib/hapticManager';
@@ -152,7 +152,7 @@ export default function DeckEditScreen() {
         keyboardShouldPersistTaps="handled"
         enableOnAndroid={true}
         enableAutomaticScroll={true}
-        extraScrollHeight={verticalScale(20)}
+        extraScrollHeight={20}
         enableResetScrollToCoords={false}
         showsVerticalScrollIndicator={false}
       >
@@ -173,7 +173,7 @@ export default function DeckEditScreen() {
         >
           <View style={styles.labelRow}>
             <View style={styles.labelTextContainer}>
-              <Iconify icon="ion:book" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+              <Iconify icon="ion:book" size={24} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.name', 'Deste Adı')}</Text>
             </View>
             <View>
@@ -194,10 +194,10 @@ export default function DeckEditScreen() {
               <TouchableOpacity
                 onPress={() => setName('')}
                 accessibilityLabel={t('common.clear', 'Temizle')}
-                hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
-                style={{ marginLeft: scale(8), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={{ marginLeft: 8, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
               >
-                <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
+                <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
               </TouchableOpacity>
             ) : null}
           </View>
@@ -219,7 +219,7 @@ export default function DeckEditScreen() {
         >
           <View style={styles.labelRow}>
             <View style={styles.labelTextContainer}>
-              <Iconify icon="icon-park-outline:translation" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+              <Iconify icon="icon-park-outline:translation" size={24} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.toName', 'Karşılığı')}</Text>
             </View>
             <View>
@@ -240,10 +240,10 @@ export default function DeckEditScreen() {
               <TouchableOpacity
                 onPress={() => setToName('')}
                 accessibilityLabel={t('common.clear', 'Temizle')}
-                hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
-                style={{ marginLeft: scale(8), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={{ marginLeft: 8, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
               >
-                <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
+                <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
               </TouchableOpacity>
             ) : null}
           </View>
@@ -265,7 +265,7 @@ export default function DeckEditScreen() {
         >
           <View style={styles.labelRow}>
             <View style={styles.labelTextContainer}>
-              <Iconify icon="tabler:file-description-filled" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+              <Iconify icon="tabler:file-description-filled" size={24} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.description', 'Açıklama')}</Text>
             </View>
             <View>
@@ -277,7 +277,7 @@ export default function DeckEditScreen() {
               style={[
                 styles.input,
                 typography.styles.body,
-                { height: verticalScale(120), textAlignVertical: 'top', color: colors.text, paddingRight: scale(40), borderColor: colors.inputBorder, backgroundColor: colors.inputBackground},
+                { height: 120, textAlignVertical: 'top', color: colors.text, paddingRight: 40, borderColor: colors.inputBorder, backgroundColor: colors.inputBackground},
               ]}
               placeholder={t('create.descriptionExam', 'Deste hakkında açıklama...')}
               placeholderTextColor={colors.muted}
@@ -291,10 +291,10 @@ export default function DeckEditScreen() {
               <TouchableOpacity
                 onPress={() => setDescription('')}
                 accessibilityLabel={t('common.clear', 'Temizle')}
-                hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
-                style={{ position: 'absolute', right: scale(8), top: verticalScale(8), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={{ position: 'absolute', right: 8, top: 8, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
               >
-                <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
+                <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
               </TouchableOpacity>
             ) : null}
           </View>
@@ -318,7 +318,7 @@ export default function DeckEditScreen() {
         >
           <View style={styles.labelRow}>
             <View style={styles.labelTextContainer}>
-              <Iconify icon="mdi:category-plus-outline" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+              <Iconify icon="mdi:category-plus-outline" size={24} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('createDeck.categoryLabel', 'Kategori')}</Text>
             </View>
             <View>
@@ -348,7 +348,7 @@ export default function DeckEditScreen() {
                 return sortOrder ? (
                   <Iconify
                     icon={getCategoryIcon(sortOrder)}
-                    size={moderateScale(20)}
+                    size={20}
                     color={selectedCategory ? colors.text : colors.muted}
                     style={styles.categoryIcon}
                   />
@@ -369,7 +369,7 @@ export default function DeckEditScreen() {
                 })() : t('createDeck.selectCategory')}
               </Text>
             </View>
-            <Iconify icon="flowbite:caret-down-solid" size={moderateScale(20)} color={colors.muted} />
+            <Iconify icon="flowbite:caret-down-solid" size={20} color={colors.muted} />
           </TouchableOpacity>
         </View>
 
@@ -390,7 +390,7 @@ export default function DeckEditScreen() {
         >
           <View style={styles.labelRow}>
             <View style={styles.labelTextContainer}>
-              <Iconify icon="mdi:spoken-language" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+              <Iconify icon="mdi:spoken-language" size={24} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>
                 {t('create.language', 'İçerik Dili')}
               </Text>
@@ -420,7 +420,7 @@ export default function DeckEditScreen() {
           <UndoButton
             onPress={resetForm}
             disabled={loading}
-            style={{ flex: 1, minWidth: 0, marginRight: scale(10) }}
+            style={{ flex: 1, minWidth: 0, marginRight: 10 }}
           />
           <CreateButton
             onPress={handleSave}
@@ -458,60 +458,60 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'flex-start',
     alignItems: 'center',
-    padding: scale(16),
-    paddingTop: verticalScale(16),
+    padding: 16,
+    paddingTop: 16,
   },
   inputCard: {
     width: '100%',
-    maxWidth: scale(440),
-    borderRadius: moderateScale(28),
-    padding: moderateScale(20),
-    marginBottom: verticalScale(11),
-    shadowOffset: { width: scale(4), height: verticalScale(6) },
+    maxWidth: 440,
+    borderRadius: 28,
+    padding: 20,
+    marginBottom: 11,
+    shadowOffset: { width: 4, height: 6 },
     shadowOpacity: 0.10,
-    shadowRadius: moderateScale(10),
+    shadowRadius: 10,
     elevation: 5,
     overflow: 'hidden',
   },
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: verticalScale(12),
+    marginBottom: 12,
     justifyContent: 'space-between',
   },
   labelTextContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(8),
+    gap: 8,
   },
   label: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     fontWeight: '500',
   },
   input: {
-    borderWidth: moderateScale(1),
-    borderRadius: moderateScale(20),
-    padding: scale(12),
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 12,
     marginBottom: 0,
-    fontSize: moderateScale(16),
+    fontSize: 16,
   },
   buttonRowModern: {
     flexDirection: 'row',
-    gap: scale(10),
-    marginTop: verticalScale(28),
-    marginBottom: verticalScale(52),
+    gap: 10,
+    marginTop: 28,
+    marginBottom: 52,
   },
   optional: {
-    marginLeft: scale(4),
+    marginLeft: 4,
     alignSelf: 'flex-end',
   },
   categorySelector: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: moderateScale(1),
-    borderRadius: moderateScale(12),
-    padding: scale(12),
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
   },
   categoryRow: {
     flexDirection: 'row',
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   categoryIcon: {
-    marginRight: scale(8),
+    marginRight: 8,
   },
   categoryText: {
     flex: 1,

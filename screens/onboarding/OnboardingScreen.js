@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Animated, Easing, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Image, Animated, Easing, Platform, useWindowDimensions } from 'react-native';
+import { Text } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PagerView from 'react-native-pager-view';
 import LottieView from 'lottie-react-native';
@@ -7,7 +8,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
-import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { OnboardingFinishContext } from '../../contexts/OnboardingFinishContext';
 
 const SLIDE_COUNT = 4;
@@ -22,7 +22,6 @@ export default function OnboardingScreen({ navigation, route }) {
   const scrollAnim = useRef(new Animated.Value(0)).current;
   const previewHintAnim = useRef(new Animated.Value(1)).current;
   const { width, height } = useWindowDimensions();
-  const isTablet = getIsTablet();
 
   const onFinishFromContext = React.useContext(OnboardingFinishContext);
   const previewMode = route?.params?.previewMode === true;
@@ -86,15 +85,11 @@ export default function OnboardingScreen({ navigation, route }) {
     [t]
   );
 
-  const mediaHeight = useMemo(() => {
-    if (isTablet) return Math.min(height * 0.45, verticalScale(420));
-    return Math.min(height * 0.38, verticalScale(320));
-  }, [height, isTablet]);
-
-  const mediaContainerHeight = useMemo(() => {
-    if (isTablet) return verticalScale(420);
-    return verticalScale(380);
-  }, [isTablet]);
+  // Media area fills up to half of the screen (380 at most), so short phones
+  // keep room for the text and buttons; the swipe preview fits inside it.
+  const mediaHeight = Math.min(height * 0.38, 320);
+  const mediaContainerHeight = Math.min(380, height * 0.5);
+  const previewCardHeight = mediaContainerHeight - 80;
 
   // Lottie senkronu: aynı anda başlat, döngü sürelerini eşitle (swipecard ~100/60s, swipehint 59/30s → aynı süre için hızlar)
   useEffect(() => {
@@ -180,7 +175,7 @@ export default function OnboardingScreen({ navigation, route }) {
 
   const renderMedia = (slide) => {
     if (slide.type === 'lottie') {
-      const cardHeight = verticalScale(300);
+      const cardHeight = previewCardHeight;
       return (
         <View style={[styles.mediaContainer, { height: mediaContainerHeight }]}>
           <View style={styles.lottieSlideColumn}>
@@ -189,7 +184,7 @@ export default function OnboardingScreen({ navigation, route }) {
               source={require('../../assets/swipecard.json')}
               loop
               speed={0.95}
-              style={{ width: Math.min(width * 0.92, scale(360)), height: cardHeight }}
+              style={{ width: Math.min(width * 0.92, 360), height: cardHeight }}
             />
             <Animated.View
               style={[
@@ -218,7 +213,7 @@ export default function OnboardingScreen({ navigation, route }) {
                 >
                   <View style={{ flexShrink: 1, alignItems: 'center' }}>
                     <Text style={[styles.previewButtonText, { color: colors.buttonText }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{label}</Text>
-                    <Text style={{ fontFamily: 'Inter', fontSize: moderateScale(10), color: colors.buttonText, opacity: 0.85 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{time}</Text>
+                    <Text style={{ fontFamily: 'Inter', fontSize: 10, color: colors.buttonText, opacity: 0.85 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{time}</Text>
                   </View>
                 </View>
               ))}
@@ -233,7 +228,7 @@ export default function OnboardingScreen({ navigation, route }) {
         <Image
           source={slide.source}
           resizeMode="contain"
-          style={{ width: Math.min(width * 0.88, scale(340)), height: mediaHeight, fadeDuration: 0 } }
+          style={{ width: Math.min(width * 0.88, 340), height: mediaHeight, fadeDuration: 0 } }
         />
       </View>
     );
@@ -290,7 +285,7 @@ export default function OnboardingScreen({ navigation, route }) {
               key={i}
               style={[
                 styles.dot,
-                { backgroundColor: i === page ? colors.buttonColor : colors.border, width: i === page ? scale(18) : scale(8) },
+                { backgroundColor: i === page ? colors.buttonColor : colors.border, width: i === page ? 18 : 8 },
               ]}
             />
           ))}
@@ -335,7 +330,7 @@ export default function OnboardingScreen({ navigation, route }) {
           )}
         </View>
 
-        {Platform.OS === 'android' ? <View style={{ height: verticalScale(10) }} /> : null}
+        {Platform.OS === 'android' ? <View style={{ height: 10 }} /> : null}
       </View>
     </SafeAreaView>
   );
@@ -350,8 +345,8 @@ const styles = StyleSheet.create({
   },
   page: {
     flex: 1,
-    paddingHorizontal: scale(20),
-    paddingTop: verticalScale(50),
+    paddingHorizontal: 20,
+    paddingTop: 50,
     alignItems: 'center',
   },
   pageInner: {
@@ -363,7 +358,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: verticalScale(320),
+    minHeight: 320,
   },
   mediaContainer: {
     width: '100%',
@@ -371,28 +366,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   textBlock: {
-    paddingTop: verticalScale(16),
+    paddingTop: 16,
     width: '100%',
   },
   title: {
     ...typography.styles.h2,
-    fontSize: moderateScale(22),
+    fontSize: 22,
     fontFamily: 'Inter-Bold',
     textAlign: 'center',
-    marginBottom: verticalScale(8),
+    marginBottom: 8,
   },
   subtitle: {
     ...typography.styles.body,
-    fontSize: moderateScale(14),
-    lineHeight: moderateScale(21),
+    fontSize: 14,
+    lineHeight: 21,
     textAlign: 'center',
-    maxWidth: scale(320),
+    maxWidth: 320,
     alignSelf: 'center',
   },
   bottomArea: {
-    paddingHorizontal: scale(20),
-    paddingTop: verticalScale(4),
-    paddingBottom: verticalScale(18),
+    paddingHorizontal: 20,
+    paddingTop: 4,
+    paddingBottom: 18,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(0,0,0,0.06)',
   },
@@ -400,57 +395,57 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: verticalScale(36),
-    gap: scale(8),
+    marginBottom: 36,
+    gap: 8,
   },
   dot: {
-    height: scale(8),
-    borderRadius: scale(8),
+    height: 8,
+    borderRadius: 8,
   },
   bottomActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: scale(16),
+    gap: 16,
   },
   skipButtonPlaceholder: {
-    width: scale(80),
+    width: 80,
   },
   skipButton: {
     borderWidth: 1.5,
     borderRadius: 99,
-    paddingVertical: verticalScale(14),
-    paddingHorizontal: scale(20),
-    minWidth: scale(80),
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    minWidth: 80,
     alignItems: 'center',
     justifyContent: 'center',
   },
   skipText: {
     ...typography.styles.body,
-    fontSize: moderateScale(14),
+    fontSize: 14,
     fontFamily: 'Inter-SemiBold',
   },
   primaryButtonWrapper: {
     flex: 1,
     borderRadius: 99,
     overflow: 'hidden',
-    maxWidth: scale(260),
+    maxWidth: 260,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: verticalScale(1) },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: moderateScale(2),
+    shadowRadius: 2,
     elevation: 1,
   },
   primaryButtonGradient: {
-    paddingVertical: verticalScale(16),
-    paddingHorizontal: scale(18),
+    paddingVertical: 16,
+    paddingHorizontal: 18,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 99,
   },
   primaryButtonText: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: moderateScale(17),
+    fontSize: 17,
     color: '#FFFFFF',
   },
   lottieSlideColumn: {
@@ -458,13 +453,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   hintBelowCard: {
-    marginTop: verticalScale(-40),
+    marginTop: -40,
     alignSelf: 'center',
   },
   previewButtonsRow: {
     width: '100%',
-    height: verticalScale(44),
-    borderRadius: moderateScale(14),
+    height: 44,
+    borderRadius: 14,
     flexDirection: 'row',
     overflow: 'hidden',
   },
@@ -480,6 +475,6 @@ const styles = StyleSheet.create({
   },
   previewButtonText: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: moderateScale(16),
+    fontSize: 16,
   },
 });

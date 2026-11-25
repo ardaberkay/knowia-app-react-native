@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity as RNTouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity as RNTouchableOpacity, useWindowDimensions } from 'react-native';
+import { Text } from '../ui/AppText';
 
 // GORHOM BİLEŞENLERİ
 import {
@@ -12,11 +13,9 @@ import {
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { Iconify } from 'react-native-iconify';
 import { triggerHaptic } from '../../lib/hapticManager';
 
-const SCREEN_HEIGHT = Dimensions.get('screen').height;
 
 // Flag per languages.sort_order (icons listed in babel.config.js).
 export const LANGUAGE_FLAG_ICONS = {
@@ -43,6 +42,7 @@ export default function DeckLanguageModal({
   selectedLanguage,
   onChange,
 }) {
+  const { height: SCREEN_HEIGHT } = useWindowDimensions();
   const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
   const bottomSheetModalRef = useRef(null);
@@ -118,11 +118,11 @@ export default function DeckLanguageModal({
       </Text>
       {language ? (
         <View style={styles.slotValueRow}>
-          <Iconify icon={flagFor(language)} size={moderateScale(20)} />
+          <Iconify icon={flagFor(language)} size={20} />
           <Text style={[styles.slotValue, { color: colors.text }]} numberOfLines={1}>
             {t(`languages.${language.sort_order}`)}
           </Text>
-          <Iconify icon="material-symbols:close-rounded" size={moderateScale(16)} color={colors.muted} />
+          <Iconify icon="material-symbols:close-rounded" size={16} color={colors.muted} />
         </View>
       ) : (
         <Text style={[styles.slotPlaceholder, { color: colors.muted }]} numberOfLines={2}>
@@ -152,7 +152,7 @@ export default function DeckLanguageModal({
       >
         <View style={styles.cardLeft}>
           <View style={styles.iconWrapper}>
-            <Iconify icon={flagFor(language)} size={moderateScale(28)} />
+            <Iconify icon={flagFor(language)} size={28} />
           </View>
           <Text style={[styles.languageName, { color: isChecked ? primaryColor : colors.text, fontWeight: isChecked ? '700' : '500' }]}>
             {t(`languages.${language.sort_order}`)}
@@ -181,7 +181,7 @@ export default function DeckLanguageModal({
       index={0}
       onChange={(index) => index === -1 && onClose()}
       backdropComponent={renderBackdrop}
-      backgroundStyle={{ backgroundColor: colors.background, borderRadius: moderateScale(44) }}
+      backgroundStyle={{ backgroundColor: colors.background, borderRadius: 44 }}
       handleIndicatorStyle={{ backgroundColor: isDarkMode ? '#555' : '#CCC' }}
       enableDynamicSizing={true}
       maxDynamicContentSize={SCREEN_HEIGHT * 0.85}
@@ -195,7 +195,7 @@ export default function DeckLanguageModal({
             <Text style={[styles.infoText, { color: isDarkMode ? '#aaa' : '#666' }]}>{t('create.languageSub')}</Text>
           </View>
           <TouchableOpacity onPress={() => bottomSheetModalRef.current?.dismiss()} style={styles.closeButton}>
-            <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
+            <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -215,7 +215,7 @@ export default function DeckLanguageModal({
             accessibilityRole="button"
             accessibilityLabel={t('create.languageSwap', 'Yerlerini değiştir')}
           >
-            <Iconify icon="material-symbols:swap-horiz-rounded" size={moderateScale(20)} color={isFull ? primaryColor : colors.muted} />
+            <Iconify icon="material-symbols:swap-horiz-rounded" size={20} color={isFull ? primaryColor : colors.muted} />
           </TouchableOpacity>
           {renderSlot(
             t('create.languageBack', 'Arka yüz'),
@@ -264,7 +264,7 @@ export function DeckLanguageField({ languages = [], selectedLanguage = [], onPre
     <View style={fieldStyles.face}>
       <Text style={[fieldStyles.faceLabel, { color: colors.muted }]} numberOfLines={1}>{label}</Text>
       <View style={fieldStyles.faceValueRow}>
-        <Iconify icon={flagFor(language)} size={moderateScale(18)} />
+        <Iconify icon={flagFor(language)} size={18} />
         <Text style={[fieldStyles.faceValue, typography.styles.body, { color: colors.text }]} numberOfLines={1}>
           {t(`languages.${language.sort_order}`)}
         </Text>
@@ -287,7 +287,7 @@ export function DeckLanguageField({ languages = [], selectedLanguage = [], onPre
       ) : back ? (
         <View style={fieldStyles.pairRow}>
           {renderFace(t('create.languageFront', 'Ön yüz'), front)}
-          <Iconify icon="material-symbols:arrow-forward-rounded" size={moderateScale(18)} color={colors.muted} />
+          <Iconify icon="material-symbols:arrow-forward-rounded" size={18} color={colors.muted} />
           {renderFace(t('create.languageBack', 'Arka yüz'), back)}
         </View>
       ) : (
@@ -304,10 +304,10 @@ export function DeckLanguageField({ languages = [], selectedLanguage = [], onPre
           accessibilityRole="button"
           accessibilityLabel={t('create.languageSwap', 'Yerlerini değiştir')}
         >
-          <Iconify icon="material-symbols:swap-horiz-rounded" size={moderateScale(20)} color={primaryColor} />
+          <Iconify icon="material-symbols:swap-horiz-rounded" size={20} color={primaryColor} />
         </RNTouchableOpacity>
       ) : (
-        <Iconify icon="flowbite:caret-down-solid" size={moderateScale(20)} color={colors.muted} />
+        <Iconify icon="flowbite:caret-down-solid" size={20} color={colors.muted} />
       )}
     </RNTouchableOpacity>
   );
@@ -315,9 +315,9 @@ export function DeckLanguageField({ languages = [], selectedLanguage = [], onPre
 
 const styles = StyleSheet.create({
   fixedHeader: {
-    paddingHorizontal: scale(20),
-    paddingTop: verticalScale(8),
-    paddingBottom: verticalScale(12),
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(150, 150, 150, 0.2)',
     zIndex: 10,
@@ -326,34 +326,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginBottom: verticalScale(14),
+    marginBottom: 14,
   },
   headerText: {
     flex: 1,
-    marginRight: scale(12),
+    marginRight: 12,
   },
   closeButton: {
     backgroundColor: 'rgba(150, 150, 150, 0.1)',
-    padding: moderateScale(6),
+    padding: 6,
     borderRadius: 99,
   },
   infoText: {
-    fontSize: moderateScale(13),
-    lineHeight: moderateScale(18),
-    marginTop: verticalScale(4),
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 4,
   },
   slotsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(8),
+    gap: 8,
   },
   slot: {
     flex: 1,
-    minHeight: verticalScale(64),
-    borderRadius: moderateScale(16),
+    minHeight: 64,
+    borderRadius: 16,
     borderWidth: 1.5,
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(10),
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     justifyContent: 'center',
   },
   slotLabel: {
@@ -361,48 +361,48 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    fontSize: moderateScale(11),
-    marginBottom: verticalScale(4),
+    fontSize: 11,
+    marginBottom: 4,
   },
   slotValueRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(6),
+    gap: 6,
   },
   slotValue: {
     flex: 1,
-    fontSize: moderateScale(15),
+    fontSize: 15,
     fontWeight: '600',
   },
   slotPlaceholder: {
-    fontSize: moderateScale(13),
-    lineHeight: moderateScale(17),
+    fontSize: 13,
+    lineHeight: 17,
   },
   swapButton: {
-    width: moderateScale(36),
-    height: moderateScale(36),
-    borderRadius: moderateScale(18),
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
   exampleText: {
-    fontSize: moderateScale(12),
-    lineHeight: moderateScale(16),
-    marginTop: verticalScale(10),
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 10,
   },
   listContainer: {
-    paddingHorizontal: scale(20),
-    paddingTop: verticalScale(14),
-    paddingBottom: verticalScale(60),
-    gap: verticalScale(12),
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 60,
+    gap: 12,
   },
   languageCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: verticalScale(14),
-    paddingHorizontal: scale(16),
-    borderRadius: moderateScale(16),
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
     borderWidth: 1.5,
   },
   cardLeft: {
@@ -410,25 +410,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconWrapper: {
-    marginRight: scale(14),
+    marginRight: 14,
   },
   languageName: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
   },
   radioCircle: {
-    width: moderateScale(24),
-    height: moderateScale(24),
+    width: 24,
+    height: 24,
     borderRadius: 12,
     borderWidth: 2,
   },
   sidePill: {
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(4),
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 99,
   },
   sidePillText: {
     color: '#FFFFFF',
-    fontSize: moderateScale(12),
+    fontSize: 12,
     fontWeight: '700',
   },
 });
@@ -439,10 +439,10 @@ const fieldStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderRadius: moderateScale(14),
-    paddingHorizontal: scale(14),
-    paddingVertical: verticalScale(10),
-    minHeight: verticalScale(52),
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    minHeight: 52,
   },
   placeholder: {
     flex: 1,
@@ -451,31 +451,31 @@ const fieldStyles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(10),
-    marginRight: scale(8),
+    gap: 10,
+    marginRight: 8,
   },
   face: {
     flexShrink: 1,
   },
   faceLabel: {
-    fontSize: moderateScale(11),
+    fontSize: 11,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
-    marginBottom: verticalScale(2),
+    marginBottom: 2,
   },
   faceValueRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(6),
+    gap: 6,
   },
   faceValue: {
     flexShrink: 1,
   },
   swapButton: {
-    width: moderateScale(34),
-    height: moderateScale(34),
-    borderRadius: moderateScale(17),
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
   },

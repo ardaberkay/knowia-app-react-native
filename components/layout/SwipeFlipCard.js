@@ -4,12 +4,8 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import {
-  Image,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
+import { Text, MAX_FONT_SIZE_MULTIPLIER } from '../ui/AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
@@ -24,11 +20,9 @@ import Reanimated, {
   withTiming,
 } from 'react-native-reanimated';
 import { typography } from '../../theme/typography';
-import MathText from '../ui/MathText';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 const PERSPECTIVE = 1200;
-const ENTRANCE_OFFSET = verticalScale(8);
+const ENTRANCE_OFFSET = 8;
 const ENTRANCE_SCALE = 0.96;
 
 // '#RRGGBB' / '#RGB' -> 'rgba(r,g,b,a)'. Falls back to the input for other formats.
@@ -203,7 +197,7 @@ function SwipeFlipCard({
 
   // Precompute all scaling outside UI-thread worklets. These helpers are regular
   // JavaScript functions and must never be called from useAnimatedStyle.
-  const swipeLabelOffset = verticalScale(7);
+  const swipeLabelOffset = 7;
 
   // Direction-aware counter color accent. The deck supplies the active layer's
   // Reanimated translateX shared value, so all of this runs on the UI thread.
@@ -287,7 +281,7 @@ function SwipeFlipCard({
     typography.styles.h2,
     {
       color: textColor,
-      marginBottom: frontImage ? verticalScale(16) : 0,
+      marginBottom: frontImage ? 16 : 0,
       textAlign: 'center',
     },
   ], [frontImage, textColor]);
@@ -297,8 +291,8 @@ function SwipeFlipCard({
     {
       color: '#fff',
       textAlign: 'center',
-      marginTop: verticalScale(8),
-      lineHeight: moderateScale(28),
+      marginTop: 8,
+      lineHeight: 28,
       fontWeight: '600',
     },
   ], []);
@@ -308,9 +302,9 @@ function SwipeFlipCard({
     {
       color: 'rgba(255, 255, 255, 0.9)',
       textAlign: 'center',
-      marginTop: verticalScale(8),
-      lineHeight: moderateScale(22),
-      fontSize: moderateScale(16),
+      marginTop: 8,
+      lineHeight: 22,
+      fontSize: 16,
     },
   ], []);
 
@@ -319,9 +313,9 @@ function SwipeFlipCard({
     {
       color: 'rgba(255, 255, 255, 0.85)',
       textAlign: 'center',
-      marginTop: verticalScale(8),
-      lineHeight: moderateScale(22),
-      fontSize: moderateScale(15),
+      marginTop: 8,
+      lineHeight: 22,
+      fontSize: 15,
       fontStyle: 'italic',
     },
   ], []);
@@ -368,7 +362,7 @@ function SwipeFlipCard({
                     style={[
                       styles.imageContainer,
                       {
-                        marginTop: verticalScale(32),
+                        marginTop: 32,
                         height: (cardHeight * 1.85) / 5,
                       },
                     ]}
@@ -381,11 +375,11 @@ function SwipeFlipCard({
                   </View>
                 ) : null}
 
-                <MathText
-                  value={frontText}
+                <Text
                   style={questionTextStyle}
-                  forceText
-                />
+                >
+                  {frontText}
+                </Text>
               </View>
           </View>
         </Reanimated.View>
@@ -431,7 +425,7 @@ function SwipeFlipCard({
                   icon={
                     <Iconify
                       icon="uil:comment-alt-check"
-                      size={moderateScale(18)}
+                      size={18}
                       color="#fff"
                     />
                   }
@@ -445,11 +439,11 @@ function SwipeFlipCard({
                     />
                   </View>
                 ) : null}
-                <MathText
-                  value={backPrimaryText}
-                  forceText
+                <Text
                   style={answerTextStyle}
-                />
+                >
+                  {backPrimaryText}
+                </Text>
               </View>
 
               {card?.cards?.example ? (
@@ -458,13 +452,13 @@ function SwipeFlipCard({
                   <View style={styles.answerSection}>
                     <Pill
                       label={t('swipeDeck.example', 'Example')}
-                      icon={<Iconify icon="lucide:lightbulb" size={moderateScale(18)} color="#fff" />}
+                      icon={<Iconify icon="lucide:lightbulb" size={18} color="#fff" />}
                     />
-                    <MathText
-                      value={card.cards.example}
-                      forceText
+                    <Text
                       style={subTextStyle}
-                    />
+                    >
+                      {card.cards.example}
+                    </Text>
                   </View>
                 </>
               ) : null}
@@ -478,16 +472,16 @@ function SwipeFlipCard({
                       icon={
                         <Iconify
                           icon="material-symbols-light:stylus-note"
-                          size={moderateScale(18)}
+                          size={18}
                           color="#fff"
                         />
                       }
                     />
-                    <MathText
-                      value={card.cards.note}
-                      forceText
+                    <Text
                       style={noteTextStyle}
-                    />
+                    >
+                      {card.cards.note}
+                    </Text>
                   </View>
                 </>
               ) : null}
@@ -518,10 +512,10 @@ function SwipeFlipCard({
         pointerEvents="none"
         style={styles.swipeLabelLayer}
       >
-        <Reanimated.Text style={[styles.swipeLabel, styles.swipeLabelOffWhite, leftSwipeLabelStyle]}>
+        <Reanimated.Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER} style={[styles.swipeLabel, styles.swipeLabelOffWhite, leftSwipeLabelStyle]}>
           {t('swipeDeck.tutorial.swipeHintLeft', 'Tekrarla')}
         </Reanimated.Text>
-        <Reanimated.Text style={[styles.swipeLabel, styles.swipeLabelOffWhite, rightSwipeLabelStyle]}>
+        <Reanimated.Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER} style={[styles.swipeLabel, styles.swipeLabelOffWhite, rightSwipeLabelStyle]}>
           {t('swipeDeck.tutorial.swipeHintRight', 'Öğrendim')}
         </Reanimated.Text>
       </Reanimated.View>
@@ -583,20 +577,20 @@ function areEqual(prev, next) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: moderateScale(26),
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
   swipeAccentWash: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: moderateScale(26),
+    borderRadius: 26,
     zIndex: 10,
   },
   swipeAccentBorder: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: moderateScale(26),
-    borderWidth: moderateScale(2),
+    borderRadius: 26,
+    borderWidth: 2,
     zIndex: 11,
   },
   swipeLabelLayer: {
@@ -607,7 +601,7 @@ const styles = StyleSheet.create({
   },
   swipeLabel: {
     position: 'absolute',
-    fontSize: moderateScale(25),
+    fontSize: 25,
     fontWeight: '800',
     letterSpacing: 0.4,
     textShadowColor: 'rgba(0,0,0,0.16)',
@@ -622,13 +616,13 @@ const styles = StyleSheet.create({
   },
   gradient: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: moderateScale(24),
+    borderRadius: 24,
   },
   face: {
     position: 'absolute',
     left: 0,
     top: 0,
-    borderRadius: moderateScale(26),
+    borderRadius: 26,
     overflow: 'hidden',
     backfaceVisibility: 'hidden',
   },
@@ -648,9 +642,9 @@ const styles = StyleSheet.create({
   backPadding: {
     flex: 1,
     width: '100%',
-    paddingHorizontal: scale(24),
-    paddingTop: verticalScale(32),
-    paddingBottom: verticalScale(24),
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 24,
   },
   backViewport: {
     flex: 1,
@@ -659,19 +653,19 @@ const styles = StyleSheet.create({
   },
   backImageContainer: {
     width: '100%',
-    marginBottom: verticalScale(8),
+    marginBottom: 8,
   },
   backFade: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    height: verticalScale(110),
+    height: 110,
   },
   frontPressable: {
     flex: 1,
     width: '100%',
-    padding: scale(24),
+    padding: 24,
   },
   frontContent: {
     flex: 1,
@@ -685,43 +679,43 @@ const styles = StyleSheet.create({
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: verticalScale(22),
+    marginBottom: 22,
   },
   cardImage: {
     width: '100%',
     height: '100%',
     resizeMode: 'contain',
-    borderRadius: moderateScale(24),
+    borderRadius: 24,
   },
   answerSection: {
     alignItems: 'center',
-    marginBottom: verticalScale(24),
+    marginBottom: 24,
   },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(14),
-    borderRadius: moderateScale(20),
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderWidth: moderateScale(1.5),
+    borderWidth: 1.5,
     borderColor: 'rgba(255, 255, 255, 0.3)',
-    marginBottom: verticalScale(12),
+    marginBottom: 12,
   },
   pillIcon: {
-    marginRight: scale(8),
+    marginRight: 8,
   },
   pillText: {
     color: '#fff',
     fontWeight: '700',
-    fontSize: moderateScale(14),
+    fontSize: 14,
     letterSpacing: 0.5,
   },
   sectionDivider: {
     width: '60%',
-    height: verticalScale(1),
+    height: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    marginVertical: verticalScale(20),
+    marginVertical: 20,
     alignSelf: 'center',
   },
 });

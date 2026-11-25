@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  ScrollView, 
-  ActivityIndicator, 
-  StyleSheet, 
-  Dimensions,
-  Modal,
-  Pressable
-} from 'react-native';
+import { View, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, Modal, Pressable, useWindowDimensions } from 'react-native';
+import { Text } from '../ui/AppText';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -21,7 +12,6 @@ import Animated, {
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { Iconify } from 'react-native-iconify';
 
 export const REPORT_REASON_OPTIONS = {
@@ -30,7 +20,6 @@ export const REPORT_REASON_OPTIONS = {
   card: ['spam', 'inappropriate', 'hate_speech', 'copyright', 'misleading', 'other'],
 };
 
-const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export default function ReportModal({
   visible,
@@ -39,6 +28,7 @@ export default function ReportModal({
   alreadyReportedCodes = [],
   onSubmit,
 }) {
+  const { height: SCREEN_HEIGHT } = useWindowDimensions();
   const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
   
@@ -135,7 +125,7 @@ export default function ReportModal({
               hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
               style={styles.closeBtnWrapper}
             >
-              <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
+              <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
 
@@ -191,7 +181,7 @@ export default function ReportModal({
                       {isSelected && <View style={[styles.radioInner, { backgroundColor: secondaryColor }]} />}
                     </View>
                   ) : (
-                    <Iconify icon="fontisto:locked" size={moderateScale(16)} color={colors.muted} />
+                    <Iconify icon="fontisto:locked" size={16} color={colors.muted} />
                   )}
                 </TouchableOpacity>
               );
@@ -236,9 +226,9 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: '90%', 
     maxHeight: '85%',
-    borderRadius: moderateScale(32),
-    padding: scale(20),
-    paddingBottom: verticalScale(24), // Butonun altından biraz boşluk
+    borderRadius: 32,
+    padding: 20,
+    paddingBottom: 24, // Butonun altından biraz boşluk
     overflow: 'hidden',
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
@@ -252,65 +242,65 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: verticalScale(12),
+    marginBottom: 12,
   },
   closeBtnWrapper: {
     backgroundColor: 'rgba(150, 150, 150, 0.1)',
-    padding: moderateScale(6),
+    padding: 6,
     borderRadius: 99,
   },
   hintText: {
-    fontSize: moderateScale(14),
-    marginBottom: verticalScale(20),
+    fontSize: 14,
+    marginBottom: 20,
     fontFamily: typography.primary?.regular || undefined,
-    lineHeight: verticalScale(20),
+    lineHeight: 20,
   },
   scrollView: {
-    maxHeight: verticalScale(420),
+    maxHeight: 420,
   },
   scrollContent: {
-    gap: verticalScale(12),
-    paddingBottom: verticalScale(16),
+    gap: 12,
+    paddingBottom: 16,
   },
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: verticalScale(14),
-    paddingHorizontal: scale(16),
-    borderRadius: moderateScale(16),
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
     borderWidth: 1.5,
   },
   optionDisabled: {
     opacity: 0.6,
   },
   optionText: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     flex: 1,
   },
   radioOuter: {
-    width: moderateScale(24),
-    height: moderateScale(24),
-    borderRadius: moderateScale(12),
-    borderWidth: moderateScale(2),
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   radioInner: {
-    width: moderateScale(12),
-    height: moderateScale(12),
-    borderRadius: moderateScale(6),
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
   submitBtn: {
-    paddingVertical: verticalScale(16),
-    borderRadius: moderateScale(16),
+    paddingVertical: 16,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: verticalScale(54),
-    marginTop: verticalScale(12),
+    minHeight: 54,
+    marginTop: 12,
   },
   submitBtnText: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     fontWeight: '700',
   }
 });

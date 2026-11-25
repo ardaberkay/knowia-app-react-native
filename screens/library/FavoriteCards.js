@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState, useLayoutEffect, useRef, useCallback, memo } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, BackHandler, Alert, Keyboard, RefreshControl, ActivityIndicator, Platform } from 'react-native';
+import { View, FlatList, Image, TouchableOpacity, BackHandler, Alert, Keyboard, RefreshControl, ActivityIndicator } from 'react-native';
+import { Text } from '../../components/ui/AppText';
 import { useNavigation } from '@react-navigation/native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -16,10 +17,10 @@ import { typography } from '../../theme/typography';
 import { StyleSheet } from 'react-native';
 import { Iconify } from 'react-native-iconify';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+import { useListBottomInset } from '../../components/ui/CustomTabBar';
 
 const MemoizedFavCardItem = memo(({ item, isFavorite, isOwner, onPress, onToggleFavorite, onDelete }) => (
-  <View style={{ paddingHorizontal: scale(12), paddingVertical: 0 }}>
+  <View style={{ paddingHorizontal: 12, paddingVertical: 0 }}>
     <CardListItem
       question={item.question}
       answer={item.answer}
@@ -46,7 +47,7 @@ export default function FavoriteCards() {
   const { showSuccess, showError } = useSnackbarHelpers();
   const { session } = useAuth();
   const userId = session?.user?.id;
-  const insets = useSafeAreaInsets();
+  const listBottomInset = useListBottomInset();
 
   const PAGE_SIZE = 50;
   const [cards, setCards] = useState([]);
@@ -321,13 +322,13 @@ export default function FavoriteCards() {
   ), [selectedCard, query, sort, t, fetchData]);
 
   const favListEmpty = useMemo(() => (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: verticalScale(400), marginTop: verticalScale(-250), pointerEvents: 'none' }}>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: 400, marginTop: -250, pointerEvents: 'none' }}>
       <Image
         source={require('../../assets/cardbg.webp')}
-        style={{ width: scale(500), height: scale(500), opacity: 0.2 }}
+        style={{ width: 500, height: 500, opacity: 0.2 }}
         resizeMode="contain"
       />
-      <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, fontSize: moderateScale(16), marginTop: verticalScale(-150) }]}>
+      <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, fontSize: 16, marginTop: -150 }]}>
         {t('cardDetail.addToDeck', 'Desteye bir kart ekle')}
       </Text>
     </View>
@@ -345,15 +346,15 @@ export default function FavoriteCards() {
     if (selectedCard) {
       navigation.setOptions({
         headerRight: () => (
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: scale(8) }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
             <TouchableOpacity
               onPress={() => handleToggleFavoriteCard(selectedCard.id)}
               activeOpacity={0.7}
-              style={{ paddingHorizontal: scale(6) }}
+              style={{ paddingHorizontal: 6 }}
             >
               <Iconify
                 icon={favoriteCards.includes(selectedCard.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-                size={moderateScale(24)}
+                size={24}
                 color={favoriteCards.includes(selectedCard.id) ? '#F98A21' : colors.text}
               />
             </TouchableOpacity>
@@ -371,8 +372,8 @@ export default function FavoriteCards() {
     <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
       {loading ? (
         <View style={styles.loadingContainer}>
-          <LottieView source={require('../../assets/flexloader.json')} speed={1.1} autoPlay loop style={{ width: scale(160, 0.3), height: verticalScale(160, 0.3) }} />
-          <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100, 0.3), height: verticalScale(100, 0.3), marginTop: verticalScale(-65) }} />
+          <LottieView source={require('../../assets/flexloader.json')} speed={1.1} autoPlay loop style={{ width: 160, height: 160 }} />
+          <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100, marginTop: -65 }} />
         </View>
       ) : selectedCard ? (
         <CardDetailView card={selectedCard} cards={cards} onSelectCard={fetchAndSetCardDetail} />
@@ -384,7 +385,7 @@ export default function FavoriteCards() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
             flexGrow: 1,
-            paddingBottom: Platform.OS === 'android' ? insets.bottom + verticalScale(48) : verticalScale(24),
+            paddingBottom: listBottomInset,
           }}
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
@@ -399,7 +400,7 @@ export default function FavoriteCards() {
           renderItem={renderFavCardItem}
           extraData={favoriteCards}
           ListFooterComponent={loadingMore ? (
-            <View style={{ paddingVertical: verticalScale(16), alignItems: 'center' }}>
+            <View style={{ paddingVertical: 16, alignItems: 'center' }}>
               <ActivityIndicator size="small" color={colors.text} />
             </View>
           ) : null}
@@ -419,22 +420,22 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: verticalScale(200),
+    minHeight: 200,
     flexDirection: 'column',
-    marginTop: verticalScale(-120),
+    marginTop: -120,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(10),
-    marginTop: verticalScale(12),
-    paddingTop: verticalScale(8),
-    paddingBottom: verticalScale(8),
-    paddingHorizontal: scale(12),
-    marginBottom: verticalScale(8),
+    gap: 10,
+    marginTop: 12,
+    paddingTop: 8,
+    paddingBottom: 8,
+    paddingHorizontal: 12,
+    marginBottom: 8,
   },
   cardListItem: {
-    paddingHorizontal: scale(12),
+    paddingHorizontal: 12,
     paddingVertical: 0,
   },
 });

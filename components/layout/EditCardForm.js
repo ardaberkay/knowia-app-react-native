@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
+import { Text, TextInput } from '../ui/AppText';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { updateCard } from '../../services/CardService';
 import { uploadCardImage } from '../../services/StorageService';
@@ -14,7 +15,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Iconify } from 'react-native-iconify';
 import CreateButton from '../tools/CreateButton';
 import UndoButton from '../tools/UndoButton';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import BadgeText from '../tools/BadgeText';
 
 export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) {
@@ -115,7 +115,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
       keyboardShouldPersistTaps="handled"
       enableOnAndroid={true}
       enableAutomaticScroll={true}
-      extraScrollHeight={verticalScale(24)}
+      extraScrollHeight={24}
       enableResetScrollToCoords={false}
       showsVerticalScrollIndicator={false}
     >
@@ -132,7 +132,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
             <View style={{ flex: 1 }}>
               <View style={styles.labelRow}>
                 <View style={styles.labelTextContainer}>
-                  <Iconify icon="mage:image-fill" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+                  <Iconify icon="mage:image-fill" size={24} color="#F98A21" style={styles.labelIcon} />
                   <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.image", "Kart Görseli")}</Text>
                 </View>
                 <View>
@@ -140,7 +140,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
                 </View>
               </View>
             {image ? (
-              <View style={{ alignItems: 'center', marginBottom: verticalScale(8) }}>
+              <View style={{ alignItems: 'center', marginBottom: 8 }}>
                 <Image source={{ uri: image }} style={styles.cardImage} />
                 <TouchableOpacity onPress={handleRemoveImage} style={styles.removeImageButton}>
                   <Text style={styles.removeImageButtonText}>{t("cardDetail.removeImage", "Görseli Kaldır")}</Text>
@@ -148,7 +148,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               </View>
             ) : (
               <TouchableOpacity onPress={handlePickImage} style={styles.addImageButton}>
-                <Iconify icon="ic:round-plus" size={moderateScale(24)} color="#F98A21" />
+                <Iconify icon="ic:round-plus" size={24} color="#F98A21" />
                 <Text style={styles.addImageButtonText}>{t("cardDetail.addImage", "Fotoğraf Ekle")}</Text>
               </TouchableOpacity>
             )}
@@ -167,7 +167,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
             <View style={{ flex: 1 }}>
               <View style={styles.labelRow}>
                 <View style={styles.labelTextContainer}>
-                <Iconify icon="uil:comment-alt-question" size={moderateScale(24)} color="#F98A21" />
+                <Iconify icon="uil:comment-alt-question" size={24} color="#F98A21" />
                 <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.question", "Soru")}</Text>
                 </View>
                 <View>
@@ -176,7 +176,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               </View>
               <View style={{ position: 'relative' }}>
                 <TextInput
-                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: question?.length > 0 ? scale(48) : scale(12), borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: question?.length > 0 ? 48 : 12, borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
                   placeholder={t("cardDetail.questionPlaceholder", "Kartın sorusu")}
                   placeholderTextColor={colors.muted}
                   value={question}
@@ -187,10 +187,10 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
                   <TouchableOpacity
                     onPress={() => setQuestion('')}
                     accessibilityLabel={t('common.clear', 'Temizle')}
-                    hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
-                    style={{ position: 'absolute', right: scale(12), top: verticalScale(12), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
                   >
-                    <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
+                    <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -209,7 +209,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
             <View style={{ flex: 1 }}>
               <View style={styles.labelRow}>
                 <View style={styles.labelTextContainer}>
-                <Iconify icon="uil:comment-alt-check" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+                <Iconify icon="uil:comment-alt-check" size={24} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.answer", "Cevap")}</Text>
                 </View>
                 <View>
@@ -218,7 +218,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               </View>
               <View style={{ position: 'relative' }}>
                 <TextInput
-                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: answer?.length > 0 ? scale(48) : scale(12), borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: answer?.length > 0 ? 48 : 12, borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
                   placeholder={t("cardDetail.answerPlaceholder", "Kartın cevabı")}
                   placeholderTextColor={colors.muted}
                   value={answer}
@@ -229,10 +229,10 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
                   <TouchableOpacity
                     onPress={() => setAnswer('')}
                     accessibilityLabel={t('common.clear', 'Temizle')}
-                    hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
-                    style={{ position: 'absolute', right: scale(12), top: verticalScale(12), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
                   >
-                    <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
+                    <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -251,7 +251,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
             <View style={{ flex: 1 }}>
               <View style={styles.labelRow}>
                 <View style={styles.labelTextContainer}>
-                <Iconify icon="lucide:lightbulb" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+                <Iconify icon="lucide:lightbulb" size={24} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.example", "Örnek")}</Text>
                 </View>
                 <View>
@@ -260,7 +260,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               </View>
               <View style={{ position: 'relative' }}>
                 <TextInput
-                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: example?.length > 0 ? scale(48) : scale(12), borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: example?.length > 0 ? 48 : 12, borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
                   placeholder={t("cardDetail.examplePlaceholder", "Örnek cümle (opsiyonel)")}
                   placeholderTextColor={colors.muted}
                   value={example}
@@ -271,10 +271,10 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
                   <TouchableOpacity
                     onPress={() => setExample('')}
                     accessibilityLabel={t('common.clear', 'Temizle')}
-                    hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
-                    style={{ position: 'absolute', right: scale(12), top: verticalScale(12), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
                   >
-                    <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
+                    <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -293,7 +293,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
             <View style={{ flex: 1 }}>
               <View style={styles.labelRow}>
                 <View style={styles.labelTextContainer}>
-                <Iconify icon="material-symbols-light:stylus-note" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+                <Iconify icon="material-symbols-light:stylus-note" size={24} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.note", "Not")}</Text>
                 </View>
                 <View>
@@ -302,7 +302,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               </View>
               <View style={{ position: 'relative' }}>
                 <TextInput
-                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: note?.length > 0 ? scale(48) : scale(12), borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
+                  style={[styles.input, typography.styles.body, {color: colors.text, paddingRight: note?.length > 0 ? 48 : 12, borderColor: colors.inputBorder, backgroundColor: colors.inputBackground}]}
                   placeholder={t("cardDetail.notePlaceholder", "Not (opsiyonel)")}
                   placeholderTextColor={colors.muted}
                   value={note}
@@ -313,10 +313,10 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
                   <TouchableOpacity
                     onPress={() => setNote('')}
                     accessibilityLabel={t('common.clear', 'Temizle')}
-                    hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
-                    style={{ position: 'absolute', right: scale(12), top: verticalScale(12), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
                   >
-                    <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
+                    <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -344,19 +344,19 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'flex-start',
     alignItems: 'center',
-    padding: scale(16),
-    paddingTop: verticalScale(16),
+    padding: 16,
+    paddingTop: 16,
 
   },
   inputCard: {
     width: '100%',
-    maxWidth: scale(440),
-    borderRadius: moderateScale(28),
-    padding: moderateScale(20),
-    marginBottom: verticalScale(11),
-    shadowOffset: { width: scale(4), height: verticalScale(6)},
+    maxWidth: 440,
+    borderRadius: 28,
+    padding: 20,
+    marginBottom: 11,
+    shadowOffset: { width: 4, height: 6},
     shadowOpacity: 0.10,
-    shadowRadius: moderateScale(10),
+    shadowRadius: 10,
     elevation: 5,
     overflow: 'hidden',
   },
@@ -364,69 +364,69 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: verticalScale(12),
+    marginBottom: 12,
 
   },
   labelTextContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(8),
+    gap: 8,
   },
   label: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     fontWeight: '500',
   },
   input: {
-    borderWidth: moderateScale(1),
-    borderRadius: moderateScale(20),
-    padding: scale(12),
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 12,
     marginBottom: 0,
-    fontSize: moderateScale(16),
+    fontSize: 16,
   },
   cardImage: {
     width: '100%',
-    height: verticalScale(160),
-    borderRadius: moderateScale(18),
-    marginBottom: verticalScale(8),
+    height: 160,
+    borderRadius: 18,
+    marginBottom: 8,
     resizeMode: 'contain',
     backgroundColor: 'transparent',
   },
   addImageButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: moderateScale(28),
-    paddingVertical: verticalScale(10),
-    paddingHorizontal: scale(18),
-    borderWidth: moderateScale(1),
+    borderRadius: 28,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderWidth: 1,
     borderColor: '#F98A21',
-    marginTop: verticalScale(6),
+    marginTop: 6,
   },
   addImageButtonText: {
     color: '#F98A21',
     fontWeight: 'bold',
-    fontSize: moderateScale(15),
-    marginLeft: scale(6),
+    fontSize: 15,
+    marginLeft: 6,
   },
   removeImageButton: {
     backgroundColor: '#F98A21',
-    borderWidth: moderateScale(1),
+    borderWidth: 1,
     borderColor: '#F98A21',
-    borderRadius: moderateScale(28),
-    paddingVertical: verticalScale(6),
-    paddingHorizontal: scale(18),
+    borderRadius: 28,
+    paddingVertical: 6,
+    paddingHorizontal: 18,
     alignItems: 'center',
-    marginTop: verticalScale(4),
+    marginTop: 4,
     
   },
   removeImageButtonText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: moderateScale(15),
+    fontSize: 15,
   },
   buttonRowModern: {
     flexDirection: 'row',
-    gap: scale(20),
-    marginTop: verticalScale(24),
-    marginBottom: verticalScale(52),
+    gap: 20,
+    marginTop: 24,
+    marginBottom: 52,
   },
 }); 

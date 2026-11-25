@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { Text } from '../ui/AppText';
 import { Iconify } from 'react-native-iconify';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import ProfileAvatarButton from './ProfileAvatarButton';
@@ -44,14 +44,14 @@ export default function StandardCustomAppBar({
             <Text
               style={[
                 typography.styles.body,
-                { color: textColor, fontSize: moderateScale(24), letterSpacing: moderateScale(-1) },
+                { color: textColor, fontSize: 24, letterSpacing: -1 },
               ]}
             >
               Knowia
             </Text>
           </View>
         ) : (
-          <Text style={[typography.styles.subtitle, styles.titleText, { color: textColor, fontSize: moderateScale(22) }]}>
+          <Text style={[typography.styles.subtitle, styles.titleText, { color: textColor, fontSize: 22 }]}>
             {title}
           </Text>
         )}
@@ -76,7 +76,7 @@ export default function StandardCustomAppBar({
               ]}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, opacity: streak > 0 ? 1 : 0.7 }}>
-                <Iconify icon="mdi:fire" size={moderateScale(18)} color={textColor} />
+                <Iconify icon="mdi:fire" size={18} color={textColor} />
                 <Text style={[styles.streakText, { color: textColor }]}>{streak}</Text>
               </View>
             </TouchableOpacity>
@@ -92,23 +92,23 @@ const styles = StyleSheet.create({
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(10),
+    gap: 10,
   },
   // ~32pt tall: balanced against the 44pt logo, easy to tap.
   streak: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: moderateScale(32),
-    paddingHorizontal: scale(12),
+    minHeight: 32,
+    paddingHorizontal: 12,
     borderRadius: 999,
   },
   streakText: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     fontWeight: '700',
   },
   header: {
-    paddingHorizontal: scale(14),
-    paddingBottom: verticalScale(8),
+    paddingHorizontal: 14,
+    paddingBottom: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerContent: {
@@ -117,11 +117,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     position: 'relative',
     width: '100%',
-    minHeight: verticalScale(44),
+    minHeight: 44,
   },
   logoImage: {
-    width: scale(44),
-    height: scale(44),
+    width: 44,
+    height: 44,
   },
   logoContainer: {
     flexDirection: 'row',

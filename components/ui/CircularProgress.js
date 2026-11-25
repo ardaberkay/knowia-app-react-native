@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text } from 'react-native';
+import { View } from 'react-native';
+import { Text } from './AppText';
 import * as SvgLib from 'react-native-svg';
 import Animated, { 
   useSharedValue, 
@@ -9,7 +10,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
-import { moderateScale } from '../../lib/scaling';
 
 const { Svg, Circle, Defs, LinearGradient, Stop } = SvgLib;
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -23,7 +23,7 @@ const ProgressText = ({ progress, colors, textStyle }) => {
       style={[
         typography.styles.body,
         {
-          fontSize: moderateScale(32),
+          fontSize: 32,
           fontWeight: 'bold',
           color: colors.cardQuestionText || '#333',
           textAlign: 'center',

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image, Keyboard, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Image, Keyboard, Platform } from 'react-native';
+import { Text, TextInput } from '../../components/ui/AppText';
 import { getCategories } from '../../services/CategoryService';
 import { createDeck } from '../../services/DeckService';
 import { getLanguages } from '../../services/LanguageService';
@@ -15,7 +16,6 @@ import HowToCreateModal from '../../components/modals/HowToCreateModal';
 import UndoButton from '../../components/tools/UndoButton';
 import CreateButton from '../../components/tools/CreateButton';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
-import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
 import DeckLanguageModal, { DeckLanguageField } from '../../components/modals/DeckLanguageModal';
 import BadgeText from '../../components/tools/BadgeText';
 import { triggerHaptic } from '../../lib/hapticManager';
@@ -175,14 +175,14 @@ export default function CreateScreen() {
           <View style={[styles.headerCard, styles.headerCardContainer, { borderRadius: 44, backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, borderWidth: 1 }]}>
             <View style={[styles.headerCardContent, styles.headerContent]}>
               <View style={styles.headerTitleContainer}>
-                <Iconify icon="fluent:tab-add-24-regular" size={moderateScale(26)} color="#F98A21" style={{ marginRight: scale(6) }} />
+                <Iconify icon="fluent:tab-add-24-regular" size={26} color="#F98A21" style={{ marginRight: 6 }} />
                 <Text style={[typography.styles.h2, { color: colors.text }]}>
                   {t('createDeck.title', 'Desteni Oluştur')}
                 </Text>
               </View>
               <View style={styles.headerBottomRow}>
                 <View style={styles.headerTextColumn}>
-                  <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: moderateScale(22), flex: 1, alignSelf: 'flex-start' }]}>
+                  <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: 22, flex: 1, alignSelf: 'flex-start' }]}>
                     {t('createDeck.motivationText', 'Kişiselleştirilmiş destelerle öğrenme yolculuğunu tasarla ve bilgini pekiştir.')}
                   </Text>
                   <TouchableOpacity
@@ -195,7 +195,7 @@ export default function CreateScreen() {
                       });
                     }}
                   >
-                    <Iconify icon="material-symbols:info-outline" size={moderateScale(16)} color={colors.secondary} style={{ marginRight: scale(4) }} />
+                    <Iconify icon="material-symbols:info-outline" size={16} color={colors.secondary} style={{ marginRight: 4 }} />
                     <Text style={[typography.styles.caption, { color: colors.secondary, fontWeight: '600'}]}>
                       {t('createDeck.howToCreate', 'Nasıl Oluşturulur?')}
                     </Text>
@@ -229,7 +229,7 @@ export default function CreateScreen() {
           >
             <View style={styles.labelRow}>
               <View style={styles.labelTextContainer}>
-                <Iconify icon="ion:book" size={moderateScale(20)} color="#F98A21" style={styles.labelIcon} />
+                <Iconify icon="ion:book" size={20} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.name', 'Deste Adı')}</Text>
               </View>
               <View>
@@ -250,10 +250,10 @@ export default function CreateScreen() {
                 <TouchableOpacity
                   onPress={() => setName('')}
                   accessibilityLabel={t('common.clear', 'Temizle')}
-                  hitSlop={{ top: moderateScale(8), bottom: moderateScale(8), left: moderateScale(8), right: moderateScale(8) }}
-                  style={{ marginLeft: scale(8), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  style={{ marginLeft: 8, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
                 >
-                  <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
+                  <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -275,7 +275,7 @@ export default function CreateScreen() {
           >
             <View style={styles.labelRow}>
               <View style={styles.labelTextContainer}>
-              <Iconify icon="icon-park-outline:translation" size={moderateScale(20)} color="#F98A21" style={styles.labelIcon} />
+              <Iconify icon="icon-park-outline:translation" size={20} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.toName', 'Karşılığı')}</Text>
               </View>
               <View>
@@ -296,10 +296,10 @@ export default function CreateScreen() {
                 <TouchableOpacity
                   onPress={() => setToName('')}
                   accessibilityLabel={t('common.clear', 'Temizle')}
-                  hitSlop={{ top: moderateScale(8), bottom: moderateScale(8), left: moderateScale(8), right: moderateScale(8) }}
-                  style={{ marginLeft: scale(8), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  style={{ marginLeft: 8, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
                 >
-                  <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
+                  <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -321,7 +321,7 @@ export default function CreateScreen() {
           >
             <View style={styles.labelRow}>
               <View style={styles.labelTextContainer}>
-              <Iconify icon="tabler:file-description-filled" size={moderateScale(20)} color="#F98A21" style={styles.labelIcon} />
+              <Iconify icon="tabler:file-description-filled" size={20} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.description', 'Açıklama')}</Text>
               </View>
               <View>
@@ -333,7 +333,7 @@ export default function CreateScreen() {
                 style={[
                   styles.input,
                   typography.styles.body,
-                  { height: verticalScale(120), textAlignVertical: 'top', color: colors.text, paddingRight: scale(40), borderColor: colors.inputBorder, backgroundColor: colors.inputBackground},
+                  { height: 120, textAlignVertical: 'top', color: colors.text, paddingRight: 40, borderColor: colors.inputBorder, backgroundColor: colors.inputBackground},
                 ]}
                 placeholder={t('create.descriptionExam', 'Deste hakkında açıklama...')}
                 placeholderTextColor={colors.muted}
@@ -347,10 +347,10 @@ export default function CreateScreen() {
                 <TouchableOpacity
                   onPress={() => setDescription('')}
                   accessibilityLabel={t('common.clear', 'Temizle')}
-                  hitSlop={{ top: moderateScale(8), bottom: moderateScale(8), left: moderateScale(8), right: moderateScale(8) }}
-                  style={{ position: 'absolute', right: scale(8), top: verticalScale(8), padding: moderateScale(6), borderRadius: moderateScale(12), backgroundColor: colors.iconBackground }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  style={{ position: 'absolute', right: 8, top: 8, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
                 >
-                  <Iconify icon="material-symbols:close-rounded" size={moderateScale(18)} color={colors.muted} />
+                  <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -374,7 +374,7 @@ export default function CreateScreen() {
           >
             <View style={styles.labelRow}>
               <View style={styles.labelTextContainer}>
-                <Iconify icon="mdi:category-plus-outline" size={moderateScale(21)} color="#F98A21" style={styles.labelIcon}/>
+                <Iconify icon="mdi:category-plus-outline" size={21} color="#F98A21" style={styles.labelIcon}/>
                 <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('createDeck.categoryLabel', 'Kategori')}</Text>
               </View>
               <View>
@@ -396,7 +396,7 @@ export default function CreateScreen() {
                 {selectedCategory && (
                   <Iconify
                     icon={getCategoryIcon(categories.find(c => c.id === selectedCategory)?.sort_order)}
-                    size={moderateScale(20)}
+                    size={20}
                     color={selectedCategory ? colors.text : colors.muted}
                     style={styles.categoryIcon}
                   />
@@ -405,7 +405,7 @@ export default function CreateScreen() {
                   {selectedCategory ? t(`categories.${categories.find(c => c.id === selectedCategory)?.sort_order}`) || categories.find(c => c.id === selectedCategory)?.name || t('createDeck.selectCategory') : t('createDeck.selectCategory')}
                 </Text>
               </View>
-              <Iconify icon="flowbite:caret-down-solid" size={moderateScale(20)} color={colors.muted} />
+              <Iconify icon="flowbite:caret-down-solid" size={20} color={colors.muted} />
             </TouchableOpacity>
           </View>
           {/* Desteye Ait Dil Seçimi */}
@@ -426,7 +426,7 @@ export default function CreateScreen() {
           >
             <View style={styles.labelRow}>
               <View style={styles.labelTextContainer}>
-              <Iconify icon="mdi:spoken-language" size={moderateScale(21)} color="#F98A21" style={styles.labelIcon} />
+              <Iconify icon="mdi:spoken-language" size={21} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>
                   {t('create.language', 'İçerik Dili')}
                 </Text>
@@ -506,38 +506,38 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'flex-start',
     alignItems: 'center',
-    padding: scale(16),
-    paddingTop: verticalScale(4),
+    padding: 16,
+    paddingTop: 4,
   },
   headerCard: {
     width: '100%',
-    marginBottom: verticalScale(12),
+    marginBottom: 12,
   },
   headerCardContainer: {
-    borderRadius: moderateScale(28),
+    borderRadius: 28,
     overflow: 'hidden',
-    marginHorizontal: scale(10),
-    marginVertical: verticalScale(8),
-    paddingVertical: verticalScale(10),
+    marginHorizontal: 10,
+    marginVertical: 8,
+    paddingVertical: 10,
   },
   headerCardContent: {
-    borderRadius: moderateScale(28),
-    paddingHorizontal: scale(20),
-    paddingVertical: verticalScale(6),
-    minHeight: verticalScale(160),
+    borderRadius: 28,
+    paddingHorizontal: 20,
+    paddingVertical: 6,
+    minHeight: 160,
   },
   headerTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: verticalScale(8),
+    marginBottom: 8,
   },
   headerContent: {
-    paddingVertical: verticalScale(4),
+    paddingVertical: 4,
   },
   headerTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: verticalScale(8),
+    marginBottom: 8,
   },
   headerBottomRow: {
     flexDirection: 'row',
@@ -545,38 +545,38 @@ const styles = StyleSheet.create({
   },
   headerTextColumn: {
     flex: 1,
-    marginRight: scale(12),
+    marginRight: 12,
   },
   howToCreateButton: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(10),
-    borderRadius: moderateScale(20),
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 20,
     borderWidth: 1,
-    marginTop: verticalScale(12),
+    marginTop: 12,
   },
   headerImageContainer: {
-    width: moderateScale(120, 0.3),
-    height: moderateScale(120, 0.3),
-    marginLeft: scale(12),
+    width: 120,
+    height: 120,
+    marginLeft: 12,
   },
   headerImage: {
-    width: moderateScale(140, 0.3),
-    height: moderateScale(140, 0.3),
+    width: 140,
+    height: 140,
     alignSelf: 'flex-end',
     top: '-10%',
   },
   inputCard: {
     width: '100%',
-    maxWidth: scale(440),
-    borderRadius: moderateScale(28),
-    padding: scale(20),
-    marginBottom: verticalScale(11),
-    shadowOffset: { width: moderateScale(4), height: moderateScale(6) },
+    maxWidth: 440,
+    borderRadius: 28,
+    padding: 20,
+    marginBottom: 11,
+    shadowOffset: { width: 4, height: 6 },
     shadowOpacity: 0.10,
-    shadowRadius: moderateScale(10),
+    shadowRadius: 10,
     elevation: 5,
     overflow: 'hidden',
 
@@ -586,30 +586,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     
-    marginBottom: verticalScale(11),
+    marginBottom: 11,
   },
   labelTextContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(8),
+    gap: 8,
   },
   input: {
-    borderWidth: moderateScale(1),
-    borderRadius: moderateScale(20),
-    padding: scale(12),
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 12,
     marginBottom: 0,
-    fontSize: moderateScale(16),
+    fontSize: 16,
   },
 
   buttonRowModern: {
     flexDirection: 'row',
-    gap: scale(20),
-    marginTop: verticalScale(12),
+    gap: 20,
+    marginTop: 12,
 
   },
 
   optional: {
-    marginLeft: scale(4),
+    marginLeft: 4,
     alignSelf: 'flex-end',
   },
 
@@ -617,9 +617,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: moderateScale(1),
-    borderRadius: moderateScale(12),
-    padding: scale(12),
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
   },
   categoryRow: {
     flexDirection: 'row',
@@ -627,7 +627,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   categoryIcon: {
-    marginRight: scale(8),
+    marginRight: 8,
   },
   categoryText: {
     flex: 1,

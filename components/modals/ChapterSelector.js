@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from '../ui/AppText';
 
 // GORHOM BİLEŞENLERİ
 import { 
@@ -13,10 +14,8 @@ import { typography } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import CircularProgress from '../ui/CircularProgress';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { triggerHaptic } from '../../lib/hapticManager';
 
-const SCREEN_HEIGHT = Dimensions.get('screen').height;
 
 export default function ChapterSelector({
   isVisible,
@@ -26,6 +25,7 @@ export default function ChapterSelector({
   onSelectChapter,
   progressMap = null // Optional: Map with chapter progress data
 }) {
+  const { height: SCREEN_HEIGHT } = useWindowDimensions();
   const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
   
@@ -80,7 +80,7 @@ export default function ChapterSelector({
           {
             backgroundColor: colors.cardBackground,
             borderColor: isSelected ? colors.buttonColor : colors.cardBorder,
-            borderWidth: isSelected ? moderateScale(2) : moderateScale(1),
+            borderWidth: isSelected ? 2 : 1,
             shadowColor: colors.shadowColor,
             shadowOffset: colors.shadowOffset,
             shadowOpacity: colors.shadowOpacity,
@@ -98,9 +98,9 @@ export default function ChapterSelector({
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Iconify
               icon="streamline-freehand:plugin-jigsaw-puzzle"
-              size={moderateScale(22)}
+              size={22}
               color={colors.buttonColor}
-              style={{ marginRight: scale(8) }}
+              style={{ marginRight: 8 }}
             />
             <Text style={[typography.styles.body, styles.chapterTitle, { color: colors.text }]}>
               {t('chapters.chapter', 'Bölüm')} {index + 1}
@@ -116,19 +116,19 @@ export default function ChapterSelector({
           <View style={styles.progressContainer}>
             <CircularProgress
               progress={chapterProgress?.progress || 0}
-              size={scale(78)}
-              strokeWidth={moderateScale(9)}
+              size={78}
+              strokeWidth={9}
               showText={true}
               shouldAnimate={true}
               fullCircle={true}
-              textStyle={{ fontSize: moderateScale(16), fontWeight: '900', color: colors.text }}
+              textStyle={{ fontSize: 16, fontWeight: '900', color: colors.text }}
             />
           </View>
 
           <View style={styles.statsContainer}>
             {/* Learning */}
             <View style={styles.statRow}>
-              <Iconify icon="mdi:fire" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
+              <Iconify icon="mdi:fire" size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
               <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
                 {t('chapters.learning', 'Learning')}: {learningCount}
               </Text>
@@ -136,7 +136,7 @@ export default function ChapterSelector({
 
             {/* Learned */}
             <View style={styles.statRow}>
-              <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
+              <Iconify icon="dashicons:welcome-learn-more" size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
               <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
                 {t('chapters.learned', 'Learned')}: {chapterProgress.learned}
               </Text>
@@ -144,7 +144,7 @@ export default function ChapterSelector({
 
             {/* Total */}
             <View style={styles.statRow}>
-              <Iconify icon="ri:stack-fill" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
+              <Iconify icon="ri:stack-fill" size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
               <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
                 {t('chapters.total', 'Total')}: {chapterProgress.total}
               </Text>
@@ -170,7 +170,7 @@ export default function ChapterSelector({
       index={0}
       onChange={(index) => index === -1 && onClose()}
       backdropComponent={renderBackdrop}
-      backgroundStyle={{ backgroundColor: colors.background, borderRadius: moderateScale(44) }}
+      backgroundStyle={{ backgroundColor: colors.background, borderRadius: 44 }}
       handleIndicatorStyle={{ backgroundColor: isDarkMode ? '#555' : '#CCC' }}
       enableDynamicSizing={true}
       maxDynamicContentSize={SCREEN_HEIGHT * 0.85}
@@ -180,7 +180,7 @@ export default function ChapterSelector({
       <View style={styles.fixedHeader}>
         <View style={styles.headerRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={moderateScale(24)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
+            <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={24} color={colors.buttonColor} style={{ marginRight: 8 }} />
             <Text style={[typography.styles.h2, { color: colors.text }]}>
               {t('chapterCards.selectChapter', 'Bölüm Seç')}
             </Text>
@@ -190,7 +190,7 @@ export default function ChapterSelector({
             hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
             style={styles.closeBtnWrapper}
           >
-            <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
+            <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
       </View>
@@ -213,9 +213,9 @@ export default function ChapterSelector({
 
 const styles = StyleSheet.create({
   fixedHeader: {
-    paddingHorizontal: scale(20),
-    paddingTop: verticalScale(10),
-    paddingBottom: verticalScale(5),
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 5,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(150, 150, 150, 0.2)',
     zIndex: 10,
@@ -224,66 +224,66 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: verticalScale(10),
+    marginBottom: 10,
   },
   closeBtnWrapper: {
     backgroundColor: 'rgba(150, 150, 150, 0.1)',
-    padding: moderateScale(6),
+    padding: 6,
     borderRadius: 99,
   },
   listContainer: {
-    paddingHorizontal: scale(20),
-    paddingTop: verticalScale(12),
-    paddingBottom: verticalScale(60), 
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 60, 
   },
   chapterItem: {
     flexDirection: 'column',
-    padding: scale(20),
-    borderRadius: moderateScale(28), // 40'tan biraz küçülttüm, daha modern durması için
-    marginBottom: verticalScale(16),
+    padding: 20,
+    borderRadius: 28, // 40'tan biraz küçülttüm, daha modern durması için
+    marginBottom: 16,
   },
   chapterHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: verticalScale(12),
+    marginBottom: 12,
   },
   chapterTitle: {
-    fontSize: moderateScale(18),
+    fontSize: 18,
     fontWeight: '600',
   },
   chapterDivider: {
-    height: moderateScale(1),
+    height: 1,
     width: '100%',
-    marginBottom: verticalScale(16),
+    marginBottom: 16,
     opacity: 0.3,
   },
   chapterContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(16),
+    gap: 16,
   },
   progressContainer: {
-    marginRight: scale(8),
+    marginRight: 8,
   },
   statsContainer: {
     flex: 1,
-    gap: verticalScale(8),
+    gap: 8,
   },
   statRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   statText: {
-    fontSize: moderateScale(15),
+    fontSize: 15,
   },
   emptyChapters: {
-    minHeight: verticalScale(160),
+    minHeight: 160,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingBottom: verticalScale(60),
+    paddingBottom: 60,
   },
   emptyChaptersText: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
   },
 });

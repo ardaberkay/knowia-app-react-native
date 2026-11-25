@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Pressable, Animated } from 'react-native';
+import { View, StyleSheet, Image, TouchableOpacity, Pressable, Animated } from 'react-native';
+import { Text } from '../../components/ui/AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
 import Constants from 'expo-constants';
@@ -26,8 +27,8 @@ import { cacheProfile, getCachedProfile, cacheProfileImage } from '../../service
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
-import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
 import { triggerHaptic } from '../../lib/hapticManager';
+import { useListBottomInset } from '../../components/ui/CustomTabBar';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '';
 
@@ -74,14 +75,14 @@ export function ProfileMenuCard({ items, colors }) {
           ]}
         >
           {item.icon ? (
-            <Iconify icon={item.icon} size={moderateScale(20)} color={item.iconColor || colors.buttonColor} />
+            <Iconify icon={item.icon} size={20} color={item.iconColor || colors.buttonColor} />
           ) : null}
           <Text style={[typography.styles.body, { color: item.labelColor || colors.text, flex: 1 }]} numberOfLines={1}>
             {item.label}
           </Text>
           {item.right ?? null}
           {item.chevron ? (
-            <Iconify icon="ion:chevron-forward" size={moderateScale(18)} color={colors.muted} />
+            <Iconify icon="ion:chevron-forward" size={18} color={colors.muted} />
           ) : null}
         </TouchableOpacity>
       ))}
@@ -91,22 +92,22 @@ export function ProfileMenuCard({ items, colors }) {
 
 export const menuStyles = StyleSheet.create({
   card: {
-    borderRadius: moderateScale(18),
+    borderRadius: 18,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(12),
-    paddingHorizontal: scale(16),
-    minHeight: verticalScale(50),
-    paddingVertical: verticalScale(10),
+    gap: 12,
+    paddingHorizontal: 16,
+    minHeight: 50,
+    paddingVertical: 10,
   },
   sectionTitle: {
-    marginTop: verticalScale(22),
-    marginBottom: verticalScale(8),
-    marginLeft: scale(4),
+    marginTop: 22,
+    marginBottom: 8,
+    marginLeft: 4,
   },
 });
 
@@ -201,7 +202,7 @@ const ActivityHeatmap = React.memo(function ActivityHeatmap({ summary, colors, i
 
   return (
     <View>
-      <View style={[heatStyles.months, { height: verticalScale(16) }]}>
+      <View style={[heatStyles.months, { height: 16 }]}>
         {cell > 0 ? monthLabels.map((m) => (
           <Text
             key={`${m.index}-${m.name}`}
@@ -365,10 +366,10 @@ const DailyGoalSheet = React.memo(function DailyGoalSheet({ sheetRef, goal, onSe
       index={0}
       onChange={handleChange}
       backdropComponent={renderBackdrop}
-      backgroundStyle={{ backgroundColor: colors.background, borderRadius: moderateScale(44) }}
+      backgroundStyle={{ backgroundColor: colors.background, borderRadius: 44 }}
       handleIndicatorStyle={{ backgroundColor: isDarkMode ? '#555' : '#CCC' }}
     >
-      <BottomSheetView style={[sheetStyles.content, { paddingBottom: bottomInset + verticalScale(20) }]}>
+      <BottomSheetView style={[sheetStyles.content, { paddingBottom: bottomInset + 20 }]}>
         <View style={sheetStyles.header}>
           <Text style={[typography.styles.h2, { color: colors.text, flex: 1 }]} numberOfLines={1}>
             {t('profile.activity.goalTitle', 'Günlük hedef')}
@@ -380,7 +381,7 @@ const DailyGoalSheet = React.memo(function DailyGoalSheet({ sheetRef, goal, onSe
             accessibilityLabel={t('cardDetail.close', 'Kapat')}
             style={sheetStyles.close}
           >
-            <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
+            <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -404,7 +405,7 @@ const DailyGoalSheet = React.memo(function DailyGoalSheet({ sheetRef, goal, onSe
                   {`${meta(preset.goal)} · ${t(`profile.activity.goals.${preset.key}.desc`)}`}
                 </Text>
               </View>
-              {selected ? <Iconify icon="hugeicons:tick-01" size={moderateScale(22)} color={colors.buttonColor} /> : null}
+              {selected ? <Iconify icon="hugeicons:tick-01" size={22} color={colors.buttonColor} /> : null}
             </TouchableOpacity>
           );
         })}
@@ -460,7 +461,7 @@ const DailyGoalSheet = React.memo(function DailyGoalSheet({ sheetRef, goal, onSe
             ) : null}
           </View>
           {!isPreset && !customOpen ? (
-            <Iconify icon="hugeicons:tick-01" size={moderateScale(22)} color={colors.buttonColor} />
+            <Iconify icon="hugeicons:tick-01" size={22} color={colors.buttonColor} />
           ) : null}
         </TouchableOpacity>
       </BottomSheetView>
@@ -474,6 +475,7 @@ export default function ProfileScreen() {
   const { colors, isDarkMode } = useTheme();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const listBottomInset = useListBottomInset();
   const { session } = useAuth();
   const authUserId = session?.user?.id;
   const { t, i18n } = useTranslation();
@@ -570,7 +572,7 @@ export default function ProfileScreen() {
     [scrollY]
   );
   const glowOpacity = useMemo(
-    () => scrollY.interpolate({ inputRange: [0, verticalScale(180)], outputRange: [1, 0], extrapolate: 'clamp' }),
+    () => scrollY.interpolate({ inputRange: [0, 180], outputRange: [1, 0], extrapolate: 'clamp' }),
     [scrollY]
   );
 
@@ -588,16 +590,16 @@ export default function ProfileScreen() {
       <TopGlow
         color={colors.buttonColor}
         strength={isDarkMode ? 0.26 : 0.15}
-        height={insets.top + verticalScale(210)}
+        height={insets.top + 210}
         opacity={glowOpacity}
       />
       <Animated.ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={{ paddingBottom: listBottomInset }}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
         onScroll={handleScroll}
       >
-        <View style={[styles.header, { paddingTop: insets.top + verticalScale(20) }]}>
+        <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
           <View style={styles.identity}>
             <Image
               source={profile?.image_url ? { uri: profile.image_url } : require('../../assets/avatar_default.webp')}
@@ -613,7 +615,7 @@ export default function ProfileScreen() {
                   accessibilityLabel={t('profile.edit', 'Profili düzenle')}
                   style={[styles.editButton, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)' }]}
                 >
-                  <Iconify icon="lucide:edit" size={moderateScale(18)} color={colors.text} />
+                  <Iconify icon="lucide:edit" size={18} color={colors.text} />
                 </TouchableOpacity>
               </View>
               <Text style={[styles.email, { color: colors.muted }]} numberOfLines={1}>{profile?.email || ' '}</Text>
@@ -627,7 +629,7 @@ export default function ProfileScreen() {
                 style={[styles.stat, index > 0 && { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.border }]}
               >
                 <View style={styles.statValueRow}>
-                  {stat.icon ? <Iconify icon={stat.icon} size={moderateScale(16)} color={colors.buttonColor} /> : null}
+                  {stat.icon ? <Iconify icon={stat.icon} size={16} color={colors.buttonColor} /> : null}
                   <Text style={[styles.statValue, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                     {stat.value}
                   </Text>
@@ -646,7 +648,7 @@ export default function ProfileScreen() {
             <View style={styles.sectionHeader}>
               {/* Same icon the Home hero used for the daily goal. */}
               <View style={styles.sectionTitleRow}>
-                <Iconify icon="fluent:arrow-trending-sparkle-24-filled" size={moderateScale(16)} color={colors.buttonColor} />
+                <Iconify icon="fluent:arrow-trending-sparkle-24-filled" size={16} color={colors.buttonColor} />
                 <Text style={[styles.sectionLabel, { color: colors.muted }]}>
                   {t('profile.activity.goalTitle', 'Günlük hedef')}
                 </Text>
@@ -657,7 +659,7 @@ export default function ProfileScreen() {
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 style={[styles.changePill, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)' }]}
               >
-                <Text style={[typography.styles.button, { color: colors.text, fontSize: moderateScale(13) }]}>
+                <Text style={[typography.styles.button, { color: colors.text, fontSize: 13 }]}>
                   {t('profile.activity.change', 'Değiştir')}
                 </Text>
               </TouchableOpacity>
@@ -673,7 +675,7 @@ export default function ProfileScreen() {
                 })}
               </Text>
               {activity?.today_goal_met ? (
-                <Iconify icon="hugeicons:tick-01" size={moderateScale(18)} color={colors.buttonColor} />
+                <Iconify icon="hugeicons:tick-01" size={18} color={colors.buttonColor} />
               ) : null}
             </View>
             <View style={[styles.goalTrack, { backgroundColor: isDarkMode ? '#3A3A3A' : '#E6E2D8' }]}>
@@ -698,7 +700,7 @@ export default function ProfileScreen() {
           </View>
 
           {/* Account / Settings / Info pages: a grouped menu stays in a card. */}
-          <View style={{ marginTop: verticalScale(8) }}>
+          <View style={{ marginTop: 8 }}>
             <ProfileMenuCard items={pages} colors={colors} />
           </View>
 
@@ -740,18 +742,15 @@ function TopGlow({ color, strength, height, opacity }) {
   );
 }
 
-const SIDE_PADDING = scale(14);
+const SIDE_PADDING = 14;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollContent: {
-    paddingBottom: '35%',
-  },
   header: {
     paddingHorizontal: SIDE_PADDING,
-    paddingBottom: verticalScale(18),
+    paddingBottom: 18,
   },
   glow: {
     position: 'absolute',
@@ -762,46 +761,46 @@ const styles = StyleSheet.create({
   identity: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(14),
+    gap: 14,
   },
   avatar: {
-    width: moderateScale(72),
-    height: moderateScale(72),
-    borderRadius: moderateScale(36),
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     borderWidth: 2,
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(10),
+    gap: 10,
   },
   name: {
     flexShrink: 1,
-    fontSize: moderateScale(21),
+    fontSize: 21,
     fontWeight: '700',
   },
   editButton: {
-    width: moderateScale(36),
-    height: moderateScale(36),
-    borderRadius: moderateScale(18),
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 'auto',
   },
   email: {
-    marginTop: verticalScale(2),
-    fontSize: moderateScale(13),
+    marginTop: 2,
+    fontSize: 13,
   },
   statsRow: {
     flexDirection: 'row',
-    marginTop: verticalScale(20),
-    paddingVertical: verticalScale(10),
-    borderRadius: moderateScale(16),
+    marginTop: 20,
+    paddingVertical: 10,
+    borderRadius: 16,
   },
   stat: {
     flex: 1,
     alignItems: 'center',
-    paddingHorizontal: scale(4),
+    paddingHorizontal: 4,
   },
   statValueRow: {
     flexDirection: 'row',
@@ -809,12 +808,12 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   statValue: {
-    fontSize: moderateScale(19),
+    fontSize: 19,
     fontWeight: '800',
   },
   statLabel: {
-    marginTop: verticalScale(2),
-    fontSize: moderateScale(11),
+    marginTop: 2,
+    fontSize: 11,
   },
   body: {
     paddingHorizontal: SIDE_PADDING,
@@ -823,52 +822,52 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
   },
   section: {
-    paddingVertical: verticalScale(16),
+    paddingVertical: 16,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: verticalScale(6),
+    marginBottom: 6,
   },
   sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(6),
+    gap: 6,
   },
   changePill: {
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(5),
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: 999,
   },
   goalLine: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(6),
+    gap: 6,
   },
   heatmapSection: {
-    paddingBottom: verticalScale(16),
+    paddingBottom: 16,
   },
   sectionLabel: {
-    fontSize: moderateScale(12),
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   },
   goalTrack: {
-    height: moderateScale(8),
-    borderRadius: moderateScale(4),
+    height: 8,
+    borderRadius: 4,
     overflow: 'hidden',
-    marginTop: verticalScale(10),
-    marginBottom: verticalScale(6),
+    marginTop: 10,
+    marginBottom: 6,
   },
   goalFill: {
     height: '100%',
-    borderRadius: moderateScale(4),
+    borderRadius: 4,
   },
   footer: {
     alignItems: 'center',
-    marginTop: verticalScale(24),
+    marginTop: 24,
   },
   footerApp: {
     fontSize: 14,
@@ -885,12 +884,12 @@ const styles = StyleSheet.create({
 const heatStyles = StyleSheet.create({
   months: {
     position: 'relative',
-    marginBottom: verticalScale(4),
+    marginBottom: 4,
   },
   month: {
     position: 'absolute',
     top: 0,
-    fontSize: moderateScale(10),
+    fontSize: 10,
   },
   grid: {
     flexDirection: 'row',
@@ -898,77 +897,77 @@ const heatStyles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: verticalScale(10),
-    gap: scale(8),
+    marginTop: 10,
+    gap: 8,
   },
   legend: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(3),
+    gap: 3,
   },
   legendCell: {
-    width: moderateScale(9),
-    height: moderateScale(9),
-    borderRadius: moderateScale(2),
+    width: 9,
+    height: 9,
+    borderRadius: 2,
   },
   legendText: {
-    fontSize: moderateScale(10),
-    marginHorizontal: scale(2),
+    fontSize: 10,
+    marginHorizontal: 2,
   },
 });
 
 const sheetStyles = StyleSheet.create({
   content: {
-    paddingHorizontal: scale(16),
+    paddingHorizontal: 16,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(12),
-    paddingTop: verticalScale(6),
-    paddingBottom: verticalScale(14),
+    gap: 12,
+    paddingTop: 6,
+    paddingBottom: 14,
   },
   close: {
     backgroundColor: 'rgba(150, 150, 150, 0.1)',
-    padding: moderateScale(6),
+    padding: 6,
     borderRadius: 99,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(12),
-    paddingHorizontal: scale(2),
-    paddingVertical: verticalScale(13),
+    gap: 12,
+    paddingHorizontal: 2,
+    paddingVertical: 13,
   },
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(10),
-    marginTop: verticalScale(12),
+    gap: 10,
+    marginTop: 12,
   },
   stepButton: {
-    width: moderateScale(40),
-    height: moderateScale(40),
-    borderRadius: moderateScale(20),
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepLabel: {
-    fontSize: moderateScale(22),
+    fontSize: 22,
     fontWeight: '600',
-    lineHeight: moderateScale(26),
+    lineHeight: 26,
   },
   stepValue: {
-    minWidth: scale(76),
+    minWidth: 76,
     textAlign: 'center',
-    fontSize: moderateScale(17),
+    fontSize: 17,
     fontWeight: '700',
   },
   customSave: {
     marginLeft: 'auto',
-    height: moderateScale(40),
-    paddingHorizontal: scale(18),
-    borderRadius: moderateScale(20),
+    height: 40,
+    paddingHorizontal: 18,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },

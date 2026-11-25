@@ -1,14 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  StyleSheet, 
-  Text, 
-  TouchableOpacity, 
-  ScrollView, 
-  Dimensions, 
-  Modal, 
-  Pressable 
-} from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable, useWindowDimensions } from 'react-native';
+import { Text } from '../ui/AppText';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -22,10 +14,8 @@ import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { triggerHaptic } from '../../lib/hapticManager';
 
-const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export const FilterModalButton = ({ onPress, variant }) => {
   const { colors, isDarkMode } = useTheme();
@@ -58,12 +48,12 @@ export const FilterModalButton = ({ onPress, variant }) => {
           onPress();
         });
       }}
-      hitSlop={{ top: scale(15), bottom: scale(15), left: scale(15), right: scale(15) }}
+      hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
       activeOpacity={0.8}
     >
       <Iconify
         icon="mage:filter"
-        size={moderateScale(24)}
+        size={24}
         color={iconColor}
       />
     </TouchableOpacity>
@@ -95,6 +85,7 @@ const FilterModal = ({
   hideFavorites = false,
   hideAz = false,
 }) => {
+  const { height: SCREEN_HEIGHT } = useWindowDimensions();
   const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
   
@@ -207,7 +198,7 @@ const FilterModal = ({
         backgroundColor: isSelected ? primaryColor : 'transparent'
       }
     ]}>
-      {isSelected && <Iconify icon="hugeicons:tick-01" size={moderateScale(16)} color="#FFF" />}
+      {isSelected && <Iconify icon="hugeicons:tick-01" size={16} color="#FFF" />}
     </View>
   );
 
@@ -234,8 +225,8 @@ const FilterModal = ({
           {/* Header */}
           <View style={styles.modalHeader}>
             <View style={styles.headerLeft}>
-              <Iconify icon="si:filter-list-alt-fill" size={moderateScale(28)} color={colors.text} />
-              <Text style={[typography.styles.h2, { color: colors.text, fontSize: moderateScale(22) }]}>
+              <Iconify icon="si:filter-list-alt-fill" size={28} color={colors.text} />
+              <Text style={[typography.styles.h2, { color: colors.text, fontSize: 22 }]}>
                 {t('common.filters', 'Filtreler')}
               </Text>
             </View>
@@ -244,7 +235,7 @@ const FilterModal = ({
               hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
               style={styles.closeBtnWrapper}
             >
-              <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
+              <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
 
@@ -255,7 +246,7 @@ const FilterModal = ({
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <View style={[styles.headerAccent, { backgroundColor: primaryColor }]} />
-                  <Iconify icon="lucide:sort-asc" size={moderateScale(20)} color={colors.text} />
+                  <Iconify icon="lucide:sort-asc" size={20} color={colors.text} />
                   <Text style={[styles.sectionTitle, { color: colors.text }]}>
                     {t('common.sortBy', 'Sıralama')}
                   </Text>
@@ -266,12 +257,12 @@ const FilterModal = ({
                   style={[styles.accordionHeader, { borderColor: colors.border, backgroundColor: isDarkMode ? '#222' : '#F9FAFB' }]}
                   activeOpacity={0.8}
                 >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(8) }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <Text style={[styles.accordionHeaderText, { color: colors.text, fontWeight: '600' }]}>
                       {selectedSortLabel}
                     </Text>
                   </View>
-                  <Iconify icon={isSortOpen ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'} size={moderateScale(20)} color={colors.text} />
+                  <Iconify icon={isSortOpen ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'} size={20} color={colors.text} />
                 </TouchableOpacity>
 
                 {isSortOpen && (
@@ -317,7 +308,7 @@ const FilterModal = ({
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <View style={[styles.headerAccent, { backgroundColor: primaryColor }]} />
-                <Iconify icon="material-symbols:category-search-rounded" size={moderateScale(20)} color={colors.text} />
+                <Iconify icon="material-symbols:category-search-rounded" size={20} color={colors.text} />
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
                   {t('common.categories', 'Kategoriler')}
                 </Text>
@@ -328,7 +319,7 @@ const FilterModal = ({
                 style={[styles.accordionHeader, { borderColor: colors.border, backgroundColor: isDarkMode ? '#222' : '#F9FAFB' }]}
                 activeOpacity={0.8}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(8) }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Text style={[styles.accordionHeaderText, { color: colors.text }]}>
                     {t('common.selectCategories', 'Kategorileri Seç')}
                   </Text>
@@ -338,7 +329,7 @@ const FilterModal = ({
                     </View>
                   )}
                 </View>
-                <Iconify icon={isCategoryOpen ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'} size={moderateScale(20)} color={colors.text} />
+                <Iconify icon={isCategoryOpen ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'} size={20} color={colors.text} />
               </TouchableOpacity>
 
               {isCategoryOpen && (
@@ -364,7 +355,7 @@ const FilterModal = ({
                       >
                         <View style={styles.optionCardLeft}>
                           <View style={styles.optionIconWrapper}>
-                            <Iconify icon={option.icon} size={moderateScale(22)} color={isSelected ? primaryColor : colors.text} />
+                            <Iconify icon={option.icon} size={22} color={isSelected ? primaryColor : colors.text} />
                           </View>
                           <Text style={[
                             styles.optionCardText,
@@ -386,10 +377,10 @@ const FilterModal = ({
             </View>
 
             {/* Dil Bölümü */}
-            <View style={[styles.section, { marginBottom: verticalScale(20) }]}>
+            <View style={[styles.section, { marginBottom: 20 }]}>
               <View style={styles.sectionHeader}>
                 <View style={[styles.headerAccent, { backgroundColor: primaryColor }]} />
-                <Iconify icon="fa:language" size={moderateScale(20)} color={colors.text} />
+                <Iconify icon="fa:language" size={20} color={colors.text} />
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
                   {t('create.language', 'İçerik Dili')}
                 </Text>
@@ -400,7 +391,7 @@ const FilterModal = ({
                 style={[styles.accordionHeader, { borderColor: colors.border, backgroundColor: isDarkMode ? '#222' : '#F9FAFB' }]}
                 activeOpacity={0.8}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(8) }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Text style={[styles.accordionHeaderText, { color: colors.text }]}>
                     {t('common.selectLanguages', 'Dil Seç')}
                   </Text>
@@ -410,7 +401,7 @@ const FilterModal = ({
                     </View>
                   )}
                 </View>
-                <Iconify icon={isLanguageOpen ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'} size={moderateScale(20)} color={colors.text} />
+                <Iconify icon={isLanguageOpen ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'} size={20} color={colors.text} />
               </TouchableOpacity>
 
               {isLanguageOpen && (
@@ -510,16 +501,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
-    borderRadius: moderateScale(32),
-    paddingHorizontal: scale(12),
+    borderRadius: 32,
+    paddingHorizontal: 12,
     borderWidth: 1,
-    height: verticalScale(46),
-    width: scale(46),
+    height: 46,
+    width: 46,
   },
   modalContainer: {
     width: '90%', 
     maxHeight: '85%',
-    borderRadius: moderateScale(32),
+    borderRadius: 32,
     padding: 0,
     overflow: 'hidden',
     shadowColor: "#000",
@@ -534,75 +525,75 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: scale(20),
-    paddingVertical: verticalScale(18),
+    paddingHorizontal: 20,
+    paddingVertical: 18,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(10),
+    gap: 10,
   },
   closeBtnWrapper: {
     backgroundColor: 'rgba(150, 150, 150, 0.1)',
-    padding: moderateScale(6),
+    padding: 6,
     borderRadius: 99,
   },
   modalContent: {
-    paddingHorizontal: scale(20),
+    paddingHorizontal: 20,
   },
   section: {
-    marginBottom: verticalScale(28),
+    marginBottom: 28,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: verticalScale(14),
+    marginBottom: 14,
   },
   headerAccent: {
-    width: moderateScale(4),
-    height: verticalScale(18),
-    borderRadius: moderateScale(2),
-    marginRight: scale(8),
+    width: 4,
+    height: 18,
+    borderRadius: 2,
+    marginRight: 8,
   },
   sectionTitle: {
-    fontSize: moderateScale(17),
+    fontSize: 17,
     fontWeight: '700',
-    marginLeft: scale(6),
+    marginLeft: 6,
   },
   accordionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: verticalScale(14),
-    paddingHorizontal: scale(16),
-    borderRadius: moderateScale(12),
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
     borderWidth: 1,
   },
   accordionHeaderText: {
-    fontSize: moderateScale(15),
+    fontSize: 15,
     fontWeight: '600',
   },
   badgePill: {
-    paddingHorizontal: scale(8),
-    paddingVertical: verticalScale(2),
+    paddingHorizontal: 8,
+    paddingVertical: 2,
     borderRadius: 99,
   },
   badgePillText: {
     color: '#FFF',
-    fontSize: moderateScale(12),
+    fontSize: 12,
     fontWeight: '800',
   },
   optionsList: {
-    marginTop: verticalScale(12),
-    gap: verticalScale(10),
+    marginTop: 12,
+    gap: 10,
   },
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: verticalScale(14),
-    paddingHorizontal: scale(16),
-    borderRadius: moderateScale(12),
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
     borderWidth: 1,
   },
   optionCardLeft: {
@@ -611,40 +602,40 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   optionIconWrapper: {
-    marginRight: scale(12),
+    marginRight: 12,
   },
   optionCardText: {
-    fontSize: moderateScale(15),
+    fontSize: 15,
   },
   checkboxSquare: {
-    width: moderateScale(22),
-    height: moderateScale(22),
-    borderRadius: moderateScale(6), 
+    width: 22,
+    height: 22,
+    borderRadius: 6, 
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalFooter: {
-    paddingHorizontal: scale(20),
-    paddingTop: verticalScale(12),
-    paddingBottom: verticalScale(16),
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(12),
-    borderTopWidth: moderateScale(1),
+    gap: 12,
+    borderTopWidth: 1,
     borderTopColor: 'rgba(0,0,0,0.05)',
   },
   resetButton: {
     flex: 1,
     borderRadius: 99,
-    borderWidth: moderateScale(1.5),
+    borderWidth: 1.5,
     backgroundColor: 'transparent',
-    paddingVertical: verticalScale(14),
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   resetButtonText: {
-    fontSize: moderateScale(15),
+    fontSize: 15,
     fontWeight: '600',
   },
   applyButton: {
@@ -652,18 +643,18 @@ const styles = StyleSheet.create({
     borderRadius: 99,
     overflow: 'hidden',
     shadowColor: '#FF6B35',
-    shadowOffset: { width: 0, height: verticalScale(4) },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: moderateScale(8),
+    shadowRadius: 8,
     elevation: 4,
   },
   gradientButton: {
-    paddingVertical: verticalScale(15),
+    paddingVertical: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
   applyButtonText: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
   },

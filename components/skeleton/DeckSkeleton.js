@@ -1,35 +1,33 @@
-import React, { useEffect, useRef, useMemo } from 'react';
-import { View, StyleSheet, Animated, Dimensions } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import { useTheme } from '../../theme/theme';
 import { LinearGradient } from 'expo-linear-gradient';
-import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
-import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
+import { useDeckCardSize } from '../ui/DeckUi';
 
-// Shimmer overlay component (Aynı kalıyor)
-const ShimmerOverlay = ({ style, delay = 0, isDarkMode = false, borderRadius = 0, screenWidth = Dimensions.get('window').width }) => {
+// Shared shimmer for the skeleton screens (DeckSkeleton, DiscoverDecksSkeleton,
+// MyDecksSkeleton): a gradient band sweeping across the box every `duration` ms.
+export const ShimmerOverlay = ({ style, delay = 0, duration = 4000, isDarkMode = false, borderRadius = 0, screenWidth }) => {
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const startAnimation = () => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(shimmerAnim, {
-            toValue: 1,
-            duration: 4000,
-            delay: delay,
-            useNativeDriver: true,
-          }),
-          Animated.timing(shimmerAnim, {
-            toValue: 0,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    };
-
-    startAnimation();
-  }, [delay, shimmerAnim]);
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmerAnim, {
+          toValue: 1,
+          duration,
+          delay,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmerAnim, {
+          toValue: 0,
+          duration: 0,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [delay, duration, shimmerAnim]);
 
   const translateX = shimmerAnim.interpolate({
     inputRange: [0, 1],
@@ -62,20 +60,14 @@ const ShimmerOverlay = ({ style, delay = 0, isDarkMode = false, borderRadius = 0
   );
 };
 
-// Shimmer wrapper (Aynı kalıyor)
-const ShimmerBox = ({ children, style, delay = 0, isDarkMode = false, borderRadius = 0, screenWidth }) => {
+export const ShimmerBox = ({ children, style, delay = 0, duration, isDarkMode = false, borderRadius = 0, screenWidth }) => {
   return (
     <View style={[{ overflow: 'hidden', borderRadius: borderRadius }, style]}>
       {children}
       <ShimmerOverlay
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-        }}
+        style={StyleSheet.absoluteFillObject}
         delay={delay}
+        duration={duration}
         isDarkMode={isDarkMode}
         borderRadius={borderRadius}
         screenWidth={screenWidth}
@@ -87,22 +79,8 @@ const ShimmerBox = ({ children, style, delay = 0, isDarkMode = false, borderRadi
 export default function DeckSkeleton({ progressMode = false }) {
   const { isDarkMode } = useTheme();
   
-  const { width, height } = useWindowDimensions();
-  const isTablet = getIsTablet();
-  
-  const deckSkeletonDimensions = useMemo(() => {
-    const { DECK_CARD } = RESPONSIVE_CONSTANTS;
-    const scaledWidth = scale(DECK_CARD.REFERENCE_WIDTH);
-    const maxWidth = isTablet ? width * 0.20 : width * 0.36;
-    const cardWidth = Math.min(scaledWidth, maxWidth);
-    const cardHeight = cardWidth * DECK_CARD.ASPECT_RATIO;
-    
-    return { width: cardWidth, height: cardHeight };
-  }, [width, isTablet]);
-  
-  const DECK_SKELETON_WIDTH = deckSkeletonDimensions.width;
-  const DECK_SKELETON_HEIGHT = deckSkeletonDimensions.height;
-  const SCREEN_WIDTH = width;
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const { width: DECK_SKELETON_WIDTH, height: DECK_SKELETON_HEIGHT } = useDeckCardSize();
   
   const bgColor = isDarkMode ? '#222' : '#ececec';
   const lineColor = isDarkMode ? '#333' : '#ddd';
@@ -114,10 +92,10 @@ export default function DeckSkeleton({ progressMode = false }) {
         {/* Üst Kısım: Profil */}
         <View style={styles.topRow}>
           <View style={styles.profileRow}>
-            <ShimmerBox delay={0} isDarkMode={isDarkMode} borderRadius={moderateScale(11)} screenWidth={SCREEN_WIDTH}>
+            <ShimmerBox delay={0} isDarkMode={isDarkMode} borderRadius={11} screenWidth={SCREEN_WIDTH}>
               <View style={[styles.avatar, { backgroundColor: lineColor }]} />
             </ShimmerBox>
-            <ShimmerBox delay={20} isDarkMode={isDarkMode} borderRadius={moderateScale(7)} screenWidth={SCREEN_WIDTH}>
+            <ShimmerBox delay={20} isDarkMode={isDarkMode} borderRadius={7} screenWidth={SCREEN_WIDTH}>
               <View style={[styles.usernameLine, { backgroundColor: lineColor }]} />
             </ShimmerBox>
           </View>
@@ -125,14 +103,14 @@ export default function DeckSkeleton({ progressMode = false }) {
 
         {/* Orta Kısım: Başlık ve Divider */}
         <View style={styles.centerRow}>
-          <ShimmerBox delay={40} isDarkMode={isDarkMode} borderRadius={moderateScale(8)} screenWidth={SCREEN_WIDTH}>
+          <ShimmerBox delay={40} isDarkMode={isDarkMode} borderRadius={8} screenWidth={SCREEN_WIDTH}>
             <View style={[styles.titleLine, { backgroundColor: lineColor }]} />
           </ShimmerBox>
           
           {/* Divider: ShimmerBox'tan çıkarıldı, sadece sabit renkli bir çizgi olarak bırakıldı */}
           <View style={[styles.divider, { backgroundColor: lineColor }]} />
           
-          <ShimmerBox delay={60} isDarkMode={isDarkMode} borderRadius={moderateScale(8)} screenWidth={SCREEN_WIDTH}>
+          <ShimmerBox delay={60} isDarkMode={isDarkMode} borderRadius={8} screenWidth={SCREEN_WIDTH}>
             <View style={[styles.subtitleLine, { backgroundColor: lineColor }]} />
           </ShimmerBox>
         </View>
@@ -145,7 +123,7 @@ export default function DeckSkeleton({ progressMode = false }) {
                 <ShimmerBox
                   delay={78}
                   isDarkMode={isDarkMode}
-                  borderRadius={moderateScale(999)}
+                  borderRadius={999}
                   screenWidth={SCREEN_WIDTH}
                   style={styles.progressBottomBadgeBaseShimmer}
                 >
@@ -154,18 +132,18 @@ export default function DeckSkeleton({ progressMode = false }) {
                 <ShimmerBox
                   delay={84}
                   isDarkMode={isDarkMode}
-                  borderRadius={moderateScale(999)}
+                  borderRadius={999}
                   screenWidth={SCREEN_WIDTH}
                   style={styles.progressChipAbsoluteShimmer}
                 >
                   <View style={[styles.progressChipPlaceholder, { backgroundColor: lineColor }]} />
                 </ShimmerBox>
                 <View style={styles.progressBarRowSkeleton}>
-                  <View style={{ width: scale(12) }} />
+                  <View style={{ width: 12 }} />
                   <ShimmerBox
                     delay={92}
                     isDarkMode={isDarkMode}
-                    borderRadius={moderateScale(999)}
+                    borderRadius={999}
                     screenWidth={SCREEN_WIDTH}
                     style={styles.progressTrackShimmerGrow}
                   >
@@ -192,7 +170,7 @@ export default function DeckSkeleton({ progressMode = false }) {
           </>
         ) : (
           <View style={styles.bottomRow}>
-            <ShimmerBox delay={80} isDarkMode={isDarkMode} borderRadius={moderateScale(12)} screenWidth={SCREEN_WIDTH}>
+            <ShimmerBox delay={80} isDarkMode={isDarkMode} borderRadius={12} screenWidth={SCREEN_WIDTH}>
               <View style={[styles.badge, { backgroundColor: lineColor }]} />
             </ShimmerBox>
             <ShimmerBox delay={100} isDarkMode={isDarkMode} borderRadius={999} screenWidth={SCREEN_WIDTH}>
@@ -209,15 +187,15 @@ export default function DeckSkeleton({ progressMode = false }) {
 const styles = StyleSheet.create({
   skeletonCard: {
     backgroundColor: 'transparent',
-    borderRadius: moderateScale(18),
-    marginRight: scale(10),
-    marginBottom: verticalScale(8),
+    borderRadius: 18,
+    marginRight: 10,
+    marginBottom: 8,
     overflow: 'hidden',
   },
   skeletonCardGradient: {
     flex: 1,
-    borderRadius: moderateScale(18),
-    padding: scale(8), // DeckUi deckCardGradient ile uyumlu
+    borderRadius: 18,
+    padding: 8, // DeckUi deckCardGradient ile uyumlu
     justifyContent: 'space-between', // İçeriği yukarı, ortaya ve aşağıya eşit dağıtacak
   },
   
@@ -239,9 +217,9 @@ const styles = StyleSheet.create({
   },
   progressBadgeContainer: {
     position: 'absolute',
-    left: scale(16),
-    right: scale(46),
-    bottom: verticalScale(14),
+    left: 16,
+    right: 46,
+    bottom: 14,
     zIndex: 10,
   },
   progressBottomBadgeSkeleton: {
@@ -250,10 +228,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    borderRadius: moderateScale(999),
-    paddingLeft: scale(24),
-    paddingRight: scale(6),
-    paddingVertical: verticalScale(6),
+    borderRadius: 999,
+    paddingLeft: 24,
+    paddingRight: 6,
+    paddingVertical: 6,
     overflow: 'visible',
   },
   progressBottomBadgeBaseShimmer: {
@@ -266,19 +244,19 @@ const styles = StyleSheet.create({
   progressBottomBadgeBase: {
     width: '100%',
     height: '100%',
-    borderRadius: moderateScale(999),
+    borderRadius: 999,
   },
   progressChipAbsoluteShimmer: {
     position: 'absolute',
-    left: scale(-8),
+    left: -8,
     top: '50%',
-    transform: [{ translateY: -scale(19) }],
+    transform: [{ translateY: -19 }],
     zIndex: 2,
   },
   progressChipPlaceholder: {
-    width: scale(38),
-    height: scale(38),
-    borderRadius: moderateScale(999),
+    width: 38,
+    height: 38,
+    borderRadius: 999,
   },
   progressBarRowSkeleton: {
     flex: 1,
@@ -293,18 +271,18 @@ const styles = StyleSheet.create({
   },
   progressTrackPlaceholder: {
     width: '100%',
-    height: verticalScale(4),
-    borderRadius: moderateScale(999),
-    marginRight: scale(2),
+    height: 4,
+    borderRadius: 999,
+    marginRight: 2,
   },
   favoriteButtonProgressPosition: {
     position: 'absolute',
-    right: scale(8),
-    bottom: verticalScale(8),
+    right: 8,
+    bottom: 8,
     zIndex: 11,
   },
   bottomRowReserve: {
-    height: verticalScale(30),
+    height: 30,
   },
 
   // Elemanlar
@@ -313,41 +291,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatar: {
-    width: scale(27),
-    height: scale(27), // height'ı da scale yaptım ki avatar tam yuvarlak/kare kalsın
-    borderRadius: moderateScale(11),
-    marginRight: scale(8),
+    width: 27,
+    height: 27, // height'ı da scale yaptım ki avatar tam yuvarlak/kare kalsın
+    borderRadius: 11,
+    marginRight: 8,
   },
   usernameLine: {
-    width: scale(75),
-    height: moderateScale(14),
-    borderRadius: moderateScale(7),
+    width: 75,
+    height: 14,
+    borderRadius: 7,
   },
   titleLine: {
-    width: scale(80),
-    height: moderateScale(16),
-    borderRadius: moderateScale(8),
+    width: 80,
+    height: 16,
+    borderRadius: 8,
   },
   divider: {
-    width: scale(50), // Biraz kısalttım, daha şık durur
-    height: moderateScale(2),
-    borderRadius: moderateScale(1),
-    marginVertical: verticalScale(12),
+    width: 50, // Biraz kısalttım, daha şık durur
+    height: 2,
+    borderRadius: 1,
+    marginVertical: 12,
     opacity: 0.5, // Çizgiyi iskelette biraz daha silik yapmak iyi bir numaradır
   },
   subtitleLine: {
-    width: scale(65),
-    height: moderateScale(14), // Subtitle genelde title'dan biraz incedir
-    borderRadius: moderateScale(7),
+    width: 65,
+    height: 14, // Subtitle genelde title'dan biraz incedir
+    borderRadius: 7,
   },
   badge: {
-    width: scale(40),
-    height: verticalScale(24),
-    borderRadius: moderateScale(12),
+    width: 40,
+    height: 24,
+    borderRadius: 12,
   },
   favoriteButton: {
-    width: moderateScale(30),
-    height: moderateScale(30),
+    width: 30,
+    height: 30,
     borderRadius: 999,
   },
 });

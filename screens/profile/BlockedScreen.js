@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, ActivityIndicator, Alert } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ActivityIndicator, Alert } from 'react-native';
+import { Text } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -7,13 +8,14 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
-import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
 import { triggerHaptic } from '../../lib/hapticManager';
 import * as BlockService from '../../services/BlockService';
 import LottieView from 'lottie-react-native';
+import { useListBottomInset } from '../../components/ui/CustomTabBar';
 
 export default function BlockedScreen() {
   const { colors } = useTheme();
+  const listBottomInset = useListBottomInset();
   const { session } = useAuth();
   const authUserId = session?.user?.id;
   const { t } = useTranslation();
@@ -118,7 +120,7 @@ export default function BlockedScreen() {
   };
 
   return (
-    <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.tabs, { backgroundColor: colors.border + '40' }]}>
         <TouchableOpacity
           style={[styles.tab, blockedTab === 'users' && { backgroundColor: colors.buttonColor }]}
@@ -142,19 +144,19 @@ export default function BlockedScreen() {
 
       {loadingBlocked ? (
         <View style={styles.loadingContainer}>
-          <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: moderateScale(160, 0.3), height: moderateScale(160, 0.3) }} />
-          <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: moderateScale(100, 0.3), height: moderateScale(100, 0.3), marginTop: verticalScale(-65) }} />
+          <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: 160, height: 160 }} />
+          <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100, marginTop: -65 }} />
         </View>
       ) : blockedTab === 'users' ? (
         blockedUsers.length === 0 ? (
           <View style={styles.emptyState}>
-            <Iconify icon="gridicons:block" size={scale(72)} color={colors.subtext || '#999'} style={styles.emptyStateIcon} />
+            <Iconify icon="gridicons:block" size={72} color={colors.subtext || '#999'} style={styles.emptyStateIcon} />
             <Text style={[typography.styles.body, { color: colors.subtext }, styles.emptyStateText]}>
               {t('profile.noBlockedUsers', 'Engellenen kullanıcı yok')}
             </Text>
           </View>
         ) : (
-          <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: listBottomInset }} showsVerticalScrollIndicator={false}>
             {blockedUsers.map((user) => (
               <View key={user.id} style={[styles.row, { borderBottomColor: colors.border + '99' }]}>
                 <Image
@@ -169,7 +171,7 @@ export default function BlockedScreen() {
                   onPress={() => handleUnblockUser(user.id, user.username)}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 >
-                  <Iconify icon="gridicons:block" size={moderateScale(32)} color={colors.error || '#ff5252'} />
+                  <Iconify icon="gridicons:block" size={32} color={colors.error || '#ff5252'} />
                 </TouchableOpacity>
               </View>
             ))}
@@ -177,17 +179,17 @@ export default function BlockedScreen() {
         )
       ) : hiddenDecks.length === 0 ? (
         <View style={styles.emptyState}>
-          <Iconify icon="mdi:cards" size={scale(72)} color={colors.subtext || '#999'} style={styles.emptyStateIcon} />
+          <Iconify icon="mdi:cards" size={72} color={colors.subtext || '#999'} style={styles.emptyStateIcon} />
           <Text style={[typography.styles.body, { color: colors.subtext }, styles.emptyStateText]}>
             {t('profile.noHiddenDecks', 'Gizlenen deste yok')}
           </Text>
         </View>
       ) : (
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.hiddenDecksScrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: listBottomInset }} showsVerticalScrollIndicator={false}>
           {hiddenDecks.map((deck) => (
             <View key={deck.id} style={[styles.deckCard, { backgroundColor: colors.border + '18', borderColor: colors.border + '40' }]}>
               <View style={[styles.deckCardThumb, { backgroundColor: colors.buttonColor + '20' }]}>
-                <Iconify icon={getCategoryIcon(deck.categories?.sort_order)} size={moderateScale(28)} color={colors.buttonColor} />
+                <Iconify icon={getCategoryIcon(deck.categories?.sort_order)} size={28} color={colors.buttonColor} />
               </View>
               <View style={styles.deckCardBody}>
                 <Text style={[styles.deckCardTitle, { color: colors.text }]} numberOfLines={1}>{deck.name}</Text>
@@ -201,7 +203,7 @@ export default function BlockedScreen() {
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 activeOpacity={0.7}
               >
-                <Iconify icon="oi:eye" size={moderateScale(20)} color={colors.buttonColor} />
+                <Iconify icon="oi:eye" size={20} color={colors.buttonColor} />
                 <Text style={[styles.deckCardActionLabel, { color: colors.buttonColor }]}>{t('profile.unhideConfirmButton', 'Göster')}</Text>
               </TouchableOpacity>
             </View>
@@ -215,83 +217,76 @@ export default function BlockedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: scale(24),
-    paddingTop: verticalScale(16),
-    paddingBottom: '15%',
+    paddingHorizontal: 24,
+    paddingTop: 16,
   },
   tabs: {
     flexDirection: 'row',
-    borderRadius: moderateScale(24),
-    padding: moderateScale(4),
-    marginBottom: verticalScale(16),
+    borderRadius: 24,
+    padding: 4,
+    marginBottom: 16,
   },
   tab: {
     flex: 1,
-    paddingVertical: verticalScale(10),
-    borderRadius: moderateScale(24),
+    paddingVertical: 10,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
   tabText: {
-    fontSize: moderateScale(13),
+    fontSize: 13,
     fontWeight: '600',
   },
   loading: {
-    paddingVertical: verticalScale(24),
+    paddingVertical: 24,
     alignItems: 'center',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: verticalScale(200),
+    minHeight: 200,
     flexDirection: 'column',
-    marginTop: verticalScale(-120),
+    marginTop: -120,
   },
   empty: {
-    paddingVertical: verticalScale(24),
-    paddingHorizontal: scale(4),
+    paddingVertical: 24,
+    paddingHorizontal: 4,
   },
   emptyState: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: verticalScale(48),
+    paddingVertical: 48,
   },
   emptyStateIcon: {
-    marginBottom: verticalScale(16),
+    marginBottom: 16,
     opacity: 0.6,
   },
   emptyStateText: {
     textAlign: 'center',
-    paddingHorizontal: scale(24),
+    paddingHorizontal: 24,
     opacity: 0.6,
   },
   scroll: {
     flex: 1,
   },
-  scrollContent: {
-    paddingBottom: verticalScale(32),
-  },
-  hiddenDecksScrollContent: {
-    paddingBottom: verticalScale(32),
-  },
   deckCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: moderateScale(20),
-    borderWidth: moderateScale(1),
-    padding: moderateScale(12),
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 12,
     overflow: 'hidden',
-    marginBottom: verticalScale(12),
+    marginBottom: 12,
   },
   deckCardThumb: {
-    width: scale(52),
-    height: scale(52),
-    borderRadius: moderateScale(20),
+    width: 52,
+    height: 52,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: scale(14),
+    marginRight: 14,
   },
   deckCardBody: {
     flex: 1,
@@ -299,55 +294,55 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   deckCardTitle: {
-    fontSize: moderateScale(14),
+    fontSize: 14,
     fontWeight: '500',
-    marginBottom: verticalScale(2),
+    marginBottom: 2,
   },
   deckCardAction: {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: verticalScale(10),
-    paddingHorizontal: scale(12),
-    borderRadius: moderateScale(16),
-    minWidth: scale(64),
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    minWidth: 64,
   },
   deckCardActionLabel: {
-    fontSize: moderateScale(11),
+    fontSize: 11,
     fontWeight: '600',
-    marginTop: verticalScale(4),
+    marginTop: 4,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: verticalScale(12),
-    borderBottomWidth: moderateScale(1),
+    paddingVertical: 12,
+    borderBottomWidth: 1,
   },
   avatar: {
-    width: scale(40),
-    height: scale(40),
-    borderRadius: moderateScale(20),
-    marginRight: scale(12),
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
   },
   deckImage: {
-    width: scale(40),
-    height: scale(40),
-    borderRadius: moderateScale(8),
-    marginRight: scale(12),
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    marginRight: 12,
   },
   deckImagePlaceholder: {
-    width: scale(40),
-    height: scale(40),
-    borderRadius: moderateScale(8),
-    marginRight: scale(12),
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    marginRight: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   label: {
     flex: 1,
-    marginRight: scale(8),
+    marginRight: 8,
   },
   actionBtn: {
-    padding: moderateScale(6),
+    padding: 6,
   },
 });

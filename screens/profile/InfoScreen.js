@@ -3,7 +3,6 @@ import { StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import { useTranslation } from 'react-i18next';
-import { scale, verticalScale } from 'react-native-size-matters';
 import { useTheme } from '../../theme/theme';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { ProfileMenuCard } from './ProfileScreen';
@@ -53,8 +52,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: scale(14),
-    paddingTop: verticalScale(16),
-    paddingBottom: verticalScale(40),
+    paddingHorizontal: 14,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
 });

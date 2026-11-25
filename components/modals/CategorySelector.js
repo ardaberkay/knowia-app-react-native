@@ -1,5 +1,6 @@
-import React, { useRef, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import React, { useRef, useEffect, useCallback } from 'react';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text } from '../ui/AppText';
 
 // ETKİLEŞİMLİ BİLEŞENLER
 import {
@@ -13,11 +14,10 @@ import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
-const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export default function CategorySelector({ isVisible, onClose, categories = [], selectedCategoryId, onSelectCategory }) {
+  const { height: SCREEN_HEIGHT } = useWindowDimensions();
   const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
 
@@ -92,7 +92,7 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
         <View style={styles.iconWrapper}>
           <Iconify
             icon={getCategoryIcon(category.sort_order)}
-            size={moderateScale(26)}
+            size={26}
             color={isSelected ? primaryColor : colors.text}
           />
         </View>
@@ -121,7 +121,7 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
       // Radius ve Arka Plan
       backgroundStyle={{
         backgroundColor: colors.background,
-        borderRadius: moderateScale(44)
+        borderRadius: 44
       }}
       handleIndicatorStyle={{ backgroundColor: isDarkMode ? '#666' : '#CCC' }}
 
@@ -133,8 +133,8 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
 
       {/* --- SABİT HEADER (LİSTENİN DIŞINDA) --- */}
       <View style={[styles.fixedHeader, {
-        backgroundColor: colors.background, borderTopLeftRadius: moderateScale(44),
-        borderTopRightRadius: moderateScale(44)
+        backgroundColor: colors.background, borderTopLeftRadius: 44,
+        borderTopRightRadius: 44
       }]}>
         <Text style={[typography.styles.h2, { color: colors.text }]}>
           {t('categorySelector.title')}
@@ -144,7 +144,7 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
           hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
           style={styles.closeBtnWrapper}
         >
-          <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
+          <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -169,36 +169,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: scale(20),
-    paddingVertical: verticalScale(12),
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(150, 150, 150, 0.2)',
     zIndex: 10,
   },
   scrollContent: {
-    paddingHorizontal: scale(20),
-    paddingTop: verticalScale(15),
-    paddingBottom: verticalScale(60),
-    gap: verticalScale(12),
+    paddingHorizontal: 20,
+    paddingTop: 15,
+    paddingBottom: 60,
+    gap: 12,
   },
   closeBtnWrapper: {
     backgroundColor: 'rgba(150, 150, 150, 0.1)',
-    padding: moderateScale(6),
+    padding: 6,
     borderRadius: 99,
   },
   categoryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: verticalScale(14),
-    paddingHorizontal: scale(16),
-    borderRadius: moderateScale(16),
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
     borderWidth: 1.5,
   },
   iconWrapper: {
-    marginRight: scale(14),
+    marginRight: 14,
   },
   categoryText: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     flex: 1,
   },
 });

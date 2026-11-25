@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch, Alert, Linking } from 'react-native';
+import { View, StyleSheet, ScrollView, Switch, Alert, Linking } from 'react-native';
+import { Text } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
-import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
 import { useTheme } from '../../theme/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProfile } from '../../contexts/ProfileContext';
@@ -102,8 +102,8 @@ export default function SettingsScreen() {
       },
       right: (
         <View style={styles.languageRow}>
-          {flag ? <Iconify icon={flag} size={moderateScale(20)} /> : null}
-          <Text style={{ color: colors.text, fontSize: moderateScale(15) }}>{languageName}</Text>
+          {flag ? <Iconify icon={flag} size={20} /> : null}
+          <Text style={{ color: colors.text, fontSize: 15 }}>{languageName}</Text>
         </View>
       ),
       chevron: true,
@@ -148,13 +148,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: scale(14),
-    paddingTop: verticalScale(16),
-    paddingBottom: verticalScale(40),
+    paddingHorizontal: 14,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
   languageRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(8),
+    gap: 8,
   },
 });

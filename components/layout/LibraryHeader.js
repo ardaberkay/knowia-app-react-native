@@ -1,11 +1,11 @@
 import React, { memo } from 'react';
 import { Animated, Image, StyleSheet, View } from 'react-native';
+import { MAX_FONT_SIZE_MULTIPLIER } from '../ui/AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import SegmentedControl from '../ui/SegmentedControl';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
-import { moderateScale, scale, verticalScale } from '../../lib/scaling';
 
 /**
  * Library header: one flat surface (theme card colour) holding a per-tab intro
@@ -46,7 +46,7 @@ function LibraryHeader({ progress, onTabPress }) {
         {
           backgroundColor: colors.cardBackground,
           borderColor: colors.cardBorder,
-          paddingTop: insets.top + verticalScale(24),
+          paddingTop: insets.top + 24,
         },
       ]}
     >
@@ -59,7 +59,7 @@ function LibraryHeader({ progress, onTabPress }) {
           });
           const translateY = progress.interpolate({
             inputRange: [index - 1, index, index + 1],
-            outputRange: [verticalScale(6), 0, verticalScale(6)],
+            outputRange: [6, 0, 6],
             extrapolate: 'clamp',
           });
           return (
@@ -69,10 +69,10 @@ function LibraryHeader({ progress, onTabPress }) {
               style={[styles.intro, { opacity, transform: [{ translateY }] }]}
             >
               <View style={styles.introText}>
-                <Animated.Text style={[typography.styles.h2, styles.title, { color: colors.text }]} numberOfLines={1}>
+                <Animated.Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER} style={[typography.styles.h2, styles.title, { color: colors.text }]} numberOfLines={1}>
                   {tab.title}
                 </Animated.Text>
-                <Animated.Text
+                <Animated.Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
                   style={[typography.styles.caption, styles.subtitle, { color: colors.muted }]}
                   numberOfLines={4}
                 >
@@ -95,14 +95,14 @@ function LibraryHeader({ progress, onTabPress }) {
         thumbColor={colors.buttonColor}
         inactiveTextColor={colors.muted}
         activeTextColor={colors.text}
-        height={verticalScale(44)}
+        height={44}
         style={styles.segmented}
       />
     </View>
   );
 }
 
-const IMAGE_SIZE = moderateScale(124, 0.3);
+const IMAGE_SIZE = 124;
 
 const styles = StyleSheet.create({
   surface: {
@@ -111,12 +111,12 @@ const styles = StyleSheet.create({
     // the pager, which is pulled up underneath it (see LibraryScreen
     // HERO_OVERLAP) so content scrolls behind the rounded corners.
     zIndex: 10,
-    borderBottomLeftRadius: moderateScale(36),
-    borderBottomRightRadius: moderateScale(36),
+    borderBottomLeftRadius: 36,
+    borderBottomRightRadius: 36,
     borderWidth: 1,
     borderTopWidth: 0,
-    paddingHorizontal: scale(20),
-    paddingBottom: verticalScale(4),
+    paddingHorizontal: 20,
+    paddingBottom: 4,
   },
   introArea: {
     height: IMAGE_SIZE,
@@ -128,13 +128,13 @@ const styles = StyleSheet.create({
   },
   introText: {
     flex: 1,
-    marginRight: scale(12),
+    marginRight: 12,
   },
   title: {
-    marginBottom: verticalScale(6),
+    marginBottom: 6,
   },
   subtitle: {
-    lineHeight: moderateScale(20),
+    lineHeight: 20,
   },
   introImage: {
     width: IMAGE_SIZE,
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   segmented: {
-    marginTop: verticalScale(8),
+    marginTop: 8,
   },
 });
 

@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Platform, Animated, Keyboard, Modal, Pressable } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Animated, Keyboard, Modal, Pressable } from 'react-native';
+import { Text } from '../../components/ui/AppText';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useHeaderHeight } from '@react-navigation/elements';
 import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
@@ -12,8 +14,8 @@ import { getDiscoverDecks } from '../../services/DeckService';
 import { addFavoriteDeck, removeFavoriteDeck } from '../../services/FavoriteService';
 import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { triggerHaptic } from '../../lib/hapticManager';
+import { useListBottomInset } from '../../components/ui/CustomTabBar';
 
 // Tabs. `key` is the DeckService tab (it maps to get_discover_decks' sort):
 //  trend     -> 'popular'       time-decayed score (favourites + people + starts)
@@ -38,8 +40,8 @@ const TIME_FILTERS = [
 // Card badge per tab: what the list is ranked by.
 const BADGE_BY_TAB = { trend: 'trend', unique: 'people', favorites: 'likes' };
 
-const TITLE_HEIGHT = verticalScale(52);
-const CHIPS_HEIGHT = verticalScale(52);
+const TITLE_HEIGHT = 52;
+const CHIPS_HEIGHT = 52;
 // Softer than Profile's glow (0.26).
 const GLOW_STRENGTH = 0.18;
 
@@ -71,6 +73,8 @@ export default function DiscoverScreen() {
   const { session } = useAuth();
   const userId = session?.user?.id;
   const insets = useSafeAreaInsets();
+  const listBottomInset = useListBottomInset();
+  const nativeHeaderHeight = useHeaderHeight();
 
   const [activeTab, setActiveTab] = useState('trend');
   const [timeFilter, setTimeFilter] = useState('all');
@@ -198,7 +202,6 @@ export default function DiscoverScreen() {
   // ─── Header ───
   // Tab: own "Keşfet" title that scrolls away; the chip row stays pinned.
   // Stack: the native header shows the title, so only the chips are drawn.
-  const nativeHeaderHeight = Platform.OS === 'ios' ? insets.top + 44 : 56;
   const topInset = isTab ? insets.top : nativeHeaderHeight;
   const titleHeight = isTab ? TITLE_HEIGHT : 0;
   const headerHeight = topInset + titleHeight + CHIPS_HEIGHT;
@@ -236,7 +239,7 @@ export default function DiscoverScreen() {
   const openTimeMenu = () => {
     triggerHaptic('selection');
     pillRef.current?.measureInWindow((x, y, width, height) => {
-      setTimeMenu({ right: x + width, top: y + height + verticalScale(6) });
+      setTimeMenu({ right: x + width, top: y + height + 6 });
     });
   };
   const selectTimeFilter = (key) => {
@@ -257,11 +260,11 @@ export default function DiscoverScreen() {
         { backgroundColor: 'rgba(255, 255, 255, 0.08)', opacity: pressed ? 0.7 : 1 },
       ]}
     >
-      <Iconify icon="solar:calendar-minimalistic-bold" size={moderateScale(14)} color={colors.muted} />
+      <Iconify icon="solar:calendar-minimalistic-bold" size={14} color={colors.muted} />
       <Text style={[styles.timePillText, { color: colors.text }]} numberOfLines={1}>
         {t(activeTime.labelKey, activeTime.fallback)}
       </Text>
-      <Iconify icon="flowbite:caret-down-solid" size={moderateScale(12)} color={colors.muted} />
+      <Iconify icon="flowbite:caret-down-solid" size={12} color={colors.muted} />
     </Pressable>
   );
 
@@ -282,7 +285,7 @@ export default function DiscoverScreen() {
             key={tab.key}
             id={`discoverGlow_${tab.key}`}
             color={tab.color}
-            height={headerHeight + verticalScale(40)}
+            height={headerHeight + 40}
             opacity={tabAnim.interpolate({ inputRange: [i - 1, i, i + 1], outputRange: [0, 1, 0], extrapolate: 'clamp' })}
           />
         ))}
@@ -324,7 +327,7 @@ export default function DiscoverScreen() {
                   pressed && { opacity: 0.7 },
                 ]}
               >
-                <Iconify icon={tab.icon} size={moderateScale(15)} color={selected ? '#FFFFFF' : colors.muted} />
+                <Iconify icon={tab.icon} size={15} color={selected ? '#FFFFFF' : colors.muted} />
                 <Text style={[styles.chipText, { color: selected ? '#FFFFFF' : colors.text }]}>
                   {t(tab.labelKey, tab.fallback)}
                 </Text>
@@ -343,7 +346,7 @@ export default function DiscoverScreen() {
     <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.listContainer}>
         {!loadedTabs.has(activeTab) ? (
-          <View style={{ paddingTop: headerHeight + verticalScale(8), flex: 1 }}>
+          <View style={{ paddingTop: headerHeight + 8, flex: 1 }}>
             <DiscoverDecksSkeleton />
           </View>
         ) : (
@@ -359,13 +362,9 @@ export default function DiscoverScreen() {
             refreshing={refreshing}
             onRefresh={handleRefresh}
             showPopularityBadge={BADGE_BY_TAB[activeTab] || false}
-            contentPaddingTop={headerHeight + verticalScale(8)}
+            contentPaddingTop={headerHeight + 8}
             progressViewOffset={headerHeight}
-            contentPaddingBottom={
-              Platform.OS === 'android'
-                ? insets.bottom + verticalScale(isTab ? 120 : 72)
-                : (isTab ? '30%' : '10%')
-            }
+            contentPaddingBottom={listBottomInset}
           />
         )}
       </View>
@@ -381,7 +380,7 @@ export default function DiscoverScreen() {
                 {
                   // Right-aligned under the pill.
                   top: timeMenu.top,
-                  left: Math.max(scale(14), timeMenu.right - scale(170)),
+                  left: Math.max(14, timeMenu.right - 170),
                   backgroundColor: colors.cardBackground,
                   borderColor: colors.cardBorder || colors.border,
                 },
@@ -402,7 +401,7 @@ export default function DiscoverScreen() {
                     <Text style={[typography.styles.body, { color: selected ? colors.buttonColor : colors.text, flex: 1 }]}>
                       {t(filter.labelKey, filter.fallback)}
                     </Text>
-                    {selected ? <Iconify icon="hugeicons:tick-01" size={moderateScale(18)} color={colors.buttonColor} /> : null}
+                    {selected ? <Iconify icon="hugeicons:tick-01" size={18} color={colors.buttonColor} /> : null}
                   </TouchableOpacity>
                 );
               })}
@@ -432,51 +431,51 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: scale(16),
+    paddingHorizontal: 16,
   },
   title: {
-    fontSize: moderateScale(28),
+    fontSize: 28,
     fontWeight: '800',
     letterSpacing: -0.5,
   },
   chipsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingRight: scale(14),
+    paddingRight: 14,
   },
   chipsContent: {
     alignItems: 'center',
-    gap: scale(8),
-    paddingHorizontal: scale(14),
+    gap: 8,
+    paddingHorizontal: 14,
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(6),
-    height: moderateScale(36),
-    paddingHorizontal: scale(14),
+    gap: 6,
+    height: 36,
+    paddingHorizontal: 14,
     borderRadius: 999,
   },
   chipText: {
-    fontSize: moderateScale(14),
+    fontSize: 14,
     fontWeight: '700',
   },
   timePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(5),
-    height: moderateScale(34),
-    paddingHorizontal: scale(12),
+    gap: 5,
+    height: 34,
+    paddingHorizontal: 12,
     borderRadius: 999,
   },
   timePillText: {
-    fontSize: moderateScale(13),
+    fontSize: 13,
     fontWeight: '600',
   },
   timeMenu: {
     position: 'absolute',
-    width: scale(170),
-    borderRadius: moderateScale(14),
+    width: 170,
+    borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -488,7 +487,7 @@ const styles = StyleSheet.create({
   timeMenuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: scale(14),
-    paddingVertical: verticalScale(12),
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
 });

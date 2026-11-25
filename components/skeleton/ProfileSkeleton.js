@@ -1,14 +1,13 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Dimensions } from 'react-native';
+import { View, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import { useTheme } from '../../theme/theme';
-import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
 import { typography } from '../../theme/typography';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Shimmer efekti için component
 const ShimmerView = ({ style, isDarkMode }) => {
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -65,10 +64,10 @@ export default function ProfileSkeleton() {
 
 const styles = StyleSheet.create({
   avatar: {
-    width: scale(80),
-    height: scale(80),
-    borderRadius: moderateScale(99),
-    marginRight: scale(20),
+    width: 80,
+    height: 80,
+    borderRadius: 99,
+    marginRight: 20,
   },
   userInfo: {
     flex: 1,
@@ -77,7 +76,7 @@ const styles = StyleSheet.create({
     width: '80%',
     height: typography.styles.h2.fontSize,
     borderRadius: 24,
-    marginBottom: verticalScale(8),
+    marginBottom: 8,
   },
   email: {
     width: '90%',

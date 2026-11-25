@@ -1,17 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
-  ScrollView, 
-  Image, 
-  Platform, 
-  Modal, 
-  TouchableWithoutFeedback, 
-  Dimensions, 
-  Pressable
-} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ScrollView, Image, Platform, Modal, TouchableWithoutFeedback, Pressable, useWindowDimensions } from 'react-native';
+import { Text } from '../ui/AppText';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -25,7 +14,6 @@ import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
@@ -37,13 +25,13 @@ import { uploadCardImage } from '../../services/StorageService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSnackbarHelpers } from '../ui/Snackbar';
 
-const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export default function CsvUploadModal({
   isVisible,
   onClose,
   deck
 }) {
+  const { height: SCREEN_HEIGHT } = useWindowDimensions();
   const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
   const { session } = useAuth();
@@ -649,7 +637,7 @@ export default function CsvUploadModal({
               hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
               style={styles.closeBtnWrapper}
             >
-              <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
+              <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
 
@@ -663,14 +651,14 @@ export default function CsvUploadModal({
             <View style={[styles.expandableSection, { backgroundColor: isDarkMode ? '#222' : '#F7F7F7' }]}>
               <TouchableOpacity onPress={toggleGuide} activeOpacity={0.7} style={styles.expandableHeader}>
                 <View style={styles.expandableHeaderLeft}>
-                  <Iconify icon="material-symbols:info-outline" size={moderateScale(22)} color={colors.primary || '#007AFF'} style={{ marginRight: scale(10) }} />
+                  <Iconify icon="material-symbols:info-outline" size={22} color={colors.primary || '#007AFF'} style={{ marginRight: 10 }} />
                   <Text style={[styles.expandableHeaderText, { color: colors.text }]}>
                     {t('addCard.howToCreateTable', 'Tablo Nasıl Oluşturulur?')}
                   </Text>
                 </View>
                 <Iconify
                   icon="flowbite:caret-down-solid"
-                  size={moderateScale(18)}
+                  size={18}
                   color={colors.text}
                   style={{ transform: [{ rotate: tableGuideExpanded ? '180deg' : '0deg' }] }}
                 />
@@ -694,7 +682,7 @@ export default function CsvUploadModal({
                     </View>
 
                     <View style={styles.alertInline}>
-                      <Iconify icon="mdi:required" size={moderateScale(22)} color={colors.secondary || '#F39C12'} style={{ marginRight: scale(6) }} />
+                      <Iconify icon="mdi:required" size={22} color={colors.secondary || '#F39C12'} style={{ marginRight: 6 }} />
                       <Text style={[styles.alertInlineText, { color: colors.secondary || '#F39C12' }]}>
                         {t('addCard.requiredColumns', 'Soru ve Cevap sütunları zorunludur!')}
                       </Text>
@@ -708,7 +696,7 @@ export default function CsvUploadModal({
                     <Text style={[styles.guideText, { color: colors.text }]}>
                       {t('addCard.imageInstructions', 'Görsel sütununa eklemek istediğiniz resmin URL adresini yapıştırabilir veya telefonunuzdan seçeceğiniz görselin dosya ismini yazabilirsiniz.')}
                     </Text>
-                    <Text style={[styles.guideText, { color: colors.muted, fontStyle: 'italic', marginTop: verticalScale(4) }]}>
+                    <Text style={[styles.guideText, { color: colors.muted, fontStyle: 'italic', marginTop: 4 }]}>
                       {t('addCard.svgNote', 'Not: SVG formatı desteklenmemektedir.')}
                     </Text>
                   </View>
@@ -760,7 +748,7 @@ export default function CsvUploadModal({
 
                 {/* Dosya Adı Barı */}
                 <View style={[styles.fileNameBar, { backgroundColor: isDarkMode ? '#222' : '#F4F6F8' }]}>
-                  <Iconify icon="hugeicons:document-validation" size={moderateScale(22)} color={colors.primary || '#007AFF'} />
+                  <Iconify icon="hugeicons:document-validation" size={22} color={colors.primary || '#007AFF'} />
                   <Text style={[styles.fileNameText, { color: colors.text }]} numberOfLines={1}>
                     {csvPreview.fileName}
                   </Text>
@@ -787,7 +775,7 @@ export default function CsvUploadModal({
                 {/* SVG Uyarısı */}
                 {csvPreview.cardsWithSvg && csvPreview.cardsWithSvg.length > 0 && (
                   <View style={styles.alertBoxWarning}>
-                    <Iconify icon="mdi:information-variant" size={moderateScale(24)} color="#B7791F" style={{ marginRight: scale(10) }} />
+                    <Iconify icon="mdi:information-variant" size={24} color="#B7791F" style={{ marginRight: 10 }} />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.alertBoxTitleWarning}>{t('addCard.svgWarning', 'SVG Desteklenmiyor')}</Text>
                       <Text style={styles.alertBoxTextWarning}>
@@ -801,7 +789,7 @@ export default function CsvUploadModal({
                 {csvPreview.errors.length > 0 && (
                   <View style={styles.alertBoxError}>
                     <View style={styles.errorHeaderRow}>
-                      <Iconify icon="material-symbols:info-outline" size={moderateScale(20)} color="#D32F2F" style={{ marginRight: scale(8) }} />
+                      <Iconify icon="material-symbols:info-outline" size={20} color="#D32F2F" style={{ marginRight: 8 }} />
                       <Text style={styles.alertBoxTitleError}>{t('addCard.errors', 'Hatalar (İlk 5)')}</Text>
                     </View>
                     {csvPreview.errors.map((err, idx) => (
@@ -830,7 +818,7 @@ export default function CsvUploadModal({
                         style={[styles.pickImgBtn, { backgroundColor: colors.primary || '#007AFF', flex: 1 }]}
                         disabled={csvLoading}
                       >
-                        <Iconify icon="mage:image-fill" size={moderateScale(18)} color="#FFF" style={{ marginRight: scale(6) }} />
+                        <Iconify icon="mage:image-fill" size={18} color="#FFF" style={{ marginRight: 6 }} />
                         <Text style={styles.pickImgBtnText}>{t('addCard.pickImages', 'Seç')}</Text>
                       </TouchableOpacity>
                     </View>
@@ -848,7 +836,7 @@ export default function CsvUploadModal({
                                 <Text style={[styles.badgeText, { color: colors.text }]}>{index + 1}</Text>
                               </View>
 
-                              <View style={{ flex: 1, paddingRight: scale(10) }}>
+                              <View style={{ flex: 1, paddingRight: 10 }}>
                                 <Text style={[styles.imgIdLabel, { color: colors.muted }]} numberOfLines={1}>{imageId}</Text>
                               </View>
 
@@ -868,7 +856,7 @@ export default function CsvUploadModal({
                                 ) : (
                                   <Text style={[styles.dropdownTriggerPlaceholder, { color: colors.muted }]}>{t('addCard.matchImages', 'Eşleştir')}</Text>
                                 )}
-                                <Iconify icon="flowbite:caret-down-solid" size={moderateScale(16)} color={colors.text} style={{ marginLeft: scale(6) }} />
+                                <Iconify icon="flowbite:caret-down-solid" size={16} color={colors.text} style={{ marginLeft: 6 }} />
                               </TouchableOpacity>
 
                               {/* Modal Dropdown Menü - Core Modal'a çevrildi */}
@@ -888,8 +876,8 @@ export default function CsvUploadModal({
                                         left: dropdownPos[imageId]?.x || 0,
                                         top: Platform.OS === 'android'
                                           ? (dropdownPos[imageId]?.y || 0) + (dropdownPos[imageId]?.height || 0)
-                                          : (dropdownPos[imageId]?.y || 0) + (dropdownPos[imageId]?.height || 0) + verticalScale(4),
-                                        minWidth: dropdownPos[imageId]?.width || scale(150),
+                                          : (dropdownPos[imageId]?.y || 0) + (dropdownPos[imageId]?.height || 0) + 4,
+                                        minWidth: dropdownPos[imageId]?.width || 150,
                                         zIndex: imageIds.length - index + 1000,
                                       }
                                     ]}>
@@ -958,7 +946,7 @@ export default function CsvUploadModal({
           {!csvPreview && (
             <View style={styles.bottomActions}>
               <TouchableOpacity onPress={handleDownloadTemplate} style={styles.btnDownloadTemplate}>
-                <Iconify icon="tabler:file-download-filled" size={moderateScale(20)} color="#F98A21" style={{ marginRight: scale(8) }} />
+                <Iconify icon="tabler:file-download-filled" size={20} color="#F98A21" style={{ marginRight: 8 }} />
                 <Text style={styles.btnDownloadTemplateText}>{t('addCard.downloadTemplate', 'Örnek CSV İndir')}</Text>
               </TouchableOpacity>
 
@@ -967,7 +955,7 @@ export default function CsvUploadModal({
                 style={[styles.btnPickCsv, { backgroundColor: colors.primary || '#007AFF' }]}
                 disabled={csvLoading}
               >
-                <Iconify icon="cuida:upload-outline" size={moderateScale(20)} color="#FFF" style={{ marginRight: scale(8) }} />
+                <Iconify icon="cuida:upload-outline" size={20} color="#FFF" style={{ marginRight: 8 }} />
                 <Text style={styles.btnPickCsvText}>
                   {csvLoading ? t('addCard.loading', 'Yükleniyor...') : t('addCard.selectCSV', 'CSV Yükle')}
                 </Text>
@@ -994,8 +982,8 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: '90%', 
     maxHeight: '90%',
-    borderRadius: moderateScale(32),
-    padding: scale(20),
+    borderRadius: 32,
+    padding: 20,
     overflow: 'hidden',
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
@@ -1009,75 +997,75 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: verticalScale(16),
+    marginBottom: 16,
   },
   closeBtnWrapper: {
     backgroundColor: 'rgba(150, 150, 150, 0.1)',
-    padding: moderateScale(6),
+    padding: 6,
     borderRadius: 99,
   },
   scrollView: {
-    maxHeight: verticalScale(550),
+    maxHeight: 550,
   },
   description: {
-    fontSize: moderateScale(14),
-    marginBottom: verticalScale(20),
+    fontSize: 14,
+    marginBottom: 20,
     textAlign: 'center',
-    lineHeight: verticalScale(20),
+    lineHeight: 20,
   },
 
   // --- REHBER KISMI ---
   expandableSection: {
-    marginBottom: verticalScale(16),
-    borderRadius: moderateScale(16),
+    marginBottom: 16,
+    borderRadius: 16,
     overflow: 'hidden',
   },
   expandableHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: verticalScale(14),
-    paddingHorizontal: scale(16),
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
   expandableHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   expandableHeaderText: {
-    fontSize: moderateScale(15),
+    fontSize: 15,
     fontWeight: '700',
   },
   expandableContent: {
-    paddingBottom: verticalScale(16),
-    paddingHorizontal: scale(16),
-    gap: verticalScale(12),
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    gap: 12,
   },
   guideCard: {
-    padding: scale(12),
-    borderRadius: moderateScale(12),
+    padding: 12,
+    borderRadius: 12,
     borderWidth: 1,
   },
   guideTitle: {
     fontWeight: '700',
-    fontSize: moderateScale(14),
-    marginBottom: verticalScale(6),
+    fontSize: 14,
+    marginBottom: 6,
   },
   guideText: {
-    fontSize: moderateScale(13),
-    lineHeight: verticalScale(18),
+    fontSize: 13,
+    lineHeight: 18,
   },
   codeBadge: {
-    marginTop: verticalScale(8),
-    marginBottom: verticalScale(10),
-    paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(12),
-    borderRadius: moderateScale(8),
+    marginTop: 8,
+    marginBottom: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
   },
   codeBadgeText: {
     fontWeight: '700',
-    fontSize: moderateScale(13),
+    fontSize: 13,
     letterSpacing: 0.5,
   },
   alertInline: {
@@ -1085,31 +1073,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   alertInlineText: {
-    fontSize: moderateScale(12),
+    fontSize: 12,
     fontWeight: '600',
   },
   imagePreviewWrapper: {
-    marginTop: verticalScale(4),
+    marginTop: 4,
     position: 'relative',
-    borderRadius: moderateScale(12),
+    borderRadius: 12,
     overflow: 'hidden',
   },
   exampleTableImage: {
     width: '100%',
-    height: verticalScale(100),
+    height: 100,
   },
   zoomIconBadge: {
     position: 'absolute',
     bottom: 8,
     right: 8,
     backgroundColor: 'rgba(0,0,0,0.6)',
-    padding: moderateScale(6),
+    padding: 6,
     borderRadius: 99,
   },
   fullScreenCloseBtn: {
     position: 'absolute',
-    top: verticalScale(80),
-    right: scale(24),
+    top: 80,
+    right: 24,
     zIndex: 10,
     backgroundColor: 'rgba(255,255,255,0.2)',
     padding: 6,
@@ -1118,40 +1106,40 @@ const styles = StyleSheet.create({
 
   // --- ÖNİZLEME (PREVIEW) KISMI ---
   previewSection: {
-    paddingTop: verticalScale(8),
-    gap: verticalScale(16),
+    paddingTop: 8,
+    gap: 16,
   },
   fileNameBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: scale(12),
-    borderRadius: moderateScale(12),
+    padding: 12,
+    borderRadius: 12,
   },
   fileNameText: {
-    fontSize: moderateScale(14),
+    fontSize: 14,
     fontWeight: '600',
-    marginLeft: scale(10),
+    marginLeft: 10,
     flex: 1,
   },
   statsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: scale(8),
+    gap: 8,
   },
   statBox: {
     flex: 1,
-    paddingVertical: verticalScale(12),
-    borderRadius: moderateScale(12),
+    paddingVertical: 12,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   statTitle: {
-    fontSize: moderateScale(12),
+    fontSize: 12,
     fontWeight: '600',
-    marginBottom: verticalScale(4),
+    marginBottom: 4,
   },
   statValue: {
-    fontSize: moderateScale(20),
+    fontSize: 20,
     fontWeight: '800',
   },
 
@@ -1161,78 +1149,78 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF08A30',
     borderColor: '#F59E0B',
     borderWidth: 1,
-    padding: scale(12),
-    borderRadius: moderateScale(12),
+    padding: 12,
+    borderRadius: 12,
   },
   alertBoxTitleWarning: {
     color: '#B7791F',
     fontWeight: '700',
-    fontSize: moderateScale(14),
-    marginBottom: verticalScale(2),
+    fontSize: 14,
+    marginBottom: 2,
   },
   alertBoxTextWarning: {
     color: '#B7791F',
-    fontSize: moderateScale(12),
-    lineHeight: verticalScale(16),
+    fontSize: 12,
+    lineHeight: 16,
   },
   alertBoxError: {
     backgroundColor: '#FEE2E250',
     borderColor: '#EF4444',
     borderWidth: 1,
-    padding: scale(12),
-    borderRadius: moderateScale(12),
+    padding: 12,
+    borderRadius: 12,
   },
   errorHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: verticalScale(6),
+    marginBottom: 6,
   },
   alertBoxTitleError: {
     color: '#D32F2F',
     fontWeight: '700',
-    fontSize: moderateScale(14),
+    fontSize: 14,
   },
   alertBoxTextError: {
     color: '#D32F2F',
-    fontSize: moderateScale(12),
-    marginBottom: verticalScale(2),
+    fontSize: 12,
+    marginBottom: 2,
   },
 
   // --- EŞLEŞTİRME KISMI ---
   imageMapSection: {
-    padding: scale(14),
-    borderRadius: moderateScale(16),
+    padding: 14,
+    borderRadius: 16,
     borderWidth: 1,
   },
   imageMapHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: verticalScale(16),
+    marginBottom: 16,
   },
   imageMapTitle: {
     fontWeight: '700',
-    fontSize: moderateScale(14),
-    marginBottom: verticalScale(2),
+    fontSize: 14,
+    marginBottom: 2,
   },
   imageMapSub: {
-    fontSize: moderateScale(12),
+    fontSize: 12,
   },
   pickImgBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(20),
-    borderRadius: moderateScale(8),
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 8,
   },
   pickImgBtnText: {
     color: '#FFF',
     fontWeight: '700',
-    fontSize: moderateScale(12),
+    fontSize: 12,
   },
   dropdownsList: {
-    gap: verticalScale(10),
+    gap: 10,
   },
   dropdownRow: {
     flexDirection: 'row',
@@ -1240,19 +1228,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   badgeContainer: {
-    width: scale(24),
-    height: scale(24),
+    width: 24,
+    height: 24,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: scale(10),
+    marginRight: 10,
   },
   badgeText: {
-    fontSize: moderateScale(12),
+    fontSize: 12,
     fontWeight: '700',
   },
   imgIdLabel: {
-    fontSize: moderateScale(13),
+    fontSize: 13,
     fontWeight: '500',
   },
   dropdownTrigger: {
@@ -1260,13 +1248,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderRadius: moderateScale(8),
-    paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(10),
-    width: scale(130),
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    width: 130,
   },
   dropdownTriggerPlaceholder: {
-    fontSize: moderateScale(13),
+    fontSize: 13,
     flex: 1,
   },
   dropdownSelectedInner: {
@@ -1275,82 +1263,82 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dropdownTriggerThumb: {
-    width: scale(20),
-    height: scale(20),
-    borderRadius: moderateScale(4),
-    marginRight: scale(6),
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    marginRight: 6,
   },
   dropdownTriggerText: {
-    fontSize: moderateScale(13),
+    fontSize: 13,
     flex: 1,
   },
 
   // Dropdown Menu Styles
   dropdownMenu: {
     position: 'absolute',
-    borderRadius: moderateScale(12),
-    paddingVertical: verticalScale(4),
+    borderRadius: 12,
+    paddingVertical: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 10,
     elevation: 8,
     borderWidth: 1,
-    maxHeight: verticalScale(200),
+    maxHeight: 200,
   },
   dropdownScrollView: {
-    maxHeight: verticalScale(200),
+    maxHeight: 200,
   },
   dropdownListItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: verticalScale(10),
-    paddingHorizontal: scale(12),
+    paddingVertical: 10,
+    paddingHorizontal: 12,
   },
   dropdownImageThumbnail: {
-    width: scale(30),
-    height: scale(30),
-    borderRadius: moderateScale(6),
-    marginRight: scale(10),
+    width: 30,
+    height: 30,
+    borderRadius: 6,
+    marginRight: 10,
   },
   dropdownListItemText: {
-    fontSize: moderateScale(14),
+    fontSize: 14,
   },
 
   // --- İÇ AKSİYON BUTONLARI (İPTAL / İÇE AKTAR) ---
   previewActionButtons: {
     flexDirection: 'row',
-    gap: scale(12),
-    marginTop: verticalScale(8),
-    marginBottom: verticalScale(16),
+    gap: 12,
+    marginTop: 8,
+    marginBottom: 16,
   },
   btnCancel: {
     flex: 1,
-    paddingVertical: verticalScale(14),
-    borderRadius: moderateScale(12),
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: 'center',
   },
   btnCancelText: {
     fontWeight: '700',
-    fontSize: moderateScale(14),
+    fontSize: 14,
   },
   btnImport: {
     flex: 2,
-    paddingVertical: verticalScale(14),
-    borderRadius: moderateScale(12),
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: 'center',
   },
   btnImportText: {
     color: '#FFF',
     fontWeight: '700',
-    fontSize: moderateScale(14),
+    fontSize: 14,
   },
 
   // --- SABİT ALT AKSİYON BUTONLARI (İLK EKRAN) ---
   bottomActions: {
     flexDirection: 'row',
-    gap: scale(12),
-    marginTop: verticalScale(16),
+    gap: 12,
+    marginTop: 16,
   },
   btnDownloadTemplate: {
     flex: 1,
@@ -1358,16 +1346,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(249, 138, 33, 0.15)', // Çok tatlı bir turuncu transparan
-    paddingVertical: verticalScale(14),
-    paddingHorizontal: scale(8),
-    borderRadius: moderateScale(12),
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#F98A21',
   },
   btnDownloadTemplateText: {
     color: '#F98A21',
     fontWeight: '700',
-    fontSize: moderateScale(13),
+    fontSize: 13,
     flexShrink: 1,
   },
   btnPickCsv: {
@@ -1375,14 +1363,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: verticalScale(14),
-    paddingHorizontal: scale(8),
-    borderRadius: moderateScale(12),
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    borderRadius: 12,
   },
   btnPickCsvText: {
     color: '#FFF',
     fontWeight: '700',
-    fontSize: moderateScale(13),
+    fontSize: 13,
     flexShrink: 1,
   },
 });

@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ImageBackground, Platform } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Alert, ImageBackground, Platform, useWindowDimensions } from 'react-native';
+import { Text, TextInput } from '../../components/ui/AppText';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../theme/theme';
@@ -7,7 +8,6 @@ import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import LanguageSelector from '../../components/modals/LanguageSelector';
-import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -22,13 +22,11 @@ export default function LoginScreen({ navigation }) {
   const { t, i18n } = useTranslation();
   
   // useWindowDimensions hook'u - ekran döndürme desteği
-  const { width, height } = useWindowDimensions();
-  const isTablet = getIsTablet();
+  const { height } = useWindowDimensions();
   
   const containerPaddingTop = useMemo(() => {
-    if (isTablet) return height * 0.30;
     return height * 0.35;
-  }, [height, isTablet]);
+  }, [height]);
 
 
   const handleLogin = async () => {
@@ -121,7 +119,7 @@ export default function LoginScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
         enableOnAndroid={true}
         enableAutomaticScroll={true}
-        extraScrollHeight={verticalScale(50)}
+        extraScrollHeight={50}
         enableResetScrollToCoords={false}
       >
         <View style={styles.form}>
@@ -130,14 +128,14 @@ export default function LoginScreen({ navigation }) {
             style={styles.languageButton}
             onPress={() => setLanguageModalVisible(true)}
           >
-            <Iconify icon="material-symbols:translate-rounded" size={moderateScale(20)} color="#fff" />
+            <Iconify icon="material-symbols:translate-rounded" size={20} color="#fff" />
             <Text style={[styles.languageButtonText, { color: '#fff' }]}>
               {i18n.language === 'tr' ? 'Türkçe' : i18n.language === 'en' ? 'English' : i18n.language === 'es' ? 'Spanish' : i18n.language === 'fr' ? 'French' : i18n.language === 'pt' ? 'Portuguese' : i18n.language === 'de' ? 'German' : ''}
             </Text>
           </TouchableOpacity>
-          <View style={[styles.inputContainer, emailError && { borderColor: colors.error || '#FF3B30', borderWidth: moderateScale(2) }]}>
-            <View style={{justifyContent: 'center', alignItems: 'center', width: scale(25), height: verticalScale(22)}}>
-              <Iconify icon="tabler:mail-filled" size={moderateScale(22)} color={emailError ? (colors.error || '#FF3B30') : colors.muted} /></View>
+          <View style={[styles.inputContainer, emailError && { borderColor: colors.error || '#FF3B30', borderWidth: 2 }]}>
+            <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
+              <Iconify icon="tabler:mail-filled" size={22} color={emailError ? (colors.error || '#FF3B30') : colors.muted} /></View>
             <TextInput
               ref={emailInputRef}
               style={[styles.input, typography.styles.body]}
@@ -153,8 +151,8 @@ export default function LoginScreen({ navigation }) {
             />
           </View>
           <View style={styles.inputContainer}>
-            <View style={{justifyContent: 'center', alignItems: 'center', width: scale(25), height: verticalScale(22)}}>
-              <Iconify icon="carbon:password" size={moderateScale(22)} color={colors.muted} /></View>
+            <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
+              <Iconify icon="carbon:password" size={22} color={colors.muted} /></View>
             <TextInput
               style={[styles.input, typography.styles.body]}
               placeholder={t('login.passwordPlaceholder', 'Şifre')}
@@ -165,10 +163,10 @@ export default function LoginScreen({ navigation }) {
             />
             <TouchableOpacity
               onPress={() => setShowPassword(prev => !prev)}
-              style={{justifyContent: 'center', alignItems: 'center', width: scale(28), height: verticalScale(22)}}
+              style={{justifyContent: 'center', alignItems: 'center', width: 28, height: 22}}
               disabled={loading}
             >
-              <Iconify icon={showPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={moderateScale(22)} color={colors.muted} />
+              <Iconify icon={showPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={22} color={colors.muted} />
             </TouchableOpacity>
           </View>
 
@@ -203,7 +201,7 @@ export default function LoginScreen({ navigation }) {
             }}
             disabled={loading}
           >
-            <Text style={[typography.styles.link, { color: colors.secondary, fontWeight: 'semibold', right: scale(6), marginBottom: verticalScale(-10)}]}>{t('login.forgotPassword', 'Şifremi Unuttum')}</Text>
+            <Text style={[typography.styles.link, { color: colors.secondary, fontWeight: 'semibold', right: 6, marginBottom: -10}]}>{t('login.forgotPassword', 'Şifremi Unuttum')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.button, { backgroundColor: colors.buttonColor }, loading && styles.buttonDisabled]}
@@ -226,7 +224,7 @@ export default function LoginScreen({ navigation }) {
             onPress={handleGoogleLogin}
             disabled={loading}
           >
-            <Iconify icon="logos:google-icon" size={moderateScale(24)} color="#DB4437" />
+            <Iconify icon="logos:google-icon" size={24} color="#DB4437" />
             <Text style={[styles.googleButtonText, typography.styles.button, { color: '#000' }]}>
               {t('login.loginWithGoogle', 'Google ile devam et')}
             </Text>
@@ -239,7 +237,7 @@ export default function LoginScreen({ navigation }) {
               onPress={handleAppleLogin}
               disabled={loading}
             >
-              <Iconify icon="grommet-icons:apple" size={moderateScale(24)} color="#000" />
+              <Iconify icon="grommet-icons:apple" size={24} color="#000" />
               <Text style={[styles.appleButtonText, typography.styles.button, { color: '#000' }]}>
                 {t('login.loginWithApple', 'Apple ile Giriş Yap')}
               </Text>
@@ -247,7 +245,7 @@ export default function LoginScreen({ navigation }) {
           )}
 
           <TouchableOpacity
-            style={[styles.linkButton, { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: moderateScale(8), paddingHorizontal: scale(12), paddingVertical: verticalScale(8) }]}
+            style={[styles.linkButton, { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 }]}
             onPress={() => navigation.navigate('Register')}
           >
             <Text style={[styles.linkText, typography.styles.link, { color: colors.secondary }]}>
@@ -278,39 +276,39 @@ const styles = StyleSheet.create({
   },
   container: {
     flexGrow: 1,
-    padding: scale(20),
+    padding: 20,
     // paddingTop dinamik olarak uygulanacak
     justifyContent: 'center',
   },
   title: {
     textAlign: 'center',
-    marginBottom: verticalScale(10),
+    marginBottom: 10,
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: scale(1), height: verticalScale(1) },
-    textShadowRadius: moderateScale(3),
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
 
   form: {
-    gap: verticalScale(15),
+    gap: 15,
   },
   input: {
     flex: 1,
-    paddingVertical: verticalScale(12),
+    paddingVertical: 12,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: moderateScale(1),
+    borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.5)',
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(6),
-    borderRadius: moderateScale(10),
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    gap: scale(8),
+    gap: 8,
   },
   button: {
-    padding: moderateScale(15),
-    borderRadius: moderateScale(10),
+    padding: 15,
+    borderRadius: 10,
     alignItems: 'center',
   },
   buttonDisabled: {
@@ -333,61 +331,61 @@ const styles = StyleSheet.create({
   },
   dividerLine: {
     flex: 1,
-    height: moderateScale(1),
+    height: 1,
   },
   dividerText: {
-    marginHorizontal: scale(10),
+    marginHorizontal: 10,
   },
   googleButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: moderateScale(15),
-    borderRadius: moderateScale(10),
-    gap: scale(10),
+    padding: 15,
+    borderRadius: 10,
+    gap: 10,
   },
   googleButtonText: {
-    marginLeft: scale(10),
+    marginLeft: 10,
   },
   appleButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: moderateScale(15),
-    borderRadius: moderateScale(10),
-    gap: scale(10),
+    padding: 15,
+    borderRadius: 10,
+    gap: 10,
   },
   appleButtonText: {
-    marginLeft: scale(10),
+    marginLeft: 10,
   },
   buttonRow: {
     flexDirection: 'row',
-    gap: scale(4),
-    marginBottom: verticalScale(10),
+    gap: 4,
+    marginBottom: 10,
   },
   forgotButton: {
     backgroundColor: 'rgba(255,255,255,0.7)',
-    borderWidth: moderateScale(1),
+    borderWidth: 1,
     borderColor: '#FF992B',
   },
   forgotTextButton: {
     alignSelf: 'flex-end',
-    marginBottom: verticalScale(6),
+    marginBottom: 6,
   },
   languageButton: {
     position: 'absolute',
     right: 0,
-    top: verticalScale(-50),
+    top: -50,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(8),
-    borderRadius: moderateScale(20),
-    gap: scale(6),
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
   },
   languageButtonText: {
-    fontSize: moderateScale(14),
+    fontSize: 14,
     fontWeight: '500',
   },
 }); 

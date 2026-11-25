@@ -1,12 +1,11 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Dimensions, Easing } from 'react-native';
+import { View, StyleSheet, Animated, Easing, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { scale, verticalScale, moderateScale } from '../../lib/scaling';
 import { useTheme } from '../../theme/theme';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function CommunityDeckSkeleton() {
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
     const { isDarkMode } = useTheme();
     const shimmerAnim = useRef(new Animated.Value(0)).current;
 
@@ -63,7 +62,7 @@ export default function CommunityDeckSkeleton() {
                 {/* SOL: Rozet / İkon Skeleton */}
                 <ShimmerBox
                     style={styles.iconBadgeContainer}
-                    borderRadius={moderateScale(14)}
+                    borderRadius={14}
                 />
 
                 {/* SAĞ: İçerik Alanı Skeleton */}
@@ -74,12 +73,12 @@ export default function CommunityDeckSkeleton() {
                         <View style={styles.userBlock}>
                             <ShimmerBox
                                 style={styles.userAvatar}
-                                borderRadius={moderateScale(99)}
+                                borderRadius={99}
                             />
 
                             <ShimmerBox
                                 style={styles.usernameSkeleton}
-                                borderRadius={moderateScale(6)}
+                                borderRadius={6}
                             />
                         </View>
 
@@ -94,7 +93,7 @@ export default function CommunityDeckSkeleton() {
                     <View style={styles.titleBlock}>
                         <ShimmerBox
                             style={styles.titleSkeleton}
-                            borderRadius={moderateScale(6)}
+                            borderRadius={6}
                         />
                     </View>
 
@@ -102,14 +101,14 @@ export default function CommunityDeckSkeleton() {
                     <View style={styles.bottomRow}>
                         <ShimmerBox
                             style={styles.metricSkeletonShort}
-                            borderRadius={moderateScale(4)}
+                            borderRadius={4}
                         />
 
                         <View style={[styles.separatorDot, { backgroundColor: lineColor }]} />
 
                         <ShimmerBox
                             style={styles.metricSkeletonLong}
-                            borderRadius={moderateScale(4)}
+                            borderRadius={4}
                         />
                     </View>
 
@@ -121,8 +120,8 @@ export default function CommunityDeckSkeleton() {
 
 const styles = StyleSheet.create({
     touchableWrapper: {
-        marginHorizontal: scale(8),
-        marginBottom: verticalScale(10),
+        marginHorizontal: 8,
+        marginBottom: 10,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.12,
@@ -133,22 +132,22 @@ const styles = StyleSheet.create({
     cardGradient: {
         flexDirection: 'row',
         alignItems: 'center',
-        borderRadius: moderateScale(20),
-        paddingHorizontal: scale(12),
-        paddingVertical: verticalScale(7),
-        height: verticalScale(120),
+        borderRadius: 20,
+        paddingHorizontal: 12,
+        paddingVertical: 7,
+        height: 120,
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.15)',
     },
 
     iconBadgeContainer: {
-        width: scale(60),
-        height: scale(60),
+        width: 60,
+        height: 60,
     },
 
     contentContainer: {
         flex: 1,
-        marginLeft: scale(12),
+        marginLeft: 12,
         height: '100%',
         justifyContent: 'space-between',
     },
@@ -163,35 +162,35 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         flex: 1,
-        marginRight: scale(10),
+        marginRight: 10,
     },
 
     userAvatar: {
-        width: scale(24),
-        height: scale(24),
-        marginRight: scale(5),
+        width: 24,
+        height: 24,
+        marginRight: 5,
     },
 
     usernameSkeleton: {
-        width: scale(80),
-        height: verticalScale(12),
+        width: 80,
+        height: 12,
     },
 
     favoriteButtonSkeleton: {
-        width: scale(30),
-        height: scale(30),
+        width: 30,
+        height: 30,
     },
 
     titleBlock: {
-        height: verticalScale(22),
+        height: 22,
         justifyContent: 'center',
         width: '100%',
-        transform: [{ translateY: -verticalScale(5) }],
+        transform: [{ translateY: -5 }],
     },
 
     titleSkeleton: {
         width: '70%',
-        height: verticalScale(16),
+        height: 16,
     },
 
     bottomRow: {
@@ -200,19 +199,19 @@ const styles = StyleSheet.create({
     },
 
     metricSkeletonShort: {
-        width: scale(45),
-        height: verticalScale(12),
+        width: 45,
+        height: 12,
     },
 
     metricSkeletonLong: {
-        width: scale(55),
-        height: verticalScale(12),
+        width: 55,
+        height: 12,
     },
 
     separatorDot: {
-        width: scale(4),
-        height: scale(4),
-        borderRadius: scale(2),
-        marginHorizontal: scale(8),
+        width: 4,
+        height: 4,
+        borderRadius: 2,
+        marginHorizontal: 8,
     },
 });

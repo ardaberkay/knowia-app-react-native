@@ -3,7 +3,6 @@ import { Image, StyleSheet, Pressable, Platform } from 'react-native'; // Toucha
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import { useProfile } from '../../contexts/ProfileContext';
-import { scale, moderateScale } from '../../lib/scaling';
 import { triggerHaptic } from '../../lib/hapticManager';
 
 // Pressable bileşenini animasyonlu hale getiriyoruz
@@ -66,33 +65,33 @@ function ProfileAvatarButton({ compact = false }) {
 
 const styles = StyleSheet.create({
   profileAvatarButton: {
-    width: scale(47),
-    height: scale(47),
-    borderRadius: moderateScale(22),
+    width: 47,
+    height: 47,
+    borderRadius: 22,
     overflow: 'hidden',
     alignItems: 'center',
     backgroundColor: 'transparent',
   },
   profileAvatar: {
-    width: scale(47),
-    height: scale(47),
-    borderRadius: moderateScale(22),
+    width: 47,
+    height: 47,
+    borderRadius: 22,
     resizeMode: 'cover',
     backgroundColor: 'transparent',
   },
   profileAvatarButtonCompact: {
-    width: scale(44),
-    height: scale(44),
-    borderRadius: moderateScale(22),
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
   },
   profileAvatarCompact: {
-    width: scale(44),
-    height: scale(44),
-    borderRadius: moderateScale(22),
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     resizeMode: 'cover',
     backgroundColor: 'transparent',
   },

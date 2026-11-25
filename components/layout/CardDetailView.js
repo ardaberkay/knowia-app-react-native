@@ -1,13 +1,12 @@
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, FlatList, Dimensions, TouchableOpacity, Animated, PixelRatio } from 'react-native';
+import { View, StyleSheet, ScrollView, Image, FlatList, TouchableOpacity, Animated, PixelRatio, useWindowDimensions } from 'react-native';
+import { Text } from '../ui/AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import Svg, { Path } from 'react-native-svg';
-import { scale, moderateScale, verticalScale, useWindowDimensions } from '../../lib/scaling';
-import MathText from '../ui/MathText';
 
 export default function CardDetailView({ card, cards = [], onSelectCard, showCreatedAt = true, isDeckOwner = false }) {
   const { colors } = useTheme();
@@ -199,7 +198,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
     const answerText = item?.answer || t('cardDetail.noAnswer', 'Cevap yok');
 
     return (
-      <View style={{ width: screenWidth, paddingHorizontal: scale(18), marginVertical: verticalScale(27), justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ width: screenWidth, paddingHorizontal: 18, marginVertical: 27, justifyContent: 'center', alignItems: 'center' }}>
         <View style={styles.flipContainer}>
 
           <Animated.View
@@ -224,17 +223,17 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
               style={styles.sliderItemGradient}
             >
               <View style={styles.backgroundCategoryIcon}>
-                <Iconify icon={categoryIcon} size={scale(200)} color="rgba(0, 0, 0, 0.1)" style={styles.categoryIconStyle} />
+                <Iconify icon={categoryIcon} size={200} color="rgba(0, 0, 0, 0.1)" style={styles.categoryIconStyle} />
               </View>
               <TouchableOpacity activeOpacity={0.9} onPress={() => flipCard(cardId)} style={styles.cardTouchable}>
                 <View style={[styles.quarterCircle, styles.quarterCircleContainer, { backgroundColor: colors.buttonColor }]}>
-                  <Iconify icon="uil:comment-alt-question" size={moderateScale(26)} color="rgba(255, 255, 255, 0.9)" />
+                  <Iconify icon="uil:comment-alt-question" size={26} color="rgba(255, 255, 255, 0.9)" />
                 </View>
                 <View style={styles.flipIconContainer}>
                   <Iconify icon="fluent:card-ui-portrait-flip-24-regular" size={24} color="rgba(255, 255, 255, 0.9)" />
                 </View>
                 <View style={styles.cardFaceContent}>
-                  <MathText value={questionText} style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText }]} numberOfLines={3} />
+                  <Text style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText }]} numberOfLines={3}>{questionText}</Text>
                 </View>
               </TouchableOpacity>
             </LinearGradient>
@@ -262,14 +261,14 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
               style={styles.sliderItemGradient}
             >
               <View style={styles.backgroundCategoryIcon}>
-                <Iconify icon={categoryIcon} size={scale(200)} color="rgba(0, 0, 0, 0.1)" style={styles.categoryIconStyle} />
+                <Iconify icon={categoryIcon} size={200} color="rgba(0, 0, 0, 0.1)" style={styles.categoryIconStyle} />
               </View>
               <TouchableOpacity activeOpacity={0.9} onPress={() => flipCard(cardId)} style={styles.cardTouchable}>
                 <View style={[styles.quarterCircle, styles.quarterCircleContainer, { backgroundColor: colors.buttonColor }]}>
-                  <Iconify icon="uil:comment-alt-check" size={moderateScale(26)} color="rgba(255, 255, 255, 0.9)" />
+                  <Iconify icon="uil:comment-alt-check" size={26} color="rgba(255, 255, 255, 0.9)" />
                 </View>
                 <View style={styles.cardFaceContent}>
-                  <MathText value={answerText} style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText }]} numberOfLines={4} />
+                  <Text style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText }]} numberOfLines={4}>{answerText}</Text>
                 </View>
               </TouchableOpacity>
             </LinearGradient>
@@ -285,14 +284,14 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
   return (
     <ScrollView
       style={{ flex: 1 }}
-      contentContainerStyle={{ paddingBottom: verticalScale(32), flexGrow: 1 }}
+      contentContainerStyle={{ paddingBottom: 32, flexGrow: 1 }}
       showsVerticalScrollIndicator={false}
     >
       {/* Deck Slider */}
       <View style={{
         width: '100%',
         position: 'relative',
-        paddingVertical: verticalScale(20),
+        paddingVertical: 20,
       }}>
         {/* Kıvrımlı arka plan */}
         <View style={styles.curvedBackgroundContainer}>
@@ -321,7 +320,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
               }
             }}
           >
-            <Iconify icon="material-symbols:arrow-back-ios-new-rounded" size={moderateScale(22)} color={'#FFFFFF'} />
+            <Iconify icon="material-symbols:arrow-back-ios-new-rounded" size={22} color={'#FFFFFF'} />
           </TouchableOpacity>
         )}
 
@@ -367,7 +366,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
               }
             }}
           >
-            <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(22)} color={'#FFFFFF'} />
+            <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={22} color={'#FFFFFF'} />
           </TouchableOpacity>
         )}
 
@@ -427,7 +426,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
           }]}>
             <View style={[styles.cardHeader, { borderBottomColor: colors.cardBorder }]}>
               <View style={styles.labelRow}>
-                <Iconify icon="mage:image-fill" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+                <Iconify icon="mage:image-fill" size={24} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, { color: colors.cardQuestionText }]}>
                   {t("cardDetail.image", "Kart Görseli")}
                 </Text>
@@ -460,17 +459,18 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
         }]}>
           <View style={[styles.cardHeader, { borderBottomColor: colors.cardBorder }]}>
             <View style={styles.labelRow}>
-              <Iconify icon="uil:comment-alt-question" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+              <Iconify icon="uil:comment-alt-question" size={24} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, typography.styles.body, { color: colors.cardQuestionText }]}>
                 {t("cardDetail.question", "Soru")}
               </Text>
             </View>
           </View>
           <View style={styles.cardContent}>
-            <MathText
-              value={card?.question}
-              style={[typography.styles.body, { fontSize: moderateScale(16), color: colors.cardAnswerText, marginLeft: scale(24) }]}
-            />
+            <Text
+              style={[typography.styles.body, { fontSize: 16, color: colors.cardAnswerText, marginLeft: 24 }]}
+            >
+              {card?.question}
+            </Text>
           </View>
         </View>
 
@@ -487,17 +487,18 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
           }]}>
             <View style={[styles.cardHeader, { borderBottomColor: colors.cardBorder }]}>
               <View style={styles.labelRow}>
-                <Iconify icon="uil:comment-alt-check" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+                <Iconify icon="uil:comment-alt-check" size={24} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, { color: colors.cardQuestionText }]}>
                   {t("cardDetail.answer", "Cevap")}
                 </Text>
               </View>
             </View>
             <View style={styles.cardContent}>
-              <MathText
-                value={card.answer}
-                style={[typography.styles.body, { fontSize: moderateScale(16), color: colors.cardAnswerText, marginLeft: scale(24) }]}
-              />
+              <Text
+                style={[typography.styles.body, { fontSize: 16, color: colors.cardAnswerText, marginLeft: 24 }]}
+              >
+                {card.answer}
+              </Text>
             </View>
           </View>
         ) : null}
@@ -522,10 +523,11 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
               </View>
             </View>
             <View style={styles.cardContent}>
-              <MathText
-                value={card.example}
-                style={[typography.styles.body, { fontSize: moderateScale(16), color: colors.cardAnswerText, marginLeft: scale(24) }]}
-              />
+              <Text
+                style={[typography.styles.body, { fontSize: 16, color: colors.cardAnswerText, marginLeft: 24 }]}
+              >
+                {card.example}
+              </Text>
             </View>
           </View>
         ) : null}
@@ -543,17 +545,18 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
           }]}>
             <View style={[styles.cardHeader, { borderBottomColor: colors.cardBorder }]}>
               <View style={styles.labelRow}>
-                <Iconify icon="material-symbols-light:stylus-note" size={moderateScale(24)} color="#F98A21" style={styles.labelIcon} />
+                <Iconify icon="material-symbols-light:stylus-note" size={24} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, { color: colors.cardQuestionText }]}>
                   {t("cardDetail.note", "Not")}
                 </Text>
               </View>
             </View>
             <View style={styles.cardContent}>
-              <MathText
-                value={card.note}
-                style={[typography.styles.body, { fontSize: moderateScale(16), color: colors.cardAnswerText, marginLeft: scale(24) }]}
-              />
+              <Text
+                style={[typography.styles.body, { fontSize: 16, color: colors.cardAnswerText, marginLeft: 24 }]}
+              >
+                {card.note}
+              </Text>
             </View>
           </View>
         ) : null}
@@ -562,11 +565,12 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
 
       {/* Oluşturulma tarihi */}
       {showCreatedAt && isDeckOwner && card?.created_at ? (
-        <View style={{ paddingHorizontal: scale(18), marginTop: 'auto', marginBottom: verticalScale(56) }}>
-          <MathText
-            value={`${t("cardDetail.createdAt", "Oluşturulma Tarihi")} ${new Date(card.created_at).toLocaleString('tr-TR')}`}
-            style={[typography.styles.caption, { color: colors.muted, textAlign: 'center', fontSize: moderateScale(14) }]}
-          />
+        <View style={{ paddingHorizontal: 18, marginTop: 'auto', marginBottom: 56 }}>
+          <Text
+            style={[typography.styles.caption, { color: colors.muted, textAlign: 'center', fontSize: 14 }]}
+          >
+            {`${t("cardDetail.createdAt", "Oluşturulma Tarihi")} ${new Date(card.created_at).toLocaleString('tr-TR')}`}
+          </Text>
         </View>
       ) : null}
     </ScrollView>
@@ -575,49 +579,49 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
 
 const styles = StyleSheet.create({
   sliderItem: {
-    height: verticalScale(315),
-    width: scale(240),
-    borderRadius: moderateScale(20),
+    height: 315,
+    width: 240,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
   sliderItemGradient: {
-    height: verticalScale(315),
-    width: scale(240),
-    borderRadius: moderateScale(20),
+    height: 315,
+    width: 240,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
     overflow: 'hidden',
   },
   sliderItemTitle: {
-    fontSize: moderateScale(18),
+    fontSize: 18,
     fontWeight: '700',
     textAlign: 'center',
   },
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: verticalScale(2),
+    marginBottom: 2,
   },
   labelIcon: {
-    marginRight: scale(8),
+    marginRight: 8,
   },
   label: {
-    fontSize: moderateScale(18),
+    fontSize: 18,
     fontWeight: '600',
     letterSpacing: 0.3,
   },
   cardImage: {
     width: '100%',
-    height: verticalScale(160),
+    height: 160,
     resizeMode: 'contain',
     backgroundColor: 'transparent',
     alignSelf: 'center',
   },
   cardImageContainer: {
     width: '100%',
-    height: verticalScale(160),
+    height: 160,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
@@ -628,12 +632,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderRadius: moderateScale(12),
+    borderRadius: 12,
     opacity: 0.35,
   },
   flipContainer: {
-    width: scale(240),
-    height: verticalScale(315),
+    width: 240,
+    height: 315,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -641,7 +645,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: scale(16),
+    paddingHorizontal: 16,
     width: '100%',
   },
   quarterCircleContainer: {
@@ -649,32 +653,32 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     zIndex: 1,
-    width: scale(40),
-    height: scale(40),
+    width: 40,
+    height: 40,
     overflow: 'hidden',
   },
   flipIconContainer: {
     position: 'absolute',
-    top: verticalScale(7),
+    top: 7,
     right: 0,
     zIndex: 1,
-    width: scale(32),
-    height: scale(32),
+    width: 32,
+    height: 32,
     overflow: 'hidden',
   },
   quarterCircle: {
-    width: scale(40),
-    height: scale(40),
-    borderRadius: moderateScale(8),
+    width: 40,
+    height: 40,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
-    borderWidth: moderateScale(2),
+    borderWidth: 2,
     borderColor: '#F98A21',
     shadowColor: '#000',
-    shadowOffset: { width: scale(2), height: verticalScale(4) },
+    shadowOffset: { width: 2, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: moderateScale(6),
+    shadowRadius: 6,
     elevation: 8,
   },
   cardTouchable: {
@@ -685,60 +689,60 @@ const styles = StyleSheet.create({
   },
   cardDetailsContainer: {
     width: '100%',
-    paddingHorizontal: scale(18),
-    paddingVertical: verticalScale(8),
+    paddingHorizontal: 18,
+    paddingVertical: 8,
   },
   detailCard: {
     backgroundColor: '#fff',
-    borderRadius: moderateScale(30),
-    padding: scale(16),
-    marginVertical: verticalScale(8),
+    borderRadius: 30,
+    padding: 16,
+    marginVertical: 8,
     shadowColor: '#000',
-    shadowOffset: { width: scale(2), height: verticalScale(4) },
+    shadowOffset: { width: 2, height: 4 },
     shadowOpacity: 0.08,
-    shadowRadius: moderateScale(8),
+    shadowRadius: 8,
     elevation: 6,
-    borderWidth: moderateScale(1),
-    minHeight: verticalScale(140),
+    borderWidth: 1,
+    minHeight: 140,
     justifyContent: 'space-between',
   },
   cardHeader: {
-    borderBottomWidth: moderateScale(1),
+    borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
-    paddingBottom: verticalScale(8),
-    marginBottom: verticalScale(8),
+    paddingBottom: 8,
+    marginBottom: 8,
   },
   cardContent: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: scale(16),
+    paddingHorizontal: 16,
   },
   navButton: {
     position: 'absolute',
     top: '50%',
-    width: scale(40),
-    height: scale(40),
-    borderRadius: moderateScale(20),
-    borderWidth: moderateScale(1),
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: verticalScale(2) },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: moderateScale(4),
+    shadowRadius: 4,
     elevation: 3,
   },
   leftNavButton: {
-    left: scale(15),
+    left: 15,
   },
   rightNavButton: {
-    right: scale(15),
+    right: 15,
 
   },
   backgroundCategoryIcon: {
     position: 'absolute',
-    left: scale(-120), // İkonun yarısının taşması için
+    left: -120, // İkonun yarısının taşması için
     width: '100%',
     height: '100%',
     justifyContent: 'center',
@@ -755,19 +759,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
 
-    paddingHorizontal: scale(20),
+    paddingHorizontal: 20,
   },
   activeDot: {
-    width: scale(10),
-    height: scale(10),
-    borderRadius: moderateScale(8),
-    marginHorizontal: scale(6),
+    width: 10,
+    height: 10,
+    borderRadius: 8,
+    marginHorizontal: 6,
   },
   inactiveDot: {
-    width: scale(8),
-    height: scale(8),
-    borderRadius: moderateScale(5),
-    marginHorizontal: scale(4),
+    width: 8,
+    height: 8,
+    borderRadius: 5,
+    marginHorizontal: 4,
   },
   curvedBackgroundContainer: {
     position: 'absolute',

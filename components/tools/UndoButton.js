@@ -1,8 +1,8 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { TouchableOpacity, StyleSheet } from 'react-native';
+import { Text } from '../ui/AppText';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 export default function UndoButton({ onPress, disabled = false, text, style, textStyle }) {
   const { colors } = useTheme();
@@ -33,14 +33,14 @@ const styles = StyleSheet.create({
   undoButton: {
     flex: 1,
     borderRadius: 99,
-    borderWidth: moderateScale(1.5),
-    paddingVertical: verticalScale(14),
-    paddingHorizontal: scale(14),
+    borderWidth: 1.5,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   undoButtonText: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     fontWeight: '500',
   },
 });

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ImageBackground, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Alert, ImageBackground, ActivityIndicator } from 'react-native';
+import { Text, TextInput } from '../../components/ui/AppText';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -8,7 +9,6 @@ import { Iconify } from 'react-native-iconify';
 import { supabase } from '../../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../contexts/AuthContext';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 export default function ResetPasswordScreen({ navigation }) {
   const [password, setPassword] = useState('');
@@ -162,7 +162,7 @@ export default function ResetPasswordScreen({ navigation }) {
     <View style={styles.validationItem}>
       <Iconify 
         icon={isValid ? 'solar:library-bold-duotone' : 'solar:library-line-duotone'} 
-        size={moderateScale(18)} 
+        size={18} 
         color={isValid ? '#4CAF50' : colors.muted} 
       />
       <Text style={[
@@ -202,14 +202,14 @@ export default function ResetPasswordScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
         enableOnAndroid={true}
         enableAutomaticScroll={true}
-        extraScrollHeight={verticalScale(50)}
+        extraScrollHeight={50}
         enableResetScrollToCoords={false}
       >
         <View style={styles.form}>
           {/* Şifre input */}
           <View style={styles.inputContainer}>
-            <View style={{justifyContent: 'center', alignItems: 'center', width: scale(25), height: verticalScale(22)}}>
-              <Iconify icon="carbon:password" size={moderateScale(22)} color={colors.muted} />
+            <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
+              <Iconify icon="carbon:password" size={22} color={colors.muted} />
             </View>
             <TextInput
               style={[styles.input, typography.styles.body]}
@@ -222,17 +222,17 @@ export default function ResetPasswordScreen({ navigation }) {
             />
             <TouchableOpacity
               onPress={() => setShowPassword(prev => !prev)}
-              style={{justifyContent: 'center', alignItems: 'center', width: scale(28), height: verticalScale(22)}}
+              style={{justifyContent: 'center', alignItems: 'center', width: 28, height: 22}}
               disabled={loading}
             >
-              <Iconify icon={showPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={moderateScale(22)} color={colors.muted} />
+              <Iconify icon={showPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={22} color={colors.muted} />
             </TouchableOpacity>
           </View>
 
           {/* Şifre onay input */}
           <View style={styles.inputContainer}>
-            <View style={{justifyContent: 'center', alignItems: 'center', width: scale(25), height: verticalScale(22)}}>
-              <Iconify icon="carbon:password" size={moderateScale(22)} color={colors.muted} />
+            <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
+              <Iconify icon="carbon:password" size={22} color={colors.muted} />
             </View>
             <TextInput
               style={[styles.input, typography.styles.body]}
@@ -245,15 +245,15 @@ export default function ResetPasswordScreen({ navigation }) {
             />
             <TouchableOpacity
               onPress={() => setShowConfirmPassword(prev => !prev)}
-              style={{justifyContent: 'center', alignItems: 'center', width: scale(28), height: verticalScale(22)}}
+              style={{justifyContent: 'center', alignItems: 'center', width: 28, height: 22}}
               disabled={loading}
             >
-              <Iconify icon={showConfirmPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={moderateScale(22)} color={colors.muted} />
+              <Iconify icon={showConfirmPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={22} color={colors.muted} />
             </TouchableOpacity>
           </View>
 
           {/* Şifre koşulları */}
-          <View style={[styles.validationContainer, { backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: moderateScale(10), padding: scale(12) }]}>
+          <View style={[styles.validationContainer, { backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: 10, padding: 12 }]}>
             <ValidationItem 
               isValid={hasMinLength} 
               text={t('resetPassword.minLength', 'En az 6 karakter')} 
@@ -297,7 +297,7 @@ export default function ResetPasswordScreen({ navigation }) {
               {t('resetPassword.rememberPassword', 'Şifreni mi hatırladın?')}
             </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Login')} disabled={loading}>
-              <Text style={[typography.styles.link, { color: colors.secondary, fontWeight: '600', marginLeft: scale(5) }]}>
+              <Text style={[typography.styles.link, { color: colors.secondary, fontWeight: '600', marginLeft: 5 }]}>
                 {t('resetPassword.loginLink', 'Giriş yap')}
               </Text>
             </TouchableOpacity>
@@ -318,45 +318,45 @@ const styles = StyleSheet.create({
   },
   container: {
     flexGrow: 1,
-    padding: scale(20),
-    marginTop: verticalScale(180),
+    padding: 20,
+    marginTop: 180,
     justifyContent: 'center',
   },
   form: {
-    gap: verticalScale(15),
+    gap: 15,
   },
   input: {
     flex: 1,
-    paddingVertical: verticalScale(12),
+    paddingVertical: 12,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: moderateScale(1),
+    borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.5)',
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(6),
-    borderRadius: moderateScale(10),
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    gap: scale(8),
+    gap: 8,
   },
   validationContainer: {
-    gap: verticalScale(8),
+    gap: 8,
   },
   validationItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(8),
+    gap: 8,
   },
   validationText: {
-    fontSize: moderateScale(14),
+    fontSize: 14,
     fontFamily: 'Inter',
   },
   button: {
-    padding: moderateScale(15),
-    borderRadius: moderateScale(10),
+    padding: 15,
+    borderRadius: 10,
     alignItems: 'center',
-    marginTop: verticalScale(10),
+    marginTop: 10,
   },
   buttonDisabled: {
     opacity: 0.7,
@@ -368,6 +368,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: verticalScale(15),
+    marginTop: 15,
   },
 });

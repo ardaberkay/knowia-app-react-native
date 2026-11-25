@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, ScrollView, Image, RefreshControl, Pressable, Animated } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Alert, ScrollView, Image, RefreshControl, Pressable, Animated } from 'react-native';
+import { Text } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
@@ -8,8 +9,6 @@ import { useNavigation, useFocusEffect, useScrollToTop } from '@react-navigation
 import { useTheme } from '../../theme/theme';
 import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
-import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
-import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 import { getFavoriteDecks, addFavoriteDeck, removeFavoriteDeck } from '../../services/FavoriteService';
 import {
   updateLastActiveAt,
@@ -23,11 +22,12 @@ import * as Notifications from 'expo-notifications';
 import DeckSkeleton from '../../components/skeleton/DeckSkeleton';
 import CommunityDeckSkeleton from '../../components/skeleton/CommunityDeckSkeleton';
 import { useTranslation } from 'react-i18next';
-import DeckCard from '../../components/ui/DeckUi';
+import DeckCard, { useDeckCardSize } from '../../components/ui/DeckUi';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import StandardCustomAppBar from '../../components/layout/StandardCustomAppBar';
 import HeroPullBackdrop from '../../components/layout/HeroPullBackdrop';
 import CommunityDeckCard from '../../components/ui/CommunityDeckCard';
+import { useListBottomInset } from '../../components/ui/CustomTabBar';
 
 
 // Kategoriye göre ikon seçen yardımcı fonksiyon
@@ -87,19 +87,8 @@ export default function HomeScreen() {
   const navigation = useNavigation();
   const { colors, isDarkMode } = useTheme();
   const insets = useSafeAreaInsets();
-  // useWindowDimensions hook'u - ekran döndürme desteği
-  const { width, height } = useWindowDimensions();
-  const isTablet = getIsTablet();
-
-  const emptyDeckCardDimensions = useMemo(() => {
-    const { DECK_CARD } = RESPONSIVE_CONSTANTS;
-    const scaledWidth = scale(DECK_CARD.REFERENCE_WIDTH);
-    const maxWidth = isTablet ? width * 0.20 : width * 0.36;
-    const cardWidth = Math.min(scaledWidth, maxWidth);
-    const cardHeight = cardWidth * DECK_CARD.ASPECT_RATIO;
-
-    return { width: cardWidth, height: cardHeight };
-  }, [width, isTablet]);
+  const listBottomInset = useListBottomInset();
+  const emptyDeckCardDimensions = useDeckCardSize();
 
   // Measured hero size: the pull-to-refresh backdrop continues the hero's top
   // row, whose colours depend on the hero's aspect ratio.
@@ -357,7 +346,7 @@ export default function HomeScreen() {
               >
                 <Iconify
                   icon="streamline:button-play-solid"
-                  size={moderateScale(13)}
+                  size={13}
                   color="#ff6b35"
                 />
                 <Text style={styles.heroButtonText} numberOfLines={1}>
@@ -443,9 +432,9 @@ export default function HomeScreen() {
           <View style={styles.sectionHeaderLeft}>
             <Iconify
               icon={getCategoryIcon(category)}
-              size={moderateScale(26)}
+              size={26}
               color="#F98A21"
-              style={{ marginRight: scale(8) }}
+              style={{ marginRight: 8 }}
             />
             <View style={styles.sectionTitleBlock}>
               <Text style={[typography.styles.h2, { color: colors.text }]}>{DECK_CATEGORIES[category]}</Text>
@@ -461,7 +450,7 @@ export default function HomeScreen() {
             </View>
           </View>
           <View>
-            <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(20)} color="#007AFF" />
+            <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={20} color="#007AFF" />
           </View>
         </HeaderWrapper>
         {isCategoryLoading ? (
@@ -479,7 +468,7 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={[styles.decksContainer, { paddingLeft: isInProgressSection ? 0 : 10 }]}
               decelerationRate="fast"
-              snapToInterval={emptyDeckCardDimensions.width + scale(10)}
+              snapToInterval={emptyDeckCardDimensions.width + 10}
               snapToAlignment="start"
             >
               {[...Array(4)].map((_, i) => (
@@ -493,7 +482,7 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.decksContainer}
             decelerationRate="fast"
-            snapToInterval={emptyDeckCardDimensions.width + scale(10)}
+            snapToInterval={emptyDeckCardDimensions.width + 10}
             snapToAlignment="start"
           >
             <View style={styles.emptyDeckPromptRow}>
@@ -527,7 +516,7 @@ export default function HomeScreen() {
                   >
                     <Iconify
                       icon="ic:round-plus"
-                      size={moderateScale(40)}
+                      size={40}
                       color={
                         isDarkMode
                           ? 'rgba(200, 200, 200, 0.8)'
@@ -561,7 +550,7 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={[styles.decksContainer, { paddingLeft: isInProgressSection ? 0 : 10, paddingRight: isInProgressSection ? 0 : 0 }]}
             decelerationRate="fast"
-            snapToInterval={emptyDeckCardDimensions.width + scale(10)}
+            snapToInterval={emptyDeckCardDimensions.width + 10}
             snapToAlignment="start"
           >
             {limitedDecks.map((deck) => {
@@ -615,7 +604,7 @@ export default function HomeScreen() {
                     },
                   ]}
                 >
-                  <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={moderateScale(30)} color="#F98A21" style={{ marginLeft: scale(2), marginTop: moderateScale(1) }} />
+                  <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={30} color="#F98A21" style={{ marginLeft: 2, marginTop: 1 }} />
                 </View>
               </View>
             )}
@@ -638,7 +627,7 @@ export default function HomeScreen() {
       <Animated.ScrollView
         ref={scrollViewRef}
         style={styles.content}
-        contentContainerStyle={{ paddingBottom: insets.bottom + verticalScale(120) }}
+        contentContainerStyle={{ paddingBottom: listBottomInset }}
         showsVerticalScrollIndicator={false}
         onScroll={onScroll}
         scrollEventThrottle={16}
@@ -672,16 +661,13 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  scrollContentContainer: {
-    paddingBottom: '35%',
-  },
   sectionHeaderGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: verticalScale(12),
-    borderRadius: moderateScale(12),
-    paddingVertical: verticalScale(8),
+    marginBottom: 12,
+    borderRadius: 12,
+    paddingVertical: 8,
   },
   hairlineBorder: {
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -699,52 +685,52 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sectionTitle: {
-    fontSize: moderateScale(20),
+    fontSize: 20,
     fontWeight: '700',
   },
   decksContainer: {
-    paddingBottom: verticalScale(8),
+    paddingBottom: 8,
   },
   inProgressMetaText: {
-    marginTop: verticalScale(2),
-    fontSize: moderateScale(12),
-    lineHeight: moderateScale(16),
+    marginTop: 2,
+    fontSize: 12,
+    lineHeight: 16,
     opacity: 0.9,
   },
   emptyText: {
-    fontSize: moderateScale(14),
+    fontSize: 14,
     textAlign: 'center',
-    marginTop: verticalScale(20),
+    marginTop: 20,
   },
   endIconContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    width: scale(44),
-    marginLeft: scale(4),
-    marginRight: scale(8),
+    width: 44,
+    marginLeft: 4,
+    marginRight: 8,
   },
   endIconPill: {
     justifyContent: 'center',
     alignItems: 'center',
-    width: scale(42),
-    height: scale(42),
-    borderRadius: moderateScale(21),
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     borderWidth: 1,
   },
   glassCard: {
-    borderRadius: moderateScale(40),
-    marginHorizontal: scale(10),
-    marginVertical: verticalScale(8),
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(10),
-    minHeight: verticalScale(180),
+    borderRadius: 40,
+    marginHorizontal: 10,
+    marginVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    minHeight: 180,
     overflow: 'hidden',
   },
   emptyDeckCard: {
-    borderRadius: moderateScale(18),
-    marginRight: scale(10),
-    marginBottom: verticalScale(8),
-    borderWidth: moderateScale(2),
+    borderRadius: 18,
+    marginRight: 10,
+    marginBottom: 8,
+    borderWidth: 2,
   },
   emptyDeckCardContent: {
     flex: 1,
@@ -754,36 +740,36 @@ const styles = StyleSheet.create({
   emptyDeckPlusContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    width: scale(64),
-    height: scale(64),
-    borderRadius: moderateScale(32),
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     // Kenarlık (borderWidth) yok, sadece arka plan rengi ile ayrışacak
   },
   emptyDeckPromptRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingRight: scale(20),
+    paddingRight: 20,
   },
 
   emptyDeckPromptText: {
-    width: scale(190),
-    marginLeft: scale(16),
+    width: 190,
+    marginLeft: 16,
     textAlign: 'center',
     justifyContent: 'center',
     alignItems: 'center'
   },
 
   emptyDeckPromptTitle: {
-    fontSize: moderateScale(17),
+    fontSize: 17,
     fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: verticalScale(6),
+    marginBottom: 6,
 
   },
 
   emptyDeckPromptDescription: {
-    fontSize: moderateScale(13),
-    lineHeight: moderateScale(19),
+    fontSize: 13,
+    lineHeight: 19,
     fontWeight: '400',
     color:
       'rgba(255, 255, 255, 0.65)',
@@ -794,11 +780,11 @@ const styles = StyleSheet.create({
   heroHeaderContainer: {
     width: '100%',
     position: 'relative',
-    marginBottom: verticalScale(24),
+    marginBottom: 24,
   },
   heroHeader: {
     width: '100%',
-    minHeight: verticalScale(215),
+    minHeight: 215,
     borderBottomRightRadius: 36,
     borderBottomLeftRadius: 36,
   },
@@ -806,8 +792,8 @@ const styles = StyleSheet.create({
   heroContent: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: verticalScale(8),
-    paddingBottom: verticalScale(24),
+    paddingTop: 8,
+    paddingBottom: 24,
     justifyContent: 'center',
   },
 
@@ -824,38 +810,38 @@ const styles = StyleSheet.create({
   },
   heroCount: {
     flexShrink: 1,
-    fontSize: moderateScale(34),
+    fontSize: 34,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: -0.8,
   },
   heroCountGoal: {
-    fontSize: moderateScale(20),
+    fontSize: 20,
     fontWeight: '700',
     color: 'rgba(255, 255, 255, 0.75)',
     letterSpacing: -0.3,
   },
   heroCountUnit: {
-    fontSize: moderateScale(14),
+    fontSize: 14,
     fontWeight: '600',
     color: 'rgba(255, 255, 255, 0.85)',
   },
   heroProgressTrack: {
     width: '85%',
-    marginTop: verticalScale(8),
-    height: moderateScale(6),
-    borderRadius: moderateScale(3),
+    marginTop: 8,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: 'rgba(255, 255, 255, 0.28)',
     overflow: 'hidden',
   },
   heroProgressFill: {
     height: '100%',
-    borderRadius: moderateScale(3),
+    borderRadius: 3,
     backgroundColor: '#FFFFFF',
   },
   heroNote: {
-    marginTop: verticalScale(6),
-    fontSize: moderateScale(13),
+    marginTop: 6,
+    fontSize: 13,
     fontWeight: '500',
     color: 'rgba(255, 255, 255, 0.92)',
   },
@@ -865,16 +851,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: verticalScale(14),
+    marginTop: 14,
     paddingHorizontal: 16,
-    height: verticalScale(38),
+    height: 38,
     borderRadius: 20,
     backgroundColor: '#FFFFFF',
   },
 
   heroButtonText: {
     marginLeft: 7,
-    fontSize: moderateScale(14),
+    fontSize: 14,
     fontWeight: '700',
     color: '#ff6b35',
   },
@@ -882,9 +868,9 @@ const styles = StyleSheet.create({
   heroIllustration: {
     position: 'absolute',
     right: 8,
-    bottom: -verticalScale(40),
-    width: moderateScale(180),
-    height: moderateScale(180),
+    bottom: -40,
+    width: 180,
+    height: 180,
     resizeMode: 'contain',
   },
   deckSection: {

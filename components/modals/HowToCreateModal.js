@@ -1,14 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
-  ScrollView, 
-  Modal,
-  Pressable,
-  Dimensions
-} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ScrollView, Modal, Pressable, useWindowDimensions } from 'react-native';
+import { Text } from '../ui/AppText';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -21,13 +13,12 @@ import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import BadgeText from '../tools/BadgeText';
 import { triggerHaptic } from '../../lib/hapticManager';
 
-const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export default function HowToCreateModal({ isVisible, onClose }) {
+  const { height: SCREEN_HEIGHT } = useWindowDimensions();
   const { colors } = useTheme();
   const { t } = useTranslation();
 
@@ -132,13 +123,13 @@ export default function HowToCreateModal({ isVisible, onClose }) {
           {/* Header */}
           <View style={styles.headerRow}>
             <View style={styles.headerTitleContainer}>
-              <Iconify icon="material-symbols:info-outline" size={moderateScale(24)} color={colors.secondary} style={{ marginRight: scale(8) }} />
+              <Iconify icon="material-symbols:info-outline" size={24} color={colors.secondary} style={{ marginRight: 8 }} />
               <Text style={[typography.styles.h2, { color: colors.text }]}>
                 {t('howToCreate.title', 'Nasıl Oluşturulur?')}
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButtonIcon} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
+              <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
 
@@ -149,7 +140,7 @@ export default function HowToCreateModal({ isVisible, onClose }) {
             contentContainerStyle={styles.scrollContent}
             bounces={true}
           >
-            <Text style={[styles.introText, typography.styles.body, { color: colors.muted, marginBottom: verticalScale(24) }]}>
+            <Text style={[styles.introText, typography.styles.body, { color: colors.muted, marginBottom: 24 }]}>
               {t('howToCreate.intro', 'Aşağıdaki adımları takip ederek kolayca bir deste oluşturabilirsiniz. Her adımın ne işe yaradığını öğrenin:')}
             </Text>
 
@@ -157,7 +148,7 @@ export default function HowToCreateModal({ isVisible, onClose }) {
               <View key={index} style={[styles.stepContainer, { backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground, borderColor: colors.cardBorder }]}>
                 <View style={styles.stepHeader}>
                   <View style={[styles.stepIconContainer, { backgroundColor: colors.iconBackground }]}>
-                    <Iconify icon={step.icon} size={moderateScale(24)} color={colors.secondary} />
+                    <Iconify icon={step.icon} size={24} color={colors.secondary} />
                   </View>
                   <View style={styles.stepTitleContainer}>
                     <View style={styles.stepTitleRow}>
@@ -175,7 +166,7 @@ export default function HowToCreateModal({ isVisible, onClose }) {
             ))}
 
             <View style={[styles.tipContainer, { backgroundColor: colors.secondary + '15', borderColor: colors.secondary + '30' }]}>
-              <Iconify icon="lucide:lightbulb" size={moderateScale(20)} color={colors.secondary} style={{ marginRight: scale(8) }} />
+              <Iconify icon="lucide:lightbulb" size={20} color={colors.secondary} style={{ marginRight: 8 }} />
               <Text style={[styles.tipText, typography.styles.caption, { color: colors.text, flex: 1 }]}>
                 {t('howToCreate.tip', 'İpucu: Deste oluşturduktan sonra istediğiniz zaman düzenleyebilir veya kart ekleyebilirsiniz.')}
               </Text>
@@ -215,8 +206,8 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: '90%', 
     maxHeight: '85%',
-    borderRadius: moderateScale(32),
-    padding: scale(20), // 24'ten 20'ye hafif çekildi, ekranda daha rahat durması için
+    borderRadius: 32,
+    padding: 20, // 24'ten 20'ye hafif çekildi, ekranda daha rahat durması için
     overflow: 'hidden',
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
@@ -231,7 +222,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: verticalScale(16),
+    marginBottom: 16,
   },
   headerTitleContainer: {
     flexDirection: 'row',
@@ -239,32 +230,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollView: {
-    maxHeight: verticalScale(450),
+    maxHeight: 450,
   },
   scrollContent: {
-    paddingBottom: verticalScale(16),
+    paddingBottom: 16,
   },
   introText: {
-    lineHeight: moderateScale(22),
+    lineHeight: 22,
   },
   stepContainer: {
-    borderRadius: moderateScale(16),
-    padding: scale(16),
-    marginBottom: verticalScale(16),
-    borderWidth: moderateScale(1),
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
   },
   stepHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: verticalScale(8),
+    marginBottom: 8,
   },
   stepIconContainer: {
-    width: scale(48),
-    height: verticalScale(48),
-    borderRadius: moderateScale(12),
+    width: 48,
+    height: 48,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: scale(12),
+    marginRight: 12,
   },
   stepTitleContainer: {
     flex: 1,
@@ -274,39 +265,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: scale(8),
+    gap: 8,
   },
   stepTitle: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     fontWeight: '600',
     flex: 1,
   },
   stepDescription: {
-    lineHeight: moderateScale(20),
-    marginTop: verticalScale(4),
-    paddingLeft: scale(4),
+    lineHeight: 20,
+    marginTop: 4,
+    paddingLeft: 4,
   },
   tipContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: scale(16),
-    borderRadius: moderateScale(12),
-    borderWidth: moderateScale(1),
-    marginTop: verticalScale(8),
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 8,
   },
   tipText: {
-    lineHeight: moderateScale(20),
+    lineHeight: 20,
   },
   closeButton: {
-    borderRadius: moderateScale(12),
-    paddingVertical: verticalScale(14),
+    borderRadius: 12,
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: verticalScale(16),
+    marginTop: 16,
   },
   closeButtonIcon: {
     backgroundColor: 'rgba(150, 150, 150, 0.1)',
-    padding: moderateScale(6),
+    padding: 6,
     borderRadius: 99,
   },
   closeButtonText: {

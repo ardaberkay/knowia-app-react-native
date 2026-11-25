@@ -1,29 +1,28 @@
-import React, { useMemo } from 'react';
-import { View, TextInput, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, StyleSheet } from 'react-native';
+import { TextInput } from '../ui/AppText';
 import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
-import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { useTranslation } from 'react-i18next';
+
+const searchBarDimensions = {
+  height: 48,
+  paddingHorizontal: 10,
+  paddingVertical: 10,
+  fontSize: 16,
+  iconSize: 20,
+  borderRadius: 24,
+  borderWidth: 1,
+  iconMarginRight: 6,
+  iconMarginLeft: 4,
+  inputPaddingHorizontal: 8,
+};
 
 export default function SearchBar({ value, onChangeText, placeholder, style, variant }) {
   const { colors, isDarkMode } = useTheme(); 
   const { t } = useTranslation();
-  useWindowDimensions();
-  const isTablet = getIsTablet();
   
-  const searchBarDimensions = useMemo(() => ({
-    height: isTablet ? verticalScale(52) : verticalScale(48),
-    paddingHorizontal: isTablet ? scale(14) : scale(10),
-    paddingVertical: isTablet ? verticalScale(12) : verticalScale(10),
-    fontSize: isTablet ? moderateScale(18) : moderateScale(16),
-    iconSize: isTablet ? moderateScale(24) : moderateScale(20),
-    borderRadius: isTablet ? moderateScale(28) : moderateScale(24),
-    borderWidth: moderateScale(1),
-    iconMarginRight: scale(6),
-    iconMarginLeft: scale(4),
-    inputPaddingHorizontal: isTablet ? scale(10) : scale(8),
-  }), [isTablet]);
   
   // Şalterimiz: Eğer variant="light" gönderildiyse beyaz/cam moduna geç
   const isLight = variant === 'light';

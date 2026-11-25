@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useLayoutEffect, useCallback, memo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, Pressable, RefreshControl } from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, Alert, Pressable, RefreshControl } from 'react-native';
+import { Text } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -11,10 +12,10 @@ import CircularProgress from '../../components/ui/CircularProgress';
 import { useAuth } from '../../contexts/AuthContext';
 import LottieView from 'lottie-react-native';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { triggerHaptic } from '../../lib/hapticManager';
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useListBottomInset } from '../../components/ui/CustomTabBar';
 
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 
@@ -42,7 +43,7 @@ const MemoizedChapterItem = memo(({ item, progressMap, editMode, colors, onPress
       <View style={styles.chapterHeader}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={moderateScale(22)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
+            <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={22} color={colors.buttonColor} style={{ marginRight: 8 }} />
             <Text style={[typography.styles.body, styles.chapterTitle, { color: colors.text }]}>{t('chapters.chapter', 'Bölüm')} {item.ordinal}</Text>
           </View>
           {editMode ? (
@@ -53,12 +54,12 @@ const MemoizedChapterItem = memo(({ item, progressMap, editMode, colors, onPress
               }}
               style={styles.deleteButton}
               activeOpacity={0.7}
-              hitSlop={{ top: scale(15), bottom: scale(15), left: scale(15), right: scale(15) }}
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
             >
-              <Iconify icon="mdi:garbage" size={moderateScale(24)} color="#FF4444" />
+              <Iconify icon="mdi:garbage" size={24} color="#FF4444" />
             </TouchableOpacity>
           ) : (
-            <Iconify icon="ion:chevron-forward" size={moderateScale(26)} color={colors.buttonColor} />
+            <Iconify icon="ion:chevron-forward" size={26} color={colors.buttonColor} />
           )}
         </View>
       </View>
@@ -67,29 +68,29 @@ const MemoizedChapterItem = memo(({ item, progressMap, editMode, colors, onPress
         <View style={styles.progressContainer}>
           <CircularProgress
             progress={chapterProgress?.progress || 0}
-            size={scale(78)}
-            strokeWidth={moderateScale(9)}
+            size={78}
+            strokeWidth={9}
             showText={true}
             shouldAnimate={true}
             fullCircle={true}
-            textStyle={{ fontSize: moderateScale(16), fontWeight: '900', color: colors.text }}
+            textStyle={{ fontSize: 16, fontWeight: '900', color: colors.text }}
           />
         </View>
         <View style={styles.statsContainer}>
           <View style={styles.statRow}>
-            <Iconify icon="mdi:fire" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
+            <Iconify icon="mdi:fire" size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
             <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
               {t('chapters.learning', 'Learning')}: {learningCount}
             </Text>
           </View>
           <View style={styles.statRow}>
-            <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
+            <Iconify icon="dashicons:welcome-learn-more" size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
             <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
               {t('chapters.learned', 'Learned')}: {chapterProgress.learned}
             </Text>
           </View>
           <View style={styles.statRow}>
-            <Iconify icon="ri:stack-fill" size={moderateScale(18)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
+            <Iconify icon="ri:stack-fill" size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
             <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
               {t('chapters.total', 'Total')}: {chapterProgress.total}
             </Text>
@@ -127,6 +128,7 @@ export default function ChaptersScreen({ route, navigation }) {
   // Sadece butonun basılı olup olmadığını takip ediyoruz (0 = boşta, 1 = basılı)
   const isPressed = useSharedValue(0);
   const insets = useSafeAreaInsets();
+  const listBottomInset = useListBottomInset();
 
   const addChapterAnimatedStyle = useAnimatedStyle(() => {
     // Apple tarzı pürüzsüz yay ayarları (Hafif kütle, yüksek sönümleme)
@@ -231,11 +233,11 @@ export default function ChaptersScreen({ route, navigation }) {
               });
             }}
             activeOpacity={0.7}
-            hitSlop={{ top: scale(15), bottom: scale(15), left: scale(15), right: scale(15) }}
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
           >
             <Iconify
               icon={editMode ? "mingcute:close-fill" : "lucide:edit"}
-              size={moderateScale(22)}
+              size={22}
               color={colors.text}
             />
           </TouchableOpacity>
@@ -348,7 +350,7 @@ export default function ChaptersScreen({ route, navigation }) {
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Iconify icon="mage:inbox-star" size={moderateScale(24)} color={colors.buttonColor} style={{ marginRight: scale(8) }} />
+              <Iconify icon="mage:inbox-star" size={24} color={colors.buttonColor} style={{ marginRight: 8 }} />
               <Text style={[typography.styles.body, { color: colors.text }]}>{t('chapters.unassigned', 'Atanmamış')}</Text>
             </View>
             {unassignedCount > 0 && (
@@ -367,9 +369,9 @@ export default function ChaptersScreen({ route, navigation }) {
       <View style={styles.emptyState}>
         <Iconify
           icon="streamline-freehand:plugin-jigsaw-puzzle"
-          size={scale(120)}
+          size={120}
           color={colors.muted}
-          style={{ marginBottom: verticalScale(12), opacity: 0.5 }}
+          style={{ marginBottom: 12, opacity: 0.5 }}
         />
         <Text style={[styles.emptyStateText, typography.styles.body, { color: colors.subtext, opacity: 0.6 }]}>
           {t('chapters.noChaptersDesc', 'Bu destede henüz bölüm oluşturulmamış.')}
@@ -381,8 +383,8 @@ export default function ChaptersScreen({ route, navigation }) {
   // Yükleniyor ekranı
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
-      <LottieView source={require('../../assets/flexloader.json')} speed={1.1} autoPlay loop style={{ width: scale(160, 0.3), height: scale(160, 0.3) }} />
-      <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100, 0.3), height: scale(100, 0.3), marginTop: verticalScale(-65) }} />
+      <LottieView source={require('../../assets/flexloader.json')} speed={1.1} autoPlay loop style={{ width: 160, height: 160 }} />
+      <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100, marginTop: -65 }} />
     </View>
   );
 
@@ -396,7 +398,7 @@ export default function ChaptersScreen({ route, navigation }) {
             <FlatList
               data={chapters}
               keyExtractor={(item) => item.id}
-              contentContainerStyle={chapters.length === 0 ? { padding: scale(16), flexGrow: 1 } : { padding: scale(16), paddingBottom: '22%' }}
+              contentContainerStyle={chapters.length === 0 ? { padding: 16, flexGrow: 1 } : { padding: 16, paddingBottom: listBottomInset + styles.fab.height + 16 } /* clears the FAB */}
               showsVerticalScrollIndicator={false}
               removeClippedSubviews={true}
               initialNumToRender={8}
@@ -414,7 +416,7 @@ export default function ChaptersScreen({ route, navigation }) {
         )}
         {!loading && isOwner && (
           <AnimatedPressable
-            style={[styles.fab, addChapterAnimatedStyle, { bottom: insets.bottom + verticalScale(24) }]} // Modern stili bağladık
+            style={[styles.fab, addChapterAnimatedStyle, { bottom: insets.bottom + 24 }]} // Modern stili bağladık
             onPressIn={() => {
               isPressed.value = 1; // Basıldı animasyonunu tetikle
             }}
@@ -435,7 +437,7 @@ export default function ChaptersScreen({ route, navigation }) {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Iconify icon="ic:round-plus" size={moderateScale(30)} color="#FFFFFF" />
+              <Iconify icon="ic:round-plus" size={30} color="#FFFFFF" />
             </LinearGradient>
           </AnimatedPressable>
         )}
@@ -455,82 +457,82 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: scale(25),
-    minHeight: verticalScale(400),
+    paddingHorizontal: 25,
+    minHeight: 400,
   },
   emptyState: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: verticalScale(-150),
+    marginTop: -150,
   },
   emptyStateTitle: {
-    marginTop: verticalScale(16),
-    marginBottom: verticalScale(8),
+    marginTop: 16,
+    marginBottom: 8,
     textAlign: 'center',
   },
   emptyStateText: {
     textAlign: 'center',
-    lineHeight: verticalScale(22),
+    lineHeight: 22,
   },
   chapterItem: {
     flexDirection: 'column',
-    padding: moderateScale(20),
-    borderRadius: moderateScale(40),
-    borderWidth: moderateScale(1),
-    marginBottom: verticalScale(14),
-    shadowOffset: { width: scale(4), height: verticalScale(6) },
+    padding: 20,
+    borderRadius: 40,
+    borderWidth: 1,
+    marginBottom: 14,
+    shadowOffset: { width: 4, height: 6 },
     shadowOpacity: 0.10,
-    shadowRadius: moderateScale(10),
+    shadowRadius: 10,
     elevation: 5,
   },
   chapterHeader: {
-    marginBottom: verticalScale(12),
+    marginBottom: 12,
   },
   chapterTitle: {
-    fontSize: moderateScale(18),
+    fontSize: 18,
     fontWeight: '600',
   },
   chapterDivider: {
-    height: verticalScale(1),
+    height: 1,
     width: '100%',
-    marginBottom: verticalScale(16),
+    marginBottom: 16,
     opacity: 0.3,
   },
   chapterContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(16),
+    gap: 16,
   },
   progressContainer: {
-    marginRight: scale(8),
+    marginRight: 8,
   },
   statsContainer: {
     flex: 1,
-    gap: verticalScale(8),
+    gap: 8,
   },
   statRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   statText: {
-    fontSize: moderateScale(15),
+    fontSize: 15,
   },
   deleteButton: {
-    padding: moderateScale(8),
-    borderRadius: moderateScale(8),
+    padding: 8,
+    borderRadius: 8,
   },
   fab: {
     position: 'absolute',
-    right: scale(20),
-    bottom: verticalScale(24),
-    width: scale(70),
-    height: scale(70),
-    borderRadius: moderateScale(99),
+    right: 20,
+    bottom: 24,
+    width: 70,
+    height: 70,
+    borderRadius: 99,
     overflow: 'hidden',
     shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: verticalScale(1) },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
-    shadowRadius: moderateScale(2),
+    shadowRadius: 2,
     elevation: 2,
   },
   fabGradient: {
@@ -538,26 +540,26 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: moderateScale(99),
+    borderRadius: 99,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: verticalScale(200),
+    minHeight: 200,
     flexDirection: 'column',
-    marginTop: verticalScale(-120),
+    marginTop: -120,
   },
   countBadge: {
-    minWidth: scale(28),
-    height: scale(28),
-    borderRadius: moderateScale(14),
-    paddingHorizontal: scale(10),
+    minWidth: 28,
+    height: 28,
+    borderRadius: 14,
+    paddingHorizontal: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
   countBadgeText: {
-    fontSize: moderateScale(13),
+    fontSize: 13,
     fontWeight: '700',
   },
 });

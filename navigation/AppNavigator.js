@@ -28,10 +28,10 @@ import ChaptersScreen from '../screens/decks/ChaptersScreen';
 import ChapterCardsScreen from '../screens/decks/CardsOfChapter.js';
 import FavoriteDecks from '../screens/library/FavoriteDecks';
 import FavoriteCards from '../screens/library/FavoriteCards';
-import { TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
+import { TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { Text } from '../components/ui/AppText';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
-import { scale, moderateScale, verticalScale } from '../lib/scaling';
 import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { triggerHaptic } from '../lib/hapticManager';
@@ -70,14 +70,14 @@ function MainTabs() {
           backgroundColor: colors.tabBarBackground,
         },
         tabBarLabelStyle: {
-          fontSize: moderateScale(12),
-          marginBottom: verticalScale(10),
+          fontSize: 12,
+          marginBottom: 10,
           fontFamily: 'Inter',
           textAlign: 'center',
-          marginTop: verticalScale(-8),
+          marginTop: -8,
         },
         tabBarIconStyle: {
-          marginTop: verticalScale(4),
+          marginTop: 4,
           alignItems: 'center',
           justifyContent: 'center',
         },
@@ -100,7 +100,7 @@ function MainTabs() {
           return (
             <Iconify
               icon={homeIcon}
-              size={moderateScale(28)}
+              size={28}
               color={color}
               style={{
                 opacity: focused ? 1 : 0.7,
@@ -209,8 +209,8 @@ export default function AppNavigator() {
                 headerBackButtonDisplayMode: 'minimal',
                 contentStyle: { backgroundColor: colors.background },
                 ...(Platform.OS === 'android' && {
-                  headerRightContainerStyle: { minWidth: scale(72) },
-                  headerLeftContainerStyle: { minWidth: scale(56) },
+                  headerRightContainerStyle: { minWidth: 72 },
+                  headerLeftContainerStyle: { minWidth: 56 },
                 }),
               }}
             />
@@ -292,22 +292,22 @@ export default function AppNavigator() {
                       // Sadece Android'e özel border ve padding ayarları:
                       ...Platform.select({
                         android: {
-                          borderWidth: moderateScale(1),
+                          borderWidth: 1,
                           borderColor: colors.text,
-                          paddingHorizontal: scale(6),
-                          paddingVertical: verticalScale(2),
-                          borderRadius: moderateScale(8)
+                          paddingHorizontal: 6,
+                          paddingVertical: 2,
+                          borderRadius: 8
                         },
                         ios: {
-                          paddingHorizontal: scale(8),
+                          paddingHorizontal: 8,
                         }
                       })
                     }}
                   >
-                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: moderateScale(15), marginRight: scale(6) }}>
+                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15, marginRight: 6 }}>
                       CSV
                     </Text>
-                    <Iconify icon="solar:cloud-upload-broken" size={moderateScale(22)} color={colors.text} />
+                    <Iconify icon="solar:cloud-upload-broken" size={22} color={colors.text} />
                   </TouchableOpacity>
                 ),
               })}

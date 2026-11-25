@@ -1,29 +1,28 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Animated,
-  RefreshControl,
-  Image,
-  ActivityIndicator,
-} from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, RefreshControl, Image, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { Text } from '../ui/AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
-import {
-  scale,
-  moderateScale,
-  verticalScale,
-  useWindowDimensions,
-  getIsTablet,
-} from '../../lib/scaling';
 import { triggerHaptic } from '../../lib/hapticManager';
 import CommunityDeckCard from '../ui/CommunityDeckCard';
 import Svg, { Path } from 'react-native-svg';
+
+// Grid deck cards keep a fixed portrait ratio instead of a share of the screen
+// height, so they never turn square on short phones or wide on tablets.
+// 1.32 matches the original look on the reference phone (≈187×247).
+const GRID_PADDING_HORIZONTAL = 12;
+const GRID_CARD_GAP = 12;
+const GRID_CARD_ASPECT_RATIO = 1.32;
+export const useDeckGridCardHeight = () => {
+  const { width } = useWindowDimensions();
+  return useMemo(() => {
+    const cardWidth = (width - GRID_PADDING_HORIZONTAL * 2 - GRID_CARD_GAP) / 2;
+    return cardWidth * GRID_CARD_ASPECT_RATIO;
+  }, [width]);
+};
 
 const getInProgressGradient = (percent) => {
   if (percent >= 75) {
@@ -97,10 +96,10 @@ const DeckCard = React.memo(
       progressPercent >= 75 &&
       progressPercent < 100;
 
-    const progressChipOverlap = scale(11);
+    const progressChipOverlap = 11;
 
     const progressFillMinWidth =
-      progressPercent > 0 ? scale(4) : 0;
+      progressPercent > 0 ? 4 : 0;
 
     const inProgressGradient =
       getInProgressGradient(progressPercent);
@@ -142,7 +141,7 @@ const DeckCard = React.memo(
               typography.styles.body,
               {
                 color: colors.headText,
-                fontSize: moderateScale(16),
+                fontSize: 16,
                 fontWeight: '800',
                 textAlign: 'center',
               },
@@ -162,7 +161,7 @@ const DeckCard = React.memo(
             typography.styles.body,
             {
               color: colors.headText,
-              fontSize: moderateScale(16),
+              fontSize: 16,
               fontWeight: '800',
               textAlign: 'center',
               width: '100%',
@@ -179,8 +178,8 @@ const DeckCard = React.memo(
         return (
           <View style={styles.myDecksBadge}>
             <Svg
-              width={scale(165)}
-              height={verticalScale(36)}
+              width={165}
+              height={36}
               viewBox="0 0 165 36"
               style={StyleSheet.absoluteFill}
             >
@@ -201,9 +200,9 @@ const DeckCard = React.memo(
             <View style={styles.myDecksBadgeContent}>
               <Iconify
                 icon="ri:stack-fill"
-                size={moderateScale(16)}
+                size={16}
                 color="#fff"
-                style={{ marginRight: scale(3) }}
+                style={{ marginRight: 3 }}
               />
 
               <Text style={styles.myDecksBadgeText}>
@@ -214,9 +213,9 @@ const DeckCard = React.memo(
 
               <Iconify
                 icon="streamline-flex:module-puzzle-2"
-                size={moderateScale(16)}
+                size={16}
                 color="#fff"
-                style={{ marginRight: scale(3) }}
+                style={{ marginRight: 3 }}
               />
 
               <Text style={styles.myDecksBadgeText}>
@@ -232,9 +231,9 @@ const DeckCard = React.memo(
           <View style={styles.cardCountContent}>
             <Iconify
               icon="ri:stack-fill"
-              size={moderateScale(18)}
+              size={18}
               color="#fff"
-              style={{ marginRight: scale(3) }}
+              style={{ marginRight: 3 }}
             />
 
             <Text
@@ -243,7 +242,7 @@ const DeckCard = React.memo(
                 {
                   color: '#fff',
                   fontWeight: 'bold',
-                  fontSize: moderateScale(16),
+                  fontSize: 16,
                 },
               ]}
             >
@@ -294,7 +293,7 @@ const DeckCard = React.memo(
             {isProgressCompleted ? (
               <Iconify
                 icon="streamline:check-solid"
-                size={moderateScale(16)}
+                size={16}
                 color="#FFFFFF"
               />
             ) : (
@@ -424,8 +423,8 @@ const DeckCard = React.memo(
               <View
                 style={{
                   flex: 1,
-                  marginRight: scale(4),
-                  paddingRight: badge ? scale(30) : 0,
+                  marginRight: 4,
+                  paddingRight: badge ? 30 : 0,
                 }}
               >
                 <Text
@@ -461,7 +460,7 @@ const DeckCard = React.memo(
               >
                 <Iconify
                   icon="mdi:garbage"
-                  size={moderateScale(21)}
+                  size={21}
                   color="#E74C3C"
                 />
               </TouchableOpacity>
@@ -472,7 +471,7 @@ const DeckCard = React.memo(
             <View style={styles.popularityBadge}>
               <Iconify
                 icon={badge.icon}
-                size={moderateScale(14)}
+                size={14}
                 color="#fff"
               />
 
@@ -524,7 +523,7 @@ const DeckCard = React.memo(
                   ? 'solar:heart-bold'
                   : 'solar:heart-broken'
               }
-              size={moderateScale(21)}
+              size={21}
               color={
                 localFavorite
                   ? '#F98A21'
@@ -540,7 +539,7 @@ const DeckCard = React.memo(
               justifyContent: 'center',
               alignItems: 'center',
               width: '100%',
-              paddingHorizontal: scale(12),
+              paddingHorizontal: 12,
             }}
           >
             {deck.to_name ? (
@@ -549,14 +548,14 @@ const DeckCard = React.memo(
 
                 <View
                   style={{
-                    width: scale(60),
-                    height: moderateScale(2),
+                    width: 60,
+                    height: 2,
                     backgroundColor:
                       colors.divider,
                     borderRadius:
-                      moderateScale(1),
+                      1,
                     marginVertical:
-                      verticalScale(8),
+                      8,
                   }}
                 />
 
@@ -598,44 +597,25 @@ const DeckList = ({
 }) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const { height } = useWindowDimensions();
-  const isTablet = getIsTablet();
-
-  const deckCardDimensions =
-    useMemo(() => {
-      const verticalHeight = isTablet
-        ? height * 0.24
-        : height * 0.27;
-
-      return {
-        verticalHeight,
-      };
-    }, [height, isTablet]);
-
-  const DECK_CARD_VERTICAL_HEIGHT =
-    deckCardDimensions.verticalHeight;
+  const DECK_CARD_VERTICAL_HEIGHT = useDeckGridCardHeight();
 
   const categoryIconDimensions =
     useMemo(() => {
-      const verticalIconSize = isTablet
-        ? scale(200)
-        : scale(150);
+      const verticalIconSize = 150;
 
-      const verticalIconLeft = isTablet
-        ? -verticalIconSize / 2
-        : scale(-75);
+      const verticalIconLeft = -75;
 
       return {
         verticalIconSize,
         verticalIconLeft,
       };
-    }, [isTablet]);
+    }, []);
 
   const responsiveSpacing = useMemo(
     () => ({
-      cardMargin: scale(6),
-      listPaddingHorizontal: scale(12),
-      listPaddingVertical: verticalScale(5),
+      cardMargin: 6,
+      listPaddingHorizontal: 12,
+      listPaddingVertical: 5,
     }),
     []
   );
@@ -980,14 +960,8 @@ const DeckList = ({
               style={{
                 position: 'absolute',
                 alignSelf: 'center',
-                width: moderateScale(
-                  300,
-                  0.3
-                ),
-                height: moderateScale(
-                  300,
-                  0.3
-                ),
+                width: 300,
+                height: 300,
                 opacity: 0.2,
               }}
               resizeMode="contain"
@@ -1009,9 +983,9 @@ const DeckList = ({
                     colors.border,
                   textAlign: 'center',
                   fontSize:
-                    moderateScale(16),
+                    16,
                   marginTop:
-                    verticalScale(20),
+                    20,
                 },
               ]}
             >
@@ -1042,7 +1016,7 @@ const DeckList = ({
           <View
             style={{
               paddingVertical:
-                verticalScale(16),
+                16,
               alignItems: 'center',
               justifyContent:
                 'center',
@@ -1084,15 +1058,15 @@ const styles = StyleSheet.create({
   deckCardVertical: {
     flex: 1,
     borderRadius:
-      moderateScale(18),
+      18,
     overflow: 'hidden',
   },
 
   deckGradient: {
     flex: 1,
     borderRadius:
-      moderateScale(18),
-    padding: scale(16),
+      18,
+    padding: 16,
     justifyContent: 'center',
   },
 
@@ -1100,18 +1074,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F98A21',
-    borderRadius: moderateScale(14),
-    paddingHorizontal: scale(8),
-    paddingVertical: verticalScale(2),
-    marginRight: scale(2),
+    borderRadius: 14,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginRight: 2,
   },
   cardCountContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   myDecksBadge: {
-    width: scale(165),
-    height: verticalScale(36),
+    width: 165,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1126,37 +1100,37 @@ const styles = StyleSheet.create({
   myDecksBadgeText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: moderateScale(15),
+    fontSize: 15,
   },
 
   myDecksDivider: {
     width: 1,
-    height: verticalScale(20),
+    height: 20,
     backgroundColor: 'rgba(255,255,255,0.45)',
-    marginHorizontal: scale(9),
+    marginHorizontal: 9,
   },
   chapterCountContainer: {
-    marginLeft: scale(7),
+    marginLeft: 7,
     alignSelf: 'stretch',
-    paddingHorizontal: scale(7),
+    paddingHorizontal: 7,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    borderRadius: scale(99),
-    gap: scale(2)
+    borderRadius: 99,
+    gap: 2
   },
   chapterCountText: {
     color: '#fff',
-    fontSize: moderateScale(13),
+    fontSize: 13,
     fontWeight: '600',
   },
   progressContainer: {
     position: 'absolute',
     bottom:
-      verticalScale(16),
-    left: scale(16),
-    right: scale(60),
+      16,
+    left: 16,
+    right: 60,
     zIndex: 10,
   },
 
@@ -1167,12 +1141,12 @@ const styles = StyleSheet.create({
   },
 
   cardCountTopLeft: {
-    top: verticalScale(0), left: 0, right: 0, alignItems: 'center',
+    top: 0, left: 0, right: 0, alignItems: 'center',
   },
 
   cardCountBottomLeft: {
-    bottom: verticalScale(12),
-    left: scale(12),
+    bottom: 12,
+    left: 12,
   },
 
   progressBottomBadge: {
@@ -1182,11 +1156,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
     borderRadius:
-      moderateScale(999),
-    paddingLeft: scale(24),
-    paddingRight: scale(6),
+      999,
+    paddingLeft: 24,
+    paddingRight: 6,
     paddingVertical:
-      verticalScale(6),
+      6,
     overflow: 'visible',
   },
 
@@ -1198,18 +1172,18 @@ const styles = StyleSheet.create({
   },
 
   progressPercentChip: {
-    width: scale(40),
-    height: scale(40),
+    width: 40,
+    height: 40,
     borderRadius:
-      moderateScale(999),
+      999,
     backgroundColor: '#F98A21',
     position: 'absolute',
-    left: scale(-8),
+    left: -8,
     top: '50%',
     transform: [
       {
         translateY:
-          -scale(20),
+          -20,
       },
     ],
     justifyContent: 'center',
@@ -1217,28 +1191,28 @@ const styles = StyleSheet.create({
     zIndex: 2,
     overflow: 'hidden',
     borderWidth:
-      moderateScale(1.5),
+      1.5,
     borderColor:
       'rgba(255, 255, 255, 0.38)',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: verticalScale(2),
+      height: 2,
     },
     shadowOpacity: 0.22,
     shadowRadius:
-      moderateScale(4),
+      4,
     elevation: 3,
   },
 
   progressPercentChipGradient: {
     position: 'absolute',
-    top: -scale(2),
-    left: -scale(2),
-    right: -scale(2),
-    bottom: -scale(2),
+    top: -2,
+    left: -2,
+    right: -2,
+    bottom: -2,
     borderRadius:
-      moderateScale(999),
+      999,
   },
 
   progressPercentChipInner: {
@@ -1252,39 +1226,39 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '800',
     fontSize:
-      moderateScale(15.5),
+      15.5,
     letterSpacing:
-      moderateScale(-0.38),
+      -0.38,
   },
 
   progressPercentSign: {
     fontSize:
-      moderateScale(10.25),
+      10.25,
     fontWeight: '700',
     color:
       'rgba(255, 255, 255, 0.92)',
     marginLeft: 0,
     marginBottom:
-      verticalScale(2),
+      2,
   },
 
   progressBottomTrack: {
     flex: 1,
     minWidth: 0,
     height:
-      verticalScale(4),
+      4,
     borderRadius:
-      moderateScale(999),
+      999,
     backgroundColor:
       'rgba(255, 255, 255, 0.22)',
     overflow: 'hidden',
-    marginRight: scale(2),
+    marginRight: 2,
   },
 
   progressBottomFill: {
     height: '100%',
     borderRadius:
-      moderateScale(999),
+      999,
     backgroundColor:
       'rgba(255, 255, 255, 0.95)',
   },
@@ -1301,7 +1275,7 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.45,
     shadowRadius:
-      moderateScale(7),
+      7,
     elevation: 4,
     borderColor:
       'rgba(255, 255, 255, 0.45)',
@@ -1315,7 +1289,7 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.9,
     shadowRadius:
-      moderateScale(12),
+      12,
     elevation: 7,
     borderColor:
       'rgba(255, 255, 255, 0.6)',
@@ -1340,20 +1314,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     zIndex: 10,
-    top: verticalScale(8),
-    left: scale(10),
+    top: 8,
+    left: 10,
   },
 
   deckProfileAvatar: {
-    width: scale(32),
-    height: verticalScale(32),
+    width: 32,
+    height: 32,
     borderRadius: 99,
-    marginRight: scale(6),
+    marginRight: 6,
   },
 
   deckProfileUsername: {
     fontSize:
-      moderateScale(15),
+      15,
     color: '#BDBDBD',
     fontWeight: '700',
     width: '95%',
@@ -1362,40 +1336,40 @@ const styles = StyleSheet.create({
   favoriteButton: {
     position: 'absolute',
     bottom:
-      verticalScale(8),
-    right: scale(10),
+      8,
+    right: 10,
     zIndex: 10,
     padding:
-      moderateScale(8),
+      8,
     borderRadius: 999,
   },
 
   deckDeleteButton: {
     position: 'absolute',
     top:
-      verticalScale(10),
-    right: scale(10),
+      10,
+    right: 10,
     zIndex: 10,
     padding:
-      moderateScale(8),
+      8,
     borderRadius: 999,
   },
 
   popularityContainer: {
     position: 'absolute',
     bottom:
-      verticalScale(12),
-    left: scale(12),
+      12,
+    left: 12,
     zIndex: 10,
   },
   popularityBadge: {
     position: 'absolute',
     top: 0,
     right: 0,
-    width: scale(62),
-    height: verticalScale(28),
+    width: 62,
+    height: 28,
     backgroundColor: '#FF6B35',
-    borderBottomLeftRadius: moderateScale(14),
+    borderBottomLeftRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1412,38 +1386,38 @@ const styles = StyleSheet.create({
 
   popularityBadgeText: {
     color: '#fff',
-    fontSize: moderateScale(12),
+    fontSize: 12,
     fontWeight: '700',
-    marginLeft: scale(4),
+    marginLeft: 4,
     textAlign: 'center',
   },
   noDecksEmpty: {
     height:
-      verticalScale(200),
+      200,
     borderRadius:
-      moderateScale(18),
+      18,
     justifyContent:
       'center',
     alignItems: 'center',
     marginHorizontal:
-      scale(16),
+      16,
     backgroundColor:
       'transparent',
     flexDirection:
       'column',
     gap:
-      verticalScale(10),
+      10,
     marginTop:
-      verticalScale(150),
+      150,
   },
 
   communityList: {
     marginTop:
-      verticalScale(16),
+      16,
     marginBottom:
-      verticalScale(8),
+      8,
     marginHorizontal:
-      scale(2),
+      2,
   },
 });
 

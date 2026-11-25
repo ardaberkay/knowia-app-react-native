@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, memo, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, TouchableHighlight, ActivityIndicator, Platform, Modal, Image, Pressable, RefreshControl, BackHandler } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, FlatList, TouchableHighlight, ActivityIndicator, Platform, Modal, Image, Pressable, RefreshControl, BackHandler } from 'react-native';
+import { Text } from '../../components/ui/AppText';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useAuth } from '../../contexts/AuthContext';
@@ -16,11 +18,10 @@ import { addFavoriteCard, removeFavoriteCard, getFavoriteCardIdsForCards } from 
 import { LinearGradient } from 'expo-linear-gradient';
 import LottieView from 'lottie-react-native';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import ChapterSelector from '../../components/modals/ChapterSelector';
-import MathText from '../../components/ui/MathText';
 import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring } from 'react-native-reanimated';
 import { triggerHaptic } from '../../lib/hapticManager';
+import { useListBottomInset } from '../../components/ui/CustomTabBar';
 
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 
@@ -92,17 +93,19 @@ const MemoizedCardItem = memo(({
             flex: editMode ? 2 : 3,
           }
         ]}>
-          <MathText
-            value={card.question}
+          <Text
             style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]}
             numberOfLines={1}
-          />
+          >
+            {card.question}
+          </Text>
           <View style={[styles.divider, { backgroundColor: colors.cardDivider }]} />
-          <MathText
-            value={card.answer}
+          <Text
             style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]}
             numberOfLines={1}
-          />
+          >
+            {card.answer}
+          </Text>
         </View>
 
         <View style={[
@@ -113,7 +116,7 @@ const MemoizedCardItem = memo(({
         ]}>
           <Iconify
             icon={statusIcon}
-            size={scale(50)}
+            size={50}
             color={'#444444'}
           />
         </View>
@@ -158,6 +161,8 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const moreMenuRef = useRef(null);
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const listBottomInset = useListBottomInset();
+  const headerHeight = useHeaderHeight();
   const latestDetailFetchRef = useRef(null);
   const selectedCardRef = useRef(null);
   const editCardModeRef = useRef(false);
@@ -180,8 +185,8 @@ export default function ChapterCardsScreen({ route, navigation }) {
     };
   });
 
-  const BAR_HEIGHT = verticalScale(50);
-  const MARGIN_TOP = verticalScale(12);
+  const BAR_HEIGHT = 50;
+  const MARGIN_TOP = 12;
 
   const animatedBarStyle = useAnimatedStyle(() => {
     return {
@@ -293,7 +298,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
             >
               <Iconify
                 icon={Platform.OS === 'ios' ? 'ci:chevron-left' : 'mdi:arrow-back'}
-                size={Platform.OS === 'ios' ? moderateScale(29) : moderateScale(24)}
+                size={Platform.OS === 'ios' ? 29 : 24}
                 color={colors.text}
               />
             </TouchableOpacity>
@@ -317,13 +322,13 @@ export default function ChapterCardsScreen({ route, navigation }) {
           >
             <Iconify
               icon={Platform.OS === 'ios' ? 'ci:chevron-left' : 'mdi:arrow-back'}
-              size={Platform.OS === 'ios' ? moderateScale(29) : moderateScale(24)}
+              size={Platform.OS === 'ios' ? 29 : 24}
               color={colors.text}
             />
           </TouchableOpacity>
         ),
         headerRight: () => (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(16), paddingHorizontal: scale(8) }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, paddingHorizontal: 8 }}>
             <TouchableOpacity
               onPress={() => {
                 triggerHaptic('medium');
@@ -336,7 +341,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
             >
               <Iconify
                 icon={favoriteCards.includes(selectedCard.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-                size={moderateScale(24)}
+                size={24}
                 color={favoriteCards.includes(selectedCard.id) ? '#F98A21' : colors.text}
               />
             </TouchableOpacity>
@@ -352,7 +357,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
                 activeOpacity={0.7}
                 hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
               >
-                <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={moderateScale(24)} color={colors.text} />
+                <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={24} color={colors.text} />
               </TouchableOpacity>
             )}
           </View>
@@ -378,11 +383,11 @@ export default function ChapterCardsScreen({ route, navigation }) {
             }
           }}
           activeOpacity={0.7}
-          hitSlop={{ top: scale(15), bottom: scale(15), left: scale(15), right: scale(15) }}
+          hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
         >
           <Iconify
             icon={editMode ? "mingcute:close-fill" : "lucide:edit"}
-            size={moderateScale(22)}
+            size={22}
             color={colors.text}
           />
         </TouchableOpacity>
@@ -660,7 +665,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
     }
   };
 
-  const CARD_ITEM_HEIGHT = verticalScale(110) + verticalScale(12);
+  const CARD_ITEM_HEIGHT = 110 + 12;
   const getItemLayout = useCallback((data, index) => ({
     length: CARD_ITEM_HEIGHT,
     offset: CARD_ITEM_HEIGHT * index,
@@ -688,8 +693,8 @@ export default function ChapterCardsScreen({ route, navigation }) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <LottieView source={require('../../assets/flexloader.json')} speed={1.1} autoPlay loop style={{ width: scale(160, 0.3), height: scale(160, 0.3) }} />
-        <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100, 0.3), height: scale(100, 0.3), marginTop: verticalScale(-65) }} />
+        <LottieView source={require('../../assets/flexloader.json')} speed={1.1} autoPlay loop style={{ width: 160, height: 160 }} />
+        <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100, marginTop: -65 }} />
       </View>
     );
   }
@@ -738,19 +743,19 @@ export default function ChapterCardsScreen({ route, navigation }) {
                 <View
                   style={{
                     position: 'absolute',
-                    right: scale(20),
+                    right: 20,
                     // Right under the nav bar. Measuring the header button is unreliable (iOS 26 bar items).
-                    top: insets.top + (Platform.OS === 'ios' ? 44 : 56) + verticalScale(6),
-                    minWidth: scale(160),
+                    top: headerHeight + 6,
+                    minWidth: 160,
                     backgroundColor: colors.cardBackground,
-                    borderRadius: moderateScale(14),
-                    paddingVertical: verticalScale(8),
+                    borderRadius: 14,
+                    paddingVertical: 8,
                     shadowColor: '#000',
-                    shadowOffset: { width: 0, height: verticalScale(2) },
+                    shadowOffset: { width: 0, height: 2 },
                     shadowOpacity: 0.15,
-                    shadowRadius: moderateScale(8),
+                    shadowRadius: 8,
                     elevation: 8,
-                    borderWidth: moderateScale(1),
+                    borderWidth: 1,
                     borderColor: colors.cardBorder,
                   }}
                 >
@@ -759,29 +764,29 @@ export default function ChapterCardsScreen({ route, navigation }) {
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
-                      paddingVertical: verticalScale(12),
-                      paddingHorizontal: scale(16),
+                      paddingVertical: 12,
+                      paddingHorizontal: 16,
                     }}
                     activeOpacity={0.7}
                   >
-                    <Iconify icon="lucide:edit" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
-                    <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
+                    <Iconify icon="lucide:edit" size={20} color={colors.text} style={{ marginRight: 12 }} />
+                    <Text style={[typography.styles.body, { color: colors.text, fontSize: 16 }]}>
                       {t('cardDetail.edit', 'Kartı Düzenle')}
                     </Text>
                   </TouchableOpacity>
-                  <View style={{ height: moderateScale(1), backgroundColor: colors.border, marginVertical: verticalScale(4) }} />
+                  <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
                   <TouchableOpacity
                     onPress={handleDeleteSelectedCard}
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
-                      paddingVertical: verticalScale(12),
-                      paddingHorizontal: scale(16),
+                      paddingVertical: 12,
+                      paddingHorizontal: 16,
                     }}
                     activeOpacity={0.7}
                   >
-                    <Iconify icon="mdi:garbage" size={moderateScale(20)} color="#E74C3C" style={{ marginRight: scale(12) }} />
-                    <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: moderateScale(16) }]}>
+                    <Iconify icon="mdi:garbage" size={20} color="#E74C3C" style={{ marginRight: 12 }} />
+                    <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: 16 }]}>
                       {t('cardDetail.delete', 'Kartı Sil')}
                     </Text>
                   </TouchableOpacity>
@@ -794,8 +799,6 @@ export default function ChapterCardsScreen({ route, navigation }) {
     );
   }
 
-  // Header yüksekliği: status bar + header (yaklaşık 44-56px) + safe area top + ekstra boşluk
-  const headerHeight = Platform.OS === 'ios' ? insets.top + 44 : 56;
   const chapterIcon = chapter?.id ? 'streamline-freehand:plugin-jigsaw-puzzle' : 'mage:inbox-star';
   const chapterName = chapter?.name || t('chapterCards.noChapter', 'Atanmamış Kartlar');
 
@@ -807,14 +810,14 @@ export default function ChapterCardsScreen({ route, navigation }) {
           colors={[colors.cardBackground, colors.cardBackground]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[styles.fixedHeaderGradient, { paddingTop: headerHeight + verticalScale(32) }]}
+          style={[styles.fixedHeaderGradient, { paddingTop: headerHeight + 32 }]}
         >
           <View style={styles.headerContent}>
             {/* Icon and Title Section */}
             <View style={styles.heroContent}>
               <View style={styles.heroIconContainer}>
                 <View style={[styles.iconCircle, { backgroundColor: colors.buttonColor + '20' }]}>
-                  <Iconify icon={chapterIcon} size={moderateScale(28)} color={colors.buttonColor} />
+                  <Iconify icon={chapterIcon} size={28} color={colors.buttonColor} />
                 </View>
               </View>
               <View style={styles.heroTextContainer}>
@@ -830,7 +833,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
               {/* Total */}
               <View style={styles.statItem}>
                 <View style={styles.iconBox}>
-                  <Iconify icon="ri:stack-fill" size={moderateScale(18)} color={colors.buttonColor} />
+                  <Iconify icon="ri:stack-fill" size={18} color={colors.buttonColor} />
                 </View>
                 <Text style={[styles.statText, { color: colors.text }]}>
                   {chapterStats.total}
@@ -842,7 +845,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
               {/* New */}
               <View style={styles.statItem}>
                 <View style={styles.iconBox}>
-                  <Iconify icon="basil:eye-closed-outline" size={moderateScale(22)} color={colors.buttonColor} />
+                  <Iconify icon="basil:eye-closed-outline" size={22} color={colors.buttonColor} />
                 </View>
                 <Text style={[styles.statText, { color: colors.text }]}>
                   {chapterStats.new}
@@ -854,7 +857,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
               {/* Learning */}
               <View style={styles.statItem}>
                 <View style={styles.iconBox}>
-                  <Iconify icon="mdi:fire" size={moderateScale(20)} color={colors.buttonColor} />
+                  <Iconify icon="mdi:fire" size={20} color={colors.buttonColor} />
                 </View>
                 <Text style={[styles.statText, { color: colors.text }]}>
                   {chapterStats.learning}
@@ -866,7 +869,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
               {/* Learned */}
               <View style={styles.statItem}>
                 <View style={styles.iconBox}>
-                  <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(18)} color={colors.buttonColor} />
+                  <Iconify icon="dashicons:welcome-learn-more" size={18} color={colors.buttonColor} />
                 </View>
                 <Text style={[styles.statText, { color: colors.text }]}>
                   {chapterStats.learned}
@@ -898,7 +901,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
                 >
                   <Iconify
                     icon={selectedCards.size === filteredCards.length ? "material-symbols:all-out-rounded" : "material-symbols:all-out-outline-rounded"}
-                    size={moderateScale(18)}
+                    size={18}
                     color={colors.text}
                   />
                   <Text style={[styles.actionPillText, { color: colors.text }]}>
@@ -933,9 +936,9 @@ export default function ChapterCardsScreen({ route, navigation }) {
                     </Text>
                     <Iconify
                       icon="ion:chevron-forward"
-                      size={moderateScale(16)}
+                      size={16}
                       color={colors.buttonColor}
-                      style={{ marginLeft: scale(4) }}
+                      style={{ marginLeft: 4 }}
                     />
                   </TouchableOpacity>
                 </Reanimated.View>
@@ -952,29 +955,29 @@ export default function ChapterCardsScreen({ route, navigation }) {
           <View style={styles.emptyState}>
             <Image
               source={require('../../assets/cardbg.webp')}
-              style={{ width: scale(500), height: scale(500), opacity: 0.2 }}
+              style={{ width: 500, height: 500, opacity: 0.2 }}
               resizeMode="contain"
             />
-            <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, textAlign: 'center', fontSize: moderateScale(16), marginTop: verticalScale(-150) }]}>
+            <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, textAlign: 'center', fontSize: 16, marginTop: -150 }]}>
               {t('chapterCards.noCardsDesc', 'Bu bölümde henüz kart oluşturulmamış.')}
             </Text>
           </View>
         ) : (
-          <View style={{ paddingHorizontal: scale(18) }}>
+          <View style={{ paddingHorizontal: 18 }}>
             <FlatList
               data={filteredCards}
               renderItem={renderCardItem}
               keyExtractor={(item) => item.id.toString()}
               getItemLayout={getItemLayout}
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={[styles.cardsList, { paddingBottom: verticalScale(100), paddingTop: verticalScale(20) }]}
+              contentContainerStyle={[styles.cardsList, { paddingBottom: listBottomInset + styles.fab.height + 16, paddingTop: 20 } /* clears the FAB */]}
               refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
               }
               onEndReached={loadMoreChapterCards}
               onEndReachedThreshold={0.5}
               ListFooterComponent={loadingMore ? (
-                <View style={{ paddingVertical: verticalScale(16), alignItems: 'center' }}>
+                <View style={{ paddingVertical: 16, alignItems: 'center' }}>
                   <ActivityIndicator size="small" color={colors.text} />
                 </View>
               ) : null}
@@ -990,7 +993,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
       {/* Floating Action Button - Atanmamış kartlar için dağıtım butonu */}
       {!chapter?.id && !editMode && currentUserId && deck?.user_id === currentUserId && !deck?.is_shared && (
         <AnimatedPressable
-          style={[styles.fab, shuffleAnimatedStyle, { bottom: insets.bottom + verticalScale(24) }]} // Dönüş ve küçülme stilini verdik
+          style={[styles.fab, shuffleAnimatedStyle, { bottom: insets.bottom + 24 }]} // Dönüş ve küçülme stilini verdik
           disabled={distLoading} // Yüklenirken tıklamayı kapat
           onPressIn={() => {
             if (!distLoading) shufflePressed.value = 1; // Yüklenmiyorsa animasyonu başlat
@@ -1015,7 +1018,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
             {distLoading ? (
               <ActivityIndicator size="large" color="#FFFFFF" />
             ) : (
-              <Iconify icon="fluent:arrow-shuffle-24-filled" size={moderateScale(28)} color="#FFFFFF" />
+              <Iconify icon="fluent:arrow-shuffle-24-filled" size={28} color="#FFFFFF" />
             )}
           </LinearGradient>
         </AnimatedPressable>
@@ -1050,14 +1053,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: verticalScale(200),
+    minHeight: 200,
     flexDirection: 'column',
-    marginTop: verticalScale(-120),
+    marginTop: -120,
   },
   header: {
     alignItems: 'center',
-    paddingHorizontal: scale(18),
-    paddingVertical: verticalScale(16),
+    paddingHorizontal: 18,
+    paddingVertical: 16,
   },
   headerTitle: {
     textAlign: 'center',
@@ -1067,30 +1070,30 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   fixedHeaderGradient: {
-    paddingBottom: verticalScale(12),
+    paddingBottom: 12,
     paddingHorizontal: 0,
   },
   headerContent: {
-    paddingHorizontal: scale(12),
-    paddingTop: verticalScale(20),
-    paddingBottom: verticalScale(20),
+    paddingHorizontal: 12,
+    paddingTop: 20,
+    paddingBottom: 20,
   },
   heroContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: verticalScale(20),
+    marginBottom: 20,
   },
   heroIconContainer: {
-    marginRight: scale(12),
+    marginRight: 12,
   },
   iconCircle: {
-    width: scale(64),
-    height: scale(64),
-    borderRadius: moderateScale(32),
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: moderateScale(2),
+    borderWidth: 2,
     borderColor: 'rgba(0, 0, 0, 0.1)',
   },
   heroTextContainer: {
@@ -1099,26 +1102,26 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     ...typography.styles.h2,
-    fontSize: moderateScale(28),
+    fontSize: 28,
     fontWeight: '900',
-    marginBottom: verticalScale(6),
+    marginBottom: 6,
     letterSpacing: -0.5,
   },
   heroSubtitle: {
     ...typography.styles.caption,
-    fontSize: moderateScale(15),
+    fontSize: 15,
     fontWeight: '500',
-    lineHeight: verticalScale(20),
+    lineHeight: 20,
   },
   statsCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: 'rgba(150, 150, 150, 0.08)', // Hem dark hem light modda çalışan çok şık, zarif bir arka plan
-    borderRadius: moderateScale(16),
-    paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(8),
-    marginBottom: verticalScale(4),
+    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    marginBottom: 4,
   },
   statItem: {
     flex: 1, // Tüm öğelerin genişliğini kusursuz bir şekilde eşitler
@@ -1127,16 +1130,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconBox: {
-    width: moderateScale(32),
-    height: moderateScale(32),
-    borderRadius: moderateScale(10), // Hafif kavisli kare (squircle) görünümü
+    width: 32,
+    height: 32,
+    borderRadius: 10, // Hafif kavisli kare (squircle) görünümü
     backgroundColor: 'rgba(150, 150, 150, 0.12)', // İkonun arkasındaki premium vurgu
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: scale(6),
+    marginRight: 6,
   },
   statText: {
-    fontSize: moderateScale(15),
+    fontSize: 15,
     fontWeight: '700', // Sayıların daha okunaklı ve vurgulu olması için kalınlık artırıldı
     letterSpacing: 0.5,
   },
@@ -1148,92 +1151,92 @@ const styles = StyleSheet.create({
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(12),
-    marginTop: verticalScale(8),
+    gap: 12,
+    marginTop: 8,
   },
   searchBar: {
     flex: 1,
   },
   listContainer: {
     flex: 1,
-    marginTop: verticalScale(-20),
+    marginTop: -20,
     zIndex: 2,
-    borderTopLeftRadius: moderateScale(28),
-    borderTopRightRadius: moderateScale(28),
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     overflow: 'hidden',
   },
   cardsList: {
-    paddingBottom: verticalScale(20),
+    paddingBottom: 20,
   },
   cardItem: {
     width: '100%',
-    minHeight: verticalScale(110),
-    borderRadius: moderateScale(30),
-    marginBottom: verticalScale(12),
+    minHeight: 110,
+    borderRadius: 30,
+    marginBottom: 12,
     padding: 0,
-    borderWidth: moderateScale(1),
+    borderWidth: 1,
     overflow: 'hidden',
   },
   cardContent: {
     flexDirection: 'row',
     width: '100%',
-    minHeight: verticalScale(110),
+    minHeight: 110,
     alignSelf: 'stretch',
   },
   leftSection: {
     flex: 3,
-    padding: moderateScale(20),
+    padding: 20,
     justifyContent: 'center',
-    borderRightWidth: moderateScale(5),
-    minHeight: verticalScale(110),
+    borderRightWidth: 5,
+    minHeight: 110,
   },
   rightSection: {
     width: '25%',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: verticalScale(20),
-    minHeight: verticalScale(110),
+    paddingVertical: 20,
+    minHeight: 110,
   },
   question: {
     fontWeight: '600',
-    fontSize: moderateScale(17),
-    marginBottom: verticalScale(8),
+    fontSize: 17,
+    marginBottom: 8,
     letterSpacing: 0.3,
-    marginTop: verticalScale(4),
+    marginTop: 4,
   },
   divider: {
-    height: verticalScale(2),
+    height: 2,
     alignSelf: 'stretch',
-    marginVertical: verticalScale(8),
-    borderRadius: moderateScale(2),
+    marginVertical: 8,
+    borderRadius: 2,
   },
   answer: {
-    fontSize: moderateScale(15),
-    marginTop: verticalScale(4),
+    fontSize: 15,
+    marginTop: 4,
     fontWeight: '400',
     letterSpacing: 0.2,
   },
   iconBtn: {
-    padding: moderateScale(8),
-    borderRadius: moderateScale(12),
-    marginBottom: verticalScale(4),
+    padding: 8,
+    borderRadius: 12,
+    marginBottom: 4,
   },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: verticalScale(-250),
+    marginTop: -250,
   },
   loadingText: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
   },
   fab: {
     position: 'absolute',
-    right: scale(20),
-    bottom: verticalScale(24),
-    width: scale(70),
-    height: scale(70),
-    borderRadius: moderateScale(35),
+    right: 20,
+    bottom: 24,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     overflow: 'hidden',
     zIndex: 1000,
   },
@@ -1242,60 +1245,60 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: moderateScale(35),
+    borderRadius: 35,
   },
   checkboxContainer: {
-    padding: moderateScale(15),
+    padding: 15,
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkbox: {
-    width: scale(24),
-    height: scale(24),
-    borderRadius: moderateScale(6),
-    borderWidth: moderateScale(2),
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
   },
   editModeBar: {
     width: '100%',
     backgroundColor: 'rgba(255, 255, 255, 0.15)', // Şık bir yarı saydam arka plan (Glassmorphism etkisi)
-    borderRadius: moderateScale(16),
+    borderRadius: 16,
   },
   editModeContent: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: scale(12),
+    paddingHorizontal: 12,
   },
   actionPillButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: verticalScale(6),
-    paddingHorizontal: scale(10),
-    borderRadius: moderateScale(20), // Tam yuvarlak (hap) görünüm
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 20, // Tam yuvarlak (hap) görünüm
     backgroundColor: 'rgba(255, 255, 255, 0.2)', // Butonlar için hafif bir vurgu
   },
   actionPillText: {
-    fontSize: moderateScale(13),
+    fontSize: 13,
     fontWeight: '600',
-    marginLeft: scale(4),
+    marginLeft: 4,
   },
   moveButtonVariant: {
     backgroundColor: '#fff', // Taşı butonu ana eylem olduğu için tam beyaz
   },
   moveButtonText: {
     color: '#ffffff', // Projenin ana rengi (örneğin mavi/mor)
-    fontSize: moderateScale(13),
+    fontSize: 13,
     fontWeight: '700',
   },
   badgeContainer: {
-    paddingVertical: verticalScale(4),
-    paddingHorizontal: scale(8),
+    paddingVertical: 4,
+    paddingHorizontal: 8,
   },
   badgeText: {
-    fontSize: moderateScale(12),
+    fontSize: 12,
     fontWeight: '500',
     opacity: 0.9,
   }

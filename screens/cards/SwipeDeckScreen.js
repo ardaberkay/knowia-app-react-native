@@ -1,8 +1,8 @@
 import React, { memo, useEffect, useState, useCallback, useRef, useMemo, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Pressable, Platform, BackHandler, ScrollView, Image, Modal } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Pressable, Platform, BackHandler, ScrollView, Image, Modal, useWindowDimensions } from 'react-native';
+import { Text, MAX_FONT_SIZE_MULTIPLIER } from '../../components/ui/AppText';
 import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Gesture, GestureDetector, ScrollView as GHScrollView } from 'react-native-gesture-handler';
-import MathText from '../../components/ui/MathText';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Reanimated, {
   runOnJS,
@@ -48,8 +48,7 @@ import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import { addFavoriteCard, removeFavoriteCard, getFavoriteCardIds } from '../../services/FavoriteService';
 import LottieView from 'lottie-react-native';
-import { scale, moderateScale, verticalScale, getIsTablet, useWindowDimensions } from '../../lib/scaling';
-import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
+import { useHeaderHeight } from '@react-navigation/elements';
 import * as BlockService from '../../services/BlockService';
 import ReportModal from '../../components/modals/ReportModal';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
@@ -125,6 +124,15 @@ const AnimatedTimeButton = ({ onPress, label, time, buttonStyle, textColor }) =>
   );
 };
 
+// Swipe card: fixed 2:3 portrait ratio; width is capped by the screen and,
+// on tablets, by an absolute maximum.
+const CARD_ASPECT_RATIO = 1.5;
+const CARD_MAX_WIDTH_RATIO = 0.88;
+const CARD_MAX_WIDTH = 440;
+// Minimum breathing room (total, top + bottom) between the card and the
+// counters / bottom controls when the card is height-limited.
+const CARD_AREA_VERTICAL_GAP = 16;
+
 // languages.language_code ('en') -> a voice locale. The region picks the voice
 // that matches the flag shown in the app (Portugal, not Brazil).
 const SPEECH_LOCALES = {
@@ -193,8 +201,8 @@ const stripForSpeech = (text) => (text || '')
 // Stepped speed bar for the voice sheet: tap a stop or drag along the track.
 // The thumb snaps to the nearest stop on the UI thread (light haptic per
 // stop); the value is committed to React when the finger lifts.
-const RATE_THUMB = moderateScale(24);
-const RATE_LABEL_WIDTH = scale(56);
+const RATE_THUMB = 24;
+const RATE_LABEL_WIDTH = 56;
 const formatRate = (rate) => `${Number.isInteger(rate) ? rate.toFixed(0) : rate}×`;
 const RateStepBar = memo(function RateStepBar({
   steps,
@@ -335,9 +343,9 @@ const VoiceRow = memo(function VoiceRow({ row, selected, first, base, locale, on
         ) : null}
       </View>
       {selected ? (
-        <Iconify icon="hugeicons:tick-01" size={moderateScale(22)} color={colors.buttonColor} />
+        <Iconify icon="hugeicons:tick-01" size={22} color={colors.buttonColor} />
       ) : (
-        <Iconify icon="streamline:button-play-solid" size={moderateScale(14)} color={colors.muted} />
+        <Iconify icon="streamline:button-play-solid" size={14} color={colors.muted} />
       )}
     </Pressable>
   );
@@ -427,7 +435,7 @@ const VoiceSettingsSheet = memo(function VoiceSettingsSheet({
       enableDynamicSizing={false}
       onDismiss={onDismiss}
       backdropComponent={renderBackdrop}
-      backgroundStyle={{ backgroundColor: colors.background, borderRadius: moderateScale(44) }}
+      backgroundStyle={{ backgroundColor: colors.background, borderRadius: 44 }}
       handleIndicatorStyle={{ backgroundColor: isDarkMode ? '#555' : '#CCC' }}
       enableContentPanningGesture={false}
     >
@@ -442,7 +450,7 @@ const VoiceSettingsSheet = memo(function VoiceSettingsSheet({
           accessibilityLabel={t('cardDetail.close', 'Kapat')}
           style={styles.voiceSheetClose}
         >
-          <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
+          <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
       {/* A plain (gesture-handler) ScrollView rather than BottomSheetScrollView:
@@ -450,7 +458,7 @@ const VoiceSettingsSheet = memo(function VoiceSettingsSheet({
           bounce-back jitter. This keeps the native bounce. */}
       <GHScrollView
         style={styles.voiceSheetScroll}
-        contentContainerStyle={[styles.voiceSheetContent, { paddingBottom: bottomInset + verticalScale(32) }]}
+        contentContainerStyle={[styles.voiceSheetContent, { paddingBottom: bottomInset + 32 }]}
       >
         <View style={styles.voiceRateHeader}>
           <Text style={[styles.voiceSectionTitle, { color: colors.muted, marginTop: 0, marginBottom: 0 }]}>
@@ -515,7 +523,7 @@ const VoiceSettingsSheet = memo(function VoiceSettingsSheet({
                     </Text>
                     <Iconify
                       icon={othersOpen ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'}
-                      size={moderateScale(16)}
+                      size={16}
                       color={colors.buttonColor}
                     />
                   </Pressable>
@@ -542,7 +550,7 @@ const VoiceSettingsSheet = memo(function VoiceSettingsSheet({
 });
 
 const AnimatedActionPressable = Reanimated.createAnimatedComponent(Pressable);
-const ACTION_ENTRANCE_OFFSET = verticalScale(8);
+const ACTION_ENTRANCE_OFFSET = 8;
 
 const SwipeCardActions = memo(function SwipeCardActions({
   cardId,
@@ -667,10 +675,10 @@ const SwipeCardActions = memo(function SwipeCardActions({
           accessibilityLabel={isSpeaking ? stopSpeakingLabel : speakLabel}
           onPress={handleSpeakPress}
           hitSlop={{
-            top: scale(10),
-            bottom: scale(10),
-            left: scale(10),
-            right: scale(10),
+            top: 10,
+            bottom: 10,
+            left: 10,
+            right: 10,
           }}
           style={[styles.cardActionButton, actionEntranceStyle]}
         >
@@ -681,12 +689,12 @@ const SwipeCardActions = memo(function SwipeCardActions({
             <Reanimated.View
               style={[styles.cardActionIconFace, styles.cardActionIconFrontFace, frontFlipStyle]}
             >
-              <Iconify icon={speakIcon} size={moderateScale(25)} color={speakIconColor} />
+              <Iconify icon={speakIcon} size={25} color={speakIconColor} />
             </Reanimated.View>
             <Reanimated.View
               style={[styles.cardActionIconFace, styles.cardActionIconBackFace, backFlipStyle]}
             >
-              <Iconify icon={speakIcon} size={moderateScale(25)} color={speakIconColor} />
+              <Iconify icon={speakIcon} size={25} color={speakIconColor} />
             </Reanimated.View>
           </Reanimated.View>
         </AnimatedActionPressable>
@@ -697,10 +705,10 @@ const SwipeCardActions = memo(function SwipeCardActions({
         accessibilityLabel={isFavorite ? 'Favorilerden kaldır' : 'Favorilere ekle'}
         onPress={handlePress}
         hitSlop={{
-          top: scale(10),
-          bottom: scale(10),
-          left: scale(10),
-          right: scale(10),
+          top: 10,
+          bottom: 10,
+          left: 10,
+          right: 10,
         }}
         style={[styles.cardActionButton, actionEntranceStyle]}
       >
@@ -713,7 +721,7 @@ const SwipeCardActions = memo(function SwipeCardActions({
           >
             <Iconify
               icon={favoriteIcon}
-              size={moderateScale(25)}
+              size={25}
               color={favoriteIconColor}
             />
           </Reanimated.View>
@@ -723,7 +731,7 @@ const SwipeCardActions = memo(function SwipeCardActions({
           >
             <Iconify
               icon={favoriteIcon}
-              size={moderateScale(25)}
+              size={25}
               color={favoriteIconColor}
             />
           </Reanimated.View>
@@ -740,11 +748,11 @@ const SwipeCardActions = memo(function SwipeCardActions({
             accessibilityRole="button"
             accessibilityLabel={showMoreLabel}
             onPress={handleShowMorePress}
-            hitSlop={{ top: scale(8), bottom: scale(8), left: scale(8), right: scale(8) }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={[styles.showMoreButton, showMoreStyle]}
           >
             <Text style={[styles.showMoreText, { color: showMoreTextColor }]}>{showMoreLabel}</Text>
-            <Iconify icon="flowbite:caret-down-solid" size={moderateScale(14)} color={showMoreTextColor} />
+            <Iconify icon="flowbite:caret-down-solid" size={14} color={showMoreTextColor} />
           </AnimatedActionPressable>
         </View>
       ) : null}
@@ -758,49 +766,25 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const { session } = useAuth();
   const authUserId = session?.user?.id;
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const { width, height } = useWindowDimensions();
-  const isTablet = getIsTablet();
 
+  // The card always keeps its 2:3 portrait ratio and is as big as fits: at most
+  // 88% of the screen width (capped for tablets) and the measured height of
+  // the card area between the counters and the bottom controls. On short
+  // screens it shrinks as a whole instead of getting squashed.
+  const [cardArea, setCardArea] = useState(null);
+  const onCardAreaLayout = useCallback((e) => {
+    const { width: w, height: h } = e.nativeEvent.layout;
+    setCardArea((prev) => (prev && Math.abs(prev.w - w) < 1 && Math.abs(prev.h - h) < 1 ? prev : { w, h }));
+  }, []);
   const cardDimensions = useMemo(() => {
-    const { CARD } = RESPONSIVE_CONSTANTS;
-
-    const getCardWidth = () => {
-      if (isTablet) {
-        const scaledWidth = scale(CARD.REFERENCE_TABLET_MAX_WIDTH);
-        const maxWidth = width * CARD.TABLET_WIDTH_PERCENT;
-        return Math.min(scaledWidth, maxWidth);
-      }
-
-      const scaledWidth = scale(CARD.REFERENCE_WIDTH);
-      const maxWidth = width * CARD.NORMAL_PHONE_WIDTH_PERCENT;
-      return Math.min(scaledWidth, maxWidth);
-    };
-
-    const calculateCardHeight = (cardWidth) => {
-      const idealHeight = cardWidth * CARD.ASPECT_RATIO;
-      const maxHeightPercentage = height < RESPONSIVE_CONSTANTS.SMALL_SCREEN_MAX_HEIGHT
-        ? CARD.SMALL_SCREEN_MAX_HEIGHT_PERCENT
-        : CARD.NORMAL_PHONE_MAX_HEIGHT_PERCENT;
-
-      const maxHeight = height * maxHeightPercentage;
-      return Math.min(idealHeight, maxHeight);
-    };
-
-    const getCardHorizontalMargin = (cardWidth) => {
-      const remainingSpace = width - cardWidth;
-      return remainingSpace / 2;
-    };
-
-    const cardWidth = getCardWidth();
-    const cardHeight = calculateCardHeight(cardWidth);
-    const horizontalMargin = getCardHorizontalMargin(cardWidth);
-
-    return {
-      width: cardWidth,
-      height: cardHeight,
-      horizontalMargin,
-    };
-  }, [width, height, isTablet]);
+    const maxWidth = Math.min(width * CARD_MAX_WIDTH_RATIO, CARD_MAX_WIDTH);
+    const cardWidth = cardArea
+      ? Math.min(maxWidth, (cardArea.h - CARD_AREA_VERTICAL_GAP) / CARD_ASPECT_RATIO)
+      : maxWidth;
+    return { width: cardWidth, height: cardWidth * CARD_ASPECT_RATIO };
+  }, [width, cardArea]);
 
   const CARD_WIDTH = cardDimensions.width;
   const CARD_HEIGHT = cardDimensions.height;
@@ -1390,8 +1374,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              gap: scale(16),
-              paddingHorizontal: scale(8),
+              gap: 16,
+              paddingHorizontal: 8,
             }}
           >
             {isReversed ? (
@@ -1401,12 +1385,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
                   toggleReversed();
                 }}
                 activeOpacity={0.7}
-                hitSlop={{ top: scale(15), bottom: scale(15), left: scale(8), right: scale(8) }}
+                hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
                 accessibilityRole="button"
                 accessibilityLabel={t('swipeDeck.reverseActive', 'Ters mod: önce cevap')}
                 style={styles.reverseBadge}
               >
-                <Iconify icon="material-symbols:swap-vert-rounded" size={moderateScale(18)} color="#FFFFFF" />
+                <Iconify icon="material-symbols:swap-vert-rounded" size={18} color="#FFFFFF" />
               </TouchableOpacity>
             ) : null}
             <TouchableOpacity
@@ -1418,16 +1402,16 @@ export default function SwipeDeckScreen({ route, navigation }) {
               }}
               activeOpacity={0.7}
               hitSlop={{
-                top: scale(15),
-                bottom: scale(15),
-                left: scale(8),
-                right: scale(8),
+                top: 15,
+                bottom: 15,
+                left: 8,
+                right: 8,
               }}
               accessibilityRole="button"
             >
               <Iconify
                 icon="iconamoon:menu-kebab-horizontal-bold"
-                size={moderateScale(24)}
+                size={24}
                 color="#FFFFFF"
               />
             </TouchableOpacity>
@@ -1654,7 +1638,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
   // When the swipe finishes, only the real React count changes. No second
   // post-swipe counter animation is triggered.
   const activeSwipeX = useSharedValue(0);
-  const counterSwipeDistance = Math.max(scale(90), CARD_WIDTH * 0.28);
+  const counterSwipeDistance = Math.max(90, CARD_WIDTH * 0.28);
 
   // The swipe itself drives the counter color/icon. After the swipe has
   // committed, the new numeric value gets one small, separate pop so the
@@ -2498,12 +2482,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
     }
 
     return (
-      <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingBottom: insets.bottom, paddingTop: insets.top + scale(50) }]}>
-        <ScrollView contentContainerStyle={[styles.completionContent, { paddingBottom: insets.bottom + verticalScale(24) }]} showsVerticalScrollIndicator={false}>
+      <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingBottom: insets.bottom, paddingTop: insets.top + 50 }]}>
+        <ScrollView contentContainerStyle={[styles.completionContent, { paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
           <View style={styles.completionHero}>
             <LinearGradient colors={[colors.buttonColor, '#FF6B35']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.completionHeroCard}>
               <View style={styles.completionHeroTitleRow}>
-                <Iconify icon="material-symbols:trophy" size={moderateScale(36)} color="#FFFFFF" />
+                <Iconify icon="material-symbols:trophy" size={36} color="#FFFFFF" />
                 <Text style={[typography.styles.h2, styles.completionTitle, { color: '#FFFFFF' }]}>{t('swipeDeck.completion.title', 'Oturum Tamamlandı!')}</Text>
               </View>
               <View style={styles.completionHeroMetricCircle}>
@@ -2546,7 +2530,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
                 <View style={styles.completionGoalRow}>
                   <Iconify
                     icon={completionActivity.today_goal_met ? 'mdi:fire' : 'lets-icons:clock-fill'}
-                    size={moderateScale(18)}
+                    size={18}
                     color="#FFFFFF"
                   />
                   <Text style={styles.completionGoalText} numberOfLines={2}>
@@ -2568,7 +2552,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
           <View style={[styles.completionChapterCard, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
             <View style={styles.completionChapterHeader}>
               <View style={styles.completionChapterTitleRow}>
-                <Iconify icon="streamline-flex:module-puzzle-2" size={moderateScale(20)} color={colors.buttonColor} />
+                <Iconify icon="streamline-flex:module-puzzle-2" size={20} color={colors.buttonColor} />
                 <Text style={[typography.styles.subtitle, { color: colors.text }]}>{t('swipeDeck.completion.chapterProgress', 'Bölüm İlerlemesi')}</Text>
               </View>
               <Text style={[styles.completionChapterProgressValue, { color: colors.buttonColor }]}>{chapterProgress ? `%${chapterPercent}` : '--'}</Text>
@@ -2583,14 +2567,14 @@ export default function SwipeDeckScreen({ route, navigation }) {
             <View style={[styles.completionChapterDivider, { backgroundColor: colors.border }]} />
             <View style={styles.completionReviewGrid}>
               <View style={styles.completionReviewItem}>
-                <Iconify icon="lets-icons:clock-fill" size={moderateScale(22)} color={colors.buttonColor} />
+                <Iconify icon="lets-icons:clock-fill" size={22} color={colors.buttonColor} />
                 <View style={styles.completionReviewTextGroup}>
                   <Text style={[styles.completionReviewMetric, { color: colors.text }]}>{nearestReview ? formatFutureReview(nearestReview.at, t) : '—'}</Text>
                   <Text style={[typography.styles.caption, styles.completionReviewLabel, { color: colors.muted }]}>{nearestReview ? t('swipeDeck.completion.cardsReady', { count: nearestReview.count, defaultValue: `${nearestReview.count} kart hazır` }) : t('swipeDeck.completion.nearestReview', 'En yakın tekrar')}</Text>
                 </View>
               </View>
               <View style={styles.completionReviewItem}>
-                <Iconify icon="solar:calendar-bold" size={moderateScale(22)} color={colors.secondary} />
+                <Iconify icon="solar:calendar-bold" size={22} color={colors.secondary} />
                 <View style={styles.completionReviewTextGroup}>
                   <Text style={[styles.completionReviewMetric, { color: colors.text }]}>{farthestReview ? formatFutureReview(farthestReview.at, t) : '—'}</Text>
                   <Text style={[typography.styles.caption, styles.completionReviewLabel, { color: colors.muted }]}>{t('swipeDeck.completion.farthestReview', 'En uzak tekrar')}</Text>
@@ -2630,8 +2614,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
     const isLastStep = swipeTutorialStep === swipeTutorialSteps.length - 1;
     const isCardTarget = activeTutorialStep.target === 'card';
     const targetLayout = isCardTarget ? cardTargetLayout : intervalTargetLayout;
-    const targetPadding = isCardTarget ? scale(10) : scale(6);
-    const targetRadius = isCardTarget ? moderateScale(26) : moderateScale(12);
+    const targetPadding = isCardTarget ? 10 : 6;
+    const targetRadius = isCardTarget ? 26 : 12;
     const hasValidTargetLayout =
       targetLayout &&
       Number.isFinite(targetLayout.x) &&
@@ -2657,7 +2641,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     const spotlightRadius = shouldUseSpotlight
       ? Math.min(targetRadius, spotlightWidth / 2, spotlightHeight / 2)
       : targetRadius;
-    const cornerCoverRadius = isCardTarget ? Math.min(spotlightRadius, moderateScale(10)) : spotlightRadius;
+    const cornerCoverRadius = isCardTarget ? Math.min(spotlightRadius, 10) : spotlightRadius;
     const targetFrameStyle = hasValidTargetLayout ? {
       top: spotlightTop,
       left: spotlightLeft,
@@ -2667,22 +2651,22 @@ export default function SwipeDeckScreen({ route, navigation }) {
     } : null;
     const coachmarkPositionStyle = isCardTarget
       ? {
-        top: targetLayout ? Math.max(verticalScale(54), targetLayout.y - verticalScale(156)) : verticalScale(74),
-        left: scale(18),
-        right: scale(18),
+        top: targetLayout ? Math.max(54, targetLayout.y - 156) : 74,
+        left: 18,
+        right: 18,
       }
       : {
-        left: scale(18),
-        right: scale(18),
+        left: 18,
+        right: 18,
         bottom: targetFrameStyle
-          ? Math.max(verticalScale(24), height - targetFrameStyle.top - verticalScale(60))
-          : verticalScale(144) + insets.bottom,
+          ? Math.max(24, height - targetFrameStyle.top - 60)
+          : 144 + insets.bottom,
       };
     const swipeDirectionHintPositionStyle = activeTutorialStep.showSwipeHint
       ? {
-        top: (coachmarkPositionStyle.top ?? verticalScale(74)) + verticalScale(340),
-        left: scale(24),
-        right: scale(24),
+        top: (coachmarkPositionStyle.top ?? 74) + 340,
+        left: 24,
+        right: 24,
       }
       : null;
 
@@ -2711,7 +2695,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
               <Text style={styles.swipeTutorialStepText}>{swipeTutorialStep + 1}/{swipeTutorialSteps.length}</Text>
             </View>
             <View style={styles.swipeTutorialTitleRow}>
-              <Iconify icon={activeTutorialStep.icon} size={moderateScale(20)} color="#F98A21" />
+              <Iconify icon={activeTutorialStep.icon} size={20} color="#F98A21" />
               <Text style={[styles.swipeTutorialTitle, { color: colors.text }]}>{activeTutorialStep.title}</Text>
             </View>
             <Text style={[styles.swipeTutorialDescription, { color: colors.muted }]}>{activeTutorialStep.description}</Text>
@@ -2751,7 +2735,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
             <View style={[styles.swipeTutorialSwipeBadge, styles.swipeTutorialSwipeBadgeLeft]}>
               <View style={[styles.swipeTutorialSwipeBadgeGlow, styles.swipeTutorialSwipeBadgeGlowLeft]} />
               <View style={[styles.swipeTutorialSwipeBadgeContent, styles.swipeTutorialSwipeBadgeContentLeft]}>
-                <Iconify icon="ion:arrow-undo" size={moderateScale(16)} color="#FFFFFF" />
+                <Iconify icon="ion:arrow-undo" size={16} color="#FFFFFF" />
                 <Text style={styles.swipeTutorialSwipeHintText}>{t('swipeDeck.tutorial.swipeHintLeft', 'Tekrar Et')}</Text>
               </View>
             </View>
@@ -2759,7 +2743,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
               <View style={[styles.swipeTutorialSwipeBadgeGlow, styles.swipeTutorialSwipeBadgeGlowRight]} />
               <View style={[styles.swipeTutorialSwipeBadgeContent, styles.swipeTutorialSwipeBadgeContentRight]}>
                 <Text style={styles.swipeTutorialSwipeHintText}>{t('swipeDeck.tutorial.swipeHintRight', 'Öğrendim')}</Text>
-                <Iconify icon="ion:arrow-redo" size={moderateScale(16)} color="#FFFFFF" />
+                <Iconify icon="ion:arrow-redo" size={16} color="#FFFFFF" />
               </View>
             </View>
           </View>
@@ -2777,7 +2761,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
         {
           paddingBottom: insets.bottom,
           backgroundColor: colors.background,
-          marginTop: '22%'
+          // The header is transparent; the screen starts right below it.
+          marginTop: headerHeight,
         }
       ]}
     >
@@ -2790,12 +2775,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
             animatedLeftCounterPop,
           ]}
         >
-          <View style={{ position: 'relative', minWidth: scale(18), minHeight: moderateScale(20), alignItems: 'center', justifyContent: 'center' }}>
-            <Reanimated.Text style={[styles.counterText, animatedLeftCount]}>
+          <View style={{ position: 'relative', minWidth: 18, minHeight: 20, alignItems: 'center', justifyContent: 'center' }}>
+            <Reanimated.Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER} style={[styles.counterText, animatedLeftCount]}>
               {leftCount}
             </Reanimated.Text>
             <Reanimated.View pointerEvents="none" style={[styles.counterIconOverlay, animatedLeftIcon]}>
-              <Iconify icon="mingcute:time-fill" size={moderateScale(18)} color="#fff" />
+              <Iconify icon="mingcute:time-fill" size={18} color="#fff" />
             </Reanimated.View>
           </View>
         </Reanimated.View>
@@ -2833,16 +2818,16 @@ export default function SwipeDeckScreen({ route, navigation }) {
               allOriginalCardsCompleted &&
               activeCardIsReinserted;
             const iconWrapStyle = {
-              borderRadius: moderateScale(10),
-              padding: scale(6),
+              borderRadius: 10,
+              padding: 6,
               backgroundColor: colors.cardBackground || 'rgba(128,128,128,0.15)',
-              marginRight: scale(10),
+              marginRight: 10,
             };
             if (showVaktiGeldi) {
               return (
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <View style={iconWrapStyle}>
-                    <Iconify icon="fluent:arrow-repeat-all-48-regular" size={moderateScale(22)} color={colors.text} />
+                    <Iconify icon="fluent:arrow-repeat-all-48-regular" size={22} color={colors.text} />
                   </View>
                   <Text style={[styles.deckProgressText, { color: colors.text }]}>{t('swipeDeck.vaktiGeldi', 'Vakti Geldi')}</Text>
                 </View>
@@ -2852,7 +2837,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 {activeCardIsReinserted && (
                   <View style={iconWrapStyle}>
-                    <Iconify icon="fluent:arrow-repeat-all-48-regular" size={moderateScale(18)} color={colors.text} />
+                    <Iconify icon="fluent:arrow-repeat-all-48-regular" size={18} color={colors.text} />
                   </View>
                 )}
                 <Text style={[styles.deckProgressText, { color: colors.text }]}>{currentCardNumber}/{sessionTargetCount}</Text>
@@ -2868,12 +2853,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
             animatedRightCounterPop,
           ]}
         >
-          <View style={{ position: 'relative', minWidth: scale(18), minHeight: moderateScale(20), alignItems: 'center', justifyContent: 'center' }}>
-            <Reanimated.Text style={[styles.counterText, animatedRightCount]}>
+          <View style={{ position: 'relative', minWidth: 18, minHeight: 20, alignItems: 'center', justifyContent: 'center' }}>
+            <Reanimated.Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER} style={[styles.counterText, animatedRightCount]}>
               {rightCount}
             </Reanimated.Text>
             <Reanimated.View pointerEvents="none" style={[styles.counterIconOverlay, animatedRightIcon]}>
-              <Iconify icon="streamline:check-solid" size={moderateScale(16)} color="#fff" />
+              <Iconify icon="streamline:check-solid" size={16} color="#fff" />
             </Reanimated.View>
           </View>
         </Reanimated.View>
@@ -2881,18 +2866,20 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
       {/* 2. Orta kart alanı */}
       <View
+        onLayout={onCardAreaLayout}
         style={{
           flex: 1,
           justifyContent: 'center',
           alignItems: 'center',
           width: '100%',
-          marginTop: verticalScale(40),
+          marginTop: 40,
           zIndex: 1,
           elevation: 1,
           overflow: 'visible',
         }}
       >
-        {cards.length > 0 && currentIndex < cards.length && !originalFlowComplete && (
+        {/* Rendered once the area is measured, so the card never jumps size. */}
+        {cardArea && cards.length > 0 && currentIndex < cards.length && !originalFlowComplete && (
           <SwipeCardDeck
             ref={swipeDeckRef}
             cards={cards}
@@ -2907,7 +2894,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
             onSwiped={handleSwipeCommitted}
             onSwipeCancelled={handleSwipeCancelled}
             onCardFlip={handleCardFlip}
-            swipeThreshold={Math.max(scale(90), CARD_WIDTH * 0.28)}
+            swipeThreshold={Math.max(90, CARD_WIDTH * 0.28)}
             velocityThreshold={900}
             swipeAnimationDuration={SWIPE_ANIMATION_MS}
             maxRotation={9}
@@ -2927,7 +2914,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
             onPress={() => handleSkip(15)}
             label={t('swipeDeck.levelHard', 'Zor')}
             time={t('swipeDeck.minutes', '15dk+')}
-            buttonStyle={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]}
+            buttonStyle={[styles.horizontalButton, { borderRightWidth: 1, borderRightColor: '#e0e0e0' }]}
             textColor={colors.buttonText}
           />
 
@@ -2935,7 +2922,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
             onPress={() => handleSkip(60)}
             label={t('swipeDeck.levelOkay', 'Orta')}
             time={t('swipeDeck.hours', '1sa+')}
-            buttonStyle={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]}
+            buttonStyle={[styles.horizontalButton, { borderRightWidth: 1, borderRightColor: '#e0e0e0' }]}
             textColor={colors.buttonText}
           />
 
@@ -2943,7 +2930,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
             onPress={() => handleSkip(24 * 60)}
             label={t('swipeDeck.levelGood', 'İyi')}
             time={t('swipeDeck.days', '1g+')}
-            buttonStyle={[styles.horizontalButton, { borderRightWidth: moderateScale(1), borderRightColor: '#e0e0e0' }]}
+            buttonStyle={[styles.horizontalButton, { borderRightWidth: 1, borderRightColor: '#e0e0e0' }]}
             textColor={colors.buttonText}
           />
 
@@ -2984,11 +2971,11 @@ export default function SwipeDeckScreen({ route, navigation }) {
             style={[styles.iconButton, undoDisabled && { opacity: 0.5 }]}
             onPress={handleUndo}
             disabled={undoDisabled}
-            hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Iconify icon="lets-icons:refund-back" size={moderateScale(28)} color={colors.orWhite} />
+            <Iconify icon="lets-icons:refund-back" size={28} color={colors.orWhite} />
           </TouchableOpacity>
-          <Reanimated.Text style={[animatedStyle, {
+          <Reanimated.Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER} style={[animatedStyle, {
             color: '#8A8A8A', ...typography.styles.caption, textAlign: 'center', fontWeight: '900'
           }]}>
             {texts[textIndex]}
@@ -2999,12 +2986,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
               if (showSwipeTutorial) return;
               setAutoPlay((prev) => !prev);
             }}
-            hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             {autoPlay ? (
-              <Iconify icon="material-symbols:pause-rounded" size={moderateScale(30)} color={colors.orWhite} />
+              <Iconify icon="material-symbols:pause-rounded" size={30} color={colors.orWhite} />
             ) : (
-              <Iconify icon="streamline:button-play-solid" size={moderateScale(22)} color={colors.orWhite} />
+              <Iconify icon="streamline:button-play-solid" size={22} color={colors.orWhite} />
             )}
           </TouchableOpacity>
         </View>
@@ -3032,7 +3019,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
               styles.moreMenu,
               {
                 // Right under the nav bar. Measuring the header button is unreliable (iOS 26 bar items).
-                top: insets.top + (Platform.OS === 'ios' ? 44 : 56) + verticalScale(6),
+                top: headerHeight + 6,
                 backgroundColor: colors.cardBackground,
                 borderColor: colors.cardBorder || colors.border,
               },
@@ -3047,7 +3034,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
                 toggleReversed();
               }}
             >
-              <Iconify icon="material-symbols:swap-vert-rounded" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
+              <Iconify icon="material-symbols:swap-vert-rounded" size={20} color={colors.text} style={{ marginRight: 12 }} />
               <Text style={[typography.styles.body, { color: colors.text }]}>
                 {isReversed ? t('swipeDeck.reverseOff', 'Normal çalış') : t('swipeDeck.reverseOn', 'Ters çevir')}
               </Text>
@@ -3071,7 +3058,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
                     }
                   }}
                 >
-                  <Iconify icon="solar:volume-loud-bold" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
+                  <Iconify icon="solar:volume-loud-bold" size={20} color={colors.text} style={{ marginRight: 12 }} />
                   <Text style={[typography.styles.body, { color: colors.text }]}>
                     {t('swipeDeck.voice.settings', 'Ses ayarları')}
                   </Text>
@@ -3091,7 +3078,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
                     requestAnimationFrame(openReportCardModal);
                   }}
                 >
-                  <Iconify icon="ic:round-report-problem" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
+                  <Iconify icon="ic:round-report-problem" size={20} color={colors.text} style={{ marginRight: 12 }} />
                   <Text style={[typography.styles.body, { color: colors.text }]}>
                     {t('moderation.reportCard', 'Kartı şikayet et')}
                   </Text>
@@ -3110,7 +3097,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
         onRequestClose={closeExpanded}
       >
         <View style={[styles.expandedSheet, { backgroundColor: colors.background }]}>
-          <View style={[styles.expandedHeader, { paddingTop: Platform.OS === 'ios' ? verticalScale(12) : insets.top + verticalScale(12) }]}>
+          <View style={[styles.expandedHeader, { paddingTop: Platform.OS === 'ios' ? 12 : insets.top + 12 }]}>
             <Pressable
               onPress={closeExpanded}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -3118,10 +3105,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
               accessibilityLabel={t('cardDetail.close', 'Kapat')}
               style={[styles.expandedCloseButton, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}
             >
-              <Iconify icon="material-symbols:close-rounded" size={moderateScale(22)} color={colors.text} />
+              <Iconify icon="material-symbols:close-rounded" size={22} color={colors.text} />
             </Pressable>
           </View>
-          <ScrollView contentContainerStyle={[styles.expandedContent, { paddingBottom: insets.bottom + verticalScale(40) }]}>
+          <ScrollView contentContainerStyle={[styles.expandedContent, { paddingBottom: insets.bottom + 40 }]}>
             {/* Same look as the card's back face: category gradient, centred
                 pill headings and dividers. Deck order is kept (question first)
                 even in reverse mode. */}
@@ -3137,7 +3124,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
                   <View style={styles.expandedSection}>
                     <Pill
                       label={t('cardDetail.question', 'Soru')}
-                      icon={<Iconify icon="uil:comment-alt-question" size={moderateScale(18)} color="#fff" />}
+                      icon={<Iconify icon="uil:comment-alt-question" size={18} color="#fff" />}
                     />
                     {expandedCard?.cards?.image ? (
                       <Image
@@ -3147,7 +3134,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
                       />
                     ) : null}
                     {expandedCard?.cards?.question ? (
-                      <MathText value={expandedCard.cards.question} forceText style={[typography.styles.h2, styles.expandedPrimaryText]} />
+                      <Text style={[typography.styles.h2, styles.expandedPrimaryText]}>{expandedCard.cards.question}</Text>
                     ) : null}
                   </View>
                   <SectionDivider />
@@ -3157,9 +3144,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
               <View style={styles.expandedSection}>
                 <Pill
                   label={t('swipeDeck.answer', 'Cevap')}
-                  icon={<Iconify icon="uil:comment-alt-check" size={moderateScale(18)} color="#fff" />}
+                  icon={<Iconify icon="uil:comment-alt-check" size={18} color="#fff" />}
                 />
-                <MathText value={expandedCard?.cards?.answer} forceText style={[typography.styles.h2, styles.expandedPrimaryText]} />
+                <Text style={[typography.styles.h2, styles.expandedPrimaryText]}>{expandedCard?.cards?.answer}</Text>
               </View>
 
               {expandedCard?.cards?.example ? (
@@ -3168,9 +3155,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
                   <View style={styles.expandedSection}>
                     <Pill
                       label={t('swipeDeck.example', 'Örnek')}
-                      icon={<Iconify icon="lucide:lightbulb" size={moderateScale(18)} color="#fff" />}
+                      icon={<Iconify icon="lucide:lightbulb" size={18} color="#fff" />}
                     />
-                    <MathText value={expandedCard.cards.example} forceText style={[typography.styles.subtitle, styles.expandedSubText]} />
+                    <Text style={[typography.styles.subtitle, styles.expandedSubText]}>{expandedCard.cards.example}</Text>
                   </View>
                 </>
               ) : null}
@@ -3181,9 +3168,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
                   <View style={styles.expandedSection}>
                     <Pill
                       label={t('swipeDeck.note', 'Not')}
-                      icon={<Iconify icon="material-symbols-light:stylus-note" size={moderateScale(18)} color="#fff" />}
+                      icon={<Iconify icon="material-symbols-light:stylus-note" size={18} color="#fff" />}
                     />
-                    <MathText value={expandedCard.cards.note} forceText style={[typography.styles.subtitle, styles.expandedSubText, styles.expandedNoteText]} />
+                    <Text style={[typography.styles.subtitle, styles.expandedSubText, styles.expandedNoteText]}>{expandedCard.cards.note}</Text>
                   </View>
                 </>
               ) : null}
@@ -3243,12 +3230,12 @@ const styles = StyleSheet.create({
   },
   swipeTutorialTargetFrame: {
     position: 'absolute',
-    borderWidth: moderateScale(2),
+    borderWidth: 2,
     borderColor: '#F98A21',
     backgroundColor: 'transparent',
     shadowColor: '#F98A21',
     shadowOpacity: 0.5,
-    shadowRadius: moderateScale(10),
+    shadowRadius: 10,
     shadowOffset: { width: 0, height: 0 },
     zIndex: 1,
     elevation: 10000,
@@ -3261,12 +3248,12 @@ const styles = StyleSheet.create({
   swipeTutorialCard: {
     position: 'absolute',
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: moderateScale(22),
-    padding: scale(18),
+    borderRadius: 22,
+    padding: 18,
     shadowColor: '#000',
     shadowOpacity: 0.22,
-    shadowRadius: moderateScale(16),
-    shadowOffset: { width: 0, height: verticalScale(8) },
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
     zIndex: 2,
     elevation: 10001,
   },
@@ -3275,11 +3262,11 @@ const styles = StyleSheet.create({
   },
   swipeTutorialStepPill: {
     alignSelf: 'flex-start',
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(4),
-    borderRadius: moderateScale(999),
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
     backgroundColor: 'rgba(249,138,33,0.14)',
-    marginBottom: verticalScale(10),
+    marginBottom: 10,
   },
   swipeTutorialStepText: {
     ...typography.styles.caption,
@@ -3294,70 +3281,70 @@ const styles = StyleSheet.create({
   swipeTutorialTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(8),
-    marginBottom: verticalScale(6),
+    gap: 8,
+    marginBottom: 6,
   },
   swipeTutorialDescription: {
     ...typography.styles.body,
-    lineHeight: moderateScale(21),
+    lineHeight: 21,
   },
   swipeTutorialSwipeHint: {
     position: 'absolute',
     flexDirection: 'row',
     justifyContent: 'space-evenly',
-    gap: scale(10),
+    gap: 10,
     zIndex: 2,
     elevation: 10001,
   },
   swipeTutorialSwipeBadge: {
-    width: scale(148),
-    minHeight: verticalScale(34),
+    width: 148,
+    minHeight: 34,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F98A21',
     overflow: 'hidden',
     shadowColor: '#F98A21',
     shadowOpacity: 0.28,
-    shadowRadius: moderateScale(6),
-    shadowOffset: { width: 0, height: verticalScale(3) },
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
     elevation: 6,
   },
   swipeTutorialSwipeBadgeLeft: {
-    borderTopLeftRadius: moderateScale(28),
-    borderBottomLeftRadius: moderateScale(10),
-    borderTopRightRadius: moderateScale(16),
-    borderBottomRightRadius: moderateScale(26),
+    borderTopLeftRadius: 28,
+    borderBottomLeftRadius: 10,
+    borderTopRightRadius: 16,
+    borderBottomRightRadius: 26,
     transform: [{ skewX: '-5deg' }],
   },
   swipeTutorialSwipeBadgeRight: {
-    borderTopLeftRadius: moderateScale(16),
-    borderBottomLeftRadius: moderateScale(26),
-    borderTopRightRadius: moderateScale(28),
-    borderBottomRightRadius: moderateScale(10),
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 26,
+    borderTopRightRadius: 28,
+    borderBottomRightRadius: 10,
     transform: [{ skewX: '5deg' }],
   },
   swipeTutorialSwipeBadgeGlow: {
     position: 'absolute',
-    width: scale(34),
-    height: scale(34),
-    borderRadius: moderateScale(17),
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: 'rgba(255,255,255,0.14)',
   },
   swipeTutorialSwipeBadgeGlowLeft: {
-    left: scale(-12),
-    top: verticalScale(-8),
+    left: -12,
+    top: -8,
   },
   swipeTutorialSwipeBadgeGlowRight: {
-    right: scale(-12),
-    top: verticalScale(-8),
+    right: -12,
+    top: -8,
   },
   swipeTutorialSwipeBadgeContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: scale(6),
-    paddingVertical: verticalScale(5),
-    paddingHorizontal: scale(8),
+    gap: 6,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
   },
   swipeTutorialSwipeBadgeContentLeft: {
     transform: [{ skewX: '5deg' }],
@@ -3373,37 +3360,37 @@ const styles = StyleSheet.create({
   },
   swipeTutorialArrowDown: {
     position: 'absolute',
-    bottom: verticalScale(-10),
+    bottom: -10,
     alignSelf: 'center',
     width: 0,
     height: 0,
-    borderLeftWidth: scale(10),
-    borderRightWidth: scale(10),
-    borderTopWidth: verticalScale(10),
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
+    borderTopWidth: 10,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderTopColor: '#F98A21',
   },
   swipeTutorialArrowUp: {
     position: 'absolute',
-    bottom: verticalScale(-10),
+    bottom: -10,
     alignSelf: 'center',
-    width: scale(18),
-    height: scale(18),
-    borderRadius: moderateScale(4),
+    width: 18,
+    height: 18,
+    borderRadius: 4,
     backgroundColor: '#F98A21',
     transform: [{ rotate: '45deg' }],
   },
   swipeTutorialActions: {
-    marginTop: verticalScale(16),
+    marginTop: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: scale(12),
+    gap: 12,
   },
   swipeTutorialGhostButton: {
-    paddingVertical: verticalScale(10),
-    paddingHorizontal: scale(4),
+    paddingVertical: 10,
+    paddingHorizontal: 4,
   },
   swipeTutorialGhostText: {
     ...typography.styles.button,
@@ -3412,13 +3399,13 @@ const styles = StyleSheet.create({
   swipeTutorialNavActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(8),
+    gap: 8,
   },
   swipeTutorialBackButton: {
-    borderWidth: moderateScale(1),
-    borderRadius: moderateScale(12),
-    paddingVertical: verticalScale(10),
-    paddingHorizontal: scale(14),
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
   },
   swipeTutorialDisabledButton: {
     opacity: 0.42,
@@ -3428,9 +3415,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   swipeTutorialNextButton: {
-    borderRadius: moderateScale(12),
-    paddingVertical: verticalScale(10),
-    paddingHorizontal: scale(16),
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     backgroundColor: '#F98A21',
   },
   swipeTutorialNextText: {
@@ -3442,18 +3429,18 @@ const styles = StyleSheet.create({
 
   // Dedicated action row. It stays outside the scrollable card content.
   reverseBadge: {
-    paddingHorizontal: scale(8),
-    paddingVertical: verticalScale(4),
-    borderRadius: moderateScale(12),
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.22)',
   },
   moreMenu: {
     position: 'absolute',
-    right: scale(16),
-    minWidth: scale(180),
-    borderRadius: moderateScale(14),
-    paddingVertical: verticalScale(6),
-    borderWidth: moderateScale(1),
+    right: 16,
+    minWidth: 180,
+    borderRadius: 14,
+    paddingVertical: 6,
+    borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
@@ -3463,18 +3450,18 @@ const styles = StyleSheet.create({
   moreMenuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: verticalScale(12),
-    paddingHorizontal: scale(16),
+    paddingVertical: 12,
+    paddingHorizontal: 16,
   },
   moreMenuDivider: {
     height: StyleSheet.hairlineWidth,
-    marginVertical: verticalScale(4),
+    marginVertical: 4,
   },
   showMoreRow: {
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: verticalScale(16),
+    bottom: 16,
     zIndex: 300,
     elevation: 300,
     alignItems: 'center',
@@ -3482,15 +3469,15 @@ const styles = StyleSheet.create({
   showMoreButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(6),
-    paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(16),
-    borderRadius: moderateScale(20),
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.92)',
   },
   showMoreText: {
     ...typography.styles.button,
-    fontSize: moderateScale(14),
+    fontSize: 14,
   },
   expandedSheet: {
     flex: 1,
@@ -3498,56 +3485,56 @@ const styles = StyleSheet.create({
   expandedHeader: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    paddingHorizontal: scale(12),
-    paddingBottom: verticalScale(10),
+    paddingHorizontal: 12,
+    paddingBottom: 10,
   },
   expandedCloseButton: {
-    width: moderateScale(36),
-    height: moderateScale(36),
-    borderRadius: moderateScale(18),
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
   },
   expandedContent: {
-    paddingHorizontal: scale(12),
+    paddingHorizontal: 12,
     paddingTop: 0,
-    paddingBottom: verticalScale(40),
+    paddingBottom: 40,
   },
   voiceSheetHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(12),
-    paddingHorizontal: scale(20),
-    paddingTop: verticalScale(10),
-    paddingBottom: verticalScale(10),
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(150, 150, 150, 0.2)',
   },
   voiceSheetClose: {
     backgroundColor: 'rgba(150, 150, 150, 0.1)',
-    padding: moderateScale(6),
+    padding: 6,
     borderRadius: 99,
   },
   voiceSheetScroll: {
     flex: 1,
   },
   voiceSheetContent: {
-    paddingHorizontal: scale(20),
-    paddingTop: verticalScale(20),
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   voiceRateHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: verticalScale(4),
+    marginBottom: 4,
   },
   voiceRateValue: {
     ...typography.styles.button,
-    fontSize: moderateScale(15),
+    fontSize: 15,
   },
   rateBar: {
-    height: moderateScale(44),
+    height: 44,
     justifyContent: 'center',
   },
   rateTrackLayer: {
@@ -3557,23 +3544,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rateTrack: {
-    height: moderateScale(4),
-    borderRadius: moderateScale(2),
+    height: 4,
+    borderRadius: 2,
   },
   rateFill: {
     position: 'absolute',
     left: 0,
     top: '50%',
-    marginTop: -moderateScale(2),
+    marginTop: -2,
   },
   rateDot: {
     position: 'absolute',
     top: '50%',
-    marginTop: -moderateScale(4),
-    marginLeft: -moderateScale(4),
-    width: moderateScale(8),
-    height: moderateScale(8),
-    borderRadius: moderateScale(4),
+    marginTop: -4,
+    marginLeft: -4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   rateThumb: {
     position: 'absolute',
@@ -3583,7 +3570,7 @@ const styles = StyleSheet.create({
     width: RATE_THUMB,
     height: RATE_THUMB,
     borderRadius: RATE_THUMB / 2,
-    borderWidth: moderateScale(2),
+    borderWidth: 2,
     backgroundColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOpacity: 0.15,
@@ -3592,7 +3579,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   rateLabels: {
-    height: moderateScale(34),
+    height: 34,
   },
   rateLabel: {
     position: 'absolute',
@@ -3603,80 +3590,80 @@ const styles = StyleSheet.create({
   },
   rateLabelText: {
     fontFamily: 'Inter',
-    fontSize: moderateScale(13),
+    fontSize: 13,
   },
   rateLabelHint: {
     fontFamily: 'Inter',
-    fontSize: moderateScale(10),
-    marginTop: verticalScale(1),
+    fontSize: 10,
+    marginTop: 1,
   },
   voiceSectionTitle: {
     ...typography.styles.button,
-    fontSize: moderateScale(13),
+    fontSize: 13,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginTop: verticalScale(24),
-    marginBottom: verticalScale(8),
+    marginTop: 24,
+    marginBottom: 8,
   },
   voiceList: {
-    borderRadius: moderateScale(16),
+    borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
   },
   voiceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(12),
-    paddingHorizontal: scale(16),
-    paddingVertical: verticalScale(12),
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   voiceRowTags: {
     fontFamily: 'Inter',
-    fontSize: moderateScale(12),
-    marginTop: verticalScale(2),
+    fontSize: 12,
+    marginTop: 2,
   },
   voiceHint: {
     fontFamily: 'Inter',
-    fontSize: moderateScale(12),
-    lineHeight: moderateScale(17),
-    marginTop: verticalScale(12),
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 12,
   },
   // "Show more" sheet card, mirroring SwipeFlipCard's back face.
   expandedCard: {
-    borderRadius: moderateScale(26),
+    borderRadius: 26,
     overflow: 'hidden',
-    paddingHorizontal: scale(20),
-    paddingTop: verticalScale(32),
-    paddingBottom: verticalScale(8),
+    paddingHorizontal: 20,
+    paddingTop: 32,
+    paddingBottom: 8,
   },
   expandedSection: {
     alignItems: 'center',
-    marginBottom: verticalScale(24),
+    marginBottom: 24,
   },
   expandedImage: {
     width: '100%',
-    height: verticalScale(180),
+    height: 180,
     resizeMode: 'contain',
-    borderRadius: moderateScale(24),
-    marginBottom: verticalScale(8),
+    borderRadius: 24,
+    marginBottom: 8,
   },
   expandedPrimaryText: {
     color: '#fff',
     textAlign: 'center',
-    marginTop: verticalScale(8),
-    lineHeight: moderateScale(28),
+    marginTop: 8,
+    lineHeight: 28,
     fontWeight: '600',
   },
   expandedSubText: {
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
-    marginTop: verticalScale(8),
-    lineHeight: moderateScale(22),
-    fontSize: moderateScale(16),
+    marginTop: 8,
+    lineHeight: 22,
+    fontSize: 16,
   },
   expandedNoteText: {
     color: 'rgba(255, 255, 255, 0.85)',
-    fontSize: moderateScale(15),
+    fontSize: 15,
     fontStyle: 'italic',
   },
   cardActionRow: {
@@ -3684,25 +3671,25 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: verticalScale(64),
+    height: 64,
     zIndex: 300,
     elevation: 300,
     flexDirection: 'row',
     alignItems: 'center',
     // Speaker on the left, favourite on the right.
     justifyContent: 'space-between',
-    paddingHorizontal: scale(12),
+    paddingHorizontal: 12,
   },
   cardActionButton: {
-    width: scale(40),
-    height: scale(40),
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: moderateScale(20),
+    borderRadius: 20,
   },
   cardActionIconStage: {
-    width: scale(40),
-    height: scale(40),
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -3711,8 +3698,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     top: 0,
-    width: scale(40),
-    height: scale(40),
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
     backfaceVisibility: 'hidden',
@@ -3730,44 +3717,44 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 10,
-    padding: scale(16),
-    height: verticalScale(36),
+    padding: 16,
+    height: 36,
   },
   counterBoxLeft: {
     position: 'absolute',
-    left: scale(-30),
-    top: verticalScale(16),
-    minWidth: scale(80),
-    paddingLeft: scale(30),
-    paddingRight: scale(12),
-    paddingVertical: verticalScale(8),
-    height: verticalScale(36),
+    left: -30,
+    top: 16,
+    minWidth: 80,
+    paddingLeft: 30,
+    paddingRight: 12,
+    paddingVertical: 8,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.08,
-    shadowRadius: moderateScale(4),
+    shadowRadius: 4,
     elevation: 2,
-    borderTopRightRadius: moderateScale(18),
-    borderBottomRightRadius: moderateScale(18),
+    borderTopRightRadius: 18,
+    borderBottomRightRadius: 18,
   },
   counterBoxRight: {
     position: 'absolute',
-    right: scale(-30),
-    top: verticalScale(16),
-    minWidth: scale(80),
-    paddingLeft: scale(12),
-    paddingRight: scale(30),
-    paddingVertical: verticalScale(8),
-    height: verticalScale(36),
+    right: -30,
+    top: 16,
+    minWidth: 80,
+    paddingLeft: 12,
+    paddingRight: 30,
+    paddingVertical: 8,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.08,
-    shadowRadius: moderateScale(4),
+    shadowRadius: 4,
     elevation: 2,
-    borderTopLeftRadius: moderateScale(18),
-    borderBottomLeftRadius: moderateScale(18),
+    borderTopLeftRadius: 18,
+    borderBottomLeftRadius: 18,
   },
   counterIconOverlay: {
     position: 'absolute',
@@ -3785,7 +3772,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     width: '93%',
     alignSelf: 'center',
-    borderRadius: moderateScale(12),
+    borderRadius: 12,
     overflow: 'hidden',
   },
   horizontalButton: {
@@ -3793,8 +3780,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: verticalScale(10),
-    paddingHorizontal: scale(4),
+    minHeight: 48,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
     backgroundColor: 'transparent',
     borderRightWidth: 0,
     borderColor: '#e0e0e0',
@@ -3808,14 +3796,14 @@ const styles = StyleSheet.create({
   },
   timeButtonLabel: {
     ...typography.styles.button,
-    fontSize: moderateScale(14),
-    lineHeight: moderateScale(17),
+    fontSize: 14,
+    lineHeight: 17,
     textAlign: 'center',
   },
   timeButtonTime: {
     fontFamily: 'Inter',
-    fontSize: moderateScale(11),
-    lineHeight: moderateScale(14),
+    fontSize: 11,
+    lineHeight: 14,
     opacity: 0.85,
     textAlign: 'center',
   },
@@ -3824,12 +3812,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: 'transparent',
-    paddingHorizontal: scale(12),
+    paddingHorizontal: 12,
   },
   iconButton: {
-    width: scale(48),
-    height: scale(48),
-    borderRadius: moderateScale(24),
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
@@ -3839,11 +3827,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    top: verticalScale(16),
+    top: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: scale(8),
-    height: verticalScale(36),
+    paddingHorizontal: 8,
+    height: 36,
   },
   deckProgressText: {
     ...typography.styles.subtitle,
@@ -3852,19 +3840,17 @@ const styles = StyleSheet.create({
   progressBarContainer: {
     width: '91%',
     alignSelf: 'center',
-    height: verticalScale(3),
-    borderRadius: moderateScale(8),
+    height: 3,
+    borderRadius: 8,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    borderRadius: moderateScale(8),
-    transition: 'width 0.3s',
+    borderRadius: 8,
   },
   loadingContainer: {
     flex: 1,
-    paddingTop: '35%',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
     height: '100%',
@@ -3875,8 +3861,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   loadingAnimation: {
-    width: scale(300),
-    height: scale(300),
+    width: 300,
+    height: 300,
   },
   loadingText: {
     ...typography.styles.subtitle,
@@ -3885,56 +3871,56 @@ const styles = StyleSheet.create({
   completionContent: {
     width: '100%',
     alignItems: 'center',
-    paddingHorizontal: scale(16),
-    paddingTop: verticalScale(18),
+    paddingHorizontal: 16,
+    paddingTop: 18,
   },
   completionHero: {
     width: '100%',
     alignItems: 'center',
     zIndex: 1,
-    marginBottom: verticalScale(22),
+    marginBottom: 22,
   },
   completionGoalRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(8),
-    marginTop: verticalScale(18),
-    paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(14),
-    borderRadius: moderateScale(999),
+    gap: 8,
+    marginTop: 18,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 999,
     backgroundColor: 'rgba(255, 255, 255, 0.18)',
   },
   completionGoalText: {
     ...typography.styles.button,
-    fontSize: moderateScale(14),
+    fontSize: 14,
     color: '#FFFFFF',
     flexShrink: 1,
   },
   completionHeroCard: {
     width: '100%',
     alignItems: 'center',
-    borderRadius: moderateScale(30),
-    paddingTop: verticalScale(24),
-    paddingBottom: verticalScale(28),
-    paddingHorizontal: scale(20),
+    borderRadius: 30,
+    paddingTop: 24,
+    paddingBottom: 28,
+    paddingHorizontal: 20,
     overflow: 'hidden',
     shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: verticalScale(8) },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.22,
-    shadowRadius: moderateScale(14),
+    shadowRadius: 14,
     elevation: 5,
   },
   completionHeroTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: scale(8),
-    marginBottom: verticalScale(16),
+    gap: 8,
+    marginBottom: 16,
   },
   completionHeroMetricCircle: {
-    width: scale(136),
-    height: scale(136),
-    borderRadius: moderateScale(68),
+    width: 136,
+    height: 136,
+    borderRadius: 68,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.18)',
@@ -3944,9 +3930,9 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   completionHeroMetric: {
-    fontSize: moderateScale(52),
+    fontSize: 52,
     fontWeight: '800',
-    lineHeight: verticalScale(56),
+    lineHeight: 56,
   },
   completionHeroLabel: {
     fontWeight: '700',
@@ -3956,7 +3942,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: verticalScale(20),
+    marginTop: 20,
   },
   completionHeroSessionStat: {
     flex: 1,
@@ -3964,18 +3950,18 @@ const styles = StyleSheet.create({
   },
   completionHeroSessionNumber: {
     color: '#FFFFFF',
-    fontSize: moderateScale(24),
+    fontSize: 24,
     fontWeight: '800',
   },
   completionHeroSessionLabel: {
     color: 'rgba(255,255,255,0.78)',
-    fontSize: moderateScale(12),
-    marginTop: verticalScale(2),
+    fontSize: 12,
+    marginTop: 2,
     textAlign: 'center',
   },
   completionHeroSessionDivider: {
     width: StyleSheet.hairlineWidth,
-    height: verticalScale(36),
+    height: 36,
     backgroundColor: 'rgba(255,255,255,0.35)',
   },
 
@@ -3989,38 +3975,38 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: scale(24),
+    paddingHorizontal: 24,
   },
   emptyCompletionIcon: {
-    fontSize: moderateScale(44),
-    marginBottom: verticalScale(16),
+    fontSize: 44,
+    marginBottom: 16,
   },
   emptyCompletionTitle: {
     textAlign: 'center',
-    marginBottom: verticalScale(20),
+    marginBottom: 20,
   },
   emptyCompletionInfo: {
     width: '100%',
     alignItems: 'center',
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: moderateScale(22),
-    padding: scale(18),
-    marginBottom: verticalScale(24),
+    borderRadius: 22,
+    padding: 18,
+    marginBottom: 24,
   },
   emptyCompletionTime: {
-    marginTop: verticalScale(6),
+    marginTop: 6,
     textAlign: 'center',
   },
   completionChapterCard: {
     width: '100%',
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: moderateScale(22),
-    padding: scale(18),
-    marginBottom: verticalScale(24),
+    borderRadius: 22,
+    padding: 18,
+    marginBottom: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: verticalScale(2) },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: moderateScale(6),
+    shadowRadius: 6,
     elevation: 1,
   },
   completionChapterHeader: {
@@ -4031,58 +4017,58 @@ const styles = StyleSheet.create({
   completionChapterTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(8),
+    gap: 8,
   },
   completionChapterProgressValue: {
-    fontSize: moderateScale(24),
+    fontSize: 24,
     fontWeight: '800',
   },
   completionChapterProgressTrack: {
-    height: verticalScale(12),
-    borderRadius: moderateScale(6),
+    height: 12,
+    borderRadius: 6,
     overflow: 'hidden',
-    marginTop: verticalScale(16),
+    marginTop: 16,
   },
   completionChapterProgressFill: {
     height: '100%',
-    borderRadius: moderateScale(6),
+    borderRadius: 6,
   },
 
   completionChapterMetrics: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: scale(12),
-    marginTop: verticalScale(16),
+    gap: 12,
+    marginTop: 16,
   },
   completionChapterDivider: {
     height: StyleSheet.hairlineWidth,
-    marginVertical: verticalScale(18),
+    marginVertical: 18,
   },
   completionReviewGrid: {
     width: '100%',
     flexDirection: 'row',
-    gap: scale(10),
+    gap: 10,
   },
   completionReviewItem: {
     flex: 1,
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: verticalScale(6),
+    gap: 6,
   },
   completionReviewTextGroup: {
-    minHeight: verticalScale(42),
+    minHeight: 42,
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   completionReviewMetric: {
-    fontSize: moderateScale(20),
+    fontSize: 20,
     fontWeight: '800',
     textAlign: 'center',
   },
   completionReviewLabel: {
-    marginTop: verticalScale(1),
+    marginTop: 1,
     textAlign: 'center',
   },
 
@@ -4099,22 +4085,22 @@ const styles = StyleSheet.create({
 
   completionButton: {
     width: '100%',
-    minHeight: verticalScale(52),
+    minHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    borderRadius: moderateScale(18),
-    paddingHorizontal: scale(16),
+    borderRadius: 18,
+    paddingHorizontal: 16,
   },
   completionCtaArea: {
     width: '100%',
-    marginTop: verticalScale(4),
-    marginBottom: verticalScale(28),
+    marginTop: 4,
+    marginBottom: 28,
   },
   completionButtonRow: {
     width: '100%',
     flexDirection: 'row',
-    gap: scale(10),
+    gap: 10,
     alignItems: 'flex-start',
   },
   completionButtonHalf: {
@@ -4127,11 +4113,11 @@ const styles = StyleSheet.create({
     ...typography.styles.body,
     textAlign: 'center',
     flex: 1,
-    marginTop: verticalScale(6),
+    marginTop: 6,
   },
   completionNextMetaRow: {
     flexDirection: 'row',
-    gap: scale(10),
+    gap: 10,
   },
   completionNextMetaSpacer: {
     flex: 1,

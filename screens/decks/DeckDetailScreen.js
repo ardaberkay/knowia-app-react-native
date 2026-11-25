@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Modal, Pressable, Image, Switch, Animated, RefreshControl } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Platform, Modal, Pressable, Image, Switch, Animated, RefreshControl } from 'react-native';
+import { Text } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
-import { Alert } from 'react-native';
+import { Alert, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getDeckById, getDeckLanguages } from '../../services/DeckService';
 import { getAllCardsForDeck } from '../../services/CardService';
@@ -20,19 +21,20 @@ import { addFavoriteDeck, removeFavoriteDeck } from '../../services/FavoriteServ
 import * as BlockService from '../../services/BlockService';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import ReportModal from '../../components/modals/ReportModal';
-import { scale, moderateScale, verticalScale, useWindowDimensions } from '../../lib/scaling';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheetModal, BottomSheetFlatList, BottomSheetBackdrop, TouchableOpacity as BSTouchableOpacity } from '@gorhom/bottom-sheet';
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import HeroPullBackdrop from '../../components/layout/HeroPullBackdrop';
+import { useListBottomInset } from '../../components/ui/CustomTabBar';
 
 // Hero gradient direction (colours come from the deck's category).
 const HERO_GRADIENT_START = { x: 0, y: 0 };
 const HERO_GRADIENT_END = { x: 1, y: 1 };
 // Category watermark size in the hero.
-const HERO_ICON_SIZE = moderateScale(240);
+const HERO_ICON_SIZE = 240;
 
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 
@@ -71,6 +73,8 @@ function EntranceBlock({ anim, style, children, scaleFrom, translateYFrom = 0, o
 export default function DeckDetailScreen({ route, navigation }) {
 
   const insets = useSafeAreaInsets();
+  const listBottomInset = useListBottomInset();
+  const headerHeight = useHeaderHeight();
   const [deck, setDeck] = useState(() => route.params?.deck);
   const { colors } = useTheme();
   const { session } = useAuth();
@@ -175,11 +179,11 @@ export default function DeckDetailScreen({ route, navigation }) {
     () =>
       Math.min(
         chapterSheetMaxContentHeight,
-        Math.max(screenHeight * 0.36, verticalScale(300))
+        Math.max(screenHeight * 0.36, 300)
       ),
     [chapterSheetMaxContentHeight, screenHeight]
   );
-  const chapterSheetHeaderApprox = verticalScale(56);
+  const chapterSheetHeaderApprox = 56;
   const moreMenuScaleAnim = useRef(new Animated.Value(0)).current;
 
   // Animation values for entrance effects (Android: giriş animasyonu kapalı — çıkışta opacity flash riski)
@@ -282,7 +286,7 @@ export default function DeckDetailScreen({ route, navigation }) {
 
   useEffect(() => {
     if (Platform.OS === 'android') return;
-    Animated.stagger(verticalScale(120), [
+    Animated.stagger(120, [
       Animated.spring(heroAnim, {
         toValue: 1,
         tension: 50,
@@ -1075,9 +1079,9 @@ export default function DeckDetailScreen({ route, navigation }) {
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            gap: scale(16),
-            paddingHorizontal: scale(8),
-            minWidth: scale(72),
+            gap: 16,
+            paddingHorizontal: 8,
+            minWidth: 72,
           }}
         >
           <TouchableOpacity
@@ -1087,12 +1091,12 @@ export default function DeckDetailScreen({ route, navigation }) {
           >
             <Iconify
               icon={isFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
-              size={moderateScale(24)}
+              size={24}
               color={isFavorite ? '#F98A21' : colors.text}
             />
           </TouchableOpacity>
 
-          <View style={{ width: moderateScale(24), alignItems: 'center' }}>
+          <View style={{ width: 24, alignItems: 'center' }}>
             {currentUserId ? (
               <TouchableOpacity
                 ref={moreMenuRef}
@@ -1105,7 +1109,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                 activeOpacity={0.7}
                 hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
               >
-                <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={moderateScale(24)} color={colors.text} />
+                <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={24} color={colors.text} />
               </TouchableOpacity>
             ) : null}
           </View>
@@ -1217,9 +1221,8 @@ export default function DeckDetailScreen({ route, navigation }) {
     });
   };
   
-  const scrollContentPaddingBottom = showAddCardFab
-    ? insets.bottom + verticalScale(100)
-    : verticalScale(screenHeight * 0.10) + insets.bottom;
+  // The add-card FAB (~56 tall) sits at the bottom; leave room for it.
+  const scrollContentPaddingBottom = listBottomInset + (showAddCardFab ? 76 : 0);
 
   const heroGradientColors = getCategoryGradient(categoryInfo?.sort_order);
   return (
@@ -1262,7 +1265,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             colors={heroGradientColors}
             start={HERO_GRADIENT_START}
             end={HERO_GRADIENT_END}
-            style={[styles.gfHeroGradient, { paddingTop: insets.top + verticalScale(60) }]}
+            style={[styles.gfHeroGradient, { paddingTop: insets.top + 60 }]}
             onLayout={onHeroLayout}
           >
             {/* Decorative Elements. Nothing touches the hero's top edge, so the
@@ -1284,8 +1287,8 @@ export default function DeckDetailScreen({ route, navigation }) {
 
             {/* Title - Scrollable if overflows */}
             <View style={styles.gfTitleContainer}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(10) }}>
-                <Iconify icon="ion:book" size={moderateScale(28)} color="#fff" />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Iconify icon="ion:book" size={28} color="#fff" />
                 <ScrollView
                   ref={nameScrollRef}
                   horizontal
@@ -1324,8 +1327,8 @@ export default function DeckDetailScreen({ route, navigation }) {
             {/* Subtitle - Scrollable if overflows */}
             {deck.to_name && (
               <View style={styles.gfTitleContainer}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: scale(10) }}>
-                  <Iconify icon="icon-park-outline:translation" size={moderateScale(28)} color="#fff" />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <Iconify icon="icon-park-outline:translation" size={28} color="#fff" />
                   <ScrollView
                     ref={toNameScrollRef}
                     horizontal
@@ -1393,10 +1396,10 @@ export default function DeckDetailScreen({ route, navigation }) {
                     <Text style={styles.gfExpandButtonText}>
                       {descriptionExpanded ? t('common.showLess', 'Daha az göster') : t('common.showMore', 'Daha fazla göster')}
                     </Text>
-                    <View style={{ marginTop: verticalScale(1) }}>
+                    <View style={{ marginTop: 1 }}>
                       <Iconify
                         icon="flowbite:caret-down-solid"
-                        size={moderateScale(14)}
+                        size={14}
                         color="rgba(255,255,255,0.9)"
                         style={{ transform: [{ rotate: descriptionExpanded ? '180deg' : '0deg' }] }}
                       />
@@ -1431,7 +1434,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                   <Text style={styles.gfCreatorName}>
                     {deck.profiles?.username || t('common.user', 'Kullanıcı')}
                   </Text>
-                  <Iconify icon="flowbite:caret-down-solid" size={moderateScale(18)} color="#fff" style={{ marginLeft: scale(2) }} />
+                  <Iconify icon="flowbite:caret-down-solid" size={18} color="#fff" style={{ marginLeft: 2 }} />
                 </TouchableOpacity>
               ) : (
                 <View style={styles.gfCreatorChip}>
@@ -1474,8 +1477,8 @@ export default function DeckDetailScreen({ route, navigation }) {
                 <View style={[styles.gfProgressGlow, { backgroundColor: getCategoryColor(categoryInfo?.sort_order) + '15' }]} />
                 <CircularProgress
                   progress={progress}
-                  size={scale(170)}
-                  strokeWidth={moderateScale(17)}
+                  size={170}
+                  strokeWidth={17}
                   showText={true}
                   shouldAnimate={!progressLoading}
                   fullCircle={true}
@@ -1491,7 +1494,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                   end={{ x: 1, y: 1 }}
                   style={styles.gfTotalBadgeGradient}
                 >
-                  <Iconify icon="ri:stack-fill" size={moderateScale(18)} color="#fff" />
+                  <Iconify icon="ri:stack-fill" size={18} color="#fff" />
                   <View style={styles.gfTotalBadgeTextWrap}>
                     <Text style={styles.gfTotalBadgeNumber}>{deckStats.total}</Text>
                     <Text style={styles.gfTotalBadgeLabel}>{t('deckDetail.cards', 'Kart')}</Text>
@@ -1518,7 +1521,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                       colors={['#F98A21', '#FF6B35']}
                       style={styles.gfStatRowIcon}
                     >
-                      <Iconify icon="mdi:fire" size={moderateScale(18)} color="#fff" />
+                      <Iconify icon="mdi:fire" size={18} color="#fff" />
                     </LinearGradient>
                     <View style={styles.gfStatRowText}>
                       <Text style={[styles.gfStatRowValue, { color: colors.cardQuestionText }]}>{deckStats.learning}</Text>
@@ -1531,7 +1534,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                       colors={[colors.secondary, colors.secondary + 'CC']}
                       style={styles.gfStatRowIcon}
                     >
-                      <Iconify icon="basil:eye-closed-outline" size={moderateScale(18)} color="#fff" />
+                      <Iconify icon="basil:eye-closed-outline" size={18} color="#fff" />
                     </LinearGradient>
                     <View style={styles.gfStatRowText}>
                       <Text style={[styles.gfStatRowValue, { color: colors.cardQuestionText }]}>{deckStats.new}</Text>
@@ -1570,7 +1573,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                 colors={[colors.secondary, colors.secondary + 'CC']}
                 style={styles.gfStudyChapterIcon}
               >
-                <Iconify icon="streamline-flex:module-puzzle-2" size={moderateScale(22)} color="#fff" />
+                <Iconify icon="streamline-flex:module-puzzle-2" size={22} color="#fff" />
               </LinearGradient>
               <View style={styles.gfStudyTextWrap}>
                 <Text style={[styles.gfStudyPrimaryText, { color: colors.cardQuestionText }]}>
@@ -1586,7 +1589,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                   </Text>
                 )}
               </View>
-              <Iconify icon="flowbite:caret-down-solid" size={moderateScale(18)} color={colors.muted} />
+              <Iconify icon="flowbite:caret-down-solid" size={18} color={colors.muted} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1605,7 +1608,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                 end={{ x: 1, y: 0 }}
               >
                 <View style={styles.gfStartMain}>
-                  <Iconify icon="streamline:button-play-solid" size={moderateScale(20)} color="#fff" />
+                  <Iconify icon="streamline:button-play-solid" size={20} color="#fff" />
                   <Text style={styles.gfStartButtonText}>{t('deckDetail.start', 'Başla')}</Text>
                 </View>
               </LinearGradient>
@@ -1641,7 +1644,7 @@ export default function DeckDetailScreen({ route, navigation }) {
               <Text style={[styles.gfActionTitle, { color: colors.cardQuestionText }]}>{t('deckDetail.cards', 'Kartlar')}</Text>
               <Text style={[styles.gfActionDesc, { color: colors.muted }]}>{t('deckDetail.browseCards', 'Tüm kartları görüntüle')}</Text>
             </View>
-            <Iconify icon="ion:chevron-forward" size={moderateScale(22)} color={colors.muted} />
+            <Iconify icon="ion:chevron-forward" size={22} color={colors.muted} />
           </TouchableOpacity>
 
           {/* Divider */}
@@ -1657,13 +1660,13 @@ export default function DeckDetailScreen({ route, navigation }) {
               colors={[colors.secondary, colors.secondary + 'DD']}
               style={styles.gfActionIconBox}
             >
-              <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={moderateScale(24)} color="#fff" />
+              <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={24} color="#fff" />
             </LinearGradient>
             <View style={styles.gfActionTextWrap}>
               <Text style={[styles.gfActionTitle, { color: colors.cardQuestionText }]}>{t('deckDetail.chapters', 'Bölümler')}</Text>
               <Text style={[styles.gfActionDesc, { color: colors.muted }]}>{chapters.length} {t('deckDetail.chaptersCount', 'bölüm')}</Text>
             </View>
-            <Iconify icon="ion:chevron-forward" size={moderateScale(22)} color={colors.muted} />
+            <Iconify icon="ion:chevron-forward" size={22} color={colors.muted} />
           </TouchableOpacity>
         </EntranceBlock>
 
@@ -1683,7 +1686,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                 colors={isShared ? ['#27AE60', '#2ECC71'] : [colors.muted + '30', colors.muted + '20']}
                 style={styles.gfShareIconBg}
               >
-                <Iconify icon="fluent:people-community-20-filled" size={moderateScale(22)} color={isShared ? '#fff' : colors.muted} />
+                <Iconify icon="fluent:people-community-20-filled" size={22} color={isShared ? '#fff' : colors.muted} />
               </LinearGradient>
               <View style={styles.gfShareContent}>
                 <Text style={[styles.gfShareTitle, { color: colors.cardQuestionText }]}>
@@ -1706,7 +1709,7 @@ export default function DeckDetailScreen({ route, navigation }) {
               onPress={handleShowShareDetails}
               activeOpacity={0.7}
             >
-              <Iconify icon="material-symbols:info-outline" size={moderateScale(18)} color={colors.secondary} />
+              <Iconify icon="material-symbols:info-outline" size={18} color={colors.secondary} />
               <Text style={[styles.gfShareInfoText, { color: colors.secondary }]}>
                 {t('deckDetail.moreInfo', 'Daha fazla bilgi')}
               </Text>
@@ -1730,7 +1733,7 @@ export default function DeckDetailScreen({ route, navigation }) {
               style={[
                 styles.addCardCoachmark,
                 {
-                  bottom: insets.bottom + verticalScale(102),
+                  bottom: insets.bottom + 102,
                   backgroundColor: colors.cardBackground,
                   borderColor: colors.cardBorder,
                 },
@@ -1761,13 +1764,13 @@ export default function DeckDetailScreen({ route, navigation }) {
               styles.addCardFab,
               addCardFabAnimatedStyle,
               {
-                bottom: insets.bottom + verticalScale(24),
+                bottom: insets.bottom + 24,
                 zIndex: showAddCardHint ? 7 : 3,
-                borderWidth: showAddCardHint ? moderateScale(2) : 0,
+                borderWidth: showAddCardHint ? 2 : 0,
                 borderColor: showAddCardHint ? '#FFE1C2' : 'transparent',
                 shadowColor: showAddCardHint ? '#F98A21' : '#000000',
                 shadowOpacity: showAddCardHint ? 0.45 : 0.12,
-                shadowRadius: showAddCardHint ? moderateScale(6) : moderateScale(4),
+                shadowRadius: showAddCardHint ? 6 : 4,
                 elevation: showAddCardHint ? 3 : 2,
               },
             ]}
@@ -1786,7 +1789,7 @@ export default function DeckDetailScreen({ route, navigation }) {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Iconify icon="ic:round-plus" size={moderateScale(26)} color="#FFFFFF" />
+              <Iconify icon="ic:round-plus" size={26} color="#FFFFFF" />
               <Text style={styles.addCardFabLabel} numberOfLines={1}>
                 {t('deckDetail.addCard', 'Kart Ekle')}
               </Text>
@@ -1807,7 +1810,7 @@ export default function DeckDetailScreen({ route, navigation }) {
           }
         }}
         backdropComponent={renderChapterSheetBackdrop}
-        backgroundStyle={{ backgroundColor: colors.background, borderRadius: moderateScale(40) }}
+        backgroundStyle={{ backgroundColor: colors.background, borderRadius: 40 }}
         handleIndicatorStyle={{ backgroundColor: colors.muted }}
         enableDynamicSizing
         maxDynamicContentSize={chapterSheetMaxContentHeight}
@@ -1830,7 +1833,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
             style={styles.chapterSheetCloseBtn}
           >
-            <Iconify icon="material-symbols:close-rounded" size={moderateScale(22)} color={colors.muted} />
+            <Iconify icon="material-symbols:close-rounded" size={22} color={colors.muted} />
           </TouchableOpacity>
         </View>
 
@@ -1848,9 +1851,9 @@ export default function DeckDetailScreen({ route, navigation }) {
               flexGrow: 1,
               minHeight: Math.max(
                 chapterSheetMinContentHeight - chapterSheetHeaderApprox,
-                verticalScale(120)
+                120
               ),
-              paddingBottom: insets.bottom + verticalScale(24),
+              paddingBottom: insets.bottom + 24,
             },
           ]}
           style={{ flex: 1 }}
@@ -1887,7 +1890,7 @@ export default function DeckDetailScreen({ route, navigation }) {
               >
                 {isAction ? (
                   <LinearGradient colors={['#F98A21', '#FF6B35']} style={styles.chapterSheetIcon}>
-                    <Iconify icon="streamline:startup-solid" size={moderateScale(16)} color="#fff" />
+                    <Iconify icon="streamline:startup-solid" size={16} color="#fff" />
                   </LinearGradient>
                 ) : (
                   <View style={styles.chapterSheetProgressBadge}>
@@ -1917,19 +1920,19 @@ export default function DeckDetailScreen({ route, navigation }) {
                   ) : (
                     <View style={styles.chapterSheetStatRow}>
                       <View style={styles.chapterSheetStatItem}>
-                        <Iconify icon="ri:stack-fill" size={moderateScale(13)} color={colors.muted} />
+                        <Iconify icon="ri:stack-fill" size={13} color={colors.muted} />
                         <Text style={[styles.chapterSheetStatText, { color: colors.muted }]}>{chapterProgress.total || 0}</Text>
                       </View>
                       <View style={styles.chapterSheetStatItem}>
-                        <Iconify icon="basil:eye-closed-outline" size={moderateScale(13)} color={colors.muted} />
+                        <Iconify icon="basil:eye-closed-outline" size={13} color={colors.muted} />
                         <Text style={[styles.chapterSheetStatText, { color: colors.muted }]}>{chapterProgress.new || 0}</Text>
                       </View>
                       <View style={styles.chapterSheetStatItem}>
-                        <Iconify icon="mdi:fire" size={moderateScale(13)} color={colors.muted} />
+                        <Iconify icon="mdi:fire" size={13} color={colors.muted} />
                         <Text style={[styles.chapterSheetStatText, { color: colors.muted }]}>{chapterProgress.learning || 0}</Text>
                       </View>
                       <View style={styles.chapterSheetStatItem}>
-                        <Iconify icon="dashicons:welcome-learn-more" size={moderateScale(13)} color={colors.muted} />
+                        <Iconify icon="dashicons:welcome-learn-more" size={13} color={colors.muted} />
                         <Text style={[styles.chapterSheetStatText, { color: colors.muted }]}>{chapterProgress.learned || 0}</Text>
                       </View>
                     </View>
@@ -1956,19 +1959,19 @@ export default function DeckDetailScreen({ route, navigation }) {
           <Animated.View
             style={{
               position: 'absolute',
-              right: scale(20),
+              right: 20,
               // Right under the nav bar. Measuring the header button is unreliable (iOS 26 bar items).
-              top: insets.top + (Platform.OS === 'ios' ? 44 : 56) + verticalScale(6),
-              minWidth: scale(160),
+              top: headerHeight + 6,
+              minWidth: 160,
               backgroundColor: colors.cardBackground,
-              borderRadius: moderateScale(14),
-              paddingVertical: verticalScale(8),
+              borderRadius: 14,
+              paddingVertical: 8,
               shadowColor: '#000',
-              shadowOffset: { width: 0, height: verticalScale(2) },
+              shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.15,
-              shadowRadius: moderateScale(8),
+              shadowRadius: 8,
               elevation: 8,
-              borderWidth: moderateScale(1),
+              borderWidth: 1,
               borderColor: colors.cardBorder,
 
               // Sihirli Animasyonlar
@@ -2001,18 +2004,18 @@ export default function DeckDetailScreen({ route, navigation }) {
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    paddingVertical: verticalScale(12),
-                    paddingHorizontal: scale(16),
+                    paddingVertical: 12,
+                    paddingHorizontal: 16,
                   }}
                   activeOpacity={0.6}
                 >
-                  <Iconify icon="lucide:edit" size={moderateScale(20)} color={colors.text} style={{ marginRight: scale(12) }} />
-                  <Text style={[typography.styles.body, { color: colors.text, fontSize: moderateScale(16) }]}>
+                  <Iconify icon="lucide:edit" size={20} color={colors.text} style={{ marginRight: 12 }} />
+                  <Text style={[typography.styles.body, { color: colors.text, fontSize: 16 }]}>
                     {t('deckDetail.edit', 'Desteyi Düzenle')}
                   </Text>
                 </TouchableOpacity>
 
-                <View style={{ height: verticalScale(1), backgroundColor: colors.border, marginVertical: verticalScale(4) }} />
+                <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
 
                 {/* SİL BUTONU */}
                 <TouchableOpacity
@@ -2026,13 +2029,13 @@ export default function DeckDetailScreen({ route, navigation }) {
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    paddingVertical: verticalScale(12),
-                    paddingHorizontal: scale(16),
+                    paddingVertical: 12,
+                    paddingHorizontal: 16,
                   }}
                   activeOpacity={0.6}
                 >
-                  <Iconify icon="mdi:garbage" size={moderateScale(20)} color="#E74C3C" style={{ marginRight: scale(12) }} />
-                  <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: moderateScale(16) }]}>
+                  <Iconify icon="mdi:garbage" size={20} color="#E74C3C" style={{ marginRight: 12 }} />
+                  <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: 16 }]}>
                     {t('deckDetail.deleteDeck', 'Desteyi Sil')}
                   </Text>
                 </TouchableOpacity>
@@ -2051,18 +2054,18 @@ export default function DeckDetailScreen({ route, navigation }) {
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    paddingVertical: verticalScale(12),
-                    paddingHorizontal: scale(16),
+                    paddingVertical: 12,
+                    paddingHorizontal: 16,
                   }}
                   activeOpacity={0.6}
                 >
-                  <Iconify icon="ic:round-report-problem" size={moderateScale(20)} color='#FED7AA' style={{ marginRight: scale(12) }} />
-                  <Text style={[typography.styles.body, { color: '#FED7AA', fontSize: moderateScale(16) }]}>
+                  <Iconify icon="ic:round-report-problem" size={20} color='#FED7AA' style={{ marginRight: 12 }} />
+                  <Text style={[typography.styles.body, { color: '#FED7AA', fontSize: 16 }]}>
                     {t('moderation.reportDeck')}
                   </Text>
                 </TouchableOpacity>
 
-                <View style={{ height: verticalScale(1), backgroundColor: colors.border, marginVertical: verticalScale(4) }} />
+                <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
 
                 {/* GİZLE BUTONU (Kapanma hatası düzeltildi) */}
                 <TouchableOpacity
@@ -2076,13 +2079,13 @@ export default function DeckDetailScreen({ route, navigation }) {
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    paddingVertical: verticalScale(12),
-                    paddingHorizontal: scale(16),
+                    paddingVertical: 12,
+                    paddingHorizontal: 16,
                   }}
                   activeOpacity={0.6}
                 >
-                  <Iconify icon="mingcute:user-hide-fill" size={moderateScale(20)} color='#E74C3C' style={{ marginRight: scale(12) }} />
-                  <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: moderateScale(16) }]}>
+                  <Iconify icon="mingcute:user-hide-fill" size={20} color='#E74C3C' style={{ marginRight: 12 }} />
+                  <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: 16 }]}>
                     {t('moderation.hideDeck')}
                   </Text>
                 </TouchableOpacity>
@@ -2110,18 +2113,18 @@ export default function DeckDetailScreen({ route, navigation }) {
               left: creatorMenuPos.x,
               // Yalnızca Android için top değerine insets.top ekliyoruz:
               top: Platform.OS === 'android'
-                ? creatorMenuPos.y + creatorMenuPos.height + verticalScale(4) + insets.top
-                : creatorMenuPos.y + creatorMenuPos.height + verticalScale(8),
-              minWidth: scale(180),
+                ? creatorMenuPos.y + creatorMenuPos.height + 4 + insets.top
+                : creatorMenuPos.y + creatorMenuPos.height + 8,
+              minWidth: 180,
               backgroundColor: colors.cardBackground,
-              borderRadius: moderateScale(14),
-              paddingVertical: verticalScale(8),
+              borderRadius: 14,
+              paddingVertical: 8,
               shadowColor: '#000',
-              shadowOffset: { width: 0, height: verticalScale(2) },
+              shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.15,
-              shadowRadius: moderateScale(8),
+              shadowRadius: 8,
               elevation: 8,
-              borderWidth: moderateScale(1),
+              borderWidth: 1,
               borderColor: colors.cardBorder,
 
               // SİHİR BURADA: Ölçekleme ve Şeffaflık
@@ -2150,18 +2153,18 @@ export default function DeckDetailScreen({ route, navigation }) {
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    paddingVertical: verticalScale(12),
-                    paddingHorizontal: scale(16),
+                    paddingVertical: 12,
+                    paddingHorizontal: 16,
                   }}
                   activeOpacity={0.6} // Tıklama hissini netleştir
                 >
-                  <Iconify icon="ic:round-report-problem" size={moderateScale(20)} color='#FED7AA' style={{ marginRight: scale(12) }} />
-                  <Text style={[typography.styles.body, { color: '#FED7AA', fontSize: moderateScale(16) }]}>
+                  <Iconify icon="ic:round-report-problem" size={20} color='#FED7AA' style={{ marginRight: 12 }} />
+                  <Text style={[typography.styles.body, { color: '#FED7AA', fontSize: 16 }]}>
                     {t('moderation.reportUser')}
                   </Text>
                 </TouchableOpacity>
 
-                <View style={{ height: verticalScale(1), backgroundColor: colors.border, marginVertical: verticalScale(4) }} />
+                <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
 
                 {/* KULLANICIYI ENGELLE BUTONU */}
                 <TouchableOpacity
@@ -2175,13 +2178,13 @@ export default function DeckDetailScreen({ route, navigation }) {
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    paddingVertical: verticalScale(12),
-                    paddingHorizontal: scale(16),
+                    paddingVertical: 12,
+                    paddingHorizontal: 16,
                   }}
                   activeOpacity={0.6}
                 >
-                  <Iconify icon="basil:user-block-solid" size={moderateScale(22)} color='#E74C3C' style={{ marginRight: scale(12) }} />
-                  <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: moderateScale(16) }]}>
+                  <Iconify icon="basil:user-block-solid" size={22} color='#E74C3C' style={{ marginRight: 12 }} />
+                  <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: 16 }]}>
                     {t('moderation.blockUser')}
                   </Text>
                 </TouchableOpacity>
@@ -2208,20 +2211,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   errorText: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     textAlign: 'center',
-    marginTop: verticalScale(20),
+    marginTop: 20,
   },
   addCardFab: {
     position: 'absolute',
-    right: scale(20),
-    borderRadius: moderateScale(28),
+    right: 20,
+    borderRadius: 28,
     overflow: 'hidden',
     zIndex: 3,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: verticalScale(1) },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.12,
-    shadowRadius: moderateScale(4),
+    shadowRadius: 4,
     elevation: 2,
     maxWidth: '88%',
   },
@@ -2229,13 +2232,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: verticalScale(14),
-    paddingHorizontal: scale(18),
-    gap: scale(8),
-    minHeight: scale(52),
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    gap: 8,
+    minHeight: 52,
   },
   addCardFabLabel: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
   },
@@ -2250,62 +2253,62 @@ const styles = StyleSheet.create({
   },
   addCardCoachmark: {
     position: 'absolute',
-    right: scale(20),
-    width: scale(280),
-    padding: moderateScale(16),
-    borderRadius: moderateScale(18),
+    right: 20,
+    width: 280,
+    padding: 16,
+    borderRadius: 18,
     borderWidth: StyleSheet.hairlineWidth,
     zIndex: 6,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: verticalScale(5) },
+    shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.28,
-    shadowRadius: moderateScale(12),
+    shadowRadius: 12,
     elevation: 8,
   },
   addCardCoachmarkArrow: {
     position: 'absolute',
-    right: scale(42),
-    bottom: verticalScale(-9),
+    right: 42,
+    bottom: -9,
     width: 0,
     height: 0,
-    borderLeftWidth: scale(9),
-    borderRightWidth: scale(9),
-    borderTopWidth: verticalScale(9),
+    borderLeftWidth: 9,
+    borderRightWidth: 9,
+    borderTopWidth: 9,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
   },
   addCardHintTitle: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     fontWeight: '800',
-    marginBottom: verticalScale(4),
+    marginBottom: 4,
   },
   addCardHintDescription: {
-    fontSize: moderateScale(13),
-    lineHeight: verticalScale(18),
+    fontSize: 13,
+    lineHeight: 18,
   },
   addCardHintSecondaryButton: {
     alignSelf: 'flex-end',
-    marginTop: verticalScale(14),
-    borderWidth: moderateScale(1.5),
-    borderRadius: moderateScale(10),
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(8),
+    marginTop: 14,
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   addCardHintSecondaryButtonText: {
     color: '#F98A21',
-    fontSize: moderateScale(13),
+    fontSize: 13,
     fontWeight: '800',
   },
   // GRADIENT FLOW STYLES - Modern & Eye-catching
   gfHeroBanner: {
-    marginBottom: verticalScale(-50),
+    marginBottom: -50,
 
   },
   gfHeroGradient: {
-    paddingBottom: verticalScale(80),
-    paddingHorizontal: scale(24),
-    borderBottomLeftRadius: moderateScale(48),
-    borderBottomRightRadius: moderateScale(48),
+    paddingBottom: 80,
+    paddingHorizontal: 24,
+    borderBottomLeftRadius: 48,
+    borderBottomRightRadius: 48,
     overflow: 'hidden',
   },
   gfHeroDecor: {
@@ -2323,7 +2326,7 @@ const styles = StyleSheet.create({
     height: HERO_ICON_SIZE,
     right: -HERO_ICON_SIZE * 0.47,
     top: '50%',
-    marginTop: -HERO_ICON_SIZE / 2 - verticalScale(25),
+    marginTop: -HERO_ICON_SIZE / 2 - 25,
   },
   gfDecorCircle: {
     position: 'absolute',
@@ -2333,18 +2336,18 @@ const styles = StyleSheet.create({
   // Bottom-left counterweight to the right-edge watermark. It bleeds off the
   // left edge and sits just above the stats-card overlap.
   gfDecorCircle2: {
-    width: scale(110),
-    height: scale(110),
-    bottom: verticalScale(56),
-    left: scale(-40),
+    width: 110,
+    height: 110,
+    bottom: 56,
+    left: -40,
   },
   // Small partner to gfDecorCircle2, diagonally up-right of it with a clear gap,
   // so the left side reads as one pair and the right side as the watermark.
   gfDecorCircle3: {
-    width: scale(40),
-    height: scale(40),
-    bottom: verticalScale(155),
-    left: scale(75),
+    width: 40,
+    height: 40,
+    bottom: 155,
+    left: 75,
     backgroundColor: 'rgba(255,255,255,0.06)',
   },
   gfCategoryBadge: {
@@ -2352,63 +2355,63 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.1)',
     alignSelf: 'flex-start',
-    paddingVertical: verticalScale(10),
-    paddingHorizontal: scale(16),
-    borderRadius: moderateScale(24),
-    gap: scale(10),
-    marginBottom: verticalScale(16),
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 24,
+    gap: 10,
+    marginBottom: 16,
   },
   gfCategoryText: {
     color: '#fff',
-    fontSize: moderateScale(13),
+    fontSize: 13,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   gfHeroTitle: {
     color: '#fff',
-    fontSize: moderateScale(32),
+    fontSize: 32,
     fontWeight: '800',
     letterSpacing: -0.5,
-    lineHeight: verticalScale(38),
+    lineHeight: 38,
     textShadowColor: 'rgba(0,0,0,0.2)',
-    textShadowOffset: { width: 0, height: verticalScale(2) },
-    textShadowRadius: moderateScale(4),
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   gfHeroSubtitle: {
     color: '#fff',
-    fontSize: moderateScale(32),
+    fontSize: 32,
     fontWeight: '800',
     letterSpacing: -0.5,
-    lineHeight: verticalScale(38),
+    lineHeight: 38,
     textShadowColor: 'rgba(0,0,0,0.2)',
-    textShadowOffset: { width: 0, height: verticalScale(2) },
-    textShadowRadius: moderateScale(4),
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   gfTitleContainer: {
     position: 'relative',
-    marginBottom: verticalScale(6),
+    marginBottom: 6,
   },
   gfHeroDesc: {
     color: 'rgba(255,255,255,0.75)',
-    fontSize: moderateScale(14),
+    fontSize: 14,
     fontWeight: '500',
     fontStyle: 'italic',
-    lineHeight: verticalScale(20),
-    marginBottom: verticalScale(8),
+    lineHeight: 20,
+    marginBottom: 8,
   },
   gfExpandButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'flex-start',
-    gap: scale(4),
-    marginBottom: verticalScale(12),
-    paddingVertical: verticalScale(4),
+    gap: 4,
+    marginBottom: 12,
+    paddingVertical: 4,
   },
   gfExpandButtonText: {
     color: 'rgba(255,255,255,0.9)',
-    fontSize: moderateScale(13),
+    fontSize: 13,
     fontWeight: '600',
   },
   gfCreatorChip: {
@@ -2416,31 +2419,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignSelf: 'flex-start',
-    paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(14),
-    paddingRight: scale(18),
-    borderRadius: moderateScale(32),
-    gap: scale(12),
-    marginTop: verticalScale(8),
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingRight: 18,
+    borderRadius: 32,
+    gap: 12,
+    marginTop: 8,
   },
   gfCreatorAvatar: {
-    width: scale(28),
-    height: scale(28),
-    borderRadius: moderateScale(14),
-    borderWidth: moderateScale(2),
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.5)',
   },
   gfCreatorName: {
     color: '#fff',
-    fontSize: moderateScale(14),
+    fontSize: 14,
     fontWeight: '600',
   },
   gfProgressCard: {
-    paddingVertical: verticalScale(16),
+    paddingVertical: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: verticalScale(4) },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
-    shadowRadius: moderateScale(12),
+    shadowRadius: 12,
     elevation: 4,
   },
   gfCardContent: {
@@ -2454,231 +2457,231 @@ const styles = StyleSheet.create({
   },
   gfProgressGlow: {
     position: 'absolute',
-    width: scale(200),
-    height: scale(200),
-    borderRadius: moderateScale(100),
+    width: 200,
+    height: 200,
+    borderRadius: 100,
   },
   gfStatsSide: {
-    width: scale(130),
-    paddingLeft: scale(12),
+    width: 130,
+    paddingLeft: 12,
   },
   gfTotalBadgeGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: verticalScale(12),
-    paddingHorizontal: scale(14),
-    borderRadius: moderateScale(18),
-    gap: scale(10),
-    marginBottom: verticalScale(14),
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 18,
+    gap: 10,
+    marginBottom: 14,
   },
   gfTotalBadgeTextWrap: {
     alignItems: 'flex-start',
   },
   gfTotalBadgeNumber: {
-    fontSize: moderateScale(22),
+    fontSize: 22,
     fontWeight: '900',
     color: '#fff',
     letterSpacing: -0.5,
-    lineHeight: verticalScale(24),
-    paddingTop: verticalScale(4),
+    lineHeight: 24,
+    paddingTop: 4,
   },
   gfTotalBadgeLabel: {
-    fontSize: moderateScale(10),
+    fontSize: 10,
     fontWeight: '700',
     color: 'rgba(255,255,255,0.85)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   gfStatsListVertical: {
-    gap: verticalScale(8),
+    gap: 8,
   },
   gfStatRowItem: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   gfStatRowIcon: {
-    width: scale(32),
-    height: scale(32),
-    borderRadius: moderateScale(10),
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: scale(10),
+    marginRight: 10,
   },
   gfStatRowText: {
     flex: 1,
   },
   gfStatRowValue: {
-    fontSize: moderateScale(17),
+    fontSize: 17,
     fontWeight: '800',
     letterSpacing: -0.5,
   },
   gfStatRowLabel: {
-    fontSize: moderateScale(9),
+    fontSize: 9,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.2,
-    marginTop: verticalScale(1),
+    marginTop: 1,
   },
   gfActionsCard: {
-    marginHorizontal: scale(16),
-    borderRadius: moderateScale(38),
-    borderWidth: moderateScale(1),
+    marginHorizontal: 16,
+    borderRadius: 38,
+    borderWidth: 1,
     overflow: 'hidden',
-    marginBottom: verticalScale(20),
+    marginBottom: 20,
   },
   gfActionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: verticalScale(16),
-    paddingHorizontal: scale(18),
+    paddingVertical: 16,
+    paddingHorizontal: 18,
   },
   gfActionIconBox: {
-    width: scale(48),
-    height: scale(48),
-    borderRadius: moderateScale(16),
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: scale(14),
+    marginRight: 14,
   },
   gfActionTextWrap: {
     flex: 1,
   },
   gfActionTitle: {
-    fontSize: moderateScale(17),
+    fontSize: 17,
     fontWeight: '700',
-    marginBottom: verticalScale(2),
+    marginBottom: 2,
   },
   gfActionDesc: {
-    fontSize: moderateScale(13),
+    fontSize: 13,
     fontWeight: '500',
   },
   gfActionDivider: {
-    height: verticalScale(1),
+    height: 1,
   },
   gfShareCard: {
-    marginHorizontal: scale(16),
-    padding: moderateScale(20),
+    marginHorizontal: 16,
+    padding: 20,
     paddingBottom: 0,
-    borderRadius: moderateScale(32),
-    borderWidth: moderateScale(1),
-    marginBottom: verticalScale(20),
+    borderRadius: 32,
+    borderWidth: 1,
+    marginBottom: 20,
   },
   gfShareMainRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingBottom: verticalScale(16),
+    paddingBottom: 16,
   },
   gfShareIconBg: {
-    width: scale(54),
-    height: scale(54),
-    borderRadius: moderateScale(18),
+    width: 54,
+    height: 54,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: scale(16),
+    marginRight: 16,
   },
   gfShareContent: {
     flex: 1,
   },
   gfShareTitle: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     fontWeight: '700',
-    marginBottom: verticalScale(4),
+    marginBottom: 4,
   },
   gfShareStatus: {
-    fontSize: moderateScale(13),
+    fontSize: 13,
     fontWeight: '500',
   },
   gfShareInfoBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: verticalScale(14),
-    borderTopWidth: moderateScale(1),
-    gap: scale(6),
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    gap: 6,
   },
   gfShareInfoText: {
-    fontSize: moderateScale(14),
+    fontSize: 14,
     fontWeight: '600',
   },
   gfLearningFlowCard: {
-    marginHorizontal: scale(16),
-    borderRadius: moderateScale(34),
-    borderWidth: moderateScale(1),
-    padding: moderateScale(14),
-    marginBottom: verticalScale(14),
+    marginHorizontal: 16,
+    borderRadius: 34,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 14,
   },
   gfLearningFlowDividerWrap: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: verticalScale(12),
+    paddingBottom: 12,
   },
   gfLearningFlowDivider: {
     width: '78%',
-    maxWidth: scale(280),
+    maxWidth: 280,
     height: StyleSheet.hairlineWidth,
-    borderRadius: moderateScale(1),
+    borderRadius: 1,
   },
   gfStudyCard: {
     marginHorizontal: 0,
-    borderRadius: moderateScale(30),
-    borderWidth: moderateScale(1),
+    borderRadius: 30,
+    borderWidth: 1,
     padding: 0,
     marginBottom: 0,
     flexDirection: 'row',
     alignItems: 'stretch',
-    gap: verticalScale(12),
+    gap: 12,
   },
   gfStudyChapterButton: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    borderWidth: moderateScale(1),
-    borderRadius: moderateScale(28),
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(10),
+    borderWidth: 1,
+    borderRadius: 28,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   gfStudyChapterIcon: {
-    width: scale(44),
-    height: scale(44),
-    borderRadius: moderateScale(18),
+    width: 44,
+    height: 44,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: scale(10),
+    marginRight: 10,
   },
   gfStudyTextWrap: {
     flex: 1,
   },
   gfStudyPrimaryText: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     fontWeight: '800',
-    marginBottom: verticalScale(2),
+    marginBottom: 2,
   },
   gfStudyMetaText: {
-    fontSize: moderateScale(12),
+    fontSize: 12,
     fontWeight: '500',
   },
   gfStartButton: {
-    width: scale(128),
-    borderRadius: moderateScale(26),
+    width: 128,
+    borderRadius: 26,
     overflow: 'hidden',
   },
   gfStartButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: scale(6),
+    gap: 6,
     flex: 1,
-    paddingVertical: verticalScale(14),
-    paddingHorizontal: scale(10),
+    paddingVertical: 14,
+    paddingHorizontal: 10,
   },
   gfStartMain: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(8),
+    gap: 8,
   },
   gfStartButtonText: {
     color: '#fff',
-    fontSize: moderateScale(18),
+    fontSize: 18,
     fontWeight: '800',
     letterSpacing: 0.2,
   },
@@ -2686,49 +2689,49 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: scale(20),
-    paddingVertical: verticalScale(12),
+    paddingHorizontal: 20,
+    paddingVertical: 12,
   },
   chapterSheetTitle: {
-    fontSize: moderateScale(18),
+    fontSize: 18,
     fontWeight: '800',
     flex: 1,
   },
   chapterSheetHeaderMeta: {
-    fontSize: moderateScale(12),
+    fontSize: 12,
     fontWeight: '600',
-    marginRight: scale(10),
+    marginRight: 10,
   },
   chapterSheetCloseBtn: {
     backgroundColor: 'rgba(150,150,150,0.1)',
-    padding: moderateScale(6),
-    borderRadius: moderateScale(99),
+    padding: 6,
+    borderRadius: 99,
   },
   chapterSheetList: {
-    paddingHorizontal: scale(20),
-    paddingTop: verticalScale(12),
-    gap: verticalScale(8),
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    gap: 8,
   },
   chapterSheetItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: moderateScale(1),
-    borderRadius: moderateScale(16),
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(10),
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   chapterSheetIcon: {
-    width: scale(34),
-    height: scale(34),
-    borderRadius: moderateScale(12),
+    width: 34,
+    height: 34,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: scale(10),
+    marginRight: 10,
   },
   chapterSheetProgressBadge: {
-    width: scale(34),
-    height: scale(34),
-    marginRight: scale(10),
+    width: 34,
+    height: 34,
+    marginRight: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2736,28 +2739,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   chapterSheetItemTitle: {
-    fontSize: moderateScale(15),
+    fontSize: 15,
     fontWeight: '700',
-    marginBottom: verticalScale(1),
+    marginBottom: 1,
   },
   chapterSheetItemMeta: {
-    fontSize: moderateScale(12),
+    fontSize: 12,
     fontWeight: '500',
   },
   chapterSheetStatRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: scale(10),
-    marginTop: verticalScale(2),
+    gap: 10,
+    marginTop: 2,
   },
   chapterSheetStatItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(4),
+    gap: 4,
   },
   chapterSheetStatText: {
-    fontSize: moderateScale(11),
+    fontSize: 11,
     fontWeight: '600',
   },
   fabChapterProgressTextContainer: {
@@ -2770,7 +2773,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   fabChapterProgressText: {
-    fontSize: moderateScale(11),
+    fontSize: 11,
     fontWeight: '700',
   },
 });

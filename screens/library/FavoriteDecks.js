@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { View, Image, Text, Platform } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Image } from 'react-native';
+import { Text } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
@@ -12,9 +13,8 @@ import DeckList from '../../components/lists/DeckList';
 import LottieView from 'lottie-react-native';
 import { typography } from '../../theme/typography';
 import { StyleSheet } from 'react-native';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { getLanguages } from '../../services/LanguageService';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useListBottomInset } from '../../components/ui/CustomTabBar';
 
 export default function FavoriteDecks() {
   const navigation = useNavigation();
@@ -22,7 +22,7 @@ export default function FavoriteDecks() {
   const { t } = useTranslation();
   const { session } = useAuth();
   const userId = session?.user?.id;
-  const insets = useSafeAreaInsets();
+  const listBottomInset = useListBottomInset();
 
   const [favoriteDecks, setFavoriteDecks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -185,21 +185,21 @@ export default function FavoriteDecks() {
   };
 
   return (
-    <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background, marginVertical: verticalScale(10) }}>
+    <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background, marginVertical: 10 }}>
       {loading ? (
         <View style={styles.loadingContainer}>
-          <LottieView source={require('../../assets/flexloader.json')} speed={1.1} autoPlay loop style={{ width: scale(160, 0.3), height: verticalScale(160, 0.3) }} />
-          <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: scale(100, 0.3), height: verticalScale(100, 0.3), marginTop: verticalScale(-65) }} />
+          <LottieView source={require('../../assets/flexloader.json')} speed={1.1} autoPlay loop style={{ width: 160, height: 160 }} />
+          <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100, marginTop: -65 }} />
         </View>
       ) : favoriteDecks.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: verticalScale(-150) }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: -150 }}>
           <Image
             source={require('../../assets/deckbg.webp')}
-            style={{ width: scale(300), height: verticalScale(300), opacity: 0.2 }}
+            style={{ width: 300, height: 300, opacity: 0.2 }}
             resizeMode="contain"
             fadeDuration={0}
           />
-          <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, textAlign: 'center', fontSize: moderateScale(16), marginTop: verticalScale(-20) }]}>
+          <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, textAlign: 'center', fontSize: 16, marginTop: -20 }]}>
             {t('library.addFavoriteDeckEmpty', 'Bir deste favorilere ekle')}
           </Text>
         </View>
@@ -225,14 +225,14 @@ export default function FavoriteDecks() {
             <View
               style={{
                 backgroundColor: colors.background,
-                marginVertical: verticalScale(8),
+                marginVertical: 8,
               }}
             >
               <View
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: scale(10),
+                  gap: 10,
                   width: '95%',
                   alignSelf: 'center',
                 }}
@@ -270,11 +270,7 @@ export default function FavoriteDecks() {
           layoutMode="double"
           cardVariant="favorite"
           showPopularityBadge={false}
-          contentPaddingBottom={
-            Platform.OS === 'android'
-              ? insets.bottom + verticalScale(72)
-              : '10%'
-          }
+          contentPaddingBottom={listBottomInset}
         />
       )}
 
@@ -299,8 +295,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: verticalScale(200),
+    minHeight: 200,
     flexDirection: 'column',
-    marginTop: verticalScale(-120),
+    marginTop: -120,
   },
 });

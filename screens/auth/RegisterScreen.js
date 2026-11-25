@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Alert, ImageBackground } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Alert, ImageBackground, useWindowDimensions } from 'react-native';
+import { Text, TextInput } from '../../components/ui/AppText';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../../contexts/AuthContext';
@@ -7,7 +8,6 @@ import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
-import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 
 const REGISTER_LINKS = {
   privacy: 'https://www.knowia.online/policy',
@@ -26,13 +26,11 @@ export default function RegisterScreen({ navigation }) {
   const { t } = useTranslation();
   
   // useWindowDimensions hook'u - ekran döndürme desteği
-  const { width, height } = useWindowDimensions();
-  const isTablet = getIsTablet();
+  const { height } = useWindowDimensions();
   
   const containerPaddingTop = useMemo(() => {
-    if (isTablet) return height * 0.15;
     return height * 0.27;
-  }, [height, isTablet]);
+  }, [height]);
 
   const openLink = useCallback(async (url) => {
     try {
@@ -82,13 +80,13 @@ export default function RegisterScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
         enableOnAndroid={true}
         enableAutomaticScroll={true}
-        extraScrollHeight={verticalScale(50)}
+        extraScrollHeight={50}
         enableResetScrollToCoords={false}
       >
         <View style={styles.form}>
           <View style={styles.inputContainer}>
-            <View style={{justifyContent: 'center', alignItems: 'center', width: scale(25), height: verticalScale(22)}}>
-              <Iconify icon="tabler:mail-filled" size={moderateScale(22)} color={colors.muted} />
+            <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
+              <Iconify icon="tabler:mail-filled" size={22} color={colors.muted} />
             </View>
             <TextInput
               style={[styles.input, typography.styles.body]}
@@ -101,8 +99,8 @@ export default function RegisterScreen({ navigation }) {
             />
           </View>
           <View style={styles.inputContainer}>
-            <View style={{justifyContent: 'center', alignItems: 'center', width: scale(25), height: verticalScale(22)}}>
-              <Iconify icon="carbon:password" size={moderateScale(22)} color={colors.muted} />
+            <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
+              <Iconify icon="carbon:password" size={22} color={colors.muted} />
             </View>
             <TextInput
               style={[styles.input, typography.styles.body]}
@@ -114,15 +112,15 @@ export default function RegisterScreen({ navigation }) {
             />
             <TouchableOpacity
               onPress={() => setShowPassword(prev => !prev)}
-              style={{justifyContent: 'center', alignItems: 'center', width: scale(28), height: verticalScale(22)}}
+              style={{justifyContent: 'center', alignItems: 'center', width: 28, height: 22}}
               disabled={loading}
             >
-              <Iconify icon={showPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={moderateScale(22)} color={colors.muted} />
+              <Iconify icon={showPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={22} color={colors.muted} />
             </TouchableOpacity>
           </View>
           <View style={styles.inputContainer}>
-            <View style={{justifyContent: 'center', alignItems: 'center', width: scale(25), height: verticalScale(22)}}>
-              <Iconify icon="carbon:password" size={moderateScale(22)} color={colors.muted} />
+            <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
+              <Iconify icon="carbon:password" size={22} color={colors.muted} />
             </View>
             <TextInput
               style={[styles.input, typography.styles.body]}
@@ -134,10 +132,10 @@ export default function RegisterScreen({ navigation }) {
             />
             <TouchableOpacity
               onPress={() => setShowConfirmPassword(prev => !prev)}
-              style={{justifyContent: 'center', alignItems: 'center', width: scale(28), height: verticalScale(22)}}
+              style={{justifyContent: 'center', alignItems: 'center', width: 28, height: 22}}
               disabled={loading}
             >
-              <Iconify icon={showConfirmPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={moderateScale(22)} color={colors.muted} />
+              <Iconify icon={showConfirmPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={22} color={colors.muted} />
             </TouchableOpacity>
           </View>
           <View style={styles.policyLinksRow}>
@@ -159,7 +157,7 @@ export default function RegisterScreen({ navigation }) {
             {t('register.agreeByRegistering', 'Kayıt olarak kabul etmiş olursunuz.')}
           </Text>
           <TouchableOpacity 
-            style={[styles.button, { backgroundColor: colors.buttonColor, borderWidth: moderateScale(1), borderColor: 'rgba(0, 0, 0, 0.1)' }, loading && styles.buttonDisabled]}
+            style={[styles.button, { backgroundColor: colors.buttonColor, borderWidth: 1, borderColor: 'rgba(0, 0, 0, 0.1)' }, loading && styles.buttonDisabled]}
             onPress={handleRegister}
             disabled={loading}
           >
@@ -168,7 +166,7 @@ export default function RegisterScreen({ navigation }) {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[styles.linkButton, { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: moderateScale(8), paddingHorizontal: scale(12), paddingVertical: verticalScale(8) }]}
+            style={[styles.linkButton, { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 }]}
             onPress={() => navigation.navigate('Login')}
           >
             <Text style={[styles.linkText, typography.styles.link, { color: colors.secondary }]}>
@@ -188,20 +186,20 @@ const styles = StyleSheet.create({
   },
   container: {
     flexGrow: 1,
-    padding: scale(20),
+    padding: 20,
     justifyContent: 'center',
     // paddingTop dinamik olarak uygulanacak
   },
   title: {
     textAlign: 'center',
-    marginBottom: verticalScale(10),
+    marginBottom: 10,
   },
   subtitle: {
     textAlign: 'center',
-    marginBottom: verticalScale(30),
+    marginBottom: 30,
   },
   form: {
-    gap: verticalScale(15),
+    gap: 15,
   },
   policyLinksRow: {
     flexDirection: 'row',
@@ -209,7 +207,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 0,
-    paddingHorizontal: scale(8),
+    paddingHorizontal: 8,
   },
   policyText: {
     marginRight: 0,
@@ -219,27 +217,27 @@ const styles = StyleSheet.create({
   },
   policyAgreeText: {
     textAlign: 'center',
-    paddingHorizontal: scale(12),
-    marginTop: verticalScale(-6),
+    paddingHorizontal: 12,
+    marginTop: -6,
   },
   input: {
     flex: 1,
-    paddingVertical: verticalScale(12),
+    paddingVertical: 12,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: moderateScale(1),
+    borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.5)',
-    paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(6),
-    borderRadius: moderateScale(10),
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    gap: scale(8),
+    gap: 8,
   },
   button: {
-    padding: moderateScale(15),
-    borderRadius: moderateScale(10),
+    padding: 15,
+    borderRadius: 10,
     alignItems: 'center',
   },
   buttonDisabled: {

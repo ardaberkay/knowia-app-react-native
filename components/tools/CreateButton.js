@@ -1,10 +1,10 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { TouchableOpacity, StyleSheet } from 'react-native';
+import { Text } from '../ui/AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
 export default function CreateButton({ onPress, disabled = false, text, loading = false, style, textStyle, colors, showIcon = false, iconName }) {
   const { colors: themeColors } = useTheme();
@@ -31,9 +31,9 @@ export default function CreateButton({ onPress, disabled = false, text, loading 
         {showIcon && iconName && (
           <Iconify 
             icon={iconName} 
-            size={moderateScale(20)} 
+            size={20} 
             color="#fff" 
-            style={{ marginRight: scale(6) }} 
+            style={{ marginRight: 6 }} 
           />
         )}
         <Text style={[
@@ -53,19 +53,19 @@ const styles = StyleSheet.create({
     borderRadius: 99,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: verticalScale(1) },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: moderateScale(2),
+    shadowRadius: 2,
     elevation: 1,
   },
   createButtonText: {
-    fontSize: moderateScale(17),
+    fontSize: 17,
     fontWeight: '500',
     color: '#FFFFFF',
   },
   gradientButton: {
-    paddingVertical: verticalScale(16),
-    paddingHorizontal: scale(18),
+    paddingVertical: 16,
+    paddingHorizontal: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { View, StyleSheet, Text, Keyboard, Platform } from 'react-native';
+import { View, StyleSheet, Keyboard, Platform, useWindowDimensions } from 'react-native';
+import { Text } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,12 +16,12 @@ import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
 import { getCategoryConfig } from '../../components/ui/CategoryHeroHeader';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
-import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { getLanguages } from '../../services/LanguageService';
+import { useListBottomInset } from '../../components/ui/CustomTabBar';
 
-const LIST_TOP_RADIUS = moderateScale(28);
-const HEADER_BOTTOM_BLEED = verticalScale(24);
-const LIST_HEADER_OVERLAP = verticalScale(24);
+const LIST_TOP_RADIUS = 28;
+const HEADER_BOTTOM_BLEED = 24;
+const LIST_HEADER_OVERLAP = 24;
 
 export default function CategoryDeckListScreen({ route }) {
   const { category, title, decks: initialDecks, favoriteDecks: initialFavoriteDecks } = route.params || {};
@@ -30,26 +31,26 @@ export default function CategoryDeckListScreen({ route }) {
   const { session } = useAuth();
   const userId = session?.user?.id;
   const insets = useSafeAreaInsets();
+  const listBottomInset = useListBottomInset();
   // useWindowDimensions hook'u - ekran döndürme desteği
-  const { width, height } = useWindowDimensions();
-  const isTablet = getIsTablet();
+  const { width } = useWindowDimensions();
 
   const heroDimensions = useMemo(() => ({
-    iconSize: scale(64),
-    iconBorderRadius: moderateScale(32),
-    iconBorderWidth: moderateScale(2),
-    iconInnerSize: moderateScale(28),
-    titleFontSize: moderateScale(28),
-    subtitleFontSize: moderateScale(15),
-    subtitleLineHeight: moderateScale(20),
-    heroContentMarginBottom: verticalScale(20),
-    heroIconMarginRight: scale(16),
-    headerContentPaddingTop: verticalScale(20),
-    headerContentPaddingBottom: verticalScale(20),
-    headerContentPaddingHorizontal: scale(12),
-    titleMarginBottom: verticalScale(6),
-    searchRowGap: scale(12),
-    searchRowMarginTop: verticalScale(8),
+    iconSize: 64,
+    iconBorderRadius: 32,
+    iconBorderWidth: 2,
+    iconInnerSize: 28,
+    titleFontSize: 28,
+    subtitleFontSize: 15,
+    subtitleLineHeight: 20,
+    heroContentMarginBottom: 20,
+    heroIconMarginRight: 16,
+    headerContentPaddingTop: 20,
+    headerContentPaddingBottom: 20,
+    headerContentPaddingHorizontal: 12,
+    titleMarginBottom: 6,
+    searchRowGap: 12,
+    searchRowMarginTop: 8,
   }), []);
 
   const [search, setSearch] = useState('');
@@ -359,14 +360,9 @@ export default function CategoryDeckListScreen({ route }) {
           showPopularityBadge={false}
           loadingMore={loadingMore}
           contentPaddingTop={
-            verticalScale(20)
+            20
           }
-          contentPaddingBottom={
-            Platform.OS === 'android'
-              ? insets.bottom +
-              verticalScale(72)
-              : '10%'
-          }
+          contentPaddingBottom={listBottomInset}
         />
       </View>
 
@@ -405,7 +401,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: scale(12),
+    marginHorizontal: 12,
     // marginBottom dinamik olarak uygulanacak
   },
   heroIconContainer: {
@@ -425,7 +421,7 @@ const styles = StyleSheet.create({
     ...typography.styles.h2,
     color: '#fff',
     fontWeight: '900',
-    letterSpacing: moderateScale(-0.5),
+    letterSpacing: -0.5,
     // fontSize, marginBottom dinamik olarak uygulanacak
   },
   heroSubtitle: {

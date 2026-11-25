@@ -1,28 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, StyleSheet, Pressable, Text } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
+import { Text } from '../ui/AppText';
 import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
-import MathText from '../ui/MathText';
 import { triggerHaptic } from '../../lib/hapticManager';
-
-const SmartText = ({ value, style, numberOfLines }) => {
-  if (!value) return null;
-
-  // ÇOK HIZLI KONTROL: İçinde ters eğik çizgi, üs veya alt simge var mı?
-  // (Regex kullanmıyoruz çünkü includes() string işlemlerinde ışık hızındadır)
-  const hasMath = value.includes('\\') || value.includes('^') || value.includes('_');
-
-  if (hasMath) {
-    // Matematik varsa senin o efsanevi, ağır fabrikaya (MathText) gönder
-    return <MathText value={value} style={style} numberOfLines={numberOfLines} forceText={true} />;
-  }
-  
-  // Sadece düz metinse fabrikaya sokma, dümdüz Text olarak bas geç! (0 Maliyet)
-  return <Text style={style} numberOfLines={numberOfLines}>{value}</Text>;
-};
 
 // export default function yerine const ile tanımlıyoruz
 const CardListItem = ({
@@ -74,28 +57,28 @@ const CardListItem = ({
     >
       <View style={styles.topRow}>
         <View style={styles.textCol}>
-          <SmartText
-            value={question}
-            style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]}
-            numberOfLines={1}
-          />
+          {question ? (
+            <Text style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]} numberOfLines={1}>
+              {question}
+            </Text>
+          ) : null}
           <View style={[styles.divider, { backgroundColor: colors.cardDivider }]} />
-          <SmartText
-            value={answer}
-            style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]}
-            numberOfLines={1}
-          />
+          {answer ? (
+            <Text style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]} numberOfLines={1}>
+              {answer}
+            </Text>
+          ) : null}
         </View>
         <View style={{ alignItems: 'center' }}>
           <TouchableOpacity
             style={[styles.iconBtn, { backgroundColor: colors.iconBackground }]}
-            hitSlop={{ top: verticalScale(8), bottom: verticalScale(8), left: scale(8), right: scale(8) }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             onPress={handleFavoritePress} // Yeni fonksiyonumuzu buraya bağladık
           >
             <Iconify
               // Artık üstten geleni değil, kendi anında değişen state'imizi dinliyor
               icon={localIsFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
-              size={moderateScale(22)}
+              size={22}
               color={localIsFavorite ? '#F98A21' : '#B0B0B0'}
             />
           </TouchableOpacity>
@@ -114,7 +97,7 @@ const CardListItem = ({
                 }}
                 activeOpacity={0.7}
               >
-                <Iconify icon="mdi:garbage-can-empty" size={moderateScale(22)} color="#E74C3C" />
+                <Iconify icon="mdi:garbage-can-empty" size={22} color="#E74C3C" />
               </TouchableOpacity>
             ) : (
               <Pressable
@@ -129,7 +112,7 @@ const CardListItem = ({
                 android_ripple={null}
                 pressRetentionOffset={0}
               >
-                <Iconify icon="mdi:garbage" size={moderateScale(22)} color="#999" />
+                <Iconify icon="mdi:garbage" size={22} color="#999" />
               </Pressable>
             )
           ) : null}
@@ -142,11 +125,11 @@ const CardListItem = ({
 const styles = StyleSheet.create({
   cardItem: {
     width: '100%',
-    minHeight: verticalScale(110),
-    borderRadius: moderateScale(30),
-    marginBottom: verticalScale(12),
-    padding: scale(20),
-    borderWidth: moderateScale(1),
+    minHeight: 110,
+    borderRadius: 30,
+    marginBottom: 12,
+    padding: 20,
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'flex-start',
   },
@@ -158,36 +141,36 @@ const styles = StyleSheet.create({
   },
   textCol: {
     width: '80%',
-    maxWidth: scale(320),
+    maxWidth: 320,
   },
   question: {
     fontWeight: '600',
-    fontSize: moderateScale(17),
-    marginBottom: verticalScale(8),
-    letterSpacing: moderateScale(0.3),
-    marginTop: verticalScale(4),
+    fontSize: 17,
+    marginBottom: 8,
+    letterSpacing: 0.3,
+    marginTop: 4,
   },
   divider: {
-    height: moderateScale(2),
+    height: 2,
     alignSelf: 'stretch',
-    marginVertical: verticalScale(8),
-    borderRadius: moderateScale(2),
+    marginVertical: 8,
+    borderRadius: 2,
   },
   answer: {
-    fontSize: moderateScale(15),
-    marginTop: verticalScale(4),
+    fontSize: 15,
+    marginTop: 4,
     fontWeight: '400',
-    letterSpacing: moderateScale(0.2),
+    letterSpacing: 0.2,
   },
   iconBtn: {
-    padding: moderateScale(8),
-    borderRadius: moderateScale(12),
-    marginBottom: verticalScale(4),
+    padding: 8,
+    borderRadius: 12,
+    marginBottom: 4,
   },
   deleteBtn: {
-    marginTop: verticalScale(8),
-    padding: moderateScale(8),
-    borderRadius: moderateScale(12),
+    marginTop: 8,
+    padding: 8,
+    borderRadius: 12,
   },
 });
 

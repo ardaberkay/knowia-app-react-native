@@ -1,9 +1,9 @@
 import React, { useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Share, Alert } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Share, Alert } from 'react-native';
+import { Text } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useAuth } from '../../contexts/AuthContext';
@@ -115,21 +115,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: scale(14),
-    paddingTop: verticalScale(16),
-    paddingBottom: verticalScale(40),
+    paddingHorizontal: 14,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
   logoutButton: {
-    marginTop: verticalScale(28),
+    marginTop: 28,
     backgroundColor: '#ff5252',
-    paddingVertical: verticalScale(12),
-    borderRadius: moderateScale(999),
+    paddingVertical: 12,
+    borderRadius: 999,
   },
   deleteButton: {
-    marginTop: verticalScale(12),
-    paddingVertical: verticalScale(12),
-    borderRadius: moderateScale(999),
-    borderWidth: moderateScale(1),
+    marginTop: 12,
+    paddingVertical: 12,
+    borderRadius: 999,
+    borderWidth: 1,
   },
   centerText: {
     textAlign: 'center',

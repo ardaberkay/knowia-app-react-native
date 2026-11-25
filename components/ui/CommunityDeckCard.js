@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { Text } from './AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { useTranslation } from 'react-i18next';
 
@@ -71,7 +71,7 @@ const CommunityDeckCard = ({
                 <View style={styles.iconBadgeContainer}>
                     <Iconify
                         icon={categoryIcon}
-                        size={scale(34)}
+                        size={34}
                         color="#FFFFFF"
                     />
                 </View>
@@ -101,7 +101,7 @@ const CommunityDeckCard = ({
                         <TouchableOpacity
                             style={{
                                 backgroundColor: colors.iconBackground,
-                                padding: moderateScale(5),
+                                padding: 5,
                                 borderRadius: 999,
                                 zIndex: 10,
                             }}
@@ -111,7 +111,7 @@ const CommunityDeckCard = ({
                         >
                             <Iconify
                                 icon={localFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
-                                size={moderateScale(20)}
+                                size={20}
                                 color={localFavorite ? '#F98A21' : colors.headText}
                             />
                         </TouchableOpacity>
@@ -146,9 +146,9 @@ const CommunityDeckCard = ({
                     <View style={styles.bottomRow}>
                         <Iconify
                             icon="ri:stack-fill"
-                            size={moderateScale(13)}
+                            size={13}
                             color="rgba(255, 255, 255, 0.9)"
-                            style={{ marginRight: scale(4) }}
+                            style={{ marginRight: 4 }}
                         />
                         <Text
                             style={[typography.styles.caption, styles.metaText]}
@@ -159,9 +159,9 @@ const CommunityDeckCard = ({
                         <Text style={[styles.separatorDot, { width: 4, height: 4 }]}></Text>
                         <Iconify
                             icon="streamline-flex:module-puzzle-2"
-                            size={moderateScale(13)}
+                            size={13}
                             color="rgba(255, 255, 255, 0.9)"
-                            style={{ marginRight: scale(4) }}
+                            style={{ marginRight: 4 }}
                         />
                         <Text
                             style={[typography.styles.caption, styles.metaText]}
@@ -178,8 +178,8 @@ const CommunityDeckCard = ({
 
 const styles = StyleSheet.create({
     touchableWrapper: {
-        marginHorizontal: scale(8),
-        marginBottom: verticalScale(10),
+        marginHorizontal: 8,
+        marginBottom: 10,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.12,
@@ -189,17 +189,17 @@ const styles = StyleSheet.create({
     cardGradient: {
         flexDirection: 'row',
         alignItems: 'center',
-        borderRadius: moderateScale(20),
-        paddingHorizontal: scale(12),
-        paddingVertical: verticalScale(8),
-        height: verticalScale(120),
+        borderRadius: 20,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        height: 120,
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.15)',
     },
     iconBadgeContainer: {
-        width: scale(60),
-        height: scale(60),
-        borderRadius: moderateScale(14),
+        width: 60,
+        height: 60,
+        borderRadius: 14,
         backgroundColor: 'rgba(255, 255, 255, 0.18)',
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.25)',
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     },
     contentContainer: {
         flex: 1,
-        marginLeft: scale(12),
+        marginLeft: 12,
         height: '100%',
         justifyContent: 'space-between',
     },
@@ -221,28 +221,28 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         flex: 1,
-        marginRight: scale(10),
+        marginRight: 10,
     },
     userAvatar: {
-        width: scale(24),
-        height: scale(24),
-        borderRadius: moderateScale(99),
-        marginRight: scale(5),
+        width: 24,
+        height: 24,
+        borderRadius: 99,
+        marginRight: 5,
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.4)',
     },
     usernameText: {
         fontWeight: '700',
-        fontSize: moderateScale(13),
+        fontSize: 13,
         color: 'rgba(255, 255, 255, 0.75)',
     },
 
     // --- Başlık Stilleri ---
     titleBlock: {
-        height: verticalScale(22),
+        height: 22,
         justifyContent: 'center',
         width: '100%',
-        transform: [{ translateY: -verticalScale(4) }],
+        transform: [{ translateY: -4 }],
 
     },
     dualTitleWrapper: {
@@ -250,29 +250,29 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     mainTitle: {
-        fontSize: moderateScale(15),
+        fontSize: 15,
         fontWeight: '700',
         color: '#FFFFFF',
     },
     subTitle: {
-        fontSize: moderateScale(15),
+        fontSize: 15,
         fontWeight: '500',
         color: '#FFFFFF',
     },
     separatorDot: {
-        width: scale(28),
+        width: 28,
         height: StyleSheet.hairlineWidth,
-        borderRadius: scale(2),
+        borderRadius: 2,
         backgroundColor: 'rgba(255, 255, 255, 0.5)',
-        marginHorizontal: scale(8),
-        marginTop: scale(2)
+        marginHorizontal: 8,
+        marginTop: 2
     },
     bottomRow: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     metaText: {
-        fontSize: moderateScale(11),
+        fontSize: 11,
         fontWeight: '600',
         color: 'rgba(255, 255, 255, 0.9)',
     },

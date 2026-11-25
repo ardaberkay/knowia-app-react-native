@@ -1,9 +1,9 @@
 import React, { useRef, useState, useMemo } from 'react';
-import { TouchableOpacity, StyleSheet, Modal, TouchableWithoutFeedback, View, Platform, Text } from 'react-native';
+import { TouchableOpacity, StyleSheet, Modal, TouchableWithoutFeedback, View, Platform } from 'react-native';
+import { Text } from '../ui/AppText';
 import Icon from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
-import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -11,25 +11,23 @@ const FilterIcon = ({ style, size, color, value = 'original', onChange, hideFavo
   const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  useWindowDimensions();
-  const isTablet = getIsTablet();
   
   const filterIconDimensions = useMemo(() => ({
-    height: isTablet ? verticalScale(52) : verticalScale(48),
-    paddingHorizontal: isTablet ? scale(16) : scale(12),
-    paddingVertical: isTablet ? verticalScale(10) : verticalScale(8),
-    borderRadius: isTablet ? moderateScale(34) : moderateScale(30),
-    borderWidth: moderateScale(1),
-    iconSize: size || (isTablet ? moderateScale(26) : moderateScale(24)),
-    dropdownMinWidth: isTablet ? scale(160) : scale(120),
-    dropdownMaxWidth: isTablet ? scale(180) : scale(140),
-    dropdownPaddingVertical: isTablet ? verticalScale(8) : verticalScale(6),
-    dropdownItemPaddingVertical: isTablet ? verticalScale(10) : verticalScale(8),
-    dropdownItemPaddingHorizontal: isTablet ? scale(18) : scale(14),
-    dropdownFontSize: isTablet ? moderateScale(17) : moderateScale(15),
-    dropdownBorderRadius: isTablet ? moderateScale(16) : moderateScale(14),
-    dropdownItemBorderRadius: moderateScale(8),
-  }), [isTablet, size]);
+    height: 48,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 30,
+    borderWidth: 1,
+    iconSize: size || (24),
+    dropdownMinWidth: 120,
+    dropdownMaxWidth: 140,
+    dropdownPaddingVertical: 6,
+    dropdownItemPaddingVertical: 8,
+    dropdownItemPaddingHorizontal: 14,
+    dropdownFontSize: 15,
+    dropdownBorderRadius: 14,
+    dropdownItemBorderRadius: 8,
+  }), [size]);
   
   const buttonRef = useRef(null);
   const [visible, setVisible] = useState(false);
@@ -100,9 +98,9 @@ const FilterIcon = ({ style, size, color, value = 'original', onChange, hideFavo
           <View style={{ flex: 1 }}>
             <View style={{
               position: 'absolute',
-              left: Math.max(scale(8), dropdownPos.x + dropdownPos.width - filterIconDimensions.dropdownMaxWidth),
+              left: Math.max(8, dropdownPos.x + dropdownPos.width - filterIconDimensions.dropdownMaxWidth),
               top: Platform.OS === 'android' ? dropdownPos.y + dropdownPos.height + insets.top
-              : dropdownPos.y + dropdownPos.height + verticalScale(4),
+              : dropdownPos.y + dropdownPos.height + 4,
               minWidth: filterIconDimensions.dropdownMinWidth,
               maxWidth: filterIconDimensions.dropdownMaxWidth,
               backgroundColor: colors.background,
@@ -110,11 +108,11 @@ const FilterIcon = ({ style, size, color, value = 'original', onChange, hideFavo
               paddingVertical: filterIconDimensions.dropdownPaddingVertical,
               paddingHorizontal: 0,
               shadowColor: '#000',
-              shadowOffset: { width: 0, height: verticalScale(2) },
+              shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.10,
-              shadowRadius: moderateScale(8),
+              shadowRadius: 8,
               elevation: 2,
-              borderWidth: moderateScale(1),
+              borderWidth: 1,
               borderColor: colors.iconBackground,
             }}>
               <TouchableOpacity onPress={() => handleSelect('original')} style={{ paddingVertical: filterIconDimensions.dropdownItemPaddingVertical, paddingHorizontal: filterIconDimensions.dropdownItemPaddingHorizontal, backgroundColor: value === 'original' ? colors.iconBackground : 'transparent', borderRadius: filterIconDimensions.dropdownItemBorderRadius }}>

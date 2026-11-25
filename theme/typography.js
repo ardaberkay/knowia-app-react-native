@@ -1,5 +1,3 @@
-import { moderateScale } from '../lib/scaling';
-
 export const typography = {
   // Font aileleri
   fontFamily: {
@@ -8,49 +6,49 @@ export const typography = {
     medium: 'Inter-SemiBold',
     bold: 'Inter-Bold',
   },
-  // Font boyutları - Responsive (Pixel 7 base cihaz)
+  // Font boyutları (sabit dp; OS yazı boyutu AppText ile en fazla 1.2× büyür)
   fontSize: {
-    xs: moderateScale(12),
-    sm: moderateScale(14),
-    base: moderateScale(16),
-    lg: moderateScale(18),
-    xl: moderateScale(24),
-    '2xl': moderateScale(32),
-    '3xl': moderateScale(40),
+    xs: 12,
+    sm: 14,
+    base: 16,
+    lg: 18,
+    xl: 24,
+    '2xl': 32,
+    '3xl': 40,
   },
-  // Hazır stil kombinasyonları - Responsive
+  // Hazır stil kombinasyonları
   styles: {
     h1: {
       fontFamily: 'Inter-Bold',
-      fontSize: moderateScale(32),
+      fontSize: 32,
     },
     h2: {
       fontFamily: 'Inter-SemiBold',
-      fontSize: moderateScale(22),
+      fontSize: 22,
     },
     subtitle: {
       fontFamily: 'Inter',
-      fontSize: moderateScale(18),
+      fontSize: 18,
     },
     body: {
       fontFamily: 'Inter',
-      fontSize: moderateScale(16),
+      fontSize: 16,
     },
     button: {
       fontFamily: 'Inter-SemiBold',
-      fontSize: moderateScale(16),
+      fontSize: 16,
     },
     caption: {
       fontFamily: 'Inter-Light',
-      fontSize: moderateScale(14),
+      fontSize: 14,
     },
     link: {
       fontFamily: 'Inter',
-      fontSize: moderateScale(16),
+      fontSize: 16,
     },
     linkBold: {
       fontFamily: 'Inter-SemiBold',
-      fontSize: moderateScale(16),
+      fontSize: 16,
     },
   },
 };

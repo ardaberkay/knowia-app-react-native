@@ -1,11 +1,11 @@
 import React, { useState, useCallback, createContext, useContext, useRef, useEffect } from 'react';
 import { Snackbar, Portal } from 'react-native-paper';
-import { StyleSheet, Animated, View, Text } from 'react-native';
+import { StyleSheet, Animated, View } from 'react-native';
+import { Text } from './AppText';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { Iconify } from 'react-native-iconify';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { triggerHaptic } from '../../lib/hapticManager';
 
 const SnackbarContext = createContext(null);
@@ -33,7 +33,7 @@ export const SnackbarProvider = ({ children }) => {
     
     // Önce yukarı doğru (ekran dışına) yumuşakça kaydır
     Animated.timing(translateY, {
-      toValue: verticalScale(-300),
+      toValue: -300,
       duration: 250,
       useNativeDriver: true,
     }).start(() => {
@@ -81,7 +81,7 @@ export const SnackbarProvider = ({ children }) => {
       timeoutRef.current = setTimeout(() => {
         // Yukarı kaydırma animasyonu ile kapat
         Animated.timing(translateY, {
-          toValue: verticalScale(-300),
+          toValue: -300,
           duration: 200,
           useNativeDriver: true,
         }).start(() => {
@@ -112,7 +112,7 @@ export const SnackbarProvider = ({ children }) => {
     
     if (state === State.END) {
       // Yukarı kaydırma eşiği
-      if (translationY < verticalScale(-50) || velocityY < -500) {
+      if (translationY < -50 || velocityY < -500) {
         // SADECE BUNU ÇAĞIRMAN YETERLİ:
         hideSnackbar(); 
       } else {
@@ -162,10 +162,10 @@ export const SnackbarProvider = ({ children }) => {
     
     return {
       backgroundColor: hexToRgba(baseColor, 0.96), // Düşük opacity arka plan (~15% opacity)
-      marginTop: insets.top + verticalScale(8),
-      marginHorizontal: scale(16),
-      borderRadius: moderateScale(15),
-      borderWidth: moderateScale(1),
+      marginTop: insets.top + 8,
+      marginHorizontal: 16,
+      borderRadius: 15,
+      borderWidth: 1,
       borderColor: borderColor,
     };
   };
@@ -261,25 +261,25 @@ const styles = StyleSheet.create({
   snackbarContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: verticalScale(12),
-    paddingHorizontal: scale(16),
-    minHeight: verticalScale(48),
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    minHeight: 48,
   },
   iconContainer: {
-    width: scale(32),
-    height: verticalScale(32),
-    borderRadius: moderateScale(16),
-    borderWidth: moderateScale(1),
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: scale(12),
+    marginRight: 12,
   },
   icon: {
     // Icon stilleri burada
   },
   message: {
     flex: 1,
-    fontSize: moderateScale(14),
+    fontSize: 14,
     fontWeight: '500',
   },
 });

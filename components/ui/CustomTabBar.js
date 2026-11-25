@@ -1,16 +1,36 @@
-import React, { useEffect, useState } from 'react';
-import { Keyboard, Platform, View, TouchableOpacity, Text, Animated } from 'react-native';
-import { BottomTabBar } from '@react-navigation/bottom-tabs';
+import React, { useContext, useEffect, useState } from 'react';
+import { Keyboard, Platform, View, TouchableOpacity, Animated } from 'react-native';
+import { Text } from './AppText';
+import { BottomTabBarHeightCallbackContext, BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
 import { useTheme } from '../../theme/theme';
+import { spacing } from '../../theme/layout';
 import { Iconify } from 'react-native-iconify';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { scale, moderateScale, verticalScale } from '../../lib/scaling';
+
+// Gap between the floating tab bar and the bottom safe area.
+const TAB_BAR_BOTTOM_GAP = 20;
+
+// Bottom padding for a scrollable list/page so its last item can scroll clear
+// of what floats at the bottom: the tab bar on tab screens (its measured
+// height, reported below), otherwise the home indicator / Android nav bar.
+// `extra` adds room for anything else floating there, e.g. a FAB.
+export function useListBottomInset(extra = 0) {
+  const tabBarHeight = useContext(BottomTabBarHeightContext); // undefined outside tabs
+  const insets = useSafeAreaInsets();
+  return (tabBarHeight ?? insets.bottom) + spacing.xl + extra;
+}
 
 export default function CustomTabBar(props) {
   const [visible, setVisible] = useState(true);
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
+  // Tells the tab navigator how much space the bar takes from the bottom edge,
+  // so useBottomTabBarHeight / useListBottomInset return the real value.
+  const onHeightChange = useContext(BottomTabBarHeightCallbackContext);
+  const handleLayout = (e) => {
+    onHeightChange?.(e.nativeEvent.layout.height + insets.bottom + TAB_BAR_BOTTOM_GAP);
+  };
 
   useEffect(() => {
     let show, hide;
@@ -58,19 +78,19 @@ export default function CustomTabBar(props) {
   };
 
   return (
-    <View style={{
+    <View onLayout={handleLayout} style={{
       position: 'absolute',
-      bottom: insets.bottom + verticalScale(20),
-      left: scale(20),
-      right: scale(20),
+      bottom: insets.bottom + TAB_BAR_BOTTOM_GAP,
+      left: 20,
+      right: 20,
       backgroundColor: colors.floatingTabBarBackground,
-      borderRadius: moderateScale(25),
-      paddingVertical: verticalScale(8),
-      paddingHorizontal: scale(12),
+      borderRadius: 25,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
       flexDirection: 'row',
       justifyContent: 'space-around',
       alignItems: 'center',
-      borderWidth: moderateScale(0.5),
+      borderWidth: 0.5,
       borderColor: colors.border + '30', // %18 opacity ile çok hafif kenarlık
     }}>
       {state.routes.map((route, index) => {
@@ -92,25 +112,25 @@ export default function CustomTabBar(props) {
               style={{
                 alignItems: 'center',
                 justifyContent: 'center',
-                paddingVertical: verticalScale(6),
-                paddingHorizontal: scale(10),
-                borderRadius: moderateScale(20),
+                paddingVertical: 6,
+                paddingHorizontal: 10,
+                borderRadius: 20,
                 backgroundColor: isFocused ? colors.buttonColor : 'transparent',
-                minWidth: scale(60),
+                minWidth: 60,
               }}
               activeOpacity={0.7}
             >
               <Iconify
                 icon={iconName}
-                size={moderateScale(24)}
+                size={24}
                 color={isFocused ? colors.buttonText : colors.subtext}
                 style={{
-                  marginBottom: verticalScale(2),
+                  marginBottom: 2,
                 }}
               />
               <Text
                 style={{
-                  fontSize: moderateScale(11),
+                  fontSize: 11,
                   fontWeight: '500',
                   color: isFocused ? colors.buttonText : colors.subtext,
                   textAlign: 'center',
