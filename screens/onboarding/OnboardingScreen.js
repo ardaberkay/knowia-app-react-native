@@ -204,11 +204,11 @@ export default function OnboardingScreen({ navigation, route }) {
               ]}
             >
               {[
-                { emoji: '😣', label: t('swipeDeck.levelHard', 'Zor'), time: t('swipeDeck.minutes', '15 dk') },
-                { emoji: '🤔', label: t('swipeDeck.levelOkay', 'Orta'), time: t('swipeDeck.hours', '1 sa') },
-                { emoji: '🙂', label: t('swipeDeck.levelGood', 'İyi'), time: t('swipeDeck.days', '1 gün') },
-                { emoji: '😎', label: t('swipeDeck.levelEasy', 'Kolay'), time: t('swipeDeck.sevenDays', '7 gün') },
-              ].map(({ emoji, label, time }, i) => (
+                { label: t('swipeDeck.levelHard', 'Zor'), time: t('swipeDeck.minutes', '15dk+') },
+                { label: t('swipeDeck.levelOkay', 'Orta'), time: t('swipeDeck.hours', '1sa+') },
+                { label: t('swipeDeck.levelGood', 'İyi'), time: t('swipeDeck.days', '1g+') },
+                { label: t('swipeDeck.levelEasy', 'Kolay'), time: t('swipeDeck.sevenDays', '7g+') },
+              ].map(({ label, time }, i) => (
                 <View
                   key={i}
                   style={[
@@ -216,8 +216,7 @@ export default function OnboardingScreen({ navigation, route }) {
                     i < 3 && styles.previewButtonDivider,
                   ]}
                 >
-                  <Text style={{ fontSize: moderateScale(20), marginRight: scale(4) }} allowFontScaling={false}>{emoji}</Text>
-                  <View style={{ flexShrink: 1, alignItems: 'flex-start' }}>
+                  <View style={{ flexShrink: 1, alignItems: 'center' }}>
                     <Text style={[styles.previewButtonText, { color: colors.buttonText }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{label}</Text>
                     <Text style={{ fontFamily: 'Inter', fontSize: moderateScale(10), color: colors.buttonText, opacity: 0.85 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{time}</Text>
                   </View>

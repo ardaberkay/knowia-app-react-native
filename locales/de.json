@@ -396,10 +396,10 @@
     "emailChangeMessage": "Ein Bestätigungslink wurde an deine neue E-Mail Adresse gesendet. Deine aktuelle E-Mail bleibt aktiv, bis du den Link bestätigst."
   },
   "swipeDeck": {
-    "minutes": "15 Min",
-    "hours": "1 Std",
-    "days": "1 Tag",
-    "sevenDays": "7 Tage",
+    "minutes": "15 Min+",
+    "hours": "1 Std+",
+    "days": "1 T+",
+    "sevenDays": "7 T+",
     "levelHard": "Schwer",
     "levelOkay": "Mittel",
     "levelGood": "Gut",
@@ -407,6 +407,24 @@
     "showMore": "Mehr anzeigen",
 
     "speak": "Vorlesen",
+    "voice": {
+      "settings": "Spracheinstellungen",
+      "rate": "Lesegeschwindigkeit",
+      "recommended": "empfohlen",
+      "front": "Vorderseite",
+      "back": "Rückseite",
+      "bothSides": "Beide Seiten",
+      "auto": "Automatisch (beste Stimme)",
+      "otherAccents": "Weitere Akzente ({{count}})",
+      "premium": "Premium",
+      "enhanced": "Erweitert",
+      "online": "Online",
+      "offline": "Auf dem Gerät",
+      "voiceN": "Stimme {{n}}",
+      "noVoices": "Für diese Sprache ist auf dem Gerät keine Stimme installiert.",
+      "iosHint": "Natürlichere Stimmen (Erweitert oder Premium) kannst du unter Einstellungen › Bedienungshilfen › Gesprochene Inhalte › Stimmen laden.",
+      "androidHint": "Weitere Stimmen kannst du unter Einstellungen › Bedienungshilfen › Sprachausgabe installieren."
+    },
 
     "stopSpeaking": "Vorlesen stoppen",
     "reverseOn": "Karten umdrehen",

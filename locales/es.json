@@ -394,10 +394,10 @@
     "emailChangeMessage": "Se ha enviado un enlace de verificación a tu nueva dirección de correo electrónico. Tu email actual permanecerá activo hasta que hagas clic en el enlace de verificación."
   },
   "swipeDeck": {
-    "minutes": "15 min",
-    "hours": "1 hora",
-    "days": "1 día",
-    "sevenDays": "7 días",
+    "minutes": "15 min+",
+    "hours": "1 h+",
+    "days": "1 d+",
+    "sevenDays": "7 d+",
     "levelHard": "Difícil",
     "levelOkay": "Regular",
     "levelGood": "Bien",
@@ -405,6 +405,24 @@
     "showMore": "Ver más",
 
     "speak": "Leer en voz alta",
+    "voice": {
+      "settings": "Ajustes de voz",
+      "rate": "Velocidad de lectura",
+      "recommended": "recomendada",
+      "front": "Anverso",
+      "back": "Reverso",
+      "bothSides": "Ambos lados",
+      "auto": "Automática (mejor voz)",
+      "otherAccents": "Otros acentos ({{count}})",
+      "premium": "Premium",
+      "enhanced": "Mejorada",
+      "online": "En línea",
+      "offline": "En el dispositivo",
+      "voiceN": "Voz {{n}}",
+      "noVoices": "No hay ninguna voz instalada en el dispositivo para este idioma.",
+      "iosHint": "Para voces más naturales, descarga voces Mejoradas o Premium en Ajustes › Accesibilidad › Contenido leído › Voces.",
+      "androidHint": "Para más voces, instala datos de voz en Ajustes › Accesibilidad › Salida de texto a voz."
+    },
 
     "stopSpeaking": "Dejar de leer",
     "reverseOn": "Invertir tarjetas",

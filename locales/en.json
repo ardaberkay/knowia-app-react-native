@@ -432,10 +432,10 @@
     "emailChangeMessage": "A verification link has been sent to your new email address. Your current email will remain active until you click the verification link."
   },
   "swipeDeck": {
-    "minutes": "15 min",
-    "hours": "1 hour",
-    "days": "1 day",
-    "sevenDays": "7 days",
+    "minutes": "15m+",
+    "hours": "1h+",
+    "days": "1d+",
+    "sevenDays": "7d+",
     "levelHard": "Hard",
     "levelOkay": "Okay",
     "levelGood": "Good",
@@ -443,6 +443,24 @@
     "showMore": "See more",
 
     "speak": "Read aloud",
+    "voice": {
+      "settings": "Voice settings",
+      "rate": "Reading speed",
+      "recommended": "recommended",
+      "front": "Front side",
+      "back": "Back side",
+      "bothSides": "Both sides",
+      "auto": "Automatic (best voice)",
+      "otherAccents": "Other accents ({{count}})",
+      "premium": "Premium",
+      "enhanced": "Enhanced",
+      "online": "Online",
+      "offline": "On device",
+      "voiceN": "Voice {{n}}",
+      "noVoices": "No voice is installed on this device for this language.",
+      "iosHint": "For more natural voices, download Enhanced or Premium voices in Settings › Accessibility › Spoken Content › Voices.",
+      "androidHint": "For more voices, install voice data in Settings › Accessibility › Text-to-speech output."
+    },
 
     "stopSpeaking": "Stop reading",
     "reverseOn": "Reverse cards",

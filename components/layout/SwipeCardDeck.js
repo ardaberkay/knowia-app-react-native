@@ -11,6 +11,7 @@ import React, {
   import { Gesture, GestureDetector } from 'react-native-gesture-handler';
   import Reanimated, {
     cancelAnimation,
+    Easing,
     runOnJS,
     useAnimatedStyle,
     useSharedValue,
@@ -27,6 +28,9 @@ import React, {
   const VERTICAL_FAIL_PX = 6;
   const TAP_MAX_DISTANCE_PX = 8;
   const TAP_MAX_DURATION_MS = 280;
+  // Card flip timeline. The layer owns flipProgress, so a tap flips the card
+  // entirely on the UI thread; React is only told afterwards (onCardFlip).
+  const FLIP_TIMING = { duration: 280, easing: Easing.out(Easing.cubic) };
   
   const SwipeCardLayer = forwardRef(function SwipeCardLayerImpl({
     card,
@@ -40,7 +44,7 @@ import React, {
     onSwipeStart,
     onSwiped,
     onSwipeCancelled,
-    onCardTap,
+    onCardFlip,
     swipeThreshold,
     activeSwipeX,
     velocityThreshold,
@@ -154,16 +158,25 @@ import React, {
       translateY.value = 0;
     }, [activeSwipeX, card, cardIndex, cardWidth, completeSwipe, disabled, isActive, isAnimating, onSwipeStart, swipeAnimationDuration, translateX, translateY]);
   
-    const handleTap = useCallback(() => {
-      if (!isActive || disabled || !card || isAnimating.value) return;
-      onCardTap?.(cardIndex);
-    }, [card, cardIndex, disabled, isActive, isAnimating, onCardTap]);
-  
+    // JS is notified once per flip; no React state is involved in the flip.
+    const notifyFlip = useCallback((flipped) => {
+      onCardFlip?.(cardIndex, flipped);
+    }, [cardIndex, onCardFlip]);
+
+    // Programmatic flip (auto-play). Taps flip inside the gesture worklet.
+    const flip = useCallback(() => {
+      if (!isActive || !card || isAnimating.value) return;
+      const flipped = flipProgress.value < 0.5;
+      flipProgress.value = withTiming(flipped ? 1 : 0, FLIP_TIMING);
+      notifyFlip(flipped);
+    }, [card, flipProgress, isActive, isAnimating, notifyFlip]);
+
     useImperativeHandle(ref, () => ({
       swipeLeft: (meta = null) => animateOut(-1, meta),
       swipeRight: (meta = null) => animateOut(1, meta),
+      flip,
       reset,
-    }), [animateOut, reset]);
+    }), [animateOut, flip, reset]);
   
     const panGesture = useMemo(() => {
       return Gesture.Pan()
@@ -255,11 +268,12 @@ import React, {
         .maxDuration(TAP_MAX_DURATION_MS)
         .onEnd((_event, success) => {
           'worklet';
-          if (success && !isAnimating.value) {
-            runOnJS(handleTap)();
-          }
+          if (!success || isAnimating.value) return;
+          const flipped = flipProgress.value < 0.5;
+          flipProgress.value = withTiming(flipped ? 1 : 0, FLIP_TIMING);
+          runOnJS(notifyFlip)(flipped);
         });
-    }, [card, disabled, handleTap, isActive, isAnimating]);
+    }, [card, disabled, flipProgress, isActive, isAnimating, notifyFlip]);
   
     const composedGesture = useMemo(
       () => Gesture.Race(tapGesture, panGesture),
@@ -358,7 +372,7 @@ import React, {
       prev.onSwipeStart === next.onSwipeStart &&
       prev.onSwiped === next.onSwiped &&
       prev.onSwipeCancelled === next.onSwipeCancelled &&
-      prev.onCardTap === next.onCardTap &&
+      prev.onCardFlip === next.onCardFlip &&
       prev.activeSwipeX === next.activeSwipeX &&
       prev.swipeThreshold === next.swipeThreshold &&
       prev.velocityThreshold === next.velocityThreshold &&
@@ -378,7 +392,7 @@ import React, {
     onSwipeStart = () => {},
     onSwiped = () => {},
     onSwipeCancelled = () => {},
-    onCardTap = () => {},
+    onCardFlip = () => {},
     activeSwipeX,
     stackSize = DEFAULT_STACK_COUNT,
     swipeThreshold = Math.max(80, cardWidth * DEFAULT_SWIPE_THRESHOLD_RATIO),
@@ -427,10 +441,10 @@ import React, {
       transitionLockRef.current = false;
     }, [onSwiped]);
   
-    const handleCardTap = useCallback((index) => {
+    const handleCardFlip = useCallback((index, flipped) => {
       if (index !== activeIndexRef.current) return;
-      onCardTap?.(index);
-    }, [onCardTap]);
+      onCardFlip?.(index, flipped);
+    }, [onCardFlip]);
   
     const startImperativeSwipe = useCallback((direction, meta = null) => {
       if (transitionLockRef.current || disabled) return;
@@ -445,6 +459,10 @@ import React, {
     useImperativeHandle(ref, () => ({
       swipeLeft: (meta = null) => startImperativeSwipe(-1, meta),
       swipeRight: (meta = null) => startImperativeSwipe(1, meta),
+      flip: () => {
+        if (transitionLockRef.current) return;
+        layerRefs.current.get(activeIndexRef.current)?.current?.flip?.();
+      },
       reset: () => {
         transitionLockRef.current = false;
         activeIndexRef.current = currentIndex;
@@ -499,7 +517,7 @@ import React, {
               onSwipeStart={handleSwipeStart}
               onSwiped={handleSwiped}
               onSwipeCancelled={handleSwipeCancelled}
-              onCardTap={handleCardTap}
+              onCardFlip={handleCardFlip}
               activeSwipeX={activeSwipeX}
               swipeThreshold={swipeThreshold}
               velocityThreshold={velocityThreshold}

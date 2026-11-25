@@ -437,10 +437,10 @@
     "emailChangeMessage": "Yeni e-posta adresinize bir doğrulama linki gönderildi. Mevcut e-posta adresiniz, doğrulama linkine tıklayana kadar aktif kalacaktır."
   },
   "swipeDeck": {
-    "minutes": "15 dk",
-    "hours": "1 sa",
-    "days": "1 gün",
-    "sevenDays": "7 gün",
+    "minutes": "15dk+",
+    "hours": "1sa+",
+    "days": "1g+",
+    "sevenDays": "7g+",
     "levelHard": "Zor",
     "levelOkay": "Orta",
     "levelGood": "İyi",
@@ -448,6 +448,24 @@
     "showMore": "Devamını gör",
 
     "speak": "Sesli oku",
+    "voice": {
+      "settings": "Ses ayarları",
+      "rate": "Okuma hızı",
+      "recommended": "önerilen",
+      "front": "Ön yüz",
+      "back": "Arka yüz",
+      "bothSides": "Ön ve arka yüz",
+      "auto": "Otomatik (en iyi ses)",
+      "otherAccents": "Diğer aksanlar ({{count}})",
+      "premium": "Premium",
+      "enhanced": "Gelişmiş",
+      "online": "Çevrimiçi",
+      "offline": "Cihazda",
+      "voiceN": "Ses {{n}}",
+      "noVoices": "Bu dil için cihazda yüklü ses bulunamadı.",
+      "iosHint": "Daha doğal sesler için: Ayarlar › Erişilebilirlik › Seslendirilen İçerik › Sesler bölümünden Gelişmiş veya Premium sesleri indirebilirsin.",
+      "androidHint": "Daha fazla ses için: Ayarlar › Erişilebilirlik › Metin okuma çıkışı bölümünden ses verilerini yükleyebilirsin."
+    },
 
     "stopSpeaking": "Okumayı durdur",
     "reverseOn": "Ters çevir",

@@ -1,9 +1,6 @@
 import React, {
-  forwardRef,
   memo,
-  useCallback,
   useEffect,
-  useImperativeHandle,
   useMemo,
   useState,
 } from 'react';
@@ -30,7 +27,6 @@ import { typography } from '../../theme/typography';
 import MathText from '../ui/MathText';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 
-const FLIP_DURATION = 280;
 const PERSPECTIVE = 1200;
 const ENTRANCE_OFFSET = verticalScale(8);
 const ENTRANCE_SCALE = 0.96;
@@ -47,7 +43,7 @@ function withAlpha(color, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-const SwipeFlipCard = forwardRef(function SwipeFlipCardImpl({
+function SwipeFlipCard({
   card,
   cardId,
   isPlaceholder = false,
@@ -57,7 +53,6 @@ const SwipeFlipCard = forwardRef(function SwipeFlipCardImpl({
   gradientColors,
   cardBackground,
   textColor,
-  onFlip,
   swipeX,
   leftSwipeAccentColor = '#F98A21',
   rightSwipeAccentColor = '#3e8e41',
@@ -66,14 +61,13 @@ const SwipeFlipCard = forwardRef(function SwipeFlipCardImpl({
   entranceOpacity: externalEntranceOpacity = null,
   onBackOverflowChange,
   reversed = false,
-}, ref) {
+}) {
   const { t } = useTranslation();
   // Reverse mode: answer on the front, question (+ image) on the back.
   const frontText = reversed ? card?.cards?.answer : card?.cards?.question;
   const frontImage = reversed ? null : card?.cards?.image;
   const backPrimaryText = reversed ? card?.cards?.question : card?.cards?.answer;
   const backImage = reversed ? card?.cards?.image : null;
-  const [isFlipped, setIsFlipped] = useState(false);
   // Back face is not scrollable (scrolling fights the swipe/tap gestures).
   // Instead we measure whether the content fits and let the parent show a
   // "see more" affordance that opens the full content.
@@ -103,7 +97,6 @@ const SwipeFlipCard = forwardRef(function SwipeFlipCardImpl({
   useEffect(() => {
     cancelAnimation(flipProgress);
     flipProgress.value = 0;
-    setIsFlipped(false);
 
     if (!externalEntranceProgress || !externalEntranceOpacity) {
       cancelAnimation(entranceProgress);
@@ -138,33 +131,18 @@ const SwipeFlipCard = forwardRef(function SwipeFlipCardImpl({
     });
   }, [entranceOpacity, entranceProgress, externalEntranceOpacity, externalEntranceProgress, isActive, isPlaceholder]);
 
-  const flip = useCallback(() => {
-    if (!isActive || isPlaceholder || !cardId) return;
-
-    const target = flipProgress.value >= 0.5 ? 0 : 1;
-    setIsFlipped(target === 1);
-    flipProgress.value = withTiming(target, {
-      duration: FLIP_DURATION,
-      easing: Easing.out(Easing.cubic),
-    });
-    onFlip?.(cardId, target === 1);
-  }, [cardId, flipProgress, isActive, isPlaceholder, onFlip]);
-
-  const reset = useCallback(() => {
-    cancelAnimation(flipProgress);
-    flipProgress.value = 0;
-  }, [flipProgress]);
-
-  useImperativeHandle(ref, () => ({
-    flip,
-    reset,
-  }), [flip, reset]);
-
+  // The flip itself is owned by SwipeCardDeck: its tap gesture animates
+  // flipProgress on the UI thread. This card only renders that progress, so a
+  // flip never re-renders React.
+  //
   // Each face is a complete physical card surface. This avoids a transformed
   // parent/shell around transformed children, which could mirror the back face
   // text on Android. Front = 0 -> 180, back = 180 -> 360 keeps the back text
   // readable while the gradient/background itself flips with the card.
+  // The opacity swap at 90° hides the far face without relying on
+  // backfaceVisibility, which is unreliable on Android.
   const frontAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: flipProgress.value < 0.5 ? 1 : 0,
     transform: [
       { perspective: PERSPECTIVE },
       { rotateY: `${180 * flipProgress.value}deg` },
@@ -172,6 +150,7 @@ const SwipeFlipCard = forwardRef(function SwipeFlipCardImpl({
   }));
 
   const backAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: flipProgress.value < 0.5 ? 0 : 1,
     transform: [
       { perspective: PERSPECTIVE },
       { rotateY: `${180 + (180 * flipProgress.value)}deg` },
@@ -203,6 +182,22 @@ const SwipeFlipCard = forwardRef(function SwipeFlipCardImpl({
           scale: ENTRANCE_SCALE + ((1 - ENTRANCE_SCALE) * entranceProgress.value),
         },
       ],
+    };
+  }, [cardWidth, swipeX]);
+
+  // The back face skips the entrance spring: it is hidden while a new card
+  // arrives, and a quick flip would otherwise show its text still scaling and
+  // settling. It keeps only the swipe fade.
+  const backContentStyle = useAnimatedStyle(() => {
+    const x = swipeX?.value ?? 0;
+    const labelDistance = Math.max(80, cardWidth * 0.28);
+    return {
+      opacity: interpolate(
+        Math.abs(x),
+        [labelDistance * 0.55, labelDistance * 0.68],
+        [1, 0],
+        'clamp'
+      ),
     };
   }, [cardWidth, swipeX]);
 
@@ -350,7 +345,8 @@ const SwipeFlipCard = forwardRef(function SwipeFlipCardImpl({
     <View style={containerStyle}>
       <Reanimated.View
         style={[styles.face, styles.frontFace, baseCardStyle, frontAnimatedStyle]}
-        pointerEvents={isFlipped ? 'none' : 'auto'}
+        pointerEvents="none"
+        renderToHardwareTextureAndroid
       >
         <LinearGradient
           colors={gradientColors}
@@ -406,7 +402,8 @@ const SwipeFlipCard = forwardRef(function SwipeFlipCardImpl({
 
       <Reanimated.View
         style={[styles.face, styles.backFace, baseCardStyle, backAnimatedStyle]}
-        pointerEvents={isFlipped ? 'auto' : 'none'}
+        pointerEvents="none"
+        renderToHardwareTextureAndroid
       >
         <LinearGradient
           colors={gradientColors}
@@ -415,7 +412,7 @@ const SwipeFlipCard = forwardRef(function SwipeFlipCardImpl({
           style={styles.gradient}
         />
 
-        <Reanimated.View pointerEvents="box-none" style={[styles.faceContent, contentEntranceStyle]}>
+        <Reanimated.View pointerEvents="box-none" style={[styles.faceContent, backContentStyle]}>
           <View style={styles.backPadding}>
           <View
             style={[
@@ -430,10 +427,10 @@ const SwipeFlipCard = forwardRef(function SwipeFlipCardImpl({
             >
               <View style={styles.answerSection}>
                 <Pill
-                  label={reversed ? t('cardDetail.question', 'Soru') : t('swipeDeck.answer', 'Answer')}
+                  label={t('swipeDeck.answer', 'Answer')}
                   icon={
                     <Iconify
-                      icon={reversed ? 'uil:comment-alt-question' : 'uil:comment-alt-check'}
+                      icon="uil:comment-alt-check"
                       size={moderateScale(18)}
                       color="#fff"
                     />
@@ -530,9 +527,10 @@ const SwipeFlipCard = forwardRef(function SwipeFlipCardImpl({
       </Reanimated.View>
     </View>
   );
-});
+}
 
-const Pill = memo(function Pill({ label, icon }) {
+// Pill and SectionDivider are also used by SwipeDeckScreen's "show more" sheet.
+export const Pill = memo(function Pill({ label, icon }) {
   return (
     <View style={styles.pill}>
       {icon ? <View style={styles.pillIcon}>{icon}</View> : null}
@@ -541,7 +539,7 @@ const Pill = memo(function Pill({ label, icon }) {
   );
 });
 
-const SectionDivider = memo(function SectionDivider() {
+export const SectionDivider = memo(function SectionDivider() {
   return <View style={styles.sectionDivider} />;
 });
 
@@ -552,7 +550,6 @@ function areEqual(prev, next) {
   if (prev.cardWidth !== next.cardWidth || prev.cardHeight !== next.cardHeight) return false;
   if (prev.cardBackground !== next.cardBackground) return false;
   if (prev.textColor !== next.textColor) return false;
-  if (prev.onFlip !== next.onFlip) return false;
   if (prev.onBackOverflowChange !== next.onBackOverflowChange) return false;
   if (prev.reversed !== next.reversed) return false;
   if (prev.swipeX !== next.swipeX) return false;
