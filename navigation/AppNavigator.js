@@ -17,6 +17,9 @@ import { useTheme } from '../theme/theme';
 import SwipeDeckScreen from '../screens/cards/SwipeDeckScreen';
 import EditProfileScreen from '../screens/profile/EditProfileScreen';
 import BlockedScreen from '../screens/profile/BlockedScreen';
+import AccountScreen from '../screens/profile/AccountScreen';
+import SettingsScreen from '../screens/profile/SettingsScreen';
+import InfoScreen from '../screens/profile/InfoScreen';
 import DeckEditScreen from '../screens/decks/EditDeckScreen';
 import CustomTabBar from '../components/ui/CustomTabBar';
 import AddCardScreen from '../screens/cards/CreateCardScreen';
@@ -120,7 +123,7 @@ function MainTabs() {
           headerShown: false,
         }}
       />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: t('tabs.profile', 'Profilim'), tabBarLabel: t('tabs.profile', 'Profilim') }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: t('tabs.profile', 'Profilim'), tabBarLabel: t('tabs.profile', 'Profilim'), headerShown: false }} />
     </Tab.Navigator>
   );
 }
@@ -263,6 +266,9 @@ export default function AppNavigator() {
             <Stack.Screen name="SwipeDeck" component={SwipeDeckScreen} options={{ headerShown: true, headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', gestureEnabled: false }} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: t('tabs.profileEdit', 'Profili Düzenle'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
             <Stack.Screen name="Blocked" component={BlockedScreen} options={{ headerShown: true, title: t('profile.blockedSection', 'Engellenenler'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
+            <Stack.Screen name="ProfileAccount" component={AccountScreen} options={{ headerShown: true, title: t('profile.account', 'Hesap'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
+            <Stack.Screen name="ProfileSettings" component={SettingsScreen} options={{ headerShown: true, title: t('profile.settings', 'Ayarlar'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
+            <Stack.Screen name="ProfileInfo" component={InfoScreen} options={{ headerShown: true, title: t('profile.info', 'Bilgi ve destek'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
             <Stack.Screen name="DeckEdit" component={DeckEditScreen} options={{ headerShown: true, title: t('tabs.deckEdit', 'Desteyi Düzenle'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
             <Stack.Screen
               name="AddCard"

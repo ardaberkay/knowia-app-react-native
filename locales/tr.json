@@ -1,5 +1,49 @@
 {
   "profile": {
+    "activity": {
+      "streak": "Seri",
+      "best": "En uzun",
+      "studied": "Çalışılan",
+      "learned": "Öğrenilen",
+      "goalTitle": "Günlük hedef",
+      "goalLine": "{{name}} · {{done}}/{{goal}} kart",
+      "goalCount": "{{count}} kart",
+      "change": "Değiştir",
+      "todayProgress": "Bugün {{done}}/{{goal}} kart",
+      "todayDone": "Bugün {{done}} kart · hedef tamam",
+      "heatmapTitle": "Son {{count}} gün",
+      "dayDetail": "{{count}} kart · {{learned}} öğrenildi",
+      "noActivity": "Çalışma yok",
+      "less": "Az",
+      "more": "Çok",
+      "goalMeta": "Günde {{count}} kart · ~{{min}} dk",
+      "goalSaveError": "Günlük hedef kaydedilemedi",
+      "goals": {
+        "warmup": {
+          "title": "Isınma",
+          "desc": "Alışkanlık başlangıcı"
+        },
+        "steady": {
+          "title": "İstikrarlı",
+          "desc": "Düzenli ilerleme"
+        },
+        "ambitious": {
+          "title": "Hırslı",
+          "desc": "Hızlı ilerleme"
+        },
+        "legend": {
+          "title": "Efsane",
+          "desc": "Sınırlarını zorla"
+        },
+        "custom": {
+          "title": "Kendi hedefim",
+          "desc": "Sayıyı sen belirle ({{min}}–{{max}})",
+          "placeholder": "Örn. 75",
+          "save": "Kaydet",
+          "invalid": "{{min}} ile {{max}} arasında bir sayı gir"
+        }
+      }
+    },
     "edit": "Profili Düzenle",
     "invite": "Arkadaşlarını Davet Et",
     "logout": "Çıkış Yap",
@@ -87,6 +131,17 @@
     "createDeck": "Bir deste oluştur"
   },
   "home": {
+    "activity": {
+      "streakBadge": "{{count}} gün seri",
+      "goalBadge": "Günlük hedef",
+      "cards": "kart",
+      "noteDone": "Bugünkü hedef tamam!",
+      "noteLeft": "Hedefe {{count}} kart kaldı",
+      "noteBest": "En uzun serin {{count}} gün",
+      "noteStart": "Serini bugün başlat",
+      "continue": "Devam et",
+      "start": "Başla"
+    },
     "inProgressDecks": "Çalıştığım Desteler",
     "defaultDecks": "Hazır Desteler",
     "communityDecks": "Topluluk Desteleri",
@@ -481,6 +536,8 @@
     "learning": "Öğreniliyor",
     "total": "Toplam",
     "completion": {
+      "goalDone": "Günlük hedef tamam! Seri: {{count}} gün",
+      "goalLeft": "Günlük hedefe {{count}} kart kaldı",
       "title": "Oturum Tamamlandı!",
       "cardsStudied": "Kart Çalışıldı",
       "learned": "Öğrenildi",

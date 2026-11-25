@@ -1,5 +1,51 @@
 {
   "profile": {
+    "activity": {
+      "streak": "Streak",
+      "best": "Best",
+      "studied": "Studied",
+      "learned": "Learned",
+      "goalTitle": "Daily goal",
+      "goalLine": "{{name}} · {{done}}/{{goal}} cards",
+      "goalCount": "{{count}} card",
+      "goalCount_plural": "{{count}} cards",
+      "change": "Change",
+      "todayProgress": "Today {{done}}/{{goal}} cards",
+      "todayDone": "Today {{done}} cards · goal done",
+      "heatmapTitle": "Last {{count}} days",
+      "dayDetail": "{{count}} card · {{learned}} learned",
+      "dayDetail_plural": "{{count}} cards · {{learned}} learned",
+      "noActivity": "No study",
+      "less": "Less",
+      "more": "More",
+      "goalMeta": "{{count}} cards a day · ~{{min}} min",
+      "goalSaveError": "Couldn't save your daily goal",
+      "goals": {
+        "warmup": {
+          "title": "Warm-up",
+          "desc": "Build the habit"
+        },
+        "steady": {
+          "title": "Steady",
+          "desc": "Regular progress"
+        },
+        "ambitious": {
+          "title": "Ambitious",
+          "desc": "Fast progress"
+        },
+        "legend": {
+          "title": "Legend",
+          "desc": "Push your limits"
+        },
+        "custom": {
+          "title": "My own goal",
+          "desc": "Set your own number ({{min}}–{{max}})",
+          "placeholder": "e.g. 75",
+          "save": "Save",
+          "invalid": "Enter a number between {{min}} and {{max}}"
+        }
+      }
+    },
     "edit": "Edit Profile",
     "invite": "Invite Friends",
     "logout": "Log Out",
@@ -87,6 +133,19 @@
     "createDeck": "Create a deck"
   },
   "home": {
+    "activity": {
+      "streakBadge": "{{count}}-day streak",
+      "goalBadge": "Daily goal",
+      "cards": "cards",
+      "noteDone": "Today's goal done!",
+      "noteLeft": "{{count}} card to go",
+      "noteLeft_plural": "{{count}} cards to go",
+      "noteBest": "Longest streak: {{count}} day",
+      "noteBest_plural": "Longest streak: {{count}} days",
+      "noteStart": "Start your streak today",
+      "continue": "Continue",
+      "start": "Start"
+    },
     "inProgressDecks": "Active Decks",
     "defaultDecks": "Default Decks",
     "communityDecks": "Community Decks",
@@ -476,6 +535,10 @@
     "learning": "Learning",
     "total": "Total",
     "completion": {
+      "goalDone": "Daily goal done! Streak: {{count}} day",
+      "goalDone_plural": "Daily goal done! Streak: {{count}} days",
+      "goalLeft": "{{count}} card left to your daily goal",
+      "goalLeft_plural": "{{count}} cards left to your daily goal",
       "title": "Session Complete!",
       "cardsStudied": "Cards Studied",
       "learned": "Learned",

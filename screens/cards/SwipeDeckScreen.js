@@ -41,6 +41,7 @@ try { Speech = require('expo-speech'); } catch { Speech = null; }
 let ExpoAudio = null;
 try { ExpoAudio = require('expo-audio'); } catch { ExpoAudio = null; }
 import { invalidateCache, hasSeenSwipeTutorial, markSwipeTutorialSeen } from '../../services/CacheService';
+import { getActivitySummary, invalidateActivitySummary } from '../../services/ProfileService';
 import { listChapters, mergeChapterProgressIntoCache } from '../../services/ChapterService';
 import { useAuth } from '../../contexts/AuthContext';
 import { Iconify } from 'react-native-iconify';
@@ -2298,6 +2299,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
     sessionTargetCount > 0 &&
     sessionProgressCount >= sessionTargetCount;
 
+  // Leaving the screen (finished or not) makes Home/Profile refetch today's
+  // goal and streak: the swipes were counted on the server.
+  useEffect(() => () => {
+    if (userId) invalidateActivitySummary(userId);
+  }, [userId]);
+
   useEffect(() => {
     const isComplete = cards.length === 0 || currentIndex >= cards.length || originalFlowComplete;
     if (!isComplete || !userId || !deck?.id || !sessionIdRef.current) return;
@@ -2317,15 +2324,21 @@ export default function SwipeDeckScreen({ route, navigation }) {
           ? listChapters(deck.id)
           : Promise.resolve([]);
 
-        const [sessionCounts, chapterProgress, reviews, chapters] = await Promise.all([
+        // Today's goal/streak after this session (fresh, bypassing the cache).
+        const activityPromise = invalidateActivitySummary(userId)
+          .then(() => getActivitySummary(userId, { days: 1, force: true }))
+          .catch(() => null);
+
+        const [sessionCounts, chapterProgress, reviews, chapters, activity] = await Promise.all([
           sessionCountsPromise,
           chapterProgressPromise,
           reviewsPromise,
           chaptersPromise,
+          activityPromise,
         ]);
         if (cancelled) return;
 
-        setCompletionSummary({ sessionCounts, chapterProgress, reviews });
+        setCompletionSummary({ sessionCounts, chapterProgress, reviews, activity });
         if (hasChapterScope) {
           const chapterIndex = chapters.findIndex(item => item.id === chapter.id);
           const followingChapter = chapterIndex >= 0 ? chapters[chapterIndex + 1] : null;
@@ -2446,6 +2459,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     const chapterPercent = chapterProgress?.total
       ? Math.round((chapterLearned / chapterProgress.total) * 100)
       : 0;
+    const completionActivity = completionSummary?.activity;
     const nearestReview = completionSummary?.reviews?.nearest;
     const farthestReview = completionSummary?.reviews?.farthest;
     const isEmptyChapter = Boolean(chapter?.id) && sessionTargetCount === 0 && cards.length === 0;
@@ -2528,6 +2542,26 @@ export default function SwipeDeckScreen({ route, navigation }) {
                   </Text>
                 </View>
               </View>
+              {completionActivity ? (
+                <View style={styles.completionGoalRow}>
+                  <Iconify
+                    icon={completionActivity.today_goal_met ? 'mdi:fire' : 'lets-icons:clock-fill'}
+                    size={moderateScale(18)}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.completionGoalText} numberOfLines={2}>
+                    {completionActivity.today_goal_met
+                      ? t('swipeDeck.completion.goalDone', {
+                        count: completionActivity.current_streak,
+                        defaultValue: `Günlük hedef tamam! Seri: ${completionActivity.current_streak} gün`,
+                      })
+                      : t('swipeDeck.completion.goalLeft', {
+                        count: Math.max((completionActivity.daily_goal ?? 0) - (completionActivity.today_swipes ?? 0), 0),
+                        defaultValue: `Günlük hedefe ${Math.max((completionActivity.daily_goal ?? 0) - (completionActivity.today_swipes ?? 0), 0)} kart kaldı`,
+                      })}
+                  </Text>
+                </View>
+              ) : null}
             </LinearGradient>
           </View>
 
@@ -3859,6 +3893,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 1,
     marginBottom: verticalScale(22),
+  },
+  completionGoalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(8),
+    marginTop: verticalScale(18),
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: scale(14),
+    borderRadius: moderateScale(999),
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+  },
+  completionGoalText: {
+    ...typography.styles.button,
+    fontSize: moderateScale(14),
+    color: '#FFFFFF',
+    flexShrink: 1,
   },
   completionHeroCard: {
     width: '100%',

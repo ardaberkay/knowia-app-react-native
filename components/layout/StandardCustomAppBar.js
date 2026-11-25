@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { Iconify } from 'react-native-iconify';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scale, moderateScale, verticalScale } from '../../lib/scaling';
 import { useTheme } from '../../theme/theme';
@@ -10,6 +11,11 @@ export default function StandardCustomAppBar({
   title,
   showLogo = false,
   isHeroBackground = false,
+  // Optional study streak pill (Home). null = not shown; 0 = shown dimmed.
+  streak = null,
+  onStreakPress,
+  // Home hides it: Profile has its own tab and the streak pill opens it.
+  showAvatar = true,
 }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -50,8 +56,32 @@ export default function StandardCustomAppBar({
           </Text>
         )}
 
-        <View style={styles.headerAvatarAbsolute}>
-          <ProfileAvatarButton />
+        <View style={styles.headerRight}>
+          {streak != null ? (
+            <TouchableOpacity
+              onPress={onStreakPress}
+              disabled={!onStreakPress}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              style={[
+                styles.streak,
+                {
+                  // No streak yet: same colours, just dimmer (a grey would
+                  // vanish on the orange hero); fully lit once a goal is met.
+                  backgroundColor: isHeroBackground
+                    ? `rgba(255, 255, 255, ${streak > 0 ? 0.22 : 0.14})`
+                    : colors.cardBackground,
+                },
+              ]}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, opacity: streak > 0 ? 1 : 0.7 }}>
+                <Iconify icon="mdi:fire" size={moderateScale(18)} color={textColor} />
+                <Text style={[styles.streakText, { color: textColor }]}>{streak}</Text>
+              </View>
+            </TouchableOpacity>
+          ) : null}
+          {showAvatar ? <ProfileAvatarButton /> : null}
         </View>
       </View>
     </View>
@@ -59,6 +89,23 @@ export default function StandardCustomAppBar({
 }
 
 const styles = StyleSheet.create({
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(10),
+  },
+  // ~32pt tall: balanced against the 44pt logo, easy to tap.
+  streak: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: moderateScale(32),
+    paddingHorizontal: scale(12),
+    borderRadius: 999,
+  },
+  streakText: {
+    fontSize: moderateScale(16),
+    fontWeight: '700',
+  },
   header: {
     paddingHorizontal: scale(14),
     paddingBottom: verticalScale(8),

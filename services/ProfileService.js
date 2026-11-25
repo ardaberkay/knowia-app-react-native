@@ -1,5 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Localization from 'expo-localization';
 import { supabase } from '../lib/supabase';
-import { invalidateCache } from './CacheService';
+import { invalidateCache, cacheData, getCachedData } from './CacheService';
 
 export async function getCurrentUserProfile(userId) {
   if (!userId) throw new Error('Kullanıcı oturumu bulunamadı');
@@ -94,4 +96,118 @@ export async function clearPushToken(userId) {
     .update({ expo_push_token: null })
     .eq('id', userId);
   if (error) console.error('Push token temizlenemedi:', error.message);
+}
+
+// ─── Study activity: daily goal, streak, heatmap ───
+//
+// Server side: user_daily_activity (one row per user per active day) is
+// counted inside the swipe RPCs; get_activity_summary returns today, the
+// streak, totals and the last `days` days in one call.
+//
+// Kept cheap on Supabase's free tier: Home asks for days = 1 (a few hundred
+// bytes), only Profile asks for the heatmap. Results are cached on the device
+// and refetched only when a study session ends or the day changes.
+
+/**
+ * Daily goal presets (swipes per day). `key` names the i18n strings
+ * profile.activity.goals.<key>.title / .desc. 50 is the default.
+ */
+export const DAILY_GOAL_PRESETS = [
+  { goal: 20, key: 'warmup' },
+  { goal: 50, key: 'steady' },
+  { goal: 100, key: 'ambitious' },
+  { goal: 150, key: 'legend' },
+];
+export const DEFAULT_DAILY_GOAL = 50;
+/** Range for a goal the user types in ("Kendi hedefim"). */
+export const CUSTOM_GOAL_MIN = 5;
+export const CUSTOM_GOAL_MAX = 500;
+/** Seconds per swipe (read, think, flip, swipe), for the "~10 min" hints. */
+export const SECONDS_PER_SWIPE = 12;
+export const goalMinutes = (goal) => Math.max(1, Math.round((goal * SECONDS_PER_SWIPE) / 60));
+
+const ACTIVITY_TTL = 30 * 60 * 1000;
+const activityKey = (userId, days) => `activity_summary_${userId}_${days}`;
+const TIMEZONE_SYNC_KEY = 'activity_timezone_synced';
+
+/** The device's local date as YYYY-MM-DD (matches the server's `today`). */
+export function localDateString(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/** IANA time zone of the device (e.g. Europe/Istanbul), or null. */
+export function getDeviceTimeZone() {
+  try {
+    const fromCalendar = Localization.getCalendars?.()?.[0]?.timeZone;
+    if (fromCalendar) return fromCalendar;
+  } catch {
+    // fall through
+  }
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Study summary for the signed-in user.
+ * @param {string} userId
+ * @param {{ days?: number, force?: boolean }} options days: 1 for Home, 182 for the heatmap.
+ * @returns {Promise<object|null>} get_activity_summary's JSON, or null if unavailable.
+ */
+export async function getActivitySummary(userId, { days = 1, force = false } = {}) {
+  if (!userId) return null;
+  const key = activityKey(userId, days);
+  const cached = force ? null : await getCachedData(key, ACTIVITY_TTL);
+  // A summary from an earlier day is outdated even within the TTL.
+  if (cached && !cached.isStale && cached.data?.today === localDateString()) {
+    return cached.data;
+  }
+  try {
+    const { data, error } = await supabase.rpc('get_activity_summary', { p_days: days });
+    if (error) throw error;
+    await cacheData(key, data);
+    return data;
+  } catch (e) {
+    console.error('Aktivite özeti alınamadı:', e?.message || e);
+    return cached?.data ?? null;
+  }
+}
+
+/** Drop cached summaries (after a study session or a goal change). */
+export async function invalidateActivitySummary(userId) {
+  if (!userId) return;
+  await invalidateCache(`activity_summary_${userId}_`);
+}
+
+/**
+ * Saves the device time zone on the server when it differs from the last one
+ * sent, so a day is counted in the user's local time. Cheap to call on focus.
+ */
+export async function syncActivityTimeZone(userId) {
+  if (!userId) return;
+  const tz = getDeviceTimeZone();
+  if (!tz) return;
+  try {
+    const synced = await AsyncStorage.getItem(TIMEZONE_SYNC_KEY);
+    if (synced === `${userId}:${tz}`) return;
+    const { error } = await supabase.rpc('set_activity_settings', { p_timezone: tz });
+    if (error) throw error;
+    await AsyncStorage.setItem(TIMEZONE_SYNC_KEY, `${userId}:${tz}`);
+    await invalidateActivitySummary(userId);
+  } catch (e) {
+    console.error('Saat dilimi kaydedilemedi:', e?.message || e);
+  }
+}
+
+/** Sets the daily goal (swipes per day). Throws on failure. */
+export async function setDailyGoal(userId, goal) {
+  if (!userId) return;
+  const { error } = await supabase.rpc('set_activity_settings', { p_daily_goal: goal });
+  if (error) throw error;
+  await invalidateActivitySummary(userId);
 }

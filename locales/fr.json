@@ -1,5 +1,51 @@
 {
   "profile": {
+    "activity": {
+      "streak": "Série",
+      "best": "Record",
+      "studied": "Étudiées",
+      "learned": "Apprises",
+      "goalTitle": "Objectif du jour",
+      "goalLine": "{{name}} · {{done}}/{{goal}} cartes",
+      "goalCount": "{{count}} carte",
+      "goalCount_plural": "{{count}} cartes",
+      "change": "Modifier",
+      "todayProgress": "Aujourd'hui {{done}}/{{goal}} cartes",
+      "todayDone": "Aujourd'hui {{done}} cartes · objectif atteint",
+      "heatmapTitle": "{{count}} derniers jours",
+      "dayDetail": "{{count}} carte · {{learned}} apprises",
+      "dayDetail_plural": "{{count}} cartes · {{learned}} apprises",
+      "noActivity": "Pas d’étude",
+      "less": "Moins",
+      "more": "Plus",
+      "goalMeta": "{{count}} cartes par jour · ~{{min}} min",
+      "goalSaveError": "Impossible d'enregistrer l'objectif du jour",
+      "goals": {
+        "warmup": {
+          "title": "Échauffement",
+          "desc": "Prendre l'habitude"
+        },
+        "steady": {
+          "title": "Régulier",
+          "desc": "Progrès constants"
+        },
+        "ambitious": {
+          "title": "Ambitieux",
+          "desc": "Progrès rapides"
+        },
+        "legend": {
+          "title": "Légende",
+          "desc": "Dépasse tes limites"
+        },
+        "custom": {
+          "title": "Mon objectif",
+          "desc": "Choisis ton nombre ({{min}}–{{max}})",
+          "placeholder": "Ex. 75",
+          "save": "Enregistrer",
+          "invalid": "Saisis un nombre entre {{min}} et {{max}}"
+        }
+      }
+    },
     "edit": "Modifier le Profil",
     "invite": "Inviter des Amis",
     "logout": "Se Déconnecter",
@@ -84,6 +130,20 @@
     "createDeck": "Créer un paquet"
   },
   "home": {
+    "activity": {
+      "streakBadge": "Série de {{count}} jour",
+      "streakBadge_plural": "Série de {{count}} jours",
+      "goalBadge": "Objectif du jour",
+      "cards": "cartes",
+      "noteDone": "Objectif du jour atteint !",
+      "noteLeft": "Encore {{count}} carte",
+      "noteLeft_plural": "Encore {{count}} cartes",
+      "noteBest": "Plus longue série : {{count}} jour",
+      "noteBest_plural": "Plus longue série : {{count}} jours",
+      "noteStart": "Commence ta série aujourd'hui",
+      "continue": "Continuer",
+      "start": "Commencer"
+    },
     "inProgressDecks": "Decks actifs",
     "defaultDecks": "Decks par défaut",
     "communityDecks": "Decks communauté",
@@ -438,6 +498,10 @@
     "learning": "En cours d'apprentissage",
     "total": "Total",
     "completion": {
+      "goalDone": "Objectif du jour atteint ! Série : {{count}} jour",
+      "goalDone_plural": "Objectif du jour atteint ! Série : {{count}} jours",
+      "goalLeft": "Encore {{count}} carte pour l'objectif du jour",
+      "goalLeft_plural": "Encore {{count}} cartes pour l'objectif du jour",
       "title": "Session terminée !",
       "cardsStudied": "Cartes étudiées",
       "learned": "Appris",

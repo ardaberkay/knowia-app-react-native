@@ -11,7 +11,13 @@ import { typography } from '../../theme/typography';
 import { scale, moderateScale, verticalScale, useWindowDimensions, getIsTablet } from '../../lib/scaling';
 import { RESPONSIVE_CONSTANTS } from '../../lib/responsiveConstants';
 import { getFavoriteDecks, addFavoriteDeck, removeFavoriteDeck } from '../../services/FavoriteService';
-import { updateLastActiveAt, updateNotificationPreference } from '../../services/ProfileService';
+import {
+  updateLastActiveAt,
+  updateNotificationPreference,
+  getActivitySummary,
+  syncActivityTimeZone,
+  DEFAULT_DAILY_GOAL,
+} from '../../services/ProfileService';
 import { registerForPushNotificationsAsync } from '../../services/NotificationService';
 import * as Notifications from 'expo-notifications';
 import DeckSkeleton from '../../components/skeleton/DeckSkeleton';
@@ -176,6 +182,15 @@ export default function HomeScreen() {
     }
   }, [userId]);
 
+  // Daily goal + streak shown in the hero. Cached on the device; refetched
+  // only when a study session ends (SwipeDeck invalidates it) or a new day starts.
+  const [activity, setActivity] = useState(null);
+  const loadActivity = useCallback(async () => {
+    if (!userId) return;
+    const summary = await getActivitySummary(userId, { days: 1 });
+    if (summary) setActivity(summary);
+  }, [userId]);
+
   useFocusEffect(
     useCallback(() => {
       if (decksLoadedRef.current) {
@@ -184,7 +199,10 @@ export default function HomeScreen() {
 
       if (!userId) return;
 
+      loadActivity();
+
       (async () => {
+        await syncActivityTimeZone(userId);
         await updateLastActiveAt(userId);
 
         if (notificationSetupDoneRef.current) return;
@@ -196,7 +214,7 @@ export default function HomeScreen() {
           await updateNotificationPreference(userId, true);
         }
       })();
-    }, [loadInProgressDecks, userId])
+    }, [loadActivity, loadInProgressDecks, userId])
   );
 
 
@@ -206,6 +224,9 @@ export default function HomeScreen() {
       await Promise.all([
         loadDecks(),
         userId ? getFavoriteDecks(userId).then(decks => setFavoriteDecks(decks || [])) : Promise.resolve(),
+        userId
+          ? getActivitySummary(userId, { days: 1, force: true }).then((summary) => { if (summary) setActivity(summary); })
+          : Promise.resolve(),
       ]);
     } finally {
       setRefreshing(false);
@@ -214,6 +235,44 @@ export default function HomeScreen() {
 
   const handleDeckPress = (deck) => {
     navigation.navigate('DeckDetail', { deck });
+  };
+
+  // Hero content for today, sized for the hero's narrow text column (the
+  // illustration and the hero layout itself stay as they are):
+  // a big "done/goal" count, a thin bar, one short note and a short button.
+  // The streak is shown in the app bar, next to the avatar.
+  const hero = useMemo(() => {
+    const goal = activity?.daily_goal ?? DEFAULT_DAILY_GOAL;
+    const done = activity?.today_swipes ?? 0;
+    const streak = activity?.current_streak ?? 0;
+    const best = activity?.best_streak ?? 0;
+    const left = Math.max(goal - done, 0);
+
+    let note;
+    if (activity?.today_goal_met) {
+      note = t('home.activity.noteDone', 'Bugünkü hedef tamam!');
+    } else if (done > 0 || streak > 0) {
+      note = t('home.activity.noteLeft', { count: left, defaultValue: `Hedefe ${left} kart kaldı` });
+    } else if (best > 0) {
+      note = t('home.activity.noteBest', { count: best, defaultValue: `En uzun serin ${best} gün` });
+    } else {
+      note = t('home.activity.noteStart', 'Serini bugün başlat');
+    }
+
+    return {
+      done,
+      goal,
+      progress: Math.min(1, done / Math.max(1, goal)),
+      note,
+      button: done > 0 ? t('home.activity.continue', 'Devam et') : t('home.activity.start', 'Başla'),
+    };
+  }, [activity, t]);
+
+  // Continue with the most recently studied deck; Discover if there is none.
+  const handleHeroPress = () => {
+    const recent = decks?.inProgressDecks?.decks?.[0];
+    if (recent) handleDeckPress(recent);
+    else navigation.navigate('DiscoverTab');
   };
 
   const handleToggleFavorite = async (deckId) => {
@@ -265,52 +324,45 @@ export default function HomeScreen() {
           <StandardCustomAppBar
             showLogo
             isHeroBackground
+            streak={activity?.current_streak ?? 0}
+            onStreakPress={() => navigation.navigate('Profile')}
+            showAvatar={false}
           />
 
           <View style={styles.heroContent}>
             <View style={styles.heroTextContent}>
-              <View style={styles.heroTitleRow}>
-                <Iconify
-                  icon="fluent:arrow-trending-sparkle-24-filled"
-                  size={24}
-                  color="#FFFFFF"
-                />
-
-                <Text style={styles.heroTitle}>
-                  {t(
-                    'home.popularDecksTitle',
-                    'Keşfet ve öğren'
-                  )}
+              {/* Today's count against the goal (the streak lives in the app bar). */}
+              <View style={styles.heroCountRow}>
+                <Text style={styles.heroCount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                  {hero.done}
+                  <Text style={styles.heroCountGoal}>{`/${hero.goal}`}</Text>
+                </Text>
+                <Text style={styles.heroCountUnit}>
+                  {t('home.activity.cards', 'kart')}
                 </Text>
               </View>
 
-              <Text style={styles.heroSubtitle}>
-                {t(
-                  'home.popularDecksSubtitle',
-                  'En popüler ve trend destelerle bilginizi pekiştirin'
-                )}
+              <View style={styles.heroProgressTrack}>
+                <View style={[styles.heroProgressFill, { width: `${hero.progress * 100}%` }]} />
+              </View>
+
+              <Text style={styles.heroNote} numberOfLines={1}>
+                {hero.note}
               </Text>
 
               <TouchableOpacity
                 style={styles.heroButton}
                 activeOpacity={0.8}
-                onPress={() => navigation.navigate('DiscoverTab')}
+                onPress={handleHeroPress}
               >
                 <Iconify
-                  icon="streamline:trending-content-remix"
-                  size={17}
+                  icon="streamline:button-play-solid"
+                  size={moderateScale(13)}
                   color="#ff6b35"
                 />
-
-                <Text style={styles.heroButtonText}>
-                  {t('home.exploreButton', 'Keşfet')}
+                <Text style={styles.heroButtonText} numberOfLines={1}>
+                  {hero.button}
                 </Text>
-
-                <Iconify
-                  icon="material-symbols:arrow-forward-ios-rounded"
-                  size={16}
-                  color="#ff6b35"
-                />
               </TouchableOpacity>
             </View>
           </View>
@@ -764,26 +816,48 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
 
-  heroTitleRow: {
+  // Hero content: big count, thin bar, one-line note, short button.
+  heroCountRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: verticalScale(8),
+    alignItems: 'baseline',
+    gap: 6,
   },
-
-  heroTitle: {
+  heroCount: {
     flexShrink: 1,
-    marginLeft: 8,
-    fontSize: moderateScale(23),
-    fontWeight: '700',
+    fontSize: moderateScale(34),
+    fontWeight: '800',
     color: '#FFFFFF',
+    letterSpacing: -0.8,
+  },
+  heroCountGoal: {
+    fontSize: moderateScale(20),
+    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.75)',
     letterSpacing: -0.3,
   },
-
-  heroSubtitle: {
+  heroCountUnit: {
     fontSize: moderateScale(14),
-    lineHeight: moderateScale(20),
-    fontWeight: '400',
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.85)',
+  },
+  heroProgressTrack: {
+    width: '85%',
+    marginTop: verticalScale(8),
+    height: moderateScale(6),
+    borderRadius: moderateScale(3),
+    backgroundColor: 'rgba(255, 255, 255, 0.28)',
+    overflow: 'hidden',
+  },
+  heroProgressFill: {
+    height: '100%',
+    borderRadius: moderateScale(3),
+    backgroundColor: '#FFFFFF',
+  },
+  heroNote: {
+    marginTop: verticalScale(6),
+    fontSize: moderateScale(13),
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.92)',
   },
 
   heroButton: {
@@ -791,18 +865,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: verticalScale(16),
-    marginLeft: verticalScale(8),
+    marginTop: verticalScale(14),
     paddingHorizontal: 16,
-    height: verticalScale(40),
+    height: verticalScale(38),
     borderRadius: 20,
     backgroundColor: '#FFFFFF',
   },
 
   heroButtonText: {
-    marginHorizontal: 7,
+    marginLeft: 7,
     fontSize: moderateScale(14),
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#ff6b35',
   },
 

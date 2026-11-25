@@ -1,5 +1,51 @@
 {
   "profile": {
+    "activity": {
+      "streak": "Serie",
+      "best": "Rekord",
+      "studied": "Gelernt",
+      "learned": "Gemerkt",
+      "goalTitle": "Tagesziel",
+      "goalLine": "{{name}} · {{done}}/{{goal}} Karten",
+      "goalCount": "{{count}} Karte",
+      "goalCount_plural": "{{count}} Karten",
+      "change": "Ändern",
+      "todayProgress": "Heute {{done}}/{{goal}} Karten",
+      "todayDone": "Heute {{done}} Karten · Ziel erreicht",
+      "heatmapTitle": "Letzte {{count}} Tage",
+      "dayDetail": "{{count}} Karte · {{learned}} gemerkt",
+      "dayDetail_plural": "{{count}} Karten · {{learned}} gemerkt",
+      "noActivity": "Nicht gelernt",
+      "less": "Wenig",
+      "more": "Viel",
+      "goalMeta": "{{count}} Karten am Tag · ~{{min}} Min.",
+      "goalSaveError": "Tagesziel konnte nicht gespeichert werden",
+      "goals": {
+        "warmup": {
+          "title": "Aufwärmen",
+          "desc": "Gewohnheit aufbauen"
+        },
+        "steady": {
+          "title": "Beständig",
+          "desc": "Stetiger Fortschritt"
+        },
+        "ambitious": {
+          "title": "Ehrgeizig",
+          "desc": "Schneller Fortschritt"
+        },
+        "legend": {
+          "title": "Legende",
+          "desc": "Grenzen überwinden"
+        },
+        "custom": {
+          "title": "Eigenes Ziel",
+          "desc": "Lege deine Zahl fest ({{min}}–{{max}})",
+          "placeholder": "z. B. 75",
+          "save": "Speichern",
+          "invalid": "Gib eine Zahl zwischen {{min}} und {{max}} ein"
+        }
+      }
+    },
     "edit": "Profil bearbeiten",
     "invite": "Freunde einladen",
     "logout": "Abmelden",
@@ -84,6 +130,20 @@
     "createDeck": "Deck erstellen"
   },
   "home": {
+    "activity": {
+      "streakBadge": "{{count}} Tag Serie",
+      "streakBadge_plural": "{{count}} Tage Serie",
+      "goalBadge": "Tagesziel",
+      "cards": "Karten",
+      "noteDone": "Tagesziel geschafft!",
+      "noteLeft": "Noch {{count}} Karte",
+      "noteLeft_plural": "Noch {{count}} Karten",
+      "noteBest": "Längste Serie: {{count}} Tag",
+      "noteBest_plural": "Längste Serie: {{count}} Tage",
+      "noteStart": "Starte heute deine Serie",
+      "continue": "Weiter",
+      "start": "Los geht's"
+    },
     "inProgressDecks": "Aktive Decks",
     "defaultDecks": "Standard Decks",
     "communityDecks": "Community Decks",
@@ -440,6 +500,10 @@
     "learning": "Lernend",
     "total": "Gesamt",
     "completion": {
+      "goalDone": "Tagesziel geschafft! Serie: {{count}} Tag",
+      "goalDone_plural": "Tagesziel geschafft! Serie: {{count}} Tage",
+      "goalLeft": "Noch {{count}} Karte bis zum Tagesziel",
+      "goalLeft_plural": "Noch {{count}} Karten bis zum Tagesziel",
       "title": "Sitzung fertig!",
       "cardsStudied": "Karten geübt",
       "learned": "Gelernt",

@@ -1,5 +1,51 @@
 {
   "profile": {
+    "activity": {
+      "streak": "Sequência",
+      "best": "Recorde",
+      "studied": "Estudados",
+      "learned": "Aprendidos",
+      "goalTitle": "Meta diária",
+      "goalLine": "{{name}} · {{done}}/{{goal}} cartões",
+      "goalCount": "{{count}} cartão",
+      "goalCount_plural": "{{count}} cartões",
+      "change": "Alterar",
+      "todayProgress": "Hoje {{done}}/{{goal}} cartões",
+      "todayDone": "Hoje {{done}} cartões · meta cumprida",
+      "heatmapTitle": "Últimos {{count}} dias",
+      "dayDetail": "{{count}} cartão · {{learned}} aprendidos",
+      "dayDetail_plural": "{{count}} cartões · {{learned}} aprendidos",
+      "noActivity": "Sem estudo",
+      "less": "Menos",
+      "more": "Mais",
+      "goalMeta": "{{count}} cartões por dia · ~{{min}} min",
+      "goalSaveError": "Não foi possível guardar a meta diária",
+      "goals": {
+        "warmup": {
+          "title": "Aquecimento",
+          "desc": "Criar o hábito"
+        },
+        "steady": {
+          "title": "Constante",
+          "desc": "Progresso regular"
+        },
+        "ambitious": {
+          "title": "Ambicioso",
+          "desc": "Progresso rápido"
+        },
+        "legend": {
+          "title": "Lenda",
+          "desc": "Supera os teus limites"
+        },
+        "custom": {
+          "title": "A minha meta",
+          "desc": "Define o teu número ({{min}}–{{max}})",
+          "placeholder": "Ex. 75",
+          "save": "Guardar",
+          "invalid": "Introduz um número entre {{min}} e {{max}}"
+        }
+      }
+    },
     "edit": "Editar Perfil",
     "invite": "Convidar Amigos",
     "logout": "Sair",
@@ -84,6 +130,20 @@
     "createDeck": "Criar um baralho"
   },
   "home": {
+    "activity": {
+      "streakBadge": "Sequência de {{count}} dia",
+      "streakBadge_plural": "Sequência de {{count}} dias",
+      "goalBadge": "Meta diária",
+      "cards": "cartões",
+      "noteDone": "Meta de hoje cumprida!",
+      "noteLeft": "Falta {{count}} cartão",
+      "noteLeft_plural": "Faltam {{count}} cartões",
+      "noteBest": "Maior sequência: {{count}} dia",
+      "noteBest_plural": "Maior sequência: {{count}} dias",
+      "noteStart": "Começa a tua sequência hoje",
+      "continue": "Continuar",
+      "start": "Começar"
+    },
     "inProgressDecks": "Decks ativos",
     "defaultDecks": "Decks padrão",
     "communityDecks": "Decks da comunidade",
@@ -438,6 +498,10 @@
     "learning": "Aprendendo",
     "total": "Total",
     "completion": {
+      "goalDone": "Meta diária cumprida! Sequência: {{count}} dia",
+      "goalDone_plural": "Meta diária cumprida! Sequência: {{count}} dias",
+      "goalLeft": "Falta {{count}} cartão para a meta diária",
+      "goalLeft_plural": "Faltam {{count}} cartões para a meta diária",
       "title": "Sessão concluída!",
       "cardsStudied": "Cartões estudados",
       "learned": "Aprendidos",

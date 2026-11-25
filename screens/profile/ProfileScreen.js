@@ -1,547 +1,975 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Share, Switch, Alert, Linking } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Pressable, Animated } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
+import Constants from 'expo-constants';
+import {
+  BottomSheetModal,
+  BottomSheetView,
+  BottomSheetBackdrop,
+} from '@gorhom/bottom-sheet';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
-import { getCurrentUserProfile, updateNotificationPreference, clearPushToken } from '../../services/ProfileService';
-import { registerForPushNotificationsAsync } from '../../services/NotificationService';
-import { useNavigation } from '@react-navigation/native';
-import * as Notifications from 'expo-notifications';
-import { supabase } from '../../lib/supabase';
+import {
+  getCurrentUserProfile,
+  getActivitySummary,
+  setDailyGoal,
+  DAILY_GOAL_PRESETS,
+  DEFAULT_DAILY_GOAL,
+  CUSTOM_GOAL_MIN,
+  CUSTOM_GOAL_MAX,
+  goalMinutes,
+} from '../../services/ProfileService';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
-import { useProfile } from '../../contexts/ProfileContext';
 import { cacheProfile, getCachedProfile, cacheProfileImage } from '../../services/CacheService';
-import ProfileSkeleton from '../../components/skeleton/ProfileSkeleton';
 import { useTranslation } from 'react-i18next';
-import LanguageSelector from '../../components/modals/LanguageSelector';
 import { Iconify } from 'react-native-iconify';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { scale, moderateScale, verticalScale } from 'react-native-size-matters';
-import * as WebBrowser from 'expo-web-browser';
-import { getHapticPreference, setHapticPreference, triggerHaptic } from '../../lib/hapticManager';
+import { triggerHaptic } from '../../lib/hapticManager';
 
-export default function ProfileScreen() {
-  const { colors, isDarkMode, toggleTheme, themePreference, loading: themeLoading } = useTheme();
-  const navigation = useNavigation();
-  const { profile: contextProfile } = useProfile();
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(contextProfile?.notifications_enabled ?? false);
-  const [userId, setUserId] = useState(null);
-  const { session, logout } = useAuth();
-  const authUserId = session?.user?.id;
-  const { t, i18n } = useTranslation();
-  const [isLanguageModalVisible, setLanguageModalVisible] = useState(false);
-  const { showSuccess, showError } = useSnackbarHelpers();
-  const isInitialMount = useRef(true);
-  const shouldRefreshOnFocus = useRef(false);
-  const [hapticsEnabled, setHapticsEnabled] = useState(true);
-  const [localThemeDark, setLocalThemeDark] = useState(themePreference === 'dark');
+const APP_VERSION = Constants.expoConfig?.version ?? '';
 
-  useEffect(() => {
-    setLocalThemeDark(themePreference === 'dark');
-  }, [themePreference]);
+// '#RRGGBB' + alpha -> 'rgba(...)'.
+function withAlpha(hex, alpha) {
+  if (typeof hex !== 'string' || !/^#[0-9a-f]{6}$/i.test(hex)) return hex;
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
 
-  const handleThemeToggle = (newValue) => {
-    // 1. İşlemci boşken ANINDA titre (Parmağınla %100 senkron)
-    triggerHaptic('light');
-    // 2. İşlemci boşken ANINDA Switch'i kaydır
-    setLocalThemeDark(newValue);
+// 'YYYY-MM-DD' -> local Date (no UTC shift).
+function parseDay(value) {
+  const [y, m, d] = String(value || '').split('-').map(Number);
+  return y ? new Date(y, m - 1, d) : new Date();
+}
+function dayKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
 
-    // 3. Ağır yükü (Temayı) Switch'in kayma animasyonu bittikten sonraya at!
-    setTimeout(() => {
-      toggleTheme();
-    }, 50);
-  };
+// Name of a goal: its preset title, or "Kendi hedefim" for a typed-in one.
+function goalName(goal, t) {
+  const preset = DAILY_GOAL_PRESETS.find((p) => p.goal === goal);
+  return preset
+    ? t(`profile.activity.goals.${preset.key}.title`)
+    : t('profile.activity.goals.custom.title', 'Kendi hedefim');
+}
 
-  //haptic ayarlarını yükle
-  useEffect(() => {
-    const loadHaptics = async () => {
-      const isEnabled = await getHapticPreference();
-      setHapticsEnabled(isEnabled);
-    };
-    loadHaptics();
-  }, []);
-
-  //haptic ayarlarını değiştir
-  const handleToggleHaptics = async (value) => {
-    setHapticsEnabled(value);
-    await setHapticPreference(value);
-
-    // Kullanıcı titreşimi açtığında çalıştığını hissettir
-    if (value) {
-      triggerHaptic('success');
-    }
-  };
-
-  // Profil yükleme fonksiyonu
-  const loadProfile = useCallback(async (useCache = true) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      if (!authUserId) {
-        setError(t('profile.errorMessageProfile'));
-        return;
-      }
-
-      // Cache kullanılacaksa önce cache'den yükle
-      if (useCache) {
-        const cachedProfile = await getCachedProfile(authUserId);
-        if (cachedProfile) {
-          setProfile(cachedProfile);
-          setUserId(cachedProfile.id);
-
-          // Bildirim durumunu kontrol et
-          const { status } = await Notifications.getPermissionsAsync();
-          if (status === 'granted' && cachedProfile.notifications_enabled) {
-            setNotificationsEnabled(true);
-          } else {
-            setNotificationsEnabled(false);
-          }
-
-          setLoading(false);
-
-          // Arka planda güncel veriyi çek ve cache'le
-          try {
-            const freshProfile = await getCurrentUserProfile(authUserId);
-            setProfile(freshProfile);
-            setUserId(freshProfile.id);
-            await cacheProfile(authUserId, freshProfile);
-
-            // Profil görselini de cache'le
-            if (freshProfile?.image_url) {
-              await cacheProfileImage(authUserId, freshProfile.image_url);
-            }
-
-            // Bildirim durumunu güncelle
-            const { status: freshStatus } = await Notifications.getPermissionsAsync();
-            if (freshStatus === 'granted' && freshProfile.notifications_enabled) {
-              setNotificationsEnabled(true);
-            } else {
-              setNotificationsEnabled(false);
-            }
-          } catch (err) {
-            // Hata durumunda cache'deki veriyi kullanmaya devam et
-            console.error('Error fetching fresh profile:', err);
-          }
-          return;
-        }
-      }
-
-      // Cache yoksa veya cache kullanılmayacaksa API'den çek
-      const profile = await getCurrentUserProfile(authUserId);
-      setProfile(profile);
-      setUserId(profile.id);
-
-      // Cache'le
-      await cacheProfile(authUserId, profile);
-      if (profile?.image_url) {
-        await cacheProfileImage(authUserId, profile.image_url);
-      }
-
-      const { status } = await Notifications.getPermissionsAsync();
-      if (status === 'granted' && profile.notifications_enabled) {
-        setNotificationsEnabled(true);
-      } else {
-        setNotificationsEnabled(false);
-      }
-    } catch (e) {
-      setNotificationsEnabled(false);
-      setError(t('profile.errorMessageProfile'));
-    } finally {
-      setLoading(false);
-    }
-  }, [t, authUserId]);
-
-  // Context'teki profil yüklendiğinde bildirim değerini senkronize et (ilk açılışta animasyonu önlemek için)
-  useEffect(() => {
-    if (contextProfile != null) {
-      setNotificationsEnabled(!!contextProfile.notifications_enabled);
-    }
-  }, [contextProfile?.notifications_enabled]);
-
-  // İlk yükleme - cache kullan
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      loadProfile(true);
-    }
-  }, [loadProfile]);
-
-  // EditProfileScreen'den geri gelindiğinde yenile
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      // İlk mount'ta çalışmasın
-      if (isInitialMount.current) {
-        return;
-      }
-
-      // Sadece EditProfileScreen'den gelindiğinde yenile
-      if (shouldRefreshOnFocus.current) {
-        shouldRefreshOnFocus.current = false;
-        loadProfile(false);
-      }
-    });
-
-    return unsubscribe;
-  }, [navigation, loadProfile]);
-
-  const handleInviteFriends = useCallback(async () => {
-    try {
-      await Share.share({
-        message: t('profile.inviteMessage', 'Bilgi evreninde öğrenme yolunu Knowia ile bul! Ücretsiz kaydol:') + 'https://knowia.online/download',
-      });
-    } catch (error) {
-      // Paylaşım iptal edildiyse veya hata olursa sessiz geç
-    }
-  }, [t]);
-
-  const handleToggleNotifications = async (value) => {
-    if (value) {
-      // Switch açılıyorsa izin iste
-      const { status } = await Notifications.requestPermissionsAsync();
-      if (status === 'granted') {
-        setNotificationsEnabled(true);
-        await updateNotificationPreference(authUserId, true);
-        const uid = userId || authUserId;
-        if (uid) {
-          await registerForPushNotificationsAsync(uid);
-        }
-      } else {
-        setNotificationsEnabled(false);
-        await updateNotificationPreference(authUserId, false);
-        Alert.alert(
-          t('profile.notifications'),
-          t('notifications.openSettingsHint', 'Bildirimleri açmak için Ayarlar\'a gidin.'),
-          [
-            { text: t('common.cancel', 'İptal'), style: 'cancel' },
-            { text: t('notifications.openSettings', 'Ayarlar'), onPress: () => Linking.openSettings() },
-          ]
-        );
-      }
-    } else {
-      setNotificationsEnabled(false);
-      await updateNotificationPreference(authUserId, false);
-      if (userId) {
-        await clearPushToken(userId);
-      }
-    }
-  };
-
-  const handleLanguageChange = useCallback(async (lng) => {
-    await i18n.changeLanguage(lng);
-    setLanguageModalVisible(false);
-  }, [i18n]);
-
-  const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-  const callEdgeFunction = useCallback(async (functionName) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      showError(t('profile.deleteDeactivateError', 'İşlem sırasında bir hata oluştu'));
-      return false;
-    }
-    const res = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(json.error || res.statusText);
-    }
-    return true;
-  }, [showError, t]);
-
-  const handleDeleteAccount = useCallback(() => {
-    Alert.alert(
-      t('profile.deleteAccountTitle'),
-      t('profile.deleteAccountIrreversible'),
-      [
-        { text: t('library.cancel', 'İptal'), style: 'cancel' },
-        {
-          text: t('profile.deleteAccountConfirm'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const ok = await callEdgeFunction('delete-account');
-              if (ok) {
-                showSuccess(t('profile.deleteSuccess'));
-                await logout();
-              }
-            } catch (e) {
-              showError(t('profile.deleteDeactivateError'));
-            }
-          },
-        },
-      ]
-    );
-  }, [t, callEdgeFunction, showSuccess, showError, logout]);
-
-  // Menü kategorileri
-  const accountItems = useMemo(() => [
-    {
-      label: t('profile.edit'),
-      onPress: () => {
-        shouldRefreshOnFocus.current = true;
-        navigation.navigate('EditProfile');
-      }
-    },
-    { label: t('profile.invite'), onPress: handleInviteFriends },
-    { label: t('profile.blockedSection', 'Engellenenler'), onPress: () => navigation.navigate('Blocked') },
-  ], [t, navigation, handleInviteFriends]);
-
-  const appSettingsItems = useMemo(() => [
-    {
-      label: t('profile.night_mode'),
-      right:
-        <Switch
-          value={localThemeDark}
-          onValueChange={handleThemeToggle}
-          trackColor={{ false: '#ccc', true: '#5AA3F0' }}
-          thumbColor={localThemeDark ? colors.secondary : '#f4f3f4'} // isDarkMode yerine bunu kullan
-          ios_backgroundColor="#ccc"
-          disabled={themePreference === 'system'}
-        />
-    },
-    {
-      label: t('profile.language'),
-      onPress: () => {
-        setLanguageModalVisible(true);
-        triggerHaptic('selection');
-      },
-      right: (
-        <View style={styles.languageRow}>
-          <Iconify icon={i18n.language === 'tr' ? 'twemoji:flag-for-flag-turkey' : i18n.language === 'en' ? 'twemoji:flag-england' : i18n.language === 'es' ? 'twemoji:flag-spain' : i18n.language === 'fr' ? 'twemoji:flag-france' : i18n.language === 'pt' ? 'twemoji:flag-portugal' : i18n.language === 'de' ? 'twemoji:flag-germany' : ''} size={moderateScale(20)} />
-          <Text style={{ color: colors.text, marginRight: scale(8), fontSize: moderateScale(15) }}>
-            {i18n.language === 'tr' ? 'Türkçe' : i18n.language === 'en' ? 'English' : i18n.language === 'es' ? 'Spanish' : i18n.language === 'fr' ? 'French' : i18n.language === 'pt' ? 'Portuguese' : i18n.language === 'de' ? 'German' : ''}
+/**
+ * Menu rows in a rounded card (used by Profile and its Account / Settings /
+ * Info pages). item: { label, icon?, right?, onPress?, chevron? }.
+ */
+export function ProfileMenuCard({ items, colors }) {
+  return (
+    <View style={[menuStyles.card, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
+      {items.map((item, index) => (
+        <TouchableOpacity
+          key={item.key || item.label}
+          activeOpacity={item.onPress ? 0.6 : 1}
+          onPress={item.onPress}
+          disabled={!item.onPress}
+          style={[
+            menuStyles.row,
+            index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+          ]}
+        >
+          {item.icon ? (
+            <Iconify icon={item.icon} size={moderateScale(20)} color={item.iconColor || colors.buttonColor} />
+          ) : null}
+          <Text style={[typography.styles.body, { color: item.labelColor || colors.text, flex: 1 }]} numberOfLines={1}>
+            {item.label}
           </Text>
-        </View>
-      ),
-    },
-    {
-      label: t('profile.haptics', 'Titreşim'),
-      right:
-        <Switch
-          value={hapticsEnabled}
-          onValueChange={handleToggleHaptics}
-          trackColor={{ false: '#ccc', true: '#5AA3F0' }}
-          thumbColor={hapticsEnabled ? colors.secondary : '#f4f3f4'}
-          ios_backgroundColor="#ccc"
-        />
-
-    },
-    {
-      label: t('profile.notifications'),
-      right: (
-        <Switch
-          value={notificationsEnabled}
-          onValueChange={(newValue) => {
-            triggerHaptic('light');
-            handleToggleNotifications(newValue);
-          }}
-          trackColor={{ false: '#ccc', true: '#5AA3F0' }}
-          thumbColor={notificationsEnabled ? colors.secondary : '#f4f3f4'}
-          ios_backgroundColor="#ccc"
-        />
-      ),
-      onPress: () => { },
-    },
-  ], [t, toggleTheme, themePreference, isDarkMode, colors, i18n.language, notificationsEnabled, handleToggleNotifications]);
-
-  const openLink = useCallback(async (url) => {
-    try {
-      await WebBrowser.openBrowserAsync(url, {
-        toolbarColor: colors.buttonColor,
-        enableBarCollapsing: true,
-      });
-    } catch (err) {
-      showError(t('profile.linkError', 'Link açılamadı'));
-    }
-  }, [colors.buttonColor, showError, t]);
-
-  const PROFILE_LINKS = {
-    about: 'https://www.knowia.online/about',
-    privacy: 'https://www.knowia.online/policy',
-    terms: 'https://www.knowia.online/terms',
-    feedback: 'https://www.knowia.online/contact',
-  };
-
-  const infoItems = useMemo(() => [
-    { label: t('profile.about'), onPress: () => openLink(PROFILE_LINKS.about) },
-    { label: t('profile.privacy'), onPress: () => openLink(PROFILE_LINKS.privacy) },
-    { label: t('profile.terms'), onPress: () => openLink(PROFILE_LINKS.terms) },
-    { label: t('profile.feedback'), onPress: () => openLink(PROFILE_LINKS.feedback) },
-  ], [t, openLink]);
-
-  const handleLogout = async () => {
-    try {
-      const { error } = await logout();
-      if (error) throw error;
-    } catch (error) {
-      showError(t('profile.logoutError', 'Çıkış yapılırken bir hata oluştu'));
-    }
-  };
-
-  // Kategori render fonksiyonu
-  const renderMenuSection = (title, items) => (
-    <View style={styles.menuSection}>
-      <Text style={[typography.styles.subtitle, { color: colors.buttonColor }, styles.sectionTitle]}>{title}</Text>
-      {items.map((item, idx) => (
-        <TouchableOpacity key={idx} style={styles.menuItem} onPress={item.onPress} activeOpacity={item.right ? 1 : 0.2}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={[typography.styles.body, { color: colors.text }, styles.menuText]}>{item.label}</Text>
-            {item.right ? item.right : null}
-          </View>
+          {item.right ?? null}
+          {item.chevron ? (
+            <Iconify icon="ion:chevron-forward" size={moderateScale(18)} color={colors.muted} />
+          ) : null}
         </TouchableOpacity>
       ))}
     </View>
   );
+}
+
+export const menuStyles = StyleSheet.create({
+  card: {
+    borderRadius: moderateScale(18),
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(12),
+    paddingHorizontal: scale(16),
+    minHeight: verticalScale(50),
+    paddingVertical: verticalScale(10),
+  },
+  sectionTitle: {
+    marginTop: verticalScale(22),
+    marginBottom: verticalScale(8),
+    marginLeft: scale(4),
+  },
+});
+
+// ─── Heatmap ───
+
+// A fixed number of days in a full 7 × 17 rectangle, today in the bottom
+// right corner. Rows are not weekdays: the map is read by colour density
+// ("how much did I study which month"), so it never has empty cells.
+const HEATMAP_ROWS = 7;
+const HEATMAP_COLS = 17;
+const HEATMAP_DAYS = HEATMAP_ROWS * HEATMAP_COLS;
+const HEATMAP_GAP = 4;
+
+const ActivityHeatmap = React.memo(function ActivityHeatmap({ summary, colors, isDarkMode, t, language }) {
+  const [width, setWidth] = useState(0);
+  const today = useMemo(() => parseDay(summary?.today), [summary?.today]);
+  const todayKey = dayKey(today);
+  const [selectedKey, setSelectedKey] = useState(todayKey);
+  useEffect(() => { setSelectedKey(todayKey); }, [todayKey]);
+
+  const byDay = useMemo(() => {
+    const map = {};
+    (summary?.days || []).forEach((d) => { map[d.day] = d; });
+    return map;
+  }, [summary?.days]);
+
+  // columns[c][r]: column-major, oldest day top-left, today bottom-right.
+  const columns = useMemo(() => {
+    const cols = [];
+    for (let c = 0; c < HEATMAP_COLS; c += 1) {
+      const col = [];
+      for (let r = 0; r < HEATMAP_ROWS; r += 1) {
+        const back = HEATMAP_DAYS - 1 - (c * HEATMAP_ROWS + r);
+        const date = new Date(today);
+        date.setDate(today.getDate() - back);
+        col.push(date);
+      }
+      cols.push(col);
+    }
+    return cols;
+  }, [today]);
+
+  const cell = width > 0 ? (width - HEATMAP_GAP * (HEATMAP_COLS - 1)) / HEATMAP_COLS : 0;
+  const emptyColor = isDarkMode ? '#3A3A3A' : '#E6E2D8';
+  const levelColor = (entry) => {
+    if (!entry || !entry.swipes) return emptyColor;
+    const ratio = entry.swipes / Math.max(1, entry.goal || DEFAULT_DAILY_GOAL);
+    if (ratio >= 1) return colors.buttonColor;
+    if (ratio >= 0.66) return withAlpha(colors.buttonColor, 0.75);
+    if (ratio >= 0.33) return withAlpha(colors.buttonColor, 0.5);
+    return withAlpha(colors.buttonColor, 0.28);
+  };
+
+  // Month name over the column where that month's 1st falls (and the first column).
+  const monthLabels = useMemo(() => {
+    const labels = [];
+    columns.forEach((col, i) => {
+      const first = col.find((date) => date.getDate() === 1);
+      if (!first && i !== 0) return;
+      const date = first || col[0];
+      let name = String(date.getMonth() + 1);
+      try {
+        name = date.toLocaleDateString(language, { month: 'short' });
+      } catch {
+        // keep the month number
+      }
+      labels.push({ index: i, name });
+    });
+    if (labels.length > 1 && labels[1].index - labels[0].index < 3) labels.shift();
+    return labels;
+  }, [columns, language]);
+
+  // The cells don't take touches, so the coordinates are the grid's own.
+  const handlePress = (e) => {
+    if (cell <= 0) return;
+    const { locationX, locationY } = e.nativeEvent;
+    const c = Math.min(HEATMAP_COLS - 1, Math.max(0, Math.floor(locationX / (cell + HEATMAP_GAP))));
+    const r = Math.min(HEATMAP_ROWS - 1, Math.max(0, Math.floor(locationY / (cell + HEATMAP_GAP))));
+    const date = columns[c]?.[r];
+    if (!date) return;
+    triggerHaptic('selection');
+    setSelectedKey(dayKey(date));
+  };
+
+  const selected = byDay[selectedKey];
+  let selectedLabel = selectedKey;
+  try {
+    selectedLabel = parseDay(selectedKey).toLocaleDateString(language, { day: 'numeric', month: 'long' });
+  } catch {
+    // keep YYYY-MM-DD
+  }
 
   return (
-    <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Sabit profil alanı */}
-      <View style={styles.profileRow}>
-        {(loading || themeLoading) ? (
-          <ProfileSkeleton />
-        ) : error ? (
-          <Text style={[typography.styles.body, { color: colors.error }]}>{t('profile.error', 'Hata')}: {error}</Text>
-        ) : profile ? (
-          <>
-            <Image source={
-              profile.image_url
-                ? { uri: profile.image_url }
-                : require('../../assets/avatar_default.webp')
-            } style={styles.avatar} />
-            <View style={styles.userInfo}>
-              <Text style={[typography.styles.h2, { color: colors.text }, styles.name]}>{profile.username}</Text>
-              <Text style={[typography.styles.body, { color: colors.subtext }, styles.email]}>{profile.email}</Text>
-            </View>
-          </>
-        ) : null}
+    <View>
+      <View style={[heatStyles.months, { height: verticalScale(16) }]}>
+        {cell > 0 ? monthLabels.map((m) => (
+          <Text
+            key={`${m.index}-${m.name}`}
+            style={[heatStyles.month, { left: m.index * (cell + HEATMAP_GAP), color: colors.muted }]}
+            numberOfLines={1}
+          >
+            {m.name}
+          </Text>
+        )) : null}
       </View>
+      <Pressable onPress={handlePress} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+        <View pointerEvents="none" style={[heatStyles.grid, { height: cell > 0 ? cell * HEATMAP_ROWS + HEATMAP_GAP * (HEATMAP_ROWS - 1) : 1 }]}>
+          {cell > 0 ? columns.map((col, c) => (
+            <View key={c} style={{ marginRight: c < HEATMAP_COLS - 1 ? HEATMAP_GAP : 0 }}>
+              {col.map((date, r) => {
+                const key = dayKey(date);
+                return (
+                  <View
+                    key={key}
+                    style={{
+                      width: cell,
+                      height: cell,
+                      marginBottom: r < HEATMAP_ROWS - 1 ? HEATMAP_GAP : 0,
+                      borderRadius: Math.max(3, cell * 0.28),
+                      backgroundColor: levelColor(byDay[key]),
+                      borderWidth: key === selectedKey ? 1.5 : 0,
+                      borderColor: colors.text,
+                    }}
+                  />
+                );
+              })}
+            </View>
+          )) : null}
+        </View>
+      </Pressable>
+      <View style={heatStyles.footer}>
+        <Text style={[typography.styles.caption, { color: colors.text, flex: 1 }]} numberOfLines={1}>
+          {`${selectedLabel} · `}
+          {selected?.swipes
+            ? t('profile.activity.dayDetail', {
+              count: selected.swipes,
+              learned: selected.learned || 0,
+              defaultValue: `${selected.swipes} kart · ${selected.learned || 0} öğrenildi`,
+            })
+            : t('profile.activity.noActivity', 'Çalışma yok')}
+        </Text>
+        <View style={heatStyles.legend}>
+          <Text style={[heatStyles.legendText, { color: colors.muted }]}>{t('profile.activity.less', 'Az')}</Text>
+          {[0, 0.28, 0.5, 0.75, 1].map((a) => (
+            <View
+              key={a}
+              style={[heatStyles.legendCell, { backgroundColor: a === 0 ? emptyColor : withAlpha(colors.buttonColor, a) }]}
+            />
+          ))}
+          <Text style={[heatStyles.legendText, { color: colors.muted }]}>{t('profile.activity.more', 'Çok')}</Text>
+        </View>
+      </View>
+    </View>
+  );
+});
 
-      {/* Scrollable alan: menü + alt butonlar */}
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.menuList}>
-          {renderMenuSection(t('profile.account'), accountItems)}
-          {renderMenuSection(t('profile.settings'), appSettingsItems)}
-          {renderMenuSection(t('profile.info'), infoItems)}
-        </View>
-        {/* Alt butonlar */}
-        <View style={styles.bottomButtonsRow}>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={[typography.styles.button, { color: colors.buttonText }, styles.logoutText]}>{t('profile.logout')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.deleteAccountButton, { borderColor: colors.error || '#ff5252' }]} onPress={handleDeleteAccount}>
-            <Text style={[typography.styles.body, { color: colors.error || '#ff5252' }, styles.deleteAccountText]}>{t('profile.deleteAccount')}</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.footerContainer}>
-          <Text style={styles.appNameText}>Knowia v1.2.0</Text>
-          <Text style={styles.companyText}>© 2026 BB Nova</Text>
-        </View>
-      </ScrollView>
-      {/* Dil seçici component */}
-      <LanguageSelector
-        isVisible={isLanguageModalVisible}
-        onClose={() => setLanguageModalVisible(false)}
-        onLanguageChange={handleLanguageChange}
-      />
-    </SafeAreaView>
+// ─── Daily goal sheet ───
+
+const CUSTOM_STEP = 5;
+const clampGoal = (value) => Math.min(CUSTOM_GOAL_MAX, Math.max(CUSTOM_GOAL_MIN, value));
+const roundToStep = (value) => Math.round(value / CUSTOM_STEP) * CUSTOM_STEP;
+
+/**
+ * − / + button of the custom goal stepper. A tap moves one step; holding it
+ * repeats, faster after a moment, so 5 → 500 takes a few seconds.
+ */
+function StepButton({ label, disabled, onStep, colors, isDarkMode }) {
+  const timerRef = useRef(null);
+  const stop = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = null;
+  }, []);
+  useEffect(() => stop, [stop]);
+
+  const start = () => {
+    if (disabled) return;
+    onStep();
+    let repeats = 0;
+    const tick = () => {
+      repeats += 1;
+      if (!onStep()) { stop(); return; }
+      timerRef.current = setTimeout(tick, repeats > 8 ? 45 : 110);
+    };
+    timerRef.current = setTimeout(tick, 380);
+  };
+
+  return (
+    <Pressable
+      onPressIn={start}
+      onPressOut={stop}
+      disabled={disabled}
+      hitSlop={8}
+      style={({ pressed }) => [
+        sheetStyles.stepButton,
+        {
+          backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
+          opacity: disabled ? 0.35 : pressed ? 0.6 : 1,
+        },
+      ]}
+    >
+      <Text style={[sheetStyles.stepLabel, { color: colors.text }]}>{label}</Text>
+    </Pressable>
   );
 }
+
+const DailyGoalSheet = React.memo(function DailyGoalSheet({ sheetRef, goal, onSelect, colors, isDarkMode, bottomInset }) {
+  const { t } = useTranslation();
+  const isPreset = DAILY_GOAL_PRESETS.some((p) => p.goal === goal);
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customValue, setCustomValue] = useState(goal);
+  // The stepper reads the latest value while a button is held down.
+  const customValueRef = useRef(goal);
+  const setCustom = (value) => {
+    customValueRef.current = value;
+    setCustomValue(value);
+  };
+
+  const renderBackdrop = useCallback((props) => (
+    <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} pressBehavior="close" opacity={0.5} />
+  ), []);
+
+  const handleChange = useCallback((index) => {
+    if (index === -1) setCustomOpen(false);
+  }, []);
+
+  const pick = (value) => {
+    onSelect(value);
+    sheetRef.current?.dismiss();
+  };
+
+  const openCustom = () => {
+    triggerHaptic('selection');
+    setCustom(clampGoal(roundToStep(goal)));
+    setCustomOpen(true);
+  };
+
+  // One step; returns false at the limit so a held button stops repeating.
+  const step = (direction) => () => {
+    const next = clampGoal(customValueRef.current + direction * CUSTOM_STEP);
+    if (next === customValueRef.current) return false;
+    setCustom(next);
+    triggerHaptic('selection');
+    return true;
+  };
+
+  const meta = (count) => t('profile.activity.goalMeta', {
+    count,
+    min: goalMinutes(count),
+    defaultValue: `Günde ${count} kart · ~${goalMinutes(count)} dk`,
+  });
+  const divider = { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border };
+
+  return (
+    <BottomSheetModal
+      ref={sheetRef}
+      index={0}
+      onChange={handleChange}
+      backdropComponent={renderBackdrop}
+      backgroundStyle={{ backgroundColor: colors.background, borderRadius: moderateScale(44) }}
+      handleIndicatorStyle={{ backgroundColor: isDarkMode ? '#555' : '#CCC' }}
+    >
+      <BottomSheetView style={[sheetStyles.content, { paddingBottom: bottomInset + verticalScale(20) }]}>
+        <View style={sheetStyles.header}>
+          <Text style={[typography.styles.h2, { color: colors.text, flex: 1 }]} numberOfLines={1}>
+            {t('profile.activity.goalTitle', 'Günlük hedef')}
+          </Text>
+          <TouchableOpacity
+            onPress={() => sheetRef.current?.dismiss()}
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+            accessibilityRole="button"
+            accessibilityLabel={t('cardDetail.close', 'Kapat')}
+            style={sheetStyles.close}
+          >
+            <Iconify icon="material-symbols:close-rounded" size={moderateScale(24)} color={colors.text} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Plain rows on the sheet background (no card), thin dividers. */}
+        {DAILY_GOAL_PRESETS.map((preset, index) => {
+          const selected = preset.goal === goal;
+          return (
+            <TouchableOpacity
+              key={preset.key}
+              activeOpacity={0.6}
+              onPress={() => { triggerHaptic('selection'); pick(preset.goal); }}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              style={[sheetStyles.row, index > 0 && divider]}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[typography.styles.button, { color: selected ? colors.buttonColor : colors.text }]}>
+                  {t(`profile.activity.goals.${preset.key}.title`)}
+                </Text>
+                <Text style={[typography.styles.caption, { color: colors.muted }]} numberOfLines={1}>
+                  {`${meta(preset.goal)} · ${t(`profile.activity.goals.${preset.key}.desc`)}`}
+                </Text>
+              </View>
+              {selected ? <Iconify icon="hugeicons:tick-01" size={moderateScale(22)} color={colors.buttonColor} /> : null}
+            </TouchableOpacity>
+          );
+        })}
+
+        {/* Custom goal: a − / + stepper (5 to 500, steps of 5), no keyboard. */}
+        <TouchableOpacity
+          activeOpacity={customOpen ? 1 : 0.6}
+          onPress={customOpen ? undefined : openCustom}
+          style={[sheetStyles.row, divider]}
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={[typography.styles.button, { color: !isPreset ? colors.buttonColor : colors.text }]}>
+              {t('profile.activity.goals.custom.title', 'Kendi hedefim')}
+            </Text>
+            <Text style={[typography.styles.caption, { color: colors.muted }]} numberOfLines={1}>
+              {customOpen || !isPreset
+                ? meta(customOpen ? customValue : goal)
+                : t('profile.activity.goals.custom.desc', {
+                  min: CUSTOM_GOAL_MIN,
+                  max: CUSTOM_GOAL_MAX,
+                  defaultValue: `Sayıyı sen belirle (${CUSTOM_GOAL_MIN}–${CUSTOM_GOAL_MAX})`,
+                })}
+            </Text>
+            {customOpen ? (
+              <View style={sheetStyles.stepper}>
+                <StepButton
+                  label="−"
+                  disabled={customValue <= CUSTOM_GOAL_MIN}
+                  onStep={step(-1)}
+                  colors={colors}
+                  isDarkMode={isDarkMode}
+                />
+                <Text style={[sheetStyles.stepValue, { color: colors.text }]} numberOfLines={1}>
+                  {t('profile.activity.goalCount', { count: customValue, defaultValue: `${customValue} kart` })}
+                </Text>
+                <StepButton
+                  label="+"
+                  disabled={customValue >= CUSTOM_GOAL_MAX}
+                  onStep={step(1)}
+                  colors={colors}
+                  isDarkMode={isDarkMode}
+                />
+                <TouchableOpacity
+                  onPress={() => { triggerHaptic('success'); pick(customValue); }}
+                  activeOpacity={0.8}
+                  style={[sheetStyles.customSave, { backgroundColor: colors.buttonColor }]}
+                >
+                  <Text style={[typography.styles.button, { color: '#FFFFFF' }]}>
+                    {t('profile.activity.goals.custom.save', 'Kaydet')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+          </View>
+          {!isPreset && !customOpen ? (
+            <Iconify icon="hugeicons:tick-01" size={moderateScale(22)} color={colors.buttonColor} />
+          ) : null}
+        </TouchableOpacity>
+      </BottomSheetView>
+    </BottomSheetModal>
+  );
+});
+
+// ─── Screen ───
+
+export default function ProfileScreen() {
+  const { colors, isDarkMode } = useTheme();
+  const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
+  const { session } = useAuth();
+  const authUserId = session?.user?.id;
+  const { t, i18n } = useTranslation();
+  const { showError } = useSnackbarHelpers();
+
+  // Profile (cache first, then fresh in the background).
+  const [profile, setProfile] = useState(null);
+  const loadProfile = useCallback(async (useCache = true) => {
+    if (!authUserId) return;
+    try {
+      if (useCache) {
+        const cached = await getCachedProfile(authUserId);
+        if (cached) setProfile(cached);
+      }
+      const fresh = await getCurrentUserProfile(authUserId);
+      setProfile(fresh);
+      await cacheProfile(authUserId, fresh);
+      if (fresh?.image_url) await cacheProfileImage(authUserId, fresh.image_url);
+    } catch (e) {
+      console.error('Error loading profile:', e);
+    }
+  }, [authUserId]);
+  useEffect(() => { loadProfile(true); }, [loadProfile]);
+
+  // Study activity: heatmap + streak + goal. Cached; refetched when a study
+  // session ends or the day changes (see ProfileService). On focus the profile
+  // is reloaded only if editing it cleared its cache.
+  const [activity, setActivity] = useState(null);
+  useFocusEffect(
+    useCallback(() => {
+      if (!authUserId) return undefined;
+      let active = true;
+      getActivitySummary(authUserId, { days: HEATMAP_DAYS }).then((summary) => {
+        if (active && summary) setActivity(summary);
+      });
+      getCachedProfile(authUserId).then((cached) => {
+        if (active && !cached) loadProfile(false);
+      });
+      return () => { active = false; };
+    }, [authUserId, loadProfile])
+  );
+
+  const dailyGoal = activity?.daily_goal ?? DEFAULT_DAILY_GOAL;
+  const todaySwipes = activity?.today_swipes ?? 0;
+
+  const goalSheetRef = useRef(null);
+  const openGoalSheet = useCallback(() => {
+    triggerHaptic('selection');
+    goalSheetRef.current?.present();
+  }, []);
+  const handleGoalSelect = useCallback(async (goal) => {
+    if (!authUserId || goal === dailyGoal) return;
+    const previous = activity;
+    setActivity((prev) => (prev ? { ...prev, daily_goal: goal } : prev));
+    try {
+      await setDailyGoal(authUserId, goal);
+      const fresh = await getActivitySummary(authUserId, { days: HEATMAP_DAYS, force: true });
+      if (fresh) setActivity(fresh);
+    } catch (e) {
+      setActivity(previous);
+      showError(t('profile.activity.goalSaveError', 'Günlük hedef kaydedilemedi'));
+    }
+  }, [activity, authUserId, dailyGoal, showError, t]);
+
+  const stats = [
+    {
+      key: 'streak',
+      icon: 'mdi:fire',
+      value: String(activity?.current_streak ?? 0),
+      label: t('profile.activity.streak', 'Seri'),
+    },
+    {
+      key: 'best',
+      value: String(activity?.best_streak ?? 0),
+      label: t('profile.activity.best', 'En uzun'),
+    },
+    {
+      key: 'studied',
+      value: String(activity?.total_swipes ?? 0),
+      label: t('profile.activity.studied', 'Çalışılan'),
+    },
+    {
+      key: 'learned',
+      value: String(activity?.total_learned ?? 0),
+      label: t('profile.activity.learned', 'Öğrenilen'),
+    },
+  ];
+
+  // Scroll offset (native) -> glow opacity: full at rest and while pulling
+  // down, gone after ~180pt of scrolling up.
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const handleScroll = useMemo(
+    () => Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true }),
+    [scrollY]
+  );
+  const glowOpacity = useMemo(
+    () => scrollY.interpolate({ inputRange: [0, verticalScale(180)], outputRange: [1, 0], extrapolate: 'clamp' }),
+    [scrollY]
+  );
+
+  const pages = [
+    { key: 'account', icon: 'solar:user-bold', label: t('profile.account', 'Hesap'), chevron: true, onPress: () => navigation.navigate('ProfileAccount') },
+    { key: 'settings', icon: 'mage:filter', label: t('profile.settings', 'Ayarlar'), chevron: true, onPress: () => navigation.navigate('ProfileSettings') },
+    { key: 'info', icon: 'material-symbols:info-outline', label: t('profile.info', 'Bilgi ve destek'), chevron: true, onPress: () => navigation.navigate('ProfileInfo') },
+  ];
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* The glow is fixed to the screen, behind the scroll view: pulling the
+          page down leaves no unlit gap above it, and it fades out as the page
+          scrolls up (native-driven opacity). */}
+      <TopGlow
+        color={colors.buttonColor}
+        strength={isDarkMode ? 0.26 : 0.15}
+        height={insets.top + verticalScale(210)}
+        opacity={glowOpacity}
+      />
+      <Animated.ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={handleScroll}
+      >
+        <View style={[styles.header, { paddingTop: insets.top + verticalScale(20) }]}>
+          <View style={styles.identity}>
+            <Image
+              source={profile?.image_url ? { uri: profile.image_url } : require('../../assets/avatar_default.webp')}
+              style={[styles.avatar, { borderColor: colors.buttonColor }]}
+            />
+            <View style={{ flex: 1 }}>
+              <View style={styles.nameRow}>
+                <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>{profile?.username || ' '}</Text>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('EditProfile')}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('profile.edit', 'Profili düzenle')}
+                  style={[styles.editButton, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)' }]}
+                >
+                  <Iconify icon="lucide:edit" size={moderateScale(18)} color={colors.text} />
+                </TouchableOpacity>
+              </View>
+              <Text style={[styles.email, { color: colors.muted }]} numberOfLines={1}>{profile?.email || ' '}</Text>
+            </View>
+          </View>
+
+          <View style={[styles.statsRow, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)' }]}>
+            {stats.map((stat, index) => (
+              <View
+                key={stat.key}
+                style={[styles.stat, index > 0 && { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.border }]}
+              >
+                <View style={styles.statValueRow}>
+                  {stat.icon ? <Iconify icon={stat.icon} size={moderateScale(16)} color={colors.buttonColor} /> : null}
+                  <Text style={[styles.statValue, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                    {stat.value}
+                  </Text>
+                </View>
+                <Text style={[styles.statLabel, { color: colors.muted }]} numberOfLines={1}>{stat.label}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.body}>
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+          {/* Daily goal (no card: a plain section) */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              {/* Same icon the Home hero used for the daily goal. */}
+              <View style={styles.sectionTitleRow}>
+                <Iconify icon="fluent:arrow-trending-sparkle-24-filled" size={moderateScale(16)} color={colors.buttonColor} />
+                <Text style={[styles.sectionLabel, { color: colors.muted }]}>
+                  {t('profile.activity.goalTitle', 'Günlük hedef')}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={openGoalSheet}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={[styles.changePill, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)' }]}
+              >
+                <Text style={[typography.styles.button, { color: colors.text, fontSize: moderateScale(13) }]}>
+                  {t('profile.activity.change', 'Değiştir')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            {/* "İstikrarlı · 7/50 kart": the goal and today's count in one line. */}
+            <View style={styles.goalLine}>
+              <Text style={[typography.styles.subtitle, { color: colors.text, flexShrink: 1 }]} numberOfLines={1}>
+                {t('profile.activity.goalLine', {
+                  name: goalName(dailyGoal, t),
+                  done: todaySwipes,
+                  goal: dailyGoal,
+                  defaultValue: `${goalName(dailyGoal, t)} · ${todaySwipes}/${dailyGoal} kart`,
+                })}
+              </Text>
+              {activity?.today_goal_met ? (
+                <Iconify icon="hugeicons:tick-01" size={moderateScale(18)} color={colors.buttonColor} />
+              ) : null}
+            </View>
+            <View style={[styles.goalTrack, { backgroundColor: isDarkMode ? '#3A3A3A' : '#E6E2D8' }]}>
+              <View
+                style={[
+                  styles.goalFill,
+                  { backgroundColor: colors.buttonColor, width: `${Math.min(1, todaySwipes / Math.max(1, dailyGoal)) * 100}%` },
+                ]}
+              />
+            </View>
+          </View>
+
+          {/* Heatmap (no card, no title) */}
+          <View style={styles.heatmapSection}>
+            <ActivityHeatmap
+              summary={activity}
+              colors={colors}
+              isDarkMode={isDarkMode}
+              t={t}
+              language={i18n.language}
+            />
+          </View>
+
+          {/* Account / Settings / Info pages: a grouped menu stays in a card. */}
+          <View style={{ marginTop: verticalScale(8) }}>
+            <ProfileMenuCard items={pages} colors={colors} />
+          </View>
+
+          <View style={styles.footer}>
+            <Text style={styles.footerApp}>{`Knowia v${APP_VERSION}`}</Text>
+            <Text style={styles.footerCompany}>© 2026 BB Nova</Text>
+          </View>
+        </View>
+      </Animated.ScrollView>
+
+      <DailyGoalSheet
+        sheetRef={goalSheetRef}
+        goal={dailyGoal}
+        onSelect={handleGoalSelect}
+        colors={colors}
+        isDarkMode={isDarkMode}
+        bottomInset={insets.bottom}
+      />
+    </View>
+  );
+}
+
+// Soft light falling from the top centre (SVG radial gradient), used instead
+// of a full gradient hero. `height` bounds it so it never reaches far down.
+function TopGlow({ color, strength, height, opacity }) {
+  return (
+    <Animated.View pointerEvents="none" style={[styles.glow, { height, opacity }]}>
+      <Svg width="100%" height="100%">
+        <Defs>
+          <RadialGradient id="profileTopGlow" cx="50%" cy="0%" rx="70%" ry="100%" fx="50%" fy="0%">
+            <Stop offset="0" stopColor={color} stopOpacity={strength} />
+            <Stop offset="0.5" stopColor={color} stopOpacity={strength * 0.4} />
+            <Stop offset="1" stopColor={color} stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#profileTopGlow)" />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+const SIDE_PADDING = scale(14);
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: scale(24),
-    paddingTop: verticalScale(80),
-    backgroundColor: 'transparent',
   },
   scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'flex-start',
     paddingBottom: '35%',
   },
-  profileRow: {
+  header: {
+    paddingHorizontal: SIDE_PADDING,
+    paddingBottom: verticalScale(18),
+  },
+  glow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
+  identity: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: verticalScale(20),
+    gap: scale(14),
   },
   avatar: {
-    width: scale(80),
-    height: scale(80),
-    borderRadius: moderateScale(99),
-    marginRight: scale(20),
+    width: moderateScale(72),
+    height: moderateScale(72),
+    borderRadius: moderateScale(36),
+    borderWidth: 2,
   },
-  userInfo: {
-    flex: 1,
-  },
-  name: {
-    marginBottom: verticalScale(4),
-  },
-  email: {},
-  menuList: {
-    flex: 1,
-    justifyContent: 'flex-start',
-  },
-  menuSection: {
-    marginBottom: verticalScale(18),
-  },
-  sectionTitle: {
-    marginBottom: verticalScale(6),
-    marginLeft: scale(2),
-  },
-  menuItem: {
-    paddingVertical: verticalScale(14),
-    borderBottomWidth: moderateScale(1),
-    borderBottomColor: '#eee',
-  },
-  menuText: {},
-  bottomButtonsRow: {
-    marginTop: verticalScale(16),
-    marginBottom: verticalScale(32),
-  },
-  logoutButton: {
-    backgroundColor: '#ff5252',
-    paddingVertical: verticalScale(12),
-    borderRadius: moderateScale(999),
-  },
-  logoutText: {
-    textAlign: 'center',
-  },
-  deleteAccountButton: {
-    marginTop: verticalScale(12),
-    paddingVertical: verticalScale(12),
-    borderRadius: moderateScale(999),
-    borderWidth: moderateScale(1),
-    alignItems: 'center',
-  },
-  deleteAccountText: {
-    textAlign: 'center',
-  },
-  languageRow: {
+  nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(8),
+    gap: scale(10),
   },
-  footerContainer: {
-    marginBottom: 20,
+  name: {
+    flexShrink: 1,
+    fontSize: moderateScale(21),
+    fontWeight: '700',
+  },
+  editButton: {
+    width: moderateScale(36),
+    height: moderateScale(36),
+    borderRadius: moderateScale(18),
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: 'auto',
   },
-  appNameText: {
+  email: {
+    marginTop: verticalScale(2),
+    fontSize: moderateScale(13),
+  },
+  statsRow: {
+    flexDirection: 'row',
+    marginTop: verticalScale(20),
+    paddingVertical: verticalScale(10),
+    borderRadius: moderateScale(16),
+  },
+  stat: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: scale(4),
+  },
+  statValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  statValue: {
+    fontSize: moderateScale(19),
+    fontWeight: '800',
+  },
+  statLabel: {
+    marginTop: verticalScale(2),
+    fontSize: moderateScale(11),
+  },
+  body: {
+    paddingHorizontal: SIDE_PADDING,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+  },
+  section: {
+    paddingVertical: verticalScale(16),
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: verticalScale(6),
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(6),
+  },
+  changePill: {
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(5),
+    borderRadius: 999,
+  },
+  goalLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(6),
+  },
+  heatmapSection: {
+    paddingBottom: verticalScale(16),
+  },
+  sectionLabel: {
+    fontSize: moderateScale(12),
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  goalTrack: {
+    height: moderateScale(8),
+    borderRadius: moderateScale(4),
+    overflow: 'hidden',
+    marginTop: verticalScale(10),
+    marginBottom: verticalScale(6),
+  },
+  goalFill: {
+    height: '100%',
+    borderRadius: moderateScale(4),
+  },
+  footer: {
+    alignItems: 'center',
+    marginTop: verticalScale(24),
+  },
+  footerApp: {
     fontSize: 14,
-    color: '#888888', // Silik gri bir renk
+    color: '#888888',
     fontWeight: '500',
     marginBottom: 4,
   },
-  companyText: {
+  footerCompany: {
     fontSize: 12,
-    color: '#AAAAAA', // Biraz daha küçük ve açık gri
+    color: '#AAAAAA',
   },
-}); 
+});
+
+const heatStyles = StyleSheet.create({
+  months: {
+    position: 'relative',
+    marginBottom: verticalScale(4),
+  },
+  month: {
+    position: 'absolute',
+    top: 0,
+    fontSize: moderateScale(10),
+  },
+  grid: {
+    flexDirection: 'row',
+  },
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: verticalScale(10),
+    gap: scale(8),
+  },
+  legend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(3),
+  },
+  legendCell: {
+    width: moderateScale(9),
+    height: moderateScale(9),
+    borderRadius: moderateScale(2),
+  },
+  legendText: {
+    fontSize: moderateScale(10),
+    marginHorizontal: scale(2),
+  },
+});
+
+const sheetStyles = StyleSheet.create({
+  content: {
+    paddingHorizontal: scale(16),
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(12),
+    paddingTop: verticalScale(6),
+    paddingBottom: verticalScale(14),
+  },
+  close: {
+    backgroundColor: 'rgba(150, 150, 150, 0.1)',
+    padding: moderateScale(6),
+    borderRadius: 99,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(12),
+    paddingHorizontal: scale(2),
+    paddingVertical: verticalScale(13),
+  },
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(10),
+    marginTop: verticalScale(12),
+  },
+  stepButton: {
+    width: moderateScale(40),
+    height: moderateScale(40),
+    borderRadius: moderateScale(20),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepLabel: {
+    fontSize: moderateScale(22),
+    fontWeight: '600',
+    lineHeight: moderateScale(26),
+  },
+  stepValue: {
+    minWidth: scale(76),
+    textAlign: 'center',
+    fontSize: moderateScale(17),
+    fontWeight: '700',
+  },
+  customSave: {
+    marginLeft: 'auto',
+    height: moderateScale(40),
+    paddingHorizontal: scale(18),
+    borderRadius: moderateScale(20),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
