@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { StyleSheet, View, TouchableOpacity, Alert, ImageBackground, useWindowDimensions } from 'react-native';
 import { Text, TextInput } from '../../components/ui/AppText';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import FormScrollView from '../../components/layout/FormScrollView';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../theme/theme';
@@ -73,15 +73,12 @@ export default function RegisterScreen({ navigation }) {
       style={styles.backgroundImage}
       resizeMode="cover"
     >
-      <KeyboardAwareScrollView
+      <FormScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.container, { paddingTop: containerPaddingTop }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        enableOnAndroid={true}
-        enableAutomaticScroll={true}
         extraScrollHeight={50}
-        enableResetScrollToCoords={false}
       >
         <View style={styles.form}>
           <View style={styles.inputContainer}>
@@ -175,7 +172,7 @@ export default function RegisterScreen({ navigation }) {
             </Text>
           </TouchableOpacity>
         </View>
-      </KeyboardAwareScrollView>
+      </FormScrollView>
     </ImageBackground>
   );
 }

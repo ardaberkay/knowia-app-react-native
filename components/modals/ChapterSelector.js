@@ -2,12 +2,10 @@ import React, { useRef, useEffect, useCallback } from 'react';
 import { View, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { Text } from '../ui/AppText';
 
-// GORHOM BİLEŞENLERİ
-import { 
-  BottomSheetModal, 
-  BottomSheetFlatList, 
-  BottomSheetBackdrop 
-} from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetFlatList } from '@expo/ui/community/bottom-sheet';
+// Lists open at half height and drag up to full (iOS medium/large detents,
+// Android partial/expanded).
+const LIST_SNAP_POINTS = ['50%', '100%'];
 
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -40,20 +38,6 @@ export default function ChapterSelector({
       bottomSheetModalRef.current?.dismiss();
     }
   }, [isVisible]);
-
-  // Arka plan (Backdrop) ayarı
-  const renderBackdrop = useCallback(
-    (props) => (
-      <BottomSheetBackdrop 
-        {...props} 
-        disappearsOnIndex={-1} 
-        appearsOnIndex={0} 
-        pressBehavior="close" 
-        opacity={0.5} 
-      />
-    ),
-    []
-  );
 
   // --- PERFORMANS ODAKLI SEÇİM YÖNETİMİ ---
   const handleSelectChapter = (chapterId) => {
@@ -169,12 +153,9 @@ export default function ChapterSelector({
       ref={bottomSheetModalRef}
       index={0}
       onChange={(index) => index === -1 && onClose()}
-      backdropComponent={renderBackdrop}
       backgroundStyle={{ backgroundColor: colors.background, borderRadius: 44 }}
-      handleIndicatorStyle={{ backgroundColor: isDarkMode ? '#555' : '#CCC' }}
-      enableDynamicSizing={true}
-      maxDynamicContentSize={SCREEN_HEIGHT * 0.85}
-      enableContentPanningGesture={false}
+      snapPoints={LIST_SNAP_POINTS}
+      enablePanDownToClose
     >
       {/* --- SABİT HEADER BÖLÜMÜ --- */}
       <View style={styles.fixedHeader}>

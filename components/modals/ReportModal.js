@@ -1,15 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, Modal, Pressable, useWindowDimensions } from 'react-native';
+import React, { useRef, useState, useEffect } from 'react';
+import { View, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, useWindowDimensions } from 'react-native';
 import { Text } from '../ui/AppText';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming, 
-  runOnJS,
-  Easing
-} from 'react-native-reanimated';
-
 import { useTheme } from '../../theme/theme';
+import { BottomSheetModal, BottomSheetView } from '@expo/ui/community/bottom-sheet';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
@@ -29,18 +22,14 @@ export default function ReportModal({
   onSubmit,
 }) {
   const { height: SCREEN_HEIGHT } = useWindowDimensions();
+  const SHEET_MAX_HEIGHT = Math.round(SCREEN_HEIGHT * 0.85);
   const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
   
   const [selectedCode, setSelectedCode] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Animasyon bitmeden Modal'ı DOM'dan kaldırmamak için local state
-  const [renderModal, setRenderModal] = useState(visible);
   
-  // Reanimated Değerleri
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(SCREEN_HEIGHT);
 
   // Marka ikincil rengi (Uyarı/Şikayet hissiyatı için)
   const secondaryColor = colors.secondary || '#FF3B30';
@@ -48,39 +37,22 @@ export default function ReportModal({
   const options = REPORT_REASON_OPTIONS[reportType] || REPORT_REASON_OPTIONS.deck;
   const alreadySet = new Set(alreadyReportedCodes || []);
 
+  // Native sheet: SwiftUI sheet on iOS, Material ModalBottomSheet on Android.
+  const sheetRef = useRef(null);
+  const visibleRef = useRef(visible);
+  visibleRef.current = visible;
   useEffect(() => {
     if (visible) {
       setSelectedCode(null);
-      setRenderModal(true);
-      // Açılış Animasyonu (Yumuşak geliş)
-      opacity.value = withTiming(1, { duration: 250 });
-      translateY.value = withTiming(0, { 
-        duration: 350, 
-        easing: Easing.out(Easing.exp) 
-      });
+      sheetRef.current?.present();
     } else {
-      // Kapanış Animasyonu (Hızlı ve keskin)
-      opacity.value = withTiming(0, { duration: 150 });
-      translateY.value = withTiming(SCREEN_HEIGHT, { 
-        duration: 150,
-        easing: Easing.in(Easing.quad) 
-      }, (isFinished) => {
-        if (isFinished) {
-          runOnJS(setRenderModal)(false);
-        }
-      });
+      sheetRef.current?.dismiss();
     }
   }, [visible]);
-
-  // Animasyon Stilleri
-  const backdropStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }));
-
-  const modalAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
-  }));
+  // Swipe/backdrop dismiss tells the parent; skipped when the parent closed it.
+  const handleSheetDismiss = () => {
+    if (visibleRef.current) onClose();
+  };
 
   const handleSubmit = async () => {
     if (!selectedCode) return;
@@ -96,25 +68,14 @@ export default function ReportModal({
   const titleKey = reportType === 'user' ? 'moderation.reportUser' : reportType === 'deck' ? 'moderation.reportDeck' : 'moderation.reportCard';
   const canSubmit = !!selectedCode;
 
-  if (!renderModal) return null;
-
   return (
-    <Modal
-      transparent={true}
-      visible={renderModal}
-      animationType="none" 
-      onRequestClose={onClose} 
-      statusBarTranslucent={true}
+    <BottomSheetModal
+      ref={sheetRef}
+      onDismiss={handleSheetDismiss}
+      enablePanDownToClose
+      backgroundStyle={{ backgroundColor: colors.background }}
     >
-      <View style={styles.overlay}>
-        
-        {/* Kararan Arka Plan */}
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
-          <Animated.View style={[styles.backdrop, backdropStyle, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]} />
-        </Pressable>
-
-        {/* Modal Kutusu */}
-        <Animated.View style={[styles.modalContainer, { backgroundColor: colors.background }, modalAnimatedStyle]}>
+      <BottomSheetView style={[styles.sheetContent, { maxHeight: SHEET_MAX_HEIGHT }]}>
           
           {/* Header Row */}
           <View style={styles.headerRow}>
@@ -207,36 +168,15 @@ export default function ReportModal({
             )}
           </TouchableOpacity>
 
-        </Animated.View>
-      </View>
-    </Modal>
+      </BottomSheetView>
+    </BottomSheetModal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'center', 
-    alignItems: 'center',     
-  },
-  backdrop: {
-    flex: 1,
-    ...StyleSheet.absoluteFillObject,
-  },
-  modalContainer: {
-    width: '90%', 
-    maxHeight: '85%',
-    borderRadius: 32,
-    padding: 20,
-    paddingBottom: 24, // Butonun altından biraz boşluk
-    overflow: 'hidden',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(150, 150, 150, 0.2)',
+  sheetContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
   },
   headerRow: {
     flexDirection: 'row',
@@ -256,6 +196,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   scrollView: {
+    flexShrink: 1,
     maxHeight: 420,
   },
   scrollContent: {

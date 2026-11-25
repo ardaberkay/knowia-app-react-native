@@ -1,8 +1,8 @@
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Pressable, Platform } from 'react-native';
 import { Text } from '../ui/AppText';
-import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
-import { Gesture, GestureDetector, ScrollView as GHScrollView } from 'react-native-gesture-handler';
+import { BottomSheetModal } from '@expo/ui/community/bottom-sheet';
+import { Gesture, GestureDetector, GestureHandlerRootView, ScrollView as GHScrollView } from 'react-native-gesture-handler';
 import Reanimated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
@@ -179,17 +179,7 @@ const VoiceSettingsSheet = memo(function VoiceSettingsSheet({
   bottomInset,
 }) {
   const { t } = useTranslation();
-  const snapPoints = useMemo(() => ['75%'], []);
   const close = useCallback(() => sheetRef?.current?.dismiss(), [sheetRef]);
-  const renderBackdrop = useCallback((props) => (
-    <BottomSheetBackdrop
-      {...props}
-      disappearsOnIndex={-1}
-      appearsOnIndex={0}
-      pressBehavior="close"
-      opacity={0.5}
-    />
-  ), []);
 
   // Row labels/tags are built once per voice list, not on every render.
   // Voices of the deck's own region (e.g. en-US) are listed directly; other
@@ -241,15 +231,14 @@ const VoiceSettingsSheet = memo(function VoiceSettingsSheet({
   return (
     <BottomSheetModal
       ref={sheetRef}
-      index={0}
-      snapPoints={snapPoints}
-      enableDynamicSizing={false}
+      snapPoints={LARGE_SNAP_POINTS}
+      enablePanDownToClose
       onDismiss={onDismiss}
-      backdropComponent={renderBackdrop}
-      backgroundStyle={{ backgroundColor: colors.background, borderRadius: 44 }}
-      handleIndicatorStyle={{ backgroundColor: isDarkMode ? '#555' : '#CCC' }}
-      enableContentPanningGesture={false}
+      backgroundStyle={{ backgroundColor: colors.background }}
     >
+      {/* The sheet content lives in the native sheet's own view hierarchy, outside
+          the app's root GestureHandlerRootView, so the rate bar's pan needs one here. */}
+      <GestureHandlerRootView style={styles.voiceSheetRoot}>
       <View style={styles.voiceSheetHeader}>
         <Text style={[typography.styles.h2, { color: colors.text, flex: 1 }]} numberOfLines={1}>
           {t('swipeDeck.voice.settings', 'Ses ayarları')}
@@ -264,12 +253,9 @@ const VoiceSettingsSheet = memo(function VoiceSettingsSheet({
           <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
-      {/* A plain (gesture-handler) ScrollView rather than BottomSheetScrollView:
-          content panning is off, and gorhom's scroll tracking made the iOS
-          bounce-back jitter. This keeps the native bounce. */}
       <GHScrollView
         style={styles.voiceSheetScroll}
-        contentContainerStyle={[styles.voiceSheetContent, { paddingBottom: bottomInset + 32 }]}
+        contentContainerStyle={[styles.voiceSheetContent, { paddingBottom: 32 }]}
       >
         <View style={styles.voiceRateHeader}>
           <Text style={[styles.voiceSectionTitle, { color: colors.muted, marginTop: 0, marginBottom: 0 }]}>
@@ -356,13 +342,20 @@ const VoiceSettingsSheet = memo(function VoiceSettingsSheet({
             : t('swipeDeck.voice.androidHint', 'Daha fazla ses için: Ayarlar › Erişilebilirlik › Metin okuma çıkışı bölümünden ses verilerini yükleyebilirsin.')}
         </Text>
       </GHScrollView>
+      </GestureHandlerRootView>
     </BottomSheetModal>
   );
 });
 
 export default VoiceSettingsSheet;
 
+// Full-height native sheet.
+const LARGE_SNAP_POINTS = ['100%'];
+
 const styles = StyleSheet.create({
+  voiceSheetRoot: {
+    flex: 1,
+  },
   voiceSheetHeader: {
     flexDirection: 'row',
     alignItems: 'center',

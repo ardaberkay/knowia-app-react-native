@@ -5,7 +5,7 @@ import { getCategories } from '../../services/CategoryService';
 import { createDeck } from '../../services/DeckService';
 import { getLanguages } from '../../services/LanguageService';
 import { useAuth } from '../../contexts/AuthContext';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import FormScrollView from '../../components/layout/FormScrollView';
 import { useNavigation } from '@react-navigation/native';
 import { typography } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
@@ -162,14 +162,11 @@ export default function CreateScreen() {
 
   return (
     <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
-      <KeyboardAwareScrollView
+      <FormScrollView
         style={{flex: 1}}
         contentContainerStyle={[styles.formContainer]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        enableOnAndroid={true}
-        enableAutomaticScroll={true}
-        enableResetScrollToCoords={false}
       >
           {/* Header Card */}
           <View style={[styles.headerCard, styles.headerCardContainer, { borderRadius: 44, backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, borderWidth: 1 }]}>
@@ -472,7 +469,7 @@ export default function CreateScreen() {
               loading={loading}
             />
           </View>
-        </KeyboardAwareScrollView>
+        </FormScrollView>
 
       <CategorySelector
         isVisible={isCategoryModalVisible}

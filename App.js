@@ -6,7 +6,6 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DefaultTheme, DarkTheme, createNavigationContainerRef } from '@react-navigation/native';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Provider as PaperProvider } from 'react-native-paper';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ProfileProvider } from './contexts/ProfileContext';
 import { ThemeProvider, useTheme } from './theme/theme';
@@ -18,16 +17,28 @@ import { View, StyleSheet } from 'react-native';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase } from './lib/supabase';
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import './lib/i18n';
 import { cleanupStaleCache } from './services/CacheService';
 import * as NavigationBar from 'expo-navigation-bar';
+import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Splash ayarlarını sabitliyoruz (fade efekti ile yumuşak geçiş)
 SplashScreen.setOptions({
   fade: true,
   duration: 250,
+});
+
+// Since SDK 58 a push received while the app is open is shown by default.
+// The only push we send is the "come back and study" nudge, which is pointless
+// while the user is already in the app, so keep foreground pushes silent.
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: false,
+    shouldShowList: false,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
 });
 
 // The OS font-size cap lives in components/ui/AppText (Text.defaultProps is
@@ -198,11 +209,7 @@ export default function App() {
     <GestureHandlerRootView style={styles.gestureRoot}>
       <SafeAreaProvider initialWindowMetrics={initialWindowMetrics}>
         <ThemeProvider>
-          <PaperProvider>
-            <BottomSheetModalProvider>
-              <AppContent />
-            </BottomSheetModalProvider>
-          </PaperProvider>
+          <AppContent />
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

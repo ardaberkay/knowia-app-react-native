@@ -1,16 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, TouchableOpacity, StyleSheet, ScrollView, Image, Platform, Modal, TouchableWithoutFeedback, Pressable, useWindowDimensions } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ScrollView, Image, Modal, TouchableWithoutFeedback, Pressable } from 'react-native';
+import { MenuView } from '@expo/ui/community/menu';
 import { Text } from '../ui/AppText';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming, 
-  runOnJS,
-  Easing,
-  LinearTransition
-} from 'react-native-reanimated';
-
 import { useTheme } from '../../theme/theme';
+import { BottomSheetModal, BottomSheetView } from '@expo/ui/community/bottom-sheet';
 import { typography } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
@@ -26,12 +19,30 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useSnackbarHelpers } from '../ui/Snackbar';
 
 
+// A native menu (SwiftUI Menu / Material DropdownMenu) laid over a trigger of
+// any size: the trigger draws itself and a same-sized transparent anchor takes
+// the taps, so the OS places the menu.
+function MenuOverlay({ actions, onPressAction, children }) {
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  const onLayout = (e) => {
+    const { width, height } = e.nativeEvent.layout;
+    setSize((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));
+  };
+  return (
+    <View>
+      <View pointerEvents="none" onLayout={onLayout}>{children}</View>
+      <MenuView actions={actions} onPressAction={onPressAction} style={StyleSheet.absoluteFill}>
+        <View style={size} />
+      </MenuView>
+    </View>
+  );
+}
+
 export default function CsvUploadModal({
   isVisible,
   onClose,
   deck
 }) {
-  const { height: SCREEN_HEIGHT } = useWindowDimensions();
   const { colors, isDarkMode } = useTheme();
   const { t } = useTranslation();
   const { session } = useAuth();
@@ -43,45 +54,25 @@ export default function CsvUploadModal({
   const [selectedImages, setSelectedImages] = useState([]);
   const [imageIds, setImageIds] = useState([]);
   const [imageIdMap, setImageIdMap] = useState({});
-  const [dropdownOpen, setDropdownOpen] = useState({});
-  const [dropdownPos, setDropdownPos] = useState({});
-  const dropdownRefs = useRef({});
   const [tableGuideExpanded, setTableGuideExpanded] = useState(false);
   const [isImageModalVisible, setImageModalVisible] = useState(false);
-  const [renderModal, setRenderModal] = useState(isVisible);
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(SCREEN_HEIGHT);
   const scrollViewRef = useRef(null);
 
+  // Native sheet: SwiftUI sheet on iOS, Material ModalBottomSheet on Android.
+  const sheetRef = useRef(null);
+  const visibleRef = useRef(isVisible);
+  visibleRef.current = isVisible;
   useEffect(() => {
     if (isVisible) {
-      setRenderModal(true);
-      opacity.value = withTiming(1, { duration: 250 });
-      translateY.value = withTiming(0, { 
-        duration: 350, 
-        easing: Easing.out(Easing.exp) 
-      });
+      sheetRef.current?.present();
     } else {
-      opacity.value = withTiming(0, { duration: 150 });
-      translateY.value = withTiming(SCREEN_HEIGHT, { 
-        duration: 150,
-        easing: Easing.in(Easing.quad) 
-      }, (isFinished) => {
-        if (isFinished) {
-          runOnJS(setRenderModal)(false);
-        }
-      });
+      sheetRef.current?.dismiss();
     }
   }, [isVisible]);
-
-  const backdropStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }));
-
-  const modalAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
-  }));
+  // Swipe/backdrop dismiss tells the parent; skipped when the parent closed it.
+  const handleSheetDismiss = () => {
+    if (visibleRef.current) handleClose();
+  };
 
   // --- FONKSİYONEL KISIMLAR (HİÇ DOKUNULMADI) ---
 
@@ -478,9 +469,6 @@ export default function CsvUploadModal({
 
         setImageIds(uniqueImageIds);
         setImageIdMap({});
-        setDropdownOpen({});
-        setDropdownPos({});
-        dropdownRefs.current = {};
 
         if (cardsWithSvg.length > 0) {
           showError(`${cardsWithSvg.length} ${t('addCard.svgNotSupported', 'kartta SVG görseli bulundu. SVG formatı desteklenmiyor, bu kartlar görselsiz eklenecek.')}`);
@@ -569,25 +557,8 @@ export default function CsvUploadModal({
     }
   };
 
-  const openImageDropdown = (imageId) => {
-    const ref = dropdownRefs.current[imageId];
-    if (ref && ref.measureInWindow) {
-      ref.measureInWindow((x, y, width, height) => {
-        setDropdownPos(prev => ({ ...prev, [imageId]: { x, y, width, height } }));
-        setDropdownOpen(prev => ({ ...prev, [imageId]: true }));
-      });
-    } else {
-      setDropdownOpen(prev => ({ ...prev, [imageId]: true }));
-    }
-  };
-
-  const closeImageDropdown = (imageId) => {
-    setDropdownOpen(prev => ({ ...prev, [imageId]: false }));
-  };
-
   const handleImageSelect = (imageId, img, idx) => {
     setImageIdMap(prev => ({ ...prev, [imageId]: { ...img, selectionIndex: idx + 1 } }));
-    closeImageDropdown(imageId);
   };
 
   const handleClose = () => {
@@ -595,10 +566,7 @@ export default function CsvUploadModal({
     setSelectedImages([]);
     setImageIds([]);
     setImageIdMap({});
-    setDropdownOpen({});
-    setDropdownPos({});
     setTableGuideExpanded(false);
-    dropdownRefs.current = {};
     onClose();
   };
 
@@ -608,25 +576,15 @@ export default function CsvUploadModal({
 
   // --- UI RENDER KISMI ---
 
-  if (!renderModal) return null;
-
   return (
-    <Modal
-      transparent={true}
-      visible={renderModal}
-      animationType="none" 
-      onRequestClose={handleClose} 
-      statusBarTranslucent={true}
+    <BottomSheetModal
+      ref={sheetRef}
+      onDismiss={handleSheetDismiss}
+      enablePanDownToClose
+      backgroundStyle={{ backgroundColor: colors.background }}
+      snapPoints={['100%']}
     >
-      <View style={styles.overlay}>
-        
-        {/* Kararan Arka Plan */}
-        <Pressable style={StyleSheet.absoluteFill} onPress={handleClose}>
-          <Animated.View style={[styles.backdrop, backdropStyle, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]} />
-        </Pressable>
-
-        {/* Modal Kutusu */}
-        <Animated.View style={[styles.modalContainer, { backgroundColor: colors.background }, modalAnimatedStyle]}>
+      <BottomSheetView style={styles.sheetContent}>
 
           <View style={styles.headerRow}>
             <Text style={[typography.styles.h2, { color: colors.text }]}>
@@ -840,73 +798,31 @@ export default function CsvUploadModal({
                                 <Text style={[styles.imgIdLabel, { color: colors.muted }]} numberOfLines={1}>{imageId}</Text>
                               </View>
 
-                              <TouchableOpacity
-                                ref={(ref) => { if (ref) dropdownRefs.current[imageId] = ref; }}
-                                onPress={() => openImageDropdown(imageId)}
-                                style={[styles.dropdownTrigger, { borderColor: selectedImg ? (colors.primary || '#007AFF') : colors.border, backgroundColor: isDarkMode ? '#111' : '#FFF' }]}
-                                activeOpacity={0.8}
+                              <MenuOverlay
+                                actions={selectedImages.map((img, idx) => ({
+                                  id: String(idx),
+                                  title: `${t('addCard.chooseImages', 'Seçim')} ${idx + 1}`,
+                                  state: imageIdMap[imageId]?.uri === img.uri ? 'on' : 'off',
+                                }))}
+                                onPressAction={({ nativeEvent }) => {
+                                  const idx = Number(nativeEvent.event);
+                                  if (selectedImages[idx]) handleImageSelect(imageId, selectedImages[idx], idx);
+                                }}
                               >
-                                {selectedImg ? (
-                                  <View style={styles.dropdownSelectedInner}>
-                                    <Image source={{ uri: selectedImg.uri }} style={styles.dropdownTriggerThumb} />
-                                    <Text style={[styles.dropdownTriggerText, { color: colors.text, fontWeight: '600' }]} numberOfLines={1}>
-                                      {t('addCard.chooseImages', 'Seçim')} {selectedImg.selectionIndex}
-                                    </Text>
-                                  </View>
-                                ) : (
-                                  <Text style={[styles.dropdownTriggerPlaceholder, { color: colors.muted }]}>{t('addCard.matchImages', 'Eşleştir')}</Text>
-                                )}
-                                <Iconify icon="flowbite:caret-down-solid" size={16} color={colors.text} style={{ marginLeft: 6 }} />
-                              </TouchableOpacity>
-
-                              {/* Modal Dropdown Menü - Core Modal'a çevrildi */}
-                              <Modal
-                                visible={dropdownOpen[imageId] || false}
-                                transparent={true}
-                                animationType="fade"
-                                onRequestClose={() => closeImageDropdown(imageId)}
-                              >
-                                <TouchableWithoutFeedback onPress={() => closeImageDropdown(imageId)}>
-                                  <View style={{ flex: 1 }}>
-                                    <View style={[
-                                      styles.dropdownMenu,
-                                      {
-                                        backgroundColor: colors.background,
-                                        borderColor: colors.border,
-                                        left: dropdownPos[imageId]?.x || 0,
-                                        top: Platform.OS === 'android'
-                                          ? (dropdownPos[imageId]?.y || 0) + (dropdownPos[imageId]?.height || 0)
-                                          : (dropdownPos[imageId]?.y || 0) + (dropdownPos[imageId]?.height || 0) + 4,
-                                        minWidth: dropdownPos[imageId]?.width || 150,
-                                        zIndex: imageIds.length - index + 1000,
-                                      }
-                                    ]}>
-                                      <ScrollView style={styles.dropdownScrollView} showsVerticalScrollIndicator={false}>
-                                        {selectedImages.map((img, idx) => {
-                                          const isSelected = imageIdMap[imageId]?.uri === img.uri;
-                                          const isLastItem = idx === selectedImages.length - 1;
-                                          return (
-                                            <TouchableOpacity
-                                              key={img.uri}
-                                              onPress={() => handleImageSelect(imageId, img, idx)}
-                                              style={[
-                                                styles.dropdownListItem,
-                                                { borderBottomColor: colors.border, borderBottomWidth: isLastItem ? 0 : 1 },
-                                                isSelected && { backgroundColor: isDarkMode ? '#333' : '#F0F9FF' }
-                                              ]}
-                                            >
-                                              <Image source={{ uri: img.uri }} style={styles.dropdownImageThumbnail} />
-                                              <Text style={[styles.dropdownListItemText, { color: isSelected ? (colors.primary || '#007AFF') : colors.text, fontWeight: isSelected ? '700' : '500' }]}>
-                                                Seçim {idx + 1}
-                                              </Text>
-                                            </TouchableOpacity>
-                                          );
-                                        })}
-                                      </ScrollView>
+                                <View style={[styles.dropdownTrigger, { borderColor: selectedImg ? (colors.primary || '#007AFF') : colors.border, backgroundColor: isDarkMode ? '#111' : '#FFF' }]}>
+                                  {selectedImg ? (
+                                    <View style={styles.dropdownSelectedInner}>
+                                      <Image source={{ uri: selectedImg.uri }} style={styles.dropdownTriggerThumb} />
+                                      <Text style={[styles.dropdownTriggerText, { color: colors.text, fontWeight: '600' }]} numberOfLines={1}>
+                                        {t('addCard.chooseImages', 'Seçim')} {selectedImg.selectionIndex}
+                                      </Text>
                                     </View>
-                                  </View>
-                                </TouchableWithoutFeedback>
-                              </Modal>
+                                  ) : (
+                                    <Text style={[styles.dropdownTriggerPlaceholder, { color: colors.muted }]}>{t('addCard.matchImages', 'Eşleştir')}</Text>
+                                  )}
+                                  <Iconify icon="flowbite:caret-down-solid" size={16} color={colors.text} style={{ marginLeft: 6 }} />
+                                </View>
+                              </MenuOverlay>
                             </View>
                           );
                         })}
@@ -963,35 +879,16 @@ export default function CsvUploadModal({
             </View>
           )}
 
-        </Animated.View>
-      </View>
-    </Modal>
+      </BottomSheetView>
+    </BottomSheetModal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  sheetContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
     flex: 1,
-    justifyContent: 'center', 
-    alignItems: 'center',     
-  },
-  backdrop: {
-    flex: 1,
-    ...StyleSheet.absoluteFillObject,
-  },
-  modalContainer: {
-    width: '90%', 
-    maxHeight: '90%',
-    borderRadius: 32,
-    padding: 20,
-    overflow: 'hidden',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(150, 150, 150, 0.2)',
   },
   headerRow: {
     flexDirection: 'row',
@@ -1005,7 +902,7 @@ const styles = StyleSheet.create({
     borderRadius: 99,
   },
   scrollView: {
-    maxHeight: 550,
+    flex: 1,
   },
   description: {
     fontSize: 14,
@@ -1274,18 +1171,6 @@ const styles = StyleSheet.create({
   },
 
   // Dropdown Menu Styles
-  dropdownMenu: {
-    position: 'absolute',
-    borderRadius: 12,
-    paddingVertical: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 8,
-    borderWidth: 1,
-    maxHeight: 200,
-  },
   dropdownScrollView: {
     maxHeight: 200,
   },

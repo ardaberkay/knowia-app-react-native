@@ -51,7 +51,7 @@ export default function CategoryHeroHeader({
   const config = getCategoryConfig(category, t);
 
   return (
-    <View style={styles.heroCard}>
+    <View style={[styles.heroCard, { backgroundColor: config.gradient[0] }]}>
       <LinearGradient
         colors={[...config.gradient, ...config.gradient.slice().reverse()]}
         start={{ x: 0, y: 0 }}

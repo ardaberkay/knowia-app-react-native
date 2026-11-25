@@ -2,12 +2,10 @@ import React, { useMemo, useRef, useEffect, useCallback } from 'react';
 import { View, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { Text } from '../ui/AppText';
 
-// GORHOM BİLEŞENLERİ
-import { 
-  BottomSheetModal, 
-  BottomSheetFlatList, 
-  BottomSheetBackdrop 
-} from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetFlatList } from '@expo/ui/community/bottom-sheet';
+// Lists open at half height and drag up to full (iOS medium/large detents,
+// Android partial/expanded).
+const LIST_SNAP_POINTS = ['50%', '100%'];
 
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -58,20 +56,6 @@ export default function LanguageSelector({ isVisible, onClose, onLanguageChange 
     }
   };
 
-  // Arka plan (Backdrop) ayarı
-  const renderBackdrop = useCallback(
-    (props) => (
-      <BottomSheetBackdrop 
-        {...props} 
-        disappearsOnIndex={-1} 
-        appearsOnIndex={0} 
-        pressBehavior="close" 
-        opacity={0.5} 
-      />
-    ),
-    []
-  );
-
   // FlatList için Satır Render Fonksiyonu
   const renderItem = useCallback(({ item: language }) => {
     const isSelected = selectedLanguage === language.code;
@@ -110,12 +94,9 @@ export default function LanguageSelector({ isVisible, onClose, onLanguageChange 
       ref={bottomSheetModalRef}
       index={0}
       onChange={(index) => index === -1 && onClose()}
-      backdropComponent={renderBackdrop}
       backgroundStyle={{ backgroundColor: colors.background, borderRadius: 44 }}
-      handleIndicatorStyle={{ backgroundColor: isDarkMode ? '#555' : '#CCC' }}
-      enableDynamicSizing={true}
-      maxDynamicContentSize={SCREEN_HEIGHT * 0.85}
-      enableContentPanningGesture={false} // Jest çakışmasını önlemek için içerik sürüklemeyi kapatıyoruz
+      snapPoints={LIST_SNAP_POINTS}
+      enablePanDownToClose
     >
       
       {/* --- SABİT HEADER BÖLÜMÜ --- */}
@@ -184,11 +165,6 @@ const styles = StyleSheet.create({
   },
   iconWrapper: {
     marginRight: 14,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
-    elevation: 2,
   },
   languageText: {
     fontSize: 16,

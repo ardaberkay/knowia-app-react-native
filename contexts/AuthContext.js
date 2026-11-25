@@ -34,7 +34,7 @@ export function AuthProvider({ children }) {
     
     // 1. MEVCUT OTURUMU KONTROL ET (Senin Kodun)
     supabase.auth.getSession().then(({ data: { session }, error }) => {
-      console.log('Session check sonucu:', { session, error });
+      console.log('Session check sonucu:', session ? 'oturum var' : 'oturum yok', error?.message ?? '');
       setSession(session);
       const currentUserId = session?.user?.id || null;
       currentUserIdRef.current = currentUserId;
@@ -49,7 +49,7 @@ export function AuthProvider({ children }) {
 
     // 2. OTURUM DEĞİŞİKLİKLERİNİ DİNLE (Senin Kodun)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log('Auth state change:', _event, session);
+      console.log('Auth state change:', _event, session ? 'oturum var' : 'oturum yok');
       setSession(session);
       const currentUserId = session?.user?.id || null;
       currentUserIdRef.current = currentUserId;
@@ -150,7 +150,7 @@ const register = async (email, password) => {
       throw error;
     }
 
-    console.log("SIGNUP DATA:", data);
+    console.log("SIGNUP:", data?.user ? "kullanıcı oluşturuldu" : "kullanıcı yok");
     return { error: null };
   } catch (error) {
     console.log("CATCH ERROR:", {
@@ -256,7 +256,7 @@ const register = async (email, password) => {
   
       if (error) throw error;
   
-      console.log('Giriş başarılı!', data);
+      console.log('Giriş başarılı!');
       return { data, error: null };
   
     } catch (error) {

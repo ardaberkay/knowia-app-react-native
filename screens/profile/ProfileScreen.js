@@ -4,11 +4,7 @@ import { Text } from '../../components/ui/AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
 import Constants from 'expo-constants';
-import {
-  BottomSheetModal,
-  BottomSheetView,
-  BottomSheetBackdrop,
-} from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetView } from '@expo/ui/community/bottom-sheet';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import {
@@ -325,10 +321,6 @@ const DailyGoalSheet = React.memo(function DailyGoalSheet({ sheetRef, goal, onSe
     setCustomValue(value);
   };
 
-  const renderBackdrop = useCallback((props) => (
-    <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} pressBehavior="close" opacity={0.5} />
-  ), []);
-
   const handleChange = useCallback((index) => {
     if (index === -1) setCustomOpen(false);
   }, []);
@@ -363,13 +355,11 @@ const DailyGoalSheet = React.memo(function DailyGoalSheet({ sheetRef, goal, onSe
   return (
     <BottomSheetModal
       ref={sheetRef}
-      index={0}
+      enablePanDownToClose
       onChange={handleChange}
-      backdropComponent={renderBackdrop}
-      backgroundStyle={{ backgroundColor: colors.background, borderRadius: 44 }}
-      handleIndicatorStyle={{ backgroundColor: isDarkMode ? '#555' : '#CCC' }}
+      backgroundStyle={{ backgroundColor: colors.background }}
     >
-      <BottomSheetView style={[sheetStyles.content, { paddingBottom: bottomInset + 20 }]}>
+      <BottomSheetView style={[sheetStyles.content, { paddingBottom: 20 }]}>
         <View style={sheetStyles.header}>
           <Text style={[typography.styles.h2, { color: colors.text, flex: 1 }]} numberOfLines={1}>
             {t('profile.activity.goalTitle', 'Günlük hedef')}

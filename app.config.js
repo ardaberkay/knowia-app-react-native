@@ -13,11 +13,6 @@ export default {
     updates: {
       url: "https://u.expo.dev/35370cb0-28f6-4273-86d2-f920b86c8acb"
     },
-    splash: {
-      image: "./assets/splash.png",
-      resizeMode: "cover",
-      backgroundColor: "#FF8D1A"
-    },
     ios: {
       backgroundColor: "#FF8D1A",
       supportsTablet: true,
@@ -39,11 +34,6 @@ export default {
     },
     android: {
       backgroundColor: "#FF8D1A",
-      splash: {
-        image: "./assets/app_icon_splash.png",
-        resizeMode: "contain",
-        backgroundColor: "#FF8D1A"
-      },
       adaptiveIcon: {
         foregroundImage: "./assets/android_logo.png",
         backgroundColor: "#FF8D1A"
@@ -77,6 +67,26 @@ export default {
       favicon: "./assets/app_icon.png"
     },
     plugins: [
+      "expo-asset",
+      // Since SDK 56 the root `splash` key is no longer read. These props keep the
+      // old look: full-screen image on iOS, 200dp logo on orange on Android.
+      [
+        "expo-splash-screen",
+        {
+          backgroundColor: "#FF8D1A",
+          ios: {
+            image: "./assets/splash.png",
+            resizeMode: "cover",
+            enableFullScreenImage_legacy: true
+          },
+          android: {
+            image: "./assets/app_icon_splash.png",
+            resizeMode: "contain",
+            imageWidth: 200
+          }
+        }
+      ],
+      "expo-status-bar",
       "expo-font",
       "expo-localization",
       "expo-dev-client",
@@ -95,7 +105,8 @@ export default {
           recordAudioAndroid: false
         }
       ],
-      "./plugins/withAndroidKeyboardMode"
+      "./plugins/withAndroidKeyboardMode",
+      "./plugins/withAndroidShortCmakePaths"
     ],
     extra: {
       eas: {

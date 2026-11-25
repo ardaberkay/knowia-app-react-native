@@ -1,8 +1,7 @@
-import React, { useState, useCallback, createContext, useContext, useRef, useEffect } from 'react';
-import { Snackbar, Portal } from 'react-native-paper';
+import React, { useState, useCallback, createContext, useContext, useRef, useMemo } from 'react';
 import { StyleSheet, Animated, View } from 'react-native';
 import { Text } from './AppText';
-import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { Iconify } from 'react-native-iconify';
@@ -11,9 +10,9 @@ import { triggerHaptic } from '../../lib/hapticManager';
 const SnackbarContext = createContext(null);
 
 /**
- * Snackbar Provider - Native snackbar için context provider
- * iOS ve Android'de native görünüm sağlar (react-native-paper kullanır)
- * Üstten gelir ve kenarlardan boşluklu (yapışık değil)
+ * Snackbar Provider: top toast, inset from the edges, swipe up to dismiss.
+ * Drawn as the last child of the provider (absolute, top layer of the RN root);
+ * no third-party portal needed.
  */
 export const SnackbarProvider = ({ children }) => {
   const [visible, setVisible] = useState(false);
@@ -74,49 +73,18 @@ export const SnackbarProvider = ({ children }) => {
     }, 3000);
   }, [translateY, hideSnackbar]);
 
-  // Otomatik kapanma için useEffect
-  useEffect(() => {
-    if (visible) {
-      // 3 saniye sonra otomatik kapat (yukarı kaydırarak)
-      timeoutRef.current = setTimeout(() => {
-        // Yukarı kaydırma animasyonu ile kapat
-        Animated.timing(translateY, {
-          toValue: -300,
-          duration: 200,
-          useNativeDriver: true,
-        }).start(() => {
-          hideSnackbar();
-        });
-      }, 3000);
-      
-      // Cleanup function
-      return () => {
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-          timeoutRef.current = null;
-        }
-      };
-    }
-  }, [visible, hideSnackbar, translateY]);
-
-  const handleGestureEvent = useCallback((event) => {
-    const { translationY } = event.nativeEvent;
-    // Sadece yukarı kaydırma (negatif değer)
-    if (translationY < 0) {
-      translateY.setValue(translationY);
-    }
-  }, [translateY]);
-
-  const handleGestureStateChange = useCallback((event) => {
-    const { translationY, velocityY, state } = event.nativeEvent;
-    
-    if (state === State.END) {
-      // Yukarı kaydırma eşiği
-      if (translationY < -50 || velocityY < -500) {
-        // SADECE BUNU ÇAĞIRMAN YETERLİ:
-        hideSnackbar(); 
+  // Swipe up to dismiss; below the threshold it springs back.
+  const panGesture = useMemo(() => Gesture.Pan()
+    .runOnJS(true)
+    .activeOffsetY([-5, 5])
+    .failOffsetX([-20, 20])
+    .onUpdate((e) => {
+      if (e.translationY < 0) translateY.setValue(e.translationY);
+    })
+    .onEnd((e) => {
+      if (e.translationY < -50 || e.velocityY < -500) {
+        hideSnackbar();
       } else {
-        // Eşik altında kaldıysa geri sekme animasyonu
         Animated.spring(translateY, {
           toValue: 0,
           useNativeDriver: true,
@@ -124,8 +92,7 @@ export const SnackbarProvider = ({ children }) => {
           friction: 7,
         }).start();
       }
-    }
-  }, [translateY, hideSnackbar]);
+    }), [translateY, hideSnackbar]);
 
   const getIconName = () => {
     if (type === 'success') return 'hugeicons:tick-01';
@@ -182,15 +149,9 @@ export const SnackbarProvider = ({ children }) => {
   return (
     <SnackbarContext.Provider value={showSnackbar}>
       {children}
-      <Portal>
-        <View style={styles.wrapper} pointerEvents="box-none">
+      <View style={styles.wrapper} pointerEvents="box-none">
           {visible && (
-            <PanGestureHandler
-              onGestureEvent={handleGestureEvent}
-              onHandlerStateChange={handleGestureStateChange}
-              activeOffsetY={[-5, 5]}
-              failOffsetX={[-20, 20]}
-            >
+            <GestureDetector gesture={panGesture}>
               <Animated.View
                 style={[
                   styles.snackbarContainer,
@@ -225,10 +186,9 @@ export const SnackbarProvider = ({ children }) => {
                   </Text>
                 </View>
               </Animated.View>
-            </PanGestureHandler>
+            </GestureDetector>
           )}
         </View>
-      </Portal>
     </SnackbarContext.Provider>
   );
 };
@@ -247,15 +207,6 @@ const styles = StyleSheet.create({
   },
   snackbarContainer: {
     width: '100%',
-    alignItems: 'center',
-  },
-  snackbarPaperWrapper: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 'auto',
-    justifyContent: 'flex-start',
     alignItems: 'center',
   },
   snackbarContent: {

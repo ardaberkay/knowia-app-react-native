@@ -155,7 +155,7 @@ export default function AppNavigator() {
     setHasSeenOnboarding(true);
   }, []);
 
-  console.log('AppNavigator render:', { session, loading, isRecoveryMode });
+  console.log('AppNavigator render:', { hasSession: !!session, loading, isRecoveryMode });
 
   if (loading) {
     console.log('Loading state, null döndürülüyor');

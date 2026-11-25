@@ -16,6 +16,7 @@ export default function CreateButton({ onPress, disabled = false, text, loading 
     <TouchableOpacity
       style={[
         styles.createButton,
+        { backgroundColor: gradientColors[0] },
         style
       ]}
       onPress={onPress}

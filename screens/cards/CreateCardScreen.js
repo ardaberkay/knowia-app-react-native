@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Image, Keyboard } from 'react-native';
 import { Text, TextInput } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import FormScrollView from '../../components/layout/FormScrollView';
 import { useAuth } from '../../contexts/AuthContext';
 import { createCard } from '../../services/CardService';
 import { uploadCardImage } from '../../services/StorageService';
@@ -152,13 +152,10 @@ export default function AddCardScreen() {
         onClose={() => setCsvModalVisible(false)}
         deck={deck}
       />
-      <KeyboardAwareScrollView
+      <FormScrollView
         style={{ flex: 1 }}
         contentContainerStyle={[styles.formContainer]}
         keyboardShouldPersistTaps="handled"
-        enableOnAndroid={true}
-        enableAutomaticScroll={true}
-        enableResetScrollToCoords={false}
         showsVerticalScrollIndicator={false}
       >
         {/* Header Card */}
@@ -418,7 +415,7 @@ export default function AddCardScreen() {
             text={t("addCard.createCard", "Kartı Oluştur")}
           />
         </View>
-      </KeyboardAwareScrollView>
+      </FormScrollView>
 
       <HowToCreateCardModal
         isVisible={isHowToCreateCardModalVisible}

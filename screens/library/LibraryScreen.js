@@ -10,11 +10,9 @@ import { getDecksByCategory, deleteDeck } from '../../services/DeckService';
 import { deleteCard, getUserCardProgressForCards } from '../../services/CardService';
 import { Iconify } from 'react-native-iconify';
 import { getFavoriteDecks, getFavoriteCards, addFavoriteDeck, removeFavoriteDeck, addFavoriteCard, removeFavoriteCard } from '../../services/FavoriteService';
-import {
-  BottomSheetModal,
-  BottomSheetBackdrop,
-  BottomSheetScrollView
-} from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetScrollView } from '@expo/ui/community/bottom-sheet';
+// Full-height native sheet.
+const LARGE_SNAP_POINTS = ['100%'];
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import PagerView from 'react-native-pager-view';
@@ -206,9 +204,6 @@ export default function LibraryScreen() {
   // Gorhom Bottom Sheet Referansı
   const cardDetailSheetRef = useRef(null);
 
-  // Ekranda kaplayacağı alan: %90 (Üstten %10 boşluk bırakır, diğer 3 tarafa yapışır)
-  const snapPoints = useMemo(() => ['90%'], []);
-
   // Modal görünürlük kontrolü
   useEffect(() => {
     if (cardDetailModalVisible) {
@@ -217,20 +212,6 @@ export default function LibraryScreen() {
       cardDetailSheetRef.current?.dismiss();
     }
   }, [cardDetailModalVisible]);
-
-  // Arka plan karartma ayarı
-  const renderBackdrop = useCallback(
-    (props) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        pressBehavior="close" // Boşluğa tıklayınca kapatır
-        opacity={0.5}
-      />
-    ),
-    []
-  );
 
   // Kategoriye göre renkleri al (Supabase sort_order kullanarak)
   const getCategoryColors = (sortOrder) => {
@@ -1130,26 +1111,20 @@ export default function LibraryScreen() {
       </AnimatedPagerView>
 
       {/* Card Detail Modal */}
-      {/* Card Detail Modal */}
-      {/* Gorhom Bottom Sheet Modal */}
-      {/* --- GORHOM CARD DETAIL BOTTOM SHEET --- */}
+      {/* Card detail: full-height native sheet */}
       <BottomSheetModal
         ref={cardDetailSheetRef}
+        snapPoints={LARGE_SNAP_POINTS}
+        enablePanDownToClose
         index={0}
-        snapPoints={snapPoints}
         onChange={(index) => {
           // Kullanıcı paneli aşağı sürükleyerek kapatırsa state'i güncelle
           if (index === -1) setCardDetailModalVisible(false);
         }}
-        backdropComponent={renderBackdrop}
         backgroundStyle={{
           backgroundColor: colors.background,
           borderRadius: 44
         }}
-        handleComponent={() => null}
-        enableContentPanningGesture={false} // İçeriği (ScrollView'u) kaydırırken panelin sürüklenmesini tamamen kapatır. Sadece içerik kayar.
-        enableDynamicSizing={false} // İçerik azaldığında veya arttığında panelin kendi kendine boyut değiştirmesini engeller. Kesinlikle %90'da kalır.
-        enableOverDrag={false} // Paneli en yukarı kaydırdığında lastik gibi esnemesini durdurur.
       >
 
         {/* --- SABİT HEADER BÖLÜMÜ (Aşağı kaymaz, hep üstte durur) --- */}

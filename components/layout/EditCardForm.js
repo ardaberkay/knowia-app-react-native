@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
 import { Text, TextInput } from '../ui/AppText';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import FormScrollView from './FormScrollView';
 import { updateCard } from '../../services/CardService';
 import { uploadCardImage } from '../../services/StorageService';
 import { typography } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Buffer } from 'buffer';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
@@ -109,14 +109,11 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
   };
 
   return (
-    <KeyboardAwareScrollView
+    <FormScrollView
       contentContainerStyle={[styles.formContainer, { backgroundColor: colors.background }]}
       style={{ flex: 1 }}
       keyboardShouldPersistTaps="handled"
-      enableOnAndroid={true}
-      enableAutomaticScroll={true}
       extraScrollHeight={24}
-      enableResetScrollToCoords={false}
       showsVerticalScrollIndicator={false}
     >
           <View style={[styles.inputCard, { 
@@ -335,7 +332,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               text={t("cardDetail.save", "Kaydet")}
             />
           </View>
-    </KeyboardAwareScrollView>
+    </FormScrollView>
   );
 }
 

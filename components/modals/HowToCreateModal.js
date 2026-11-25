@@ -1,15 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, ScrollView, Modal, Pressable, useWindowDimensions } from 'react-native';
+import React, { useRef, useEffect, useState } from 'react';
+import { View, TouchableOpacity, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { Text } from '../ui/AppText';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming, 
-  runOnJS,
-  Easing
-} from 'react-native-reanimated';
-
 import { useTheme } from '../../theme/theme';
+import { BottomSheetModal, BottomSheetView } from '@expo/ui/community/bottom-sheet';
 import { typography } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
@@ -19,48 +12,27 @@ import { triggerHaptic } from '../../lib/hapticManager';
 
 export default function HowToCreateModal({ isVisible, onClose }) {
   const { height: SCREEN_HEIGHT } = useWindowDimensions();
+  const SHEET_MAX_HEIGHT = Math.round(SCREEN_HEIGHT * 0.85);
   const { colors } = useTheme();
   const { t } = useTranslation();
 
-  // Animasyon bitmeden Modal'ı DOM'dan kaldırmamak için local state
-  const [renderModal, setRenderModal] = useState(isVisible);
   
-  // Reanimated Değerleri
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(SCREEN_HEIGHT); // Ekranın en altından başlar
 
+  // Native sheet: SwiftUI sheet on iOS, Material ModalBottomSheet on Android.
+  const sheetRef = useRef(null);
+  const visibleRef = useRef(isVisible);
+  visibleRef.current = isVisible;
   useEffect(() => {
     if (isVisible) {
-      setRenderModal(true);
-      // Açılış Animasyonu (Yumuşak geliş)
-      opacity.value = withTiming(1, { duration: 250 });
-      translateY.value = withTiming(0, { 
-        duration: 350, 
-        easing: Easing.out(Easing.exp) 
-      });
+      sheetRef.current?.present();
     } else {
-      // Kapanış Animasyonu (Hızlı ve keskin)
-      opacity.value = withTiming(0, { duration: 150 });
-      translateY.value = withTiming(SCREEN_HEIGHT, { 
-        duration: 150,
-        easing: Easing.in(Easing.quad) 
-      }, (isFinished) => {
-        if (isFinished) {
-          runOnJS(setRenderModal)(false);
-        }
-      });
+      sheetRef.current?.dismiss();
     }
   }, [isVisible]);
-
-  // Animasyon Stilleri
-  const backdropStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }));
-
-  const modalAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
-  }));
+  // Swipe/backdrop dismiss tells the parent; skipped when the parent closed it.
+  const handleSheetDismiss = () => {
+    if (visibleRef.current) onClose();
+  };
 
   const steps = [
     {
@@ -100,25 +72,14 @@ export default function HowToCreateModal({ isVisible, onClose }) {
     }
   ];
 
-  if (!renderModal) return null;
-
   return (
-    <Modal
-      transparent={true}
-      visible={renderModal}
-      animationType="none" 
-      onRequestClose={onClose} 
-      statusBarTranslucent={true}
+    <BottomSheetModal
+      ref={sheetRef}
+      onDismiss={handleSheetDismiss}
+      enablePanDownToClose
+      backgroundStyle={{ backgroundColor: colors.background }}
     >
-      <View style={styles.overlay}>
-        
-        {/* Kararan Arka Plan */}
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
-          <Animated.View style={[styles.backdrop, backdropStyle, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]} />
-        </Pressable>
-
-        {/* Modal Kutusu */}
-        <Animated.View style={[styles.modalContainer, { backgroundColor: colors.background }, modalAnimatedStyle]}>
+      <BottomSheetView style={[styles.sheetContent, { maxHeight: SHEET_MAX_HEIGHT }]}>
           
           {/* Header */}
           <View style={styles.headerRow}>
@@ -187,36 +148,15 @@ export default function HowToCreateModal({ isVisible, onClose }) {
             </Text>
           </TouchableOpacity>
 
-        </Animated.View>
-      </View>
-    </Modal>
+      </BottomSheetView>
+    </BottomSheetModal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'center', 
-    alignItems: 'center',     
-  },
-  backdrop: {
-    flex: 1,
-    ...StyleSheet.absoluteFillObject,
-  },
-  modalContainer: {
-    width: '90%', 
-    maxHeight: '85%',
-    borderRadius: 32,
-    padding: 20, // 24'ten 20'ye hafif çekildi, ekranda daha rahat durması için
-    overflow: 'hidden',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(150, 150, 150, 0.2)',
-
+  sheetContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
   },
   headerRow: {
     flexDirection: 'row',
@@ -230,6 +170,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollView: {
+    flexShrink: 1,
     maxHeight: 450,
   },
   scrollContent: {

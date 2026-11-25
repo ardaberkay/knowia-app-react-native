@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Animated, Keyboard, Modal, Pressable } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Animated, Keyboard, Pressable } from 'react-native';
+import { MenuView } from '@expo/ui/community/menu';
 import { Text } from '../../components/ui/AppText';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -233,39 +234,48 @@ export default function DiscoverScreen() {
     setActiveTab(key);
   };
 
-  // Time window menu (a small dropdown under the pill).
-  const pillRef = useRef(null);
-  const [timeMenu, setTimeMenu] = useState(null); // { right, top } in window coords, or null
-  const openTimeMenu = () => {
-    triggerHaptic('selection');
-    pillRef.current?.measureInWindow((x, y, width, height) => {
-      setTimeMenu({ right: x + width, top: y + height + 6 });
-    });
+  // Time window menu: a native menu laid over the pill (the pill's width
+  // follows its label, so the trigger takes the measured size).
+  const [timePillSize, setTimePillSize] = useState({ width: 0, height: 0 });
+  const onTimePillLayout = (e) => {
+    const { width, height } = e.nativeEvent.layout;
+    setTimePillSize((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));
   };
   const selectTimeFilter = (key) => {
     triggerHaptic('selection');
-    setTimeMenu(null);
     setTimeFilter(key);
   };
   const activeTime = TIME_FILTERS.find((f) => f.key === timeFilter) || TIME_FILTERS[0];
   const showTimePill = TABS_WITH_TIME_FILTER.has(activeTab);
 
   const renderTimePill = () => (
-    <Pressable
-      ref={pillRef}
-      onPress={openTimeMenu}
-      hitSlop={8}
-      style={({ pressed }) => [
-        styles.timePill,
-        { backgroundColor: 'rgba(255, 255, 255, 0.08)', opacity: pressed ? 0.7 : 1 },
-      ]}
+    <View>
+    <View
+      onLayout={onTimePillLayout}
+      pointerEvents="none"
+      style={[styles.timePill, { backgroundColor: 'rgba(255, 255, 255, 0.08)' }]}
     >
       <Iconify icon="solar:calendar-minimalistic-bold" size={14} color={colors.muted} />
       <Text style={[styles.timePillText, { color: colors.text }]} numberOfLines={1}>
         {t(activeTime.labelKey, activeTime.fallback)}
       </Text>
       <Iconify icon="flowbite:caret-down-solid" size={12} color={colors.muted} />
-    </Pressable>
+    </View>
+    <MenuView
+      actions={TIME_FILTERS.map((f) => ({
+        id: f.key,
+        title: t(f.labelKey, f.fallback),
+        state: f.key === timeFilter ? 'on' : 'off',
+      }))}
+      onOpenMenu={() => triggerHaptic('selection')}
+      onPressAction={({ nativeEvent }) => {
+        if (nativeEvent.event !== timeFilter) selectTimeFilter(nativeEvent.event);
+      }}
+      style={StyleSheet.absoluteFill}
+    >
+      <View style={timePillSize} />
+    </MenuView>
+    </View>
   );
 
   const renderHeader = () => (
@@ -371,44 +381,6 @@ export default function DiscoverScreen() {
 
       {renderHeader()}
 
-      <Modal visible={Boolean(timeMenu)} transparent animationType="fade" onRequestClose={() => setTimeMenu(null)}>
-        <Pressable style={{ flex: 1 }} onPress={() => setTimeMenu(null)}>
-          {timeMenu ? (
-            <View
-              style={[
-                styles.timeMenu,
-                {
-                  // Right-aligned under the pill.
-                  top: timeMenu.top,
-                  left: Math.max(14, timeMenu.right - 170),
-                  backgroundColor: colors.cardBackground,
-                  borderColor: colors.cardBorder || colors.border,
-                },
-              ]}
-            >
-              {TIME_FILTERS.map((filter, index) => {
-                const selected = filter.key === timeFilter;
-                return (
-                  <TouchableOpacity
-                    key={filter.key}
-                    activeOpacity={0.6}
-                    onPress={() => selectTimeFilter(filter.key)}
-                    style={[
-                      styles.timeMenuItem,
-                      index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-                    ]}
-                  >
-                    <Text style={[typography.styles.body, { color: selected ? colors.buttonColor : colors.text, flex: 1 }]}>
-                      {t(filter.labelKey, filter.fallback)}
-                    </Text>
-                    {selected ? <Iconify icon="hugeicons:tick-01" size={18} color={colors.buttonColor} /> : null}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          ) : null}
-        </Pressable>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -471,23 +443,5 @@ const styles = StyleSheet.create({
   timePillText: {
     fontSize: 13,
     fontWeight: '600',
-  },
-  timeMenu: {
-    position: 'absolute',
-    width: 170,
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
-  },
-  timeMenuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
   },
 });

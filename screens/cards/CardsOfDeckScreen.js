@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useCallback, useMemo } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Platform, BackHandler, Alert, Animated, Easing, Modal, Image, RefreshControl, Pressable, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, Platform, BackHandler, Alert, Animated, Easing, Image, RefreshControl, Pressable, ActivityIndicator } from 'react-native';
 import { Text } from '../../components/ui/AppText';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
@@ -14,7 +14,6 @@ import FilterIcon from '../../components/modals/CardFilterIcon';
 import CardDetailView from '../../components/layout/CardDetailView';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { useFocusEffect } from '@react-navigation/native';
-import { useHeaderHeight } from '@react-navigation/elements';
 import { useAuth } from '../../contexts/AuthContext';
 import * as BlockService from '../../services/BlockService';
 import { deleteCard, getCardsByDeck, getUserCardProgressForCards, getCardDetail } from '../../services/CardService';
@@ -23,6 +22,7 @@ import { invalidateCache } from '../../services/CacheService';
 import ReportModal from '../../components/modals/ReportModal';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { LinearGradient } from 'expo-linear-gradient';
+import { MenuView } from '@expo/ui/community/menu';
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useListBottomInset } from '../../components/ui/CustomTabBar';
 
@@ -83,7 +83,7 @@ export default function DeckCardsScreen({ route, navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const PAGE_SIZE = 50;
   const spinValue = useRef(new Animated.Value(0)).current;
-  const moreMenuRef = useRef(null);
+  const moreMenuActionsRef = useRef({});
   const flatListRef = useRef(null);
   const dataFetchedRef = useRef(false);
   const latestDetailFetchRef = useRef(null);
@@ -93,8 +93,6 @@ export default function DeckCardsScreen({ route, navigation }) {
   const cardsFetchGenRef = useRef(0);
   const debouncedSearchFetchBootRef = useRef(true);
   const favoriteCardsRef = useRef(new Set());
-  const [moreMenuVisible, setMoreMenuVisible] = useState(false);
-  const [moreMenuPos, setMoreMenuPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [reportModalAlreadyCodes, setReportModalAlreadyCodes] = useState([]);
   const [reportCardId, setReportCardId] = useState(null);
@@ -104,7 +102,6 @@ export default function DeckCardsScreen({ route, navigation }) {
   const showFullScreenLoading = loading && cards.length === 0 && !selectedCard;
   const insets = useSafeAreaInsets();
   const listBottomInset = useListBottomInset();
-  const headerHeight = useHeaderHeight();
   const selectedCardRef = useRef(null);
   const editModeRef = useRef(false);
   const addCardFabPressed = useSharedValue(0);
@@ -434,19 +431,19 @@ export default function DeckCardsScreen({ route, navigation }) {
               </TouchableOpacity>
             )}
             {isOwner && (
-              <TouchableOpacity
-                ref={moreMenuRef}
-                onPress={() => {
-                  triggerHaptic('light');
-                  requestAnimationFrame(() => {
-                    openMoreMenu();
-                  });
-                }}
-                activeOpacity={0.7}
-                hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
+              <MenuView
+                actions={[
+                  { id: 'edit', title: t('cardDetail.edit', 'Kartı Düzenle'), image: 'pencil' },
+                  { id: 'delete', title: t('cardDetail.delete', 'Kartı Sil'), image: 'trash', attributes: { destructive: true } },
+                ]}
+                onOpenMenu={() => triggerHaptic('light')}
+                onPressAction={({ nativeEvent }) => moreMenuActionsRef.current[nativeEvent.event]?.()}
+                style={styles.headerMenuHost}
               >
-                <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={26} color={colors.text} />
-              </TouchableOpacity>
+                <View style={styles.headerMenuTrigger}>
+                  <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={26} color={colors.text} />
+                </View>
+              </MenuView>
             )}
           </View>
         ),
@@ -457,7 +454,7 @@ export default function DeckCardsScreen({ route, navigation }) {
         headerRight: () => null,
       });
     }
-  }, [showFullScreenLoading, selectedCard, editMode, colors.text, navigation, deck, favoriteCards, currentUserId, handleToggleFavoriteCard, openMoreMenu, openReportCardModal]);
+  }, [showFullScreenLoading, selectedCard, editMode, colors.text, navigation, deck, favoriteCards, currentUserId, handleToggleFavoriteCard, openReportCardModal, t]);
 
   useEffect(() => {
     if (loading) {
@@ -529,7 +526,6 @@ export default function DeckCardsScreen({ route, navigation }) {
   const handleEditSelectedCard = () => {
     if (!selectedCard) return;
     setEditMode(true);
-    setMoreMenuVisible(false);
   };
 
   const handleDeleteSelectedCard = () => {
@@ -542,7 +538,6 @@ export default function DeckCardsScreen({ route, navigation }) {
         {
           text: t('common.cancel', 'İptal'),
           style: 'cancel',
-          onPress: () => setMoreMenuVisible(false)
         },
         {
           text: t('common.delete', 'Sil'),
@@ -578,8 +573,6 @@ export default function DeckCardsScreen({ route, navigation }) {
               showSuccess(t('cardDetail.deleteSuccess', 'Kart başarıyla silindi'));
             } catch (e) {
               showError(t('cardDetail.deleteError', 'Kart silinemedi'));
-            } finally {
-              setMoreMenuVisible(false);
             }
           }
         }
@@ -587,16 +580,9 @@ export default function DeckCardsScreen({ route, navigation }) {
     );
   };
 
-  const openMoreMenu = () => {
-    if (moreMenuRef.current && moreMenuRef.current.measureInWindow) {
-      moreMenuRef.current.measureInWindow((x, y, width, height) => {
-        setMoreMenuPos({ x, y, width, height });
-        setMoreMenuVisible(true);
-      });
-    } else {
-      setMoreMenuVisible(true);
-    }
-  };
+  // The header menu lives in a setOptions closure; read the handlers through a
+  // ref so it always sees the current cards/selection.
+  moreMenuActionsRef.current = { edit: handleEditSelectedCard, delete: handleDeleteSelectedCard };
 
   const fetchAndSetCardDetail = useCallback(async (card) => {
     if (!card) {
@@ -821,45 +807,6 @@ export default function DeckCardsScreen({ route, navigation }) {
                 />
               </View>
 
-              {/* Detay sayfasının More (Üç nokta) Menüsü */}
-              <Modal
-                visible={moreMenuVisible}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setMoreMenuVisible(false)}
-              >
-                <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setMoreMenuVisible(false)}>
-                  <View
-                    style={{
-                      position: 'absolute',
-                      right: 20,
-                      // Right under the nav bar. Measuring the header button is unreliable (iOS 26 bar items).
-                      top: headerHeight + 6,
-                      minWidth: 160,
-                      backgroundColor: colors.cardBackground,
-                      borderRadius: 14,
-                      paddingVertical: 8,
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.15,
-                      shadowRadius: 8,
-                      elevation: 8,
-                      borderWidth: 1,
-                      borderColor: colors.cardBorder,
-                    }}
-                  >
-                    <TouchableOpacity onPress={handleEditSelectedCard} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16 }} activeOpacity={0.7}>
-                      <Iconify icon="lucide:edit" size={20} color={colors.text} style={{ marginRight: 12 }} />
-                      <Text style={[typography.styles.body, { color: colors.text, fontSize: 16 }]}>{t('cardDetail.edit', 'Kartı Düzenle')}</Text>
-                    </TouchableOpacity>
-                    <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
-                    <TouchableOpacity onPress={handleDeleteSelectedCard} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16 }} activeOpacity={0.7}>
-                      <Iconify icon="mdi:garbage" size={20} color="#E74C3C" style={{ marginRight: 12 }} />
-                      <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: 16 }]}>{t('cardDetail.delete', 'Kartı Sil')}</Text>
-                    </TouchableOpacity>
-                  </View>
-                </TouchableOpacity>
-              </Modal>
             </View>
           )}
 
@@ -878,6 +825,16 @@ export default function DeckCardsScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
+  headerMenuHost: {
+    width: 32,
+    height: 32,
+  },
+  headerMenuTrigger: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -896,6 +853,7 @@ const styles = StyleSheet.create({
     right: 20,
     borderRadius: 28,
     overflow: 'hidden',
+    backgroundColor: '#F98A21', // solid base under the gradient: cheap iOS shadow
     zIndex: 3,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },

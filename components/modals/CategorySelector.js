@@ -1,14 +1,12 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import { View, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Text } from '../ui/AppText';
 
 // ETKİLEŞİMLİ BİLEŞENLER
-import {
-  BottomSheetModal,
-  BottomSheetFlatList,
-  BottomSheetBackdrop,
-  TouchableOpacity
-} from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetFlatList } from '@expo/ui/community/bottom-sheet';
+// Lists open at half height and drag up to full (iOS medium/large detents,
+// Android partial/expanded).
+const LIST_SNAP_POINTS = ['50%', '100%'];
 
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -37,19 +35,6 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
       onClose();
     }
   }, [onClose]);
-
-  const renderBackdrop = useCallback(
-    (props) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        pressBehavior="close"
-        opacity={0.5}
-      />
-    ),
-    []
-  );
 
   // --- ORİJİNAL FONKSİYONLARIN (KORUNDU) ---
   const getCategoryName = (category) => t(`categories.${category.sort_order}`, null);
@@ -117,18 +102,15 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
       ref={bottomSheetModalRef}
       index={0}
       onChange={handleSheetChanges}
-      backdropComponent={renderBackdrop}
       // Radius ve Arka Plan
       backgroundStyle={{
         backgroundColor: colors.background,
         borderRadius: 44
       }}
-      handleIndicatorStyle={{ backgroundColor: isDarkMode ? '#666' : '#CCC' }}
 
-      // Dinamik Boyutlandırma ve Scroll Ayarları
-      enableDynamicSizing={true}
-      maxDynamicContentSize={SCREEN_HEIGHT * 0.6}
-      enableContentPanningGesture={false}
+      snapPoints={LIST_SNAP_POINTS}
+
+      enablePanDownToClose
     >
 
       {/* --- SABİT HEADER (LİSTENİN DIŞINDA) --- */}

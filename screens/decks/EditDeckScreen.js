@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Keyboard } from 'react-native';
 import { Text, TextInput } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import FormScrollView from '../../components/layout/FormScrollView';
 import { getCategories } from '../../services/CategoryService';
 import { updateDeck } from '../../services/DeckService';
 import { getLanguages } from '../../services/LanguageService';
@@ -147,13 +147,10 @@ export default function DeckEditScreen() {
 
   return (
     <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
-      <KeyboardAwareScrollView
+      <FormScrollView
         contentContainerStyle={styles.formContainer}
         keyboardShouldPersistTaps="handled"
-        enableOnAndroid={true}
-        enableAutomaticScroll={true}
         extraScrollHeight={20}
-        enableResetScrollToCoords={false}
         showsVerticalScrollIndicator={false}
       >
         <View
@@ -430,7 +427,7 @@ export default function DeckEditScreen() {
             style={{ flex: 2 }}
           />
         </View>
-      </KeyboardAwareScrollView>
+      </FormScrollView>
 
       <CategorySelector
         isVisible={isCategoryModalVisible}

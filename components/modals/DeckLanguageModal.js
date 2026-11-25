@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity as RNTouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Text } from '../ui/AppText';
 
-// GORHOM BİLEŞENLERİ
-import {
-  BottomSheetModal,
-  BottomSheetFlatList,
-  BottomSheetBackdrop,
-  TouchableOpacity,
-} from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetFlatList } from '@expo/ui/community/bottom-sheet';
+// Lists open at half height and drag up to full (iOS medium/large detents,
+// Android partial/expanded).
+const LIST_SNAP_POINTS = ['50%', '100%'];
 
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -90,11 +87,6 @@ export default function DeckLanguageModal({
   const front = byId(localSelected[0]);
   const back = byId(localSelected[1]);
   const isFull = localSelected.length >= 2;
-
-  const renderBackdrop = useCallback(
-    (props) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} pressBehavior="close" opacity={0.5} />,
-    []
-  );
 
   // One face "slot". The slot the next tap will fill is outlined in the accent
   // colour so it's clear what is being picked; a filled slot clears on tap.
@@ -180,12 +172,9 @@ export default function DeckLanguageModal({
       ref={bottomSheetModalRef}
       index={0}
       onChange={(index) => index === -1 && onClose()}
-      backdropComponent={renderBackdrop}
       backgroundStyle={{ backgroundColor: colors.background, borderRadius: 44 }}
-      handleIndicatorStyle={{ backgroundColor: isDarkMode ? '#555' : '#CCC' }}
-      enableDynamicSizing={true}
-      maxDynamicContentSize={SCREEN_HEIGHT * 0.85}
-      enableContentPanningGesture={false}
+      snapPoints={LIST_SNAP_POINTS}
+      enablePanDownToClose
     >
       {/* --- SABİT HEADER BÖLÜMÜ --- */}
       <View style={styles.fixedHeader}>
@@ -273,7 +262,7 @@ export function DeckLanguageField({ languages = [], selectedLanguage = [], onPre
   );
 
   return (
-    <RNTouchableOpacity
+    <TouchableOpacity
       activeOpacity={0.8}
       onPress={onPress}
       style={[fieldStyles.field, { borderColor: colors.inputBorder, backgroundColor: colors.inputBackground }]}
@@ -297,7 +286,7 @@ export function DeckLanguageField({ languages = [], selectedLanguage = [], onPre
       )}
 
       {back ? (
-        <RNTouchableOpacity
+        <TouchableOpacity
           onPress={onSwap}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           style={[fieldStyles.swapButton, { backgroundColor: `${primaryColor}18` }]}
@@ -305,11 +294,11 @@ export function DeckLanguageField({ languages = [], selectedLanguage = [], onPre
           accessibilityLabel={t('create.languageSwap', 'Yerlerini değiştir')}
         >
           <Iconify icon="material-symbols:swap-horiz-rounded" size={20} color={primaryColor} />
-        </RNTouchableOpacity>
+        </TouchableOpacity>
       ) : (
         <Iconify icon="flowbite:caret-down-solid" size={20} color={colors.muted} />
       )}
-    </RNTouchableOpacity>
+    </TouchableOpacity>
   );
 }
 

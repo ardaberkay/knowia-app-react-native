@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { StyleSheet, View, TouchableOpacity, Alert, ImageBackground, ActivityIndicator } from 'react-native';
 import { Text, TextInput } from '../../components/ui/AppText';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import FormScrollView from '../../components/layout/FormScrollView';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
@@ -195,15 +195,12 @@ export default function ResetPasswordScreen({ navigation }) {
       style={styles.backgroundImage}
       resizeMode="cover"
     >
-      <KeyboardAwareScrollView
+      <FormScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        enableOnAndroid={true}
-        enableAutomaticScroll={true}
         extraScrollHeight={50}
-        enableResetScrollToCoords={false}
       >
         <View style={styles.form}>
           {/* Şifre input */}
@@ -303,7 +300,7 @@ export default function ResetPasswordScreen({ navigation }) {
             </TouchableOpacity>
           </View>
         </View>
-      </KeyboardAwareScrollView>
+      </FormScrollView>
     </ImageBackground>
   );
 }

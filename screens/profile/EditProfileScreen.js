@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Image, StatusBar, Alert, Keyboard } from 'react-native';
 import { Text, TextInput } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import FormScrollView from '../../components/layout/FormScrollView';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { getCurrentUserProfile, updateProfile } from '../../services/ProfileService';
@@ -303,14 +303,11 @@ export default function EditProfileScreen({ navigation }) {
   return (
     <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <KeyboardAwareScrollView
+      <FormScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        enableOnAndroid={true}
-        enableAutomaticScroll={true}
-        enableResetScrollToCoords={false}
       >
         {/* Profile Photo Card */}
         <View style={[styles.inputCard, {
@@ -637,7 +634,7 @@ export default function EditProfileScreen({ navigation }) {
             text={saving ? t('editProfile.saving') : t('editProfile.save')}
           />
         </View>
-      </KeyboardAwareScrollView>
+      </FormScrollView>
     </SafeAreaView>
   );
 }

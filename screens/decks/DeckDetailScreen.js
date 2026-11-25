@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Platform, Modal, Pressable, Image, Switch, Animated, RefreshControl } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Platform, Pressable, Image, Switch, Animated, RefreshControl } from 'react-native';
 import { Text } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
@@ -22,10 +22,13 @@ import * as BlockService from '../../services/BlockService';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import ReportModal from '../../components/modals/ReportModal';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
-import { useHeaderHeight } from '@react-navigation/elements';
+import { MenuView } from '@expo/ui/community/menu';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BottomSheetModal, BottomSheetFlatList, BottomSheetBackdrop, TouchableOpacity as BSTouchableOpacity } from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetFlatList } from '@expo/ui/community/bottom-sheet';
+// Lists open at half height and drag up to full (iOS medium/large detents,
+// Android partial/expanded).
+const LIST_SNAP_POINTS = ['50%', '100%'];
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import HeroPullBackdrop from '../../components/layout/HeroPullBackdrop';
 import { useListBottomInset } from '../../components/ui/CustomTabBar';
@@ -74,7 +77,6 @@ export default function DeckDetailScreen({ route, navigation }) {
 
   const insets = useSafeAreaInsets();
   const listBottomInset = useListBottomInset();
-  const headerHeight = useHeaderHeight();
   const [deck, setDeck] = useState(() => route.params?.deck);
   const { colors } = useTheme();
   const { session } = useAuth();
@@ -94,12 +96,14 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [favoriteCards, setFavoriteCards] = useState([]);
   const [cardSort, setCardSort] = useState('original'); // 'original', 'az', 'fav'
   const [originalCards, setOriginalCards] = useState([]);
-  const [moreMenuVisible, setMoreMenuVisible] = useState(false);
-  const [moreMenuPos, setMoreMenuPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
-  const moreMenuRef = useRef(null);
-  const [creatorMenuVisible, setCreatorMenuVisible] = useState(false);
-  const [creatorMenuPos, setCreatorMenuPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
-  const creatorChipRef = useRef(null);
+  // Header kebab menu actions, read through a ref from the setOptions closure.
+  const moreMenuActionsRef = useRef({});
+  // The creator chip's size, so the native menu trigger laid over it matches.
+  const [creatorChipSize, setCreatorChipSize] = useState({ width: 0, height: 0 });
+  const onCreatorChipLayout = useCallback((e) => {
+    const { width, height } = e.nativeEvent.layout;
+    setCreatorChipSize((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));
+  }, []);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [reportModalType, setReportModalType] = useState('user');
   const [reportModalTargetId, setReportModalTargetId] = useState(null);
@@ -172,19 +176,6 @@ export default function DeckDetailScreen({ route, navigation }) {
   const descriptionLayoutDone = useRef(false);
   const [refreshing, setRefreshing] = useState(false);
   const { height: screenHeight } = useWindowDimensions();
-  /** Az bölümde sheet kısa; çok bölümde en fazla ~%68 ekran (önceki sabit snap ile aynı tavan) */
-  const chapterSheetMaxContentHeight = useMemo(() => screenHeight * 0.68, [screenHeight]);
-  /** Çok az bölümde sheet çökük kalmasın; tavanı aşmasın */
-  const chapterSheetMinContentHeight = useMemo(
-    () =>
-      Math.min(
-        chapterSheetMaxContentHeight,
-        Math.max(screenHeight * 0.36, 300)
-      ),
-    [chapterSheetMaxContentHeight, screenHeight]
-  );
-  const chapterSheetHeaderApprox = 56;
-  const moreMenuScaleAnim = useRef(new Animated.Value(0)).current;
 
   // Animation values for entrance effects (Android: giriş animasyonu kapalı — çıkışta opacity flash riski)
   const entranceStart = Platform.OS === 'android' ? 1 : 0;
@@ -204,7 +195,6 @@ export default function DeckDetailScreen({ route, navigation }) {
     () => Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true }),
     [scrollY]
   );
-  const scaleAnim = useRef(new Animated.Value(0)).current;
   const addCardFabPressed = useSharedValue(0);
 
   useFocusEffect(
@@ -241,35 +231,6 @@ export default function DeckDetailScreen({ route, navigation }) {
       opacity: withSpring(addCardFabPressed.value ? 0.85 : 1, springConfig),
     };
   });
-
-  useEffect(() => {
-    if (creatorMenuVisible) {
-      // Menü açıldığında: Anında ve sıçrayarak büyü (Instagram popup'ları gibi)
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 200, // Hız
-        friction: 10, // Sekme payı (az sekip hızlı dursun)
-        useNativeDriver: true, // GPU'yu kullan, asla kasmaz!
-      }).start();
-    } else {
-      // Menü kapandığında: Bekleme yapmadan anında yok ol
-      scaleAnim.setValue(0);
-    }
-  }, [creatorMenuVisible]);
-
-  useEffect(() => {
-    if (moreMenuVisible) {
-      // Menü açıldığında: Anında ve sıçrayarak büyü
-      Animated.spring(moreMenuScaleAnim, {
-        toValue: 1,
-        tension: 200,
-        friction: 10,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      moreMenuScaleAnim.setValue(0);
-    }
-  }, [moreMenuVisible]);
 
   useEffect(() => {
     const loadDecksLanguages = async () => {
@@ -779,19 +740,6 @@ export default function DeckDetailScreen({ route, navigation }) {
     chapterSheetModalRef.current?.dismiss();
   }, [chapterSheetVisible]);
 
-  const renderChapterSheetBackdrop = useCallback(
-    (props) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-        opacity={0.45}
-        pressBehavior="close"
-      />
-    ),
-    []
-  );
-
   const navigateToSwipeDeck = useCallback(
     async (chapter) => {
       try {
@@ -950,36 +898,9 @@ export default function DeckDetailScreen({ route, navigation }) {
     );
   };
 
-  // More menüsünü aç
-  const openMoreMenu = () => {
-    if (moreMenuRef.current && moreMenuRef.current.measureInWindow) {
-      moreMenuRef.current.measureInWindow((x, y, width, height) => {
-        setMoreMenuPos({ x, y, width, height });
-        setMoreMenuVisible(true);
-      });
-    } else {
-      setMoreMenuVisible(true);
-    }
-  };
-
-  const openCreatorMenu = () => {
-    if (creatorChipRef.current && creatorChipRef.current.measureInWindow) {
-      // Ölçüm emrini Native'e anında gönderiyoruz
-      creatorChipRef.current.measureInWindow((x, y, width, height) => {
-        // Ölçüm sonucu geldiğinde, UI'ı çizmeyi (render) bir frame erteliyoruz ki takılmasın
-        requestAnimationFrame(() => {
-          setCreatorMenuPos({ x, y, width, height });
-          setCreatorMenuVisible(true);
-        });
-      });
-    } else {
-      setCreatorMenuVisible(true);
-    }
-  };
 
 
   const openReportUserModal = async () => {
-    setCreatorMenuVisible(false);
     if (!deck?.user_id) return;
     if (!userId) { showError(t('common.error')); return; }
     try {
@@ -994,7 +915,6 @@ export default function DeckDetailScreen({ route, navigation }) {
   };
 
   const handleBlockUser = () => {
-    setCreatorMenuVisible(false);
     if (!deck?.user_id) return;
     Alert.alert(
       t('moderation.blockUser'),
@@ -1019,7 +939,6 @@ export default function DeckDetailScreen({ route, navigation }) {
   };
 
   const handleHideDeck = async () => {
-    setMoreMenuVisible(false);
     if (!deck?.id) return;
     try {
       if (!userId) { showError(t('common.error')); return; }
@@ -1032,7 +951,6 @@ export default function DeckDetailScreen({ route, navigation }) {
   };
 
   const openReportDeckModal = async () => {
-    setMoreMenuVisible(false);
     if (!deck?.id) return;
     if (!userId) { showError(t('common.error')); return; }
     try {
@@ -1060,6 +978,19 @@ export default function DeckDetailScreen({ route, navigation }) {
       else showError(e?.message || t('common.error'));
       throw e;
     }
+  };
+
+  // A native menu runs its action as it closes; wait for that before
+  // presenting a sheet so the two animations don't overlap.
+  moreMenuActionsRef.current = {
+    edit: () => navigation.navigate('DeckEdit', {
+      deck,
+      categoryInfo: categoryInfo || deck.categories || null,
+      selectedLanguageIds: decksLanguages,
+    }),
+    delete: handleDeleteDeck,
+    report: () => setTimeout(openReportDeckModal, 250),
+    hide: handleHideDeck,
   };
 
   // Header'a ikonları ekle
@@ -1098,25 +1029,32 @@ export default function DeckDetailScreen({ route, navigation }) {
 
           <View style={{ width: 24, alignItems: 'center' }}>
             {currentUserId ? (
-              <TouchableOpacity
-                ref={moreMenuRef}
-                onPress={() => {
-                  triggerHaptic('selection');
-                  requestAnimationFrame(() => {
-                    openMoreMenu();
-                  });
-                }}
-                activeOpacity={0.7}
-                hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
+              <MenuView
+                actions={
+                  deck?.user_id === currentUserId
+                    ? [
+                        { id: 'edit', title: t('deckDetail.edit', 'Desteyi Düzenle'), image: 'pencil' },
+                        { id: 'delete', title: t('deckDetail.deleteDeck', 'Desteyi Sil'), image: 'trash', attributes: { destructive: true } },
+                      ]
+                    : [
+                        { id: 'report', title: t('moderation.reportDeck'), image: 'exclamationmark.bubble' },
+                        { id: 'hide', title: t('moderation.hideDeck'), image: 'eye.slash', attributes: { destructive: true } },
+                      ]
+                }
+                onOpenMenu={() => triggerHaptic('selection')}
+                onPressAction={({ nativeEvent }) => moreMenuActionsRef.current[nativeEvent.event]?.()}
+                style={styles.headerMenuHost}
               >
-                <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={24} color={colors.text} />
-              </TouchableOpacity>
+                <View style={styles.headerMenuTrigger}>
+                  <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={24} color={colors.text} />
+                </View>
+              </MenuView>
             ) : null}
           </View>
         </View>
       ),
     });
-  }, [navigation, colors.text, isFavorite, currentUserId, deck?.user_id, isFocused]);
+  }, [navigation, colors.text, isFavorite, currentUserId, deck?.user_id, isFocused, t]);
 
   const sortCards = (type, cardsList) => {
     if (type === 'az') {
@@ -1412,17 +1350,8 @@ export default function DeckDetailScreen({ route, navigation }) {
             {/* Creator Chip - admin veya user_id varsa göster; başkasının destesinde tıklanabilir (şikayet/engelle) */}
             {(deck.is_admin_created || deck.user_id) && (
               (currentUserId && deck.user_id !== currentUserId && !deck.is_admin_created) ? (
-                <TouchableOpacity
-                  ref={creatorChipRef}
-                  onPress={
-                    () => {
-                      triggerHaptic('selection');
-                      openCreatorMenu();
-                    }
-                  }
-                  activeOpacity={0.8}
-                  style={styles.gfCreatorChip}
-                >
+                <View style={styles.gfCreatorChipSlot}>
+                <View style={[styles.gfCreatorChip, styles.gfCreatorChipInSlot]} onLayout={onCreatorChipLayout} pointerEvents="none">
                   <Image
                     source={
                       deck.profiles?.image_url
@@ -1435,7 +1364,22 @@ export default function DeckDetailScreen({ route, navigation }) {
                     {deck.profiles?.username || t('common.user', 'Kullanıcı')}
                   </Text>
                   <Iconify icon="flowbite:caret-down-solid" size={18} color="#fff" style={{ marginLeft: 2 }} />
-                </TouchableOpacity>
+                </View>
+                <MenuView
+                  actions={[
+                    { id: 'reportUser', title: t('moderation.reportUser'), image: 'exclamationmark.bubble' },
+                    { id: 'blockUser', title: t('moderation.blockUser'), image: 'hand.raised', attributes: { destructive: true } },
+                  ]}
+                  onOpenMenu={() => triggerHaptic('selection')}
+                  onPressAction={({ nativeEvent }) => {
+                    if (nativeEvent.event === 'reportUser') setTimeout(openReportUserModal, 250);
+                    else if (nativeEvent.event === 'blockUser') handleBlockUser();
+                  }}
+                  style={StyleSheet.absoluteFill}
+                >
+                  <View style={creatorChipSize} />
+                </MenuView>
+                </View>
               ) : (
                 <View style={styles.gfCreatorChip}>
                   <Image
@@ -1809,12 +1753,9 @@ export default function DeckDetailScreen({ route, navigation }) {
             }
           }
         }}
-        backdropComponent={renderChapterSheetBackdrop}
         backgroundStyle={{ backgroundColor: colors.background, borderRadius: 40 }}
-        handleIndicatorStyle={{ backgroundColor: colors.muted }}
-        enableDynamicSizing
-        maxDynamicContentSize={chapterSheetMaxContentHeight}
-        enableContentPanningGesture={false}
+        snapPoints={LIST_SNAP_POINTS}
+        enablePanDownToClose
       >
         <View style={[styles.chapterSheetHeader, { borderBottomColor: colors.border }]}>
           <Text style={[styles.chapterSheetTitle, { color: colors.cardQuestionText }]}>
@@ -1847,18 +1788,10 @@ export default function DeckDetailScreen({ route, navigation }) {
           removeClippedSubviews={true}
           contentContainerStyle={[
             styles.chapterSheetList,
-            {
-              flexGrow: 1,
-              minHeight: Math.max(
-                chapterSheetMinContentHeight - chapterSheetHeaderApprox,
-                120
-              ),
-              paddingBottom: insets.bottom + 24,
-            },
+            { paddingBottom: 24 },
           ]}
           style={{ flex: 1 }}
-          nestedScrollEnabled
-          renderItem={({ item }) => {
+            renderItem={({ item }) => {
             const isAction = item.id === 'action';
             const isSelected = selectedChapter?.id === item.id;
             const chapterProgress = isAction
@@ -1869,7 +1802,7 @@ export default function DeckDetailScreen({ route, navigation }) {
               ? Math.round((chapterProgress.learned / chapterProgress.total) * 100)
               : 0;
             return (
-              <BSTouchableOpacity
+              <TouchableOpacity
                 style={[
                   styles.chapterSheetItem,
                   {
@@ -1938,261 +1871,11 @@ export default function DeckDetailScreen({ route, navigation }) {
                     </View>
                   )}
                 </View>
-              </BSTouchableOpacity>
+              </TouchableOpacity>
             );
           }}
         />
       </BottomSheetModal>
-
-      {/* More Menüsü Modal - sahibi: Düzenle/Sil; sahibi değil: Gizle/Şikayet et */}
-      <Modal
-        visible={moreMenuVisible && isFocused}
-        transparent
-        animationType="none" // OS'in yavaş animasyonunu kapattık
-        onRequestClose={() => setMoreMenuVisible(false)}
-      >
-        <TouchableOpacity
-          style={{ flex: 1 }}
-          activeOpacity={1}
-          onPress={() => setMoreMenuVisible(false)}
-        >
-          <Animated.View
-            style={{
-              position: 'absolute',
-              right: 20,
-              // Right under the nav bar. Measuring the header button is unreliable (iOS 26 bar items).
-              top: headerHeight + 6,
-              minWidth: 160,
-              backgroundColor: colors.cardBackground,
-              borderRadius: 14,
-              paddingVertical: 8,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.15,
-              shadowRadius: 8,
-              elevation: 8,
-              borderWidth: 1,
-              borderColor: colors.cardBorder,
-
-              // Sihirli Animasyonlar
-              opacity: moreMenuScaleAnim,
-              transform: [
-                {
-                  scale: moreMenuScaleAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.85, 1], // %85'ten 100'e hızlıca büyüyecek
-                  }),
-                },
-              ],
-            }}
-          >
-            {currentUserId && deck.user_id === currentUserId ? (
-              <>
-                {/* DÜZENLE BUTONU */}
-                <TouchableOpacity
-                  onPress={() => {
-                    triggerHaptic('selection'); // Dokunma hissini ekledik
-                    setMoreMenuVisible(false); // Önce menüyü kapat
-                    requestAnimationFrame(() => { // Geçişi pürüzsüzleştir
-                      navigation.navigate('DeckEdit', {
-                        deck,
-                        categoryInfo: categoryInfo || deck.categories || null,
-                        selectedLanguageIds: decksLanguages
-                      });
-                    });
-                  }}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingVertical: 12,
-                    paddingHorizontal: 16,
-                  }}
-                  activeOpacity={0.6}
-                >
-                  <Iconify icon="lucide:edit" size={20} color={colors.text} style={{ marginRight: 12 }} />
-                  <Text style={[typography.styles.body, { color: colors.text, fontSize: 16 }]}>
-                    {t('deckDetail.edit', 'Desteyi Düzenle')}
-                  </Text>
-                </TouchableOpacity>
-
-                <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
-
-                {/* SİL BUTONU */}
-                <TouchableOpacity
-                  onPress={() => {
-                    triggerHaptic('heavy');
-                    setMoreMenuVisible(false);
-                    requestAnimationFrame(() => {
-                      handleDeleteDeck();
-                    });
-                  }}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingVertical: 12,
-                    paddingHorizontal: 16,
-                  }}
-                  activeOpacity={0.6}
-                >
-                  <Iconify icon="mdi:garbage" size={20} color="#E74C3C" style={{ marginRight: 12 }} />
-                  <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: 16 }]}>
-                    {t('deckDetail.deleteDeck', 'Desteyi Sil')}
-                  </Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                {/* ŞİKAYET ET BUTONU (Kapanma hatası düzeltildi) */}
-                <TouchableOpacity
-                  onPress={() => {
-                    triggerHaptic('light');
-                    setMoreMenuVisible(false);
-                    requestAnimationFrame(() => {
-                      openReportDeckModal();
-                    });
-                  }}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingVertical: 12,
-                    paddingHorizontal: 16,
-                  }}
-                  activeOpacity={0.6}
-                >
-                  <Iconify icon="ic:round-report-problem" size={20} color='#FED7AA' style={{ marginRight: 12 }} />
-                  <Text style={[typography.styles.body, { color: '#FED7AA', fontSize: 16 }]}>
-                    {t('moderation.reportDeck')}
-                  </Text>
-                </TouchableOpacity>
-
-                <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
-
-                {/* GİZLE BUTONU (Kapanma hatası düzeltildi) */}
-                <TouchableOpacity
-                  onPress={() => {
-                    triggerHaptic('heavy');
-                    setMoreMenuVisible(false);
-                    requestAnimationFrame(() => {
-                      handleHideDeck();
-                    });
-                  }}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingVertical: 12,
-                    paddingHorizontal: 16,
-                  }}
-                  activeOpacity={0.6}
-                >
-                  <Iconify icon="mingcute:user-hide-fill" size={20} color='#E74C3C' style={{ marginRight: 12 }} />
-                  <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: 16 }]}>
-                    {t('moderation.hideDeck')}
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </Animated.View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Creator menüsü (kullanıcıyı şikayet et / engelle) */}
-      <Modal
-        visible={creatorMenuVisible && isFocused}
-        transparent
-        animationType="none" // OS'in yavaş animasyonunu İPTAL ET!
-        onRequestClose={() => setCreatorMenuVisible(false)}
-      >
-        <TouchableOpacity
-          style={{ flex: 1 }}
-          activeOpacity={1}
-          onPress={() => setCreatorMenuVisible(false)}
-        >
-          <Animated.View
-            style={{
-              position: 'absolute',
-              left: creatorMenuPos.x,
-              // Yalnızca Android için top değerine insets.top ekliyoruz:
-              top: Platform.OS === 'android'
-                ? creatorMenuPos.y + creatorMenuPos.height + 4 + insets.top
-                : creatorMenuPos.y + creatorMenuPos.height + 8,
-              minWidth: 180,
-              backgroundColor: colors.cardBackground,
-              borderRadius: 14,
-              paddingVertical: 8,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.15,
-              shadowRadius: 8,
-              elevation: 8,
-              borderWidth: 1,
-              borderColor: colors.cardBorder,
-
-              // SİHİR BURADA: Ölçekleme ve Şeffaflık
-              opacity: scaleAnim, // Başlangıçta 0, anında 1 olacak
-              transform: [
-                {
-                  scale: scaleAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.85, 1], // %85'ten %100'e pırtlayarak büyüyecek
-                  }),
-                },
-              ],
-            }}
-          >
-            {!deck?.is_admin_created && (
-              <>
-                {/* ŞİKAYET ET BUTONU */}
-                <TouchableOpacity
-                  onPress={() => {
-                    triggerHaptic('light');
-                    setCreatorMenuVisible(false); // 1. ÖNCE BU MENÜYÜ KAPAT (Anında tepki)
-                    requestAnimationFrame(() => {
-                      openReportUserModal(); // 2. SONRA DİĞERİNİ AÇ
-                    });
-                  }}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingVertical: 12,
-                    paddingHorizontal: 16,
-                  }}
-                  activeOpacity={0.6} // Tıklama hissini netleştir
-                >
-                  <Iconify icon="ic:round-report-problem" size={20} color='#FED7AA' style={{ marginRight: 12 }} />
-                  <Text style={[typography.styles.body, { color: '#FED7AA', fontSize: 16 }]}>
-                    {t('moderation.reportUser')}
-                  </Text>
-                </TouchableOpacity>
-
-                <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
-
-                {/* KULLANICIYI ENGELLE BUTONU */}
-                <TouchableOpacity
-                  onPress={() => {
-                    triggerHaptic('heavy');
-                    setCreatorMenuVisible(false); // 1. ÖNCE BU MENÜYÜ KAPAT
-                    requestAnimationFrame(() => {
-                      handleBlockUser(); // 2. SONRA İŞLEMİ YAP
-                    });
-                  }}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingVertical: 12,
-                    paddingHorizontal: 16,
-                  }}
-                  activeOpacity={0.6}
-                >
-                  <Iconify icon="basil:user-block-solid" size={22} color='#E74C3C' style={{ marginRight: 12 }} />
-                  <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: 16 }]}>
-                    {t('moderation.blockUser')}
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </Animated.View>
-        </TouchableOpacity>
-      </Modal>
 
       <ReportModal
         visible={reportModalVisible && isFocused}
@@ -2220,6 +1903,7 @@ const styles = StyleSheet.create({
     right: 20,
     borderRadius: 28,
     overflow: 'hidden',
+    backgroundColor: '#F98A21', // solid base under the gradient: cheap iOS shadow
     zIndex: 3,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
@@ -2413,6 +2097,23 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.9)',
     fontSize: 13,
     fontWeight: '600',
+  },
+  gfCreatorChipSlot: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  gfCreatorChipInSlot: {
+    marginTop: 0,
+  },
+  headerMenuHost: {
+    width: 24,
+    height: 32,
+  },
+  headerMenuTrigger: {
+    width: 24,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   gfCreatorChip: {
     flexDirection: 'row',

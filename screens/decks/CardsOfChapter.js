@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, memo, useMemo } from 'react';
-import { View, StyleSheet, TouchableOpacity, FlatList, TouchableHighlight, ActivityIndicator, Platform, Modal, Image, Pressable, RefreshControl, BackHandler } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, FlatList, TouchableHighlight, ActivityIndicator, Platform, Image, Pressable, RefreshControl, BackHandler } from 'react-native';
 import { Text } from '../../components/ui/AppText';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
@@ -17,6 +17,7 @@ import { deleteCard, getCardsByChapter, getUserCardProgressForCards, getChapterP
 import { addFavoriteCard, removeFavoriteCard, getFavoriteCardIdsForCards } from '../../services/FavoriteService';
 import { LinearGradient } from 'expo-linear-gradient';
 import LottieView from 'lottie-react-native';
+import { MenuView } from '@expo/ui/community/menu';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import ChapterSelector from '../../components/modals/ChapterSelector';
 import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring } from 'react-native-reanimated';
@@ -155,10 +156,8 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const selectedCardsRef = useRef(new Set());
   const [showChapterModal, setShowChapterModal] = useState(false);
   const [moveLoading, setMoveLoading] = useState(false);
-  const [moreMenuVisible, setMoreMenuVisible] = useState(false);
   const { showSuccess, showError } = useSnackbarHelpers();
-  const [moreMenuPos, setMoreMenuPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
-  const moreMenuRef = useRef(null);
+  const moreMenuActionsRef = useRef({});
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const listBottomInset = useListBottomInset();
@@ -346,19 +345,19 @@ export default function ChapterCardsScreen({ route, navigation }) {
               />
             </TouchableOpacity>
             {isOwnerUser && (
-              <TouchableOpacity
-                ref={moreMenuRef}
-                onPress={() => {
-                  triggerHaptic('light');
-                  requestAnimationFrame(() => {
-                    openCardMenu();
-                  });
-                }}
-                activeOpacity={0.7}
-                hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
+              <MenuView
+                actions={[
+                  { id: 'edit', title: t('cardDetail.edit', 'Kartı Düzenle'), image: 'pencil' },
+                  { id: 'delete', title: t('cardDetail.delete', 'Kartı Sil'), image: 'trash', attributes: { destructive: true } },
+                ]}
+                onOpenMenu={() => triggerHaptic('light')}
+                onPressAction={({ nativeEvent }) => moreMenuActionsRef.current[nativeEvent.event]?.()}
+                style={styles.headerMenuHost}
               >
-                <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={24} color={colors.text} />
-              </TouchableOpacity>
+                <View style={styles.headerMenuTrigger}>
+                  <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={24} color={colors.text} />
+                </View>
+              </MenuView>
             )}
           </View>
         ),
@@ -393,7 +392,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
         </TouchableOpacity>
       ) : () => null,
     });
-  }, [loading, navigation, chapter?.id, currentUserId, deck?.user_id, deck?.is_shared, editMode, selectedCard, editCardMode, favoriteCards, colors.text, colors.background, openCardMenu]);
+  }, [loading, navigation, chapter?.id, currentUserId, deck?.user_id, deck?.is_shared, editMode, selectedCard, editCardMode, favoriteCards, colors.text, colors.background, t]);
 
   const filteredCards = useMemo(() => {
     if (!search.trim()) return cards;
@@ -511,7 +510,6 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
   const handleEditSelectedCard = () => {
     if (!selectedCard) return;
-    setMoreMenuVisible(false);
     setEditCardMode(true);
   };
 
@@ -527,17 +525,9 @@ export default function ChapterCardsScreen({ route, navigation }) {
     }
   };
 
-  const openCardMenu = () => {
-    if (!selectedCard) return;
-    if (moreMenuRef.current && moreMenuRef.current.measureInWindow) {
-      moreMenuRef.current.measureInWindow((x, y, width, height) => {
-        setMoreMenuPos({ x, y, width, height });
-        setMoreMenuVisible(true);
-      });
-    } else {
-      setMoreMenuVisible(true);
-    }
-  };
+  // The header menu lives in a setOptions closure; read the handlers through a
+  // ref so it always sees the current selection.
+  moreMenuActionsRef.current = { edit: handleEditSelectedCard, delete: handleDeleteSelectedCard };
 
   const fetchAndSetCardDetail = useCallback(async (card) => {
     if (!card) {
@@ -729,70 +719,6 @@ export default function ChapterCardsScreen({ route, navigation }) {
               showCreatedAt={true}
               isDeckOwner={isOwner}
             />
-            <Modal
-              visible={moreMenuVisible}
-              transparent
-              animationType="fade"
-              onRequestClose={() => setMoreMenuVisible(false)}
-            >
-              <TouchableOpacity
-                style={{ flex: 1 }}
-                activeOpacity={1}
-                onPress={() => setMoreMenuVisible(false)}
-              >
-                <View
-                  style={{
-                    position: 'absolute',
-                    right: 20,
-                    // Right under the nav bar. Measuring the header button is unreliable (iOS 26 bar items).
-                    top: headerHeight + 6,
-                    minWidth: 160,
-                    backgroundColor: colors.cardBackground,
-                    borderRadius: 14,
-                    paddingVertical: 8,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.15,
-                    shadowRadius: 8,
-                    elevation: 8,
-                    borderWidth: 1,
-                    borderColor: colors.cardBorder,
-                  }}
-                >
-                  <TouchableOpacity
-                    onPress={handleEditSelectedCard}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      paddingVertical: 12,
-                      paddingHorizontal: 16,
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Iconify icon="lucide:edit" size={20} color={colors.text} style={{ marginRight: 12 }} />
-                    <Text style={[typography.styles.body, { color: colors.text, fontSize: 16 }]}>
-                      {t('cardDetail.edit', 'Kartı Düzenle')}
-                    </Text>
-                  </TouchableOpacity>
-                  <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
-                  <TouchableOpacity
-                    onPress={handleDeleteSelectedCard}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      paddingVertical: 12,
-                      paddingHorizontal: 16,
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Iconify icon="mdi:garbage" size={20} color="#E74C3C" style={{ marginRight: 12 }} />
-                    <Text style={[typography.styles.body, { color: '#E74C3C', fontSize: 16 }]}>
-                      {t('cardDetail.delete', 'Kartı Sil')}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            </Modal>
           </>
         )}
       </SafeAreaView>
@@ -1043,6 +969,16 @@ export default function ChapterCardsScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
+  headerMenuHost: {
+    width: 32,
+    height: 32,
+  },
+  headerMenuTrigger: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   bgGradient: {
     flex: 1,
   },

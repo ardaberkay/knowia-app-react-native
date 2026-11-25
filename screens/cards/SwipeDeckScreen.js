@@ -51,6 +51,7 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import SwipeFlipCard, { Pill, SectionDivider, SwipeCardActions } from '../../components/layout/SwipeFlipCard';
 import { SwipeCardStage } from '../../components/layout/SwipeCardDeck';
 import VoiceSettingsSheet from '../../components/modals/VoiceSettingsSheet';
+import { MenuView } from '@expo/ui/community/menu';
 import {
   LANGUAGE_SORT_ORDER,
   LEGACY_RATE_INDEX_TO_RATE,
@@ -478,33 +479,13 @@ export default function SwipeDeckScreen({ route, navigation }) {
     // never re-renders anything during the opening animation.
     setTimeout(loadVoices, 450);
   }, [loadVoices]);
-  // The sheet opens only after the kebab menu has fully closed: two
-  // animations at once (the menu's native fade + the sheet sliding up) were
-  // what made the opening stutter.
-  const openVoiceSheetAfterMenuRef = useRef(false);
-  const handleMoreMenuDismiss = useCallback(() => {
-    if (!openVoiceSheetAfterMenuRef.current) return;
-    openVoiceSheetAfterMenuRef.current = false;
-    openVoiceSheet();
-  }, [openVoiceSheet]);
   const handleVoiceSheetDismiss = useCallback(() => {
     Speech?.stop();
   }, []);
 
-  // App bar overflow (kebab) menu.
-  const moreMenuRef = useRef(null);
-  const [moreMenuVisible, setMoreMenuVisible] = useState(false);
-  const [moreMenuPos, setMoreMenuPos] = useState({ x: 0, y: 0, width: 0, height: 0 });
-  const openMoreMenu = useCallback(() => {
-    if (moreMenuRef.current?.measureInWindow) {
-      moreMenuRef.current.measureInWindow((x, y, w, h) => {
-        setMoreMenuPos({ x, y, width: w, height: h });
-        setMoreMenuVisible(true);
-      });
-    } else {
-      setMoreMenuVisible(true);
-    }
-  }, []);
+  // App bar overflow (kebab) menu: a native menu anchored to the button.
+  // It lives in a setOptions closure, so actions are read through a ref.
+  const moreMenuActionsRef = useRef({});
 
   const handleShowMore = useCallback((id) => {
     const card = cardsRef.current.find((c) => c?.card_id === id);
@@ -697,6 +678,12 @@ export default function SwipeDeckScreen({ route, navigation }) {
     }
   }, [userId, reportCardId, t, showSuccess, showError]);
 
+  moreMenuActionsRef.current = {
+    reverse: toggleReversed,
+    voice: () => setTimeout(openVoiceSheet, 250),
+    report: () => setTimeout(openReportCardModal, 250),
+  };
+
   useLayoutEffect(() => {
     const currentCard = cards[currentIndex];
 
@@ -750,28 +737,28 @@ export default function SwipeDeckScreen({ route, navigation }) {
                 <Iconify icon="material-symbols:swap-vert-rounded" size={18} color="#FFFFFF" />
               </TouchableOpacity>
             ) : null}
-            <TouchableOpacity
-              ref={moreMenuRef}
-              collapsable={false}
-              onPress={() => {
-                triggerHaptic('selection');
-                requestAnimationFrame(openMoreMenu);
-              }}
-              activeOpacity={0.7}
-              hitSlop={{
-                top: 15,
-                bottom: 15,
-                left: 8,
-                right: 8,
-              }}
-              accessibilityRole="button"
+            <MenuView
+              actions={[
+                {
+                  id: 'reverse',
+                  title: isReversed ? t('swipeDeck.reverseOff', 'Normal çalış') : t('swipeDeck.reverseOn', 'Ters çevir'),
+                  image: 'arrow.up.arrow.down',
+                },
+                Speech ? { id: 'voice', title: t('swipeDeck.voice.settings', 'Ses ayarları'), image: 'speaker.wave.2' } : null,
+                !isOwner ? { id: 'report', title: t('moderation.reportCard', 'Kartı şikayet et'), image: 'exclamationmark.bubble' } : null,
+              ].filter(Boolean)}
+              onOpenMenu={() => triggerHaptic('selection')}
+              onPressAction={({ nativeEvent }) => moreMenuActionsRef.current[nativeEvent.event]?.()}
+              style={styles.headerMenuHost}
             >
-              <Iconify
-                icon="iconamoon:menu-kebab-horizontal-bold"
-                size={24}
-                color="#FFFFFF"
-              />
-            </TouchableOpacity>
+              <View style={styles.headerMenuTrigger}>
+                <Iconify
+                  icon="iconamoon:menu-kebab-horizontal-bold"
+                  size={24}
+                  color="#FFFFFF"
+                />
+              </View>
+            </MenuView>
           </View>
         );
       },
@@ -781,7 +768,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     cards,
     currentIndex,
     loading,
-    openMoreMenu,
+    isOwner,
     isReversed,
     toggleReversed,
     t,
@@ -1844,7 +1831,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingBottom: insets.bottom, paddingTop: insets.top + 50 }]}>
         <ScrollView contentContainerStyle={[styles.completionContent, { paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
           <View style={styles.completionHero}>
-            <LinearGradient colors={[colors.buttonColor, '#FF6B35']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.completionHeroCard}>
+            <LinearGradient colors={[colors.buttonColor, '#FF6B35']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.completionHeroCard, { backgroundColor: colors.buttonColor }]}>
               <View style={styles.completionHeroTitleRow}>
                 <Iconify icon="material-symbols:trophy" size={36} color="#FFFFFF" />
                 <Text style={[typography.styles.h2, styles.completionTitle, { color: '#FFFFFF' }]}>{t('swipeDeck.completion.title', 'Oturum Tamamlandı!')}</Text>
@@ -2349,89 +2336,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
       />
 
       <Modal
-        visible={moreMenuVisible}
-        transparent
-        animationType="fade"
-        onDismiss={handleMoreMenuDismiss}
-        onRequestClose={() => setMoreMenuVisible(false)}
-      >
-        <Pressable style={{ flex: 1 }} onPress={() => setMoreMenuVisible(false)}>
-          <View
-            style={[
-              styles.moreMenu,
-              {
-                // Right under the nav bar. Measuring the header button is unreliable (iOS 26 bar items).
-                top: headerHeight + 6,
-                backgroundColor: colors.cardBackground,
-                borderColor: colors.cardBorder || colors.border,
-              },
-            ]}
-          >
-            <TouchableOpacity
-              style={styles.moreMenuItem}
-              activeOpacity={0.6}
-              onPress={() => {
-                triggerHaptic('selection');
-                setMoreMenuVisible(false);
-                toggleReversed();
-              }}
-            >
-              <Iconify icon="material-symbols:swap-vert-rounded" size={20} color={colors.text} style={{ marginRight: 12 }} />
-              <Text style={[typography.styles.body, { color: colors.text }]}>
-                {isReversed ? t('swipeDeck.reverseOff', 'Normal çalış') : t('swipeDeck.reverseOn', 'Ters çevir')}
-              </Text>
-            </TouchableOpacity>
-
-            {Speech ? (
-              <>
-                <View style={[styles.moreMenuDivider, { backgroundColor: colors.border }]} />
-                <TouchableOpacity
-                  style={styles.moreMenuItem}
-                  activeOpacity={0.6}
-                  onPress={() => {
-                    triggerHaptic('selection');
-                    setMoreMenuVisible(false);
-                    if (Platform.OS === 'ios') {
-                      // Opened from the menu Modal's onDismiss.
-                      openVoiceSheetAfterMenuRef.current = true;
-                    } else {
-                      // Android Modal has no onDismiss; its fade is ~200ms.
-                      setTimeout(openVoiceSheet, 220);
-                    }
-                  }}
-                >
-                  <Iconify icon="solar:volume-loud-bold" size={20} color={colors.text} style={{ marginRight: 12 }} />
-                  <Text style={[typography.styles.body, { color: colors.text }]}>
-                    {t('swipeDeck.voice.settings', 'Ses ayarları')}
-                  </Text>
-                </TouchableOpacity>
-              </>
-            ) : null}
-
-            {!isOwner ? (
-              <>
-                <View style={[styles.moreMenuDivider, { backgroundColor: colors.border }]} />
-                <TouchableOpacity
-                  style={styles.moreMenuItem}
-                  activeOpacity={0.6}
-                  onPress={() => {
-                    triggerHaptic('light');
-                    setMoreMenuVisible(false);
-                    requestAnimationFrame(openReportCardModal);
-                  }}
-                >
-                  <Iconify icon="ic:round-report-problem" size={20} color={colors.text} style={{ marginRight: 12 }} />
-                  <Text style={[typography.styles.body, { color: colors.text }]}>
-                    {t('moderation.reportCard', 'Kartı şikayet et')}
-                  </Text>
-                </TouchableOpacity>
-              </>
-            ) : null}
-          </View>
-        </Pressable>
-      </Modal>
-
-      <Modal
         visible={expandedVisible}
         onDismiss={() => setExpandedCard(null)}
         animationType="slide"
@@ -2786,28 +2690,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.22)',
   },
-  moreMenu: {
-    position: 'absolute',
-    right: 16,
-    minWidth: 180,
-    borderRadius: 14,
-    paddingVertical: 6,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8,
+  headerMenuHost: {
+    width: 32,
+    height: 32,
   },
-  moreMenuItem: {
-    flexDirection: 'row',
+  headerMenuTrigger: {
+    width: 32,
+    height: 32,
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  moreMenuDivider: {
-    height: StyleSheet.hairlineWidth,
-    marginVertical: 4,
+    justifyContent: 'center',
   },
   expandedSheet: {
     flex: 1,

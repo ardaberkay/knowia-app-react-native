@@ -529,6 +529,7 @@ const styles = StyleSheet.create({
     height: 70,
     borderRadius: 99,
     overflow: 'hidden',
+    backgroundColor: '#F98A21', // solid base under the gradient: cheap iOS shadow
     shadowColor: '#F98A21',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,

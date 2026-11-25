@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Appearance } from 'react-native';
 import { lightColors, darkColors } from './colors';
 import { typography } from './typography';
 
@@ -34,6 +35,12 @@ export const ThemeProvider = ({ children }) => {
     };
     fetchTheme();
   }, []);
+
+  // Native UI (menus, sheets, alerts, keyboard) follows the app theme, not the
+  // OS setting, so a light-mode phone doesn't get light menus in the dark app.
+  useEffect(() => {
+    Appearance.setColorScheme(isDarkMode ? 'dark' : 'light');
+  }, [isDarkMode]);
 
   const toggleTheme = async () => {
     const newPref = themePreference === 'dark' ? 'light' : 'dark';

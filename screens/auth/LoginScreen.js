@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo } from 'react';
 import { StyleSheet, View, TouchableOpacity, Alert, ImageBackground, Platform, useWindowDimensions } from 'react-native';
 import { Text, TextInput } from '../../components/ui/AppText';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import FormScrollView from '../../components/layout/FormScrollView';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -112,15 +112,12 @@ export default function LoginScreen({ navigation }) {
       style={styles.backgroundImage}
       resizeMode="cover"
     >
-      <KeyboardAwareScrollView
+      <FormScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.container, { paddingTop: containerPaddingTop }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        enableOnAndroid={true}
-        enableAutomaticScroll={true}
         extraScrollHeight={50}
-        enableResetScrollToCoords={false}
       >
         <View style={styles.form}>
           {/* Dil seçimi butonu */}
@@ -254,7 +251,7 @@ export default function LoginScreen({ navigation }) {
             </Text>
           </TouchableOpacity>
         </View>
-      </KeyboardAwareScrollView>
+      </FormScrollView>
 
       {/* Dil seçici component */}
       <LanguageSelector

@@ -59,7 +59,7 @@ const CommunityDeckCard = ({
         <TouchableOpacity
             onPress={() => onPress(deck)}
             activeOpacity={0.85}
-            style={styles.touchableWrapper}
+            style={[styles.touchableWrapper, { backgroundColor: gradientColors[0] }]}
         >
             <LinearGradient
                 colors={gradientColors}
@@ -178,6 +178,9 @@ const CommunityDeckCard = ({
 
 const styles = StyleSheet.create({
     touchableWrapper: {
+        // Solid rounded base (same radius as the gradient) so iOS computes the
+        // shadow from the bounds, not from the gradient's pixels.
+        borderRadius: 20,
         marginHorizontal: 8,
         marginBottom: 10,
         shadowColor: '#000',

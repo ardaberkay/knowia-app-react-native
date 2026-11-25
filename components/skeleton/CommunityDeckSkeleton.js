@@ -56,7 +56,7 @@ export default function CommunityDeckSkeleton() {
     );
 
     return (
-        <View style={styles.touchableWrapper}>
+        <View style={[styles.touchableWrapper, { backgroundColor: bgColor }]}>
             <View style={[styles.cardGradient, { backgroundColor: bgColor }]}>
                 
                 {/* SOL: Rozet / İkon Skeleton */}
@@ -120,6 +120,7 @@ export default function CommunityDeckSkeleton() {
 
 const styles = StyleSheet.create({
     touchableWrapper: {
+        borderRadius: 20,
         marginHorizontal: 8,
         marginBottom: 10,
         shadowColor: '#000',
