@@ -43,7 +43,10 @@ export const getFavoriteDecks = async (userId, options = {}) => {
     : null;
   const categoryList = Array.isArray(categorySortOrders) ? categorySortOrders : [];
   const languageList = Array.isArray(languageIds) ? languageIds : [];
-  const cacheKey = `fav_decks_${userId}_p${page}_${limit || 'all'}_${sortBy}_${encodeURIComponent(searchNorm).slice(0, 80)}_${categoryList.join('-')}_${languageList.join('-')}`;
+  // v2: to_name added to the select (older cached rows don't have it). The
+  // version sits after the user id so invalidateCache(`fav_decks_${userId}`)
+  // still clears it.
+  const cacheKey = `fav_decks_${userId}_v2_p${page}_${limit || 'all'}_${sortBy}_${encodeURIComponent(searchNorm).slice(0, 80)}_${categoryList.join('-')}_${languageList.join('-')}`;
 
   if (!forceRefresh) {
     const cached = await getCachedData(cacheKey, CACHE_DURATIONS.FAVORITES_DECK_IDS);
@@ -52,7 +55,7 @@ export const getFavoriteDecks = async (userId, options = {}) => {
 
   let query = supabase
     .from('favorite_decks')
-    .select('deck_id, created_at, decks(id, name, description, card_count, user_id, category_id, is_shared, is_admin_created, updated_at, created_at, profiles:profiles(username, image_url), categories:categories(id, name, sort_order), decks_languages(language_id))')
+    .select('deck_id, created_at, decks(id, name, to_name, description, card_count, user_id, category_id, is_shared, is_admin_created, updated_at, created_at, profiles:profiles(username, image_url), categories:categories(id, name, sort_order), decks_languages(language_id))')
     .eq('user_id', userId);
 
   if (searchLike) {

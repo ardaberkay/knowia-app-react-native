@@ -15,6 +15,7 @@ import { getDiscoverDecks } from '../../services/DeckService';
 import { addFavoriteDeck, removeFavoriteDeck } from '../../services/FavoriteService';
 import { Iconify } from 'react-native-iconify';
 import { typography, fontSizes, fonts } from '../../theme/typography';
+import { SCREEN_TITLE_HEIGHT, spacing } from '../../theme/layout';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { useListBottomInset } from '../../components/ui/CustomTabBar';
 
@@ -41,7 +42,7 @@ const TIME_FILTERS = [
 // Card badge per tab: what the list is ranked by.
 const BADGE_BY_TAB = { trend: 'trend', unique: 'people', favorites: 'likes' };
 
-const TITLE_HEIGHT = 52;
+const TITLE_HEIGHT = SCREEN_TITLE_HEIGHT;
 const CHIPS_HEIGHT = 52;
 // Softer than Profile's glow (0.26).
 const GLOW_STRENGTH = 0.18;
@@ -403,12 +404,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
   },
   title: {
-    fontSize: fontSizes.title1,
-    fontFamily: fonts.bold,
-    letterSpacing: -0.5,
+    ...typography.styles.screenTitle,
   },
   chipsRow: {
     flexDirection: 'row',

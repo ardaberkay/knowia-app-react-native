@@ -48,6 +48,8 @@ export const lineHeights = {
 
 // Ready-made size + weight pairs.
 export const textStyles = {
+  // Large page title of the tab screens (Keşfet, Kitaplığım).
+  screenTitle: { fontFamily: fonts.bold, fontSize: fontSizes.title1, letterSpacing: -0.5 },
   display: { fontFamily: fonts.bold, fontSize: fontSizes.display },
   largeTitle: { fontFamily: fonts.bold, fontSize: fontSizes.largeTitle },
   title1: { fontFamily: fonts.bold, fontSize: fontSizes.title1 },

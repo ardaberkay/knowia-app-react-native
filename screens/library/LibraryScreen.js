@@ -1,11 +1,12 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, FlatList, Alert, Animated, ScrollView, Image, Keyboard, useWindowDimensions, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Alert, Animated, ScrollView, useWindowDimensions, Platform } from 'react-native';
 import { Text } from '../../components/ui/AppText';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { useAuth } from '../../contexts/AuthContext';
-import { typography, fontSizes, fonts } from '../../theme/typography';
+import { typography, fontSizes, fonts, lineHeights } from '../../theme/typography';
+import { spacing } from '../../theme/layout';
 import { getDecksByCategory, deleteDeck, getLibrarySummary } from '../../services/DeckService';
 import { deleteCard, getUserCardProgressForCards } from '../../services/CardService';
 import { Iconify } from 'react-native-iconify';
@@ -13,7 +14,6 @@ import { getFavoriteDecks, getFavoriteCards, addFavoriteDeck, removeFavoriteDeck
 import { BottomSheetModal, BottomSheetScrollView } from '@expo/ui/community/bottom-sheet';
 // Full-height native sheet.
 const LARGE_SNAP_POINTS = ['100%'];
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import PagerView from 'react-native-pager-view';
 import LibraryHeader from '../../components/layout/LibraryHeader';
@@ -21,10 +21,10 @@ import LibraryHeader from '../../components/layout/LibraryHeader';
 // Native-driven page scroll events → smooth segmented control / header.
 const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
 import SearchBar from '../../components/tools/SearchBar';
-import FilterIcon from '../../components/modals/CardFilterIcon';
 import CardListItem from '../../components/lists/CardList';
 import LottieView from 'lottie-react-native';
 import DeckList from '../../components/lists/DeckList';
+import { DeckStackCarousel } from '../../components/ui/DeckUi';
 import MyDecksSkeleton from '../../components/skeleton/MyDecksSkeleton';
 import CardDetailView from '../../components/layout/CardDetailView';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
@@ -34,45 +34,12 @@ import { getLanguages, languagesInUse } from '../../services/LanguageService';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { useListBottomInset } from '../../components/ui/CustomTabBar';
 
-// Fade efekti - karakter bazlı opacity (MaskedView sorunlarından kaçınır)
-const FadeText = ({ text, style, maxChars = 15 }) => {
-  if (!text) return null;
-
-  const shouldFade = text.length > maxChars;
-
-  if (!shouldFade) {
-    return <Text style={style} numberOfLines={1}>{text}</Text>;
-  }
-
-  // Son 4 karaktere fade uygula
-  const fadeLength = 4;
-  const visibleLength = maxChars - fadeLength;
-  const visibleText = text.substring(0, visibleLength);
-  const fadeText = text.substring(visibleLength, maxChars);
-
-  // Her fade karakteri için azalan opacity
-  const opacities = [0.7, 0.5, 0.3, 0.1];
-
-  // Style'dan textAlign kontrolü
-  const flatStyle = Array.isArray(style) ? Object.assign({}, ...style.filter(Boolean)) : (style || {});
-  const isCentered = flatStyle.textAlign === 'center';
-
-  return (
-    <View style={{ flexDirection: 'row', overflow: 'hidden', justifyContent: isCentered ? 'center' : 'flex-start', alignSelf: isCentered ? 'center' : 'flex-start' }}>
-      <Text style={style} numberOfLines={1}>{visibleText}</Text>
-      {fadeText.split('').map((char, index) => (
-        <Text
-          key={index}
-          style={[style, { opacity: opacities[index] || 0.1 }]}
-        >
-          {char}
-        </Text>
-      ))}
-    </View>
-  );
-};
-
 const MY_DECKS_SEARCH_THRESHOLD = 10;
+// Favorilerim overview: newest decks in the carousel, newest cards in the list.
+const FAVORITE_DECKS_PREVIEW_COUNT = 10;
+const FAVORITE_CARDS_PREVIEW_COUNT = 5;
+const favoritedAt = (item) => new Date(item.favorited_at || item.created_at || 0).getTime();
+const sortByFavoritedAt = (items) => items.slice().sort((a, b) => favoritedAt(b) - favoritedAt(a));
 // The pager is pulled up under the hero by this much (same as Discover) so list
 // content scrolls behind the hero's rounded bottom corners. Lists add it back
 // as top padding and offset their refresh spinner by it.
@@ -137,9 +104,6 @@ export default function LibraryScreen() {
     [{ nativeEvent: { position: pagePosition, offset: pageOffset } }],
     { useNativeDriver: true }
   ), [pagePosition, pageOffset]);
-  const [favSlideIndex, setFavSlideIndex] = useState(0);
-  const [favCardsQuery, setFavCardsQuery] = useState('');
-  const [favCardsSort, setFavCardsSort] = useState('original');
   const [favoriteCards, setFavoriteCards] = useState([]);
   const [favoriteCardIds, setFavoriteCardIds] = useState([]);
   // Hero summary ("12 deste · 32 kart"): real counts from the server, refreshed
@@ -164,7 +128,7 @@ export default function LibraryScreen() {
   }, []);
 
   // useWindowDimensions hook'u - ekran döndürme desteği
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
 
   const horizontalPadding = 16 * 2;
   const cardSpacing = 12;
@@ -180,32 +144,6 @@ export default function LibraryScreen() {
 
   const myDecksSearchContainerTopMargin = 8;
 
-  const favoriteSliderDimensions = useMemo(() => {
-    const sliderHeight = height * 0.27;
-    const basePadding = 16;
-
-    return {
-      sliderHeight,
-      fontSize: fontSizes.title3,
-      dividerMargin: 5,
-      padding: basePadding,
-      profileBottomPadding: basePadding * 0.7,
-      profileLeftPadding: basePadding * 0.7,
-      favoriteButtonTopPadding: basePadding * 0.7,
-      favoriteButtonRightPadding: basePadding * 0.7,
-      badgeBottomPadding: basePadding * 0.7,
-      badgeRightPadding: basePadding * 0.5,
-      profileAvatarSize: 36,
-      profileUsernameSize: fontSizes.body,
-      badgeIconSize: 20,
-      badgeTextSize: fontSizes.bodyLarge,
-      favoriteButtonSize: 26,
-      favoriteButtonPadding: 8,
-      categoryIconSize: 150,
-      categoryIconLeft: -70,
-    };
-  }, [height]);
-
   // Gorhom Bottom Sheet Referansı
   const cardDetailSheetRef = useRef(null);
 
@@ -217,30 +155,6 @@ export default function LibraryScreen() {
       cardDetailSheetRef.current?.dismiss();
     }
   }, [cardDetailModalVisible]);
-
-  // Kategoriye göre renkleri al (Supabase sort_order kullanarak)
-  const getCategoryColors = (sortOrder) => {
-    if (colors.categoryColors && colors.categoryColors[sortOrder]) {
-      return colors.categoryColors[sortOrder];
-    }
-    // Varsayılan renkler (Tarih kategorisi - sort_order: 4)
-    return ['#6F8EAD', '#3F5E78'];
-  };
-
-  // Kategori ikonunu sort_order değerine göre al
-  const getCategoryIcon = (sortOrder) => {
-    const icons = {
-      1: "hugeicons:language-skill", // Dil
-      2: "clarity:atom-solid", // Bilim
-      3: "mdi:math-compass", // Matematik
-      4: "game-icons:tied-scroll", // Tarih
-      5: "arcticons:world-geography-alt", // Coğrafya
-      6: "map:museum", // Sanat ve Kültür
-      7: "ic:outline-self-improvement", // Kişisel Gelişim
-      8: "streamline-ultimate:module-puzzle-2-bold" // Genel Kültür
-    };
-    return icons[sortOrder] || "material-symbols:category";
-  };
 
   // Search and filter removed
 
@@ -307,9 +221,8 @@ export default function LibraryScreen() {
   }, [activeTab, favoritesFetched, userId]);
 
   const FAVORITE_CARDS_PAGE_SIZE = 20;
-  const fetchFavorites = async (silent = false, forceRefresh = false, sortOverride = null) => {
+  const fetchFavorites = async (silent = false, forceRefresh = false) => {
     if (!userId) return;
-    const currentSort = sortOverride ?? favCardsSort;
     if (!silent) setFavoritesLoading(true);
     try {
       const decks = await getFavoriteDecks(userId, {
@@ -333,9 +246,8 @@ export default function LibraryScreen() {
       });
       setFavoriteDecks(modifiedDecks);
 
-      const sortBy = ['original', 'az'].includes(currentSort) ? currentSort : 'original';
-      const filter = ['learned', 'unlearned'].includes(currentSort) ? currentSort : null;
-      const cards = await getFavoriteCards(userId, 0, FAVORITE_CARDS_PAGE_SIZE, forceRefresh, sortBy, filter);
+      // Newest favourites first; search and filters live on the "Tümü" screen.
+      const cards = await getFavoriteCards(userId, 0, FAVORITE_CARDS_PAGE_SIZE, forceRefresh, 'original', null);
       const cardIds = (cards || []).map(c => c.id);
       const statusMap = await getUserCardProgressForCards(userId, cardIds);
 
@@ -448,22 +360,7 @@ export default function LibraryScreen() {
 
               // Eğer seçili kart silindiyse, modal'ı kapat veya sonraki karta geç
               if (selectedCard && selectedCard.id === cardId) {
-                // Güncellenmiş kart listesini filtrele (silinen kart olmadan)
-                let remainingCards = updatedCards.slice();
-                if (favCardsQuery && favCardsQuery.trim()) {
-                  const q = favCardsQuery.toLowerCase();
-                  remainingCards = remainingCards.filter(c => (c.question || '').toLowerCase().includes(q) || (c.answer || '').toLowerCase().includes(q));
-                }
-                const favAt = (c) => new Date(c.favorited_at || c.created_at || 0).getTime();
-                if (favCardsSort === 'az') {
-                  remainingCards.sort((a, b) => (a.question || '').localeCompare(b.question || '') || favAt(b) - favAt(a));
-                } else if (favCardsSort === 'unlearned') {
-                  remainingCards = remainingCards.filter(c => c.status !== 'learned');
-                  remainingCards.sort((a, b) => favAt(b) - favAt(a));
-                } else if (favCardsSort !== 'fav') {
-                  remainingCards.sort((a, b) => favAt(b) - favAt(a));
-                }
-
+                const remainingCards = sortByFavoritedAt(updatedCards);
                 if (remainingCards.length > 0) {
                   setSelectedCard(remainingCards[0]);
                 } else {
@@ -492,22 +389,8 @@ export default function LibraryScreen() {
     setFavoriteCardIds(updatedIds);
 
     if (selectedCard && selectedCard.id === cardId && cardDetailModalVisible) {
-      const currentIndex = filteredFavoriteCards.findIndex(c => c.id === cardId);
-      let remainingCards = updatedCards.slice();
-      if (favCardsQuery && favCardsQuery.trim()) {
-        const q = favCardsQuery.toLowerCase();
-        remainingCards = remainingCards.filter(c => (c.question || '').toLowerCase().includes(q) || (c.answer || '').toLowerCase().includes(q));
-      }
-      const favAt = (c) => new Date(c.favorited_at || c.created_at || 0).getTime();
-      if (favCardsSort === 'az') {
-        remainingCards.sort((a, b) => (a.question || '').localeCompare(b.question || '') || favAt(b) - favAt(a));
-      } else if (favCardsSort === 'unlearned') {
-        remainingCards = remainingCards.filter(c => c.status !== 'learned');
-        remainingCards.sort((a, b) => favAt(b) - favAt(a));
-      } else if (favCardsSort !== 'fav') {
-        remainingCards.sort((a, b) => favAt(b) - favAt(a));
-      }
-
+      const currentIndex = favoriteCards.findIndex(c => c.id === cardId);
+      const remainingCards = sortByFavoritedAt(updatedCards);
       if (remainingCards.length > 0) {
         let nextCard;
         if (currentIndex >= 0 && currentIndex < remainingCards.length) nextCard = remainingCards[currentIndex];
@@ -528,7 +411,7 @@ export default function LibraryScreen() {
         setFavoriteCardIds(prev => [...prev, cardId]);
       }
     }
-  }, [userId, favoriteCards, favoriteCardIds, selectedCard, cardDetailModalVisible, filteredFavoriteCards, favCardsQuery, favCardsSort]);
+  }, [userId, favoriteCards, favoriteCardIds, selectedCard, cardDetailModalVisible]);
 
 
 
@@ -543,22 +426,8 @@ export default function LibraryScreen() {
       setFavoriteCards(updatedCards);
 
       if (selectedCard && selectedCard.id === cardId) {
-        const currentIndex = filteredFavoriteCards.findIndex(c => c.id === cardId);
-        let remainingCards = updatedCards.slice();
-        if (favCardsQuery && favCardsQuery.trim()) {
-          const q = favCardsQuery.toLowerCase();
-          remainingCards = remainingCards.filter(c => (c.question || '').toLowerCase().includes(q) || (c.answer || '').toLowerCase().includes(q));
-        }
-        const favAt = (c) => new Date(c.favorited_at || c.created_at || 0).getTime();
-        if (favCardsSort === 'az') {
-          remainingCards.sort((a, b) => (a.question || '').localeCompare(b.question || '') || favAt(b) - favAt(a));
-        } else if (favCardsSort === 'unlearned') {
-          remainingCards = remainingCards.filter(c => c.status !== 'learned');
-          remainingCards.sort((a, b) => favAt(b) - favAt(a));
-        } else if (favCardsSort !== 'fav') {
-          remainingCards.sort((a, b) => favAt(b) - favAt(a));
-        }
-
+        const currentIndex = favoriteCards.findIndex(c => c.id === cardId);
+        const remainingCards = sortByFavoritedAt(updatedCards);
         if (remainingCards.length > 0) {
           let nextCard;
           if (currentIndex >= 0 && currentIndex < remainingCards.length) nextCard = remainingCards[currentIndex];
@@ -572,7 +441,7 @@ export default function LibraryScreen() {
       }
     } else {
       setFavoriteCardIds(prev => [...prev, cardId]);
-      const card = filteredFavoriteCards.find(c => c.id === cardId);
+      const card = favoriteCards.find(c => c.id === cardId);
       if (card) setFavoriteCards(prev => [...prev, card]);
     }
 
@@ -586,18 +455,21 @@ export default function LibraryScreen() {
         setFavoriteCards(prev => prev.filter(c => c.id !== cardId));
       }
     }
-  }, [userId, favoriteCardIds, favoriteCards, selectedCard, filteredFavoriteCards, favCardsQuery, favCardsSort]);
+  }, [userId, favoriteCardIds, favoriteCards, selectedCard]);
 
-  const filteredFavoriteCards = useMemo(() => {
-    let list = favoriteCards.slice();
-
-    if (favCardsQuery && favCardsQuery.trim()) {
-      const q = favCardsQuery.toLowerCase();
-      list = list.filter(c => (c.question || '').toLowerCase().includes(q) || (c.answer || '').toLowerCase().includes(q));
-    }
-
-    return list;
-  }, [favoriteCards, favCardsQuery]);
+  // Overview: the newest favourite cards. The full list (search, filters) is
+  // on the "Tümü" screen.
+  const favoriteCardsPreview = useMemo(
+    () => favoriteCards.slice(0, FAVORITE_CARDS_PREVIEW_COUNT),
+    [favoriteCards]
+  );
+  const favoriteDecksPreview = useMemo(
+    () => favoriteDecks
+      .slice()
+      .sort((a, b) => new Date(b.favorited_at || b.created_at) - new Date(a.favorited_at || a.created_at))
+      .slice(0, FAVORITE_DECKS_PREVIEW_COUNT),
+    [favoriteDecks]
+  );
 
   const filteredMyDecks = useMemo(() => {
     // Orijinal diziyi bozmamak için kopyalıyoruz
@@ -773,6 +645,29 @@ export default function LibraryScreen() {
     </View>
   );
 
+  // Favorilerim section header, same look as Home's: plain icon, title,
+  // "Tümü ›" link.
+  const renderFavoriteSectionHeader = ({ icon, title, onSeeAll }) => (
+    <View style={styles.favoriteSectionHeader}>
+      <Iconify icon={icon} size={22} color="#F98A21" />
+      <Text style={[typography.styles.title3, styles.favoriteSectionTitle, { color: colors.text }]} numberOfLines={1}>
+        {title}
+      </Text>
+      <TouchableOpacity
+        onPress={onSeeAll}
+        activeOpacity={0.7}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        accessibilityRole="button"
+        style={styles.seeAllLink}
+      >
+        <Text style={[typography.styles.subhead, styles.seeAllText, { color: colors.secondary }]}>
+          {t('library.all', 'Tümü')}
+        </Text>
+        <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={13} color={colors.secondary} />
+      </TouchableOpacity>
+    </View>
+  );
+
 
   return (
     <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
@@ -879,243 +774,65 @@ export default function LibraryScreen() {
             />
           )}
         </View>
-        {/* Page 1: Favorites */}
-        <View key="favorites" style={{ flex: 1, marginHorizontal: 10 }}>
+        {/* Page 1: Favorites — overview: newest decks (carousel) and cards.
+            "Tümü" opens the full lists with search and filters. */}
+        <View key="favorites" style={{ flex: 1 }}>
           {favoritesLoading ? (
             renderLoading()
           ) : (
             <ScrollView
               style={{ flex: 1, backgroundColor: colors.background }}
-              contentContainerStyle={{ paddingBottom: listBottomInset, paddingTop: favoritesScrollViewPaddingTop, flexGrow: 1, paddingHorizontal: 4 }}
+              contentContainerStyle={{ paddingTop: favoritesScrollViewPaddingTop + spacing.sm, paddingBottom: listBottomInset, flexGrow: 1 }}
               showsVerticalScrollIndicator={false}
-              keyboardDismissMode="on-drag"
-              keyboardShouldPersistTaps="handled"
-              onScrollBeginDrag={() => Keyboard.dismiss()}
             >
-              <View style={styles.favoriteSliderWrapper}>
-                <View style={[styles.favoriteHeaderRow, (favoriteDecks?.length === 0 && { zIndex: 10, elevation: 10 })]}>
-                  <View style={{ flex: 1, flexShrink: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <View style={[styles.iconBackground, { backgroundColor: colors.iconBackground }]}>
-                      <Iconify icon="ph:cards-fill" size={26} color="#F98A21" />
-                    </View>
-                    <Text style={[styles.favoriteHeaderTitle, { color: colors.text }]} numberOfLines={1}>
-                      {t('library.favoriteDecksTitle', 'Favori Destelerim')}
-                    </Text>
-                  </View>
-                  <TouchableOpacity activeOpacity={0.8} style={[styles.seeAllButton, { borderColor: colors.secondary, backgroundColor: colors.secondary + '30', flexShrink: 0 }]} onPress={() => navigation.navigate('FavoriteDecks')}>
-                    <Text style={[styles.seeAllText, { color: colors.secondary }]}>
-                      {t('library.all', 'Tümü')}
-                    </Text>
-                    <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={15} color={colors.secondary} />
-                  </TouchableOpacity>
-                </View>
+              {renderFavoriteSectionHeader({
+                icon: 'ph:cards-fill',
+                title: t('library.decksSection', 'Desteler'),
+                onSeeAll: () => navigation.navigate('FavoriteDecks'),
+              })}
+              {favoriteDecksPreview.length > 0 ? (
+                <DeckStackCarousel
+                  decks={favoriteDecksPreview}
+                  colors={colors}
+                  typography={typography}
+                  onPress={(deck) => navigation.navigate('DeckDetail', { deck })}
+                />
+              ) : (
+                <Text style={[typography.styles.subhead, styles.favoriteEmptyText, { color: colors.muted }]}>
+                  {t('library.favoriteDecksEmptyHint', 'Beğendiğin desteleri kalple kaydet, burada görünsün.')}
+                </Text>
+              )}
 
-                {favoriteDecks && favoriteDecks.length > 0 ? (
-                  <>
-                    <PagerView
-                      style={[styles.favoriteSlider, { height: favoriteSliderDimensions.sliderHeight }]}
-                      initialPage={0}
-                      onPageSelected={(e) => setFavSlideIndex(e.nativeEvent.position)}
-                      orientation="horizontal"
-                    >
-                      {favoriteDecks
-                        .slice()
-                        .sort((a, b) => new Date(b.favorited_at || b.created_at) - new Date(a.favorited_at || a.created_at))
-                        .slice(0, 10)
-                        .map(deck => (
-                          <View key={'fav_slide_' + deck.id} style={styles.favoriteSlideItem}>
-                            <TouchableOpacity
-                              activeOpacity={0.93}
-                              onPress={() => navigation.navigate('DeckDetail', { deck })}
-                              style={{ flex: 1 }}
-                            >
-                              <LinearGradient
-                                colors={getCategoryColors(deck.categories?.sort_order)}
-                                start={{ x: 0, y: 1 }}
-                                end={{ x: 1, y: 0 }}
-                                style={[styles.favoriteSlideGradient, { padding: favoriteSliderDimensions.padding }]}
-                              >
-                                {/* Background Category Icon */}
-                                <View style={[styles.backgroundCategoryIcon, { left: favoriteSliderDimensions.categoryIconLeft }]}>
-                                  <Iconify
-                                    icon={getCategoryIcon(deck.categories?.sort_order)}
-                                    size={favoriteSliderDimensions.categoryIconSize}
-                                    color="rgba(0, 0, 0, 0.1)"
-                                    style={styles.categoryIconStyle}
-                                  />
-                                </View>
-                                {/* Profile Section */}
-                                <View style={[styles.deckProfileRow, { position: 'absolute', top: 'auto', bottom: favoriteSliderDimensions.profileBottomPadding, left: favoriteSliderDimensions.profileLeftPadding, zIndex: 10 }]}>
-                                  <Image
-                                    source={
-                                      deck.is_admin_created
-                                        ? require('../../assets/app_icon.png')
-                                        : deck.profiles?.image_url
-                                          ? { uri: deck.profiles.image_url }
-                                          : require('../../assets/avatar_default.webp')
-                                    }
-                                    style={[styles.deckProfileAvatar, { width: favoriteSliderDimensions.profileAvatarSize, height: favoriteSliderDimensions.profileAvatarSize }]}
-                                  />
-                                  <FadeText
-                                    text={deck.profiles?.username || 'Kullanıcı'}
-                                    style={[typography.styles.body, styles.deckProfileUsername, { fontSize: favoriteSliderDimensions.profileUsernameSize }]}
-                                    maxChars={16}
-                                  />
-                                </View>
-                                <TouchableOpacity
-                                  style={{ position: 'absolute', top: favoriteSliderDimensions.favoriteButtonTopPadding, right: favoriteSliderDimensions.favoriteButtonRightPadding, zIndex: 10, backgroundColor: colors.iconBackground, padding: favoriteSliderDimensions.favoriteButtonPadding, borderRadius: 999 }}
-                                  onPress={async () => {
-                                    if (favoriteDecks.some(d => d.id === deck.id)) {
-                                      await handleRemoveFavoriteDeck(deck.id);
-                                    } else {
-                                      await handleAddFavoriteDeck(deck.id);
-                                    }
-                                  }}
-                                  activeOpacity={0.7}
-                                >
-                                  <Iconify
-                                    icon={favoriteDecks.some(d => d.id === deck.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-                                    size={favoriteSliderDimensions.favoriteButtonSize}
-                                    color={favoriteDecks.some(d => d.id === deck.id) ? '#F98A21' : colors.text}
-                                  />
-                                </TouchableOpacity>
-                                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                                  <View style={[styles.deckHeaderModern, { flexDirection: 'column' }]}>
-                                    {deck.to_name ? (
-                                      <>
-                                        <FadeText
-                                          text={deck.name}
-                                          style={[typography.styles.body, { color: colors.headText, fontSize: favoriteSliderDimensions.fontSize, fontFamily: fonts.bold, textAlign: 'center' }]}
-                                          maxChars={20}
-                                        />
-                                        <View style={{ width: 70, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: favoriteSliderDimensions.dividerMargin, alignSelf: 'center' }} />
-                                        <FadeText
-                                          text={deck.to_name}
-                                          style={[typography.styles.body, { color: colors.headText, fontSize: favoriteSliderDimensions.fontSize, fontFamily: fonts.bold, textAlign: 'center' }]}
-                                          maxChars={20}
-                                        />
-                                      </>
-                                    ) : (
-                                      <FadeText
-                                        text={deck.name}
-                                        style={[typography.styles.body, { color: colors.headText, fontSize: favoriteSliderDimensions.fontSize, fontFamily: fonts.bold, textAlign: 'center' }]}
-                                        maxChars={20}
-                                      />
-                                    )}
-                                  </View>
-                                </View>
-                                <View style={{ position: 'absolute', bottom: favoriteSliderDimensions.badgeBottomPadding, right: favoriteSliderDimensions.badgeRightPadding }}>
-                                  <View style={styles.deckCountBadge}>
-                                    <Iconify icon="ri:stack-fill" size={favoriteSliderDimensions.badgeIconSize} color="#fff" style={{ marginRight: 4 }} />
-                                    <Text style={[typography.styles.body, { color: '#fff', fontFamily: fonts.bold, fontSize: favoriteSliderDimensions.badgeTextSize }]}>{deck.card_count || 0}</Text>
-                                  </View>
-                                </View>
-                              </LinearGradient>
-                            </TouchableOpacity>
-                          </View>
-                        ))}
-                    </PagerView>
-                    <View style={styles.favoriteSliderDots}>
-                      {favoriteDecks
-                        .slice()
-                        .sort((a, b) => new Date(b.favorited_at || b.created_at) - new Date(a.favorited_at || a.created_at))
-                        .slice(0, 10)
-                        .map((_, i) => (
-                          <View
-                            key={'fav_dot_' + i}
-                            style={[styles.favoriteDot, { opacity: favSlideIndex === i ? 1 : 0.35, backgroundColor: '#F98A21' }]}
-                          />
-                        ))}
-                    </View>
-                  </>
-                ) : (
-                  <View style={[styles.favoriteSliderEmpty, { pointerEvents: 'box-none' }]}>
-                    <Image
-                      source={require('../../assets/deckbg.webp')}
-                      style={{ position: 'absolute', alignSelf: 'center', width: 300, height: 300, opacity: 0.2 }}
-                      resizeMode="contain"
-                      fadeDuration={0}
-                    />
-                  </View>
-                )}
-
-                {/* Favorite Cards Section Header + Controls */}
-                <View style={[styles.favoriteHeaderRow, { marginTop: 40 }]}>
-                  <View style={{ flex: 1, flexShrink: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <View style={[styles.iconBackground, { backgroundColor: colors.iconBackground }]}>
-                      <Iconify icon="mdi:cards" size={26} color="#F98A21" />
-                    </View>
-                    <Text style={[styles.favoriteHeaderTitle, { color: colors.text }]} numberOfLines={1}>
-                      {t('library.favoriteCardsTitle', 'Favori Kartlarım')}
-                    </Text>
-                  </View>
-                  <TouchableOpacity activeOpacity={0.8} style={[styles.seeAllButton, { borderColor: colors.secondary, backgroundColor: colors.secondary + '30', flexShrink: 0 }]} onPress={() => navigation.navigate('FavoriteCards')}>
-                    <Text style={[styles.seeAllText, { color: colors.secondary }]}>
-                      {t('library.all', 'Tümü')}
-                    </Text>
-                    <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={15} color={colors.secondary} />
-                  </TouchableOpacity>
-                </View>
-                <View style={{ marginVertical: 5 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, width: '98%', alignSelf: 'center' }}>
-                    <SearchBar
-                      value={favCardsQuery}
-                      onChangeText={setFavCardsQuery}
-                      placeholder={t('common.searchPlaceholder', 'Kartlarda ara...')}
-                      style={{ flex: 1 }}
-                    />
-                    <FilterIcon
-                      value={favCardsSort}
-                      onChange={(newSort) => {
-                        setFavCardsSort(newSort);
-                        fetchFavorites(false, true, newSort);
+              <View style={styles.favoriteSectionGap} />
+              {renderFavoriteSectionHeader({
+                icon: 'mdi:cards',
+                title: t('library.cardsSection', 'Kartlar'),
+                onSeeAll: () => navigation.navigate('FavoriteCards'),
+              })}
+              {favoriteCardsPreview.length > 0 ? (
+                <View style={styles.favoriteCardsList}>
+                  {favoriteCardsPreview.map((card) => (
+                    <CardListItem
+                      key={card.id}
+                      question={card.question}
+                      answer={card.answer}
+                      isFavorite={true}
+                      onPress={() => {
+                        setSelectedCard(card);
+                        setCardDetailModalVisible(true);
                       }}
-                      hideFavorites={true}
-                      hideAz={true}
+                      onToggleFavorite={() => handleRemoveFavoriteCard(card.id)}
+                      canDelete={true}
+                      onDelete={() => handleDeleteCard(card.id)}
+                      isOwner={Boolean(userId && card.deck?.user_id && card.deck.user_id === userId)}
                     />
-                  </View>
-                  {/* Favorite Cards List */}
-                  <View style={{ marginTop: 14, paddingHorizontal: 4, pointerEvents: filteredFavoriteCards.length > 0 ? 'auto' : 'none' }}>
-                    <FlatList
-                      data={filteredFavoriteCards}
-                      keyExtractor={item => String(item.id)}
-                      scrollEnabled={false}
-                      removeClippedSubviews={true}
-                      initialNumToRender={10}
-                      maxToRenderPerBatch={8}
-                      windowSize={5}
-                      renderItem={({ item: card }) => {
-                        const isOwner = userId && card.deck?.user_id && card.deck.user_id === userId;
-                        return (
-                          <CardListItem
-                            question={card.question}
-                            answer={card.answer}
-                            isFavorite={true}
-                            onPress={() => {
-                              setSelectedCard(card);
-                              setCardDetailModalVisible(true);
-                            }}
-                            onToggleFavorite={() => handleRemoveFavoriteCard(card.id)}
-                            canDelete={true}
-                            onDelete={() => handleDeleteCard(card.id)}
-                            isOwner={isOwner}
-                          />
-                        );
-                      }}
-                      ListEmptyComponent={
-                        <View style={styles.favoriteCardsEmpty}>
-                          <Image
-                            source={require('../../assets/cardbg.webp')}
-                            style={{ width: 400, height: 400, opacity: 0.2 }}
-                            resizeMode="contain"
-                            fadeDuration={0}
-                          />
-                        </View>
-                      }
-                    />
-                  </View>
+                  ))}
                 </View>
-              </View>
+              ) : (
+                <Text style={[typography.styles.subhead, styles.favoriteEmptyText, { color: colors.muted }]}>
+                  {t('library.favoriteCardsEmptyHint', 'Çalışırken karttaki kalbe dokun, burada görünsün.')}
+                </Text>
+              )}
             </ScrollView>
           )}
         </View>
@@ -1188,7 +905,7 @@ export default function LibraryScreen() {
           {selectedCard && (
             <CardDetailView
               card={selectedCard}
-              cards={filteredFavoriteCards}
+              cards={favoriteCardsPreview}
               onSelectCard={(card) => setSelectedCard(card)}
               showCreatedAt={true}
             />
@@ -1221,106 +938,35 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  favoriteSliderWrapper: {
-    marginBottom: 12,
-  },
-  favoriteHeaderRow: {
-    paddingHorizontal: 4,
-    marginBottom: 14,
-    marginTop: 8,
+  // Favorilerim: section header (Home style), carousel, card list.
+  favoriteSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
   },
-  favoriteHeaderTitle: {
-    fontSize: fontSizes.title3,
-    fontFamily: fonts.bold,
-  },
-  seeAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderRadius: 30,
-  },
-  favoriteSlider: {
-    // height dinamik olarak uygulanacak
-    borderRadius: 18,
-    overflow: 'hidden',
-  },
-  favoriteSliderEmpty: {
-    height: 200,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    backgroundColor: 'transparent',
-  },
-  favoriteCardsEmpty: {
-    height: 200,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-
-    backgroundColor: 'transparent',
-  },
-  favoriteSlideItem: {
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 8,
-  },
-  favoriteSlideGradient: {
+  favoriteSectionTitle: {
     flex: 1,
-    borderRadius: 18,
-    // padding dinamik olarak uygulanacak
-    justifyContent: 'center',
-    overflow: 'hidden', // İkonun taşan kısmını gizlemek için
   },
-  favoriteSliderDots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 8,
-    gap: 6,
+  favoriteSectionGap: {
+    height: spacing.xl,
   },
-  favoriteDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#F98A21',
-  },
-  // Count badge used in Favorites slider
-  deckCountBadge: {
+  seeAllLink: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F98A21',
-    borderRadius: 14,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginRight: 8,
+    gap: spacing.xxs,
   },
   seeAllText: {
-    fontSize: fontSizes.body,
-    fontFamily: fonts.bold,
+    fontFamily: fonts.semibold,
   },
-  deckProfileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    maxWidth: 120,
+  favoriteCardsList: {
+    paddingHorizontal: spacing.lg,
   },
-  deckProfileAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 99,
-    marginRight: 6,
-  },
-  deckProfileUsername: {
-    fontSize: fontSizes.body,
-    color: '#BDBDBD',
-    fontFamily: fonts.bold,
+  favoriteEmptyText: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    lineHeight: lineHeights.subhead,
   },
   loadingContainer: {
     flex: 1,
@@ -1334,21 +980,6 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.bodyLarge,
     fontFamily: fonts.semibold,
     textAlign: 'center',
-  },
-  backgroundCategoryIcon: {
-    position: 'absolute',
-    // left dinamik olarak uygulanacak (favoriteSliderDimensions.categoryIconLeft)
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'flex-start', // Sola hizala
-    zIndex: 0, // En altta kalması için
-    overflow: 'hidden', // Taşan kısmı gizle
-    top: 0
-  },
-  categoryIconStyle: {
-    // Subtle background effect için
-    opacity: 0.8,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1374,13 +1005,6 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: fontSizes.bodyLarge,
     fontFamily: fonts.bold,
-  },
-  iconBackground: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });
 

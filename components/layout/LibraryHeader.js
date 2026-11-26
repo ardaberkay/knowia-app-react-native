@@ -1,18 +1,21 @@
 import React, { memo } from 'react';
 import { Animated, Image, StyleSheet, View } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
-import { MAX_FONT_SIZE_MULTIPLIER } from '../ui/AppText';
+import { Text, MAX_FONT_SIZE_MULTIPLIER } from '../ui/AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import SegmentedControl from '../ui/SegmentedControl';
 import { useTheme } from '../../theme/theme';
-import { typography, fonts } from '../../theme/typography';
+import { typography, fonts, lineHeights } from '../../theme/typography';
+import { SCREEN_TITLE_HEIGHT, spacing } from '../../theme/layout';
 
 /**
  * Library header: part of the page (no card surface), lit by a soft top glow
  * that takes the selected tab's colour (orange / pink, same strength as
- * Discover). Holds a per-tab intro (title, one short line, a summary line with
- * real counts, illustration; top-aligned) and the tabs under it.
+ * Discover). Holds the page title ("Kitaplığım", same place and style as
+ * Discover's), a per-tab intro (one short line, a summary line with real
+ * counts, illustration) and the tabs under it. The tabs name the sections,
+ * so the intro has no title of its own.
  *
  * `progress` = PagerView position + offset (native Animated value). The intro
  * cross-fades between tabs on that value, so swiping the pager animates the
@@ -28,7 +31,6 @@ function LibraryHeader({ progress, onTabPress, summary }) {
       key: 'myDecks',
       label: t('library.myDecks', 'Destelerim'),
       icon: 'ph:cards-fill',
-      title: t('library.myDecksHeading', 'Destelerim'),
       subtitle: t('library.myDecksHeroText', 'Kendi destelerinle öğrenmeye başla.'),
       summary: summary
         ? `${t('library.summaryDecks', { count: summary.myDecks })} · ${t('library.summaryCards', { count: summary.myCards })}`
@@ -40,7 +42,6 @@ function LibraryHeader({ progress, onTabPress, summary }) {
       key: 'favorites',
       label: t('library.favorites', 'Favorilerim'),
       icon: 'solar:heart-bold',
-      title: t('library.favorites', 'Favorilerim'),
       subtitle: t('library.favoritesHeroText', 'Beğendiğin desteler ve kartlar.'),
       summary: summary
         ? `${t('library.summaryDecks', { count: summary.favoriteDecks })} · ${t('library.summaryCards', { count: summary.favoriteCards })}`
@@ -56,7 +57,7 @@ function LibraryHeader({ progress, onTabPress, summary }) {
   ];
 
   return (
-    <View style={[styles.surface, { paddingTop: insets.top + 24 }]}>
+    <View style={[styles.surface, { paddingTop: insets.top }]}>
       {/* Soft light from the top centre, fading out by the tabs; one layer per
           tab, cross-faded on the pager position (native driver). */}
       {tabs.map((tab, index) => (
@@ -86,6 +87,11 @@ function LibraryHeader({ progress, onTabPress, summary }) {
           </Svg>
         </Animated.View>
       ))}
+      <View style={styles.titleRow}>
+        <Text style={[typography.styles.screenTitle, { color: colors.text }]} numberOfLines={1}>
+          {t('tabs.library', 'Kitaplığım')}
+        </Text>
+      </View>
       <View style={styles.introArea}>
         {tabs.map((tab, index) => {
           const opacity = progress.interpolate({
@@ -105,12 +111,9 @@ function LibraryHeader({ progress, onTabPress, summary }) {
               style={[styles.intro, { opacity, transform: [{ translateY }] }]}
             >
               <View style={styles.introText}>
-                <Animated.Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER} style={[typography.styles.title2, styles.title, { color: colors.text }]} numberOfLines={1}>
-                  {tab.title}
-                </Animated.Text>
                 <Animated.Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
-                  style={[typography.styles.subhead, styles.subtitle, { color: colors.muted }]}
-                  numberOfLines={2}
+                  style={[typography.styles.body, styles.subtitle, { color: colors.muted }]}
+                  numberOfLines={SUBTITLE_LINES}
                 >
                   {tab.subtitle?.trim()}
                 </Animated.Text>
@@ -147,14 +150,20 @@ function LibraryHeader({ progress, onTabPress, summary }) {
 }
 
 const IMAGE_SIZE = 124;
+const SUBTITLE_LINES = 2;
 // Same as Discover's glow.
 const GLOW_STRENGTH = 0.18;
 
 const styles = StyleSheet.create({
   surface: {
     width: '100%',
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.lg,
     paddingBottom: 4,
+  },
+  // Same row as Discover's title: right under the safe area, same height.
+  titleRow: {
+    height: SCREEN_TITLE_HEIGHT,
+    justifyContent: 'center',
   },
   // Both tab intros share one spot (each is full width with a -100% right
   // margin, so they overlap) but stay in the layout: the area takes the
@@ -170,24 +179,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  // Full height of the intro: title + text at the top, summary pinned to the
-  // bottom (marginTop auto), so it sits in the same place on both tabs.
+  // Text + summary centred next to the illustration. The subtitle always takes
+  // two lines of space, so the group has the same height on both tabs and the
+  // text and summary sit in the same spots whatever the text length.
   introText: {
     flex: 1,
     alignSelf: 'stretch',
-    paddingTop: 8,
-    paddingBottom: 8,
-    marginRight: 12,
-  },
-  title: {
-    marginBottom: 6,
+    justifyContent: 'center',
+    marginRight: spacing.md,
   },
   subtitle: {
-    lineHeight: 20,
+    lineHeight: lineHeights.body,
+    minHeight: lineHeights.body * SUBTITLE_LINES,
   },
   summary: {
-    marginTop: 'auto',
-    paddingTop: 8,
+    marginTop: spacing.sm,
     fontFamily: fonts.semibold,
   },
   introImage: {

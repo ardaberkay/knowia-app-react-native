@@ -19,5 +19,9 @@ export const radius = {
   full: 999,
 };
 
+// Row that holds a tab screen's large title (Keşfet, Kitaplığım), right under
+// the safe area, with spacing.lg side padding.
+export const SCREEN_TITLE_HEIGHT = 52;
+
 // Minimum touch target (Apple HIG 44pt, Material 48dp).
 export const MIN_TOUCH_SIZE = 48;
