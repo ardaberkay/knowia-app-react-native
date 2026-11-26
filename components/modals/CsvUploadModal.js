@@ -4,7 +4,7 @@ import { MenuView } from '@expo/ui/community/menu';
 import { Text } from '../ui/AppText';
 import { useTheme } from '../../theme/theme';
 import { BottomSheetModal, BottomSheetView } from '@expo/ui/community/bottom-sheet';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -581,7 +581,7 @@ export default function CsvUploadModal({
       <BottomSheetView style={styles.sheetContent}>
 
           <View style={styles.headerRow}>
-            <Text style={[typography.styles.h2, { color: colors.text }]}>
+            <Text style={[typography.styles.title2, { color: colors.text }]}>
               {t('addCard.csvUpload', 'CSV ile Yükle')}
             </Text>
             <TouchableOpacity
@@ -736,7 +736,7 @@ export default function CsvUploadModal({
                     </View>
                     {csvPreview.errors.map((err, idx) => (
                       <Text key={idx} style={styles.alertBoxTextError}>
-                        <Text style={{ fontWeight: 'bold' }}>Satır {err.row}: </Text>{err.message}
+                        <Text style={{ fontFamily: fonts.bold }}>Satır {err.row}: </Text>{err.message}
                       </Text>
                     ))}
                   </View>
@@ -797,7 +797,7 @@ export default function CsvUploadModal({
                                   {selectedImg ? (
                                     <View style={styles.dropdownSelectedInner}>
                                       <Image source={{ uri: selectedImg.uri }} style={styles.dropdownTriggerThumb} />
-                                      <Text style={[styles.dropdownTriggerText, { color: colors.text, fontWeight: '600' }]} numberOfLines={1}>
+                                      <Text style={[styles.dropdownTriggerText, { color: colors.text, fontFamily: fonts.semibold }]} numberOfLines={1}>
                                         {t('addCard.chooseImages', 'Seçim')} {selectedImg.selectionIndex}
                                       </Text>
                                     </View>
@@ -889,7 +889,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   description: {
-    fontSize: 14,
+    fontSize: fontSizes.subhead,
     marginBottom: 20,
     textAlign: 'center',
     lineHeight: 20,
@@ -905,8 +905,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   guideHeadingText: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: fontSizes.body,
+    fontFamily: fonts.bold,
   },
   guideContent: {
     gap: 12,
@@ -917,12 +917,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   guideTitle: {
-    fontWeight: '700',
-    fontSize: 14,
+    fontFamily: fonts.bold,
+    fontSize: fontSizes.subhead,
     marginBottom: 6,
   },
   guideText: {
-    fontSize: 13,
+    fontSize: fontSizes.footnote,
     lineHeight: 18,
   },
   codeBadge: {
@@ -935,8 +935,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   codeBadgeText: {
-    fontWeight: '700',
-    fontSize: 13,
+    fontFamily: fonts.bold,
+    fontSize: fontSizes.footnote,
     letterSpacing: 0.5,
   },
   alertInline: {
@@ -944,8 +944,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   alertInlineText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: fontSizes.caption,
+    fontFamily: fonts.semibold,
   },
   imagePreviewWrapper: {
     marginTop: 4,
@@ -987,8 +987,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   fileNameText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: fontSizes.subhead,
+    fontFamily: fonts.semibold,
     marginLeft: 10,
     flex: 1,
   },
@@ -1005,13 +1005,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   statTitle: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: fontSizes.caption,
+    fontFamily: fonts.semibold,
     marginBottom: 4,
   },
   statValue: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: fontSizes.title3,
+    fontFamily: fonts.bold,
   },
 
   // --- UYARI & HATA KUTULARI ---
@@ -1025,13 +1025,13 @@ const styles = StyleSheet.create({
   },
   alertBoxTitleWarning: {
     color: '#B7791F',
-    fontWeight: '700',
-    fontSize: 14,
+    fontFamily: fonts.bold,
+    fontSize: fontSizes.subhead,
     marginBottom: 2,
   },
   alertBoxTextWarning: {
     color: '#B7791F',
-    fontSize: 12,
+    fontSize: fontSizes.caption,
     lineHeight: 16,
   },
   alertBoxError: {
@@ -1048,12 +1048,12 @@ const styles = StyleSheet.create({
   },
   alertBoxTitleError: {
     color: '#D32F2F',
-    fontWeight: '700',
-    fontSize: 14,
+    fontFamily: fonts.bold,
+    fontSize: fontSizes.subhead,
   },
   alertBoxTextError: {
     color: '#D32F2F',
-    fontSize: 12,
+    fontSize: fontSizes.caption,
     marginBottom: 2,
   },
 
@@ -1070,12 +1070,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   imageMapTitle: {
-    fontWeight: '700',
-    fontSize: 14,
+    fontFamily: fonts.bold,
+    fontSize: fontSizes.subhead,
     marginBottom: 2,
   },
   imageMapSub: {
-    fontSize: 12,
+    fontSize: fontSizes.caption,
   },
   pickImgBtn: {
     flexDirection: 'row',
@@ -1087,8 +1087,8 @@ const styles = StyleSheet.create({
   },
   pickImgBtnText: {
     color: '#FFF',
-    fontWeight: '700',
-    fontSize: 12,
+    fontFamily: fonts.bold,
+    fontSize: fontSizes.caption,
   },
   dropdownsList: {
     gap: 10,
@@ -1107,12 +1107,12 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   badgeText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: fontSizes.caption,
+    fontFamily: fonts.bold,
   },
   imgIdLabel: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: fontSizes.footnote,
+    fontFamily: fonts.medium,
   },
   dropdownTrigger: {
     flexDirection: 'row',
@@ -1125,7 +1125,7 @@ const styles = StyleSheet.create({
     width: 130,
   },
   dropdownTriggerPlaceholder: {
-    fontSize: 13,
+    fontSize: fontSizes.footnote,
     flex: 1,
   },
   dropdownSelectedInner: {
@@ -1140,7 +1140,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   dropdownTriggerText: {
-    fontSize: 13,
+    fontSize: fontSizes.footnote,
     flex: 1,
   },
 
@@ -1161,7 +1161,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   dropdownListItemText: {
-    fontSize: 14,
+    fontSize: fontSizes.subhead,
   },
 
   // --- İÇ AKSİYON BUTONLARI (İPTAL / İÇE AKTAR) ---
@@ -1178,8 +1178,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   btnCancelText: {
-    fontWeight: '700',
-    fontSize: 14,
+    fontFamily: fonts.bold,
+    fontSize: fontSizes.subhead,
   },
   btnImport: {
     flex: 2,
@@ -1189,8 +1189,8 @@ const styles = StyleSheet.create({
   },
   btnImportText: {
     color: '#FFF',
-    fontWeight: '700',
-    fontSize: 14,
+    fontFamily: fonts.bold,
+    fontSize: fontSizes.subhead,
   },
 
   // --- SABİT ALT AKSİYON BUTONLARI (İLK EKRAN) ---
@@ -1213,8 +1213,8 @@ const styles = StyleSheet.create({
   },
   btnDownloadTemplateText: {
     color: '#F98A21',
-    fontWeight: '700',
-    fontSize: 13,
+    fontFamily: fonts.bold,
+    fontSize: fontSizes.footnote,
     flexShrink: 1,
   },
   btnPickCsv: {
@@ -1228,8 +1228,8 @@ const styles = StyleSheet.create({
   },
   btnPickCsvText: {
     color: '#FFF',
-    fontWeight: '700',
-    fontSize: 13,
+    fontFamily: fonts.bold,
+    fontSize: fontSizes.footnote,
     flexShrink: 1,
   },
 });

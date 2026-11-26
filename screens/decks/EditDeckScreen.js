@@ -7,7 +7,7 @@ import { getCategories } from '../../services/CategoryService';
 import { updateDeck } from '../../services/DeckService';
 import { getLanguages } from '../../services/LanguageService';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
@@ -171,7 +171,7 @@ export default function DeckEditScreen() {
           <View style={styles.labelRow}>
             <View style={styles.labelTextContainer}>
               <Iconify icon="ion:book" size={24} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.name', 'Deste Adı')}</Text>
+              <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.text }]}>{t('create.name', 'Deste Adı')}</Text>
             </View>
             <View>
               <BadgeText required={true} />
@@ -217,7 +217,7 @@ export default function DeckEditScreen() {
           <View style={styles.labelRow}>
             <View style={styles.labelTextContainer}>
               <Iconify icon="icon-park-outline:translation" size={24} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.toName', 'Karşılığı')}</Text>
+              <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.text }]}>{t('create.toName', 'Karşılığı')}</Text>
             </View>
             <View>
               <BadgeText required={false} />
@@ -263,7 +263,7 @@ export default function DeckEditScreen() {
           <View style={styles.labelRow}>
             <View style={styles.labelTextContainer}>
               <Iconify icon="tabler:file-description-filled" size={24} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.description', 'Açıklama')}</Text>
+              <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.text }]}>{t('create.description', 'Açıklama')}</Text>
             </View>
             <View>
               <BadgeText required={false} />
@@ -316,7 +316,7 @@ export default function DeckEditScreen() {
           <View style={styles.labelRow}>
             <View style={styles.labelTextContainer}>
               <Iconify icon="mdi:category-plus-outline" size={24} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('createDeck.categoryLabel', 'Kategori')}</Text>
+              <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.text }]}>{t('createDeck.categoryLabel', 'Kategori')}</Text>
             </View>
             <View>
               <BadgeText required={true} />
@@ -388,7 +388,7 @@ export default function DeckEditScreen() {
           <View style={styles.labelRow}>
             <View style={styles.labelTextContainer}>
               <Iconify icon="mdi:spoken-language" size={24} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>
+              <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.text }]}>
                 {t('create.language', 'İçerik Dili')}
               </Text>
             </View>
@@ -482,15 +482,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: fontSizes.body,
+    fontFamily: fonts.medium,
   },
   input: {
     borderWidth: 1,
     borderRadius: 20,
     padding: 12,
     marginBottom: 0,
-    fontSize: 16,
+    fontSize: fontSizes.body,
   },
   buttonRowModern: {
     flexDirection: 'row',

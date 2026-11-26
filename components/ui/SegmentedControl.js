@@ -1,7 +1,7 @@
 import React, { memo, useCallback, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from './AppText';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes } from '../../theme/typography';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { Iconify } from 'react-native-iconify';
 
@@ -179,8 +179,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   label: {
-    ...typography.styles.button,
-    fontSize: 15,
+    ...typography.styles.headline,
+    fontSize: fontSizes.body,
     flexShrink: 1,
   },
   labelOverlay: {

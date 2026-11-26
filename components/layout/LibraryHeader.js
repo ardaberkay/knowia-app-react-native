@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import SegmentedControl from '../ui/SegmentedControl';
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { typography, fonts } from '../../theme/typography';
 
 /**
  * Library header: part of the page (no card surface), lit by a soft top glow
@@ -105,18 +105,18 @@ function LibraryHeader({ progress, onTabPress, summary }) {
               style={[styles.intro, { opacity, transform: [{ translateY }] }]}
             >
               <View style={styles.introText}>
-                <Animated.Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER} style={[typography.styles.h2, styles.title, { color: colors.text }]} numberOfLines={1}>
+                <Animated.Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER} style={[typography.styles.title2, styles.title, { color: colors.text }]} numberOfLines={1}>
                   {tab.title}
                 </Animated.Text>
                 <Animated.Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
-                  style={[typography.styles.caption, styles.subtitle, { color: colors.muted }]}
+                  style={[typography.styles.subhead, styles.subtitle, { color: colors.muted }]}
                   numberOfLines={2}
                 >
                   {tab.subtitle?.trim()}
                 </Animated.Text>
                 {tab.summary ? (
                   <Animated.Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
-                    style={[typography.styles.caption, styles.summary, { color: colors.buttonColor }]}
+                    style={[typography.styles.subhead, styles.summary, { color: colors.buttonColor }]}
                     numberOfLines={1}
                   >
                     {tab.summary}
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   summary: {
     marginTop: 'auto',
     paddingTop: 8,
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
   },
   introImage: {
     width: IMAGE_SIZE,

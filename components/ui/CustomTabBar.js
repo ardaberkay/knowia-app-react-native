@@ -6,6 +6,7 @@ import { useTheme } from '../../theme/theme';
 import { spacing } from '../../theme/layout';
 import { Iconify } from 'react-native-iconify';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { fontSizes, fonts } from '../../theme/typography';
 
 // Gap between the floating tab bar and the bottom safe area.
 const TAB_BAR_BOTTOM_GAP = 20;
@@ -130,8 +131,8 @@ export default function CustomTabBar(props) {
               />
               <Text
                 style={{
-                  fontSize: 11,
-                  fontWeight: '500',
+                  fontSize: fontSizes.micro,
+                  fontFamily: fonts.medium,
                   color: isFocused ? colors.buttonText : colors.subtext,
                   textAlign: 'center',
                 }}

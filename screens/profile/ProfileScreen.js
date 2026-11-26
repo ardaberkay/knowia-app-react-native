@@ -6,7 +6,7 @@ import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
 import Constants from 'expo-constants';
 import { BottomSheetModal, BottomSheetView } from '@expo/ui/community/bottom-sheet';
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import {
   getCurrentUserProfile,
   getActivitySummary,
@@ -255,7 +255,7 @@ const ActivityHeatmap = React.memo(function ActivityHeatmap({ summary, colors, i
         </View>
       </Pressable>
       <View style={heatStyles.footer}>
-        <Text style={[typography.styles.caption, { color: colors.text, flex: 1 }]} numberOfLines={1}>
+        <Text style={[typography.styles.subhead, { color: colors.text, flex: 1 }]} numberOfLines={1}>
           {`${selectedLabel} · `}
           {selected?.swipes
             ? t('profile.activity.dayDetail', {
@@ -381,7 +381,7 @@ const DailyGoalSheet = React.memo(function DailyGoalSheet({ sheetRef, goal, onSe
     >
       <BottomSheetView style={[sheetStyles.content, { paddingBottom: 20 }]}>
         <View style={sheetStyles.header}>
-          <Text style={[typography.styles.h2, { color: colors.text, flex: 1 }]} numberOfLines={1}>
+          <Text style={[typography.styles.title2, { color: colors.text, flex: 1 }]} numberOfLines={1}>
             {t('profile.activity.goalTitle', 'Günlük hedef')}
           </Text>
           <TouchableOpacity
@@ -408,10 +408,10 @@ const DailyGoalSheet = React.memo(function DailyGoalSheet({ sheetRef, goal, onSe
               style={[sheetStyles.row, index > 0 && divider]}
             >
               <View style={{ flex: 1 }}>
-                <Text style={[typography.styles.button, { color: selected ? colors.buttonColor : colors.text }]}>
+                <Text style={[typography.styles.headline, { color: selected ? colors.buttonColor : colors.text }]}>
                   {t(`profile.activity.goals.${preset.key}.title`)}
                 </Text>
-                <Text style={[typography.styles.caption, { color: colors.muted }]} numberOfLines={1}>
+                <Text style={[typography.styles.subhead, { color: colors.muted }]} numberOfLines={1}>
                   {`${meta(preset.goal)} · ${t(`profile.activity.goals.${preset.key}.desc`)}`}
                 </Text>
               </View>
@@ -427,10 +427,10 @@ const DailyGoalSheet = React.memo(function DailyGoalSheet({ sheetRef, goal, onSe
           style={[sheetStyles.row, divider]}
         >
           <View style={{ flex: 1 }}>
-            <Text style={[typography.styles.button, { color: !isPreset ? colors.buttonColor : colors.text }]}>
+            <Text style={[typography.styles.headline, { color: !isPreset ? colors.buttonColor : colors.text }]}>
               {t('profile.activity.goals.custom.title', 'Kendi hedefim')}
             </Text>
-            <Text style={[typography.styles.caption, { color: colors.muted }]} numberOfLines={1}>
+            <Text style={[typography.styles.subhead, { color: colors.muted }]} numberOfLines={1}>
               {customOpen || !isPreset
                 ? meta(customOpen ? customValue : goal)
                 : t('profile.activity.goals.custom.desc', {
@@ -463,7 +463,7 @@ const DailyGoalSheet = React.memo(function DailyGoalSheet({ sheetRef, goal, onSe
                   activeOpacity={0.8}
                   style={[sheetStyles.customSave, { backgroundColor: colors.buttonColor }]}
                 >
-                  <Text style={[typography.styles.button, { color: '#FFFFFF' }]}>
+                  <Text style={[typography.styles.headline, { color: '#FFFFFF' }]}>
                     {t('profile.activity.goals.custom.save', 'Kaydet')}
                   </Text>
                 </TouchableOpacity>
@@ -669,14 +669,14 @@ export default function ProfileScreen() {
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 style={[styles.changePill, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)' }]}
               >
-                <Text style={[typography.styles.button, { color: colors.text, fontSize: 13 }]}>
+                <Text style={[typography.styles.headline, { color: colors.text, fontSize: fontSizes.footnote }]}>
                   {t('profile.activity.change', 'Değiştir')}
                 </Text>
               </TouchableOpacity>
             </View>
             {/* "İstikrarlı · 7/50 kart": the goal and today's count in one line. */}
             <View style={styles.goalLine}>
-              <Text style={[typography.styles.subtitle, { color: colors.text, flexShrink: 1 }]} numberOfLines={1}>
+              <Text style={[typography.styles.bodyLarge, { color: colors.text, flexShrink: 1 }]} numberOfLines={1}>
                 {t('profile.activity.goalLine', {
                   name: goalName(dailyGoal, t),
                   done: todaySwipes,
@@ -786,8 +786,8 @@ const styles = StyleSheet.create({
   },
   name: {
     flexShrink: 1,
-    fontSize: 21,
-    fontWeight: '700',
+    fontSize: fontSizes.title3,
+    fontFamily: fonts.bold,
   },
   editButton: {
     width: 36,
@@ -799,7 +799,7 @@ const styles = StyleSheet.create({
   },
   email: {
     marginTop: 2,
-    fontSize: 13,
+    fontSize: fontSizes.footnote,
   },
   statsRow: {
     flexDirection: 'row',
@@ -818,12 +818,12 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   statValue: {
-    fontSize: 19,
-    fontWeight: '800',
+    fontSize: fontSizes.title3,
+    fontFamily: fonts.bold,
   },
   statLabel: {
     marginTop: 2,
-    fontSize: 11,
+    fontSize: fontSizes.micro,
   },
   body: {
     paddingHorizontal: SIDE_PADDING,
@@ -859,8 +859,8 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   sectionLabel: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: fontSizes.caption,
+    fontFamily: fonts.bold,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   },
@@ -880,13 +880,13 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   footerApp: {
-    fontSize: 14,
+    fontSize: fontSizes.subhead,
     color: '#888888',
-    fontWeight: '500',
+    fontFamily: fonts.medium,
     marginBottom: 4,
   },
   footerCompany: {
-    fontSize: 12,
+    fontSize: fontSizes.caption,
     color: '#AAAAAA',
   },
 });
@@ -899,7 +899,7 @@ const heatStyles = StyleSheet.create({
   month: {
     position: 'absolute',
     top: 0,
-    fontSize: 10,
+    fontSize: fontSizes.micro,
   },
   grid: {
     flexDirection: 'row',
@@ -921,7 +921,7 @@ const heatStyles = StyleSheet.create({
     borderRadius: 2,
   },
   legendText: {
-    fontSize: 10,
+    fontSize: fontSizes.micro,
     marginHorizontal: 2,
   },
 });
@@ -963,15 +963,15 @@ const sheetStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepLabel: {
-    fontSize: 22,
-    fontWeight: '600',
+    fontSize: fontSizes.title2,
+    fontFamily: fonts.semibold,
     lineHeight: 26,
   },
   stepValue: {
     minWidth: 76,
     textAlign: 'center',
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: fontSizes.bodyLarge,
+    fontFamily: fonts.bold,
   },
   customSave: {
     marginLeft: 'auto',

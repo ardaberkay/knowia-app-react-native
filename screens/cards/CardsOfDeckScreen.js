@@ -3,7 +3,7 @@ import { View, StyleSheet, FlatList, TouchableOpacity, Platform, BackHandler, Al
 import { Text } from '../../components/ui/AppText';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import LottieView from 'lottie-react-native';
 import AddEditCardInlineForm from '../../components/layout/EditCardForm';
@@ -740,7 +740,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                       />
                     </View>
                     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="none">
-                      <Text style={[typography.styles.body, { color: colors.border, textAlign: 'center', fontSize: 16, marginTop: 20 }]}>
+                      <Text style={[typography.styles.body, { color: colors.border, textAlign: 'center', fontSize: fontSizes.body, marginTop: 20 }]}>
                         {t('cardDetail.addToDeck', 'Desteye bir kart ekle')}
                       </Text>
                     </View>
@@ -845,8 +845,8 @@ const styles = StyleSheet.create({
     marginTop: -120,
   },
   loadingText: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: fontSizes.bodyLarge,
+    fontFamily: fonts.semibold,
     textAlign: 'center',
   },
   addCardFab: {
@@ -873,8 +873,8 @@ const styles = StyleSheet.create({
     minHeight: 52,
   },
   addCardFabLabel: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: fontSizes.body,
+    fontFamily: fonts.bold,
     color: '#FFFFFF',
   },
   cardsBlurSearchContainer: {

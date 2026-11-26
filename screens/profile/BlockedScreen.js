@@ -3,7 +3,7 @@ import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ActivityIndicato
 import { Text } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
@@ -234,8 +234,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: fontSizes.footnote,
+    fontFamily: fonts.semibold,
   },
   loading: {
     paddingVertical: 24,
@@ -294,8 +294,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   deckCardTitle: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: fontSizes.subhead,
+    fontFamily: fonts.medium,
     marginBottom: 2,
   },
   deckCardAction: {
@@ -308,8 +308,8 @@ const styles = StyleSheet.create({
     minWidth: 64,
   },
   deckCardActionLabel: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: fontSizes.micro,
+    fontFamily: fonts.semibold,
     marginTop: 4,
   },
   row: {

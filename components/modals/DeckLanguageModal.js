@@ -5,7 +5,7 @@ import { Text, TextInput } from '../ui/AppText';
 import { BottomSheetModal, BottomSheetFlatList } from '@expo/ui/community/bottom-sheet';
 
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import { triggerHaptic } from '../../lib/hapticManager';
@@ -190,7 +190,7 @@ export default function DeckLanguageModal({
             <LanguageCodeBadge language={language} active={isChecked} />
           </View>
           <View style={styles.nameColumn}>
-            <Text style={[styles.languageName, { color: isChecked ? primaryColor : colors.text, fontWeight: isChecked ? '700' : '500' }]} numberOfLines={1}>
+            <Text style={[styles.languageName, { color: isChecked ? primaryColor : colors.text, fontFamily: isChecked ? fonts.bold : fonts.medium }]} numberOfLines={1}>
               {languageNativeName(language, t)}
             </Text>
             {languageEnglishName(language) ? (
@@ -230,7 +230,7 @@ export default function DeckLanguageModal({
       <View style={styles.fixedHeader}>
         <View style={styles.headerRow}>
           <View style={styles.headerText}>
-            <Text style={[typography.styles.h2, { color: colors.text }]}>{title ?? t('create.languageHeading')}</Text>
+            <Text style={[typography.styles.title2, { color: colors.text }]}>{title ?? t('create.languageHeading')}</Text>
             <Text style={[styles.infoText, { color: isDarkMode ? '#aaa' : '#666' }]}>{subtitle ?? t('create.languageSub')}</Text>
           </View>
           <TouchableOpacity onPress={() => bottomSheetModalRef.current?.dismiss()} style={styles.closeButton}>
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
     borderRadius: 99,
   },
   infoText: {
-    fontSize: 13,
+    fontSize: fontSizes.footnote,
     lineHeight: 18,
     marginTop: 4,
   },
@@ -416,11 +416,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   slotLabel: {
-    ...typography.styles.caption,
-    fontWeight: '700',
+    ...typography.styles.subhead,
+    fontFamily: fonts.bold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    fontSize: 11,
+    fontSize: fontSizes.micro,
     marginBottom: 4,
   },
   slotValueRow: {
@@ -430,11 +430,11 @@ const styles = StyleSheet.create({
   },
   slotValue: {
     flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: fontSizes.body,
+    fontFamily: fonts.semibold,
   },
   slotPlaceholder: {
-    fontSize: 13,
+    fontSize: fontSizes.footnote,
     lineHeight: 17,
   },
   swapButton: {
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   exampleText: {
-    fontSize: 12,
+    fontSize: fontSizes.caption,
     lineHeight: 16,
     marginTop: 10,
   },
@@ -477,10 +477,10 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   languageName: {
-    fontSize: 16,
+    fontSize: fontSizes.body,
   },
   languageEnglish: {
-    fontSize: 12,
+    fontSize: fontSizes.caption,
     marginTop: 1,
   },
   searchBox: {
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: fontSizes.body,
     paddingVertical: 0,
   },
   radioCircle: {
@@ -510,8 +510,8 @@ const styles = StyleSheet.create({
   },
   sidePillText: {
     color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: fontSizes.caption,
+    fontFamily: fonts.bold,
   },
 });
 
@@ -540,8 +540,8 @@ const fieldStyles = StyleSheet.create({
     flexShrink: 1,
   },
   faceLabel: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: fontSizes.micro,
+    fontFamily: fonts.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
     marginBottom: 2,
@@ -579,11 +579,11 @@ const badgeStyles = StyleSheet.create({
     borderRadius: 6,
   },
   text: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: fontSizes.footnote,
+    fontFamily: fonts.bold,
     letterSpacing: 0.3,
   },
   textSm: {
-    fontSize: 10,
+    fontSize: fontSizes.micro,
   },
 });

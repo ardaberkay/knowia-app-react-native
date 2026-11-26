@@ -3,7 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { Text } from './AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import SearchBar from '../tools/SearchBar';
 
 // Kategoriye göre icon, renk ve gradient belirleme
@@ -125,18 +125,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   heroTitle: {
-    ...typography.styles.h2,
+    ...typography.styles.title2,
     color: '#fff',
-    fontSize: 28,
-    fontWeight: '900',
+    fontSize: fontSizes.title1,
+    fontFamily: fonts.bold,
     marginBottom: 6,
     letterSpacing: -0.5,
   },
   heroSubtitle: {
-    ...typography.styles.caption,
+    ...typography.styles.subhead,
     color: 'rgba(255, 255, 255, 0.85)',
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: fontSizes.body,
+    fontFamily: fonts.medium,
     lineHeight: 20,
   },
   searchRow: {

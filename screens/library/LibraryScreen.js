@@ -5,7 +5,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { useAuth } from '../../contexts/AuthContext';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { getDecksByCategory, deleteDeck, getLibrarySummary } from '../../services/DeckService';
 import { deleteCard, getUserCardProgressForCards } from '../../services/CardService';
 import { Iconify } from 'react-native-iconify';
@@ -186,7 +186,7 @@ export default function LibraryScreen() {
 
     return {
       sliderHeight,
-      fontSize: 20,
+      fontSize: fontSizes.title3,
       dividerMargin: 5,
       padding: basePadding,
       profileBottomPadding: basePadding * 0.7,
@@ -196,9 +196,9 @@ export default function LibraryScreen() {
       badgeBottomPadding: basePadding * 0.7,
       badgeRightPadding: basePadding * 0.5,
       profileAvatarSize: 36,
-      profileUsernameSize: 16,
+      profileUsernameSize: fontSizes.body,
       badgeIconSize: 20,
-      badgeTextSize: 18,
+      badgeTextSize: fontSizes.bodyLarge,
       favoriteButtonSize: 26,
       favoriteButtonPadding: 8,
       categoryIconSize: 150,
@@ -985,20 +985,20 @@ export default function LibraryScreen() {
                                       <>
                                         <FadeText
                                           text={deck.name}
-                                          style={[typography.styles.body, { color: colors.headText, fontSize: favoriteSliderDimensions.fontSize, fontWeight: '800', textAlign: 'center' }]}
+                                          style={[typography.styles.body, { color: colors.headText, fontSize: favoriteSliderDimensions.fontSize, fontFamily: fonts.bold, textAlign: 'center' }]}
                                           maxChars={20}
                                         />
                                         <View style={{ width: 70, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: favoriteSliderDimensions.dividerMargin, alignSelf: 'center' }} />
                                         <FadeText
                                           text={deck.to_name}
-                                          style={[typography.styles.body, { color: colors.headText, fontSize: favoriteSliderDimensions.fontSize, fontWeight: '800', textAlign: 'center' }]}
+                                          style={[typography.styles.body, { color: colors.headText, fontSize: favoriteSliderDimensions.fontSize, fontFamily: fonts.bold, textAlign: 'center' }]}
                                           maxChars={20}
                                         />
                                       </>
                                     ) : (
                                       <FadeText
                                         text={deck.name}
-                                        style={[typography.styles.body, { color: colors.headText, fontSize: favoriteSliderDimensions.fontSize, fontWeight: '800', textAlign: 'center' }]}
+                                        style={[typography.styles.body, { color: colors.headText, fontSize: favoriteSliderDimensions.fontSize, fontFamily: fonts.bold, textAlign: 'center' }]}
                                         maxChars={20}
                                       />
                                     )}
@@ -1007,7 +1007,7 @@ export default function LibraryScreen() {
                                 <View style={{ position: 'absolute', bottom: favoriteSliderDimensions.badgeBottomPadding, right: favoriteSliderDimensions.badgeRightPadding }}>
                                   <View style={styles.deckCountBadge}>
                                     <Iconify icon="ri:stack-fill" size={favoriteSliderDimensions.badgeIconSize} color="#fff" style={{ marginRight: 4 }} />
-                                    <Text style={[typography.styles.body, { color: '#fff', fontWeight: 'bold', fontSize: favoriteSliderDimensions.badgeTextSize }]}>{deck.card_count || 0}</Text>
+                                    <Text style={[typography.styles.body, { color: '#fff', fontFamily: fonts.bold, fontSize: favoriteSliderDimensions.badgeTextSize }]}>{deck.card_count || 0}</Text>
                                   </View>
                                 </View>
                               </LinearGradient>
@@ -1156,7 +1156,7 @@ export default function LibraryScreen() {
             <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
           </TouchableOpacity>
 
-          <Text style={[styles.modalTitle, { color: colors.text, flex: 1, textAlign: 'center', fontWeight: '600' }]}>
+          <Text style={[styles.modalTitle, { color: colors.text, flex: 1, textAlign: 'center', fontFamily: fonts.semibold }]}>
             {t('cardDetail.cardDetail', 'Kart Detayı')}
           </Text>
 
@@ -1233,8 +1233,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   favoriteHeaderTitle: {
-    fontSize: 21,
-    fontWeight: '800',
+    fontSize: fontSizes.title3,
+    fontFamily: fonts.bold,
   },
   seeAllButton: {
     flexDirection: 'row',
@@ -1303,8 +1303,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   seeAllText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: fontSizes.body,
+    fontFamily: fonts.bold,
   },
   deckProfileRow: {
     flexDirection: 'row',
@@ -1318,9 +1318,9 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   deckProfileUsername: {
-    fontSize: 15,
+    fontSize: fontSizes.body,
     color: '#BDBDBD',
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   loadingContainer: {
     flex: 1,
@@ -1331,8 +1331,8 @@ const styles = StyleSheet.create({
     gap: -65,
   },
   loadingText: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: fontSizes.bodyLarge,
+    fontFamily: fonts.semibold,
     textAlign: 'center',
   },
   backgroundCategoryIcon: {
@@ -1372,8 +1372,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: fontSizes.bodyLarge,
+    fontFamily: fonts.bold,
   },
   iconBackground: {
     width: 40,
@@ -1421,12 +1421,12 @@ const createCardStyles = StyleSheet.create({
     elevation: 6,
   },
   title: {
-    ...typography.styles.button,
-    fontSize: 16,
+    ...typography.styles.headline,
+    fontSize: fontSizes.body,
     textAlign: 'center',
   },
   subtitle: {
-    ...typography.styles.caption,
+    ...typography.styles.subhead,
     textAlign: 'center',
     marginTop: 2,
   },

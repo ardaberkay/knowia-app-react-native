@@ -9,7 +9,7 @@ import Animated, {
   Easing 
 } from 'react-native-reanimated';
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 
 const { Svg, Circle, Defs, LinearGradient, Stop } = SvgLib;
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -23,8 +23,8 @@ const ProgressText = ({ progress, colors, textStyle }) => {
       style={[
         typography.styles.body,
         {
-          fontSize: 32,
-          fontWeight: 'bold',
+          fontSize: fontSizes.largeTitle,
+          fontFamily: fonts.bold,
           color: colors.cardQuestionText || '#333',
           textAlign: 'center',
         },

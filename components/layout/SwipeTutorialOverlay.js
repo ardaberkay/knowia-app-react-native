@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import { Text } from '../ui/AppText';
-import { typography } from '../../theme/typography';
+import { typography, fonts } from '../../theme/typography';
 
 /**
  * First-run coachmarks on the swipe screen. Dims everything except the
@@ -234,13 +234,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   swipeTutorialStepText: {
-    ...typography.styles.caption,
+    ...typography.styles.subhead,
     color: '#F98A21',
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   swipeTutorialTitle: {
-    ...typography.styles.subtitle,
-    fontWeight: '800',
+    ...typography.styles.bodyLarge,
+    fontFamily: fonts.bold,
     flex: 1,
   },
   swipeTutorialTitleRow: {
@@ -318,10 +318,10 @@ const styles = StyleSheet.create({
     transform: [{ skewX: '-5deg' }],
   },
   swipeTutorialSwipeHintText: {
-    ...typography.styles.caption,
+    ...typography.styles.subhead,
     textAlign: 'center',
     color: '#FFFFFF',
-    fontWeight: '800',
+    fontFamily: fonts.bold,
   },
   swipeTutorialArrowDown: {
     position: 'absolute',
@@ -358,8 +358,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   swipeTutorialGhostText: {
-    ...typography.styles.button,
-    fontWeight: '700',
+    ...typography.styles.headline,
+    fontFamily: fonts.bold,
   },
   swipeTutorialNavActions: {
     flexDirection: 'row',
@@ -376,8 +376,8 @@ const styles = StyleSheet.create({
     opacity: 0.42,
   },
   swipeTutorialBackText: {
-    ...typography.styles.button,
-    fontWeight: '700',
+    ...typography.styles.headline,
+    fontFamily: fonts.bold,
   },
   swipeTutorialNextButton: {
     borderRadius: 12,
@@ -386,8 +386,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F98A21',
   },
   swipeTutorialNextText: {
-    ...typography.styles.button,
+    ...typography.styles.headline,
     color: '#FFFFFF',
-    fontWeight: '800',
+    fontFamily: fonts.bold,
   },
 });

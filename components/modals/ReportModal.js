@@ -3,7 +3,7 @@ import { View, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, useW
 import { Text } from '../ui/AppText';
 import { useTheme } from '../../theme/theme';
 import { BottomSheetModal, BottomSheetView } from '@expo/ui/community/bottom-sheet';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 
@@ -79,7 +79,7 @@ export default function ReportModal({
           
           {/* Header Row */}
           <View style={styles.headerRow}>
-            <Text style={[typography.styles.h2, { color: colors.text }]}>{t(titleKey)}</Text>
+            <Text style={[typography.styles.title2, { color: colors.text }]}>{t(titleKey)}</Text>
             <TouchableOpacity 
               onClose={onClose} // HitSlop sorunu olmaması için onPress yerine propu doğrudan kullan
               onPress={onClose}
@@ -124,7 +124,7 @@ export default function ReportModal({
                     styles.optionText,
                     { 
                       color: disabled ? colors.muted : (isSelected ? secondaryColor : colors.text),
-                      fontWeight: isSelected ? '700' : '500',
+                      fontFamily: isSelected ? fonts.bold : fonts.medium,
                       textDecorationLine: disabled ? 'line-through' : 'none' 
                     }
                   ]}>
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     borderRadius: 99,
   },
   hintText: {
-    fontSize: 14,
+    fontSize: fontSizes.subhead,
     marginBottom: 20,
     fontFamily: typography.primary?.regular || undefined,
     lineHeight: 20,
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   optionText: {
-    fontSize: 16,
+    fontSize: fontSizes.body,
     flex: 1,
   },
   radioOuter: {
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   submitBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: fontSizes.body,
+    fontFamily: fonts.bold,
   }
 });

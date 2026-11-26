@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import { Text } from '../ui/AppText';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 
 const formatFutureReview = (dateString, t) => {
   const minutes = Math.max(1, Math.ceil((new Date(dateString).getTime() - Date.now()) / 60000));
@@ -52,14 +52,14 @@ export default function SwipeCompletionView({
     <View style={styles.completionCtaArea}>
       <View style={styles.completionButtonRow}>
         <TouchableOpacity style={[styles.completionButton, styles.completionButtonHalf, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, borderWidth: StyleSheet.hairlineWidth }]} onPress={onBack}>
-          <Text style={[typography.styles.button, { color: colors.text }]}>{t('swipeDeck.completion.back', 'Geri Dön')}</Text>
+          <Text style={[typography.styles.headline, { color: colors.text }]}>{t('swipeDeck.completion.back', 'Geri Dön')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           disabled={!nextChapter}
           style={[styles.completionButton, styles.completionButtonHalf, { backgroundColor: nextChapter ? colors.buttonColor : colors.cardBackground, borderColor: nextChapter ? 'transparent' : colors.cardBorder, borderWidth: nextChapter ? 0 : StyleSheet.hairlineWidth, opacity: nextChapter ? 1 : 0.55 }]}
           onPress={onNextChapter}
         >
-          <Text style={[typography.styles.button, { color: nextChapter ? colors.buttonText : colors.muted }]}>{t('swipeDeck.completion.nextChapter', 'Sonraki Bölüm')}</Text>
+          <Text style={[typography.styles.headline, { color: nextChapter ? colors.buttonText : colors.muted }]}>{t('swipeDeck.completion.nextChapter', 'Sonraki Bölüm')}</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.completionNextMetaRow}>
@@ -74,10 +74,10 @@ export default function SwipeCompletionView({
       <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingBottom: insets.bottom }]}>
         <View style={styles.emptyCompletionContent}>
           <Text style={styles.emptyCompletionIcon}>📚</Text>
-          <Text style={[typography.styles.h2, styles.emptyCompletionTitle, { color: colors.text }]}>{t('swipeDeck.completion.emptyTitle', 'Bu bölümde şu anda çalışılacak kart yok.')}</Text>
+          <Text style={[typography.styles.title2, styles.emptyCompletionTitle, { color: colors.text }]}>{t('swipeDeck.completion.emptyTitle', 'Bu bölümde şu anda çalışılacak kart yok.')}</Text>
           <View style={[styles.emptyCompletionInfo, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
             <Text style={[styles.completionReviewMetric, { color: colors.text }]}>{nearestReview ? formatFutureReview(nearestReview.at, t) : '—'}</Text>
-            <Text style={[typography.styles.caption, styles.completionReviewLabel, { color: colors.muted }]}>{nearestReview ? t('swipeDeck.completion.cardsReady', { count: nearestReview.count, defaultValue: `${nearestReview.count} kart hazır` }) : t('swipeDeck.completion.nearestReview', 'En yakın tekrar')}</Text>
+            <Text style={[typography.styles.subhead, styles.completionReviewLabel, { color: colors.muted }]}>{nearestReview ? t('swipeDeck.completion.cardsReady', { count: nearestReview.count, defaultValue: `${nearestReview.count} kart hazır` }) : t('swipeDeck.completion.nearestReview', 'En yakın tekrar')}</Text>
           </View>
           {ctaArea}
         </View>
@@ -92,7 +92,7 @@ export default function SwipeCompletionView({
           <LinearGradient colors={[colors.buttonColor, '#FF6B35']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.completionHeroCard, { backgroundColor: colors.buttonColor }]}>
             <View style={styles.completionHeroTitleRow}>
               <Iconify icon="material-symbols:trophy" size={36} color="#FFFFFF" />
-              <Text style={[typography.styles.h2, styles.completionTitle, { color: '#FFFFFF' }]}>{t('swipeDeck.completion.title', 'Oturum Tamamlandı!')}</Text>
+              <Text style={[typography.styles.title2, styles.completionTitle, { color: '#FFFFFF' }]}>{t('swipeDeck.completion.title', 'Oturum Tamamlandı!')}</Text>
             </View>
             <View style={styles.completionHeroMetricCircle}>
               <Text style={[styles.completionHeroMetric, { color: '#FFFFFF' }]}>{sessionTargetCount}</Text>
@@ -157,7 +157,7 @@ export default function SwipeCompletionView({
           <View style={styles.completionChapterHeader}>
             <View style={styles.completionChapterTitleRow}>
               <Iconify icon="streamline-flex:module-puzzle-2" size={20} color={colors.buttonColor} />
-              <Text style={[typography.styles.subtitle, { color: colors.text }]}>{t('swipeDeck.completion.chapterProgress', 'Bölüm İlerlemesi')}</Text>
+              <Text style={[typography.styles.bodyLarge, { color: colors.text }]}>{t('swipeDeck.completion.chapterProgress', 'Bölüm İlerlemesi')}</Text>
             </View>
             <Text style={[styles.completionChapterProgressValue, { color: colors.buttonColor }]}>{chapterProgress ? `%${chapterPercent}` : '--'}</Text>
           </View>
@@ -174,14 +174,14 @@ export default function SwipeCompletionView({
               <Iconify icon="lets-icons:clock-fill" size={22} color={colors.buttonColor} />
               <View style={styles.completionReviewTextGroup}>
                 <Text style={[styles.completionReviewMetric, { color: colors.text }]}>{nearestReview ? formatFutureReview(nearestReview.at, t) : '—'}</Text>
-                <Text style={[typography.styles.caption, styles.completionReviewLabel, { color: colors.muted }]}>{nearestReview ? t('swipeDeck.completion.cardsReady', { count: nearestReview.count, defaultValue: `${nearestReview.count} kart hazır` }) : t('swipeDeck.completion.nearestReview', 'En yakın tekrar')}</Text>
+                <Text style={[typography.styles.subhead, styles.completionReviewLabel, { color: colors.muted }]}>{nearestReview ? t('swipeDeck.completion.cardsReady', { count: nearestReview.count, defaultValue: `${nearestReview.count} kart hazır` }) : t('swipeDeck.completion.nearestReview', 'En yakın tekrar')}</Text>
               </View>
             </View>
             <View style={styles.completionReviewItem}>
               <Iconify icon="solar:calendar-bold" size={22} color={colors.secondary} />
               <View style={styles.completionReviewTextGroup}>
                 <Text style={[styles.completionReviewMetric, { color: colors.text }]}>{farthestReview ? formatFutureReview(farthestReview.at, t) : '—'}</Text>
-                <Text style={[typography.styles.caption, styles.completionReviewLabel, { color: colors.muted }]}>{t('swipeDeck.completion.farthestReview', 'En uzak tekrar')}</Text>
+                <Text style={[typography.styles.subhead, styles.completionReviewLabel, { color: colors.muted }]}>{t('swipeDeck.completion.farthestReview', 'En uzak tekrar')}</Text>
               </View>
             </View>
           </View>
@@ -220,8 +220,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.18)',
   },
   completionGoalText: {
-    ...typography.styles.button,
-    fontSize: 14,
+    ...typography.styles.headline,
+    fontSize: fontSizes.subhead,
     color: '#FFFFFF',
     flexShrink: 1,
   },
@@ -259,12 +259,12 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   completionHeroMetric: {
-    fontSize: 52,
-    fontWeight: '800',
+    fontSize: fontSizes.display,
+    fontFamily: fonts.bold,
     lineHeight: 56,
   },
   completionHeroLabel: {
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   completionHeroSessionStats: {
     width: '100%',
@@ -279,12 +279,12 @@ const styles = StyleSheet.create({
   },
   completionHeroSessionNumber: {
     color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: fontSizes.title2,
+    fontFamily: fonts.bold,
   },
   completionHeroSessionLabel: {
     color: 'rgba(255,255,255,0.78)',
-    fontSize: 12,
+    fontSize: fontSizes.caption,
     marginTop: 2,
     textAlign: 'center',
   },
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   emptyCompletionIcon: {
-    fontSize: 44,
+    fontSize: fontSizes.display,
     marginBottom: 16,
   },
   emptyCompletionTitle: {
@@ -344,8 +344,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   completionChapterProgressValue: {
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: fontSizes.title2,
+    fontFamily: fonts.bold,
   },
   completionChapterProgressTrack: {
     height: 12,
@@ -387,8 +387,8 @@ const styles = StyleSheet.create({
   },
 
   completionReviewMetric: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: fontSizes.title3,
+    fontFamily: fonts.bold,
     textAlign: 'center',
   },
   completionReviewLabel: {

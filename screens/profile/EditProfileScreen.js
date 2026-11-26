@@ -4,7 +4,7 @@ import { Text, TextInput } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FormScrollView from '../../components/layout/FormScrollView';
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { getCurrentUserProfile, updateProfile } from '../../services/ProfileService';
 import { uploadAvatar, removeAvatar } from '../../services/StorageService';
 import { useProfile } from '../../contexts/ProfileContext';
@@ -322,7 +322,7 @@ export default function EditProfileScreen({ navigation }) {
         }]}>
           <View style={styles.labelRow}>
             <Iconify icon="mage:image-fill" size={20} color={colors.buttonColor} style={styles.labelIcon} />
-            <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
+            <Text style={[typography.styles.body, { color: colors.text, fontFamily: fonts.semibold }]}>
               {t('editProfile.profilePhoto')}
             </Text>
           </View>
@@ -350,7 +350,7 @@ export default function EditProfileScreen({ navigation }) {
                 activeOpacity={0.7}
               >
                 <Iconify icon="lucide:edit" size={18} color={colors.buttonColor} style={{ marginRight: 6 }} />
-                <Text style={[typography.styles.button, { color: colors.buttonColor, fontSize: 14 }]}>
+                <Text style={[typography.styles.headline, { color: colors.buttonColor, fontSize: fontSizes.subhead }]}>
                   {t('editProfile.changePhoto')}
                 </Text>
               </TouchableOpacity>
@@ -364,7 +364,7 @@ export default function EditProfileScreen({ navigation }) {
                   activeOpacity={0.7}
                 >
                   <Iconify icon="mdi:garbage-can-empty" size={18} color={colors.error} style={{ marginRight: 6 }} />
-                  <Text style={[typography.styles.button, { color: colors.error, fontSize: 14 }]}>
+                  <Text style={[typography.styles.headline, { color: colors.error, fontSize: fontSizes.subhead }]}>
                     {t('editProfile.removePhoto')}
                   </Text>
                 </TouchableOpacity>
@@ -386,7 +386,7 @@ export default function EditProfileScreen({ navigation }) {
         }]}>
           <View style={styles.labelRow}>
             <Iconify icon="solar:user-bold" size={20} color={colors.buttonColor} style={styles.labelIcon} />
-            <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
+            <Text style={[typography.styles.body, { color: colors.text, fontFamily: fonts.semibold }]}>
               {t('editProfile.userName')}
             </Text>
           </View>
@@ -403,7 +403,7 @@ export default function EditProfileScreen({ navigation }) {
             autoCapitalize="none"
             maxLength={16}
           />
-          <Text style={[typography.styles.caption, { color: colors.muted, marginTop: 4 }]}>
+          <Text style={[typography.styles.subhead, { color: colors.muted, marginTop: 4 }]}>
             {t('editProfile.usernameHint')}
           </Text>
         </View>
@@ -428,7 +428,7 @@ export default function EditProfileScreen({ navigation }) {
           )}
           <View style={styles.labelRow}>
             <Iconify icon="tabler:mail-filled" size={20} color={colors.buttonColor} style={styles.labelIcon} />
-            <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
+            <Text style={[typography.styles.body, { color: colors.text, fontFamily: fonts.semibold }]}>
               {t('editProfile.email')}
             </Text>
           </View>
@@ -470,7 +470,7 @@ export default function EditProfileScreen({ navigation }) {
           )}
           <View style={styles.labelRow}>
             <Iconify icon="carbon:password" size={20} color={colors.buttonColor} style={styles.labelIcon} />
-            <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
+            <Text style={[typography.styles.body, { color: colors.text, fontFamily: fonts.semibold }]}>
               {t('editProfile.currentPassword')}
             </Text>
           </View>
@@ -517,7 +517,7 @@ export default function EditProfileScreen({ navigation }) {
             }}>
               <Iconify icon="mdi:information-variant" size={14} color={colors.muted} />
             </View>
-            <Text style={[typography.styles.caption, { color: colors.muted, flex: 1 }]}>
+            <Text style={[typography.styles.subhead, { color: colors.muted, flex: 1 }]}>
               {t('editProfile.currentPasswordNote')}
             </Text>
           </View>
@@ -543,10 +543,10 @@ export default function EditProfileScreen({ navigation }) {
           )}
           <View style={styles.labelRow}>
             <Iconify icon="carbon:password" size={20} color={colors.buttonColor} style={styles.labelIcon} />
-            <Text style={[typography.styles.body, { color: colors.text, fontWeight: '600' }]}>
+            <Text style={[typography.styles.body, { color: colors.text, fontFamily: fonts.semibold }]}>
               {t('editProfile.newPassword')}
             </Text>
-            <Text style={[typography.styles.caption, { color: colors.muted, marginLeft: 6 }]}>
+            <Text style={[typography.styles.subhead, { color: colors.muted, marginLeft: 6 }]}>
               ({t('editProfile.optional')})
             </Text>
           </View>
@@ -616,7 +616,7 @@ export default function EditProfileScreen({ navigation }) {
         {error && (
           <View style={[styles.errorCard, { backgroundColor: colors.error + '15', borderColor: colors.error }]}>
             <Iconify icon="mdi:information-variant" size={20} color={colors.error} style={{ marginRight: 8 }} />
-            <Text style={[typography.styles.caption, { color: colors.error, flex: 1 }]}>{error}</Text>
+            <Text style={[typography.styles.subhead, { color: colors.error, flex: 1 }]}>{error}</Text>
           </View>
         )}
 
@@ -724,7 +724,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     width: '100%',
-    fontSize: 16,
+    fontSize: fontSizes.body,
   },
   passwordInputContainer: {
     position: 'relative',

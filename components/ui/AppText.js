@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { createContext, useContext } from 'react';
 import { Text as RNText, TextInput as RNTextInput } from 'react-native';
+import { fonts } from '../../theme/typography';
 
 // App-wide Text / TextInput. They follow the OS accessibility text size but
 // never grow past 1.2×, so large system font sizes can't break layouts.
@@ -9,11 +10,25 @@ import { Text as RNText, TextInput as RNTextInput } from 'react-native';
 // maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER} explicitly.
 export const MAX_FONT_SIZE_MULTIPLIER = 1.2;
 
+// Text without a font of its own uses Inter instead of the system font.
+// Only the outermost Text gets it: nested Text inherits from its parent, and a
+// base font there would override the parent's weight.
+const BASE_STYLE = { fontFamily: fonts.regular };
+const InsideText = createContext(false);
+
 // React 19 passes `ref` as a regular prop, so spreading props forwards it.
-export function Text(props) {
-  return <RNText maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER} {...props} />;
+export function Text({ style, ...props }) {
+  const nested = useContext(InsideText);
+  const text = (
+    <RNText
+      maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
+      {...props}
+      style={nested ? style : [BASE_STYLE, style]}
+    />
+  );
+  return nested ? text : <InsideText.Provider value>{text}</InsideText.Provider>;
 }
 
-export function TextInput(props) {
-  return <RNTextInput maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER} {...props} />;
+export function TextInput({ style, ...props }) {
+  return <RNTextInput maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER} {...props} style={[BASE_STYLE, style]} />;
 }

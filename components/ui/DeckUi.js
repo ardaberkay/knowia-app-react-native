@@ -4,7 +4,8 @@ import { Text } from './AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
 import MaskedView from '@react-native-masked-view/masked-view';
-import { triggerHaptic } from '../../lib/hapticManager'; // Titreşim yöneticimizi ekledik
+import { triggerHaptic } from '../../lib/hapticManager';
+import { fontSizes, fonts } from '../../theme/typography'; // Titreşim yöneticimizi ekledik
 
 // Deck cards are always portrait rectangles: 140 wide (at most 36% of the
 // screen on narrow phones) with a fixed 1:1.4 ratio, so they never turn square.
@@ -327,8 +328,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   deckTitleModern: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: fontSizes.body,
+    fontFamily: fonts.semibold,
     color: '#F98A21',
     maxWidth: '95%',
     textAlign: 'center',
@@ -350,8 +351,8 @@ const styles = StyleSheet.create({
   },
   deckCountBadgeText: {
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 15,
+    fontFamily: fonts.bold,
+    fontSize: fontSizes.body,
   },
   popularityBadge: {
     flexDirection: 'row',
@@ -364,8 +365,8 @@ const styles = StyleSheet.create({
   },
   popularityBadgeText: {
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 12,
+    fontFamily: fonts.bold,
+    fontSize: fontSizes.caption,
   },
   deckProfileRow: {
     position: 'absolute',
@@ -381,9 +382,9 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   deckProfileUsername: {
-    fontSize: 14,
+    fontSize: fontSizes.subhead,
     color: '#BDBDBD',
-    fontWeight: '700',
+    fontFamily: fonts.bold,
 
   },
   backgroundCategoryIcon: {
@@ -478,13 +479,13 @@ const styles = StyleSheet.create({
   },
   progressPercentChipNumber: {
     color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 14.5,
+    fontFamily: fonts.bold,
+    fontSize: fontSizes.subhead,
     letterSpacing: -0.38,
   },
   progressPercentSign: {
-    fontSize: 9.75,
-    fontWeight: '700',
+    fontSize: fontSizes.micro,
+    fontFamily: fonts.bold,
     color: 'rgba(255, 255, 255, 0.92)',
     marginLeft: 0,
     marginBottom: 2,

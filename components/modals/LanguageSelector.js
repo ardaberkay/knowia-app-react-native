@@ -5,7 +5,7 @@ import { Text } from '../ui/AppText';
 import { BottomSheetModal, BottomSheetFlatList } from '@expo/ui/community/bottom-sheet';
 
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import { triggerHaptic } from '../../lib/hapticManager';
@@ -77,7 +77,7 @@ export default function LanguageSelector({ isVisible, onClose, onLanguageChange 
           styles.languageText,
           { 
             color: isSelected ? primaryColor : colors.text,
-            fontWeight: isSelected ? '700' : '500'
+            fontFamily: isSelected ? fonts.bold : fonts.medium
           }
         ]}>
           {language.name}
@@ -99,7 +99,7 @@ export default function LanguageSelector({ isVisible, onClose, onLanguageChange 
       {/* --- SABİT HEADER BÖLÜMÜ --- */}
       <View style={styles.fixedHeader}>
         <View style={styles.headerRow}>
-          <Text style={[typography.styles.h2, { color: colors.text }]}>
+          <Text style={[typography.styles.title2, { color: colors.text }]}>
             {t('profile.language')}
           </Text>
           <TouchableOpacity 
@@ -165,6 +165,6 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   languageText: {
-    fontSize: 16,
+    fontSize: fontSizes.body,
   },
 });

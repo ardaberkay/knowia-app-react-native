@@ -4,7 +4,7 @@ import { Text, TextInput } from '../ui/AppText';
 import FormScrollView from './FormScrollView';
 import { updateCard } from '../../services/CardService';
 import { uploadCardImage } from '../../services/StorageService';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -130,7 +130,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               <View style={styles.labelRow}>
                 <View style={styles.labelTextContainer}>
                   <Iconify icon="mage:image-fill" size={24} color="#F98A21" style={styles.labelIcon} />
-                  <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.image", "Kart Görseli")}</Text>
+                  <Text style={[styles.label, { fontSize: fontSizes.body }, {color: colors.text}]}>{t("cardDetail.image", "Kart Görseli")}</Text>
                 </View>
                 <View>
                   <BadgeText required={false} />
@@ -165,7 +165,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               <View style={styles.labelRow}>
                 <View style={styles.labelTextContainer}>
                 <Iconify icon="uil:comment-alt-question" size={24} color="#F98A21" />
-                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.question", "Soru")}</Text>
+                <Text style={[styles.label, { fontSize: fontSizes.body }, {color: colors.text}]}>{t("cardDetail.question", "Soru")}</Text>
                 </View>
                 <View>
                   <BadgeText required={true} />
@@ -207,7 +207,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               <View style={styles.labelRow}>
                 <View style={styles.labelTextContainer}>
                 <Iconify icon="uil:comment-alt-check" size={24} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.answer", "Cevap")}</Text>
+                <Text style={[styles.label, { fontSize: fontSizes.body }, {color: colors.text}]}>{t("cardDetail.answer", "Cevap")}</Text>
                 </View>
                 <View>
                   <BadgeText required={true} />
@@ -249,7 +249,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               <View style={styles.labelRow}>
                 <View style={styles.labelTextContainer}>
                 <Iconify icon="lucide:lightbulb" size={24} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.example", "Örnek")}</Text>
+                <Text style={[styles.label, { fontSize: fontSizes.body }, {color: colors.text}]}>{t("cardDetail.example", "Örnek")}</Text>
                 </View>
                 <View>
                   <BadgeText required={false} />
@@ -291,7 +291,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               <View style={styles.labelRow}>
                 <View style={styles.labelTextContainer}>
                 <Iconify icon="material-symbols-light:stylus-note" size={24} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, {color: colors.text}]}>{t("cardDetail.note", "Not")}</Text>
+                <Text style={[styles.label, { fontSize: fontSizes.body }, {color: colors.text}]}>{t("cardDetail.note", "Not")}</Text>
                 </View>
                 <View>
                   <BadgeText required={false} />
@@ -370,15 +370,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: fontSizes.body,
+    fontFamily: fonts.medium,
   },
   input: {
     borderWidth: 1,
     borderRadius: 20,
     padding: 12,
     marginBottom: 0,
-    fontSize: 16,
+    fontSize: fontSizes.body,
   },
   cardImage: {
     width: '100%',
@@ -400,8 +400,8 @@ const styles = StyleSheet.create({
   },
   addImageButtonText: {
     color: '#F98A21',
-    fontWeight: 'bold',
-    fontSize: 15,
+    fontFamily: fonts.bold,
+    fontSize: fontSizes.body,
     marginLeft: 6,
   },
   removeImageButton: {
@@ -417,8 +417,8 @@ const styles = StyleSheet.create({
   },
   removeImageButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 15,
+    fontFamily: fonts.bold,
+    fontSize: fontSizes.body,
   },
   buttonRowModern: {
     flexDirection: 'row',

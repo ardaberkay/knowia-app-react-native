@@ -22,7 +22,7 @@ import Reanimated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { triggerHaptic } from '../../lib/hapticManager';
 
 const PERSPECTIVE = 1200;
@@ -282,7 +282,7 @@ function SwipeFlipCard({
   }), [cardBackground, cardHeight, cardWidth]);
 
   const questionTextStyle = useMemo(() => [
-    typography.styles.h2,
+    typography.styles.title2,
     {
       color: textColor,
       marginBottom: frontImage ? 16 : 0,
@@ -291,35 +291,35 @@ function SwipeFlipCard({
   ], [frontImage, textColor]);
 
   const answerTextStyle = useMemo(() => [
-    typography.styles.h2,
+    typography.styles.title2,
     {
       color: '#fff',
       textAlign: 'center',
       marginTop: 8,
       lineHeight: 28,
-      fontWeight: '600',
+      fontFamily: fonts.semibold,
     },
   ], []);
 
   const subTextStyle = useMemo(() => [
-    typography.styles.subtitle,
+    typography.styles.bodyLarge,
     {
       color: 'rgba(255, 255, 255, 0.9)',
       textAlign: 'center',
       marginTop: 8,
       lineHeight: 22,
-      fontSize: 16,
+      fontSize: fontSizes.body,
     },
   ], []);
 
   const noteTextStyle = useMemo(() => [
-    typography.styles.subtitle,
+    typography.styles.bodyLarge,
     {
       color: 'rgba(255, 255, 255, 0.85)',
       textAlign: 'center',
       marginTop: 8,
       lineHeight: 22,
-      fontSize: 15,
+      fontSize: fontSizes.body,
       fontStyle: 'italic',
     },
   ], []);
@@ -814,8 +814,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.92)',
   },
   showMoreText: {
-    ...typography.styles.button,
-    fontSize: 14,
+    ...typography.styles.headline,
+    fontSize: fontSizes.subhead,
   },
   cardActionRow: {
     position: 'absolute',
@@ -886,8 +886,8 @@ const styles = StyleSheet.create({
   },
   swipeLabel: {
     position: 'absolute',
-    fontSize: 25,
-    fontWeight: '800',
+    fontSize: fontSizes.title2,
+    fontFamily: fonts.bold,
     letterSpacing: 0.4,
     textShadowColor: 'rgba(0,0,0,0.16)',
     textShadowOffset: { width: 0, height: 1 },
@@ -992,8 +992,8 @@ const styles = StyleSheet.create({
   },
   pillText: {
     color: '#fff',
-    fontWeight: '700',
-    fontSize: 14,
+    fontFamily: fonts.bold,
+    fontSize: fontSizes.subhead,
     letterSpacing: 0.5,
   },
   sectionDivider: {

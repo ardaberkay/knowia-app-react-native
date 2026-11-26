@@ -4,7 +4,7 @@ import { Text } from '../../components/ui/AppText';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useAuth } from '../../contexts/AuthContext';
 import { updateCardsChapter } from '../../services/CardService';
 import { Iconify } from 'react-native-iconify';
@@ -95,14 +95,14 @@ const MemoizedCardItem = memo(({
           }
         ]}>
           <Text
-            style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]}
+            style={[styles.question, { fontSize: fontSizes.body }, { color: colors.cardQuestionText }]}
             numberOfLines={1}
           >
             {card.question}
           </Text>
           <View style={[styles.divider, { backgroundColor: colors.cardDivider }]} />
           <Text
-            style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]}
+            style={[styles.question, { fontSize: fontSizes.body }, { color: colors.cardQuestionText }]}
             numberOfLines={1}
           >
             {card.answer}
@@ -884,7 +884,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
               style={{ width: 500, height: 500, opacity: 0.2 }}
               resizeMode="contain"
             />
-            <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, textAlign: 'center', fontSize: 16, marginTop: -150 }]}>
+            <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, textAlign: 'center', fontSize: fontSizes.body, marginTop: -150 }]}>
               {t('chapterCards.noCardsDesc', 'Bu bölümde henüz kart oluşturulmamış.')}
             </Text>
           </View>
@@ -1038,16 +1038,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   heroTitle: {
-    ...typography.styles.h2,
-    fontSize: 28,
-    fontWeight: '900',
+    ...typography.styles.title2,
+    fontSize: fontSizes.title1,
+    fontFamily: fonts.bold,
     marginBottom: 6,
     letterSpacing: -0.5,
   },
   heroSubtitle: {
-    ...typography.styles.caption,
-    fontSize: 15,
-    fontWeight: '500',
+    ...typography.styles.subhead,
+    fontSize: fontSizes.body,
+    fontFamily: fonts.medium,
     lineHeight: 20,
   },
   statsCard: {
@@ -1076,8 +1076,8 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   statText: {
-    fontSize: 15,
-    fontWeight: '700', // Sayıların daha okunaklı ve vurgulu olması için kalınlık artırıldı
+    fontSize: fontSizes.body,
+    fontFamily: fonts.bold, // Sayıların daha okunaklı ve vurgulu olması için kalınlık artırıldı
     letterSpacing: 0.5,
   },
   divider: {
@@ -1135,8 +1135,8 @@ const styles = StyleSheet.create({
     minHeight: 110,
   },
   question: {
-    fontWeight: '600',
-    fontSize: 17,
+    fontFamily: fonts.semibold,
+    fontSize: fontSizes.bodyLarge,
     marginBottom: 8,
     letterSpacing: 0.3,
     marginTop: 4,
@@ -1148,9 +1148,9 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   answer: {
-    fontSize: 15,
+    fontSize: fontSizes.body,
     marginTop: 4,
-    fontWeight: '400',
+    fontFamily: fonts.regular,
     letterSpacing: 0.2,
   },
   iconBtn: {
@@ -1165,7 +1165,7 @@ const styles = StyleSheet.create({
     marginTop: -250,
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: fontSizes.body,
   },
   fab: {
     position: 'absolute',
@@ -1218,8 +1218,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)', // Butonlar için hafif bir vurgu
   },
   actionPillText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: fontSizes.footnote,
+    fontFamily: fonts.semibold,
     marginLeft: 4,
   },
   moveButtonVariant: {
@@ -1227,16 +1227,16 @@ const styles = StyleSheet.create({
   },
   moveButtonText: {
     color: '#ffffff', // Projenin ana rengi (örneğin mavi/mor)
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: fontSizes.footnote,
+    fontFamily: fonts.bold,
   },
   badgeContainer: {
     paddingVertical: 4,
     paddingHorizontal: 8,
   },
   badgeText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: fontSizes.caption,
+    fontFamily: fonts.medium,
     opacity: 0.9,
   }
 });

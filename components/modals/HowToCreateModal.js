@@ -3,7 +3,7 @@ import { View, TouchableOpacity, StyleSheet, ScrollView, useWindowDimensions, Pl
 import { Text } from '../ui/AppText';
 import { useTheme } from '../../theme/theme';
 import { BottomSheetModal, BottomSheetView } from '@expo/ui/community/bottom-sheet';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import BadgeText from '../tools/BadgeText';
@@ -85,7 +85,7 @@ export default function HowToCreateModal({ isVisible, onClose }) {
           <View style={styles.headerRow}>
             <View style={styles.headerTitleContainer}>
               <Iconify icon="material-symbols:info-outline" size={24} color={colors.secondary} style={{ marginRight: 8 }} />
-              <Text style={[typography.styles.h2, { color: colors.text }]}>
+              <Text style={[typography.styles.title2, { color: colors.text }]}>
                 {t('howToCreate.title', 'Nasıl Oluşturulur?')}
               </Text>
             </View>
@@ -113,7 +113,7 @@ export default function HowToCreateModal({ isVisible, onClose }) {
                   </View>
                   <View style={styles.stepTitleContainer}>
                     <View style={styles.stepTitleRow}>
-                      <Text style={[styles.stepTitle, typography.styles.h3, { color: colors.text }]}>
+                      <Text style={[styles.stepTitle, { fontSize: fontSizes.body }, { color: colors.text }]}>
                         {step.title}
                       </Text>
                       {step.required}
@@ -128,7 +128,7 @@ export default function HowToCreateModal({ isVisible, onClose }) {
 
             <View style={[styles.tipContainer, { backgroundColor: colors.secondary + '15', borderColor: colors.secondary + '30' }]}>
               <Iconify icon="lucide:lightbulb" size={20} color={colors.secondary} style={{ marginRight: 8 }} />
-              <Text style={[styles.tipText, typography.styles.caption, { color: colors.text, flex: 1 }]}>
+              <Text style={[styles.tipText, typography.styles.subhead, { color: colors.text, flex: 1 }]}>
                 {t('howToCreate.tip', 'İpucu: Deste oluşturduktan sonra istediğiniz zaman düzenleyebilir veya kart ekleyebilirsiniz.')}
               </Text>
             </View>
@@ -143,7 +143,7 @@ export default function HowToCreateModal({ isVisible, onClose }) {
             }}
             activeOpacity={0.8}
           >
-            <Text style={[styles.closeButtonText, typography.styles.body, { color: '#fff' }]}>
+            <Text style={[styles.closeButtonText, { fontSize: fontSizes.body }, { color: '#fff' }]}>
               {t('common.ok', 'Tamam')}
             </Text>
           </TouchableOpacity>
@@ -212,8 +212,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   stepTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: fontSizes.body,
+    fontFamily: fonts.semibold,
     flex: 1,
   },
   stepDescription: {
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     borderRadius: 99,
   },
   closeButtonText: {
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
     color: '#fff',
   },
 });

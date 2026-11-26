@@ -11,7 +11,7 @@ import SearchBar from '../../components/tools/SearchBar';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
 import DeckList from '../../components/lists/DeckList';
 import LottieView from 'lottie-react-native';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes } from '../../theme/typography';
 import { StyleSheet } from 'react-native';
 import { getLanguages, languagesInUse } from '../../services/LanguageService';
 import { useListBottomInset } from '../../components/ui/CustomTabBar';
@@ -207,7 +207,7 @@ export default function FavoriteDecks() {
             resizeMode="contain"
             fadeDuration={0}
           />
-          <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, textAlign: 'center', fontSize: 16, marginTop: -20 }]}>
+          <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, textAlign: 'center', fontSize: fontSizes.body, marginTop: -20 }]}>
             {t('library.addFavoriteDeckEmpty', 'Bir deste favorilere ekle')}
           </Text>
         </View>

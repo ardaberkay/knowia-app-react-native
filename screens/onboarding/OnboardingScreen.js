@@ -7,7 +7,7 @@ import LottieView from 'lottie-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { OnboardingFinishContext } from '../../contexts/OnboardingFinishContext';
 
 const SLIDE_COUNT = 4;
@@ -213,7 +213,7 @@ export default function OnboardingScreen({ navigation, route }) {
                 >
                   <View style={{ flexShrink: 1, alignItems: 'center' }}>
                     <Text style={[styles.previewButtonText, { color: colors.buttonText }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{label}</Text>
-                    <Text style={{ fontFamily: 'Inter', fontSize: 10, color: colors.buttonText, opacity: 0.85 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{time}</Text>
+                    <Text style={{ fontFamily: fonts.regular, fontSize: fontSizes.micro, color: colors.buttonText, opacity: 0.85 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{time}</Text>
                   </View>
                 </View>
               ))}
@@ -370,15 +370,15 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   title: {
-    ...typography.styles.h2,
-    fontSize: 22,
-    fontFamily: 'Inter-Bold',
+    ...typography.styles.title2,
+    fontSize: fontSizes.title2,
+    fontFamily: fonts.bold,
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     ...typography.styles.body,
-    fontSize: 14,
+    fontSize: fontSizes.subhead,
     lineHeight: 21,
     textAlign: 'center',
     maxWidth: 320,
@@ -422,8 +422,8 @@ const styles = StyleSheet.create({
   },
   skipText: {
     ...typography.styles.body,
-    fontSize: 14,
-    fontFamily: 'Inter-SemiBold',
+    fontSize: fontSizes.subhead,
+    fontFamily: fonts.semibold,
   },
   primaryButtonWrapper: {
     flex: 1,
@@ -445,8 +445,8 @@ const styles = StyleSheet.create({
     borderRadius: 99,
   },
   primaryButtonText: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 17,
+    fontFamily: fonts.semibold,
+    fontSize: fontSizes.bodyLarge,
     color: '#FFFFFF',
   },
   lottieSlideColumn: {
@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
     borderRightColor: 'rgba(255,255,255,0.35)',
   },
   previewButtonText: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
+    fontFamily: fonts.semibold,
+    fontSize: fontSizes.body,
   },
 });

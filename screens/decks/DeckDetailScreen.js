@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, TouchableOpacity, Platform, Pressable, Im
 import { Text } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { Alert, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getDeckById, getDeckLanguages } from '../../services/DeckService';
@@ -1892,7 +1892,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   errorText: {
-    fontSize: 16,
+    fontSize: fontSizes.body,
     textAlign: 'center',
     marginTop: 20,
   },
@@ -1920,8 +1920,8 @@ const styles = StyleSheet.create({
     minHeight: 52,
   },
   addCardFabLabel: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: fontSizes.body,
+    fontFamily: fonts.bold,
     color: '#FFFFFF',
   },
   addCardHintOverlay: {
@@ -1960,12 +1960,12 @@ const styles = StyleSheet.create({
     borderRightColor: 'transparent',
   },
   addCardHintTitle: {
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: fontSizes.body,
+    fontFamily: fonts.bold,
     marginBottom: 4,
   },
   addCardHintDescription: {
-    fontSize: 13,
+    fontSize: fontSizes.footnote,
     lineHeight: 18,
   },
   addCardHintSecondaryButton: {
@@ -1978,8 +1978,8 @@ const styles = StyleSheet.create({
   },
   addCardHintSecondaryButtonText: {
     color: '#F98A21',
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: fontSizes.footnote,
+    fontFamily: fonts.bold,
   },
   // GRADIENT FLOW STYLES - Modern & Eye-catching
   gfHeroBanner: {
@@ -2045,15 +2045,15 @@ const styles = StyleSheet.create({
   },
   gfCategoryText: {
     color: '#fff',
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: fontSizes.footnote,
+    fontFamily: fonts.bold,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   gfHeroTitle: {
     color: '#fff',
-    fontSize: 32,
-    fontWeight: '800',
+    fontSize: fontSizes.largeTitle,
+    fontFamily: fonts.bold,
     letterSpacing: -0.5,
     lineHeight: 38,
     textShadowColor: 'rgba(0,0,0,0.2)',
@@ -2062,8 +2062,8 @@ const styles = StyleSheet.create({
   },
   gfHeroSubtitle: {
     color: '#fff',
-    fontSize: 32,
-    fontWeight: '800',
+    fontSize: fontSizes.largeTitle,
+    fontFamily: fonts.bold,
     letterSpacing: -0.5,
     lineHeight: 38,
     textShadowColor: 'rgba(0,0,0,0.2)',
@@ -2076,8 +2076,8 @@ const styles = StyleSheet.create({
   },
   gfHeroDesc: {
     color: 'rgba(255,255,255,0.75)',
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: fontSizes.subhead,
+    fontFamily: fonts.medium,
     fontStyle: 'italic',
     lineHeight: 20,
     marginBottom: 8,
@@ -2093,8 +2093,8 @@ const styles = StyleSheet.create({
   },
   gfExpandButtonText: {
     color: 'rgba(255,255,255,0.9)',
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: fontSizes.footnote,
+    fontFamily: fonts.semibold,
   },
   gfCreatorChipSlot: {
     alignSelf: 'flex-start',
@@ -2135,8 +2135,8 @@ const styles = StyleSheet.create({
   },
   gfCreatorName: {
     color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: fontSizes.subhead,
+    fontFamily: fonts.semibold,
   },
   gfProgressCard: {
     paddingVertical: 16,
@@ -2178,16 +2178,16 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   gfTotalBadgeNumber: {
-    fontSize: 22,
-    fontWeight: '900',
+    fontSize: fontSizes.title2,
+    fontFamily: fonts.bold,
     color: '#fff',
     letterSpacing: -0.5,
     lineHeight: 24,
     paddingTop: 4,
   },
   gfTotalBadgeLabel: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: fontSizes.micro,
+    fontFamily: fonts.bold,
     color: 'rgba(255,255,255,0.85)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -2211,13 +2211,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   gfStatRowValue: {
-    fontSize: 17,
-    fontWeight: '800',
+    fontSize: fontSizes.bodyLarge,
+    fontFamily: fonts.bold,
     letterSpacing: -0.5,
   },
   gfStatRowLabel: {
-    fontSize: 9,
-    fontWeight: '600',
+    fontSize: fontSizes.micro,
+    fontFamily: fonts.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.2,
     marginTop: 1,
@@ -2247,13 +2247,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   gfActionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: fontSizes.bodyLarge,
+    fontFamily: fonts.bold,
     marginBottom: 2,
   },
   gfActionDesc: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: fontSizes.footnote,
+    fontFamily: fonts.medium,
   },
   gfActionDivider: {
     height: 1,
@@ -2283,13 +2283,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   gfShareTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: fontSizes.body,
+    fontFamily: fonts.bold,
     marginBottom: 4,
   },
   gfShareStatus: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: fontSizes.footnote,
+    fontFamily: fonts.medium,
   },
   gfShareInfoBtn: {
     flexDirection: 'row',
@@ -2300,8 +2300,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   gfShareInfoText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: fontSizes.subhead,
+    fontFamily: fonts.semibold,
   },
   gfLearningFlowCard: {
     marginHorizontal: 16,
@@ -2352,13 +2352,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   gfStudyPrimaryText: {
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: fontSizes.body,
+    fontFamily: fonts.bold,
     marginBottom: 2,
   },
   gfStudyMetaText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: fontSizes.caption,
+    fontFamily: fonts.medium,
   },
   gfStartButton: {
     width: 128,
@@ -2381,8 +2381,8 @@ const styles = StyleSheet.create({
   },
   gfStartButtonText: {
     color: '#fff',
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: fontSizes.bodyLarge,
+    fontFamily: fonts.bold,
     letterSpacing: 0.2,
   },
   chapterSheetHeader: {
@@ -2393,13 +2393,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   chapterSheetTitle: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: fontSizes.bodyLarge,
+    fontFamily: fonts.bold,
     flex: 1,
   },
   chapterSheetHeaderMeta: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: fontSizes.caption,
+    fontFamily: fonts.semibold,
     marginRight: 10,
   },
   chapterSheetCloseBtn: {
@@ -2439,13 +2439,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   chapterSheetItemTitle: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: fontSizes.body,
+    fontFamily: fonts.bold,
     marginBottom: 1,
   },
   chapterSheetItemMeta: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: fontSizes.caption,
+    fontFamily: fonts.medium,
   },
   chapterSheetStatRow: {
     flexDirection: 'row',
@@ -2460,8 +2460,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   chapterSheetStatText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: fontSizes.micro,
+    fontFamily: fonts.semibold,
   },
   fabChapterProgressTextContainer: {
     position: 'absolute',
@@ -2473,7 +2473,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   fabChapterProgressText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: fontSizes.micro,
+    fontFamily: fonts.bold,
   },
 });

@@ -5,7 +5,7 @@ import { Text } from '../ui/AppText';
 import { BottomSheetModal, BottomSheetFlatList } from '@expo/ui/community/bottom-sheet';
 
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import CircularProgress from '../ui/CircularProgress';
@@ -102,7 +102,7 @@ export default function ChapterSelector({
               showText={true}
               shouldAnimate={true}
               fullCircle={true}
-              textStyle={{ fontSize: 16, fontWeight: '900', color: colors.text }}
+              textStyle={{ fontSize: fontSizes.body, fontFamily: fonts.bold, color: colors.text }}
             />
           </View>
 
@@ -159,7 +159,7 @@ export default function ChapterSelector({
         <View style={styles.headerRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={24} color={colors.buttonColor} style={{ marginRight: 8 }} />
-            <Text style={[typography.styles.h2, { color: colors.text }]}>
+            <Text style={[typography.styles.title2, { color: colors.text }]}>
               {t('chapterCards.selectChapter', 'Bölüm Seç')}
             </Text>
           </View>
@@ -228,8 +228,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   chapterTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: fontSizes.bodyLarge,
+    fontFamily: fonts.semibold,
   },
   chapterDivider: {
     height: 1,
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statText: {
-    fontSize: 15,
+    fontSize: fontSizes.body,
   },
   emptyChapters: {
     minHeight: 160,
@@ -263,6 +263,6 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
   },
   emptyChaptersText: {
-    fontSize: 16,
+    fontSize: fontSizes.body,
   },
 });

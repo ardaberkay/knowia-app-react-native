@@ -137,20 +137,20 @@ export default function RegisterScreen({ navigation }) {
           </View>
           <View style={styles.policyLinksRow}>
             <TouchableOpacity onPress={() => openLink(REGISTER_LINKS.privacy)} activeOpacity={0.7}>
-              <Text style={[typography.styles.caption, styles.policyLink, { color: colors.secondary }]}>
+              <Text style={[typography.styles.subhead, styles.policyLink, { color: colors.secondary }]}>
                 {t('profile.privacy', 'Gizlilik Politikası')}
               </Text>
             </TouchableOpacity>
-            <Text style={[typography.styles.caption, styles.policyText, { color: colors.text }]}>
+            <Text style={[typography.styles.subhead, styles.policyText, { color: colors.text }]}>
               {t('register.and', ' ve ')}
             </Text>
             <TouchableOpacity onPress={() => openLink(REGISTER_LINKS.terms)} activeOpacity={0.7}>
-              <Text style={[typography.styles.caption, styles.policyLink, { color: colors.secondary }]}>
+              <Text style={[typography.styles.subhead, styles.policyLink, { color: colors.secondary }]}>
                 {t('profile.terms', 'Kullanım Koşulları')}
               </Text>
             </TouchableOpacity>
           </View>
-          <Text style={[typography.styles.caption, styles.policyAgreeText, { color: colors.text }]}>
+          <Text style={[typography.styles.subhead, styles.policyAgreeText, { color: colors.text }]}>
             {t('register.agreeByRegistering', 'Kayıt olarak kabul etmiş olursunuz.')}
           </Text>
           <TouchableOpacity 
@@ -158,7 +158,7 @@ export default function RegisterScreen({ navigation }) {
             onPress={handleRegister}
             disabled={loading}
           >
-            <Text style={[styles.buttonText, typography.styles.button, { color: colors.buttonText }]}>
+            <Text style={[styles.buttonText, typography.styles.headline, { color: colors.buttonText }]}>
               {loading ? t('register.registering', 'Kayıt yapılıyor...') : t('register.register', 'Kayıt Ol')}
             </Text>
           </TouchableOpacity>
@@ -166,9 +166,9 @@ export default function RegisterScreen({ navigation }) {
             style={[styles.linkButton, { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 }]}
             onPress={() => navigation.navigate('Login')}
           >
-            <Text style={[styles.linkText, typography.styles.link, { color: colors.secondary }]}>
+            <Text style={[styles.linkText, typography.styles.body, { color: colors.secondary }]}>
               {t('register.didUAcc', 'Zaten hesabınız var mı?')} {' '}
-              <Text style={typography.styles.linkBold}>{t('register.login', 'Giriş yapın')}</Text>
+              <Text style={typography.styles.headline}>{t('register.login', 'Giriş yapın')}</Text>
             </Text>
           </TouchableOpacity>
         </View>

@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
+import { fontSizes, fonts } from '../../theme/typography';
 
 export default function CreateButton({ onPress, disabled = false, text, loading = false, style, textStyle, colors, showIcon = false, iconName }) {
   const { colors: themeColors } = useTheme();
@@ -60,8 +61,8 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   createButtonText: {
-    fontSize: 17,
-    fontWeight: '500',
+    fontSize: fontSizes.bodyLarge,
+    fontFamily: fonts.medium,
     color: '#FFFFFF',
   },
   gradientButton: {

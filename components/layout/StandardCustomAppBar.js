@@ -4,7 +4,7 @@ import { Text } from '../ui/AppText';
 import { Iconify } from 'react-native-iconify';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import ProfileAvatarButton from './ProfileAvatarButton';
 
 export default function StandardCustomAppBar({
@@ -44,14 +44,14 @@ export default function StandardCustomAppBar({
             <Text
               style={[
                 typography.styles.body,
-                { color: textColor, fontSize: 24, letterSpacing: -1 },
+                { color: textColor, fontSize: fontSizes.title2, letterSpacing: -1 },
               ]}
             >
               Knowia
             </Text>
           </View>
         ) : (
-          <Text style={[typography.styles.subtitle, styles.titleText, { color: textColor, fontSize: 22 }]}>
+          <Text style={[typography.styles.bodyLarge, styles.titleText, { color: textColor, fontSize: fontSizes.title2 }]}>
             {title}
           </Text>
         )}
@@ -103,8 +103,8 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   streakText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: fontSizes.body,
+    fontFamily: fonts.bold,
   },
   header: {
     paddingHorizontal: 14,
@@ -130,6 +130,6 @@ const styles = StyleSheet.create({
   },
   titleText: {
     textAlign: 'center',
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
   },
 });

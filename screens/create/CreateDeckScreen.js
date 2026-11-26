@@ -7,7 +7,7 @@ import { getLanguages } from '../../services/LanguageService';
 import { useAuth } from '../../contexts/AuthContext';
 import FormScrollView from '../../components/layout/FormScrollView';
 import { useNavigation } from '@react-navigation/native';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
@@ -173,13 +173,13 @@ export default function CreateScreen() {
             <View style={[styles.headerCardContent, styles.headerContent]}>
               <View style={styles.headerTitleContainer}>
                 <Iconify icon="fluent:tab-add-24-regular" size={26} color="#F98A21" style={{ marginRight: 6 }} />
-                <Text style={[typography.styles.h2, { color: colors.text }]}>
+                <Text style={[typography.styles.title2, { color: colors.text }]}>
                   {t('createDeck.title', 'Desteni Oluştur')}
                 </Text>
               </View>
               <View style={styles.headerBottomRow}>
                 <View style={styles.headerTextColumn}>
-                  <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: 22, flex: 1, alignSelf: 'flex-start' }]}>
+                  <Text style={[typography.styles.subhead, { color: colors.muted, lineHeight: 22, flex: 1, alignSelf: 'flex-start' }]}>
                     {t('createDeck.motivationText', 'Kişiselleştirilmiş destelerle öğrenme yolculuğunu tasarla ve bilgini pekiştir.')}
                   </Text>
                   <TouchableOpacity
@@ -193,7 +193,7 @@ export default function CreateScreen() {
                     }}
                   >
                     <Iconify icon="material-symbols:info-outline" size={16} color={colors.secondary} style={{ marginRight: 4 }} />
-                    <Text style={[typography.styles.caption, { color: colors.secondary, fontWeight: '600'}]}>
+                    <Text style={[typography.styles.subhead, { color: colors.secondary, fontFamily: fonts.semibold}]}>
                       {t('createDeck.howToCreate', 'Nasıl Oluşturulur?')}
                     </Text>
                   </TouchableOpacity>
@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 12,
     marginBottom: 0,
-    fontSize: 16,
+    fontSize: fontSizes.body,
   },
 
   buttonRowModern: {

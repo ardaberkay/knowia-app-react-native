@@ -3,7 +3,7 @@ import { StyleSheet, View, TouchableOpacity, Alert, ImageBackground, ActivityInd
 import { Text, TextInput } from '../../components/ui/AppText';
 import FormScrollView from '../../components/layout/FormScrollView';
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import { supabase } from '../../lib/supabase';
@@ -283,7 +283,7 @@ export default function ResetPasswordScreen({ navigation }) {
             onPress={handleResetPassword}
             disabled={loading || !isPasswordValid}
           >
-            <Text style={[styles.buttonText, typography.styles.button, { color: colors.buttonText }]}>
+            <Text style={[styles.buttonText, typography.styles.headline, { color: colors.buttonText }]}>
               {loading ? t('resetPassword.updating', 'Güncelleniyor...') : t('resetPassword.updatePassword', 'Şifreyi Güncelle')}
             </Text>
           </TouchableOpacity>
@@ -294,7 +294,7 @@ export default function ResetPasswordScreen({ navigation }) {
               {t('resetPassword.rememberPassword', 'Şifreni mi hatırladın?')}
             </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Login')} disabled={loading}>
-              <Text style={[typography.styles.link, { color: colors.secondary, fontWeight: '600', marginLeft: 5 }]}>
+              <Text style={[typography.styles.body, { color: colors.secondary, fontFamily: fonts.semibold, marginLeft: 5 }]}>
                 {t('resetPassword.loginLink', 'Giriş yap')}
               </Text>
             </TouchableOpacity>
@@ -346,8 +346,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   validationText: {
-    fontSize: 14,
-    fontFamily: 'Inter',
+    fontSize: fontSizes.subhead,
+    fontFamily: fonts.regular,
   },
   button: {
     padding: 15,

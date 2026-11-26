@@ -36,6 +36,7 @@ import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { triggerHaptic } from '../lib/hapticManager';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
+import { fontSizes, fonts } from '../theme/typography';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -70,9 +71,9 @@ function MainTabs() {
           backgroundColor: colors.tabBarBackground,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: fontSizes.caption,
           marginBottom: 10,
-          fontFamily: 'Inter',
+          fontFamily: fonts.regular,
           textAlign: 'center',
           marginTop: -8,
         },
@@ -180,8 +181,8 @@ export default function AppNavigator() {
         animation: 'default',
         headerBackButtonDisplayMode: 'minimal',
         headerTitleStyle: {
-          fontFamily: 'Inter-SemiBold',
-          fontSize: 18
+          fontFamily: fonts.semibold,
+          fontSize: fontSizes.bodyLarge
         },
         // DeckDetail vb. geri çıkışta bir karelik yanlış ekran / flash azaltır (native stack + detach etkileşimi)
         detachInactiveScreens: false,
@@ -302,7 +303,7 @@ export default function AppNavigator() {
                       })
                     }}
                   >
-                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15, marginRight: 6 }}>
+                    <Text style={{ color: colors.text, fontFamily: fonts.bold, fontSize: fontSizes.body, marginRight: 6 }}>
                       CSV
                     </Text>
                     <Iconify icon="solar:cloud-upload-broken" size={22} color={colors.text} />

@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { useTranslation } from 'react-i18next';
+import { fontSizes, fonts } from '../../theme/typography';
 
 
 const CommunityDeckCard = ({
@@ -91,7 +92,7 @@ const CommunityDeckCard = ({
                                 }
                                 style={styles.userAvatar}
                             />
-                            <Text style={[typography.styles.caption, styles.usernameText]}
+                            <Text style={[typography.styles.subhead, styles.usernameText]}
                                 numberOfLines={2}
                                 ellipsizeMode="tail">
                                 {username}
@@ -120,7 +121,7 @@ const CommunityDeckCard = ({
                     {/* Orta Satır: MaskedView Tabanlı Başlık Alanı */}
                     <View style={styles.titleBlock}>
                         <Text
-                            style={[typography.styles.h3, styles.mainTitle]}
+                            style={[typography.styles.headline, styles.mainTitle]}
                             numberOfLines={1}
                             ellipsizeMode="tail"
                         >
@@ -132,7 +133,7 @@ const CommunityDeckCard = ({
                                 <Text style={styles.separatorDot}></Text>
 
                                 <Text
-                                    style={[typography.styles.h3, styles.subTitle]}
+                                    style={[typography.styles.headline, styles.subTitle]}
                                     numberOfLines={1}
                                     ellipsizeMode="tail"
                                 >
@@ -151,7 +152,7 @@ const CommunityDeckCard = ({
                             style={{ marginRight: 4 }}
                         />
                         <Text
-                            style={[typography.styles.caption, styles.metaText]}
+                            style={[typography.styles.subhead, styles.metaText]}
                             numberOfLines={1}
                         >
                             {deck.card_count || 0} {t('home.cardCount', 'Kart')}
@@ -164,7 +165,7 @@ const CommunityDeckCard = ({
                             style={{ marginRight: 4 }}
                         />
                         <Text
-                            style={[typography.styles.caption, styles.metaText]}
+                            style={[typography.styles.subhead, styles.metaText]}
                             numberOfLines={1}
                         >
                             {chapter_count || 0} {t('home.chapterCount', 'Bölüm')}
@@ -235,8 +236,8 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255, 255, 255, 0.4)',
     },
     usernameText: {
-        fontWeight: '700',
-        fontSize: 13,
+        fontFamily: fonts.bold,
+        fontSize: fontSizes.footnote,
         color: 'rgba(255, 255, 255, 0.75)',
     },
 
@@ -253,13 +254,13 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     mainTitle: {
-        fontSize: 15,
-        fontWeight: '700',
+        fontSize: fontSizes.body,
+        fontFamily: fonts.bold,
         color: '#FFFFFF',
     },
     subTitle: {
-        fontSize: 15,
-        fontWeight: '500',
+        fontSize: fontSizes.body,
+        fontFamily: fonts.medium,
         color: '#FFFFFF',
     },
     separatorDot: {
@@ -275,8 +276,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     metaText: {
-        fontSize: 11,
-        fontWeight: '600',
+        fontSize: fontSizes.micro,
+        fontFamily: fonts.semibold,
         color: 'rgba(255, 255, 255, 0.9)',
     },
 });

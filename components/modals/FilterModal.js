@@ -6,7 +6,7 @@ import { BottomSheetModal, BottomSheetView } from '@expo/ui/community/bottom-she
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { languageCode, languageNativeName, languageEnglishName } from '../../services/LanguageService';
 
@@ -187,7 +187,7 @@ const FilterModal = ({
           <View style={styles.modalHeader}>
             <View style={styles.headerLeft}>
               <Iconify icon="si:filter-list-alt-fill" size={28} color={colors.text} />
-              <Text style={[typography.styles.h2, { color: colors.text, fontSize: 22 }]}>
+              <Text style={[typography.styles.title2, { color: colors.text, fontSize: fontSizes.title2 }]}>
                 {t('common.filters', 'Filtreler')}
               </Text>
             </View>
@@ -219,7 +219,7 @@ const FilterModal = ({
                   activeOpacity={0.8}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Text style={[styles.accordionHeaderText, { color: colors.text, fontWeight: '600' }]}>
+                    <Text style={[styles.accordionHeaderText, { color: colors.text, fontFamily: fonts.semibold }]}>
                       {selectedSortLabel}
                     </Text>
                   </View>
@@ -251,7 +251,7 @@ const FilterModal = ({
                               styles.optionCardText,
                               {
                                 color: isSelected ? primaryColor : colors.text,
-                                fontWeight: isSelected ? '700' : '500'
+                                fontFamily: isSelected ? fonts.bold : fonts.medium
                               }
                             ]}>
                               {option.label}
@@ -322,7 +322,7 @@ const FilterModal = ({
                             styles.optionCardText,
                             {
                               color: isSelected ? primaryColor : colors.text,
-                              fontWeight: isSelected ? '700' : '500'
+                              fontFamily: isSelected ? fonts.bold : fonts.medium
                             }
                           ]}>
                             {option.label}
@@ -397,13 +397,13 @@ const FilterModal = ({
                               styles.optionCardText,
                               {
                                 color: isSelected ? primaryColor : colors.text,
-                                fontWeight: isSelected ? '700' : '500'
+                                fontFamily: isSelected ? fonts.bold : fonts.medium
                               }
                             ]} numberOfLines={1}>
                               {languageNativeName(lang, t)}
                             </Text>
                             {languageEnglishName(lang) ? (
-                              <Text style={{ fontSize: 12, color: colors.muted }} numberOfLines={1}>
+                              <Text style={{ fontSize: fontSizes.caption, color: colors.muted }} numberOfLines={1}>
                                 {languageEnglishName(lang)}
                               </Text>
                             ) : null}
@@ -468,8 +468,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   langCodeText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: fontSizes.caption,
+    fontFamily: fonts.bold,
     letterSpacing: 0.3,
   },
   filterIconButton: {
@@ -523,8 +523,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: fontSizes.bodyLarge,
+    fontFamily: fonts.bold,
     marginLeft: 6,
   },
   accordionHeader: {
@@ -537,8 +537,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   accordionHeaderText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: fontSizes.body,
+    fontFamily: fonts.semibold,
   },
   badgePill: {
     paddingHorizontal: 8,
@@ -547,8 +547,8 @@ const styles = StyleSheet.create({
   },
   badgePillText: {
     color: '#FFF',
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: fontSizes.caption,
+    fontFamily: fonts.bold,
   },
   optionsList: {
     marginTop: 12,
@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   optionCardText: {
-    fontSize: 15,
+    fontSize: fontSizes.body,
   },
   checkboxSquare: {
     width: 22,
@@ -602,8 +602,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   resetButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: fontSizes.body,
+    fontFamily: fonts.semibold,
   },
   applyButton: {
     flex: 2,
@@ -622,8 +622,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   applyButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: fontSizes.body,
+    fontFamily: fonts.bold,
     color: '#FFFFFF',
   },
 });

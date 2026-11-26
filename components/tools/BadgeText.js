@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { Text } from '../ui/AppText';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
+import { fontSizes, fonts } from '../../theme/typography';
 
 export default function BadgeText({ required }) {
     const { colors } = useTheme();
@@ -30,7 +31,7 @@ const styles = StyleSheet.create({
         borderRadius: 6,
     },
     badgeText: {
-        fontSize: 11,
-        fontWeight: '600',
+        fontSize: fontSizes.micro,
+        fontFamily: fonts.semibold,
     },
 });

@@ -14,7 +14,7 @@ import Reanimated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import {
   getChapterProgressCounts,
   getTotalLearnedCardsCount,
@@ -1765,7 +1765,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
             <Iconify icon="lets-icons:refund-back" size={28} color={colors.orWhite} />
           </TouchableOpacity>
           <Reanimated.Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER} style={[animatedStyle, {
-            color: '#8A8A8A', ...typography.styles.caption, textAlign: 'center', fontWeight: '900'
+            color: '#8A8A8A', ...typography.styles.subhead, textAlign: 'center', fontFamily: fonts.bold
           }]}>
             {texts[textIndex]}
           </Reanimated.Text>
@@ -1850,7 +1850,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
                       />
                     ) : null}
                     {expandedCard?.cards?.question ? (
-                      <Text style={[typography.styles.h2, styles.expandedPrimaryText]}>{expandedCard.cards.question}</Text>
+                      <Text style={[typography.styles.title2, styles.expandedPrimaryText]}>{expandedCard.cards.question}</Text>
                     ) : null}
                   </View>
                   <SectionDivider />
@@ -1862,7 +1862,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
                   label={t('swipeDeck.answer', 'Cevap')}
                   icon={<Iconify icon="uil:comment-alt-check" size={18} color="#fff" />}
                 />
-                <Text style={[typography.styles.h2, styles.expandedPrimaryText]}>{expandedCard?.cards?.answer}</Text>
+                <Text style={[typography.styles.title2, styles.expandedPrimaryText]}>{expandedCard?.cards?.answer}</Text>
               </View>
 
               {expandedCard?.cards?.example ? (
@@ -1873,7 +1873,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
                       label={t('swipeDeck.example', 'Örnek')}
                       icon={<Iconify icon="lucide:lightbulb" size={18} color="#fff" />}
                     />
-                    <Text style={[typography.styles.subtitle, styles.expandedSubText]}>{expandedCard.cards.example}</Text>
+                    <Text style={[typography.styles.bodyLarge, styles.expandedSubText]}>{expandedCard.cards.example}</Text>
                   </View>
                 </>
               ) : null}
@@ -1886,7 +1886,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
                       label={t('swipeDeck.note', 'Not')}
                       icon={<Iconify icon="material-symbols-light:stylus-note" size={18} color="#fff" />}
                     />
-                    <Text style={[typography.styles.subtitle, styles.expandedSubText, styles.expandedNoteText]}>{expandedCard.cards.note}</Text>
+                    <Text style={[typography.styles.bodyLarge, styles.expandedSubText, styles.expandedNoteText]}>{expandedCard.cards.note}</Text>
                   </View>
                 </>
               ) : null}
@@ -1988,18 +1988,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     lineHeight: 28,
-    fontWeight: '600',
+    fontFamily: fonts.semibold,
   },
   expandedSubText: {
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
     marginTop: 8,
     lineHeight: 22,
-    fontSize: 16,
+    fontSize: fontSizes.body,
   },
   expandedNoteText: {
     color: 'rgba(255, 255, 255, 0.85)',
-    fontSize: 15,
+    fontSize: fontSizes.body,
     fontStyle: 'italic',
   },
   counterRow: {
@@ -2053,7 +2053,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   counterText: {
-    ...typography.styles.button,
+    ...typography.styles.headline,
     color: '#fff',
     textAlign: 'center',
     includeFontPadding: false,
@@ -2079,21 +2079,21 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
   },
   horizontalButtonText: {
-    ...typography.styles.button,
+    ...typography.styles.headline,
   },
   timeButtonTextColumn: {
     flexShrink: 1,
     alignItems: 'center',
   },
   timeButtonLabel: {
-    ...typography.styles.button,
-    fontSize: 14,
+    ...typography.styles.headline,
+    fontSize: fontSizes.subhead,
     lineHeight: 17,
     textAlign: 'center',
   },
   timeButtonTime: {
-    fontFamily: 'Inter',
-    fontSize: 11,
+    fontFamily: fonts.regular,
+    fontSize: fontSizes.micro,
     lineHeight: 14,
     opacity: 0.85,
     textAlign: 'center',
@@ -2128,8 +2128,8 @@ const styles = StyleSheet.create({
     height: 36,
   },
   deckProgressText: {
-    ...typography.styles.subtitle,
-    fontWeight: '700',
+    ...typography.styles.bodyLarge,
+    fontFamily: fonts.bold,
   },
   progressBarContainer: {
     width: '91%',
@@ -2159,7 +2159,7 @@ const styles = StyleSheet.create({
     height: 300,
   },
   loadingText: {
-    ...typography.styles.subtitle,
+    ...typography.styles.bodyLarge,
     textAlign: 'center',
   },
 });

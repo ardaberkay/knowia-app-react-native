@@ -6,7 +6,7 @@ import { Text } from '../ui/AppText';
 import { BottomSheetModal, BottomSheetFlatList } from '@expo/ui/community/bottom-sheet';
 
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 
@@ -84,7 +84,7 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
             styles.categoryText,
             {
               color: isSelected ? primaryColor : colors.text,
-              fontWeight: isSelected ? '700' : '500',
+              fontFamily: isSelected ? fonts.bold : fonts.medium,
             },
           ]}
         >
@@ -107,7 +107,7 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
 
       {/* --- SABİT HEADER (LİSTENİN DIŞINDA) --- */}
       <View style={styles.fixedHeader}>
-        <Text style={[typography.styles.h2, { color: colors.text }]}>
+        <Text style={[typography.styles.title2, { color: colors.text }]}>
           {t('categorySelector.title')}
         </Text>
         <TouchableOpacity
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   categoryText: {
-    fontSize: 16,
+    fontSize: fontSizes.body,
     flex: 1,
   },
 });

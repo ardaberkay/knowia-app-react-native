@@ -8,7 +8,7 @@ import { getDecksByCategory } from '../../services/DeckService';
 import { useNavigation, useFocusEffect, useScrollToTop } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
 import { Iconify } from 'react-native-iconify';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { getFavoriteDecks, addFavoriteDeck, removeFavoriteDeck } from '../../services/FavoriteService';
 import {
   updateLastActiveAt,
@@ -432,14 +432,14 @@ export default function HomeScreen() {
           <View style={styles.sectionHeaderLeft}>
             <Iconify
               icon={getCategoryIcon(category)}
-              size={26}
+              size={22}
               color="#F98A21"
               style={{ marginRight: 8 }}
             />
             <View style={styles.sectionTitleBlock}>
-              <Text style={[typography.styles.h2, { color: colors.text }]}>{DECK_CATEGORIES[category]}</Text>
+              <Text style={[typography.styles.title3, { color: colors.text }]}>{DECK_CATEGORIES[category]}</Text>
               {isInProgressSection ? (
-                <Text style={[typography.styles.caption, styles.inProgressMetaText, { color: colors.muted }]}>
+                <Text style={[typography.styles.subhead, styles.inProgressMetaText, { color: colors.muted }]}>
                   {isCategoryLoading
                     ? t('common.loading', 'Yükleniyor...')
                     : activeDeckCount > 0
@@ -684,21 +684,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
   decksContainer: {
     paddingBottom: 8,
   },
   inProgressMetaText: {
     marginTop: 2,
-    fontSize: 12,
+    fontSize: fontSizes.caption,
     lineHeight: 16,
     opacity: 0.9,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: fontSizes.subhead,
     textAlign: 'center',
     marginTop: 20,
   },
@@ -760,17 +756,17 @@ const styles = StyleSheet.create({
   },
 
   emptyDeckPromptTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: fontSizes.bodyLarge,
+    fontFamily: fonts.bold,
     color: '#FFFFFF',
     marginBottom: 6,
 
   },
 
   emptyDeckPromptDescription: {
-    fontSize: 13,
+    fontSize: fontSizes.footnote,
     lineHeight: 19,
-    fontWeight: '400',
+    fontFamily: fonts.regular,
     color:
       'rgba(255, 255, 255, 0.65)',
     textAlign: 'center',
@@ -812,20 +808,20 @@ const styles = StyleSheet.create({
   },
   heroCount: {
     flexShrink: 1,
-    fontSize: 34,
-    fontWeight: '800',
+    fontSize: fontSizes.largeTitle,
+    fontFamily: fonts.bold,
     color: '#FFFFFF',
     letterSpacing: -0.8,
   },
   heroCountGoal: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: fontSizes.title3,
+    fontFamily: fonts.bold,
     color: 'rgba(255, 255, 255, 0.75)',
     letterSpacing: -0.3,
   },
   heroCountUnit: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: fontSizes.subhead,
+    fontFamily: fonts.semibold,
     color: 'rgba(255, 255, 255, 0.85)',
   },
   heroProgressTrack: {
@@ -843,8 +839,8 @@ const styles = StyleSheet.create({
   },
   heroNote: {
     marginTop: 6,
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: fontSizes.footnote,
+    fontFamily: fonts.medium,
     color: 'rgba(255, 255, 255, 0.92)',
   },
 
@@ -862,8 +858,8 @@ const styles = StyleSheet.create({
 
   heroButtonText: {
     marginLeft: 7,
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: fontSizes.subhead,
+    fontFamily: fonts.bold,
     color: '#ff6b35',
   },
 

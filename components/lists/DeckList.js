@@ -4,7 +4,7 @@ import { Text } from '../ui/AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { triggerHaptic } from '../../lib/hapticManager';
 import CommunityDeckCard from '../ui/CommunityDeckCard';
@@ -138,11 +138,9 @@ const DeckCard = React.memo(
             numberOfLines={1}
             ellipsizeMode="tail"
             style={[
-              typography.styles.body,
+              typography.styles.headline,
               {
                 color: colors.headText,
-                fontSize: 16,
-                fontWeight: '800',
                 textAlign: 'center',
               },
             ]}
@@ -158,11 +156,9 @@ const DeckCard = React.memo(
           ellipsizeMode="tail"
           textBreakStrategy="simple"
           style={[
-            typography.styles.body,
+            typography.styles.headline,
             {
               color: colors.headText,
-              fontSize: 16,
-              fontWeight: '800',
               textAlign: 'center',
               width: '100%',
             },
@@ -238,11 +234,10 @@ const DeckCard = React.memo(
 
             <Text
               style={[
-                typography.styles.body,
+                typography.styles.subhead,
                 {
                   color: '#fff',
-                  fontWeight: 'bold',
-                  fontSize: 16,
+                  fontFamily: fonts.semibold,
                 },
               ]}
             >
@@ -983,7 +978,7 @@ const DeckList = ({
                     colors.border,
                   textAlign: 'center',
                   fontSize:
-                    16,
+                    fontSizes.body,
                   marginTop:
                     20,
                 },
@@ -1099,8 +1094,8 @@ const styles = StyleSheet.create({
 
   myDecksBadgeText: {
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 15,
+    fontFamily: fonts.bold,
+    fontSize: fontSizes.body,
   },
 
   myDecksDivider: {
@@ -1122,8 +1117,8 @@ const styles = StyleSheet.create({
   },
   chapterCountText: {
     color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: fontSizes.footnote,
+    fontFamily: fonts.semibold,
   },
   progressContainer: {
     position: 'absolute',
@@ -1224,17 +1219,17 @@ const styles = StyleSheet.create({
 
   progressPercentChipNumber: {
     color: '#FFFFFF',
-    fontWeight: '800',
+    fontFamily: fonts.bold,
     fontSize:
-      15.5,
+      fontSizes.body,
     letterSpacing:
       -0.38,
   },
 
   progressPercentSign: {
     fontSize:
-      10.25,
-    fontWeight: '700',
+      fontSizes.micro,
+    fontFamily: fonts.bold,
     color:
       'rgba(255, 255, 255, 0.92)',
     marginLeft: 0,
@@ -1327,9 +1322,9 @@ const styles = StyleSheet.create({
 
   deckProfileUsername: {
     fontSize:
-      15,
+      fontSizes.body,
     color: '#BDBDBD',
-    fontWeight: '700',
+    fontFamily: fonts.bold,
     width: '95%',
   },
 
@@ -1386,8 +1381,8 @@ const styles = StyleSheet.create({
 
   popularityBadgeText: {
     color: '#fff',
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: fontSizes.caption,
+    fontFamily: fonts.bold,
     marginLeft: 4,
     textAlign: 'center',
   },

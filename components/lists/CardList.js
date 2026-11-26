@@ -3,7 +3,7 @@ import { View, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
 import { Text } from '../ui/AppText';
 import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { fontSizes, fonts } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { triggerHaptic } from '../../lib/hapticManager';
 
@@ -58,13 +58,13 @@ const CardListItem = ({
       <View style={styles.topRow}>
         <View style={styles.textCol}>
           {question ? (
-            <Text style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]} numberOfLines={1}>
+            <Text style={[styles.question, { fontSize: fontSizes.body }, { color: colors.cardQuestionText }]} numberOfLines={1}>
               {question}
             </Text>
           ) : null}
           <View style={[styles.divider, { backgroundColor: colors.cardDivider }]} />
           {answer ? (
-            <Text style={[styles.question, typography.styles.body, { color: colors.cardQuestionText }]} numberOfLines={1}>
+            <Text style={[styles.question, { fontSize: fontSizes.body }, { color: colors.cardQuestionText }]} numberOfLines={1}>
               {answer}
             </Text>
           ) : null}
@@ -144,8 +144,8 @@ const styles = StyleSheet.create({
     maxWidth: 320,
   },
   question: {
-    fontWeight: '600',
-    fontSize: 17,
+    fontFamily: fonts.semibold,
+    fontSize: fontSizes.bodyLarge,
     marginBottom: 8,
     letterSpacing: 0.3,
     marginTop: 4,
@@ -157,9 +157,9 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   answer: {
-    fontSize: 15,
+    fontSize: fontSizes.body,
     marginTop: 4,
-    fontWeight: '400',
+    fontFamily: fonts.regular,
     letterSpacing: 0.2,
   },
   iconBtn: {

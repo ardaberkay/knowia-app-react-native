@@ -3,7 +3,7 @@ import { View, StyleSheet, FlatList, TouchableOpacity, Alert, Pressable, Refresh
 import { Text } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
@@ -73,7 +73,7 @@ const MemoizedChapterItem = memo(({ item, progressMap, editMode, colors, onPress
             showText={true}
             shouldAnimate={true}
             fullCircle={true}
-            textStyle={{ fontSize: 16, fontWeight: '900', color: colors.text }}
+            textStyle={{ fontSize: fontSizes.body, fontFamily: fonts.bold, color: colors.text }}
           />
         </View>
         <View style={styles.statsContainer}>
@@ -489,8 +489,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   chapterTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: fontSizes.bodyLarge,
+    fontFamily: fonts.semibold,
   },
   chapterDivider: {
     height: 1,
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statText: {
-    fontSize: 15,
+    fontSize: fontSizes.body,
   },
   deleteButton: {
     padding: 8,
@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   countBadgeText: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: fontSizes.footnote,
+    fontFamily: fonts.bold,
   },
 });

@@ -14,7 +14,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getDiscoverDecks } from '../../services/DeckService';
 import { addFavoriteDeck, removeFavoriteDeck } from '../../services/FavoriteService';
 import { Iconify } from 'react-native-iconify';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { useListBottomInset } from '../../components/ui/CustomTabBar';
 
@@ -406,8 +406,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: fontSizes.title1,
+    fontFamily: fonts.bold,
     letterSpacing: -0.5,
   },
   chipsRow: {
@@ -429,8 +429,8 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   chipText: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: fontSizes.subhead,
+    fontFamily: fonts.bold,
   },
   timePill: {
     flexDirection: 'row',
@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   timePillText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: fontSizes.footnote,
+    fontFamily: fonts.semibold,
   },
 });

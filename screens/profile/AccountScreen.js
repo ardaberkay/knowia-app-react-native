@@ -96,7 +96,7 @@ export default function AccountScreen() {
         <ProfileMenuCard items={items} colors={colors} />
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
-          <Text style={[typography.styles.button, { color: colors.buttonText }, styles.centerText]}>{t('profile.logout')}</Text>
+          <Text style={[typography.styles.headline, { color: colors.buttonText }, styles.centerText]}>{t('profile.logout')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.deleteButton, { borderColor: colors.error || '#ff5252' }]}

@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   },
   name: {
     width: '80%',
-    height: typography.styles.h2.fontSize,
+    height: typography.styles.title2.fontSize,
     borderRadius: 24,
     marginBottom: 8,
   },

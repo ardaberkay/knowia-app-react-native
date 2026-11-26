@@ -3,14 +3,14 @@ import { View, StyleSheet } from 'react-native';
 import { TextInput } from '../ui/AppText';
 import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 
 const searchBarDimensions = {
   height: 48,
   paddingHorizontal: 10,
   paddingVertical: 10,
-  fontSize: 16,
+  fontSize: fontSizes.body,
   iconSize: 20,
   borderRadius: 24,
   borderWidth: 1,

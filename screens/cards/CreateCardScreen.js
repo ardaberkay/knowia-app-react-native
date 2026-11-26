@@ -7,7 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { createCard } from '../../services/CardService';
 import { uploadCardImage } from '../../services/StorageService';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
@@ -163,13 +163,13 @@ export default function AddCardScreen() {
           <View style={[styles.headerCardContent, styles.headerContent]}>
             <View style={styles.headerTitleContainer}>
               <Iconify icon="hugeicons:file-add" size={26} color="#F98A21" style={{ marginRight: 6 }} />
-              <Text style={[typography.styles.h2, { color: colors.text }]}>
+              <Text style={[typography.styles.title2, { color: colors.text }]}>
                 {t('addCard.title', 'Kart Oluştur')}
               </Text>
             </View>
             <View style={styles.headerBottomRow}>
               <View style={styles.headerTextColumn}>
-                <Text style={[typography.styles.caption, { color: colors.muted, lineHeight: 22, flex: 1, alignSelf: 'flex-start' }]}>
+                <Text style={[typography.styles.subhead, { color: colors.muted, lineHeight: 22, flex: 1, alignSelf: 'flex-start' }]}>
                   {t('addCard.motivationText', 'Bilgini pekiştirmek için soru-cevap kartları oluştur ve öğrenme sürecini hızlandır.')}
                 </Text>
                 <TouchableOpacity
@@ -183,7 +183,7 @@ export default function AddCardScreen() {
                   }}
                 >
                   <Iconify icon="material-symbols:info-outline" size={16} color={colors.secondary} style={{ marginRight: 4 }} />
-                  <Text style={[typography.styles.caption, { color: colors.secondary, fontWeight: '600'}]}>
+                  <Text style={[typography.styles.subhead, { color: colors.secondary, fontFamily: fonts.semibold}]}>
                     {t('addCard.howToCreate', 'Nasıl Oluşturulur?')}
                   </Text>
                 </TouchableOpacity>
@@ -213,7 +213,7 @@ export default function AddCardScreen() {
             <View style={styles.labelRow}>
               <View style={styles.labelTextContainer}>
                 <Iconify icon="mage:image-fill" size={24} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t("addCard.image", "Kart Görseli")}</Text>
+                <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.text }]}>{t("addCard.image", "Kart Görseli")}</Text>
               </View>
               <View>
                 <BadgeText required={false} />
@@ -248,7 +248,7 @@ export default function AddCardScreen() {
             <View style={styles.labelRow}>
               <View style={styles.labelTextContainer}>
               <Iconify icon="uil:comment-alt-question" size={24} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t("addCard.question", "Soru")}</Text>
+                <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.text }]}>{t("addCard.question", "Soru")}</Text>
               </View>
               <View>
                 <BadgeText required={true} />
@@ -290,7 +290,7 @@ export default function AddCardScreen() {
             <View style={styles.labelRow}>
               <View style={styles.labelTextContainer}>
                 <Iconify icon="uil:comment-alt-check" size={24} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t("addCard.answer", "Cevap")}</Text>
+                <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.text }]}>{t("addCard.answer", "Cevap")}</Text>
               </View>
               <View>
                 <BadgeText required={true} />
@@ -332,7 +332,7 @@ export default function AddCardScreen() {
             <View style={styles.labelRow}>
               <View style={styles.labelTextContainer}>
               <Iconify icon="lucide:lightbulb" size={24} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t("addCard.example", "Örnek")}</Text>
+              <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.text }]}>{t("addCard.example", "Örnek")}</Text>
               </View>
               <View>
                 <BadgeText required={false} />
@@ -374,7 +374,7 @@ export default function AddCardScreen() {
             <View style={styles.labelRow}>
               <View style={styles.labelTextContainer}>
               <Iconify icon="material-symbols-light:stylus-note" size={24} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t("addCard.note", "Not")}</Text>
+              <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.text }]}>{t("addCard.note", "Not")}</Text>
               </View>
               <View>
                 <BadgeText required={false} />
@@ -511,15 +511,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: fontSizes.body,
+    fontFamily: fonts.medium,
   },
   input: {
     borderWidth: 1,
     borderRadius: 20,
     padding: 12,
     marginBottom: 0,
-    fontSize: 16,
+    fontSize: fontSizes.body,
   },
   cardImage: {
     width: '100%',
@@ -541,8 +541,8 @@ const styles = StyleSheet.create({
   },
   addImageButtonText: {
     color: '#F98A21',
-    fontWeight: 'bold',
-    fontSize: 15,
+    fontFamily: fonts.bold,
+    fontSize: fontSizes.body,
     marginLeft: 6,
   },
   removeImageButton: {
@@ -557,8 +557,8 @@ const styles = StyleSheet.create({
   },
   removeImageButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 15,
+    fontFamily: fonts.bold,
+    fontSize: fontSizes.body,
   },
   buttonRowModern: {
     flexDirection: 'row',

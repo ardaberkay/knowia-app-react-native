@@ -13,7 +13,7 @@ import FilterIcon from '../../components/modals/CardFilterIcon';
 import CardListItem from '../../components/lists/CardList';
 import CardDetailView from '../../components/layout/CardDetailView';
 import LottieView from 'lottie-react-native';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes } from '../../theme/typography';
 import { StyleSheet } from 'react-native';
 import { Iconify } from 'react-native-iconify';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
@@ -328,7 +328,7 @@ export default function FavoriteCards() {
         style={{ width: 500, height: 500, opacity: 0.2 }}
         resizeMode="contain"
       />
-      <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, fontSize: 16, marginTop: -150 }]}>
+      <Text style={[typography.styles.body, { color: colors.text, opacity: 0.6, fontSize: fontSizes.body, marginTop: -150 }]}>
         {t('cardDetail.addToDeck', 'Desteye bir kart ekle')}
       </Text>
     </View>

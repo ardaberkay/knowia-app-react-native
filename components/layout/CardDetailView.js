@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, Image, FlatList, TouchableOpacity, Animat
 import { Text } from '../ui/AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import Svg, { Path } from 'react-native-svg';
@@ -427,7 +427,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
             <View style={[styles.cardHeader, { borderBottomColor: colors.cardBorder }]}>
               <View style={styles.labelRow}>
                 <Iconify icon="mage:image-fill" size={24} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, { color: colors.cardQuestionText }]}>
+                <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.cardQuestionText }]}>
                   {t("cardDetail.image", "Kart Görseli")}
                 </Text>
               </View>
@@ -460,14 +460,14 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
           <View style={[styles.cardHeader, { borderBottomColor: colors.cardBorder }]}>
             <View style={styles.labelRow}>
               <Iconify icon="uil:comment-alt-question" size={24} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, typography.styles.body, { color: colors.cardQuestionText }]}>
+              <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.cardQuestionText }]}>
                 {t("cardDetail.question", "Soru")}
               </Text>
             </View>
           </View>
           <View style={styles.cardContent}>
             <Text
-              style={[typography.styles.body, { fontSize: 16, color: colors.cardAnswerText, marginLeft: 24 }]}
+              style={[typography.styles.body, { fontSize: fontSizes.body, color: colors.cardAnswerText, marginLeft: 24 }]}
             >
               {card?.question}
             </Text>
@@ -488,14 +488,14 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
             <View style={[styles.cardHeader, { borderBottomColor: colors.cardBorder }]}>
               <View style={styles.labelRow}>
                 <Iconify icon="uil:comment-alt-check" size={24} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, { color: colors.cardQuestionText }]}>
+                <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.cardQuestionText }]}>
                   {t("cardDetail.answer", "Cevap")}
                 </Text>
               </View>
             </View>
             <View style={styles.cardContent}>
               <Text
-                style={[typography.styles.body, { fontSize: 16, color: colors.cardAnswerText, marginLeft: 24 }]}
+                style={[typography.styles.body, { fontSize: fontSizes.body, color: colors.cardAnswerText, marginLeft: 24 }]}
               >
                 {card.answer}
               </Text>
@@ -517,14 +517,14 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
             <View style={[styles.cardHeader, { borderBottomColor: colors.cardBorder }]}>
               <View style={styles.labelRow}>
                 <Iconify icon="lucide:lightbulb" size={24} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, { color: colors.cardQuestionText }]}>
+                <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.cardQuestionText }]}>
                   {t("cardDetail.example", "Örnek")}
                 </Text>
               </View>
             </View>
             <View style={styles.cardContent}>
               <Text
-                style={[typography.styles.body, { fontSize: 16, color: colors.cardAnswerText, marginLeft: 24 }]}
+                style={[typography.styles.body, { fontSize: fontSizes.body, color: colors.cardAnswerText, marginLeft: 24 }]}
               >
                 {card.example}
               </Text>
@@ -546,14 +546,14 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
             <View style={[styles.cardHeader, { borderBottomColor: colors.cardBorder }]}>
               <View style={styles.labelRow}>
                 <Iconify icon="material-symbols-light:stylus-note" size={24} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, typography.styles.body, { color: colors.cardQuestionText }]}>
+                <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.cardQuestionText }]}>
                   {t("cardDetail.note", "Not")}
                 </Text>
               </View>
             </View>
             <View style={styles.cardContent}>
               <Text
-                style={[typography.styles.body, { fontSize: 16, color: colors.cardAnswerText, marginLeft: 24 }]}
+                style={[typography.styles.body, { fontSize: fontSizes.body, color: colors.cardAnswerText, marginLeft: 24 }]}
               >
                 {card.note}
               </Text>
@@ -567,7 +567,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
       {showCreatedAt && isDeckOwner && card?.created_at ? (
         <View style={{ paddingHorizontal: 18, marginTop: 'auto', marginBottom: 56 }}>
           <Text
-            style={[typography.styles.caption, { color: colors.muted, textAlign: 'center', fontSize: 14 }]}
+            style={[typography.styles.subhead, { color: colors.muted, textAlign: 'center', fontSize: fontSizes.subhead }]}
           >
             {`${t("cardDetail.createdAt", "Oluşturulma Tarihi")} ${new Date(card.created_at).toLocaleString('tr-TR')}`}
           </Text>
@@ -595,8 +595,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   sliderItemTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: fontSizes.bodyLarge,
+    fontFamily: fonts.bold,
     textAlign: 'center',
   },
   labelRow: {
@@ -608,8 +608,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   label: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: fontSizes.bodyLarge,
+    fontFamily: fonts.semibold,
     letterSpacing: 0.3,
   },
   cardImage: {

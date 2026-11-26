@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { Iconify } from 'react-native-iconify';
 import { triggerHaptic } from '../../lib/hapticManager';
+import { fontSizes, fonts } from '../../theme/typography';
 
 const SnackbarContext = createContext(null);
 
@@ -230,8 +231,8 @@ const styles = StyleSheet.create({
   },
   message: {
     flex: 1,
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: fontSizes.subhead,
+    fontFamily: fonts.medium,
   },
 });
 

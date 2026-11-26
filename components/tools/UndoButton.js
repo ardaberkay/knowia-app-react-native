@@ -3,6 +3,7 @@ import { TouchableOpacity, StyleSheet } from 'react-native';
 import { Text } from '../ui/AppText';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
+import { fontSizes, fonts } from '../../theme/typography';
 
 export default function UndoButton({ onPress, disabled = false, text, style, textStyle }) {
   const { colors } = useTheme();
@@ -40,7 +41,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   undoButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: fontSizes.body,
+    fontFamily: fonts.medium,
   },
 });

@@ -13,6 +13,7 @@ import { registerForPushNotificationsAsync } from '../../services/NotificationSe
 import { getHapticPreference, setHapticPreference, triggerHaptic } from '../../lib/hapticManager';
 import LanguageSelector from '../../components/modals/LanguageSelector';
 import { ProfileMenuCard } from './ProfileScreen';
+import { fontSizes } from '../../theme/typography';
 
 const LANGUAGE_FLAGS = {
   tr: ['twemoji:flag-for-flag-turkey', 'Türkçe'],
@@ -103,7 +104,7 @@ export default function SettingsScreen() {
       right: (
         <View style={styles.languageRow}>
           {flag ? <Iconify icon={flag} size={20} /> : null}
-          <Text style={{ color: colors.text, fontSize: 15 }}>{languageName}</Text>
+          <Text style={{ color: colors.text, fontSize: fontSizes.body }}>{languageName}</Text>
         </View>
       ),
       chevron: true,

@@ -13,7 +13,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getDecksByCategory } from '../../services/DeckService';
 import { addFavoriteDeck, removeFavoriteDeck, getFavoriteDeckIds } from '../../services/FavoriteService';
 import { Iconify } from 'react-native-iconify';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { getCategoryConfig } from '../../components/ui/CategoryHeroHeader';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
 import { getLanguages, languagesInUse } from '../../services/LanguageService';
@@ -40,8 +40,8 @@ export default function CategoryDeckListScreen({ route }) {
     iconBorderRadius: 32,
     iconBorderWidth: 2,
     iconInnerSize: 28,
-    titleFontSize: 28,
-    subtitleFontSize: 15,
+    titleFontSize: fontSizes.title1,
+    subtitleFontSize: fontSizes.body,
     subtitleLineHeight: 20,
     heroContentMarginBottom: 20,
     heroIconMarginRight: 16,
@@ -426,16 +426,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   heroTitle: {
-    ...typography.styles.h2,
+    ...typography.styles.title2,
     color: '#fff',
-    fontWeight: '900',
+    fontFamily: fonts.bold,
     letterSpacing: -0.5,
     // fontSize, marginBottom dinamik olarak uygulanacak
   },
   heroSubtitle: {
-    ...typography.styles.caption,
+    ...typography.styles.subhead,
     color: 'rgba(255, 255, 255, 0.85)',
-    fontWeight: '500',
+    fontFamily: fonts.medium,
     // fontSize, lineHeight dinamik olarak uygulanacak
   },
   searchRow: {

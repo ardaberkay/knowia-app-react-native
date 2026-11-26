@@ -4,7 +4,7 @@ import { Text, TextInput } from '../../components/ui/AppText';
 import FormScrollView from '../../components/layout/FormScrollView';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../theme/theme';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import LanguageSelector from '../../components/modals/LanguageSelector';
@@ -198,21 +198,21 @@ export default function LoginScreen({ navigation }) {
             }}
             disabled={loading}
           >
-            <Text style={[typography.styles.link, { color: colors.secondary, fontWeight: 'semibold', right: 6, marginBottom: -10}]}>{t('login.forgotPassword', 'Şifremi Unuttum')}</Text>
+            <Text style={[typography.styles.body, { color: colors.secondary, fontFamily: fonts.semibold, right: 6, marginBottom: -10}]}>{t('login.forgotPassword', 'Şifremi Unuttum')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.button, { backgroundColor: colors.buttonColor }, loading && styles.buttonDisabled]}
             onPress={handleLogin}
             disabled={loading}
           >
-            <Text style={[styles.buttonText, typography.styles.button, { color: colors.buttonText }]}>
+            <Text style={[styles.buttonText, typography.styles.headline, { color: colors.buttonText }]}>
               {loading ? t('login.loading', 'Giriş yapılıyor...') : t('login.login', 'Giriş Yap')}
             </Text>
           </TouchableOpacity>
 
           <View style={styles.divider}>
             <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-            <Text style={[styles.dividerText, typography.styles.caption, { color: colors.text }]}>{t('login.or', 'YA DA')}</Text>
+            <Text style={[styles.dividerText, typography.styles.subhead, { color: colors.text }]}>{t('login.or', 'YA DA')}</Text>
             <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
           </View>
 
@@ -222,7 +222,7 @@ export default function LoginScreen({ navigation }) {
             disabled={loading}
           >
             <Iconify icon="logos:google-icon" size={24} color="#DB4437" />
-            <Text style={[styles.googleButtonText, typography.styles.button, { color: '#000' }]}>
+            <Text style={[styles.googleButtonText, typography.styles.headline, { color: '#000' }]}>
               {t('login.loginWithGoogle', 'Google ile devam et')}
             </Text>
           </TouchableOpacity>
@@ -235,7 +235,7 @@ export default function LoginScreen({ navigation }) {
               disabled={loading}
             >
               <Iconify icon="grommet-icons:apple" size={24} color="#000" />
-              <Text style={[styles.appleButtonText, typography.styles.button, { color: '#000' }]}>
+              <Text style={[styles.appleButtonText, typography.styles.headline, { color: '#000' }]}>
                 {t('login.loginWithApple', 'Apple ile Giriş Yap')}
               </Text>
             </TouchableOpacity>
@@ -245,9 +245,9 @@ export default function LoginScreen({ navigation }) {
             style={[styles.linkButton, { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 }]}
             onPress={() => navigation.navigate('Register')}
           >
-            <Text style={[styles.linkText, typography.styles.link, { color: colors.secondary }]}>
+            <Text style={[styles.linkText, typography.styles.body, { color: colors.secondary }]}>
               {t('login.didUAcc', 'Hesabın yok mu?')} {' '}
-              <Text style={typography.styles.linkBold}>{t('login.register', 'Kayıt ol')}</Text>
+              <Text style={typography.styles.headline}>{t('login.register', 'Kayıt ol')}</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   languageButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: fontSizes.subhead,
+    fontFamily: fonts.medium,
   },
 }); 

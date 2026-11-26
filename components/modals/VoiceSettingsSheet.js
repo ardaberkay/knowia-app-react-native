@@ -6,7 +6,7 @@ import { Gesture, GestureDetector, GestureHandlerRootView, ScrollView as GHScrol
 import Reanimated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
-import { typography } from '../../theme/typography';
+import { typography, fontSizes, fonts } from '../../theme/typography';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { SPEECH_RATE, SPEECH_RATES, formatRate, voiceRank } from '../../lib/speech';
 import DeckLanguageModal from './DeckLanguageModal';
@@ -115,7 +115,7 @@ const RateStepBar = memo(function RateStepBar({
           const selected = i === index;
           return (
             <View key={step} style={[styles.rateLabel, { left: pct(i) }]}>
-              <Text style={[styles.rateLabelText, { color: selected ? accentColor : textColor, fontWeight: selected ? '700' : '500' }]}>
+              <Text style={[styles.rateLabelText, { color: selected ? accentColor : textColor, fontFamily: selected ? fonts.bold : fonts.medium }]}>
                 {formatRate(step)}
               </Text>
               {step === recommended ? (
@@ -251,7 +251,7 @@ const VoiceSettingsSheet = memo(function VoiceSettingsSheet({
           the app's root GestureHandlerRootView, so the rate bar's pan needs one here. */}
       <GestureHandlerRootView style={styles.voiceSheetRoot}>
       <View style={styles.voiceSheetHeader}>
-        <Text style={[typography.styles.h2, { color: colors.text, flex: 1 }]} numberOfLines={1}>
+        <Text style={[typography.styles.title2, { color: colors.text, flex: 1 }]} numberOfLines={1}>
           {t('swipeDeck.voice.settings', 'Ses ayarları')}
         </Text>
         <TouchableOpacity
@@ -442,8 +442,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   voiceRateValue: {
-    ...typography.styles.button,
-    fontSize: 15,
+    ...typography.styles.headline,
+    fontSize: fontSizes.body,
   },
   rateBar: {
     height: 44,
@@ -501,17 +501,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rateLabelText: {
-    fontFamily: 'Inter',
-    fontSize: 13,
+    fontFamily: fonts.regular,
+    fontSize: fontSizes.footnote,
   },
   rateLabelHint: {
-    fontFamily: 'Inter',
-    fontSize: 10,
+    fontFamily: fonts.regular,
+    fontSize: fontSizes.micro,
     marginTop: 1,
   },
   voiceSectionTitle: {
-    ...typography.styles.button,
-    fontSize: 13,
+    ...typography.styles.headline,
+    fontSize: fontSizes.footnote,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginTop: 24,
@@ -547,18 +547,17 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   resetLinkText: {
-    fontFamily: 'Inter',
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: fontSizes.footnote,
+    fontFamily: fonts.semibold,
   },
   voiceRowTags: {
-    fontFamily: 'Inter',
-    fontSize: 12,
+    fontFamily: fonts.regular,
+    fontSize: fontSizes.caption,
     marginTop: 2,
   },
   voiceHint: {
-    fontFamily: 'Inter',
-    fontSize: 12,
+    fontFamily: fonts.regular,
+    fontSize: fontSizes.caption,
     lineHeight: 17,
     marginTop: 12,
   },

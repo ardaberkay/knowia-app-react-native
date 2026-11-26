@@ -11,7 +11,7 @@ import { ProfileProvider } from './contexts/ProfileContext';
 import { ThemeProvider, useTheme } from './theme/theme';
 import { SnackbarProvider } from './components/ui/Snackbar';
 import AppNavigator from './navigation/AppNavigator';
-import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold, Inter_300Light } from '@expo-google-fonts/inter';
+import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { useEffect, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import * as Linking from 'expo-linking';
@@ -85,7 +85,7 @@ function AppContent() {
 
   const [fontsLoaded] = useFonts({
     'Inter': Inter_400Regular,
-    'Inter-Light': Inter_300Light,
+    'Inter-Medium': Inter_500Medium,
     'Inter-SemiBold': Inter_600SemiBold,
     'Inter-Bold': Inter_700Bold,
   });
