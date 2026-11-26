@@ -10,7 +10,7 @@ import { updateCardsChapter } from '../../services/CardService';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import SearchBar from '../../components/tools/SearchBar';
-import CardDetailSheet, { CardStackSlider } from '../../components/layout/CardDetailView';
+import CardDetailSheet from '../../components/layout/CardDetailView';
 import { listChapters, distributeUnassignedEvenly, getDeckChaptersProgressRpc } from '../../services/ChapterService';
 import { deleteCard, getCardsByChapter, getUserCardProgressForCards, getChapterProgressCounts, getCardDetail } from '../../services/CardService';
 import { addFavoriteCard, removeFavoriteCard, getFavoriteCardIdsForCards } from '../../services/FavoriteService';
@@ -753,25 +753,11 @@ export default function ChapterCardsScreen({ route, navigation }) {
             </Text>
           </View>
         ) : (
-          // Side padding lives in the list content (not on a wrapper), so the
-          // slider in the list header can span the full width.
           <View>
             <FlatList
               data={filteredCards}
               renderItem={renderCardItem}
               keyExtractor={(item) => item.id.toString()}
-              ListHeaderComponent={!editMode && filteredCards.length > 0 ? (
-                // Browse the cards; back to the first card on a new search.
-                // Full width: undo the list's side padding.
-                <View style={styles.sliderBleed}>
-                  <CardStackSlider
-                    key={search.trim()}
-                    cards={filteredCards}
-                    onOpenDetail={openDetail}
-                    onEndReached={loadMoreChapterCards}
-                  />
-                </View>
-              ) : null}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={[styles.cardsList, { paddingHorizontal: LIST_SIDE_PADDING, paddingBottom: listBottomInset + styles.fab.height + 16, paddingTop: 20 } /* clears the FAB */]}
               refreshControl={
@@ -858,9 +844,6 @@ export default function ChapterCardsScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  sliderBleed: {
-    marginHorizontal: -LIST_SIDE_PADDING,
-  },
   bgGradient: {
     flex: 1,
   },
