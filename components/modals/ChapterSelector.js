@@ -1,11 +1,8 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import { View, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, useWindowDimensions, Platform } from 'react-native';
 import { Text } from '../ui/AppText';
 
 import { BottomSheetModal, BottomSheetFlatList } from '@expo/ui/community/bottom-sheet';
-// Lists open at half height and drag up to full (iOS medium/large detents,
-// Android partial/expanded).
-const LIST_SNAP_POINTS = ['50%', '100%'];
 
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -153,10 +150,10 @@ export default function ChapterSelector({
       ref={bottomSheetModalRef}
       index={0}
       onChange={(index) => index === -1 && onClose()}
-      backgroundStyle={{ backgroundColor: colors.background, borderRadius: 44 }}
-      snapPoints={LIST_SNAP_POINTS}
+      backgroundStyle={Platform.OS === 'android' ? { backgroundColor: colors.background } : undefined /* iOS: system Liquid Glass */}
       enablePanDownToClose
     >
+      <View style={{ maxHeight: Math.round(SCREEN_HEIGHT * 0.75) }}>
       {/* --- SABİT HEADER BÖLÜMÜ --- */}
       <View style={styles.fixedHeader}>
         <View style={styles.headerRow}>
@@ -186,8 +183,9 @@ export default function ChapterSelector({
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
         bounces={true}
-        style={{ flex: 1 }}
+        style={{ flexGrow: 0, flexShrink: 1 }}
       />
+      </View>
     </BottomSheetModal>
   );
 }
@@ -215,7 +213,7 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 60, 
+    paddingBottom: 24,
   },
   chapterItem: {
     flexDirection: 'column',

@@ -95,10 +95,10 @@
     "unknownDeck": "This deck"
   },
   "library": {
-"favoritesShortSubtitle": "Your favorite decks and cards in one place.",
-"newDeck": "New Deck",
-"newDeckSubtitle": "Create your own deck",
-"myDecksShortSubtitle": "Create, edit and study your own decks.",
+    "favoritesShortSubtitle": "Your favorite decks and cards in one place.",
+    "newDeck": "New Deck",
+    "newDeckSubtitle": "Create your own deck",
+    "myDecksShortSubtitle": "Create, edit and study your own decks.",
     "all": "All",
     "decks": "Decks",
     "cards": "Cards",
@@ -130,7 +130,13 @@
     "favoriteDecksTitle": "Favorite Decks",
     "favoriteCardsTitle": "Favorite Cards",
     "myDecksSubtitle": "  Design your own learning journey with your created decks; discover, reinforce and advance towards your goals",
-    "createDeck": "Create a deck"
+    "createDeck": "Create a deck",
+    "myDecksHeroText": "Start learning with your own decks.",
+    "favoritesHeroText": "Decks and cards you liked.",
+    "summaryDecks": "{{count}} deck",
+    "summaryDecks_plural": "{{count}} decks",
+    "summaryCards": "{{count}} card",
+    "summaryCards_plural": "{{count}} cards"
   },
   "home": {
     "activity": {
@@ -202,21 +208,13 @@
     "selectLanguage": "Select Language",
     "languageHeading": "Content Language",
     "languageSub": "First pick the language on the front of the cards. If the back is in another language, pick that too.",
-
     "languageFront": "Front",
-
     "languageBack": "Back",
-
     "languageBackEmpty": "Same as front · optional",
-
     "languagePick": "Select language",
-
     "languageSwap": "Swap",
-
     "languageBoth": "Front and back",
-
     "languageExample": "Example: front in Spanish “manzana”, back in English “apple”",
-
     "requiredLanguage": "Please select the language on the front of the cards."
   },
   "common": {
@@ -293,7 +291,7 @@
     }
   },
   "tabs": {
-"discover": "Discover",
+    "discover": "Discover",
     "home": "Home",
     "create": "Create",
     "library": "Library",
@@ -500,7 +498,6 @@
     "levelGood": "Good",
     "levelEasy": "Easy",
     "showMore": "See more",
-
     "speak": "Read aloud",
     "voice": {
       "settings": "Voice settings",
@@ -520,7 +517,6 @@
       "iosHint": "For more natural voices, download Enhanced or Premium voices in Settings › Accessibility › Spoken Content › Voices.",
       "androidHint": "For more voices, install voice data in Settings › Accessibility › Text-to-speech output."
     },
-
     "stopSpeaking": "Stop reading",
     "reverseOn": "Reverse cards",
     "reverseOff": "Study normally",

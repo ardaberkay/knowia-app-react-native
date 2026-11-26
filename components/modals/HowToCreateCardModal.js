@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ScrollView, useWindowDimensions, Platform } from 'react-native';
 import { Text } from '../ui/AppText';
 import { useTheme } from '../../theme/theme';
 import { BottomSheetModal, BottomSheetView } from '@expo/ui/community/bottom-sheet';
@@ -11,7 +11,6 @@ import BadgeText from '../tools/BadgeText';
 
 export default function HowToCreateCardModal({ isVisible, onClose }) {
   const { height: SCREEN_HEIGHT } = useWindowDimensions();
-  const SHEET_MAX_HEIGHT = Math.round(SCREEN_HEIGHT * 0.85);
   const { colors } = useTheme();
   const { t } = useTranslation();
 
@@ -76,9 +75,10 @@ export default function HowToCreateCardModal({ isVisible, onClose }) {
       ref={sheetRef}
       onDismiss={handleSheetDismiss}
       enablePanDownToClose
-      backgroundStyle={{ backgroundColor: colors.background }}
+      backgroundStyle={Platform.OS === 'android' ? { backgroundColor: colors.background } : undefined /* iOS: system Liquid Glass */}
+      snapPoints={FULL_SNAP_POINTS}
     >
-      <BottomSheetView style={[styles.sheetContent, { maxHeight: SHEET_MAX_HEIGHT }]}>
+      <BottomSheetView style={styles.sheetContent}>
           
           {/* Header */}
           <View style={styles.headerRow}>
@@ -149,10 +149,14 @@ export default function HowToCreateCardModal({ isVisible, onClose }) {
   );
 }
 
+// Step-by-step guide: full-height native sheet, content scrolls directly.
+const FULL_SNAP_POINTS = ['100%'];
+
 const styles = StyleSheet.create({
   sheetContent: {
     paddingHorizontal: 20,
     paddingBottom: 16,
+    flex: 1,
   },
   headerRow: {
     flexDirection: 'row',
@@ -166,8 +170,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollView: {
-    flexShrink: 1,
-    maxHeight: 450,
+    flex: 1,
   },
   scrollContent: {
     paddingBottom: 16,

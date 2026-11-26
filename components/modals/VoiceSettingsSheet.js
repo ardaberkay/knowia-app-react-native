@@ -234,7 +234,7 @@ const VoiceSettingsSheet = memo(function VoiceSettingsSheet({
       snapPoints={LARGE_SNAP_POINTS}
       enablePanDownToClose
       onDismiss={onDismiss}
-      backgroundStyle={{ backgroundColor: colors.background }}
+      backgroundStyle={Platform.OS === 'android' ? { backgroundColor: colors.background } : undefined /* iOS: system Liquid Glass */}
     >
       {/* The sheet content lives in the native sheet's own view hierarchy, outside
           the app's root GestureHandlerRootView, so the rate bar's pan needs one here. */}
@@ -363,8 +363,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(150, 150, 150, 0.2)',
   },
   voiceSheetClose: {
     backgroundColor: 'rgba(150, 150, 150, 0.1)',

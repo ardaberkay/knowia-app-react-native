@@ -792,8 +792,10 @@ const styles = StyleSheet.create({
   heroContent: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 24,
+    // 6px moved from top to bottom: content sits closer to the app bar,
+    // hero height unchanged.
+    paddingTop: 2,
+    paddingBottom: 30,
     justifyContent: 'center',
   },
 

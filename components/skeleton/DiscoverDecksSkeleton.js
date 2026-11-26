@@ -32,7 +32,7 @@ export default function DiscoverDecksSkeleton() {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ paddingBottom: listBottomInset, paddingTop: 20 }}
+      contentContainerStyle={{ paddingBottom: listBottomInset }} /* top offset comes from the screen, same as the real list */
       showsVerticalScrollIndicator={false}
     >
       {rows.map((rowIndex) => (

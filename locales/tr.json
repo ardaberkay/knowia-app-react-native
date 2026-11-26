@@ -93,10 +93,10 @@
     "unknownDeck": "Bu deste"
   },
   "library": {
-"favoritesShortSubtitle": "Beğendiğin desteler ve kartlar tek yerde.",
-"newDeck": "Yeni Deste",
-"newDeckSubtitle": "Kendi desteni oluştur",
-"myDecksShortSubtitle": "Kendi destelerini oluştur, düzenle ve çalış.",
+    "favoritesShortSubtitle": "Beğendiğin desteler ve kartlar tek yerde.",
+    "newDeck": "Yeni Deste",
+    "newDeckSubtitle": "Kendi desteni oluştur",
+    "myDecksShortSubtitle": "Kendi destelerini oluştur, düzenle ve çalış.",
     "all": "Tümü",
     "decks": "Desteler",
     "cards": "Kartlar",
@@ -128,7 +128,13 @@
     "favoriteDecksTitle": "Favori Destelerim",
     "favoriteCardsTitle": "Favori Kartlarım",
     "myDecksSubtitle": "  Oluşturduğun destelerle kendi öğrenme yolculuğunu tasarla; keşfet, pekiştir ve hedeflerine doğru ilerle",
-    "createDeck": "Bir deste oluştur"
+    "createDeck": "Bir deste oluştur",
+    "myDecksHeroText": "Kendi destelerinle öğrenmeye başla.",
+    "favoritesHeroText": "Beğendiğin desteler ve kartlar.",
+    "summaryDecks": "{{count}} deste",
+    "summaryDecks_plural": "{{count}} deste",
+    "summaryCards": "{{count}} kart",
+    "summaryCards_plural": "{{count}} kart"
   },
   "home": {
     "activity": {
@@ -199,21 +205,13 @@
     "selectLanguage": "Dil Seç",
     "languageHeading": "İçerik Dili",
     "languageSub": "Önce kartın ön yüzündeki dili seç. Arka yüz başka bir dildeyse onu da seç.",
-
     "languageFront": "Ön yüz",
-
     "languageBack": "Arka yüz",
-
     "languageBackEmpty": "Ön yüzle aynı · isteğe bağlı",
-
     "languagePick": "Dil seç",
-
     "languageSwap": "Yerlerini değiştir",
-
     "languageBoth": "Ön ve arka yüz",
-
     "languageExample": "Örnek: ön yüz İngilizce “apple”, arka yüz Türkçe “elma”",
-
     "requiredLanguage": "Lütfen kartın ön yüzündeki dili seç."
   },
   "common": {
@@ -290,7 +288,7 @@
     }
   },
   "tabs": {
-"discover": "Keşfet",
+    "discover": "Keşfet",
     "home": "Anasayfa",
     "create": "Oluştur",
     "library": "Kitaplığım",
@@ -501,7 +499,6 @@
     "levelGood": "İyi",
     "levelEasy": "Kolay",
     "showMore": "Devamını gör",
-
     "speak": "Sesli oku",
     "voice": {
       "settings": "Ses ayarları",
@@ -521,7 +518,6 @@
       "iosHint": "Daha doğal sesler için: Ayarlar › Erişilebilirlik › Seslendirilen İçerik › Sesler bölümünden Gelişmiş veya Premium sesleri indirebilirsin.",
       "androidHint": "Daha fazla ses için: Ayarlar › Erişilebilirlik › Metin okuma çıkışı bölümünden ses verilerini yükleyebilirsin."
     },
-
     "stopSpeaking": "Okumayı durdur",
     "reverseOn": "Ters çevir",
     "reverseOff": "Normal çalış",

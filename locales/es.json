@@ -91,10 +91,10 @@
     "unhideError": "Error en la operación"
   },
   "library": {
-"favoritesShortSubtitle": "Tus mazos y tarjetas favoritos en un solo lugar.",
-"newDeck": "Nuevo mazo",
-"newDeckSubtitle": "Crea tu propio mazo",
-"myDecksShortSubtitle": "Crea, edita y estudia tus propios mazos.",
+    "favoritesShortSubtitle": "Tus mazos y tarjetas favoritos en un solo lugar.",
+    "newDeck": "Nuevo mazo",
+    "newDeckSubtitle": "Crea tu propio mazo",
+    "myDecksShortSubtitle": "Crea, edita y estudia tus propios mazos.",
     "all": "Todo",
     "decks": "Barajas",
     "cards": "Tarjetas",
@@ -126,7 +126,13 @@
     "favoriteDecksTitle": "Barajas Favoritas",
     "favoriteCardsTitle": "Tarjetas Favoritas",
     "myDecksSubtitle": "  Diseña tu propio viaje de aprendizaje con tus barajas creadas; descubre, refuerza y avanza hacia tus metas",
-    "createDeck": "Crear una baraja"
+    "createDeck": "Crear una baraja",
+    "myDecksHeroText": "Empieza a aprender con tus propios mazos.",
+    "favoritesHeroText": "Los mazos y tarjetas que te gustaron.",
+    "summaryDecks": "{{count}} mazo",
+    "summaryDecks_plural": "{{count}} mazos",
+    "summaryCards": "{{count}} tarjeta",
+    "summaryCards_plural": "{{count}} tarjetas"
   },
   "home": {
     "activity": {
@@ -199,21 +205,13 @@
     "selectLanguage": "Seleccionar idioma",
     "languageHeading": "Idioma del contenido",
     "languageSub": "Primero elige el idioma del anverso de las tarjetas. Si el reverso está en otro idioma, elígelo también.",
-
     "languageFront": "Anverso",
-
     "languageBack": "Reverso",
-
     "languageBackEmpty": "Igual que el anverso · opcional",
-
     "languagePick": "Elegir idioma",
-
     "languageSwap": "Intercambiar",
-
     "languageBoth": "Anverso y reverso",
-
     "languageExample": "Ejemplo: anverso en inglés “apple”, reverso en español “manzana”",
-
     "requiredLanguage": "Elige el idioma del anverso de las tarjetas.",
     "haptics": "Vibraciones"
   },
@@ -261,7 +259,7 @@
     "selected": "Seleccionado"
   },
   "tabs": {
-"discover": "Descubrir",
+    "discover": "Descubrir",
     "home": "Inicio",
     "create": "Crear",
     "library": "Colección",
@@ -463,7 +461,6 @@
     "levelGood": "Bien",
     "levelEasy": "Fácil",
     "showMore": "Ver más",
-
     "speak": "Leer en voz alta",
     "voice": {
       "settings": "Ajustes de voz",
@@ -483,7 +480,6 @@
       "iosHint": "Para voces más naturales, descarga voces Mejoradas o Premium en Ajustes › Accesibilidad › Contenido leído › Voces.",
       "androidHint": "Para más voces, instala datos de voz en Ajustes › Accesibilidad › Salida de texto a voz."
     },
-
     "stopSpeaking": "Dejar de leer",
     "reverseOn": "Invertir tarjetas",
     "reverseOff": "Estudiar normal",

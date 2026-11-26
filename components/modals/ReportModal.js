@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, useWindowDimensions, Platform } from 'react-native';
 import { Text } from '../ui/AppText';
 import { useTheme } from '../../theme/theme';
 import { BottomSheetModal, BottomSheetView } from '@expo/ui/community/bottom-sheet';
@@ -73,7 +73,7 @@ export default function ReportModal({
       ref={sheetRef}
       onDismiss={handleSheetDismiss}
       enablePanDownToClose
-      backgroundStyle={{ backgroundColor: colors.background }}
+      backgroundStyle={Platform.OS === 'android' ? { backgroundColor: colors.background } : undefined /* iOS: system Liquid Glass */}
     >
       <BottomSheetView style={[styles.sheetContent, { maxHeight: SHEET_MAX_HEIGHT }]}>
           

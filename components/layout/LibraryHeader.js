@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import { Animated, Image, StyleSheet, View } from 'react-native';
+import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { MAX_FONT_SIZE_MULTIPLIER } from '../ui/AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -8,14 +9,16 @@ import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 
 /**
- * Library header: one flat surface (theme card colour) holding a per-tab intro
- * (title + text + illustration) and the segmented control under it.
+ * Library header: part of the page (no card surface), lit by a soft top glow
+ * that takes the selected tab's colour (orange / pink, same strength as
+ * Discover). Holds a per-tab intro (title, one short line, a summary line with
+ * real counts, illustration; top-aligned) and the tabs under it.
  *
  * `progress` = PagerView position + offset (native Animated value). The intro
  * cross-fades between tabs on that value, so swiping the pager animates the
  * header without any React re-render.
  */
-function LibraryHeader({ progress, onTabPress }) {
+function LibraryHeader({ progress, onTabPress, summary }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -26,7 +29,11 @@ function LibraryHeader({ progress, onTabPress }) {
       label: t('library.myDecks', 'Destelerim'),
       icon: 'ph:cards-fill',
       title: t('library.myDecksHeading', 'Destelerim'),
-      subtitle: t('library.myDecksSubtitle', 'Oluşturduğun destelerle kendi öğrenme yolculuğunu tasarla; keşfet, pekiştir ve hedeflerine doğru ilerle'),
+      subtitle: t('library.myDecksHeroText', 'Kendi destelerinle öğrenmeye başla.'),
+      summary: summary
+        ? `${t('library.summaryDecks', { count: summary.myDecks })} · ${t('library.summaryCards', { count: summary.myCards })}`
+        : null,
+      glow: colors.buttonColor,
       image: require('../../assets/mydecks_item.webp'),
     },
     {
@@ -34,22 +41,51 @@ function LibraryHeader({ progress, onTabPress }) {
       label: t('library.favorites', 'Favorilerim'),
       icon: 'solar:heart-bold',
       title: t('library.favorites', 'Favorilerim'),
-      subtitle: t('library.favoritesShortSubtitle', 'Beğendiğin desteler ve kartlar tek yerde.'),
+      subtitle: t('library.favoritesHeroText', 'Beğendiğin desteler ve kartlar.'),
+      summary: summary
+        ? `${t('library.summaryDecks', { count: summary.favoriteDecks })} · ${t('library.summaryCards', { count: summary.favoriteCards })}`
+        : null,
+      glow: '#F5576C',
       image: require('../../assets/shared.webp'),
+      // This drawing sits right of centre with empty space top-left (its box
+      // spans ~x 265-925, y 35-950 of 1024), so at the same size it read as
+      // smaller and lower than Destelerim's full-bleed one. Scale it to fill
+      // the frame and pull it back to centre.
+      imageStyle: { transform: [{ scale: 1.12 }, { translateX: -10 }] },
     },
   ];
 
   return (
-    <View
-      style={[
-        styles.surface,
-        {
-          backgroundColor: colors.cardBackground,
-          borderColor: colors.cardBorder,
-          paddingTop: insets.top + 24,
-        },
-      ]}
-    >
+    <View style={[styles.surface, { paddingTop: insets.top + 24 }]}>
+      {/* Soft light from the top centre, fading out by the tabs; one layer per
+          tab, cross-faded on the pager position (native driver). */}
+      {tabs.map((tab, index) => (
+        <Animated.View
+          key={`glow_${tab.key}`}
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              opacity: progress.interpolate({
+                inputRange: [index - 1, index, index + 1],
+                outputRange: [0, 1, 0],
+                extrapolate: 'clamp',
+              }),
+            },
+          ]}
+        >
+          <Svg width="100%" height="100%">
+            <Defs>
+              <RadialGradient id={`libraryGlow_${tab.key}`} cx="50%" cy="0%" rx="70%" ry="100%" fx="50%" fy="0%">
+                <Stop offset="0" stopColor={tab.glow} stopOpacity={GLOW_STRENGTH} />
+                <Stop offset="0.5" stopColor={tab.glow} stopOpacity={GLOW_STRENGTH * 0.4} />
+                <Stop offset="1" stopColor={tab.glow} stopOpacity={0} />
+              </RadialGradient>
+            </Defs>
+            <Rect x="0" y="0" width="100%" height="100%" fill={`url(#libraryGlow_${tab.key})`} />
+          </Svg>
+        </Animated.View>
+      ))}
       <View style={styles.introArea}>
         {tabs.map((tab, index) => {
           const opacity = progress.interpolate({
@@ -74,12 +110,20 @@ function LibraryHeader({ progress, onTabPress }) {
                 </Animated.Text>
                 <Animated.Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
                   style={[typography.styles.caption, styles.subtitle, { color: colors.muted }]}
-                  numberOfLines={4}
+                  numberOfLines={2}
                 >
                   {tab.subtitle?.trim()}
                 </Animated.Text>
+                {tab.summary ? (
+                  <Animated.Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
+                    style={[typography.styles.caption, styles.summary, { color: colors.buttonColor }]}
+                    numberOfLines={1}
+                  >
+                    {tab.summary}
+                  </Animated.Text>
+                ) : null}
               </View>
-              <Image source={tab.image} style={styles.introImage} fadeDuration={0} />
+              <Image source={tab.image} style={[styles.introImage, tab.imageStyle]} fadeDuration={0} />
             </Animated.View>
           );
         })}
@@ -103,31 +147,36 @@ function LibraryHeader({ progress, onTabPress }) {
 }
 
 const IMAGE_SIZE = 124;
+// Same as Discover's glow.
+const GLOW_STRENGTH = 0.18;
 
 const styles = StyleSheet.create({
   surface: {
     width: '100%',
-    // Same radius as the Home / Discover heroes. zIndex keeps the hero above
-    // the pager, which is pulled up underneath it (see LibraryScreen
-    // HERO_OVERLAP) so content scrolls behind the rounded corners.
-    zIndex: 10,
-    borderBottomLeftRadius: 36,
-    borderBottomRightRadius: 36,
-    borderWidth: 1,
-    borderTopWidth: 0,
     paddingHorizontal: 20,
     paddingBottom: 4,
   },
+  // Both tab intros share one spot (each is full width with a -100% right
+  // margin, so they overlap) but stay in the layout: the area takes the
+  // tallest intro's height, so longer text (or a larger OS font) pushes the
+  // tabs down instead of running into them.
   introArea: {
-    height: IMAGE_SIZE,
+    flexDirection: 'row',
+    minHeight: IMAGE_SIZE,
   },
   intro: {
-    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    marginRight: '-100%',
     flexDirection: 'row',
     alignItems: 'center',
   },
+  // Full height of the intro: title + text at the top, summary pinned to the
+  // bottom (marginTop auto), so it sits in the same place on both tabs.
   introText: {
     flex: 1,
+    alignSelf: 'stretch',
+    paddingTop: 8,
+    paddingBottom: 8,
     marginRight: 12,
   },
   title: {
@@ -135,6 +184,11 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     lineHeight: 20,
+  },
+  summary: {
+    marginTop: 'auto',
+    paddingTop: 8,
+    fontWeight: '600',
   },
   introImage: {
     width: IMAGE_SIZE,

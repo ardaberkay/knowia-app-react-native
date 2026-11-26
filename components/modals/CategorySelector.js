@@ -1,12 +1,9 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, useWindowDimensions, Platform } from 'react-native';
 import { Text } from '../ui/AppText';
 
 // ETKİLEŞİMLİ BİLEŞENLER
 import { BottomSheetModal, BottomSheetFlatList } from '@expo/ui/community/bottom-sheet';
-// Lists open at half height and drag up to full (iOS medium/large detents,
-// Android partial/expanded).
-const LIST_SNAP_POINTS = ['50%', '100%'];
 
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -103,21 +100,13 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
       index={0}
       onChange={handleSheetChanges}
       // Radius ve Arka Plan
-      backgroundStyle={{
-        backgroundColor: colors.background,
-        borderRadius: 44
-      }}
-
-      snapPoints={LIST_SNAP_POINTS}
-
+      backgroundStyle={Platform.OS === 'android' ? { backgroundColor: colors.background } : undefined /* iOS: system Liquid Glass */}
       enablePanDownToClose
     >
+      <View style={{ maxHeight: Math.round(SCREEN_HEIGHT * 0.75) }}>
 
       {/* --- SABİT HEADER (LİSTENİN DIŞINDA) --- */}
-      <View style={[styles.fixedHeader, {
-        backgroundColor: colors.background, borderTopLeftRadius: 44,
-        borderTopRightRadius: 44
-      }]}>
+      <View style={styles.fixedHeader}>
         <Text style={[typography.styles.h2, { color: colors.text }]}>
           {t('categorySelector.title')}
         </Text>
@@ -139,9 +128,10 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
         showsVerticalScrollIndicator={false}
         bounces={true}
         nestedScrollEnabled={true}
-        style={{ flex: 1 }}
+        style={{ flexGrow: 0, flexShrink: 1 }}
       />
 
+      </View>
     </BottomSheetModal>
   );
 }
@@ -160,7 +150,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 15,
-    paddingBottom: 60,
+    paddingBottom: 24,
     gap: 12,
   },
   closeBtnWrapper: {

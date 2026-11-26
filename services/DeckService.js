@@ -657,3 +657,25 @@ export const getDiscoverDecks = async (userId, tab = 'trend', timeFilter = 'all'
   const favIds = new Set(await getFavoriteDeckIds(userId));
   return decks.map(d => ({ ...d, is_favorite: favIds.has(d.id) }));
 };
+/**
+ * Counts for the Library hero summary line. The lists themselves are paged
+ * (favourite cards 20 at a time), so counting loaded rows would be wrong:
+ * favourites use head-only count requests (no rows), and own decks read only
+ * the card_count column to sum the cards.
+ */
+export const getLibrarySummary = async (userId) => {
+  if (!userId) return null;
+  const [mine, favDecks, favCards] = await Promise.all([
+    supabase.from('decks').select('card_count').eq('user_id', userId).eq('is_admin_created', false),
+    supabase.from('favorite_decks').select('deck_id', { count: 'exact', head: true }).eq('user_id', userId),
+    supabase.from('favorite_cards').select('card_id', { count: 'exact', head: true }).eq('user_id', userId),
+  ]);
+  if (mine.error || favDecks.error || favCards.error) return null;
+  const rows = mine.data || [];
+  return {
+    myDecks: rows.length,
+    myCards: rows.reduce((sum, d) => sum + Number(d.card_count || 0), 0),
+    favoriteDecks: favDecks.count || 0,
+    favoriteCards: favCards.count || 0,
+  };
+};

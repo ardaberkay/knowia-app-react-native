@@ -26,9 +26,6 @@ import { MenuView } from '@expo/ui/community/menu';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheetModal, BottomSheetFlatList } from '@expo/ui/community/bottom-sheet';
-// Lists open at half height and drag up to full (iOS medium/large detents,
-// Android partial/expanded).
-const LIST_SNAP_POINTS = ['50%', '100%'];
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import HeroPullBackdrop from '../../components/layout/HeroPullBackdrop';
 import { useListBottomInset } from '../../components/ui/CustomTabBar';
@@ -1753,10 +1750,10 @@ export default function DeckDetailScreen({ route, navigation }) {
             }
           }
         }}
-        backgroundStyle={{ backgroundColor: colors.background, borderRadius: 40 }}
-        snapPoints={LIST_SNAP_POINTS}
+        backgroundStyle={Platform.OS === 'android' ? { backgroundColor: colors.background } : undefined /* iOS: system Liquid Glass */}
         enablePanDownToClose
       >
+        <View style={{ maxHeight: Math.round(screenHeight * 0.75) }}>
         <View style={[styles.chapterSheetHeader, { borderBottomColor: colors.border }]}>
           <Text style={[styles.chapterSheetTitle, { color: colors.cardQuestionText }]}>
             {t('deckDetail.selectChapterTitle', 'Bölüm seç')}
@@ -1790,7 +1787,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             styles.chapterSheetList,
             { paddingBottom: 24 },
           ]}
-          style={{ flex: 1 }}
+          style={{ flexGrow: 0, flexShrink: 1 }}
             renderItem={({ item }) => {
             const isAction = item.id === 'action';
             const isSelected = selectedChapter?.id === item.id;
@@ -1875,6 +1872,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             );
           }}
         />
+        </View>
       </BottomSheetModal>
 
       <ReportModal

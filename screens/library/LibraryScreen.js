@@ -1,12 +1,12 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, FlatList, Alert, Animated, ScrollView, Image, Keyboard, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, FlatList, Alert, Animated, ScrollView, Image, Keyboard, useWindowDimensions, Platform } from 'react-native';
 import { Text } from '../../components/ui/AppText';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { typography } from '../../theme/typography';
-import { getDecksByCategory, deleteDeck } from '../../services/DeckService';
+import { getDecksByCategory, deleteDeck, getLibrarySummary } from '../../services/DeckService';
 import { deleteCard, getUserCardProgressForCards } from '../../services/CardService';
 import { Iconify } from 'react-native-iconify';
 import { getFavoriteDecks, getFavoriteCards, addFavoriteDeck, removeFavoriteDeck, addFavoriteCard, removeFavoriteCard } from '../../services/FavoriteService';
@@ -76,7 +76,9 @@ const MY_DECKS_SEARCH_THRESHOLD = 10;
 // The pager is pulled up under the hero by this much (same as Discover) so list
 // content scrolls behind the hero's rounded bottom corners. Lists add it back
 // as top padding and offset their refresh spinner by it.
-const HERO_OVERLAP = 16;
+// The hero is part of the page now (no card surface), so the pager no longer
+// tucks under it.
+const HERO_OVERLAP = 0;
 
 /** Aynı ekranda inline fonksiyon kullanılırsa her render'da yeni component tipi oluşur; liste yenilenince header (Image) yeniden mount olur. */
 const MyDecksListHeaderCard = React.memo(function MyDecksListHeaderCard({
@@ -140,6 +142,9 @@ export default function LibraryScreen() {
   const [favCardsSort, setFavCardsSort] = useState('original');
   const [favoriteCards, setFavoriteCards] = useState([]);
   const [favoriteCardIds, setFavoriteCardIds] = useState([]);
+  // Hero summary ("12 deste · 32 kart"): real counts from the server, refreshed
+  // when the loaded lists change size (create/delete/favourite) and on focus.
+  const [librarySummary, setLibrarySummary] = useState(null);
   const [myDecksQuery, setMyDecksQuery] = useState('');
   const [myDecksSort, setMyDecksSort] = useState('default');
   const [myDecksSelectedCategories, setMyDecksSelectedCategories] = useState([]);
@@ -170,7 +175,7 @@ export default function LibraryScreen() {
 
   // The header is now a normal (non-overlay) block above the pager, so the
   // pages only need a small top gap instead of clearing an absolute overlay.
-  const favoritesScrollViewPaddingTop = HERO_OVERLAP + 16;
+  const favoritesScrollViewPaddingTop = HERO_OVERLAP + 4; // same top as Destelerim
   const myDecksListPaddingTop = HERO_OVERLAP + 4;
 
   const myDecksSearchContainerTopMargin = 8;
@@ -664,6 +669,16 @@ export default function LibraryScreen() {
     // Bağımlılık listesi: favoriteDecks artık sadece Favorilerim sekmesi için; Destelerim filtresi deck.is_favorite kullanır
   }, [myDecks, myDecksQuery, myDecksSelectedCategories, myDecksSort, selectedLanguages]);
 
+  const refreshLibrarySummary = useCallback(() => {
+    getLibrarySummary(userId).then((s) => { if (s) setLibrarySummary(s); }).catch(() => {});
+  }, [userId]);
+  useEffect(() => {
+    refreshLibrarySummary();
+  }, [refreshLibrarySummary, myDecks.length, favoriteDecks.length, favoriteCardIds.length]);
+  useFocusEffect(useCallback(() => {
+    refreshLibrarySummary();
+  }, [refreshLibrarySummary]));
+
   const openMyDecksFilterModal = useCallback(() => setMyDecksFilterModalVisible(true), []);
 
   // First cell of "Destelerim" grid: always-visible "create deck" card
@@ -679,25 +694,21 @@ export default function LibraryScreen() {
       accessibilityRole="button"
       accessibilityLabel={t('tabs.createDeck', 'Deste Oluştur')}
     >
-      {/* Reads as an "empty deck": same cell shape as the deck cards, a ⊕
-          badge where deck cards keep their corner action, illustration, then
-          title + hint. The whole card is the button. */}
+      {/* Same surface as the Profile stats box (translucent, no border), with a
+          glowing ⊕ in the middle and the title + hint under it. The whole card
+          is the button. */}
       <View
         style={[
           createCardStyles.surface,
-          { backgroundColor: colors.cardBackground, borderColor: isDarkMode ? '#4A4A4A' : colors.border },
+          { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)' },
         ]}
       >
-        <View style={[createCardStyles.plusBadge, { backgroundColor: colors.buttonColor }]}>
-          <Iconify icon="ic:round-plus" size={22} color="#FFFFFF" />
-        </View>
-        <View style={createCardStyles.imageWrap}>
-          <Image
-            source={require('../../assets/create_deck_item.webp')}
-            style={createCardStyles.image}
-            resizeMode="contain"
-            fadeDuration={0}
-          />
+        <View style={[createCardStyles.plusHalo, { backgroundColor: `${colors.buttonColor}1F` }]}>
+          <View style={[createCardStyles.plusRing, { borderColor: `${colors.buttonColor}66` }]}>
+            <View style={[createCardStyles.plusCore, { backgroundColor: colors.buttonColor, shadowColor: colors.buttonColor }]}>
+              <Iconify icon="ic:round-plus" size={28} color="#FFFFFF" />
+            </View>
+          </View>
         </View>
         <Text
           style={[createCardStyles.title, { color: colors.text }]}
@@ -715,7 +726,7 @@ export default function LibraryScreen() {
         </Text>
       </View>
     </TouchableOpacity>
-  ), [colors.buttonColor, colors.cardBackground, colors.border, colors.text, colors.muted, isDarkMode, navigation, t]);
+  ), [colors.buttonColor, colors.text, colors.muted, isDarkMode, navigation, t]);
 
   // Search + filter only earn their space once the library is big enough to
   // need them. Keep them visible while any query/filter is active so the user
@@ -765,7 +776,7 @@ export default function LibraryScreen() {
 
   return (
     <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
-      <LibraryHeader progress={pagerProgress} onTabPress={handleSetPage} />
+      <LibraryHeader progress={pagerProgress} onTabPress={handleSetPage} summary={librarySummary} />
       {/* PagerView: 0 - MyDecks, 1 - Favorites */}
       <AnimatedPagerView
         ref={pagerRef}
@@ -1121,10 +1132,7 @@ export default function LibraryScreen() {
           // Kullanıcı paneli aşağı sürükleyerek kapatırsa state'i güncelle
           if (index === -1) setCardDetailModalVisible(false);
         }}
-        backgroundStyle={{
-          backgroundColor: colors.background,
-          borderRadius: 44
-        }}
+        backgroundStyle={Platform.OS === 'android' ? { backgroundColor: colors.background } : undefined /* iOS: system Liquid Glass */}
       >
 
         {/* --- SABİT HEADER BÖLÜMÜ (Aşağı kaymaz, hep üstte durur) --- */}
@@ -1379,35 +1387,38 @@ const styles = StyleSheet.create({
 const createCardStyles = StyleSheet.create({
   surface: {
     flex: 1,
-    borderRadius: 18,
-    borderWidth: 1,
+    borderRadius: 16,
     padding: 12,
-  },
-  imageWrap: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    // Nudged down so the illustration clears the corner tab.
-    marginTop: 6,
   },
-  image: {
-    width: '85%',
-    height: '85%',
-  },
-  // Corner tab fused into the card's top-right corner: covers the 1px border
-  // (-1 offsets), shares the card's outer 18 radius, rounds only its inner
-  // bottom-left corner.
-  plusBadge: {
-    position: 'absolute',
-    top: -1,
-    right: -1,
-    zIndex: 1,
-    width: 36,
-    height: 36,
-    borderTopRightRadius: 18,
-    borderBottomLeftRadius: 20,
+  // Soft halo > thin ring > solid orange core: the ⊕ glows without an image.
+  plusHalo: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 14,
+  },
+  plusRing: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  plusCore: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    elevation: 6,
   },
   title: {
     ...typography.styles.button,
@@ -1418,7 +1429,6 @@ const createCardStyles = StyleSheet.create({
     ...typography.styles.caption,
     textAlign: 'center',
     marginTop: 2,
-    marginBottom: 4,
   },
 });
 

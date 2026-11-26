@@ -92,10 +92,10 @@
     "unhideError": "Aktion fehlgeschlagen"
   },
   "library": {
-"favoritesShortSubtitle": "Deine Lieblingsdecks und -karten an einem Ort.",
-"newDeck": "Neues Deck",
-"newDeckSubtitle": "Erstelle dein eigenes Deck",
-"myDecksShortSubtitle": "Erstelle, bearbeite und lerne deine eigenen Decks.",
+    "favoritesShortSubtitle": "Deine Lieblingsdecks und -karten an einem Ort.",
+    "newDeck": "Neues Deck",
+    "newDeckSubtitle": "Erstelle dein eigenes Deck",
+    "myDecksShortSubtitle": "Erstelle, bearbeite und lerne deine eigenen Decks.",
     "all": "Alle",
     "decks": "Decks",
     "cards": "Karten",
@@ -127,7 +127,13 @@
     "favoriteDecksTitle": "Favoriten Decks",
     "favoriteCardsTitle": "Favoriten Karten",
     "myDecksSubtitle": "Gestalte deinen Lernweg mit eigenen Decks – entdecken, festigen und Ziele erreichen",
-    "createDeck": "Deck erstellen"
+    "createDeck": "Deck erstellen",
+    "myDecksHeroText": "Lerne mit deinen eigenen Decks.",
+    "favoritesHeroText": "Decks und Karten, die dir gefallen.",
+    "summaryDecks": "{{count}} Deck",
+    "summaryDecks_plural": "{{count}} Decks",
+    "summaryCards": "{{count}} Karte",
+    "summaryCards_plural": "{{count}} Karten"
   },
   "home": {
     "activity": {
@@ -200,21 +206,13 @@
     "selectLanguage": "Sprache wählen",
     "languageHeading": "Inhaltssprache",
     "languageSub": "Wähle zuerst die Sprache der Kartenvorderseite. Ist die Rückseite in einer anderen Sprache, wähle auch diese.",
-
     "languageFront": "Vorderseite",
-
     "languageBack": "Rückseite",
-
     "languageBackEmpty": "Wie Vorderseite · optional",
-
     "languagePick": "Sprache wählen",
-
     "languageSwap": "Tauschen",
-
     "languageBoth": "Vorder- und Rückseite",
-
     "languageExample": "Beispiel: Vorderseite Englisch „apple“, Rückseite Deutsch „Apfel“",
-
     "requiredLanguage": "Bitte wähle die Sprache der Kartenvorderseite."
   },
   "common": {
@@ -258,7 +256,7 @@
     "apply": "Anwenden"
   },
   "tabs": {
-"discover": "Entdecken",
+    "discover": "Entdecken",
     "home": "Start",
     "create": "Erstellen",
     "library": "Bibliothek",
@@ -465,7 +463,6 @@
     "levelGood": "Gut",
     "levelEasy": "Leicht",
     "showMore": "Mehr anzeigen",
-
     "speak": "Vorlesen",
     "voice": {
       "settings": "Spracheinstellungen",
@@ -485,7 +482,6 @@
       "iosHint": "Natürlichere Stimmen (Erweitert oder Premium) kannst du unter Einstellungen › Bedienungshilfen › Gesprochene Inhalte › Stimmen laden.",
       "androidHint": "Weitere Stimmen kannst du unter Einstellungen › Bedienungshilfen › Sprachausgabe installieren."
     },
-
     "stopSpeaking": "Vorlesen stoppen",
     "reverseOn": "Karten umdrehen",
     "reverseOff": "Normal lernen",

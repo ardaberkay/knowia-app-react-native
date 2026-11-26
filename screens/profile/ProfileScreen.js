@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { View, StyleSheet, Image, TouchableOpacity, Pressable, Animated } from 'react-native';
+import { View, StyleSheet, Image, TouchableOpacity, Pressable, Animated, Platform } from 'react-native';
 import { Text } from '../../components/ui/AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
@@ -53,23 +53,33 @@ function goalName(goal, t) {
 }
 
 /**
- * Menu rows in a rounded card (used by Profile and its Account / Settings /
- * Info pages). item: { label, icon?, right?, onPress?, chevron? }.
+ * Menu rows in an iOS-style inset grouped card (used by Profile and its
+ * Account / Settings / Info pages): no border, continuous corners, hairline
+ * separators inset to where the text starts, grey highlight while pressed.
+ * item: { label, icon?, right?, onPress?, chevron? }.
  */
 export function ProfileMenuCard({ items, colors }) {
   return (
-    <View style={[menuStyles.card, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
+    <View style={[menuStyles.card, { backgroundColor: colors.cardBackground }]}>
       {items.map((item, index) => (
-        <TouchableOpacity
+        <Pressable
           key={item.key || item.label}
-          activeOpacity={item.onPress ? 0.6 : 1}
           onPress={item.onPress}
           disabled={!item.onPress}
-          style={[
+          style={({ pressed }) => [
             menuStyles.row,
-            index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+            pressed && item.onPress ? { backgroundColor: 'rgba(150, 150, 150, 0.18)' } : null,
           ]}
         >
+          {index > 0 ? (
+            <View
+              pointerEvents="none"
+              style={[
+                menuStyles.separator,
+                { left: item.icon ? MENU_TEXT_INSET : MENU_SIDE_PADDING, backgroundColor: colors.border },
+              ]}
+            />
+          ) : null}
           {item.icon ? (
             <Iconify icon={item.icon} size={20} color={item.iconColor || colors.buttonColor} />
           ) : null}
@@ -80,25 +90,35 @@ export function ProfileMenuCard({ items, colors }) {
           {item.chevron ? (
             <Iconify icon="ion:chevron-forward" size={18} color={colors.muted} />
           ) : null}
-        </TouchableOpacity>
+        </Pressable>
       ))}
     </View>
   );
 }
 
+const MENU_SIDE_PADDING = 16;
+// Side padding + 20 icon + 12 gap: separators start where the label starts.
+const MENU_TEXT_INSET = MENU_SIDE_PADDING + 20 + 12;
+
 export const menuStyles = StyleSheet.create({
   card: {
-    borderRadius: 18,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 26,
+    borderCurve: 'continuous',
     overflow: 'hidden',
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: MENU_SIDE_PADDING,
     minHeight: 50,
     paddingVertical: 10,
+  },
+  separator: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    height: StyleSheet.hairlineWidth,
   },
   sectionTitle: {
     marginTop: 22,
@@ -357,7 +377,7 @@ const DailyGoalSheet = React.memo(function DailyGoalSheet({ sheetRef, goal, onSe
       ref={sheetRef}
       enablePanDownToClose
       onChange={handleChange}
-      backgroundStyle={{ backgroundColor: colors.background }}
+      backgroundStyle={Platform.OS === 'android' ? { backgroundColor: colors.background } : undefined /* iOS: system Liquid Glass */}
     >
       <BottomSheetView style={[sheetStyles.content, { paddingBottom: 20 }]}>
         <View style={sheetStyles.header}>
@@ -579,7 +599,7 @@ export default function ProfileScreen() {
           scrolls up (native-driven opacity). */}
       <TopGlow
         color={colors.buttonColor}
-        strength={isDarkMode ? 0.26 : 0.15}
+        strength={isDarkMode ? 0.18 : 0.1} // same as Discover / Library
         height={insets.top + 210}
         opacity={glowOpacity}
       />

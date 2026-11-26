@@ -222,7 +222,6 @@ export default function AppNavigator() {
                 title: '',
                 headerTransparent: true,
                 headerBackButtonDisplayMode: 'minimal',
-                animation: 'fade',
                 contentStyle: {
                   backgroundColor: colors.background,
                 },
@@ -241,7 +240,6 @@ export default function AppNavigator() {
                 title: '',
                 headerTitleAlign: 'center',
                 headerTransparent: true,
-                animation: 'fade',
                 headerBackButtonDisplayMode: 'minimal',
                 contentStyle: {
                   backgroundColor: colors.background,

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, TouchableOpacity, StyleSheet, ScrollView, Image, Modal, TouchableWithoutFeedback, Pressable } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ScrollView, Image, Modal, TouchableWithoutFeedback, Pressable, Platform } from 'react-native';
 import { MenuView } from '@expo/ui/community/menu';
 import { Text } from '../ui/AppText';
 import { useTheme } from '../../theme/theme';
@@ -54,7 +54,6 @@ export default function CsvUploadModal({
   const [selectedImages, setSelectedImages] = useState([]);
   const [imageIds, setImageIds] = useState([]);
   const [imageIdMap, setImageIdMap] = useState({});
-  const [tableGuideExpanded, setTableGuideExpanded] = useState(false);
   const [isImageModalVisible, setImageModalVisible] = useState(false);
   const scrollViewRef = useRef(null);
 
@@ -566,12 +565,7 @@ export default function CsvUploadModal({
     setSelectedImages([]);
     setImageIds([]);
     setImageIdMap({});
-    setTableGuideExpanded(false);
     onClose();
-  };
-
-  const toggleGuide = () => {
-    setTableGuideExpanded(!tableGuideExpanded);
   };
 
   // --- UI RENDER KISMI ---
@@ -581,7 +575,7 @@ export default function CsvUploadModal({
       ref={sheetRef}
       onDismiss={handleSheetDismiss}
       enablePanDownToClose
-      backgroundStyle={{ backgroundColor: colors.background }}
+      backgroundStyle={Platform.OS === 'android' ? { backgroundColor: colors.background } : undefined /* iOS: system Liquid Glass */}
       snapPoints={['100%']}
     >
       <BottomSheetView style={styles.sheetContent}>
@@ -605,25 +599,16 @@ export default function CsvUploadModal({
               {t('addCard.csvUploadDescriptionMain', 'Kartlarınızı Excel veya Google Sheets\'te hazırlayın ve CSV olarak kaydedin. CSV dosyanızı yükleyin ve kartlarınız hazır!')}
             </Text>
 
-            {/* TABLO NASIL OLUŞTURULUR REHBERİ */}
-            <View style={[styles.expandableSection, { backgroundColor: isDarkMode ? '#222' : '#F7F7F7' }]}>
-              <TouchableOpacity onPress={toggleGuide} activeOpacity={0.7} style={styles.expandableHeader}>
-                <View style={styles.expandableHeaderLeft}>
-                  <Iconify icon="material-symbols:info-outline" size={22} color={colors.primary || '#007AFF'} style={{ marginRight: 10 }} />
-                  <Text style={[styles.expandableHeaderText, { color: colors.text }]}>
-                    {t('addCard.howToCreateTable', 'Tablo Nasıl Oluşturulur?')}
-                  </Text>
-                </View>
-                <Iconify
-                  icon="flowbite:caret-down-solid"
-                  size={18}
-                  color={colors.text}
-                  style={{ transform: [{ rotate: tableGuideExpanded ? '180deg' : '0deg' }] }}
-                />
-              </TouchableOpacity>
+            {/* TABLO NASIL OLUŞTURULUR REHBERİ: always open, written straight on the sheet */}
+            <View style={styles.guideSection}>
+              <View style={styles.guideHeading}>
+                <Iconify icon="material-symbols:info-outline" size={22} color={colors.primary || '#007AFF'} style={{ marginRight: 10 }} />
+                <Text style={[styles.guideHeadingText, { color: colors.text }]}>
+                  {t('addCard.howToCreateTable', 'Tablo Nasıl Oluşturulur?')}
+                </Text>
+              </View>
 
-              {tableGuideExpanded && (
-                <View style={styles.expandableContent}>
+                <View style={styles.guideContent}>
 
                   <View style={[styles.guideCard, { backgroundColor: isDarkMode ? '#2A2A2A' : '#FFFFFF', borderColor: isDarkMode ? '#333' : '#EEE' }]}>
                     <Text style={[styles.guideTitle, { color: colors.text }]}>
@@ -670,7 +655,6 @@ export default function CsvUploadModal({
                     </View>
                   </TouchableOpacity>
                 </View>
-              )}
 
               {/* Büyütülmüş Resim Modalı - Core Modal'a taşındı */}
               <Modal
@@ -912,29 +896,19 @@ const styles = StyleSheet.create({
   },
 
   // --- REHBER KISMI ---
-  expandableSection: {
+  guideSection: {
     marginBottom: 16,
-    borderRadius: 16,
-    overflow: 'hidden',
   },
-  expandableHeader: {
+  guideHeading: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    marginBottom: 12,
   },
-  expandableHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  expandableHeaderText: {
+  guideHeadingText: {
     fontSize: 15,
     fontWeight: '700',
   },
-  expandableContent: {
-    paddingBottom: 16,
-    paddingHorizontal: 16,
+  guideContent: {
     gap: 12,
   },
   guideCard: {

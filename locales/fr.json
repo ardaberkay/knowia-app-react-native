@@ -92,10 +92,10 @@
     "unhideError": "Échec de l'opération"
   },
   "library": {
-"favoritesShortSubtitle": "Tes decks et cartes favoris au même endroit.",
-"newDeck": "Nouveau deck",
-"newDeckSubtitle": "Crée ton propre deck",
-"myDecksShortSubtitle": "Crée, modifie et étudie tes propres decks.",
+    "favoritesShortSubtitle": "Tes decks et cartes favoris au même endroit.",
+    "newDeck": "Nouveau deck",
+    "newDeckSubtitle": "Crée ton propre deck",
+    "myDecksShortSubtitle": "Crée, modifie et étudie tes propres decks.",
     "all": "Tout",
     "decks": "Paquets",
     "cards": "Cartes",
@@ -127,7 +127,13 @@
     "favoriteDecksTitle": "Paquets Favoris",
     "favoriteCardsTitle": "Cartes Favorites",
     "myDecksSubtitle": "  Concevez votre propre parcours d'apprentissage avec vos paquets créés; découvrez, renforcez et avancez vers vos objectifs",
-    "createDeck": "Créer un paquet"
+    "createDeck": "Créer un paquet",
+    "myDecksHeroText": "Commence à apprendre avec tes propres decks.",
+    "favoritesHeroText": "Les decks et cartes que tu as aimés.",
+    "summaryDecks": "{{count}} deck",
+    "summaryDecks_plural": "{{count}} decks",
+    "summaryCards": "{{count}} carte",
+    "summaryCards_plural": "{{count}} cartes"
   },
   "home": {
     "activity": {
@@ -200,21 +206,13 @@
     "selectLanguage": "Choisir la langue",
     "languageHeading": "Langue du contenu",
     "languageSub": "Choisis d’abord la langue du recto des cartes. Si le verso est dans une autre langue, choisis-la aussi.",
-
     "languageFront": "Recto",
-
     "languageBack": "Verso",
-
     "languageBackEmpty": "Comme le recto · facultatif",
-
     "languagePick": "Choisir la langue",
-
     "languageSwap": "Inverser",
-
     "languageBoth": "Recto et verso",
-
     "languageExample": "Exemple : recto en anglais « apple », verso en français « pomme »",
-
     "requiredLanguage": "Choisis la langue du recto des cartes."
   },
   "common": {
@@ -261,7 +259,7 @@
     "selected": "Sélectionné"
   },
   "tabs": {
-"discover": "Découvrir",
+    "discover": "Découvrir",
     "home": "Accueil",
     "create": "Créer",
     "library": "Bibliothèque",
@@ -463,7 +461,6 @@
     "levelGood": "Bien",
     "levelEasy": "Facile",
     "showMore": "Voir plus",
-
     "speak": "Lire à voix haute",
     "voice": {
       "settings": "Réglages de la voix",
@@ -483,7 +480,6 @@
       "iosHint": "Pour des voix plus naturelles, télécharge des voix Améliorées ou Premium dans Réglages › Accessibilité › Contenu énoncé › Voix.",
       "androidHint": "Pour plus de voix, installe des données vocales dans Paramètres › Accessibilité › Synthèse vocale."
     },
-
     "stopSpeaking": "Arrêter la lecture",
     "reverseOn": "Inverser les cartes",
     "reverseOff": "Étudier normalement",
