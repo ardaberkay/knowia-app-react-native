@@ -7,7 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { Text } from '../ui/AppText';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 
-const formatFutureReview = (dateString, t) => {
+// "in 5 min" / "in 2 h" / "in 3 days"; also used by the card detail sheet.
+export const formatFutureReview = (dateString, t) => {
   const minutes = Math.max(1, Math.ceil((new Date(dateString).getTime() - Date.now()) / 60000));
   if (minutes < 60) return t('swipeDeck.completion.minutesFromNow', { count: minutes, defaultValue: `${minutes} dk sonra` });
   const hours = Math.ceil(minutes / 60);

@@ -40,6 +40,18 @@ import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { fontSizes, fonts } from '../theme/typography';
 
 const Stack = createNativeStackNavigator();
+
+// iOS: a see-through header that the list scrolls under, with the system
+// scroll edge effect (iOS 26 soft blur) once content is beneath it. The
+// screen's list must use contentInsetAdjustmentBehavior="automatic" so it
+// starts below the header. Android keeps the opaque header.
+const SCROLL_EDGE_HEADER = Platform.OS === 'ios'
+  ? {
+    headerTransparent: true,
+    headerStyle: { backgroundColor: 'transparent' },
+    scrollEdgeEffects: { top: 'automatic' },
+  }
+  : {};
 const Tab = createBottomTabNavigator();
 
 function MainTabs() {
@@ -313,7 +325,7 @@ export default function AppNavigator() {
               })}
             />
             <Stack.Screen name="EditCard" component={EditCardScreen} options={{ headerShown: true, title: t('cardDetail.edit', 'Kartı Düzenle'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
-            <Stack.Screen name="DeckCards" component={DeckCardsScreen} options={{ headerShown: true, title: t('tabs.cards', 'Kartlar'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
+            <Stack.Screen name="DeckCards" component={DeckCardsScreen} options={{ headerShown: true, title: t('tabs.cards', 'Kartlar'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', ...SCROLL_EDGE_HEADER }} />
             <Stack.Screen name="Chapters" component={ChaptersScreen} options={{ headerShown: true, title: t('tabs.chapters', 'Bölümler'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
             <Stack.Screen name="ChapterCards" component={ChapterCardsScreen} options={{
               headerShown: true,
@@ -322,7 +334,7 @@ export default function AppNavigator() {
               headerBackButtonDisplayMode: 'minimal',
             }} />
             <Stack.Screen name="FavoriteDecks" component={FavoriteDecks} options={{ headerShown: true, title: t('library.favoriteDecksTitle', 'Favori Desteler'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
-            <Stack.Screen name="FavoriteCards" component={FavoriteCards} options={{ headerShown: true, title: t('library.favoriteCardsTitle', 'Favori Kartlar'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
+            <Stack.Screen name="FavoriteCards" component={FavoriteCards} options={{ headerShown: true, title: t('library.favoriteCardsTitle', 'Favori Kartlar'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', ...SCROLL_EDGE_HEADER }} />
           </>
         )}
       </Stack.Navigator>

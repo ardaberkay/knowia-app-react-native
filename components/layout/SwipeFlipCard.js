@@ -527,8 +527,8 @@ function SwipeFlipCard({
   );
 }
 
-// Pill and SectionDivider are also used by SwipeDeckScreen's "show more" sheet.
-export const Pill = memo(function Pill({ label, icon }) {
+// The back face's section heading and divider.
+const Pill = memo(function Pill({ label, icon }) {
   return (
     <View style={styles.pill}>
       {icon ? <View style={styles.pillIcon}>{icon}</View> : null}
@@ -537,7 +537,7 @@ export const Pill = memo(function Pill({ label, icon }) {
   );
 });
 
-export const SectionDivider = memo(function SectionDivider() {
+const SectionDivider = memo(function SectionDivider() {
   return <View style={styles.sectionDivider} />;
 });
 

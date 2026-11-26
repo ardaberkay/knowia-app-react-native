@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo, useLayoutEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Pressable, Platform, BackHandler, ScrollView, Image, Modal, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Pressable, Platform, BackHandler, Image, useWindowDimensions } from 'react-native';
 import { Text, MAX_FONT_SIZE_MULTIPLIER } from '../../components/ui/AppText';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Reanimated, {
@@ -12,7 +12,6 @@ import Reanimated, {
   interpolateColor,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import {
@@ -40,7 +39,8 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import * as BlockService from '../../services/BlockService';
 import ReportModal from '../../components/modals/ReportModal';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
-import SwipeFlipCard, { Pill, SectionDivider, SwipeCardActions } from '../../components/layout/SwipeFlipCard';
+import SwipeFlipCard, { SwipeCardActions } from '../../components/layout/SwipeFlipCard';
+import CardDetailSheet from '../../components/layout/CardDetailView';
 import { SwipeCardStage } from '../../components/layout/SwipeCardDeck';
 import VoiceSettingsSheet from '../../components/modals/VoiceSettingsSheet';
 import SwipeTutorialOverlay from '../../components/layout/SwipeTutorialOverlay';
@@ -196,11 +196,16 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const [backOverflowIds, setBackOverflowIds] = useState(() => new Set());
   const [expandedCard, setExpandedCard] = useState(null);
   const [expandedVisible, setExpandedVisible] = useState(false);
-  const closeExpanded = useCallback(() => {
-    setExpandedVisible(false);
-    // iOS clears it in the Modal's onDismiss; Android has no such callback.
-    if (Platform.OS !== 'ios') setExpandedCard(null);
-  }, []);
+  // The sheet's shapes: the card's own fields, and the deck with the
+  // category loaded for this screen.
+  const expandedSheetCard = useMemo(() => (
+    expandedCard?.cards ? { ...expandedCard.cards, id: expandedCard.card_id ?? expandedCard.cards.id } : null
+  ), [expandedCard]);
+  const expandedSheetDeck = useMemo(() => {
+    if (!deck) return null;
+    const sortOrder = categorySortOrder ?? deck.categories?.sort_order;
+    return { ...deck, categories: { ...(deck.categories || {}), sort_order: sortOrder } };
+  }, [categorySortOrder, deck]);
   // Which card shows its back face. Written by the deck's flip callback; a
   // ref, not state, so flipping never re-renders this screen.
   const flippedCardIdRef = useRef(null);
@@ -1799,95 +1804,20 @@ export default function SwipeDeckScreen({ route, navigation }) {
         onSubmit={handleReportModalSubmit}
       />
 
-      <Modal
+      {/* "See more": the card's full content in the cards pages' detail sheet,
+          without actions, learning status or speech. Deck order is kept
+          (question first) even in reverse mode. */}
+      <CardDetailSheet
+        card={expandedSheetCard}
+        deck={expandedSheetDeck}
         visible={expandedVisible}
-        onDismiss={() => setExpandedCard(null)}
-        animationType="slide"
-        presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'}
-        onRequestClose={closeExpanded}
-      >
-        <View style={[styles.expandedSheet, { backgroundColor: colors.background }]}>
-          <View style={[styles.expandedHeader, { paddingTop: Platform.OS === 'ios' ? 12 : insets.top + 12 }]}>
-            <Pressable
-              onPress={closeExpanded}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              accessibilityRole="button"
-              accessibilityLabel={t('cardDetail.close', 'Kapat')}
-              style={[styles.expandedCloseButton, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}
-            >
-              <Iconify icon="material-symbols:close-rounded" size={22} color={colors.text} />
-            </Pressable>
-          </View>
-          <ScrollView contentContainerStyle={[styles.expandedContent, { paddingBottom: insets.bottom + 40 }]}>
-            {/* Same look as the card's back face: category gradient, centred
-                pill headings and dividers. Deck order is kept (question first)
-                even in reverse mode. */}
-            <View style={styles.expandedCard}>
-              <LinearGradient
-                colors={getCategoryColors(colors, categorySortOrder)}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={StyleSheet.absoluteFill}
-              />
-              {expandedCard?.cards?.question || expandedCard?.cards?.image ? (
-                <>
-                  <View style={styles.expandedSection}>
-                    <Pill
-                      label={t('cardDetail.question', 'Soru')}
-                      icon={<Iconify icon="uil:comment-alt-question" size={18} color="#fff" />}
-                    />
-                    {expandedCard?.cards?.image ? (
-                      <Image
-                        source={{ uri: expandedCard.cards.image }}
-                        style={styles.expandedImage}
-                        fadeDuration={0}
-                      />
-                    ) : null}
-                    {expandedCard?.cards?.question ? (
-                      <Text style={[typography.styles.title2, styles.expandedPrimaryText]}>{expandedCard.cards.question}</Text>
-                    ) : null}
-                  </View>
-                  <SectionDivider />
-                </>
-              ) : null}
-
-              <View style={styles.expandedSection}>
-                <Pill
-                  label={t('swipeDeck.answer', 'Cevap')}
-                  icon={<Iconify icon="uil:comment-alt-check" size={18} color="#fff" />}
-                />
-                <Text style={[typography.styles.title2, styles.expandedPrimaryText]}>{expandedCard?.cards?.answer}</Text>
-              </View>
-
-              {expandedCard?.cards?.example ? (
-                <>
-                  <SectionDivider />
-                  <View style={styles.expandedSection}>
-                    <Pill
-                      label={t('swipeDeck.example', 'Örnek')}
-                      icon={<Iconify icon="lucide:lightbulb" size={18} color="#fff" />}
-                    />
-                    <Text style={[typography.styles.bodyLarge, styles.expandedSubText]}>{expandedCard.cards.example}</Text>
-                  </View>
-                </>
-              ) : null}
-
-              {expandedCard?.cards?.note ? (
-                <>
-                  <SectionDivider />
-                  <View style={styles.expandedSection}>
-                    <Pill
-                      label={t('swipeDeck.note', 'Not')}
-                      icon={<Iconify icon="material-symbols-light:stylus-note" size={18} color="#fff" />}
-                    />
-                    <Text style={[typography.styles.bodyLarge, styles.expandedSubText, styles.expandedNoteText]}>{expandedCard.cards.note}</Text>
-                  </View>
-                </>
-              ) : null}
-            </View>
-          </ScrollView>
-        </View>
-      </Modal>
+        onDismiss={() => {
+          setExpandedVisible(false);
+          setExpandedCard(null);
+        }}
+        showLearningStatus={false}
+        enableSpeech={false}
+      />
 
       {/* Voice settings: reading speed and a voice per deck language. */}
       <VoiceSettingsSheet
@@ -1935,66 +1865,6 @@ const styles = StyleSheet.create({
     height: 24,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  expandedSheet: {
-    flex: 1,
-  },
-  expandedHeader: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 12,
-    paddingBottom: 10,
-  },
-  expandedCloseButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  expandedContent: {
-    paddingHorizontal: 12,
-    paddingTop: 0,
-    paddingBottom: 40,
-  },
-  // "Show more" sheet card, mirroring SwipeFlipCard's back face.
-  expandedCard: {
-    borderRadius: 26,
-    overflow: 'hidden',
-    paddingHorizontal: 20,
-    paddingTop: 32,
-    paddingBottom: 8,
-  },
-  expandedSection: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  expandedImage: {
-    width: '100%',
-    height: 180,
-    resizeMode: 'contain',
-    borderRadius: 24,
-    marginBottom: 8,
-  },
-  expandedPrimaryText: {
-    color: '#fff',
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 28,
-    fontFamily: fonts.semibold,
-  },
-  expandedSubText: {
-    color: 'rgba(255, 255, 255, 0.9)',
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 22,
-    fontSize: fontSizes.body,
-  },
-  expandedNoteText: {
-    color: 'rgba(255, 255, 255, 0.85)',
-    fontSize: fontSizes.body,
-    fontStyle: 'italic',
   },
   counterRow: {
     position: 'absolute',

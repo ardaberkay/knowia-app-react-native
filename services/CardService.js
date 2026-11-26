@@ -500,6 +500,20 @@ export const getUserCardProgressForCards = async (userId, cardIds) => {
   return statusMap;
 };
 
+// One card's learning state for the user: { status, next_review }, or null
+// when it has never been studied.
+export const getCardProgress = async (userId, cardId) => {
+  if (!userId || !cardId) return null;
+  const { data, error } = await supabase
+    .from('user_card_progress')
+    .select('status, next_review')
+    .eq('user_id', userId)
+    .eq('card_id', cardId)
+    .maybeSingle();
+  if (error) throw error;
+  return data || null;
+};
+
 export const upsertCardProgress = async (userId, cardId, status, nextReview) => {
   const { error } = await supabase
     .from('user_card_progress')

@@ -357,7 +357,14 @@
     "optional": "optionnel",
     "save": "Enregistrer",
     "addToDeck": "Ajouter une carte au paquet",
-    "cardDetail": "Détail de la Carte"
+    "cardDetail": "Détail de la Carte",
+    "learningTitle": "État d'apprentissage",
+    "statusNew": "Pas encore étudiée",
+    "statusLearning": "En cours",
+    "statusDue": "À réviser",
+    "statusLearned": "Apprise",
+    "nextReview": "Prochaine révision : {{time}}",
+    "speak": "Lire à voix haute"
   },
   "addCard": {
     "question": "Question",

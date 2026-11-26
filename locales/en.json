@@ -391,7 +391,14 @@
     "optional": "optional",
     "save": "Save",
     "addToDeck": "Add a card to the deck",
-    "cardDetail": "Card Detail"
+    "cardDetail": "Card Detail",
+    "learningTitle": "Learning status",
+    "statusNew": "Not studied yet",
+    "statusLearning": "Learning",
+    "statusDue": "Due for review",
+    "statusLearned": "Learned",
+    "nextReview": "Next review: {{time}}",
+    "speak": "Read aloud"
   },
   "addCard": {
     "title": "Create Card",

@@ -356,7 +356,14 @@
     "optional": "optional",
     "save": "Speichern",
     "addToDeck": "Karte zum Deck hinzufügen",
-    "cardDetail": "Kartendetails"
+    "cardDetail": "Kartendetails",
+    "learningTitle": "Lernstand",
+    "statusNew": "Noch nicht gelernt",
+    "statusLearning": "Wird gelernt",
+    "statusDue": "Wiederholung fällig",
+    "statusLearned": "Gelernt",
+    "nextReview": "Nächste Wiederholung: {{time}}",
+    "speak": "Vorlesen"
   },
   "addCard": {
     "title": "Karte erstellen",

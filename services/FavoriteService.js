@@ -157,7 +157,8 @@ const applyFavoriteEmbedTextOrIlike = (query, likePattern) => {
 export const getFavoriteCards = async (userId, page = 0, pageSize = FAVORITE_CARDS_PAGE_SIZE, forceRefresh = false, sortBy = 'original', filter = null, searchQuery = null) => {
   const searchNorm = searchQuery && String(searchQuery).trim() ? String(searchQuery).trim() : '';
   const searchKeyPart = searchNorm ? `_q_${encodeURIComponent(searchNorm).slice(0, 80)}` : '';
-  const cacheKey = `fav_cards_${userId}_p${page}_${sortBy}_${filter || 'all'}${searchKeyPart}`;
+  // v2: deck.to_name added to the select (older cached rows don't have it).
+  const cacheKey = `fav_cards_${userId}_v2_p${page}_${sortBy}_${filter || 'all'}${searchKeyPart}`;
   if (!forceRefresh) {
     const cached = await getCachedData(cacheKey, CACHE_DURATIONS.FAVORITES_CARDS_CONTENT);
     if (cached && !cached.isStale) return cached.data;
@@ -185,7 +186,7 @@ export const getFavoriteCards = async (userId, page = 0, pageSize = FAVORITE_CAR
     if (favIds.length === 0) return [];
     let cardsQuery = supabase
       .from('cards')
-      .select('id, question, answer, created_at, deck:decks(id, name, user_id, categories:categories(id, name, sort_order))')
+      .select('id, question, answer, created_at, deck:decks(id, name, to_name, user_id, categories:categories(id, name, sort_order))')
       .in('id', favIds);
     cardsQuery = applyCardsTableTextOrIlike(cardsQuery, likePattern);
     const { data: cardsData, error } = await cardsQuery
@@ -219,7 +220,7 @@ export const getFavoriteCards = async (userId, page = 0, pageSize = FAVORITE_CAR
         cards(
           id, question, answer, created_at,
           deck:decks(
-            id, name, user_id,
+            id, name, to_name, user_id,
             categories:categories(id, name, sort_order)
           )
         )
@@ -248,7 +249,7 @@ export const getFavoriteCards = async (userId, page = 0, pageSize = FAVORITE_CAR
         cards(
           id, question, answer, created_at,
           deck:decks(
-            id, name, user_id,
+            id, name, to_name, user_id,
             categories:categories(id, name, sort_order)
           )
         )

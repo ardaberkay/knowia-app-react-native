@@ -844,6 +844,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
       <CardDetailSheet
         card={selectedCard}
+        deck={deck}
         visible={detailVisible}
         onDismiss={() => setDetailVisible(false)}
         isFavorite={Boolean(selectedCard && favoriteCards.includes(selectedCard.id))}

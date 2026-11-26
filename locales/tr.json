@@ -392,7 +392,14 @@
     "deleteCardConfirmation": "Bu kartı kalıcı olarak silmek istediğinizden emin misiniz?",
     "error": "Hata",
     "deleteCardError": "Kart silinirken bir hata oluştu.",
-    "cardDetail": "Kart Detayı"
+    "cardDetail": "Kart Detayı",
+    "learningTitle": "Öğrenme durumu",
+    "statusNew": "Henüz çalışılmadı",
+    "statusLearning": "Öğreniliyor",
+    "statusDue": "Tekrar zamanı geldi",
+    "statusLearned": "Öğrenildi",
+    "nextReview": "Sonraki tekrar: {{time}}",
+    "speak": "Sesli oku"
   },
   "addCard": {
     "title": "Kart Oluştur",

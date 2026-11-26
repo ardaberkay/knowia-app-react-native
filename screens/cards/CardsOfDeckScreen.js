@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, StyleSheet, FlatList, Alert, Animated, Easing, Image, RefreshControl, Pressable, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, FlatList, Alert, Animated, Easing, Image, RefreshControl, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { Text } from '../../components/ui/AppText';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
@@ -496,7 +496,10 @@ export default function DeckCardsScreen({ route, navigation }) {
     !deck.is_shared;
 
   // The add-card FAB (~56 tall) sits at the bottom; leave room for it.
-  const listContentPaddingBottom = listBottomInset + (showAddCardFab ? 76 : 0);
+  // iOS: the list's automatic inset (see-through header, SCROLL_EDGE_HEADER)
+  // already covers the bottom safe area.
+  const listContentPaddingBottom = (Platform.OS === 'ios' ? Math.max(0, listBottomInset - insets.bottom) : listBottomInset)
+    + (showAddCardFab ? 76 : 0);
 
   const listFooter = useMemo(() => {
     if (!loadingMore) return null;
@@ -529,6 +532,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                 data={cards}
                 keyExtractor={item => item.id?.toString()}
                 showsVerticalScrollIndicator={false}
+                contentInsetAdjustmentBehavior="automatic"
                 contentContainerStyle={{ flexGrow: 1, paddingBottom: listContentPaddingBottom }}
                 refreshControl={
                   <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -627,6 +631,7 @@ export default function DeckCardsScreen({ route, navigation }) {
 
       <CardDetailSheet
         card={selectedCard}
+        deck={deck}
         visible={detailVisible}
         onDismiss={() => setDetailVisible(false)}
         isFavorite={Boolean(selectedCard && favoriteIdSet.has(selectedCard.id))}

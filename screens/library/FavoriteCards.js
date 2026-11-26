@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback, memo } from 'react';
-import { View, FlatList, Image, Alert, Keyboard, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, FlatList, Image, Alert, Keyboard, RefreshControl, ActivityIndicator, Platform } from 'react-native';
 import { Text } from '../../components/ui/AppText';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -45,6 +45,7 @@ export default function FavoriteCards() {
   const { session } = useAuth();
   const userId = session?.user?.id;
   const listBottomInset = useListBottomInset();
+  const insets = useSafeAreaInsets();
 
   const PAGE_SIZE = 50;
   const [cards, setCards] = useState([]);
@@ -327,9 +328,12 @@ export default function FavoriteCards() {
           data={cards}
           keyExtractor={item => item.id?.toString()}
           showsVerticalScrollIndicator={false}
+          // iOS: starts below the see-through header (SCROLL_EDGE_HEADER);
+          // the automatic inset also covers the bottom safe area.
+          contentInsetAdjustmentBehavior="automatic"
           contentContainerStyle={{
             flexGrow: 1,
-            paddingBottom: listBottomInset,
+            paddingBottom: Platform.OS === 'ios' ? Math.max(0, listBottomInset - insets.bottom) : listBottomInset,
           }}
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"

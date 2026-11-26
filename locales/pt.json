@@ -357,7 +357,14 @@
     "optional": "opcional",
     "save": "Salvar",
     "addToDeck": "Adicionar um cartão ao baralho",
-    "cardDetail": "Detalhe do Cartão"
+    "cardDetail": "Detalhe do Cartão",
+    "learningTitle": "Estado de aprendizagem",
+    "statusNew": "Ainda não estudado",
+    "statusLearning": "A aprender",
+    "statusDue": "Revisão pendente",
+    "statusLearned": "Aprendido",
+    "nextReview": "Próxima revisão: {{time}}",
+    "speak": "Ler em voz alta"
   },
   "addCard": {
     "question": "Pergunta",

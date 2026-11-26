@@ -45,7 +45,6 @@
     "expo-updates": "~58.0.22",
     "expo-web-browser": "~58.1.0",
     "i18next": "^25.10.10",
-    "jsonwebtoken": "^9.0.3",
     "lottie-react-native": "~7.5.0",
     "react": "19.3.0",
     "react-i18next": "^16.6.6",
@@ -66,6 +65,7 @@
     "@types/react": "~19.3.0",
     "babel-plugin-transform-remove-console": "^6.9.4",
     "babel-preset-expo": "~58.0.0",
+    "jsonwebtoken": "^9.0.3",
     "typescript": "~6.0.3"
   }
 }
