@@ -11,7 +11,7 @@ import Reanimated, {
   interpolate,
   interpolateColor,
 } from 'react-native-reanimated';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
@@ -27,18 +27,7 @@ import {
   undoLastSwipe,
   endSwipeSession,
 } from '../../services/CardService';
-import { getDeckById, getDeckSpeechLanguages } from '../../services/DeckService';
-import { getLanguages, languageNativeName } from '../../services/LanguageService';
-// expo-speech / expo-audio are native modules. Builds made before they were
-// added (and OTA updates landing on them) don't have the native side, and the
-// module throws on import, so load them defensively: no Speech = no speaker
-// button; no audio module = speech still works, just muted in silent mode.
-// Device-only reading language per deck: { [deckId]: { front, back } }.
-const READING_LANG_KEY = 'tts_reading_lang_v1';
-let Speech = null;
-try { Speech = require('expo-speech'); } catch { Speech = null; }
-let ExpoAudio = null;
-try { ExpoAudio = require('expo-audio'); } catch { ExpoAudio = null; }
+import { getDeckById } from '../../services/DeckService';
 import { invalidateCache, hasSeenSwipeTutorial, markSwipeTutorialSeen } from '../../services/CacheService';
 import { getActivitySummary, invalidateActivitySummary } from '../../services/ProfileService';
 import { listChapters, mergeChapterProgressIntoCache } from '../../services/ChapterService';
@@ -54,20 +43,10 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import SwipeFlipCard, { Pill, SectionDivider, SwipeCardActions } from '../../components/layout/SwipeFlipCard';
 import { SwipeCardStage } from '../../components/layout/SwipeCardDeck';
 import VoiceSettingsSheet from '../../components/modals/VoiceSettingsSheet';
+import SwipeTutorialOverlay from '../../components/layout/SwipeTutorialOverlay';
+import SwipeCompletionView from '../../components/layout/SwipeCompletionView';
 import { MenuView } from '@expo/ui/community/menu';
-import {
-  LANGUAGE_SORT_ORDER,
-  LEGACY_RATE_INDEX_TO_RATE,
-  SPEECH_RATE,
-  SPEECH_RATES,
-  TTS_PREFS_KEY,
-  VOICE_SAMPLES,
-  pickBestVoice,
-  stripForSpeech,
-  toSpeechLocale,
-  baseLanguage,
-  voicesForLocale,
-} from '../../lib/speech';
+import { isSpeechAvailable, useCardSpeech } from '../../lib/speech';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { maybePromptForReview, getReviewMilestones } from '../../services/ReviewPromptService';
 
@@ -79,14 +58,6 @@ const learnedRuntimeState = {
   baseLearned: 0,
   deltaLearned: 0,
   lastSyncedAt: 0,
-};
-
-const formatFutureReview = (dateString, t) => {
-  const minutes = Math.max(1, Math.ceil((new Date(dateString).getTime() - Date.now()) / 60000));
-  if (minutes < 60) return t('swipeDeck.completion.minutesFromNow', { count: minutes, defaultValue: `${minutes} dk sonra` });
-  const hours = Math.ceil(minutes / 60);
-  if (hours < 24) return t('swipeDeck.completion.hoursFromNow', { count: hours, defaultValue: `${hours} sa sonra` });
-  return t('swipeDeck.completion.daysFromNow', { count: Math.ceil(hours / 24), defaultValue: `${Math.ceil(hours / 24)} gün sonra` });
 };
 
 // --- Alt kontrol butonu ---
@@ -209,7 +180,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const tutorialOverlayRootRef = useRef(null);
   const cardTutorialTargetRef = useRef(null);
   const intervalTutorialTargetRef = useRef(null);
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [showSwipeTutorial, setShowSwipeTutorial] = useState(false);
   const [swipeTutorialStep, setSwipeTutorialStep] = useState(0);
   const [firstRenderedCardId, setFirstRenderedCardId] = useState(null);
@@ -262,159 +233,14 @@ export default function SwipeDeckScreen({ route, navigation }) {
     });
   }, [reverseStorageKey]);
 
-  // Text-to-speech: only on an explicit tap of the card's speaker button.
-  // Each face reads in its own deck language (decks_languages.side); the back
-  // falls back to the front language, a deck with no language to the app's.
-  const [deckSpeechLangs, setDeckSpeechLangs] = useState({ front: null, back: null });
-  const [speakingCardId, setSpeakingCardId] = useState(null);
-  useEffect(() => {
-    if (!deck?.id) return;
-    let cancelled = false;
-    getDeckSpeechLanguages(deck.id, i18n.language)
-      .then((langs) => { if (!cancelled) setDeckSpeechLangs(langs); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [deck?.id, i18n.language]);
-
-  // Reading language: a device-only override per deck, set in the voice sheet
-  // (the deck's own language is changed in the deck settings). It only changes
-  // which language cards are read in; progress and filters are untouched.
-  const [readingOverrides, setReadingOverrides] = useState({});
-  useEffect(() => {
-    AsyncStorage.getItem(READING_LANG_KEY)
-      .then((raw) => { if (raw) setReadingOverrides(JSON.parse(raw) || {}); })
-      .catch(() => {});
-  }, []);
-  const readingOverride = deck?.id ? readingOverrides[deck.id] : null;
-  const speechLangs = readingOverride || deckSpeechLangs;
-  const saveReadingOverride = useCallback((value) => {
-    if (!deck?.id) return;
-    setReadingOverrides((prev) => {
-      const next = { ...prev };
-      if (value) next[deck.id] = value;
-      else delete next[deck.id];
-      AsyncStorage.setItem(READING_LANG_KEY, JSON.stringify(next)).catch(() => {});
-      return next;
-    });
-  }, [deck?.id]);
-
-  // All content languages: reading language picker + section titles.
-  const [allLanguages, setAllLanguages] = useState([]);
-  useEffect(() => {
-    getLanguages().then(setAllLanguages).catch(() => {});
-  }, []);
-  const languageForCode = useCallback(
-    (code) => allLanguages.find((l) => baseLanguage(l.language_code) === baseLanguage(code)),
-    [allLanguages]
-  );
-  const readingLangIds = useMemo(() => {
-    const front = languageForCode(speechLangs.front || i18n.language);
-    const back = speechLangs.back ? languageForCode(speechLangs.back) : null;
-    return [front?.id, back && back.id !== front?.id ? back.id : null].filter(Boolean);
-  }, [i18n.language, languageForCode, speechLangs]);
-  const handleReadingLanguagesChange = useCallback((ids) => {
-    if (!ids?.length) return; // keep the last choice; the picker can't be empty
-    const code = (id) => allLanguages.find((l) => l.id === id)?.language_code?.toLowerCase() || null;
-    const value = { front: code(ids[0]), back: ids[1] ? code(ids[1]) : null };
-    const sameAsDeck = baseLanguage(value.front) === baseLanguage(deckSpeechLangs.front)
-      && baseLanguage(value.back || '') === baseLanguage(deckSpeechLangs.back || '');
-    saveReadingOverride(sameAsDeck ? null : value);
-  }, [allLanguages, deckSpeechLangs, saveReadingOverride]);
-  const resetReadingLanguages = useCallback(() => {
-    triggerHaptic('selection');
-    saveReadingOverride(null);
-  }, [saveReadingOverride]);
-
-  // Installed voices. Loaded on mount and again when the voice sheet opens
-  // (Android's TTS engine can return an empty list while it starts up).
-  const voicesRef = useRef([]);
-  const [voices, setVoices] = useState([]);
-  const loadVoices = useCallback(() => {
-    if (!Speech) return;
-    Speech.getAvailableVoicesAsync()
-      .then((list) => {
-        const next = list || [];
-        // Skip the update (and the re-render) when nothing changed.
-        const sameList = next.length === voicesRef.current.length
-          && next.every((v, i) => v.identifier === voicesRef.current[i]?.identifier);
-        if (sameList) return;
-        voicesRef.current = next;
-        setVoices(next);
-      })
-      .catch(() => {});
-  }, []);
-  useEffect(() => { loadVoices(); }, [loadVoices]);
-
-  // Voice settings (rate + chosen voice per language), device-wide. The ref
-  // lets handleSpeak read them without being recreated on every change.
-  const [ttsPrefs, setTtsPrefs] = useState({ rate: SPEECH_RATE, voices: {} });
-  const ttsPrefsRef = useRef(ttsPrefs);
-  ttsPrefsRef.current = ttsPrefs;
-  useEffect(() => {
-    AsyncStorage.getItem(TTS_PREFS_KEY)
-      .then((raw) => {
-        if (!raw) return;
-        const saved = JSON.parse(raw);
-        let rate = SPEECH_RATE;
-        if (SPEECH_RATES.includes(saved?.rate)) rate = saved.rate;
-        else if (LEGACY_RATE_INDEX_TO_RATE[saved?.rateIndex] != null) rate = LEGACY_RATE_INDEX_TO_RATE[saved.rateIndex];
-        setTtsPrefs({
-          rate,
-          voices: saved?.voices && typeof saved.voices === 'object' ? saved.voices : {},
-        });
-      })
-      .catch(() => {});
-  }, []);
-  const updateTtsPrefs = useCallback((change) => {
-    setTtsPrefs((prev) => {
-      const next = {
-        rate: change.rate ?? prev.rate,
-        voices: { ...prev.voices, ...(change.voices || {}) },
-      };
-      AsyncStorage.setItem(TTS_PREFS_KEY, JSON.stringify(next)).catch(() => {});
-      return next;
-    });
-  }, []);
-  // The user's voice for this language if it is still installed, else the best.
-  const resolveVoice = useCallback((locale) => {
-    const base = baseLanguage(locale);
-    const chosen = ttsPrefsRef.current.voices[base];
-    if (chosen && voicesRef.current.some((v) => v.identifier === chosen)) return chosen;
-    return pickBestVoice(voicesRef.current, locale);
-  }, []);
-  const currentRate = useCallback(() => ttsPrefsRef.current.rate ?? SPEECH_RATE, []);
-
-  // Audio session: speak even with the ring/silent switch on (user-started
-  // playback), and only duck other apps' audio (e.g. music) while speaking.
-  // The session is released after each utterance so their volume comes back.
-  const audioModeReadyRef = useRef(false);
-  const activateSpeechAudio = useCallback(async () => {
-    if (!ExpoAudio) return;
-    try {
-      if (!audioModeReadyRef.current) {
-        await ExpoAudio.setAudioModeAsync({ playsInSilentMode: true, interruptionMode: 'duckOthers' });
-        audioModeReadyRef.current = true;
-      }
-      await ExpoAudio.setIsAudioActiveAsync(true);
-    } catch {
-      // Without the session the system default applies (muted in silent mode).
-    }
-  }, []);
-  const releaseSpeechAudio = useCallback(() => {
-    ExpoAudio?.setIsAudioActiveAsync(false).catch(() => {});
-  }, []);
-
-  const speakingCardIdRef = useRef(null);
-  speakingCardIdRef.current = speakingCardId;
-  const stopSpeaking = useCallback(() => {
-    if (speakingCardIdRef.current == null) return;
-    Speech?.stop();
-    setSpeakingCardId(null);
-  }, []);
-
-  // A new card, a reverse-mode toggle or leaving the screen ends speech
-  // (a flip ends it too, in handleCardFlip).
-  useEffect(() => { stopSpeaking(); }, [currentIndex, isReversed, stopSpeaking]);
+  // Text-to-speech (speaker button + voice settings sheet), see lib/speech.js.
+  const { speakingCardId, handleSpeak, stopSpeaking, openVoiceSheet, voiceSheetProps } = useCardSpeech({
+    deckId: deck?.id,
+    cardsRef,
+    flippedCardIdRef,
+    isReversed,
+    currentIndex,
+  });
 
   // Called by the deck once per flip (the flip animation itself runs on the
   // UI thread). Only refs change here unless speech has to stop.
@@ -423,119 +249,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
     flippedCardIdRef.current = flipped ? id : null;
     stopSpeaking();
   }, [stopSpeaking]);
-  useEffect(() => () => {
-    Speech?.stop();
-    ExpoAudio?.setIsAudioActiveAsync(false).catch(() => {});
-  }, []);
-
-  const handleSpeak = useCallback((id) => {
-    if (!Speech) return;
-    if (speakingCardId === id) {
-      stopSpeaking();
-      return;
-    }
-    const card = cardsRef.current.find((c) => c?.card_id === id)?.cards;
-    if (!card) return;
-
-    // Which face is showing, and which deck side it holds (reverse mode
-    // puts the answer, i.e. the back-side content, on the front face).
-    const showingBack = flippedCardIdRef.current === id;
-    const isBackContent = showingBack !== isReversed;
-    const text = stripForSpeech(isBackContent ? card.answer : card.question);
-    if (!text) return;
-    const code = (isBackContent ? speechLangs.back : speechLangs.front) || i18n.language;
-    const locale = toSpeechLocale(code);
-
-    Speech.stop();
-    setSpeakingCardId(id);
-    const done = () => {
-      setSpeakingCardId((prev) => (prev === id ? null : prev));
-      releaseSpeechAudio();
-    };
-    activateSpeechAudio().then(() => {
-      Speech.speak(text, {
-        language: locale,
-        voice: resolveVoice(locale),
-        rate: currentRate(),
-        onDone: done,
-        onStopped: done,
-        onError: done,
-      });
-    });
-  }, [activateSpeechAudio, currentRate, i18n.language, isReversed, releaseSpeechAudio, resolveVoice, speakingCardId, speechLangs, stopSpeaking]);
-
-  // Voice sheet: one section per deck language (front first; one section when
-  // both sides share a language).
-  const voiceSections = useMemo(() => {
-    const front = speechLangs.front || i18n.language;
-    const back = speechLangs.back || front;
-    const sideLabel = {
-      front: t('swipeDeck.voice.front', 'Ön yüz'),
-      back: t('swipeDeck.voice.back', 'Arka yüz'),
-      both: t('swipeDeck.voice.bothSides', 'Ön ve arka yüz'),
-    };
-    const make = (code, side) => {
-      const base = baseLanguage(code);
-      const locale = toSpeechLocale(code);
-      const order = LANGUAGE_SORT_ORDER[base];
-      const language = languageForCode(code);
-      return {
-        base,
-        locale,
-        title: language ? languageNativeName(language, t) : (order ? t(`languages.${order}`) : base.toUpperCase()),
-        sideLabel: sideLabel[side],
-        voices: voicesForLocale(voices, locale),
-      };
-    };
-    const frontBase = baseLanguage(front);
-    const backBase = baseLanguage(back);
-    if (frontBase === backBase) return [make(front, 'both')];
-    return [make(front, 'front'), make(back, 'back')];
-  }, [i18n.language, languageForCode, speechLangs, t, voices]);
-
-  // Plays a short sample in the section's language with the given voice
-  // (null = automatic) at the current rate, or at `rate` when given.
-  const previewVoice = useCallback((identifier, locale, rate) => {
-    if (!Speech) return;
-    const base = baseLanguage(locale);
-    Speech.stop();
-    setSpeakingCardId(null);
-    activateSpeechAudio().then(() => {
-      Speech.speak(VOICE_SAMPLES[base] || VOICE_SAMPLES.en, {
-        language: locale,
-        voice: identifier || pickBestVoice(voicesRef.current, locale),
-        rate: rate ?? currentRate(),
-        onDone: releaseSpeechAudio,
-        onStopped: releaseSpeechAudio,
-        onError: releaseSpeechAudio,
-      });
-    });
-  }, [activateSpeechAudio, currentRate, releaseSpeechAudio]);
-
-  const selectVoice = useCallback((base, identifier, locale) => {
-    triggerHaptic('selection');
-    updateTtsPrefs({ voices: { [base]: identifier } });
-    previewVoice(identifier, locale);
-  }, [previewVoice, updateTtsPrefs]);
-
-  // A new speed is saved and heard right away, in the deck's front language.
-  const handleRateChange = useCallback((rate) => {
-    if (!SPEECH_RATES.includes(rate)) return;
-    updateTtsPrefs({ rate });
-    const locale = voiceSections[0]?.locale;
-    if (locale) previewVoice(resolveVoice(locale), locale, rate);
-  }, [previewVoice, resolveVoice, updateTtsPrefs, voiceSections]);
-
-  const voiceSheetRef = useRef(null);
-  const openVoiceSheet = useCallback(() => {
-    voiceSheetRef.current?.present();
-    // Refresh the voice list once the sheet has settled, so a changed list
-    // never re-renders anything during the opening animation.
-    setTimeout(loadVoices, 450);
-  }, [loadVoices]);
-  const handleVoiceSheetDismiss = useCallback(() => {
-    Speech?.stop();
-  }, []);
 
   // App bar overflow (kebab) menu: a native menu anchored to the button.
   // It lives in a setOptions closure, so actions are read through a ref.
@@ -594,8 +307,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
       icon: 'hugeicons:chat-delay-01',
     },
   ]), [t]);
-
-  const activeTutorialStep = swipeTutorialSteps[swipeTutorialStep] || swipeTutorialSteps[0];
 
   const measureTutorialTarget = useCallback((ref, setter) => {
     requestAnimationFrame(() => {
@@ -798,7 +509,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
                   title: isReversed ? t('swipeDeck.reverseOff', 'Normal çalış') : t('swipeDeck.reverseOn', 'Ters çevir'),
                   image: 'arrow.up.arrow.down',
                 },
-                Speech ? { id: 'voice', title: t('swipeDeck.voice.settings', 'Ses ayarları'), image: 'speaker.wave.2' } : null,
+                isSpeechAvailable ? { id: 'voice', title: t('swipeDeck.voice.settings', 'Ses ayarları'), image: 'speaker.wave.2' } : null,
                 !isOwner ? { id: 'report', title: t('moderation.reportCard', 'Kartı şikayet et'), image: 'exclamationmark.bubble' } : null,
               ].filter(Boolean)}
               onOpenMenu={() => triggerHaptic('selection')}
@@ -1806,7 +1517,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
         showMoreLabel={t('swipeDeck.showMore', 'Devamını gör')}
         onShowMorePress={handleShowMore}
         showMoreTextColor={colors.buttonColor}
-        onSpeakPress={Speech ? handleSpeak : undefined}
+        onSpeakPress={isSpeechAvailable ? handleSpeak : undefined}
         isSpeaking={speakingCardId === card.card_id}
         speakLabel={t('swipeDeck.speak', 'Sesli oku')}
         stopSpeakingLabel={t('swipeDeck.stopSpeaking', 'Okumayı durdur')}
@@ -1832,325 +1543,20 @@ export default function SwipeDeckScreen({ route, navigation }) {
   }
 
   if (cards.length === 0 || currentIndex >= cards.length || originalFlowComplete) {
-    // The backend session summary can lag behind the UI write. The right
-    // counter is the authoritative in-session "learned" value for the
-    // completion screen because it is updated at swipe commit time.
-    const sessionLearned = rightCount;
-    const sessionPlanned = Math.max(0, sessionTargetCount - sessionLearned);
-    const chapterProgress = completionSummary?.chapterProgress;
-    const chapterLearned = chapterProgress?.learned || 0;
-    const chapterUnfinished = chapterProgress ? chapterProgress.total - chapterLearned : 0;
-    const chapterPercent = chapterProgress?.total
-      ? Math.round((chapterLearned / chapterProgress.total) * 100)
-      : 0;
-    const completionActivity = completionSummary?.activity;
-    const nearestReview = completionSummary?.reviews?.nearest;
-    const farthestReview = completionSummary?.reviews?.farthest;
-    const isEmptyChapter = Boolean(chapter?.id) && sessionTargetCount === 0 && cards.length === 0;
-
-    if (isEmptyChapter) {
-      return (
-        <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingBottom: insets.bottom }]}>
-          <View style={styles.emptyCompletionContent}>
-            <Text style={styles.emptyCompletionIcon}>📚</Text>
-            <Text style={[typography.styles.h2, styles.emptyCompletionTitle, { color: colors.text }]}>{t('swipeDeck.completion.emptyTitle', 'Bu bölümde şu anda çalışılacak kart yok.')}</Text>
-            <View style={[styles.emptyCompletionInfo, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
-              <Text style={[styles.completionReviewMetric, { color: colors.text }]}>{nearestReview ? formatFutureReview(nearestReview.at, t) : '—'}</Text>
-              <Text style={[typography.styles.caption, styles.completionReviewLabel, { color: colors.muted }]}>{nearestReview ? t('swipeDeck.completion.cardsReady', { count: nearestReview.count, defaultValue: `${nearestReview.count} kart hazır` }) : t('swipeDeck.completion.nearestReview', 'En yakın tekrar')}</Text>
-            </View>
-            <View style={styles.completionCtaArea}>
-              <View style={styles.completionButtonRow}>
-                <TouchableOpacity style={[styles.completionButton, styles.completionButtonHalf, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, borderWidth: StyleSheet.hairlineWidth }]} onPress={() => navigation.goBack()}>
-                  <Text style={[typography.styles.button, { color: colors.text }]}>{t('swipeDeck.completion.back', 'Geri Dön')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  disabled={!nextChapter}
-                  style={[styles.completionButton, styles.completionButtonHalf, { backgroundColor: nextChapter ? colors.buttonColor : colors.cardBackground, borderColor: nextChapter ? 'transparent' : colors.cardBorder, borderWidth: nextChapter ? 0 : StyleSheet.hairlineWidth, opacity: nextChapter ? 1 : 0.55 }]}
-                  onPress={() => nextChapter && navigation.replace('SwipeDeck', { deck, chapter: nextChapter })}
-                >
-                  <Text style={[typography.styles.button, { color: nextChapter ? colors.buttonText : colors.muted }]}>{t('swipeDeck.completion.nextChapter', 'Sonraki Bölüm')}</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.completionNextMetaRow}>
-                <View style={styles.completionNextMetaSpacer} />
-                <Text style={[styles.nextChapterMeta, { color: colors.muted }]}>{nextChapter ? t('swipeDeck.completion.chapterMeta', { chapter: nextChapter.ordinal, count: nextChapter.totalCards, defaultValue: `Bölüm ${nextChapter.ordinal} • ${nextChapter.totalCards} kart` }) : t('swipeDeck.completion.noNextChapter', 'Sonraki bölüm yok')}</Text>
-              </View>
-            </View>
-          </View>
-        </SafeAreaView>
-      );
-    }
-
     return (
-      <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingBottom: insets.bottom, paddingTop: insets.top + 50 }]}>
-        <ScrollView contentContainerStyle={[styles.completionContent, { paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
-          <View style={styles.completionHero}>
-            <LinearGradient colors={[colors.buttonColor, '#FF6B35']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.completionHeroCard, { backgroundColor: colors.buttonColor }]}>
-              <View style={styles.completionHeroTitleRow}>
-                <Iconify icon="material-symbols:trophy" size={36} color="#FFFFFF" />
-                <Text style={[typography.styles.h2, styles.completionTitle, { color: '#FFFFFF' }]}>{t('swipeDeck.completion.title', 'Oturum Tamamlandı!')}</Text>
-              </View>
-              <View style={styles.completionHeroMetricCircle}>
-                <Text style={[styles.completionHeroMetric, { color: '#FFFFFF' }]}>{sessionTargetCount}</Text>
-                <Text style={[typography.styles.body, styles.completionHeroLabel, { color: 'rgba(255,255,255,0.88)' }]}>{t('swipeDeck.completion.cardsStudied', 'Kart Çalışıldı')}</Text>
-              </View>
-              <View style={styles.completionHeroSessionStats}>
-                <View style={styles.completionHeroSessionStat}>
-                  <Text style={styles.completionHeroSessionNumber}>
-                    {sessionLearned ?? '—'}
-                  </Text>
-                  <Text style={styles.completionHeroSessionLabel}>
-                    {t('swipeDeck.completion.learned', 'Öğrenildi')}
-                  </Text>
-                </View>
-
-                <View style={styles.completionHeroSessionDivider} />
-
-                <View style={styles.completionHeroSessionStat}>
-                  <Text style={styles.completionHeroSessionNumber}>
-                    {sessionPlanned ?? '—'}
-                  </Text>
-                  <Text style={styles.completionHeroSessionLabel}>
-                    {t('swipeDeck.completion.reviewPlanned', 'Tekrar Planlandı')}
-                  </Text>
-                </View>
-
-                <View style={styles.completionHeroSessionDivider} />
-
-                <View style={styles.completionHeroSessionStat}>
-                  <Text style={styles.completionHeroSessionNumber}>
-                    {totalSwipeCount ?? '—'}
-                  </Text>
-                  <Text style={styles.completionHeroSessionLabel}>
-                    {t('swipeDeck.completion.totalSwipes', 'Toplam Kaydırma')}
-                  </Text>
-                </View>
-              </View>
-              {completionActivity ? (
-                <View style={styles.completionGoalRow}>
-                  <Iconify
-                    icon={completionActivity.today_goal_met ? 'mdi:fire' : 'lets-icons:clock-fill'}
-                    size={18}
-                    color="#FFFFFF"
-                  />
-                  <Text style={styles.completionGoalText} numberOfLines={2}>
-                    {completionActivity.today_goal_met
-                      ? t('swipeDeck.completion.goalDone', {
-                        count: completionActivity.current_streak,
-                        defaultValue: `Günlük hedef tamam! Seri: ${completionActivity.current_streak} gün`,
-                      })
-                      : t('swipeDeck.completion.goalLeft', {
-                        count: Math.max((completionActivity.daily_goal ?? 0) - (completionActivity.today_swipes ?? 0), 0),
-                        defaultValue: `Günlük hedefe ${Math.max((completionActivity.daily_goal ?? 0) - (completionActivity.today_swipes ?? 0), 0)} kart kaldı`,
-                      })}
-                  </Text>
-                </View>
-              ) : null}
-            </LinearGradient>
-          </View>
-
-          <View style={[styles.completionChapterCard, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
-            <View style={styles.completionChapterHeader}>
-              <View style={styles.completionChapterTitleRow}>
-                <Iconify icon="streamline-flex:module-puzzle-2" size={20} color={colors.buttonColor} />
-                <Text style={[typography.styles.subtitle, { color: colors.text }]}>{t('swipeDeck.completion.chapterProgress', 'Bölüm İlerlemesi')}</Text>
-              </View>
-              <Text style={[styles.completionChapterProgressValue, { color: colors.buttonColor }]}>{chapterProgress ? `%${chapterPercent}` : '--'}</Text>
-            </View>
-            <View style={[styles.completionChapterProgressTrack, { backgroundColor: colors.progressBarSwipe || colors.border }]}>
-              <View style={[styles.completionChapterProgressFill, { width: `${chapterProgress ? chapterPercent : 0}%`, backgroundColor: colors.buttonColor }]} />
-            </View>
-            <View style={styles.completionChapterMetrics}>
-              <Text style={[typography.styles.body, { color: colors.text }]}>{chapterProgress ? `• ${t('swipeDeck.completion.learnedCount', { count: chapterLearned, defaultValue: `${chapterLearned} Öğrenildi` })}` : '—'}</Text>
-              <Text style={[typography.styles.body, { color: colors.muted }]}>{chapterProgress ? `• ${t('swipeDeck.completion.learningCount', { count: chapterUnfinished, defaultValue: `${chapterUnfinished} Öğrenme Sürecinde` })}` : '—'}</Text>
-            </View>
-            <View style={[styles.completionChapterDivider, { backgroundColor: colors.border }]} />
-            <View style={styles.completionReviewGrid}>
-              <View style={styles.completionReviewItem}>
-                <Iconify icon="lets-icons:clock-fill" size={22} color={colors.buttonColor} />
-                <View style={styles.completionReviewTextGroup}>
-                  <Text style={[styles.completionReviewMetric, { color: colors.text }]}>{nearestReview ? formatFutureReview(nearestReview.at, t) : '—'}</Text>
-                  <Text style={[typography.styles.caption, styles.completionReviewLabel, { color: colors.muted }]}>{nearestReview ? t('swipeDeck.completion.cardsReady', { count: nearestReview.count, defaultValue: `${nearestReview.count} kart hazır` }) : t('swipeDeck.completion.nearestReview', 'En yakın tekrar')}</Text>
-                </View>
-              </View>
-              <View style={styles.completionReviewItem}>
-                <Iconify icon="solar:calendar-bold" size={22} color={colors.secondary} />
-                <View style={styles.completionReviewTextGroup}>
-                  <Text style={[styles.completionReviewMetric, { color: colors.text }]}>{farthestReview ? formatFutureReview(farthestReview.at, t) : '—'}</Text>
-                  <Text style={[typography.styles.caption, styles.completionReviewLabel, { color: colors.muted }]}>{t('swipeDeck.completion.farthestReview', 'En uzak tekrar')}</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.completionCtaArea}>
-            <View style={styles.completionButtonRow}>
-              <TouchableOpacity style={[styles.completionButton, styles.completionButtonHalf, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, borderWidth: StyleSheet.hairlineWidth }]} onPress={() => navigation.goBack()}>
-                <Text style={[typography.styles.button, { color: colors.text }]}>{t('swipeDeck.completion.back', 'Geri Dön')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                disabled={!nextChapter}
-                style={[styles.completionButton, styles.completionButtonHalf, { backgroundColor: nextChapter ? colors.buttonColor : colors.cardBackground, borderColor: nextChapter ? 'transparent' : colors.cardBorder, borderWidth: nextChapter ? 0 : StyleSheet.hairlineWidth, opacity: nextChapter ? 1 : 0.55 }]}
-                onPress={() => nextChapter && navigation.replace('SwipeDeck', { deck, chapter: nextChapter })}
-              >
-                <Text style={[typography.styles.button, { color: nextChapter ? colors.buttonText : colors.muted }]}>{t('swipeDeck.completion.nextChapter', 'Sonraki Bölüm')}</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.completionNextMetaRow}>
-              <View style={styles.completionNextMetaSpacer} />
-              <Text style={[styles.nextChapterMeta, { color: colors.muted }]}>{nextChapter ? t('swipeDeck.completion.chapterMeta', { chapter: nextChapter.ordinal, count: nextChapter.totalCards, defaultValue: `Bölüm ${nextChapter.ordinal} • ${nextChapter.totalCards} kart` }) : t('swipeDeck.completion.noNextChapter', 'Sonraki bölüm yok')}</Text>
-            </View>
-          </View>
-
-        </ScrollView>
-      </SafeAreaView>
+      <SwipeCompletionView
+        isEmptyChapter={Boolean(chapter?.id) && sessionTargetCount === 0 && cards.length === 0}
+        sessionLearned={rightCount}
+        sessionTargetCount={sessionTargetCount}
+        totalSwipeCount={totalSwipeCount}
+        completionSummary={completionSummary}
+        nextChapter={nextChapter}
+        onBack={() => navigation.goBack()}
+        onNextChapter={() => nextChapter && navigation.replace('SwipeDeck', { deck, chapter: nextChapter })}
+        colors={colors}
+      />
     );
   }
-
-  const renderSwipeTutorialOverlay = () => {
-    if (!showSwipeTutorial || !activeTutorialStep) return null;
-
-    const isFirstStep = swipeTutorialStep === 0;
-    const isLastStep = swipeTutorialStep === swipeTutorialSteps.length - 1;
-    const isCardTarget = activeTutorialStep.target === 'card';
-    const targetLayout = isCardTarget ? cardTargetLayout : intervalTargetLayout;
-    const targetPadding = isCardTarget ? 10 : 6;
-    const targetRadius = isCardTarget ? 26 : 12;
-    const hasValidTargetLayout =
-      targetLayout &&
-      Number.isFinite(targetLayout.x) &&
-      Number.isFinite(targetLayout.y) &&
-      Number.isFinite(targetLayout.width) &&
-      Number.isFinite(targetLayout.height) &&
-      targetLayout.width > 0 &&
-      targetLayout.height > 0;
-    const spotlightLeft = hasValidTargetLayout ? Math.max(0, targetLayout.x - targetPadding) : 0;
-    const spotlightTop = hasValidTargetLayout ? Math.max(0, targetLayout.y - targetPadding) : 0;
-    const spotlightWidth = hasValidTargetLayout
-      ? Math.min(width - spotlightLeft, targetLayout.width + targetPadding * 2)
-      : 0;
-    const spotlightHeight = hasValidTargetLayout
-      ? Math.min(height - spotlightTop, targetLayout.height + targetPadding * 2)
-      : 0;
-    const shouldUseSpotlight =
-      hasValidTargetLayout &&
-      spotlightWidth > 0 &&
-      spotlightHeight > 0 &&
-      spotlightLeft + spotlightWidth <= width + 1 &&
-      spotlightTop + spotlightHeight <= height + 1;
-    const spotlightRadius = shouldUseSpotlight
-      ? Math.min(targetRadius, spotlightWidth / 2, spotlightHeight / 2)
-      : targetRadius;
-    const cornerCoverRadius = isCardTarget ? Math.min(spotlightRadius, 10) : spotlightRadius;
-    const targetFrameStyle = hasValidTargetLayout ? {
-      top: spotlightTop,
-      left: spotlightLeft,
-      width: spotlightWidth,
-      height: spotlightHeight,
-      borderRadius: spotlightRadius,
-    } : null;
-    const coachmarkPositionStyle = isCardTarget
-      ? {
-        top: targetLayout ? Math.max(54, targetLayout.y - 156) : 74,
-        left: 18,
-        right: 18,
-      }
-      : {
-        left: 18,
-        right: 18,
-        bottom: targetFrameStyle
-          ? Math.max(24, height - targetFrameStyle.top - 60)
-          : 144 + insets.bottom,
-      };
-    const swipeDirectionHintPositionStyle = activeTutorialStep.showSwipeHint
-      ? {
-        top: (coachmarkPositionStyle.top ?? 74) + 340,
-        left: 24,
-        right: 24,
-      }
-      : null;
-
-    return (
-      <View style={styles.swipeTutorialOverlay} pointerEvents="auto" onTouchStart={() => { }}>
-        {shouldUseSpotlight ? (
-          <>
-            <View style={[styles.swipeTutorialDimLayer, { top: 0, left: 0, right: 0, height: spotlightTop }]} />
-            <View style={[styles.swipeTutorialDimLayer, { top: spotlightTop, left: 0, width: spotlightLeft, height: spotlightHeight }]} />
-            <View style={[styles.swipeTutorialDimLayer, { top: spotlightTop, left: spotlightLeft + spotlightWidth, right: 0, height: spotlightHeight }]} />
-            <View style={[styles.swipeTutorialDimLayer, { top: spotlightTop + spotlightHeight, left: 0, right: 0, bottom: 0 }]} />
-            <View style={[styles.swipeTutorialCornerCover, { top: spotlightTop, left: spotlightLeft, width: cornerCoverRadius, height: cornerCoverRadius, borderBottomRightRadius: cornerCoverRadius }]} />
-            <View style={[styles.swipeTutorialCornerCover, { top: spotlightTop, left: spotlightLeft + spotlightWidth - cornerCoverRadius, width: cornerCoverRadius, height: cornerCoverRadius, borderBottomLeftRadius: cornerCoverRadius }]} />
-            <View style={[styles.swipeTutorialCornerCover, { top: spotlightTop + spotlightHeight - cornerCoverRadius, left: spotlightLeft, width: cornerCoverRadius, height: cornerCoverRadius, borderTopRightRadius: cornerCoverRadius }]} />
-            <View style={[styles.swipeTutorialCornerCover, { top: spotlightTop + spotlightHeight - cornerCoverRadius, left: spotlightLeft + spotlightWidth - cornerCoverRadius, width: cornerCoverRadius, height: cornerCoverRadius, borderTopLeftRadius: cornerCoverRadius }]} />
-          </>
-        ) : (
-          <View style={styles.swipeTutorialFullDimLayer} />
-        )}
-        {targetFrameStyle && (
-          <View pointerEvents="none" style={[styles.swipeTutorialTargetFrame, targetFrameStyle]} />
-        )}
-        <View style={[styles.swipeTutorialCoachmarkGroup, coachmarkPositionStyle]}>
-          <View style={[styles.swipeTutorialCard, styles.swipeTutorialCardInGroup, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
-            <View style={styles.swipeTutorialStepPill}>
-              <Text style={styles.swipeTutorialStepText}>{swipeTutorialStep + 1}/{swipeTutorialSteps.length}</Text>
-            </View>
-            <View style={styles.swipeTutorialTitleRow}>
-              <Iconify icon={activeTutorialStep.icon} size={20} color="#F98A21" />
-              <Text style={[styles.swipeTutorialTitle, { color: colors.text }]}>{activeTutorialStep.title}</Text>
-            </View>
-            <Text style={[styles.swipeTutorialDescription, { color: colors.muted }]}>{activeTutorialStep.description}</Text>
-            {isCardTarget ? <View style={styles.swipeTutorialArrowUp} /> : <View style={styles.swipeTutorialArrowDown} />}
-            <View style={styles.swipeTutorialActions}>
-              <Pressable onPress={completeSwipeTutorial} style={styles.swipeTutorialGhostButton}>
-                <Text style={[styles.swipeTutorialGhostText, { color: colors.muted }]}>{t('swipeDeck.tutorial.skip', 'Geç')}</Text>
-              </Pressable>
-              <View style={styles.swipeTutorialNavActions}>
-                <Pressable
-                  disabled={isFirstStep}
-                  onPress={() => setSwipeTutorialStep((step) => Math.max(0, step - 1))}
-                  style={[styles.swipeTutorialBackButton, { borderColor: colors.cardBorder }, isFirstStep && styles.swipeTutorialDisabledButton]}
-                >
-                  <Text style={[styles.swipeTutorialBackText, { color: colors.text }]}>{t('swipeDeck.tutorial.back', 'Geri')}</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => {
-                    if (isLastStep) {
-                      completeSwipeTutorial();
-                    } else {
-                      setSwipeTutorialStep((step) => Math.min(swipeTutorialSteps.length - 1, step + 1));
-                    }
-                  }}
-                  style={styles.swipeTutorialNextButton}
-                >
-                  <Text style={styles.swipeTutorialNextText}>
-                    {isLastStep ? t('swipeDeck.tutorial.done', 'Anladım') : t('swipeDeck.tutorial.next', 'İleri')}
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </View>
-        {activeTutorialStep.showSwipeHint && swipeDirectionHintPositionStyle && (
-          <View pointerEvents="none" style={[styles.swipeTutorialSwipeHint, swipeDirectionHintPositionStyle]}>
-            <View style={[styles.swipeTutorialSwipeBadge, styles.swipeTutorialSwipeBadgeLeft]}>
-              <View style={[styles.swipeTutorialSwipeBadgeGlow, styles.swipeTutorialSwipeBadgeGlowLeft]} />
-              <View style={[styles.swipeTutorialSwipeBadgeContent, styles.swipeTutorialSwipeBadgeContentLeft]}>
-                <Iconify icon="ion:arrow-undo" size={16} color="#FFFFFF" />
-                <Text style={styles.swipeTutorialSwipeHintText}>{t('swipeDeck.tutorial.swipeHintLeft', 'Tekrar Et')}</Text>
-              </View>
-            </View>
-            <View style={[styles.swipeTutorialSwipeBadge, styles.swipeTutorialSwipeBadgeRight]}>
-              <View style={[styles.swipeTutorialSwipeBadgeGlow, styles.swipeTutorialSwipeBadgeGlowRight]} />
-              <View style={[styles.swipeTutorialSwipeBadgeContent, styles.swipeTutorialSwipeBadgeContentRight]}>
-                <Text style={styles.swipeTutorialSwipeHintText}>{t('swipeDeck.tutorial.swipeHintRight', 'Öğrendim')}</Text>
-                <Iconify icon="ion:arrow-redo" size={16} color="#FFFFFF" />
-              </View>
-            </View>
-          </View>
-        )}
-      </View>
-    );
-  };
 
   return (
     <View
@@ -2380,7 +1786,17 @@ export default function SwipeDeckScreen({ route, navigation }) {
         </View>
       </View>
 
-      {renderSwipeTutorialOverlay()}
+      {showSwipeTutorial ? (
+        <SwipeTutorialOverlay
+          steps={swipeTutorialSteps}
+          stepIndex={swipeTutorialStep}
+          onStepChange={setSwipeTutorialStep}
+          onComplete={completeSwipeTutorial}
+          cardTargetLayout={cardTargetLayout}
+          intervalTargetLayout={intervalTargetLayout}
+          colors={colors}
+        />
+      ) : null}
       <ReportModal
         visible={reportModalVisible}
         onClose={() => { setReportModalVisible(false); setReportCardId(null); }}
@@ -2481,21 +1897,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
       {/* Voice settings: reading speed and a voice per deck language. */}
       <VoiceSettingsSheet
-        sheetRef={voiceSheetRef}
-        sections={voiceSections}
-        rate={ttsPrefs.rate}
-        chosenVoices={ttsPrefs.voices}
-        onSelectVoice={selectVoice}
-        onRateChange={handleRateChange}
-        onDismiss={handleVoiceSheetDismiss}
+        {...voiceSheetProps}
         colors={colors}
         isDarkMode={isDarkMode}
         bottomInset={insets.bottom}
-        languages={allLanguages}
-        readingLangIds={readingLangIds}
-        readingOverridden={Boolean(readingOverride)}
-        onReadingLanguagesChange={handleReadingLanguagesChange}
-        onResetReadingLanguages={resetReadingLanguages}
       />
     </View>
   );
@@ -2519,229 +1924,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  swipeTutorialOverlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'transparent',
-    zIndex: 9999,
-    elevation: 9999,
-  },
-  swipeTutorialFullDimLayer: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    zIndex: 0,
-    elevation: 0,
-  },
-  swipeTutorialDimLayer: {
-    position: 'absolute',
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    zIndex: 0,
-    elevation: 0,
-  },
-  swipeTutorialCornerCover: {
-    position: 'absolute',
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    zIndex: 0,
-    elevation: 0,
-  },
-  swipeTutorialTargetFrame: {
-    position: 'absolute',
-    borderWidth: 2,
-    borderColor: '#F98A21',
-    backgroundColor: 'transparent',
-    shadowColor: '#F98A21',
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 0 },
-    zIndex: 1,
-    elevation: 10000,
-  },
-  swipeTutorialCoachmarkGroup: {
-    position: 'absolute',
-    zIndex: 2,
-    elevation: 10001,
-  },
-  swipeTutorialCard: {
-    position: 'absolute',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 22,
-    padding: 18,
-    shadowColor: '#000',
-    shadowOpacity: 0.22,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    zIndex: 2,
-    elevation: 10001,
-  },
-  swipeTutorialCardInGroup: {
-    position: 'relative',
-  },
-  swipeTutorialStepPill: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: 'rgba(249,138,33,0.14)',
-    marginBottom: 10,
-  },
-  swipeTutorialStepText: {
-    ...typography.styles.caption,
-    color: '#F98A21',
-    fontWeight: '700',
-  },
-  swipeTutorialTitle: {
-    ...typography.styles.subtitle,
-    fontWeight: '800',
-    flex: 1,
-  },
-  swipeTutorialTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
-  },
-  swipeTutorialDescription: {
-    ...typography.styles.body,
-    lineHeight: 21,
-  },
-  swipeTutorialSwipeHint: {
-    position: 'absolute',
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    gap: 10,
-    zIndex: 2,
-    elevation: 10001,
-  },
-  swipeTutorialSwipeBadge: {
-    width: 148,
-    minHeight: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F98A21',
-    overflow: 'hidden',
-    shadowColor: '#F98A21',
-    shadowOpacity: 0.28,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 6,
-  },
-  swipeTutorialSwipeBadgeLeft: {
-    borderTopLeftRadius: 28,
-    borderBottomLeftRadius: 10,
-    borderTopRightRadius: 16,
-    borderBottomRightRadius: 26,
-    transform: [{ skewX: '-5deg' }],
-  },
-  swipeTutorialSwipeBadgeRight: {
-    borderTopLeftRadius: 16,
-    borderBottomLeftRadius: 26,
-    borderTopRightRadius: 28,
-    borderBottomRightRadius: 10,
-    transform: [{ skewX: '5deg' }],
-  },
-  swipeTutorialSwipeBadgeGlow: {
-    position: 'absolute',
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-  },
-  swipeTutorialSwipeBadgeGlowLeft: {
-    left: -12,
-    top: -8,
-  },
-  swipeTutorialSwipeBadgeGlowRight: {
-    right: -12,
-    top: -8,
-  },
-  swipeTutorialSwipeBadgeContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 5,
-    paddingHorizontal: 8,
-  },
-  swipeTutorialSwipeBadgeContentLeft: {
-    transform: [{ skewX: '5deg' }],
-  },
-  swipeTutorialSwipeBadgeContentRight: {
-    transform: [{ skewX: '-5deg' }],
-  },
-  swipeTutorialSwipeHintText: {
-    ...typography.styles.caption,
-    textAlign: 'center',
-    color: '#FFFFFF',
-    fontWeight: '800',
-  },
-  swipeTutorialArrowDown: {
-    position: 'absolute',
-    bottom: -10,
-    alignSelf: 'center',
-    width: 0,
-    height: 0,
-    borderLeftWidth: 10,
-    borderRightWidth: 10,
-    borderTopWidth: 10,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderTopColor: '#F98A21',
-  },
-  swipeTutorialArrowUp: {
-    position: 'absolute',
-    bottom: -10,
-    alignSelf: 'center',
-    width: 18,
-    height: 18,
-    borderRadius: 4,
-    backgroundColor: '#F98A21',
-    transform: [{ rotate: '45deg' }],
-  },
-  swipeTutorialActions: {
-    marginTop: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  swipeTutorialGhostButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-  },
-  swipeTutorialGhostText: {
-    ...typography.styles.button,
-    fontWeight: '700',
-  },
-  swipeTutorialNavActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  swipeTutorialBackButton: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-  },
-  swipeTutorialDisabledButton: {
-    opacity: 0.42,
-  },
-  swipeTutorialBackText: {
-    ...typography.styles.button,
-    fontWeight: '700',
-  },
-  swipeTutorialNextButton: {
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    backgroundColor: '#F98A21',
-  },
-  swipeTutorialNextText: {
-    ...typography.styles.button,
-    color: '#FFFFFF',
-    fontWeight: '800',
-  },
-
-
   // Dedicated action row. It stays outside the scrollable card content.
   reverseBadge: {
     paddingHorizontal: 8,
@@ -2979,259 +2161,5 @@ const styles = StyleSheet.create({
   loadingText: {
     ...typography.styles.subtitle,
     textAlign: 'center',
-  },
-  completionContent: {
-    width: '100%',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 18,
-  },
-  completionHero: {
-    width: '100%',
-    alignItems: 'center',
-    zIndex: 1,
-    marginBottom: 22,
-  },
-  completionGoalRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 18,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-  },
-  completionGoalText: {
-    ...typography.styles.button,
-    fontSize: 14,
-    color: '#FFFFFF',
-    flexShrink: 1,
-  },
-  completionHeroCard: {
-    width: '100%',
-    alignItems: 'center',
-    borderRadius: 30,
-    paddingTop: 24,
-    paddingBottom: 28,
-    paddingHorizontal: 20,
-    overflow: 'hidden',
-    shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.22,
-    shadowRadius: 14,
-    elevation: 5,
-  },
-  completionHeroTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginBottom: 16,
-  },
-  completionHeroMetricCircle: {
-    width: 136,
-    height: 136,
-    borderRadius: 68,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.18)',
-  },
-  completionTitle: {
-    textAlign: 'center',
-    marginBottom: 0,
-  },
-  completionHeroMetric: {
-    fontSize: 52,
-    fontWeight: '800',
-    lineHeight: 56,
-  },
-  completionHeroLabel: {
-    fontWeight: '700',
-  },
-  completionHeroSessionStats: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  completionHeroSessionStat: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  completionHeroSessionNumber: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: '800',
-  },
-  completionHeroSessionLabel: {
-    color: 'rgba(255,255,255,0.78)',
-    fontSize: 12,
-    marginTop: 2,
-    textAlign: 'center',
-  },
-  completionHeroSessionDivider: {
-    width: StyleSheet.hairlineWidth,
-    height: 36,
-    backgroundColor: 'rgba(255,255,255,0.35)',
-  },
-
-
-
-
-
-
-  emptyCompletionContent: {
-    flex: 1,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  emptyCompletionIcon: {
-    fontSize: 44,
-    marginBottom: 16,
-  },
-  emptyCompletionTitle: {
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  emptyCompletionInfo: {
-    width: '100%',
-    alignItems: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 22,
-    padding: 18,
-    marginBottom: 24,
-  },
-  emptyCompletionTime: {
-    marginTop: 6,
-    textAlign: 'center',
-  },
-  completionChapterCard: {
-    width: '100%',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 22,
-    padding: 18,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  completionChapterHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  completionChapterTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  completionChapterProgressValue: {
-    fontSize: 24,
-    fontWeight: '800',
-  },
-  completionChapterProgressTrack: {
-    height: 12,
-    borderRadius: 6,
-    overflow: 'hidden',
-    marginTop: 16,
-  },
-  completionChapterProgressFill: {
-    height: '100%',
-    borderRadius: 6,
-  },
-
-  completionChapterMetrics: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginTop: 16,
-  },
-  completionChapterDivider: {
-    height: StyleSheet.hairlineWidth,
-    marginVertical: 18,
-  },
-  completionReviewGrid: {
-    width: '100%',
-    flexDirection: 'row',
-    gap: 10,
-  },
-  completionReviewItem: {
-    flex: 1,
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  completionReviewTextGroup: {
-    minHeight: 42,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  completionReviewMetric: {
-    fontSize: 20,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  completionReviewLabel: {
-    marginTop: 1,
-    textAlign: 'center',
-  },
-
-
-
-
-
-
-
-
-
-
-
-
-  completionButton: {
-    width: '100%',
-    minHeight: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    borderRadius: 18,
-    paddingHorizontal: 16,
-  },
-  completionCtaArea: {
-    width: '100%',
-    marginTop: 4,
-    marginBottom: 28,
-  },
-  completionButtonRow: {
-    width: '100%',
-    flexDirection: 'row',
-    gap: 10,
-    alignItems: 'flex-start',
-  },
-  completionButtonHalf: {
-    flex: 1,
-    width: undefined,
-  },
-
-
-  nextChapterMeta: {
-    ...typography.styles.body,
-    textAlign: 'center',
-    flex: 1,
-    marginTop: 6,
-  },
-  completionNextMetaRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  completionNextMetaSpacer: {
-    flex: 1,
   },
 });
