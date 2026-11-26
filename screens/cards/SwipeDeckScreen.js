@@ -28,10 +28,13 @@ import {
   endSwipeSession,
 } from '../../services/CardService';
 import { getDeckById, getDeckSpeechLanguages } from '../../services/DeckService';
+import { getLanguages, languageNativeName } from '../../services/LanguageService';
 // expo-speech / expo-audio are native modules. Builds made before they were
 // added (and OTA updates landing on them) don't have the native side, and the
 // module throws on import, so load them defensively: no Speech = no speaker
 // button; no audio module = speech still works, just muted in silent mode.
+// Device-only reading language per deck: { [deckId]: { front, back } }.
+const READING_LANG_KEY = 'tts_reading_lang_v1';
 let Speech = null;
 try { Speech = require('expo-speech'); } catch { Speech = null; }
 let ExpoAudio = null;
@@ -62,6 +65,7 @@ import {
   pickBestVoice,
   stripForSpeech,
   toSpeechLocale,
+  baseLanguage,
   voicesForLocale,
 } from '../../lib/speech';
 import { triggerHaptic } from '../../lib/hapticManager';
@@ -261,16 +265,65 @@ export default function SwipeDeckScreen({ route, navigation }) {
   // Text-to-speech: only on an explicit tap of the card's speaker button.
   // Each face reads in its own deck language (decks_languages.side); the back
   // falls back to the front language, a deck with no language to the app's.
-  const [speechLangs, setSpeechLangs] = useState({ front: null, back: null });
+  const [deckSpeechLangs, setDeckSpeechLangs] = useState({ front: null, back: null });
   const [speakingCardId, setSpeakingCardId] = useState(null);
   useEffect(() => {
     if (!deck?.id) return;
     let cancelled = false;
     getDeckSpeechLanguages(deck.id, i18n.language)
-      .then((langs) => { if (!cancelled) setSpeechLangs(langs); })
+      .then((langs) => { if (!cancelled) setDeckSpeechLangs(langs); })
       .catch(() => {});
     return () => { cancelled = true; };
   }, [deck?.id, i18n.language]);
+
+  // Reading language: a device-only override per deck, set in the voice sheet
+  // (the deck's own language is changed in the deck settings). It only changes
+  // which language cards are read in; progress and filters are untouched.
+  const [readingOverrides, setReadingOverrides] = useState({});
+  useEffect(() => {
+    AsyncStorage.getItem(READING_LANG_KEY)
+      .then((raw) => { if (raw) setReadingOverrides(JSON.parse(raw) || {}); })
+      .catch(() => {});
+  }, []);
+  const readingOverride = deck?.id ? readingOverrides[deck.id] : null;
+  const speechLangs = readingOverride || deckSpeechLangs;
+  const saveReadingOverride = useCallback((value) => {
+    if (!deck?.id) return;
+    setReadingOverrides((prev) => {
+      const next = { ...prev };
+      if (value) next[deck.id] = value;
+      else delete next[deck.id];
+      AsyncStorage.setItem(READING_LANG_KEY, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+  }, [deck?.id]);
+
+  // All content languages: reading language picker + section titles.
+  const [allLanguages, setAllLanguages] = useState([]);
+  useEffect(() => {
+    getLanguages().then(setAllLanguages).catch(() => {});
+  }, []);
+  const languageForCode = useCallback(
+    (code) => allLanguages.find((l) => baseLanguage(l.language_code) === baseLanguage(code)),
+    [allLanguages]
+  );
+  const readingLangIds = useMemo(() => {
+    const front = languageForCode(speechLangs.front || i18n.language);
+    const back = speechLangs.back ? languageForCode(speechLangs.back) : null;
+    return [front?.id, back && back.id !== front?.id ? back.id : null].filter(Boolean);
+  }, [i18n.language, languageForCode, speechLangs]);
+  const handleReadingLanguagesChange = useCallback((ids) => {
+    if (!ids?.length) return; // keep the last choice; the picker can't be empty
+    const code = (id) => allLanguages.find((l) => l.id === id)?.language_code?.toLowerCase() || null;
+    const value = { front: code(ids[0]), back: ids[1] ? code(ids[1]) : null };
+    const sameAsDeck = baseLanguage(value.front) === baseLanguage(deckSpeechLangs.front)
+      && baseLanguage(value.back || '') === baseLanguage(deckSpeechLangs.back || '');
+    saveReadingOverride(sameAsDeck ? null : value);
+  }, [allLanguages, deckSpeechLangs, saveReadingOverride]);
+  const resetReadingLanguages = useCallback(() => {
+    triggerHaptic('selection');
+    saveReadingOverride(null);
+  }, [saveReadingOverride]);
 
   // Installed voices. Loaded on mount and again when the voice sheet opens
   // (Android's TTS engine can return an empty list while it starts up).
@@ -324,7 +377,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
   }, []);
   // The user's voice for this language if it is still installed, else the best.
   const resolveVoice = useCallback((locale) => {
-    const base = (locale || '').slice(0, 2).toLowerCase();
+    const base = baseLanguage(locale);
     const chosen = ttsPrefsRef.current.voices[base];
     if (chosen && voicesRef.current.some((v) => v.identifier === chosen)) return chosen;
     return pickBestVoice(voicesRef.current, locale);
@@ -422,28 +475,29 @@ export default function SwipeDeckScreen({ route, navigation }) {
       both: t('swipeDeck.voice.bothSides', 'Ön ve arka yüz'),
     };
     const make = (code, side) => {
-      const base = (code || '').slice(0, 2).toLowerCase();
+      const base = baseLanguage(code);
       const locale = toSpeechLocale(code);
       const order = LANGUAGE_SORT_ORDER[base];
+      const language = languageForCode(code);
       return {
         base,
         locale,
-        title: order ? t(`languages.${order}`) : base.toUpperCase(),
+        title: language ? languageNativeName(language, t) : (order ? t(`languages.${order}`) : base.toUpperCase()),
         sideLabel: sideLabel[side],
         voices: voicesForLocale(voices, locale),
       };
     };
-    const frontBase = (front || '').slice(0, 2).toLowerCase();
-    const backBase = (back || '').slice(0, 2).toLowerCase();
+    const frontBase = baseLanguage(front);
+    const backBase = baseLanguage(back);
     if (frontBase === backBase) return [make(front, 'both')];
     return [make(front, 'front'), make(back, 'back')];
-  }, [i18n.language, speechLangs, t, voices]);
+  }, [i18n.language, languageForCode, speechLangs, t, voices]);
 
   // Plays a short sample in the section's language with the given voice
   // (null = automatic) at the current rate, or at `rate` when given.
   const previewVoice = useCallback((identifier, locale, rate) => {
     if (!Speech) return;
-    const base = (locale || '').slice(0, 2).toLowerCase();
+    const base = baseLanguage(locale);
     Speech.stop();
     setSpeakingCardId(null);
     activateSpeechAudio().then(() => {
@@ -2437,6 +2491,11 @@ export default function SwipeDeckScreen({ route, navigation }) {
         colors={colors}
         isDarkMode={isDarkMode}
         bottomInset={insets.bottom}
+        languages={allLanguages}
+        readingLangIds={readingLangIds}
+        readingOverridden={Boolean(readingOverride)}
+        onReadingLanguagesChange={handleReadingLanguagesChange}
+        onResetReadingLanguages={resetReadingLanguages}
       />
     </View>
   );
@@ -2461,13 +2520,13 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   swipeTutorialOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'transparent',
     zIndex: 9999,
     elevation: 9999,
   },
   swipeTutorialFullDimLayer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.55)',
     zIndex: 0,
     elevation: 0,
@@ -2690,13 +2749,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.22)',
   },
+  // Same size as the icon: the iOS 26 bar draws its glass capsule around this.
   headerMenuHost: {
-    width: 32,
-    height: 32,
+    width: 24,
+    height: 24,
   },
   headerMenuTrigger: {
-    width: 32,
-    height: 32,
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },

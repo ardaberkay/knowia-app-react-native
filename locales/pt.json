@@ -205,15 +205,16 @@
     "language": "Idioma",
     "selectLanguage": "Selecionar idioma",
     "languageHeading": "Idioma do conteúdo",
-    "languageSub": "Primeiro escolha o idioma da frente dos cartões. Se o verso estiver em outro idioma, escolha-o também.",
+    "languageSub": "Os cartões são lidos em voz alta neste idioma e o seu baralho aparece com ele nos filtros de idioma. Se o verso estiver noutro idioma, escolha-o também.",
     "languageFront": "Frente",
     "languageBack": "Verso",
-    "languageBackEmpty": "Igual à frente · opcional",
+    "languageBackEmpty": "Opcional",
     "languagePick": "Escolher idioma",
     "languageSwap": "Trocar",
     "languageBoth": "Frente e verso",
     "languageExample": "Exemplo: frente em inglês “apple”, verso em português “maçã”",
-    "requiredLanguage": "Escolha o idioma da frente dos cartões."
+    "requiredLanguage": "Escolha o idioma da frente dos cartões.",
+    "languageSearch": "Pesquisar idioma"
   },
   "common": {
     "error": "Ocorreu um erro",
@@ -478,7 +479,14 @@
       "voiceN": "Voz {{n}}",
       "noVoices": "Não há nenhuma voz instalada no dispositivo para este idioma.",
       "iosHint": "Para vozes mais naturais, descarrega vozes Melhoradas ou Premium em Definições › Acessibilidade › Conteúdo falado › Vozes.",
-      "androidHint": "Para mais vozes, instala dados de voz em Definições › Acessibilidade › Saída de texto para voz."
+      "androidHint": "Para mais vozes, instala dados de voz em Definições › Acessibilidade › Saída de texto para voz.",
+      "readingLanguage": "Idioma de leitura",
+      "readingLanguagePick": "Escolher idioma",
+      "readingLanguageHint": "Só neste dispositivo e para este baralho. O idioma do baralho muda nas definições do baralho.",
+      "readingLanguageSub": "Escolha em que idioma os cartões são lidos neste dispositivo. O baralho e os filtros não mudam.",
+      "useDeckLanguage": "Usar o idioma do baralho",
+      "otherVoices": "Outras vozes ({{count}})",
+      "otherVoices_plural": "Outras vozes ({{count}})"
     },
     "stopSpeaking": "Parar a leitura",
     "reverseOn": "Inverter cartões",

@@ -298,7 +298,7 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
           <Svg
             height="100%"
             width="100%"
-            style={StyleSheet.absoluteFillObject}
+            style={StyleSheet.absoluteFill}
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
           >

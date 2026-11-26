@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
 import { triggerHaptic } from '../../lib/hapticManager';
+import { languageCode, languageNativeName, languageEnglishName } from '../../services/LanguageService';
 
 
 export const FilterModalButton = ({ onPress, variant }) => {
@@ -385,16 +386,28 @@ const FilterModal = ({
                         ]}
                         activeOpacity={1}
                       >
-                        <View style={styles.optionCardLeft}>
-                          <Text style={[
-                            styles.optionCardText,
-                            {
-                              color: isSelected ? primaryColor : colors.text,
-                              fontWeight: isSelected ? '700' : '500'
-                            }
-                          ]}>
-                            {t(`languages.${lang.sort_order}`, lang.name)}
-                          </Text>
+                        <View style={[styles.optionCardLeft, { gap: 10, flexShrink: 1 }]}>
+                          <View style={[styles.langCodeBadge, { backgroundColor: isSelected ? primaryColor : (isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)') }]}>
+                            <Text style={[styles.langCodeText, { color: isSelected ? '#FFFFFF' : colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                              {languageCode(lang)}
+                            </Text>
+                          </View>
+                          <View style={{ flexShrink: 1 }}>
+                            <Text style={[
+                              styles.optionCardText,
+                              {
+                                color: isSelected ? primaryColor : colors.text,
+                                fontWeight: isSelected ? '700' : '500'
+                              }
+                            ]} numberOfLines={1}>
+                              {languageNativeName(lang, t)}
+                            </Text>
+                            {languageEnglishName(lang) ? (
+                              <Text style={{ fontSize: 12, color: colors.muted }} numberOfLines={1}>
+                                {languageEnglishName(lang)}
+                              </Text>
+                            ) : null}
+                          </View>
                         </View>
                         
                         <CheckboxSquare isSelected={isSelected} />
@@ -446,6 +459,19 @@ const FilterModal = ({
 };
 
 const styles = StyleSheet.create({
+  langCodeBadge: {
+    minWidth: 36,
+    height: 24,
+    paddingHorizontal: 5,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  langCodeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
   filterIconButton: {
     flexDirection: 'row',
     alignItems: 'center',

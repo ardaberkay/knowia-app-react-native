@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity, useWindowDimensions, Platform } from 'react-native';
-import { Text } from '../ui/AppText';
+import { Text, TextInput } from '../ui/AppText';
 
 import { BottomSheetModal, BottomSheetFlatList } from '@expo/ui/community/bottom-sheet';
 
@@ -9,15 +9,43 @@ import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import { triggerHaptic } from '../../lib/hapticManager';
+import {
+  languageCode,
+  languageNativeName,
+  languageEnglishName,
+  sortLanguagesForPicker,
+  filterLanguages,
+} from '../../services/LanguageService';
 
 
-// Flag per languages.sort_order (icons listed in babel.config.js).
-export const LANGUAGE_FLAG_ICONS = {
-  1: 'twemoji:flag-for-flag-turkey', 2: 'twemoji:flag-england', 3: 'twemoji:flag-germany',
-  4: 'twemoji:flag-spain', 5: 'twemoji:flag-france', 6: 'twemoji:flag-portugal',
-  7: 'twemoji:flag-saudi-arabia',
-};
-const flagFor = (language) => LANGUAGE_FLAG_ICONS[language?.sort_order] || LANGUAGE_FLAG_ICONS[1];
+// Code badge ("JA") instead of a flag: languages aren't countries, and there
+// are far more languages than flag icons we'd want to bundle.
+function LanguageCodeBadge({ language, size = 'md', active = false }) {
+  const { colors, isDarkMode } = useTheme();
+  const small = size === 'sm';
+  return (
+    <View
+      style={[
+        badgeStyles.badge,
+        small && badgeStyles.badgeSm,
+        {
+          backgroundColor: active
+            ? colors.buttonColor
+            : (isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)'),
+        },
+      ]}
+    >
+      <Text
+        style={[badgeStyles.text, small && badgeStyles.textSm, { color: active ? '#FFFFFF' : colors.text }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
+      >
+        {languageCode(language)}
+      </Text>
+    </View>
+  );
+}
 
 /**
  * Deck language picker.
@@ -35,12 +63,29 @@ export default function DeckLanguageModal({
   languages = [],
   selectedLanguage,
   onChange,
+  // Optional header overrides (the swipe screen reuses this as the reading
+  // language picker). example={null} hides the example line.
+  title,
+  subtitle,
+  example,
 }) {
   const { height: SCREEN_HEIGHT } = useWindowDimensions();
   const { colors, isDarkMode } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const bottomSheetModalRef = useRef(null);
   const [localSelected, setLocalSelected] = useState([]);
+  const [query, setQuery] = useState('');
+
+  // App language first, then the original 7, then A-Z; the search box
+  // matches native name, English name or code.
+  const sortedLanguages = useMemo(
+    () => sortLanguagesForPicker(languages, i18n.language),
+    [languages, i18n.language]
+  );
+  const visibleLanguages = useMemo(
+    () => filterLanguages(sortedLanguages, query, t),
+    [sortedLanguages, query, t]
+  );
 
   const primaryColor = colors.buttonColor || colors.primary || '#F98A21';
   const neutralBorder = isDarkMode ? '#3A3A3A' : '#E4E4E4';
@@ -49,6 +94,7 @@ export default function DeckLanguageModal({
   useEffect(() => {
     if (isVisible) {
       setLocalSelected(selectedLanguage || []);
+      setQuery('');
       bottomSheetModalRef.current?.present();
     } else {
       bottomSheetModalRef.current?.dismiss();
@@ -100,16 +146,16 @@ export default function DeckLanguageModal({
         },
       ]}
       accessibilityRole="button"
-      accessibilityLabel={language ? `${label}: ${t(`languages.${language.sort_order}`)}` : `${label}: ${emptyText}`}
+      accessibilityLabel={language ? `${label}: ${languageNativeName(language, t)}` : `${label}: ${emptyText}`}
     >
       <Text style={[styles.slotLabel, { color: language || isNext ? primaryColor : colors.muted }]}>
         {label}
       </Text>
       {language ? (
         <View style={styles.slotValueRow}>
-          <Iconify icon={flagFor(language)} size={20} />
+          <LanguageCodeBadge language={language} size="sm" />
           <Text style={[styles.slotValue, { color: colors.text }]} numberOfLines={1}>
-            {t(`languages.${language.sort_order}`)}
+            {languageNativeName(language, t)}
           </Text>
           <Iconify icon="material-symbols:close-rounded" size={16} color={colors.muted} />
         </View>
@@ -141,11 +187,18 @@ export default function DeckLanguageModal({
       >
         <View style={styles.cardLeft}>
           <View style={styles.iconWrapper}>
-            <Iconify icon={flagFor(language)} size={28} />
+            <LanguageCodeBadge language={language} active={isChecked} />
           </View>
-          <Text style={[styles.languageName, { color: isChecked ? primaryColor : colors.text, fontWeight: isChecked ? '700' : '500' }]}>
-            {t(`languages.${language.sort_order}`)}
-          </Text>
+          <View style={styles.nameColumn}>
+            <Text style={[styles.languageName, { color: isChecked ? primaryColor : colors.text, fontWeight: isChecked ? '700' : '500' }]} numberOfLines={1}>
+              {languageNativeName(language, t)}
+            </Text>
+            {languageEnglishName(language) ? (
+              <Text style={[styles.languageEnglish, { color: colors.muted }]} numberOfLines={1}>
+                {languageEnglishName(language)}
+              </Text>
+            ) : null}
+          </View>
         </View>
 
         {/* Selected rows say which face they are instead of a plain tick. */}
@@ -172,13 +225,13 @@ export default function DeckLanguageModal({
       backgroundStyle={Platform.OS === 'android' ? { backgroundColor: colors.background } : undefined /* iOS: system Liquid Glass */}
       enablePanDownToClose
     >
-      <View style={{ maxHeight: Math.round(SCREEN_HEIGHT * 0.75) }}>
+      <View style={{ height: Math.round(SCREEN_HEIGHT * 0.75) }}>
       {/* --- SABİT HEADER BÖLÜMÜ --- */}
       <View style={styles.fixedHeader}>
         <View style={styles.headerRow}>
           <View style={styles.headerText}>
-            <Text style={[typography.styles.h2, { color: colors.text }]}>{t('create.languageHeading')}</Text>
-            <Text style={[styles.infoText, { color: isDarkMode ? '#aaa' : '#666' }]}>{t('create.languageSub')}</Text>
+            <Text style={[typography.styles.h2, { color: colors.text }]}>{title ?? t('create.languageHeading')}</Text>
+            <Text style={[styles.infoText, { color: isDarkMode ? '#aaa' : '#666' }]}>{subtitle ?? t('create.languageSub')}</Text>
           </View>
           <TouchableOpacity onPress={() => bottomSheetModalRef.current?.dismiss()} style={styles.closeButton}>
             <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
@@ -207,18 +260,37 @@ export default function DeckLanguageModal({
             t('create.languageBack', 'Arka yüz'),
             back,
             !!front && !back,
-            t('create.languageBackEmpty', 'Ön yüzle aynı · isteğe bağlı')
+            t('create.languageBackEmpty', 'İsteğe bağlı')
           )}
         </View>
 
-        <Text style={[styles.exampleText, { color: colors.muted }]}>
-          {t('create.languageExample', 'Örnek: ön yüz İngilizce “apple”, arka yüz Türkçe “elma”')}
-        </Text>
+        {example === null ? null : (
+          <Text style={[styles.exampleText, { color: colors.muted }]}>
+            {example ?? t('create.languageExample', 'Örnek: ön yüz İngilizce “apple”, arka yüz Türkçe “elma”')}
+          </Text>
+        )}
+
+        <View style={[styles.searchBox, { backgroundColor: neutralFill }]}>
+          <Iconify icon="iconamoon:search" size={18} color={colors.muted} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t('create.languageSearch', 'Dil ara')}
+            placeholderTextColor={colors.muted}
+            style={[styles.searchInput, { color: colors.text }]}
+            autoCorrect={false}
+            autoCapitalize="none"
+            clearButtonMode="while-editing"
+            returnKeyType="search"
+          />
+        </View>
       </View>
 
       {/* --- KAYDIRILABİLİR LİSTE --- */}
       <BottomSheetFlatList
-        data={languages}
+        data={visibleLanguages}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderItem}
         extraData={localSelected}
@@ -251,9 +323,9 @@ export function DeckLanguageField({ languages = [], selectedLanguage = [], onPre
     <View style={fieldStyles.face}>
       <Text style={[fieldStyles.faceLabel, { color: colors.muted }]} numberOfLines={1}>{label}</Text>
       <View style={fieldStyles.faceValueRow}>
-        <Iconify icon={flagFor(language)} size={18} />
+        <LanguageCodeBadge language={language} size="sm" />
         <Text style={[fieldStyles.faceValue, typography.styles.body, { color: colors.text }]} numberOfLines={1}>
-          {t(`languages.${language.sort_order}`)}
+          {languageNativeName(language, t)}
         </Text>
       </View>
     </View>
@@ -395,12 +467,35 @@ const styles = StyleSheet.create({
   cardLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 1,
+    marginRight: 12,
   },
   iconWrapper: {
     marginRight: 14,
   },
+  nameColumn: {
+    flexShrink: 1,
+  },
   languageName: {
     fontSize: 16,
+  },
+  languageEnglish: {
+    fontSize: 12,
+    marginTop: 1,
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    height: 40,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    paddingVertical: 0,
   },
   radioCircle: {
     width: 24,
@@ -465,5 +560,30 @@ const fieldStyles = StyleSheet.create({
     borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+});
+
+const badgeStyles = StyleSheet.create({
+  badge: {
+    minWidth: 40,
+    height: 28,
+    paddingHorizontal: 6,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeSm: {
+    minWidth: 30,
+    height: 20,
+    paddingHorizontal: 4,
+    borderRadius: 6,
+  },
+  text: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  textSm: {
+    fontSize: 10,
   },
 });

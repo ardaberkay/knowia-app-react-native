@@ -30,7 +30,7 @@ import CardDetailView from '../../components/layout/CardDetailView';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import ProfileAvatarButton from '../../components/layout/ProfileAvatarButton';
-import { getLanguages } from '../../services/LanguageService';
+import { getLanguages, languagesInUse } from '../../services/LanguageService';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { useListBottomInset } from '../../components/ui/CustomTabBar';
 
@@ -1210,7 +1210,7 @@ export default function LibraryScreen() {
           setSelectedLanguages(newLanguages || []);
         }}
         showSortOptions={true}
-        languages={allLanguages}
+        languages={languagesInUse(allLanguages, myDecks, selectedLanguages)}
         currentLanguages={selectedLanguages}
       />
     </SafeAreaView>

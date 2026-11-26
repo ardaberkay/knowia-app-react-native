@@ -9,6 +9,8 @@ import { useTranslation } from 'react-i18next';
 import { typography } from '../../theme/typography';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { SPEECH_RATE, SPEECH_RATES, formatRate, voiceRank } from '../../lib/speech';
+import DeckLanguageModal from './DeckLanguageModal';
+import { languageNativeName } from '../../services/LanguageService';
 
 // Stepped speed bar for the voice sheet: tap a stop or drag along the track.
 // The thumb snaps to the nearest stop on the UI thread (light haptic per
@@ -137,14 +139,11 @@ const VoiceRow = memo(function VoiceRow({ row, selected, first, base, locale, on
       onPress={() => onSelect(base, row.identifier, locale)}
       accessibilityRole="button"
       accessibilityState={{ selected }}
-      style={({ pressed }) => [
-        styles.voiceRow,
-        !first && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-        pressed && { opacity: 0.6 },
-      ]}
+      style={({ pressed }) => [styles.voiceRow, pressed && styles.rowPressed]}
     >
+      {!first ? <View pointerEvents="none" style={[styles.rowSeparator, { backgroundColor: colors.border }]} /> : null}
       <View style={{ flex: 1 }}>
-        <Text style={[typography.styles.body, { color: colors.text }]} numberOfLines={1}>
+        <Text style={[typography.styles.body, { color: selected ? colors.buttonColor : colors.text }]} numberOfLines={1}>
           {row.label}
         </Text>
         {row.tags ? (
@@ -177,9 +176,21 @@ const VoiceSettingsSheet = memo(function VoiceSettingsSheet({
   colors,
   isDarkMode,
   bottomInset,
+  // Reading language (device-only, per deck): picker options, the current
+  // [frontId, backId], whether it differs from the deck's own languages.
+  languages = [],
+  readingLangIds = [],
+  readingOverridden = false,
+  onReadingLanguagesChange,
+  onResetReadingLanguages,
 }) {
   const { t } = useTranslation();
   const close = useCallback(() => sheetRef?.current?.dismiss(), [sheetRef]);
+  const [readingPickerVisible, setReadingPickerVisible] = useState(false);
+  const readingNames = readingLangIds
+    .map((id) => languages.find((l) => l.id === id))
+    .filter(Boolean)
+    .map((l) => languageNativeName(l, t));
 
   // Row labels/tags are built once per voice list, not on every render.
   // Voices of the deck's own region (e.g. en-US) are listed directly; other
@@ -257,7 +268,36 @@ const VoiceSettingsSheet = memo(function VoiceSettingsSheet({
         style={styles.voiceSheetScroll}
         contentContainerStyle={[styles.voiceSheetContent, { paddingBottom: 32 }]}
       >
-        <View style={styles.voiceRateHeader}>
+        {/* Reading language: device-only, this deck only (the deck's own
+            language is changed in the deck settings). */}
+        <Text style={[styles.voiceSectionTitle, { color: colors.muted, marginTop: 0 }]}>
+          {t('swipeDeck.voice.readingLanguage', 'Okuma dili')}
+        </Text>
+        <View style={[styles.voiceList, { backgroundColor: colors.cardBackground }]}>
+          <Pressable
+            onPress={() => { triggerHaptic('selection'); setReadingPickerVisible(true); }}
+            disabled={!languages.length}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.voiceRow, pressed && styles.rowPressed]}
+          >
+            <Text style={[typography.styles.body, { color: colors.text, flex: 1 }]} numberOfLines={1}>
+              {readingNames.length ? readingNames.join(' → ') : t('swipeDeck.voice.readingLanguagePick', 'Dil seç')}
+            </Text>
+            <Iconify icon="ion:chevron-forward" size={18} color={colors.muted} />
+          </Pressable>
+        </View>
+        <Text style={[styles.voiceHint, { color: colors.muted, marginTop: 8 }]}>
+          {t('swipeDeck.voice.readingLanguageHint', 'Sadece bu cihazda ve bu destede geçerli. Destenin dili deste ayarlarından değişir.')}
+        </Text>
+        {readingOverridden ? (
+          <Pressable onPress={onResetReadingLanguages} hitSlop={8} style={styles.resetLink}>
+            <Text style={[styles.resetLinkText, { color: colors.buttonColor }]}>
+              {t('swipeDeck.voice.useDeckLanguage', 'Destenin dilini kullan')}
+            </Text>
+          </Pressable>
+        ) : null}
+
+        <View style={[styles.voiceRateHeader, { marginTop: 24 }]}>
           <Text style={[styles.voiceSectionTitle, { color: colors.muted, marginTop: 0, marginBottom: 0 }]}>
             {t('swipeDeck.voice.rate', 'Okuma hızı')}
           </Text>
@@ -280,52 +320,61 @@ const VoiceSettingsSheet = memo(function VoiceSettingsSheet({
         {sectionRows.map((section) => {
           const chosen = chosenVoices[section.base];
           const chosenInstalled = Boolean(chosen) && section.voices.some((v) => v.identifier === chosen);
-          const chosenIsOther = chosenInstalled && section.otherRows.some((row) => row.identifier === chosen);
-          const othersOpen = accentsOpen[section.base] ?? chosenIsOther;
-          const renderRow = (row, first) => (
-            <VoiceRow
-              key={row.identifier || 'auto'}
-              row={row}
-              selected={row.identifier ? row.identifier === chosen : !chosenInstalled}
-              first={first}
-              base={section.base}
-              locale={section.locale}
-              onSelect={onSelectVoice}
-              colors={colors}
-            />
-          );
+          const allRows = [...section.mainRows, ...section.otherRows];
+          const isSelected = (row) => (row.identifier ? row.identifier === chosen : !chosenInstalled);
+          const selectedRow = allRows.find(isSelected) || allRows[0];
+          const restRows = allRows.filter((row) => row !== selectedRow);
+          const othersOpen = Boolean(accentsOpen[section.base]);
           return (
             <View key={section.base}>
               <Text style={[styles.voiceSectionTitle, { color: colors.muted }]}>
                 {`${section.title} · ${section.sideLabel}`}
               </Text>
-              <View style={[styles.voiceList, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
-                {section.mainRows.map((row, index) => renderRow(row, index === 0))}
-                {section.otherRows.length ? (
+              <View style={[styles.voiceList, { backgroundColor: colors.cardBackground }]}>
+                <VoiceRow
+                  row={selectedRow}
+                  selected
+                  first
+                  base={section.base}
+                  locale={section.locale}
+                  onSelect={onSelectVoice}
+                  colors={colors}
+                />
+                {restRows.length ? (
                   <Pressable
                     onPress={() => toggleAccents(section.base, othersOpen)}
                     accessibilityRole="button"
                     accessibilityState={{ expanded: othersOpen }}
-                    style={({ pressed }) => [
-                      styles.voiceRow,
-                      { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-                      pressed && { opacity: 0.6 },
-                    ]}
+                    style={({ pressed }) => [styles.voiceRow, pressed && styles.rowPressed]}
                   >
-                    <Text style={[typography.styles.body, { color: colors.buttonColor, flex: 1 }]} numberOfLines={1}>
-                      {t('swipeDeck.voice.otherAccents', {
-                        count: section.otherRows.length,
-                        defaultValue: `Diğer aksanlar (${section.otherRows.length})`,
+                    <View pointerEvents="none" style={[styles.rowSeparator, { backgroundColor: colors.border }]} />
+                    <Text style={[typography.styles.body, { color: colors.text, flex: 1 }]} numberOfLines={1}>
+                      {t('swipeDeck.voice.otherVoices', {
+                        count: restRows.length,
+                        defaultValue: `Diğer sesler (${restRows.length})`,
                       })}
                     </Text>
                     <Iconify
                       icon={othersOpen ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'}
                       size={16}
-                      color={colors.buttonColor}
+                      color={colors.muted}
                     />
                   </Pressable>
                 ) : null}
-                {othersOpen ? section.otherRows.map((row) => renderRow(row, false)) : null}
+                {othersOpen
+                  ? restRows.map((row) => (
+                    <VoiceRow
+                      key={row.identifier || 'auto'}
+                      row={row}
+                      selected={false}
+                      first={false}
+                      base={section.base}
+                      locale={section.locale}
+                      onSelect={onSelectVoice}
+                      colors={colors}
+                    />
+                  ))
+                  : null}
               </View>
               {section.voices.length === 0 ? (
                 <Text style={[styles.voiceHint, { color: colors.muted }]}>
@@ -342,6 +391,16 @@ const VoiceSettingsSheet = memo(function VoiceSettingsSheet({
             : t('swipeDeck.voice.androidHint', 'Daha fazla ses için: Ayarlar › Erişilebilirlik › Metin okuma çıkışı bölümünden ses verilerini yükleyebilirsin.')}
         </Text>
       </GHScrollView>
+      <DeckLanguageModal
+        isVisible={readingPickerVisible}
+        onClose={() => setReadingPickerVisible(false)}
+        languages={languages}
+        selectedLanguage={readingLangIds}
+        onChange={(ids) => onReadingLanguagesChange?.(ids)}
+        title={t('swipeDeck.voice.readingLanguage', 'Okuma dili')}
+        subtitle={t('swipeDeck.voice.readingLanguageSub', 'Kartların bu cihazda hangi dilde okunacağını seç. Deste ve filtreler değişmez.')}
+        example={null}
+      />
       </GestureHandlerRootView>
     </BottomSheetModal>
   );
@@ -458,17 +517,39 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginBottom: 8,
   },
+  // Same card as the Profile menu: continuous 26 corners, no border.
   voiceList: {
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 26,
+    borderCurve: 'continuous',
     overflow: 'hidden',
   },
+  // Every row the same height, with or without a tag line.
   voiceRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    minHeight: 60,
+    paddingVertical: 8,
+  },
+  rowPressed: {
+    backgroundColor: 'rgba(150, 150, 150, 0.18)',
+  },
+  rowSeparator: {
+    position: 'absolute',
+    top: 0,
+    left: 16,
+    right: 0,
+    height: StyleSheet.hairlineWidth,
+  },
+  resetLink: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  resetLinkText: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    fontWeight: '600',
   },
   voiceRowTags: {
     fontFamily: 'Inter',

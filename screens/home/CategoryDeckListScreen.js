@@ -16,7 +16,7 @@ import { Iconify } from 'react-native-iconify';
 import { typography } from '../../theme/typography';
 import { getCategoryConfig } from '../../components/ui/CategoryHeroHeader';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
-import { getLanguages } from '../../services/LanguageService';
+import { getLanguages, languagesInUse } from '../../services/LanguageService';
 import { useListBottomInset } from '../../components/ui/CustomTabBar';
 
 const LIST_TOP_RADIUS = 28;
@@ -58,6 +58,7 @@ export default function CategoryDeckListScreen({ route }) {
   const [sort, setSort] = useState('default');
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedLanguages, setSelectedLanguages] = useState([]);
+  const seenLanguageIdsRef = useRef(new Set());
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [favoriteDecks, setFavoriteDecks] = useState(initialFavoriteDecks || []);
   const [refreshing, setRefreshing] = useState(false);
@@ -330,6 +331,13 @@ export default function CategoryDeckListScreen({ route }) {
     );
   }, [category, title, search, colors, t, insets, heroDimensions, width]);
 
+  const filterLanguageOptions = useMemo(() => {
+    for (const deck of decks || []) {
+      for (const dl of deck?.decks_languages || []) seenLanguageIdsRef.current.add(dl.language_id);
+    }
+    return languagesInUse(allLanguages, [], [...seenLanguageIdsRef.current, ...selectedLanguages]);
+  }, [allLanguages, decks, selectedLanguages]);
+
   return (
     <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
       {renderFixedHeader()}
@@ -373,7 +381,7 @@ export default function CategoryDeckListScreen({ route }) {
         currentCategories={selectedCategories}
         onApply={handleApplyFilters}
         showSortOptions={true}
-        languages={allLanguages}
+        languages={filterLanguageOptions}
         currentLanguages={selectedLanguages}
       />
     </SafeAreaView>

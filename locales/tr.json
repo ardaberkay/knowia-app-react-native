@@ -204,15 +204,16 @@
     "language": "İçerik Dili",
     "selectLanguage": "Dil Seç",
     "languageHeading": "İçerik Dili",
-    "languageSub": "Önce kartın ön yüzündeki dili seç. Arka yüz başka bir dildeyse onu da seç.",
+    "languageSub": "Kartların bu dilde sesli okunur, desten de dil filtrelerinde bu dille bulunur. Arka yüz farklı bir dildeyse onu da seç.",
     "languageFront": "Ön yüz",
     "languageBack": "Arka yüz",
-    "languageBackEmpty": "Ön yüzle aynı · isteğe bağlı",
+    "languageBackEmpty": "İsteğe bağlı",
     "languagePick": "Dil seç",
     "languageSwap": "Yerlerini değiştir",
     "languageBoth": "Ön ve arka yüz",
     "languageExample": "Örnek: ön yüz İngilizce “apple”, arka yüz Türkçe “elma”",
-    "requiredLanguage": "Lütfen kartın ön yüzündeki dili seç."
+    "requiredLanguage": "Lütfen kartın ön yüzündeki dili seç.",
+    "languageSearch": "Dil ara"
   },
   "common": {
     "error": "Bir hata oluştu",
@@ -516,7 +517,14 @@
       "voiceN": "Ses {{n}}",
       "noVoices": "Bu dil için cihazda yüklü ses bulunamadı.",
       "iosHint": "Daha doğal sesler için: Ayarlar › Erişilebilirlik › Seslendirilen İçerik › Sesler bölümünden Gelişmiş veya Premium sesleri indirebilirsin.",
-      "androidHint": "Daha fazla ses için: Ayarlar › Erişilebilirlik › Metin okuma çıkışı bölümünden ses verilerini yükleyebilirsin."
+      "androidHint": "Daha fazla ses için: Ayarlar › Erişilebilirlik › Metin okuma çıkışı bölümünden ses verilerini yükleyebilirsin.",
+      "readingLanguage": "Okuma dili",
+      "readingLanguagePick": "Dil seç",
+      "readingLanguageHint": "Sadece bu cihazda ve bu destede geçerli. Destenin dili deste ayarlarından değişir.",
+      "readingLanguageSub": "Kartların bu cihazda hangi dilde okunacağını seç. Deste ve filtreler değişmez.",
+      "useDeckLanguage": "Destenin dilini kullan",
+      "otherVoices": "Diğer sesler ({{count}})",
+      "otherVoices_plural": "Diğer sesler ({{count}})"
     },
     "stopSpeaking": "Okumayı durdur",
     "reverseOn": "Ters çevir",

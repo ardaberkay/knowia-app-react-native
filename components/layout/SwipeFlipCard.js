@@ -868,18 +868,18 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   swipeAccentWash: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 26,
     zIndex: 10,
   },
   swipeAccentBorder: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 26,
     borderWidth: 2,
     zIndex: 11,
   },
   swipeLabelLayer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 50,
@@ -900,7 +900,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   gradient: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 24,
   },
   face: {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { View, Image } from 'react-native';
 import { Text } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,7 +13,7 @@ import DeckList from '../../components/lists/DeckList';
 import LottieView from 'lottie-react-native';
 import { typography } from '../../theme/typography';
 import { StyleSheet } from 'react-native';
-import { getLanguages } from '../../services/LanguageService';
+import { getLanguages, languagesInUse } from '../../services/LanguageService';
 import { useListBottomInset } from '../../components/ui/CustomTabBar';
 
 export default function FavoriteDecks() {
@@ -32,6 +32,7 @@ export default function FavoriteDecks() {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [selectedLanguages, setSelectedLanguages] = useState([]);
+  const seenLanguageIdsRef = useRef(new Set());
   const [allLanguages, setAllLanguages] = useState([]);
 
   const [page, setPage] = useState(0);
@@ -184,6 +185,13 @@ export default function FavoriteDecks() {
     setSelectedLanguages(newLanguages || []);
   };
 
+  const filterLanguageOptions = useMemo(() => {
+    for (const deck of favoriteDecks || []) {
+      for (const dl of deck?.decks_languages || []) seenLanguageIdsRef.current.add(dl.language_id);
+    }
+    return languagesInUse(allLanguages, [], [...seenLanguageIdsRef.current, ...selectedLanguages]);
+  }, [allLanguages, favoriteDecks, selectedLanguages]);
+
   return (
     <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background, marginVertical: 10 }}>
       {loading ? (
@@ -283,7 +291,7 @@ export default function FavoriteDecks() {
         showSortOptions={true}
         hideFavorites={true}
         hideAz={true}
-        languages={allLanguages}
+        languages={filterLanguageOptions}
         currentLanguages={selectedLanguages}
       />
     </SafeAreaView>

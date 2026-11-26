@@ -2103,13 +2103,14 @@ const styles = StyleSheet.create({
   gfCreatorChipInSlot: {
     marginTop: 0,
   },
+  // Same size as the icon: the iOS 26 bar draws its glass capsule around this.
   headerMenuHost: {
     width: 24,
-    height: 32,
+    height: 24,
   },
   headerMenuTrigger: {
     width: 24,
-    height: 32,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },

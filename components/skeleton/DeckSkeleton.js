@@ -65,7 +65,7 @@ export const ShimmerBox = ({ children, style, delay = 0, duration, isDarkMode = 
     <View style={[{ overflow: 'hidden', borderRadius: borderRadius }, style]}>
       {children}
       <ShimmerOverlay
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
         delay={delay}
         duration={duration}
         isDarkMode={isDarkMode}

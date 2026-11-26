@@ -205,15 +205,16 @@
     "language": "Langue",
     "selectLanguage": "Choisir la langue",
     "languageHeading": "Langue du contenu",
-    "languageSub": "Choisis d’abord la langue du recto des cartes. Si le verso est dans une autre langue, choisis-la aussi.",
+    "languageSub": "Les cartes sont lues à voix haute dans cette langue, et ton deck apparaît sous celle-ci dans les filtres de langue. Si le verso est dans une autre langue, choisis-la aussi.",
     "languageFront": "Recto",
     "languageBack": "Verso",
-    "languageBackEmpty": "Comme le recto · facultatif",
+    "languageBackEmpty": "Facultatif",
     "languagePick": "Choisir la langue",
     "languageSwap": "Inverser",
     "languageBoth": "Recto et verso",
     "languageExample": "Exemple : recto en anglais « apple », verso en français « pomme »",
-    "requiredLanguage": "Choisis la langue du recto des cartes."
+    "requiredLanguage": "Choisis la langue du recto des cartes.",
+    "languageSearch": "Rechercher une langue"
   },
   "common": {
     "error": "Une erreur s'est produite",
@@ -478,7 +479,14 @@
       "voiceN": "Voix {{n}}",
       "noVoices": "Aucune voix n'est installée sur l'appareil pour cette langue.",
       "iosHint": "Pour des voix plus naturelles, télécharge des voix Améliorées ou Premium dans Réglages › Accessibilité › Contenu énoncé › Voix.",
-      "androidHint": "Pour plus de voix, installe des données vocales dans Paramètres › Accessibilité › Synthèse vocale."
+      "androidHint": "Pour plus de voix, installe des données vocales dans Paramètres › Accessibilité › Synthèse vocale.",
+      "readingLanguage": "Langue de lecture",
+      "readingLanguagePick": "Choisir une langue",
+      "readingLanguageHint": "Uniquement sur cet appareil et pour ce deck. La langue du deck se change dans ses réglages.",
+      "readingLanguageSub": "Choisis dans quelle langue les cartes sont lues sur cet appareil. Le deck et les filtres ne changent pas.",
+      "useDeckLanguage": "Utiliser la langue du deck",
+      "otherVoices": "Autres voix ({{count}})",
+      "otherVoices_plural": "Autres voix ({{count}})"
     },
     "stopSpeaking": "Arrêter la lecture",
     "reverseOn": "Inverser les cartes",

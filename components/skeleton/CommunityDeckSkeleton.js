@@ -39,7 +39,7 @@ export default function CommunityDeckSkeleton() {
         <View style={[style, { backgroundColor: lineColor, borderRadius, overflow: 'hidden' }]}>
             <Animated.View
                 style={[
-                    StyleSheet.absoluteFillObject,
+                    StyleSheet.absoluteFill,
                     {
                         transform: [{ translateX }],
                     },

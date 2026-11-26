@@ -33,7 +33,7 @@ const ShimmerView = ({ style, isDarkMode }) => {
     <View style={[style, { overflow: 'hidden', backgroundColor: isDarkMode ? '#444' : '#e0e0e0' }]}>
       <Animated.View
         style={{
-          ...StyleSheet.absoluteFillObject,
+          ...StyleSheet.absoluteFill,
           transform: [{ translateX }],
         }}
       >

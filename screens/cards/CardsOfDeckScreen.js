@@ -825,13 +825,14 @@ export default function DeckCardsScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
+  // Same size as the icon: the iOS 26 bar draws its glass capsule around this.
   headerMenuHost: {
-    width: 32,
-    height: 32,
+    width: 26,
+    height: 26,
   },
   headerMenuTrigger: {
-    width: 32,
-    height: 32,
+    width: 26,
+    height: 26,
     alignItems: 'center',
     justifyContent: 'center',
   },

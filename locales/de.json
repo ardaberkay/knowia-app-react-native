@@ -205,15 +205,16 @@
     "language": "Inhaltssprache",
     "selectLanguage": "Sprache wählen",
     "languageHeading": "Inhaltssprache",
-    "languageSub": "Wähle zuerst die Sprache der Kartenvorderseite. Ist die Rückseite in einer anderen Sprache, wähle auch diese.",
+    "languageSub": "Karten werden in dieser Sprache vorgelesen, und dein Deck erscheint unter ihr in den Sprachfiltern. Ist die Rückseite in einer anderen Sprache, wähle sie auch.",
     "languageFront": "Vorderseite",
     "languageBack": "Rückseite",
-    "languageBackEmpty": "Wie Vorderseite · optional",
+    "languageBackEmpty": "Optional",
     "languagePick": "Sprache wählen",
     "languageSwap": "Tauschen",
     "languageBoth": "Vorder- und Rückseite",
     "languageExample": "Beispiel: Vorderseite Englisch „apple“, Rückseite Deutsch „Apfel“",
-    "requiredLanguage": "Bitte wähle die Sprache der Kartenvorderseite."
+    "requiredLanguage": "Bitte wähle die Sprache der Kartenvorderseite.",
+    "languageSearch": "Sprache suchen"
   },
   "common": {
     "error": "Ein Fehler ist aufgetreten",
@@ -480,7 +481,14 @@
       "voiceN": "Stimme {{n}}",
       "noVoices": "Für diese Sprache ist auf dem Gerät keine Stimme installiert.",
       "iosHint": "Natürlichere Stimmen (Erweitert oder Premium) kannst du unter Einstellungen › Bedienungshilfen › Gesprochene Inhalte › Stimmen laden.",
-      "androidHint": "Weitere Stimmen kannst du unter Einstellungen › Bedienungshilfen › Sprachausgabe installieren."
+      "androidHint": "Weitere Stimmen kannst du unter Einstellungen › Bedienungshilfen › Sprachausgabe installieren.",
+      "readingLanguage": "Vorlesesprache",
+      "readingLanguagePick": "Sprache wählen",
+      "readingLanguageHint": "Nur auf diesem Gerät und für dieses Deck. Die Sprache des Decks änderst du in den Deck-Einstellungen.",
+      "readingLanguageSub": "Wähle, in welcher Sprache Karten auf diesem Gerät vorgelesen werden. Deck und Filter bleiben gleich.",
+      "useDeckLanguage": "Sprache des Decks verwenden",
+      "otherVoices": "Weitere Stimmen ({{count}})",
+      "otherVoices_plural": "Weitere Stimmen ({{count}})"
     },
     "stopSpeaking": "Vorlesen stoppen",
     "reverseOn": "Karten umdrehen",

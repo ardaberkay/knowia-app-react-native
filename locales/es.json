@@ -204,16 +204,17 @@
     "language": "Idioma",
     "selectLanguage": "Seleccionar idioma",
     "languageHeading": "Idioma del contenido",
-    "languageSub": "Primero elige el idioma del anverso de las tarjetas. Si el reverso está en otro idioma, elígelo también.",
+    "languageSub": "Las tarjetas se leen en voz alta en este idioma y tu mazo aparece con él en los filtros de idioma. Si el reverso está en otro idioma, elígelo también.",
     "languageFront": "Anverso",
     "languageBack": "Reverso",
-    "languageBackEmpty": "Igual que el anverso · opcional",
+    "languageBackEmpty": "Opcional",
     "languagePick": "Elegir idioma",
     "languageSwap": "Intercambiar",
     "languageBoth": "Anverso y reverso",
     "languageExample": "Ejemplo: anverso en inglés “apple”, reverso en español “manzana”",
     "requiredLanguage": "Elige el idioma del anverso de las tarjetas.",
-    "haptics": "Vibraciones"
+    "haptics": "Vibraciones",
+    "languageSearch": "Buscar idioma"
   },
   "common": {
     "error": "Ocurrió un error",
@@ -478,7 +479,14 @@
       "voiceN": "Voz {{n}}",
       "noVoices": "No hay ninguna voz instalada en el dispositivo para este idioma.",
       "iosHint": "Para voces más naturales, descarga voces Mejoradas o Premium en Ajustes › Accesibilidad › Contenido leído › Voces.",
-      "androidHint": "Para más voces, instala datos de voz en Ajustes › Accesibilidad › Salida de texto a voz."
+      "androidHint": "Para más voces, instala datos de voz en Ajustes › Accesibilidad › Salida de texto a voz.",
+      "readingLanguage": "Idioma de lectura",
+      "readingLanguagePick": "Elige un idioma",
+      "readingLanguageHint": "Solo en este dispositivo y para este mazo. El idioma del mazo se cambia en sus ajustes.",
+      "readingLanguageSub": "Elige en qué idioma se leen las tarjetas en este dispositivo. El mazo y los filtros no cambian.",
+      "useDeckLanguage": "Usar el idioma del mazo",
+      "otherVoices": "Otras voces ({{count}})",
+      "otherVoices_plural": "Otras voces ({{count}})"
     },
     "stopSpeaking": "Dejar de leer",
     "reverseOn": "Invertir tarjetas",

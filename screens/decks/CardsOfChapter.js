@@ -969,13 +969,14 @@ export default function ChapterCardsScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
+  // Same size as the icon: the iOS 26 bar draws its glass capsule around this.
   headerMenuHost: {
-    width: 32,
-    height: 32,
+    width: 24,
+    height: 24,
   },
   headerMenuTrigger: {
-    width: 32,
-    height: 32,
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },

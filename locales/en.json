@@ -207,15 +207,16 @@
     "language": "Content Language",
     "selectLanguage": "Select Language",
     "languageHeading": "Content Language",
-    "languageSub": "First pick the language on the front of the cards. If the back is in another language, pick that too.",
+    "languageSub": "Cards are read aloud in this language, and your deck shows up under it in language filters. If the back is in another language, pick that too.",
     "languageFront": "Front",
     "languageBack": "Back",
-    "languageBackEmpty": "Same as front · optional",
+    "languageBackEmpty": "Optional",
     "languagePick": "Select language",
     "languageSwap": "Swap",
     "languageBoth": "Front and back",
     "languageExample": "Example: front in Spanish “manzana”, back in English “apple”",
-    "requiredLanguage": "Please select the language on the front of the cards."
+    "requiredLanguage": "Please select the language on the front of the cards.",
+    "languageSearch": "Search languages"
   },
   "common": {
     "error": "An error occurred",
@@ -515,7 +516,14 @@
       "voiceN": "Voice {{n}}",
       "noVoices": "No voice is installed on this device for this language.",
       "iosHint": "For more natural voices, download Enhanced or Premium voices in Settings › Accessibility › Spoken Content › Voices.",
-      "androidHint": "For more voices, install voice data in Settings › Accessibility › Text-to-speech output."
+      "androidHint": "For more voices, install voice data in Settings › Accessibility › Text-to-speech output.",
+      "readingLanguage": "Reading language",
+      "readingLanguagePick": "Choose a language",
+      "readingLanguageHint": "Only on this device and for this deck. The deck's language is changed in the deck settings.",
+      "readingLanguageSub": "Choose which language cards are read in on this device. The deck and filters stay the same.",
+      "useDeckLanguage": "Use the deck's language",
+      "otherVoices": "Other voices ({{count}})",
+      "otherVoices_plural": "Other voices ({{count}})"
     },
     "stopSpeaking": "Stop reading",
     "reverseOn": "Reverse cards",
