@@ -118,11 +118,6 @@ export default function DeckCardsScreen({ route, navigation }) {
     favoriteCardsRef.current = new Set(favoriteCards);
   }, [favoriteCards]);
 
-  // TEMP order debug: every change of the shown list.
-  useEffect(() => {
-    console.log('[ORDER] cards state', { count: cards.length, loading, first: cards.slice(0, 3).map((c) => String(c.question).slice(0, 18)) });
-  }, [cards, loading]);
-
   useEffect(() => {
     const id = setTimeout(() => setDebouncedSearch(search.trim()), 350);
     return () => clearTimeout(id);
@@ -148,14 +143,10 @@ export default function DeckCardsScreen({ route, navigation }) {
     const nextSort = nextFilter ? 'original' : requestedSort;
 
     const fetchId = ++cardsFetchGenRef.current;
-    // TEMP order debug
-    console.log('[ORDER] fetch start', { fetchId, silent, sort: nextSort, filter: nextFilter, search: nextSearch, forceRefresh, stack: new Error().stack?.split('\n').slice(2, 5).join(' | ') });
 
     if (!silent) setLoading(true);
     try {
       const cardsData = await getCardsByDeck(deck.id, 0, PAGE_SIZE, nextSort, forceRefresh, userId, nextFilter || undefined, nextSearch || null);
-      // TEMP order debug
-      console.log('[ORDER] fetch done', { fetchId, latest: cardsFetchGenRef.current, count: cardsData.length, first: cardsData.slice(0, 4).map((c) => `${String(c.question).slice(0, 18)}@${c.created_at}`) });
       if (fetchId !== cardsFetchGenRef.current) return;
 
       let statusMap = {};
@@ -292,7 +283,6 @@ export default function DeckCardsScreen({ route, navigation }) {
 
   useFocusEffect(
     useCallback(() => {
-      console.log('[ORDER] focus', { fetched: dataFetchedRef.current }); // TEMP order debug
       if (dataFetchedRef.current) {
         fetchData(true);
       }

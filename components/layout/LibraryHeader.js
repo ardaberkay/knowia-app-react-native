@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useRef } from 'react';
 import { Animated, Image, StyleSheet, View } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { Text, MAX_FONT_SIZE_MULTIPLIER } from '../ui/AppText';
@@ -20,11 +20,25 @@ import { SCREEN_TITLE_HEIGHT, spacing } from '../../theme/layout';
  * `progress` = PagerView position + offset (native Animated value). The intro
  * cross-fades between tabs on that value, so swiping the pager animates the
  * header without any React re-render.
+ *
+ * It floats over the pages (absolute) and collapses like Discover's header:
+ * `collapsed` (native Animated value, 0 .. collapseDistance) is how far the
+ * lists have scrolled the header away. The title and intro slide up and fade
+ * out, the glow fades, and a solid background fades in behind the tabs, which
+ * stay pinned under the status bar. `onHeightChange(height)` reports the
+ * header's full height (the lists' top padding).
  */
-function LibraryHeader({ progress, onTabPress, summary }) {
+function LibraryHeader({ progress, onTabPress, summary, collapsed, collapseDistance, onHeightChange }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const notCollapsed = useRef(new Animated.Value(0)).current;
+  if (!collapsed) collapsed = notCollapsed; // eslint-disable-line no-param-reassign
+  const distance = Math.max(1, collapseDistance || 1);
+  const translateY = collapsed.interpolate({ inputRange: [0, distance], outputRange: [0, -distance], extrapolate: 'clamp' });
+  const contentOpacity = collapsed.interpolate({ inputRange: [0, distance * 0.7], outputRange: [1, 0], extrapolate: 'clamp' });
+  const glowOpacity = collapsed.interpolate({ inputRange: [0, distance], outputRange: [1, 0], extrapolate: 'clamp' });
+  const solidOpacity = collapsed.interpolate({ inputRange: [0, distance], outputRange: [0, 1], extrapolate: 'clamp' });
 
   const tabs = [
     {
@@ -57,9 +71,19 @@ function LibraryHeader({ progress, onTabPress, summary }) {
   ];
 
   return (
-    <View style={[styles.surface, { paddingTop: insets.top }]}>
+    <Animated.View
+      pointerEvents="box-none"
+      onLayout={(e) => onHeightChange?.(e.nativeEvent.layout.height)}
+      style={[styles.surface, { paddingTop: insets.top, transform: [{ translateY }] }]}
+    >
+      {/* Solid background, visible once a list scrolls under the tabs. */}
+      <Animated.View
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, { backgroundColor: colors.background, opacity: solidOpacity }]}
+      />
       {/* Soft light from the top centre, fading out by the tabs; one layer per
           tab, cross-faded on the pager position (native driver). */}
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: glowOpacity }]}>
       {tabs.map((tab, index) => (
         <Animated.View
           key={`glow_${tab.key}`}
@@ -87,6 +111,8 @@ function LibraryHeader({ progress, onTabPress, summary }) {
           </Svg>
         </Animated.View>
       ))}
+      </Animated.View>
+      <Animated.View pointerEvents="none" style={{ opacity: contentOpacity }}>
       <View style={styles.titleRow}>
         <Text style={[typography.styles.screenTitle, { color: colors.text }]} numberOfLines={1}>
           {t('tabs.library', 'Kitaplığım')}
@@ -131,9 +157,11 @@ function LibraryHeader({ progress, onTabPress, summary }) {
           );
         })}
       </View>
+      </Animated.View>
 
       {/* Underline tabs sit on the hero's bottom edge as its "hinge" to the
-          content: bare labels + a sliding orange bar, no extra container. */}
+          content: bare labels + a sliding orange bar, no extra container.
+          They stay pinned when the rest scrolls away. */}
       <SegmentedControl
         variant="underline"
         segments={tabs}
@@ -142,23 +170,36 @@ function LibraryHeader({ progress, onTabPress, summary }) {
         thumbColor={colors.buttonColor}
         inactiveTextColor={colors.muted}
         activeTextColor={colors.text}
-        height={44}
+        height={TABS_HEIGHT}
         style={styles.segmented}
       />
-    </View>
+    </Animated.View>
   );
 }
 
 const IMAGE_SIZE = 124;
+const TABS_HEIGHT = 44;
+const TABS_MARGIN_TOP = 8;
+const SURFACE_PADDING_BOTTOM = 4;
+// What stays on screen when collapsed (under the status bar): the tabs.
+export const LIBRARY_TABS_BLOCK_HEIGHT = TABS_MARGIN_TOP + TABS_HEIGHT + SURFACE_PADDING_BOTTOM;
+// First-render guess of the full height (corrected by onHeightChange), so
+// the lists don't jump when the header is measured.
+export const LIBRARY_HEADER_ESTIMATED_HEIGHT = SCREEN_TITLE_HEIGHT + IMAGE_SIZE + LIBRARY_TABS_BLOCK_HEIGHT;
 const SUBTITLE_LINES = 2;
 // Same as Discover's glow.
 const GLOW_STRENGTH = 0.18;
 
 const styles = StyleSheet.create({
+  // Floats over the pages (LibraryScreen pads its lists by its height).
   surface: {
-    width: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
     paddingHorizontal: spacing.lg,
-    paddingBottom: 4,
+    paddingBottom: SURFACE_PADDING_BOTTOM,
   },
   // Same row as Discover's title: right under the safe area, same height.
   titleRow: {
@@ -202,7 +243,7 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   segmented: {
-    marginTop: 8,
+    marginTop: TABS_MARGIN_TOP,
   },
 });
 

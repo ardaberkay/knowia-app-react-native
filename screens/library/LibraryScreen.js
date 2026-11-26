@@ -1,8 +1,8 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Alert, Animated, ScrollView, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Alert, Animated, useWindowDimensions } from 'react-native';
 import { Text } from '../../components/ui/AppText';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { typography, fontSizes, fonts, lineHeights } from '../../theme/typography';
@@ -13,7 +13,7 @@ import { Iconify } from 'react-native-iconify';
 import { getFavoriteDecks, getFavoriteCards, addFavoriteDeck, removeFavoriteDeck, addFavoriteCard, removeFavoriteCard } from '../../services/FavoriteService';
 import { useTranslation } from 'react-i18next';
 import PagerView from 'react-native-pager-view';
-import LibraryHeader from '../../components/layout/LibraryHeader';
+import LibraryHeader, { LIBRARY_HEADER_ESTIMATED_HEIGHT, LIBRARY_TABS_BLOCK_HEIGHT } from '../../components/layout/LibraryHeader';
 
 // Native-driven page scroll events → smooth segmented control / header.
 const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
@@ -37,12 +37,6 @@ const FAVORITE_DECKS_PREVIEW_COUNT = 10;
 const FAVORITE_CARDS_PREVIEW_COUNT = 5;
 const favoritedAt = (item) => new Date(item.favorited_at || item.created_at || 0).getTime();
 const sortByFavoritedAt = (items) => items.slice().sort((a, b) => favoritedAt(b) - favoritedAt(a));
-// The pager is pulled up under the hero by this much (same as Discover) so list
-// content scrolls behind the hero's rounded bottom corners. Lists add it back
-// as top padding and offset their refresh spinner by it.
-// The hero is part of the page now (no card surface), so the pager no longer
-// tucks under it.
-const HERO_OVERLAP = 0;
 
 /** Aynı ekranda inline fonksiyon kullanılırsa her render'da yeni component tipi oluşur; liste yenilenince header (Image) yeniden mount olur. */
 const MyDecksListHeaderCard = React.memo(function MyDecksListHeaderCard({
@@ -101,6 +95,40 @@ export default function LibraryScreen() {
     [{ nativeEvent: { position: pagePosition, offset: pageOffset } }],
     { useNativeDriver: true }
   ), [pagePosition, pageOffset]);
+
+  // Collapsing header (like Discover's): it floats over the pages and each
+  // page's list scrolls it away; the tabs stay pinned. Each page keeps its own
+  // scroll position; while swiping between pages the header blends between
+  // the two, so it shows the state of the page in front. All native-driven.
+  const insets = useSafeAreaInsets();
+  const [headerHeight, setHeaderHeight] = useState(() => insets.top + LIBRARY_HEADER_ESTIMATED_HEIGHT);
+  const handleHeaderHeight = useCallback((height) => {
+    if (height > 0) setHeaderHeight((prev) => (Math.abs(prev - height) < 0.5 ? prev : height));
+  }, []);
+  const collapseDistance = Math.max(1, headerHeight - insets.top - LIBRARY_TABS_BLOCK_HEIGHT);
+  const myDecksScrollY = useRef(new Animated.Value(0)).current;
+  const favoritesScrollY = useRef(new Animated.Value(0)).current;
+  const onMyDecksScroll = useMemo(() => Animated.event(
+    [{ nativeEvent: { contentOffset: { y: myDecksScrollY } } }],
+    { useNativeDriver: true }
+  ), [myDecksScrollY]);
+  const onFavoritesScroll = useMemo(() => Animated.event(
+    [{ nativeEvent: { contentOffset: { y: favoritesScrollY } } }],
+    { useNativeDriver: true }
+  ), [favoritesScrollY]);
+  const headerCollapsed = useMemo(() => {
+    const clampScroll = (value) => value.interpolate({
+      inputRange: [0, collapseDistance],
+      outputRange: [0, collapseDistance],
+      extrapolate: 'clamp',
+    });
+    const favoritesShare = pagerProgress.interpolate({ inputRange: [0, 1], outputRange: [0, 1], extrapolate: 'clamp' });
+    const myDecksShare = pagerProgress.interpolate({ inputRange: [0, 1], outputRange: [1, 0], extrapolate: 'clamp' });
+    return Animated.add(
+      Animated.multiply(clampScroll(myDecksScrollY), myDecksShare),
+      Animated.multiply(clampScroll(favoritesScrollY), favoritesShare)
+    );
+  }, [collapseDistance, favoritesScrollY, myDecksScrollY, pagerProgress]);
   const [favoriteCards, setFavoriteCards] = useState([]);
   const [favoriteCardIds, setFavoriteCardIds] = useState([]);
   // Hero summary ("12 deste · 32 kart"): real counts from the server, refreshed
@@ -134,10 +162,9 @@ export default function LibraryScreen() {
   const cardAspectRatio = 120 / 168;
   const cardHeight = cardWidth / cardAspectRatio;
 
-  // The header is now a normal (non-overlay) block above the pager, so the
-  // pages only need a small top gap instead of clearing an absolute overlay.
-  const favoritesScrollViewPaddingTop = HERO_OVERLAP + 4; // same top as Destelerim
-  const myDecksListPaddingTop = HERO_OVERLAP + 4;
+  // The header floats over the pages: the lists start below it.
+  const favoritesScrollViewPaddingTop = headerHeight + 4; // same top as Destelerim
+  const myDecksListPaddingTop = headerHeight + 4;
 
   const myDecksSearchContainerTopMargin = 8;
 
@@ -656,11 +683,10 @@ export default function LibraryScreen() {
 
   return (
     <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
-      <LibraryHeader progress={pagerProgress} onTabPress={handleSetPage} summary={librarySummary} />
       {/* PagerView: 0 - MyDecks, 1 - Favorites */}
       <AnimatedPagerView
         ref={pagerRef}
-        style={{ flex: 1, marginTop: -HERO_OVERLAP, backgroundColor: colors.background }}
+        style={{ flex: 1, backgroundColor: colors.background }}
         initialPage={activeTab === 'myDecks' ? 0 : 1}
         onPageSelected={(e) => {
           const index = e.nativeEvent.position;
@@ -754,8 +780,9 @@ export default function LibraryScreen() {
               showPopularityBadge={false}
               loadingMore={myDecksLoadingMore}
               contentPaddingTop={myDecksListPaddingTop}
-              progressViewOffset={HERO_OVERLAP}
+              progressViewOffset={headerHeight}
               contentPaddingBottom={listBottomInset}
+              onScroll={onMyDecksScroll}
             />
           )}
         </View>
@@ -763,12 +790,14 @@ export default function LibraryScreen() {
             "Tümü" opens the full lists with search and filters. */}
         <View key="favorites" style={{ flex: 1 }}>
           {favoritesLoading ? (
-            renderLoading()
+            <View style={{ flex: 1, paddingTop: headerHeight }}>{renderLoading()}</View>
           ) : (
-            <ScrollView
+            <Animated.ScrollView
               style={{ flex: 1, backgroundColor: colors.background }}
               contentContainerStyle={{ paddingTop: favoritesScrollViewPaddingTop + spacing.sm, paddingBottom: listBottomInset, flexGrow: 1 }}
               showsVerticalScrollIndicator={false}
+              onScroll={onFavoritesScroll}
+              scrollEventThrottle={16}
             >
               {renderFavoriteSectionHeader({
                 icon: 'ph:cards-fill',
@@ -818,10 +847,20 @@ export default function LibraryScreen() {
                   {t('library.favoriteCardsEmptyHint', 'Çalışırken karttaki kalbe dokun, burada görünsün.')}
                 </Text>
               )}
-            </ScrollView>
+            </Animated.ScrollView>
           )}
         </View>
       </AnimatedPagerView>
+
+      {/* Over the pages: scrolls away with the lists, tabs stay pinned. */}
+      <LibraryHeader
+        progress={pagerProgress}
+        onTabPress={handleSetPage}
+        summary={librarySummary}
+        collapsed={headerCollapsed}
+        collapseDistance={collapseDistance}
+        onHeightChange={handleHeaderHeight}
+      />
 
       {/* Card detail: full-screen native sheet */}
       <CardDetailSheet
