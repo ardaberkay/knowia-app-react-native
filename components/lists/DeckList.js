@@ -590,6 +590,8 @@ const DeckList = ({
   onScroll,
   onEndReached,
   renderLeadingItem = null,
+  // iOS: 'automatic' for a list under a see-through header (SCROLL_EDGE_HEADER).
+  contentInsetAdjustmentBehavior = 'never',
 }) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -885,6 +887,7 @@ const DeckList = ({
       data={rows}
       onScroll={onScroll}
       scrollEventThrottle={onScroll ? 16 : undefined}
+      contentInsetAdjustmentBehavior={contentInsetAdjustmentBehavior}
       keyExtractor={(_, idx) =>
         `row_${idx}`
       }

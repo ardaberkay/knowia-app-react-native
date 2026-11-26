@@ -16,7 +16,7 @@ import { getCategoryIcon } from '../../theme/colors';
 
 export default function BlockedScreen() {
   const { colors } = useTheme();
-  const listBottomInset = useListBottomInset();
+  const listBottomInset = useListBottomInset(0, { automaticInsets: true });
   const { session } = useAuth();
   const authUserId = session?.user?.id;
   const { t } = useTranslation();
@@ -143,7 +143,7 @@ export default function BlockedScreen() {
             </Text>
           </View>
         ) : (
-          <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: listBottomInset }} showsVerticalScrollIndicator={false}>
+          <ScrollView style={styles.scroll} contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ paddingBottom: listBottomInset }} showsVerticalScrollIndicator={false}>
             {blockedUsers.map((user) => (
               <View key={user.id} style={[styles.row, { borderBottomColor: colors.border + '99' }]}>
                 <Image
@@ -172,7 +172,7 @@ export default function BlockedScreen() {
           </Text>
         </View>
       ) : (
-        <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: listBottomInset }} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.scroll} contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ paddingBottom: listBottomInset }} showsVerticalScrollIndicator={false}>
           {hiddenDecks.map((deck) => (
             <View key={deck.id} style={[styles.deckCard, { backgroundColor: colors.border + '18', borderColor: colors.border + '40' }]}>
               <View style={[styles.deckCardThumb, { backgroundColor: colors.buttonColor + '20' }]}>

@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { StyleSheet, ScrollView } from 'react-native';
+import { StyleSheet, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,10 @@ const PROFILE_LINKS = {
 };
 
 /** Profile › Info & support: about, privacy, terms, feedback (in-app browser). */
+// iOS: the scroll view's automatic inset (see-through header,
+// SCROLL_EDGE_HEADER) already covers the bottom safe area.
+const SAFE_EDGES = Platform.OS === 'ios' ? ['left', 'right'] : ['bottom', 'left', 'right'];
+
 export default function InfoScreen() {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -39,8 +43,8 @@ export default function InfoScreen() {
   ];
 
   return (
-    <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <SafeAreaView edges={SAFE_EDGES} style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <ProfileMenuCard items={items} colors={colors} />
       </ScrollView>
     </SafeAreaView>

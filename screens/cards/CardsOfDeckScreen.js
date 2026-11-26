@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, StyleSheet, FlatList, Alert, Animated, Easing, Image, RefreshControl, Pressable, ActivityIndicator, Platform } from 'react-native';
+import { View, StyleSheet, FlatList, Alert, Animated, Easing, Image, RefreshControl, Pressable, ActivityIndicator } from 'react-native';
 import { Text } from '../../components/ui/AppText';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
@@ -99,7 +99,7 @@ export default function DeckCardsScreen({ route, navigation }) {
   const userId = session?.user?.id;
   const showFullScreenLoading = loading && cards.length === 0;
   const insets = useSafeAreaInsets();
-  const listBottomInset = useListBottomInset();
+  const listBottomInset = useListBottomInset(0, { automaticInsets: true });
   const addCardFabPressed = useSharedValue(0);
 
   const addCardFabAnimatedStyle = useAnimatedStyle(() => {
@@ -117,6 +117,11 @@ export default function DeckCardsScreen({ route, navigation }) {
   useEffect(() => {
     favoriteCardsRef.current = new Set(favoriteCards);
   }, [favoriteCards]);
+
+  // TEMP order debug: every change of the shown list.
+  useEffect(() => {
+    console.log('[ORDER] cards state', { count: cards.length, loading, first: cards.slice(0, 3).map((c) => String(c.question).slice(0, 18)) });
+  }, [cards, loading]);
 
   useEffect(() => {
     const id = setTimeout(() => setDebouncedSearch(search.trim()), 350);
@@ -143,10 +148,14 @@ export default function DeckCardsScreen({ route, navigation }) {
     const nextSort = nextFilter ? 'original' : requestedSort;
 
     const fetchId = ++cardsFetchGenRef.current;
+    // TEMP order debug
+    console.log('[ORDER] fetch start', { fetchId, silent, sort: nextSort, filter: nextFilter, search: nextSearch, forceRefresh, stack: new Error().stack?.split('\n').slice(2, 5).join(' | ') });
 
     if (!silent) setLoading(true);
     try {
       const cardsData = await getCardsByDeck(deck.id, 0, PAGE_SIZE, nextSort, forceRefresh, userId, nextFilter || undefined, nextSearch || null);
+      // TEMP order debug
+      console.log('[ORDER] fetch done', { fetchId, latest: cardsFetchGenRef.current, count: cardsData.length, first: cardsData.slice(0, 4).map((c) => `${String(c.question).slice(0, 18)}@${c.created_at}`) });
       if (fetchId !== cardsFetchGenRef.current) return;
 
       let statusMap = {};
@@ -207,8 +216,16 @@ export default function DeckCardsScreen({ route, navigation }) {
     setRefreshing(false);
   }, [fetchData]);
 
+  // Refs, not state: the list calls this from an earlier render (e.g. on its
+  // first, empty render, before the first page has even been requested), so
+  // `loading` / `loadingMore` can be stale. Without these guards page 2 was
+  // requested at once and, when it came back first (first visit, no cache),
+  // showed up as the list until page 1 replaced it.
+  const loadingMoreRef = useRef(false);
   const loadMore = useCallback(async () => {
+    if (!dataFetchedRef.current || loadingMoreRef.current) return;
     if (!hasMore || loadingMore || loading) return;
+    loadingMoreRef.current = true;
     setLoadingMore(true);
     const loadGen = cardsFetchGenRef.current;
     try {
@@ -256,6 +273,7 @@ export default function DeckCardsScreen({ route, navigation }) {
     } catch (e) {
       console.error("Error loading more cards:", e);
     } finally {
+      loadingMoreRef.current = false;
       setLoadingMore(false);
     }
   }, [hasMore, loadingMore, loading, page, deck.id, userId]);
@@ -274,6 +292,7 @@ export default function DeckCardsScreen({ route, navigation }) {
 
   useFocusEffect(
     useCallback(() => {
+      console.log('[ORDER] focus', { fetched: dataFetchedRef.current }); // TEMP order debug
       if (dataFetchedRef.current) {
         fetchData(true);
       }
@@ -496,10 +515,7 @@ export default function DeckCardsScreen({ route, navigation }) {
     !deck.is_shared;
 
   // The add-card FAB (~56 tall) sits at the bottom; leave room for it.
-  // iOS: the list's automatic inset (see-through header, SCROLL_EDGE_HEADER)
-  // already covers the bottom safe area.
-  const listContentPaddingBottom = (Platform.OS === 'ios' ? Math.max(0, listBottomInset - insets.bottom) : listBottomInset)
-    + (showAddCardFab ? 76 : 0);
+  const listContentPaddingBottom = listBottomInset + (showAddCardFab ? 76 : 0);
 
   const listFooter = useMemo(() => {
     if (!loadingMore) return null;

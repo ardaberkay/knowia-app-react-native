@@ -15,10 +15,15 @@ const TAB_BAR_BOTTOM_GAP = 20;
 // of what floats at the bottom: the tab bar on tab screens (its measured
 // height, reported below), otherwise the home indicator / Android nav bar.
 // `extra` adds room for anything else floating there, e.g. a FAB.
-export function useListBottomInset(extra = 0) {
+// automaticInsets: the list uses contentInsetAdjustmentBehavior="automatic"
+// (under a see-through header, SCROLL_EDGE_HEADER), which on iOS already adds
+// the bottom safe area; it is left out here so it isn't counted twice.
+export function useListBottomInset(extra = 0, { automaticInsets = false } = {}) {
   const tabBarHeight = useContext(BottomTabBarHeightContext); // undefined outside tabs
   const insets = useSafeAreaInsets();
-  return (tabBarHeight ?? insets.bottom) + spacing.xl + extra;
+  const floating = tabBarHeight ?? insets.bottom;
+  const systemAdded = automaticInsets && Platform.OS === 'ios' ? insets.bottom : 0;
+  return Math.max(0, floating - systemAdded) + spacing.xl + extra;
 }
 
 export default function CustomTabBar(props) {

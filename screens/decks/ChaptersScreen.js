@@ -128,7 +128,7 @@ export default function ChaptersScreen({ route, navigation }) {
   // Sadece butonun basılı olup olmadığını takip ediyoruz (0 = boşta, 1 = basılı)
   const isPressed = useSharedValue(0);
   const insets = useSafeAreaInsets();
-  const listBottomInset = useListBottomInset();
+  const listBottomInset = useListBottomInset(0, { automaticInsets: true });
 
   const addChapterAnimatedStyle = useAnimatedStyle(() => {
     // Apple tarzı pürüzsüz yay ayarları (Hafif kütle, yüksek sönümleme)
@@ -398,6 +398,8 @@ export default function ChaptersScreen({ route, navigation }) {
             <FlatList
               data={chapters}
               keyExtractor={(item) => item.id}
+              // iOS: starts below the see-through header (SCROLL_EDGE_HEADER).
+              contentInsetAdjustmentBehavior="automatic"
               contentContainerStyle={chapters.length === 0 ? { padding: 16, flexGrow: 1 } : { padding: 16, paddingBottom: listBottomInset + styles.fab.height + 16 } /* clears the FAB */}
               showsVerticalScrollIndicator={false}
               removeClippedSubviews={true}

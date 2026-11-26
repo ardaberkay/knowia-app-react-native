@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Share, Alert } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Share, Alert, Platform } from 'react-native';
 import { Text } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -12,6 +12,10 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { ProfileMenuCard } from './ProfileScreen';
 
 /** Profile › Account: edit profile, invite, blocked list, log out, delete account. */
+// iOS: the scroll view's automatic inset (see-through header,
+// SCROLL_EDGE_HEADER) already covers the bottom safe area.
+const SAFE_EDGES = Platform.OS === 'ios' ? ['left', 'right'] : ['bottom', 'left', 'right'];
+
 export default function AccountScreen() {
   const { colors } = useTheme();
   const navigation = useNavigation();
@@ -91,8 +95,8 @@ export default function AccountScreen() {
   ];
 
   return (
-    <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <SafeAreaView edges={SAFE_EDGES} style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <ProfileMenuCard items={items} colors={colors} />
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>

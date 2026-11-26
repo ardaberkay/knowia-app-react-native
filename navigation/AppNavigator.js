@@ -277,10 +277,10 @@ export default function AppNavigator() {
             />
             <Stack.Screen name="SwipeDeck" component={SwipeDeckScreen} options={{ headerShown: true, headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', gestureEnabled: false }} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: t('tabs.profileEdit', 'Profili Düzenle'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
-            <Stack.Screen name="Blocked" component={BlockedScreen} options={{ headerShown: true, title: t('profile.blockedSection', 'Engellenenler'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
-            <Stack.Screen name="ProfileAccount" component={AccountScreen} options={{ headerShown: true, title: t('profile.account', 'Hesap'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
+            <Stack.Screen name="Blocked" component={BlockedScreen} options={{ headerShown: true, title: t('profile.blockedSection', 'Engellenenler'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', ...SCROLL_EDGE_HEADER }} />
+            <Stack.Screen name="ProfileAccount" component={AccountScreen} options={{ headerShown: true, title: t('profile.account', 'Hesap'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', ...SCROLL_EDGE_HEADER }} />
             <Stack.Screen name="ProfileSettings" component={SettingsScreen} options={{ headerShown: true, title: t('profile.settings', 'Ayarlar'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
-            <Stack.Screen name="ProfileInfo" component={InfoScreen} options={{ headerShown: true, title: t('profile.info', 'Bilgi ve destek'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
+            <Stack.Screen name="ProfileInfo" component={InfoScreen} options={{ headerShown: true, title: t('profile.info', 'Bilgi ve destek'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', ...SCROLL_EDGE_HEADER }} />
             <Stack.Screen name="DeckEdit" component={DeckEditScreen} options={{ headerShown: true, title: t('tabs.deckEdit', 'Desteyi Düzenle'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
             <Stack.Screen
               name="AddCard"
@@ -326,14 +326,14 @@ export default function AppNavigator() {
             />
             <Stack.Screen name="EditCard" component={EditCardScreen} options={{ headerShown: true, title: t('cardDetail.edit', 'Kartı Düzenle'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
             <Stack.Screen name="DeckCards" component={DeckCardsScreen} options={{ headerShown: true, title: t('tabs.cards', 'Kartlar'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', ...SCROLL_EDGE_HEADER }} />
-            <Stack.Screen name="Chapters" component={ChaptersScreen} options={{ headerShown: true, title: t('tabs.chapters', 'Bölümler'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
+            <Stack.Screen name="Chapters" component={ChaptersScreen} options={{ headerShown: true, title: t('tabs.chapters', 'Bölümler'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', ...SCROLL_EDGE_HEADER }} />
             <Stack.Screen name="ChapterCards" component={ChapterCardsScreen} options={{
               headerShown: true,
               title: '',
               headerTitleAlign: 'center',
               headerBackButtonDisplayMode: 'minimal',
             }} />
-            <Stack.Screen name="FavoriteDecks" component={FavoriteDecks} options={{ headerShown: true, title: t('library.favoriteDecksTitle', 'Favori Desteler'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
+            <Stack.Screen name="FavoriteDecks" component={FavoriteDecks} options={{ headerShown: true, title: t('library.favoriteDecksTitle', 'Favori Desteler'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', ...SCROLL_EDGE_HEADER }} />
             <Stack.Screen name="FavoriteCards" component={FavoriteCards} options={{ headerShown: true, title: t('library.favoriteCardsTitle', 'Favori Kartlar'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', ...SCROLL_EDGE_HEADER }} />
           </>
         )}

@@ -22,7 +22,7 @@ export default function FavoriteDecks() {
   const { t } = useTranslation();
   const { session } = useAuth();
   const userId = session?.user?.id;
-  const listBottomInset = useListBottomInset();
+  const listBottomInset = useListBottomInset(0, { automaticInsets: true });
 
   const [favoriteDecks, setFavoriteDecks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -279,6 +279,7 @@ export default function FavoriteDecks() {
           cardVariant="favorite"
           showPopularityBadge={false}
           contentPaddingBottom={listBottomInset}
+          contentInsetAdjustmentBehavior="automatic"
         />
       )}
 

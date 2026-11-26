@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback, memo } from 'react';
-import { View, FlatList, Image, Alert, Keyboard, RefreshControl, ActivityIndicator, Platform } from 'react-native';
+import { View, FlatList, Image, Alert, Keyboard, RefreshControl, ActivityIndicator } from 'react-native';
 import { Text } from '../../components/ui/AppText';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -44,8 +44,7 @@ export default function FavoriteCards() {
   const { showSuccess, showError } = useSnackbarHelpers();
   const { session } = useAuth();
   const userId = session?.user?.id;
-  const listBottomInset = useListBottomInset();
-  const insets = useSafeAreaInsets();
+  const listBottomInset = useListBottomInset(0, { automaticInsets: true });
 
   const PAGE_SIZE = 50;
   const [cards, setCards] = useState([]);
@@ -333,7 +332,7 @@ export default function FavoriteCards() {
           contentInsetAdjustmentBehavior="automatic"
           contentContainerStyle={{
             flexGrow: 1,
-            paddingBottom: Platform.OS === 'ios' ? Math.max(0, listBottomInset - insets.bottom) : listBottomInset,
+            paddingBottom: listBottomInset,
           }}
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
