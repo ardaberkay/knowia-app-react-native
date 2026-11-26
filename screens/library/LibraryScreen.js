@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Alert, Animated, ScrollView, useWindowDimensions, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Alert, Animated, ScrollView, useWindowDimensions } from 'react-native';
 import { Text } from '../../components/ui/AppText';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,9 +11,6 @@ import { getDecksByCategory, deleteDeck, getLibrarySummary } from '../../service
 import { deleteCard, getUserCardProgressForCards } from '../../services/CardService';
 import { Iconify } from 'react-native-iconify';
 import { getFavoriteDecks, getFavoriteCards, addFavoriteDeck, removeFavoriteDeck, addFavoriteCard, removeFavoriteCard } from '../../services/FavoriteService';
-import { BottomSheetModal, BottomSheetScrollView } from '@expo/ui/community/bottom-sheet';
-// Full-height native sheet.
-const LARGE_SNAP_POINTS = ['100%'];
 import { useTranslation } from 'react-i18next';
 import PagerView from 'react-native-pager-view';
 import LibraryHeader from '../../components/layout/LibraryHeader';
@@ -26,7 +23,7 @@ import LottieView from 'lottie-react-native';
 import DeckList from '../../components/lists/DeckList';
 import { DeckStackCarousel } from '../../components/ui/DeckUi';
 import MyDecksSkeleton from '../../components/skeleton/MyDecksSkeleton';
-import CardDetailView from '../../components/layout/CardDetailView';
+import CardDetailSheet from '../../components/layout/CardDetailView';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import ProfileAvatarButton from '../../components/layout/ProfileAvatarButton';
@@ -143,18 +140,6 @@ export default function LibraryScreen() {
   const myDecksListPaddingTop = HERO_OVERLAP + 4;
 
   const myDecksSearchContainerTopMargin = 8;
-
-  // Gorhom Bottom Sheet Referansı
-  const cardDetailSheetRef = useRef(null);
-
-  // Modal görünürlük kontrolü
-  useEffect(() => {
-    if (cardDetailModalVisible) {
-      cardDetailSheetRef.current?.present();
-    } else {
-      cardDetailSheetRef.current?.dismiss();
-    }
-  }, [cardDetailModalVisible]);
 
   // Search and filter removed
 
@@ -838,81 +823,14 @@ export default function LibraryScreen() {
         </View>
       </AnimatedPagerView>
 
-      {/* Card Detail Modal */}
-      {/* Card detail: full-height native sheet */}
-      <BottomSheetModal
-        ref={cardDetailSheetRef}
-        snapPoints={LARGE_SNAP_POINTS}
-        enablePanDownToClose
-        index={0}
-        onChange={(index) => {
-          // Kullanıcı paneli aşağı sürükleyerek kapatırsa state'i güncelle
-          if (index === -1) setCardDetailModalVisible(false);
-        }}
-        backgroundStyle={Platform.OS === 'android' ? { backgroundColor: colors.background } : undefined /* iOS: system Liquid Glass */}
-      >
-
-        {/* --- SABİT HEADER BÖLÜMÜ (Aşağı kaymaz, hep üstte durur) --- */}
-        <View style={[styles.modalHeader, {
-          backgroundColor: colors.background,
-          borderBottomWidth: StyleSheet.hairlineWidth,
-          borderBottomColor: colors.cardBorder || '#E0E0E0',
-          paddingBottom: 12,
-          paddingTop: 24,
-          paddingHorizontal: 16,
-          borderRadius: 44,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }]}>
-          <TouchableOpacity
-            onPress={() => setCardDetailModalVisible(false)}
-            style={styles.modalCloseButton}
-            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-          >
-            <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
-          </TouchableOpacity>
-
-          <Text style={[styles.modalTitle, { color: colors.text, flex: 1, textAlign: 'center', fontFamily: fonts.semibold }]}>
-            {t('cardDetail.cardDetail', 'Kart Detayı')}
-          </Text>
-
-          {selectedCard ? (
-            <TouchableOpacity
-              onPress={() => handleToggleFavoriteCard(selectedCard.id)}
-              activeOpacity={0.7}
-              style={styles.modalFavoriteButton}
-              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-            >
-              <Iconify
-                icon={favoriteCardIds.includes(selectedCard.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-                size={24}
-                color={favoriteCardIds.includes(selectedCard.id) ? '#F98A21' : colors.text}
-              />
-            </TouchableOpacity>
-          ) : (
-            <View style={{ width: 24 }} />
-          )}
-        </View>
-
-        {/* --- KAYDIRILABİLİR İÇERİK (Sihirli Kısım Burası) --- */}
-        <BottomSheetScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: 30 }}
-          showsVerticalScrollIndicator={false}
-          bounces={true}
-        >
-          {selectedCard && (
-            <CardDetailView
-              card={selectedCard}
-              cards={favoriteCardsPreview}
-              onSelectCard={(card) => setSelectedCard(card)}
-              showCreatedAt={true}
-            />
-          )}
-        </BottomSheetScrollView>
-
-      </BottomSheetModal>
+      {/* Card detail: full-screen native sheet */}
+      <CardDetailSheet
+        card={selectedCard}
+        visible={cardDetailModalVisible}
+        onDismiss={() => setCardDetailModalVisible(false)}
+        isFavorite={Boolean(selectedCard && favoriteCardIds.includes(selectedCard.id))}
+        onToggleFavorite={(card) => handleToggleFavoriteCard(card.id)}
+      />
 
       {/* MyDecks Filter Modal */}
       <FilterModal
@@ -980,31 +898,6 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.bodyLarge,
     fontFamily: fonts.semibold,
     textAlign: 'center',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  modalCloseButton: {
-    width: 28,
-    height: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 4,
-  },
-  modalFavoriteButton: {
-    width: 28,
-    height: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-  },
-  modalTitle: {
-    fontSize: fontSizes.bodyLarge,
-    fontFamily: fonts.bold,
   },
 });
 

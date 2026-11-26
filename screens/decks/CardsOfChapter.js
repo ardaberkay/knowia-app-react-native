@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, memo, useMemo } from 'react';
-import { View, StyleSheet, TouchableOpacity, FlatList, TouchableHighlight, ActivityIndicator, Platform, Image, Pressable, RefreshControl, BackHandler } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, FlatList, TouchableHighlight, ActivityIndicator, Image, Pressable, RefreshControl, Alert } from 'react-native';
 import { Text } from '../../components/ui/AppText';
-import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
@@ -10,14 +10,12 @@ import { updateCardsChapter } from '../../services/CardService';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import SearchBar from '../../components/tools/SearchBar';
-import CardDetailView from '../../components/layout/CardDetailView';
-import AddEditCardInlineForm from '../../components/layout/EditCardForm';
+import CardDetailSheet, { CardStackSlider } from '../../components/layout/CardDetailView';
 import { listChapters, distributeUnassignedEvenly, getDeckChaptersProgressRpc } from '../../services/ChapterService';
 import { deleteCard, getCardsByChapter, getUserCardProgressForCards, getChapterProgressCounts, getCardDetail } from '../../services/CardService';
 import { addFavoriteCard, removeFavoriteCard, getFavoriteCardIdsForCards } from '../../services/FavoriteService';
 import { LinearGradient } from 'expo-linear-gradient';
 import LottieView from 'lottie-react-native';
-import { MenuView } from '@expo/ui/community/menu';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import ChapterSelector from '../../components/modals/ChapterSelector';
 import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring } from 'react-native-reanimated';
@@ -134,6 +132,9 @@ const MemoizedCardItem = memo(({
   );
 });
 
+// Side padding of the cards list (in the list content, see the FlatList).
+const LIST_SIDE_PADDING = 18;
+
 export default function ChapterCardsScreen({ route, navigation }) {
   const { chapter, deck } = route.params;
   const { colors } = useTheme();
@@ -146,7 +147,8 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const [cardStatusMap, setCardStatusMap] = useState(new Map());
   const [chapterStats, setChapterStats] = useState({ total: 0, learning: 0, learned: 0, new: 0 });
   const [selectedCard, setSelectedCard] = useState(null);
-  const [editCardMode, setEditCardMode] = useState(false);
+  // Detail sheet: selectedCard is its content, detailVisible opens / closes it.
+  const [detailVisible, setDetailVisible] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [distLoading, setDistLoading] = useState(false);
   const [chapters, setChapters] = useState([]);
@@ -157,14 +159,11 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const [showChapterModal, setShowChapterModal] = useState(false);
   const [moveLoading, setMoveLoading] = useState(false);
   const { showSuccess, showError } = useSnackbarHelpers();
-  const moreMenuActionsRef = useRef({});
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const listBottomInset = useListBottomInset();
   const headerHeight = useHeaderHeight();
   const latestDetailFetchRef = useRef(null);
-  const selectedCardRef = useRef(null);
-  const editCardModeRef = useRef(false);
   const [progressMap, setProgressMap] = useState(new Map());
   const [pageNum, setPageNum] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -209,47 +208,6 @@ export default function ChapterCardsScreen({ route, navigation }) {
     checkOwnerAndLoadChapters();
   }, [chapter.id, deck?.id, userId]);
 
-  useEffect(() => {
-    selectedCardRef.current = selectedCard;
-  }, [selectedCard]);
-
-  useEffect(() => {
-    editCardModeRef.current = editCardMode;
-  }, [editCardMode]);
-
-  useEffect(() => {
-    const onBackPress = () => {
-      if (editCardModeRef.current) {
-        setEditCardMode(false);
-        return true;
-      }
-      if (selectedCardRef.current) {
-        setSelectedCard(null);
-        return true;
-      }
-      return false;
-    };
-
-    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-    return () => sub.remove();
-  }, []);
-
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-      if (editCardModeRef.current) {
-        e.preventDefault();
-        setEditCardMode(false);
-        return;
-      }
-      if (selectedCardRef.current) {
-        e.preventDefault();
-        setSelectedCard(null);
-      }
-    });
-
-    return unsubscribe;
-  }, [navigation]);
-
   const checkOwnerAndLoadChapters = async () => {
     try {
       if (userId && deck) {
@@ -269,7 +227,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
   useLayoutEffect(() => {
     const isOwnerUser = currentUserId && deck?.user_id === currentUserId && !deck?.is_shared;
 
-    if (!selectedCard && loading) {
+    if (loading) {
       navigation.setOptions({
         headerShown: true,
         headerTransparent: true,
@@ -277,90 +235,6 @@ export default function ChapterCardsScreen({ route, navigation }) {
         headerTintColor: colors.text,
         headerTitle: '',
         headerRight: () => null,
-      });
-      return;
-    }
-
-    if (selectedCard) {
-      if (editCardMode) {
-        navigation.setOptions({
-          headerShown: true,
-          headerTransparent: false,
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text,
-          headerTitle: '',
-          headerLeft: () => (
-            <TouchableOpacity
-              onPress={() => setEditCardMode(false)}
-              activeOpacity={0.6}
-              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-            >
-              <Iconify
-                icon={Platform.OS === 'ios' ? 'ci:chevron-left' : 'mdi:arrow-back'}
-                size={Platform.OS === 'ios' ? 29 : 24}
-                color={colors.text}
-              />
-            </TouchableOpacity>
-          ),
-          headerRight: () => null,
-        });
-        return;
-      }
-
-      navigation.setOptions({
-        headerShown: true,
-        headerTransparent: false,
-        headerStyle: { backgroundColor: colors.background },
-        headerTintColor: colors.text,
-        headerTitle: '',
-        headerLeft: () => (
-          <TouchableOpacity
-            onPress={() => setSelectedCard(null)}
-            activeOpacity={0.6}
-            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-          >
-            <Iconify
-              icon={Platform.OS === 'ios' ? 'ci:chevron-left' : 'mdi:arrow-back'}
-              size={Platform.OS === 'ios' ? 29 : 24}
-              color={colors.text}
-            />
-          </TouchableOpacity>
-        ),
-        headerRight: () => (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, paddingHorizontal: 8 }}>
-            <TouchableOpacity
-              onPress={() => {
-                triggerHaptic('medium');
-                requestAnimationFrame(() => {
-                  handleToggleFavoriteCard(selectedCard.id);
-                });
-              }}
-              activeOpacity={0.7}
-              hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
-            >
-              <Iconify
-                icon={favoriteCards.includes(selectedCard.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-                size={24}
-                color={favoriteCards.includes(selectedCard.id) ? '#F98A21' : colors.text}
-              />
-            </TouchableOpacity>
-            {isOwnerUser && (
-              <MenuView
-                actions={[
-                  { id: 'edit', title: t('cardDetail.edit', 'Kartı Düzenle'), image: 'pencil' },
-                  { id: 'delete', title: t('cardDetail.delete', 'Kartı Sil'), image: 'trash', attributes: { destructive: true } },
-                ]}
-                onOpenMenu={() => triggerHaptic('light')}
-                onPressAction={({ nativeEvent }) => moreMenuActionsRef.current[nativeEvent.event]?.()}
-                style={styles.headerMenuHost}
-              >
-                <View style={styles.headerMenuTrigger}>
-                  <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={24} color={colors.text} />
-                </View>
-              </MenuView>
-            )}
-          </View>
-        ),
       });
       return;
     }
@@ -392,7 +266,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
         </TouchableOpacity>
       ) : () => null,
     });
-  }, [loading, navigation, chapter?.id, currentUserId, deck?.user_id, deck?.is_shared, editMode, selectedCard, editCardMode, favoriteCards, colors.text, colors.background, t]);
+  }, [loading, navigation, chapter?.id, currentUserId, deck?.user_id, deck?.is_shared, editMode, colors.text, colors.background, t]);
 
   const filteredCards = useMemo(() => {
     if (!search.trim()) return cards;
@@ -508,26 +382,49 @@ export default function ChapterCardsScreen({ route, navigation }) {
     }
   }, [userId, favoriteCards]);
 
-  const handleEditSelectedCard = () => {
-    if (!selectedCard) return;
-    setEditCardMode(true);
-  };
+  // --- Detail sheet ---
+  const openDetail = useCallback((card) => {
+    fetchAndSetCardDetailRef.current(card);
+    setDetailVisible(true);
+  }, []);
 
-  const handleDeleteSelectedCard = async () => {
-    if (!selectedCard) return;
-    try {
-      await deleteCard(selectedCard.id);
-      setSelectedCard(null);
-      setEditCardMode(false);
-      await fetchChapterCards();
-    } catch (e) {
-      showError(t('cardDetail.deleteError', 'Kart silinirken bir hata oluştu.'));
-    }
-  };
+  const handleSheetEdit = useCallback((card) => {
+    navigation.navigate('EditCard', { card, deck, returnKey: route.key });
+  }, [deck, navigation, route.key]);
 
-  // The header menu lives in a setOptions closure; read the handlers through a
-  // ref so it always sees the current selection.
-  moreMenuActionsRef.current = { edit: handleEditSelectedCard, delete: handleDeleteSelectedCard };
+  const handleSheetDelete = useCallback((card) => {
+    Alert.alert(
+      t('cardDetail.warningTitle', 'Uyarı'),
+      t('cardDetail.deleteConfirm', 'Kartı silmek istediğinize emin misiniz?'),
+      [
+        { text: t('common.cancel', 'İptal'), style: 'cancel' },
+        {
+          text: t('common.delete', 'Sil'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteCard(card.id);
+              setDetailVisible(false);
+              await fetchChapterCards();
+            } catch (e) {
+              showError(t('cardDetail.deleteError', 'Kart silinirken bir hata oluştu.'));
+            }
+          },
+        },
+      ]
+    );
+  }, [showError, t]);
+
+  // Back from the edit page with the saved card.
+  const editedCard = route.params?.editedCard;
+  useEffect(() => {
+    if (!editedCard) return;
+    navigation.setParams({ editedCard: undefined });
+    cardDetailsRef.current.set(editedCard.id, editedCard);
+    setCards((prev) => prev.map((c) => (c.id === editedCard.id ? { ...c, ...editedCard } : c)));
+    setSelectedCard((prev) => ({ ...(prev || {}), ...editedCard, isFullDataLoaded: true }));
+    setDetailVisible(true);
+  }, [editedCard, navigation]);
 
   // Full card details (image, example, note) fetched for the detail view, by
   // id. Kept out of `cards` on purpose: writing them into the list re-rendered
@@ -664,16 +561,10 @@ export default function ChapterCardsScreen({ route, navigation }) {
     }
   };
 
-  const CARD_ITEM_HEIGHT = 110 + 12;
-  const getItemLayout = useCallback((data, index) => ({
-    length: CARD_ITEM_HEIGHT,
-    offset: CARD_ITEM_HEIGHT * index,
-    index,
-  }), [CARD_ITEM_HEIGHT]);
 
-  const handleCardPress = useCallback((card) => {
-    fetchAndSetCardDetail(card);
-  }, [fetchAndSetCardDetail]);
+  const fetchAndSetCardDetailRef = useRef(fetchAndSetCardDetail);
+  fetchAndSetCardDetailRef.current = fetchAndSetCardDetail;
+  const handleCardPress = openDetail;
 
   const renderCardItem = useCallback(({ item: card }) => {
     return (
@@ -695,44 +586,6 @@ export default function ChapterCardsScreen({ route, navigation }) {
         <LottieView source={require('../../assets/flexloader.json')} speed={1.1} autoPlay loop style={{ width: 160, height: 160 }} />
         <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100, marginTop: -65 }} />
       </View>
-    );
-  }
-
-  // Kart detay görünümü gösteriliyorsa
-  if (selectedCard) {
-    return (
-      <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
-        {editCardMode ? (
-          <AddEditCardInlineForm
-            card={selectedCard}
-            deck={deck}
-            onSave={async (updatedCard) => {
-              cardDetailsRef.current.set(updatedCard.id, updatedCard);
-              setCards(cards.map(c => c.id === updatedCard.id ? updatedCard : c));
-              setSelectedCard(updatedCard);
-              setEditCardMode(false);
-              await fetchChapterCards();
-            }}
-            onCancel={() => {
-              setEditCardMode(false);
-            }}
-          />
-        ) : (
-          <>
-            <CardDetailView
-              card={selectedCard}
-              cards={cards}
-              onSelectCard={card => {
-                fetchAndSetCardDetail(card);
-                setEditCardMode(false);
-              }}
-              onEndReached={loadMoreChapterCards}
-              showCreatedAt={true}
-              isDeckOwner={isOwner}
-            />
-          </>
-        )}
-      </SafeAreaView>
     );
   }
 
@@ -900,14 +753,27 @@ export default function ChapterCardsScreen({ route, navigation }) {
             </Text>
           </View>
         ) : (
-          <View style={{ paddingHorizontal: 18 }}>
+          // Side padding lives in the list content (not on a wrapper), so the
+          // slider in the list header can span the full width.
+          <View>
             <FlatList
               data={filteredCards}
               renderItem={renderCardItem}
               keyExtractor={(item) => item.id.toString()}
-              getItemLayout={getItemLayout}
+              ListHeaderComponent={!editMode && filteredCards.length > 0 ? (
+                // Browse the cards; back to the first card on a new search.
+                // Full width: undo the list's side padding.
+                <View style={styles.sliderBleed}>
+                  <CardStackSlider
+                    key={search.trim()}
+                    cards={filteredCards}
+                    onOpenDetail={openDetail}
+                    onEndReached={loadMoreChapterCards}
+                  />
+                </View>
+              ) : null}
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={[styles.cardsList, { paddingBottom: listBottomInset + styles.fab.height + 16, paddingTop: 20 } /* clears the FAB */]}
+              contentContainerStyle={[styles.cardsList, { paddingHorizontal: LIST_SIDE_PADDING, paddingBottom: listBottomInset + styles.fab.height + 16, paddingTop: 20 } /* clears the FAB */]}
               refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
               }
@@ -975,21 +841,24 @@ export default function ChapterCardsScreen({ route, navigation }) {
           handleMoveToChapter(chapterId);
         }}
       />
+
+      <CardDetailSheet
+        card={selectedCard}
+        visible={detailVisible}
+        onDismiss={() => setDetailVisible(false)}
+        isFavorite={Boolean(selectedCard && favoriteCards.includes(selectedCard.id))}
+        onToggleFavorite={(card) => handleToggleFavoriteCard(card.id)}
+        onEdit={isOwner ? handleSheetEdit : undefined}
+        onDelete={isOwner ? handleSheetDelete : undefined}
+        showCreatedAt={isOwner}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // Same size as the icon: the iOS 26 bar draws its glass capsule around this.
-  headerMenuHost: {
-    width: 24,
-    height: 24,
-  },
-  headerMenuTrigger: {
-    width: 24,
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+  sliderBleed: {
+    marginHorizontal: -LIST_SIDE_PADDING,
   },
   bgGradient: {
     flex: 1,

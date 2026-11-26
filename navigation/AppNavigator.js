@@ -24,6 +24,7 @@ import DeckEditScreen from '../screens/decks/EditDeckScreen';
 import CustomTabBar from '../components/ui/CustomTabBar';
 import AddCardScreen from '../screens/cards/CreateCardScreen';
 import DeckCardsScreen from '../screens/cards/CardsOfDeckScreen';
+import { EditCardScreen } from '../components/layout/EditCardForm';
 import ChaptersScreen from '../screens/decks/ChaptersScreen';
 import ChapterCardsScreen from '../screens/decks/CardsOfChapter.js';
 import FavoriteDecks from '../screens/library/FavoriteDecks';
@@ -311,6 +312,7 @@ export default function AppNavigator() {
                 ),
               })}
             />
+            <Stack.Screen name="EditCard" component={EditCardScreen} options={{ headerShown: true, title: t('cardDetail.edit', 'Kartı Düzenle'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
             <Stack.Screen name="DeckCards" component={DeckCardsScreen} options={{ headerShown: true, title: t('tabs.cards', 'Kartlar'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
             <Stack.Screen name="Chapters" component={ChaptersScreen} options={{ headerShown: true, title: t('tabs.chapters', 'Bölümler'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
             <Stack.Screen name="ChapterCards" component={ChapterCardsScreen} options={{

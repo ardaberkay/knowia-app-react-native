@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useState, useLayoutEffect, useRef, useCallback, memo } from 'react';
-import { View, FlatList, Image, TouchableOpacity, BackHandler, Alert, Keyboard, RefreshControl, ActivityIndicator } from 'react-native';
+import React, { useEffect, useMemo, useState, useRef, useCallback, memo } from 'react';
+import { View, FlatList, Image, Alert, Keyboard, RefreshControl, ActivityIndicator } from 'react-native';
 import { Text } from '../../components/ui/AppText';
-import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { useAuth } from '../../contexts/AuthContext';
@@ -11,11 +10,10 @@ import { deleteCard, getCardDetail, getUserCardProgressForCards } from '../../se
 import SearchBar from '../../components/tools/SearchBar';
 import FilterIcon from '../../components/modals/CardFilterIcon';
 import CardListItem from '../../components/lists/CardList';
-import CardDetailView from '../../components/layout/CardDetailView';
+import CardDetailSheet, { CardStackSlider } from '../../components/layout/CardDetailView';
 import LottieView from 'lottie-react-native';
 import { typography, fontSizes } from '../../theme/typography';
 import { StyleSheet } from 'react-native';
-import { Iconify } from 'react-native-iconify';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { useListBottomInset } from '../../components/ui/CustomTabBar';
 
@@ -41,7 +39,6 @@ const MemoizedFavCardItem = memo(({ item, isFavorite, isOwner, onPress, onToggle
 ));
 
 export default function FavoriteCards() {
-  const navigation = useNavigation();
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { showSuccess, showError } = useSnackbarHelpers();
@@ -58,6 +55,8 @@ export default function FavoriteCards() {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('original');
   const [selectedCard, setSelectedCard] = useState(null);
+  // Detail sheet: selectedCard is its content, detailVisible opens / closes it.
+  const [detailVisible, setDetailVisible] = useState(false);
   const [favoriteCards, setFavoriteCards] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
   const latestDetailFetchRef = useRef(null);
@@ -180,36 +179,6 @@ export default function FavoriteCards() {
     fetchData(true, false);
   }, [debouncedQuery, userId, fetchData]);
 
-  useEffect(() => {
-    const onBackPress = () => {
-      if (selectedCard) {
-        setSelectedCard(null);
-        return true; // Geri tuşunu burada tüket
-      }
-      return false; // Normal navigation geri çalışsın
-    };
-
-    // 1. Event listener'ı ekle ve dönen referansı bir değişkene ata
-    const backHandlerSubscription = BackHandler.addEventListener(
-      'hardwareBackPress', 
-      onBackPress
-    );
-
-    return () => {
-      backHandlerSubscription.remove();
-    };
-  }, [selectedCard]);
-
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-      if (selectedCard) {
-        e.preventDefault();
-        setSelectedCard(null);
-      }
-    });
-    return unsubscribe;
-  }, [navigation, selectedCard]);
-
   const fetchAndSetCardDetail = useCallback(async (card) => {
     if (!card) {
       setSelectedCard(null);
@@ -228,6 +197,11 @@ export default function FavoriteCards() {
     }
   }, []);
 
+  const openDetail = useCallback((card) => {
+    fetchAndSetCardDetail(card);
+    setDetailVisible(true);
+  }, [fetchAndSetCardDetail]);
+
   const handleToggleFavoriteCard = useCallback(async (cardId) => {
     if (!userId) return;
     const wasFavorite = favoriteCards.includes(cardId);
@@ -235,9 +209,8 @@ export default function FavoriteCards() {
     if (wasFavorite) {
       setFavoriteCards(prev => prev.filter(id => id !== cardId));
       setCards(prev => prev.filter(c => c.id !== cardId));
-      if (selectedCard && selectedCard.id === cardId) {
-        setSelectedCard(null);
-      }
+      // No longer a favourite: it leaves this page, close its sheet.
+      if (selectedCard && selectedCard.id === cardId) setDetailVisible(false);
     } else {
       setFavoriteCards(prev => [...prev, cardId]);
     }
@@ -267,9 +240,7 @@ export default function FavoriteCards() {
               await deleteCard(cardId);
               setCards(prev => prev.filter(c => c.id !== cardId));
               setFavoriteCards(prev => prev.filter(id => id !== cardId));
-              if (selectedCard && selectedCard.id === cardId) {
-                setSelectedCard(null);
-              }
+              if (selectedCard && selectedCard.id === cardId) setDetailVisible(false);
               showSuccess(t('cardDetail.deleteSuccess', 'Kart başarıyla silindi'));
             } catch (e) {
               showError(t('cardDetail.deleteError', 'Kart silinemedi'));
@@ -288,15 +259,24 @@ export default function FavoriteCards() {
         item={item}
         isFavorite={favoriteCardsSet.has(item.id)} // Artık doğrudan Set'e bakıyor
         isOwner={isOwner}
-        onPress={fetchAndSetCardDetail}
+        onPress={openDetail}
         onToggleFavorite={handleToggleFavoriteCard}
         onDelete={handleDeleteCard}
       />
     );
-  }, [currentUserId, favoriteCardsSet, fetchAndSetCardDetail, handleToggleFavoriteCard, handleDeleteCard]);
+  }, [currentUserId, favoriteCardsSet, openDetail, handleToggleFavoriteCard, handleDeleteCard]);
 
   const favListHeader = useMemo(() => (
-    !selectedCard ? (
+    <>
+      {/* Browse the cards; back to the first card on a new search / filter. */}
+      {cards.length > 0 ? (
+        <CardStackSlider
+          key={`${debouncedQuery}|${sort}`}
+          cards={cards}
+          onOpenDetail={openDetail}
+          onEndReached={loadMore}
+        />
+      ) : null}
       <View style={styles.searchContainer}>
         <SearchBar
           value={query}
@@ -318,8 +298,8 @@ export default function FavoriteCards() {
           hideAz={true}
         />
       </View>
-    ) : null
-  ), [selectedCard, query, sort, t, fetchData]);
+    </>
+  ), [cards, debouncedQuery, openDetail, loadMore, query, sort, t, fetchData]);
 
   const favListEmpty = useMemo(() => (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: 400, marginTop: -250, pointerEvents: 'none' }}>
@@ -334,40 +314,6 @@ export default function FavoriteCards() {
     </View>
   ), [colors.text, t]);
 
-  // Header'ı ayarla - selectedCard durumuna göre
-  useLayoutEffect(() => {
-    if (loading) {
-      navigation.setOptions({
-        headerRight: () => null,
-      });
-      return;
-    }
-
-    if (selectedCard) {
-      navigation.setOptions({
-        headerRight: () => (
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
-            <TouchableOpacity
-              onPress={() => handleToggleFavoriteCard(selectedCard.id)}
-              activeOpacity={0.7}
-              style={{ paddingHorizontal: 6 }}
-            >
-              <Iconify
-                icon={favoriteCards.includes(selectedCard.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-                size={24}
-                color={favoriteCards.includes(selectedCard.id) ? '#F98A21' : colors.text}
-              />
-            </TouchableOpacity>
-          </View>
-        ),
-      });
-    } else {
-      navigation.setOptions({
-        headerRight: () => null,
-      });
-    }
-  }, [loading, selectedCard, colors.text, navigation, favoriteCards, handleToggleFavoriteCard]);
-
   return (
     <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
       {loading ? (
@@ -375,8 +321,6 @@ export default function FavoriteCards() {
           <LottieView source={require('../../assets/flexloader.json')} speed={1.1} autoPlay loop style={{ width: 160, height: 160 }} />
           <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100, marginTop: -65 }} />
         </View>
-      ) : selectedCard ? (
-        <CardDetailView card={selectedCard} cards={cards} onSelectCard={fetchAndSetCardDetail} onEndReached={loadMore} />
       ) : (
         <FlatList
           ref={flatListRef}
@@ -411,6 +355,14 @@ export default function FavoriteCards() {
           updateCellsBatchingPeriod={50}
         />
       )}
+
+      <CardDetailSheet
+        card={selectedCard}
+        visible={detailVisible}
+        onDismiss={() => setDetailVisible(false)}
+        isFavorite={Boolean(selectedCard && favoriteCardsSet.has(selectedCard.id))}
+        onToggleFavorite={(card) => handleToggleFavoriteCard(card.id)}
+      />
     </SafeAreaView>
   );
 }

@@ -1,17 +1,16 @@
-import React, { useState, useEffect, useRef, useLayoutEffect, useCallback, useMemo } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Platform, BackHandler, Alert, Animated, Easing, Image, RefreshControl, Pressable, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { View, StyleSheet, FlatList, Alert, Animated, Easing, Image, RefreshControl, Pressable, ActivityIndicator } from 'react-native';
 import { Text } from '../../components/ui/AppText';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import LottieView from 'lottie-react-native';
-import AddEditCardInlineForm from '../../components/layout/EditCardForm';
 import { useTranslation } from 'react-i18next';
 import CardListItem from '../../components/lists/CardList';
 import SearchBar from '../../components/tools/SearchBar';
 import FilterIcon from '../../components/modals/CardFilterIcon';
-import CardDetailView from '../../components/layout/CardDetailView';
+import CardDetailSheet, { CardStackSlider } from '../../components/layout/CardDetailView';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
@@ -22,7 +21,6 @@ import { invalidateCache } from '../../services/CacheService';
 import ReportModal from '../../components/modals/ReportModal';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MenuView } from '@expo/ui/community/menu';
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useListBottomInset } from '../../components/ui/CustomTabBar';
 
@@ -75,7 +73,8 @@ export default function DeckCardsScreen({ route, navigation }) {
   const [cardSort, setCardSort] = useState('original');
   const [selectedCard, setSelectedCard] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
-  const [editMode, setEditMode] = useState(false);
+  // Detail sheet: selectedCard is its content, detailVisible opens / closes it.
+  const [detailVisible, setDetailVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -83,7 +82,6 @@ export default function DeckCardsScreen({ route, navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const PAGE_SIZE = 50;
   const spinValue = useRef(new Animated.Value(0)).current;
-  const moreMenuActionsRef = useRef({});
   const flatListRef = useRef(null);
   const dataFetchedRef = useRef(false);
   const latestDetailFetchRef = useRef(null);
@@ -99,11 +97,9 @@ export default function DeckCardsScreen({ route, navigation }) {
   const { t } = useTranslation();
   const { session } = useAuth();
   const userId = session?.user?.id;
-  const showFullScreenLoading = loading && cards.length === 0 && !selectedCard;
+  const showFullScreenLoading = loading && cards.length === 0;
   const insets = useSafeAreaInsets();
   const listBottomInset = useListBottomInset();
-  const selectedCardRef = useRef(null);
-  const editModeRef = useRef(false);
   const addCardFabPressed = useSharedValue(0);
 
   const addCardFabAnimatedStyle = useAnimatedStyle(() => {
@@ -309,154 +305,6 @@ export default function DeckCardsScreen({ route, navigation }) {
   }, [fetchData, search]);
 
   useEffect(() => {
-    selectedCardRef.current = selectedCard;
-  }, [selectedCard]);
-
-  useEffect(() => {
-    editModeRef.current = editMode;
-  }, [editMode]);
-  
-  // Android back
-  useEffect(() => {
-    const onBackPress = () => {
-      if (editModeRef.current) {
-        setEditMode(false);
-        return true;
-      }
-      if (selectedCardRef.current) {
-        setSelectedCard(null);
-        return true;
-      }
-      return false;
-    };
-  
-    const sub = BackHandler.addEventListener(
-      'hardwareBackPress',
-      onBackPress
-    );
-  
-    return () => sub.remove();
-  }, []);
-  
-  // iOS back safety net
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-      if (!selectedCardRef.current) return;
-      e.preventDefault();
-    });
-    return unsubscribe;
-  }, [navigation]);
-
-  // iOS swipe-back gesture kontrolü
-  useEffect(() => {
-    navigation.setOptions({
-      gestureEnabled: !selectedCard,
-    });
-  }, [navigation, selectedCard]);
-
-  // Header'ı ayarla - selectedCard durumuna göre
-  useLayoutEffect(() => {
-    // Loading bitene kadar header ikonlarını gösterme
-    if (showFullScreenLoading) {
-      navigation.setOptions({
-        headerLeft: undefined,
-        headerRight: () => null,
-      });
-      return;
-    }
-
-    const isOwner = currentUserId && deck.user_id === currentUserId;
-    if (selectedCard && editMode) {
-      navigation.setOptions({
-        headerLeft: () => (
-          <TouchableOpacity
-            onPress={() => setEditMode(false)}
-            activeOpacity={0.6}
-            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-          >
-            <Iconify
-              icon={Platform.OS === 'ios' ? 'ci:chevron-left' : 'mdi:arrow-back'}
-              size={29}
-              color={colors.text}
-            />
-          </TouchableOpacity>
-        ),
-        headerRight: () => null,
-      });
-      return;
-    }
-    if (selectedCard && !editMode) {
-      navigation.setOptions({
-        headerLeft: () => (
-          <TouchableOpacity
-            onPress={() => setSelectedCard(null)}
-            activeOpacity={0.6}
-            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-          >
-            <Iconify
-              icon={Platform.OS === 'ios' ? 'ci:chevron-left' : 'mdi:arrow-back'}
-              size={Platform.OS === 'ios' ? 29 : 24}
-              color={colors.text}
-            />
-          </TouchableOpacity>
-        ),
-        headerRight: () => (
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 4, gap: 16, paddingHorizontal: 8 }}>
-            <TouchableOpacity
-              onPress={() => {
-                triggerHaptic('medium');
-                handleToggleFavoriteCard(selectedCard.id);
-              }}
-              activeOpacity={0.7}
-              hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
-            >
-              <Iconify
-                icon={favoriteCards.includes(selectedCard.id) ? 'solar:heart-bold' : 'solar:heart-broken'}
-                size={24}
-                color={favoriteCards.includes(selectedCard.id) ? '#F98A21' : colors.text}
-              />
-            </TouchableOpacity>
-            {!isOwner && (
-              <TouchableOpacity
-                onPress={() => {
-                  triggerHaptic('light');
-                  requestAnimationFrame(() => {
-                    openReportCardModal();
-                  });
-                }}
-                activeOpacity={0.7}
-                hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
-              >
-                <Iconify icon="ic:round-report-problem" size={24} color='#FED7AA' />
-              </TouchableOpacity>
-            )}
-            {isOwner && (
-              <MenuView
-                actions={[
-                  { id: 'edit', title: t('cardDetail.edit', 'Kartı Düzenle'), image: 'pencil' },
-                  { id: 'delete', title: t('cardDetail.delete', 'Kartı Sil'), image: 'trash', attributes: { destructive: true } },
-                ]}
-                onOpenMenu={() => triggerHaptic('light')}
-                onPressAction={({ nativeEvent }) => moreMenuActionsRef.current[nativeEvent.event]?.()}
-                style={styles.headerMenuHost}
-              >
-                <View style={styles.headerMenuTrigger}>
-                  <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={26} color={colors.text} />
-                </View>
-              </MenuView>
-            )}
-          </View>
-        ),
-      });
-    } else {
-      navigation.setOptions({
-        headerLeft: undefined,
-        headerRight: () => null,
-      });
-    }
-  }, [showFullScreenLoading, selectedCard, editMode, colors.text, navigation, deck, favoriteCards, currentUserId, handleToggleFavoriteCard, openReportCardModal, t]);
-
-  useEffect(() => {
     if (loading) {
       Animated.loop(
         Animated.timing(spinValue, {
@@ -472,17 +320,17 @@ export default function DeckCardsScreen({ route, navigation }) {
     }
   }, [loading]);
 
-  const openReportCardModal = useCallback(async () => {
-    if (!currentUserId || !selectedCard) return;
+  const openReportCardModal = useCallback(async (card) => {
+    if (!currentUserId || !card) return;
     try {
-      const codes = await BlockService.getMyReportReasonCodesForTarget(currentUserId, 'card', selectedCard.id);
+      const codes = await BlockService.getMyReportReasonCodesForTarget(currentUserId, 'card', card.id);
       setReportModalAlreadyCodes(codes || []);
-      setReportCardId(selectedCard.id);
+      setReportCardId(card.id);
       setReportModalVisible(true);
     } catch (e) {
       showError(t('moderation.alreadyReported', 'Zaten şikayet ettiniz') || e?.message);
     }
-  }, [currentUserId, selectedCard, t, showError]);
+  }, [currentUserId, t, showError]);
 
   const handleReportModalSubmit = useCallback(async (reasonCode, reasonText) => {
     if (!currentUserId || !reportCardId) return;
@@ -523,66 +371,50 @@ export default function DeckCardsScreen({ route, navigation }) {
     }
   }, [userId, deck.id, fetchData, search]);
 
-  const handleEditSelectedCard = () => {
-    if (!selectedCard) return;
-    setEditMode(true);
-  };
+  // --- Detail sheet ---
+  const openDetail = useCallback((card) => {
+    fetchAndSetCardDetailRef.current(card);
+    setDetailVisible(true);
+  }, []);
 
-  const handleDeleteSelectedCard = () => {
-    if (!selectedCard) return;
+  const handleSheetEdit = useCallback((card) => {
+    navigation.navigate('EditCard', { card, deck, returnKey: route.key });
+  }, [deck, navigation, route.key]);
 
+  const handleSheetDelete = useCallback((card) => {
     Alert.alert(
       t('cardDetail.warningTitle', 'Uyarı'),
       t('cardDetail.deleteConfirm', 'Kartı silmek istediğinize emin misiniz?'),
       [
-        {
-          text: t('common.cancel', 'İptal'),
-          style: 'cancel',
-        },
+        { text: t('common.cancel', 'İptal'), style: 'cancel' },
         {
           text: t('common.delete', 'Sil'),
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteCard(selectedCard.id);
-
-              // --- EKRANDAN ATMAYI ENGELLEYEN YENİ MANTIK ---
-
-              // 1. Silinen kartın index'ini bul
-              const currentIndex = cards.findIndex(c => c.id === selectedCard.id);
-              let nextCardToSelect = null;
-
-              // 2. Eğer listede 1'den fazla kart varsa sıradaki kartı belirle
-              if (cards.length > 1) {
-                // Eğer en son kartı siliyorsak bir öncekini göster
-                if (currentIndex === cards.length - 1) {
-                  nextCardToSelect = cards[currentIndex - 1];
-                }
-                // Aksi halde bir sonrakini göster
-                else {
-                  nextCardToSelect = cards[currentIndex + 1];
-                }
-              }
-
-              // 3. Listeleri güncelle
-              setCards(cards.filter(c => c.id !== selectedCard.id));
-
-              // 4. Null yerine sıradaki kartı seç (Böylece bileşen kapanmaz, slider diğer karta geçer)
-              fetchAndSetCardDetail(nextCardToSelect);
-
+              await deleteCard(card.id);
+              setDetailVisible(false);
+              setCards((prev) => prev.filter((c) => c.id !== card.id));
               showSuccess(t('cardDetail.deleteSuccess', 'Kart başarıyla silindi'));
             } catch (e) {
               showError(t('cardDetail.deleteError', 'Kart silinemedi'));
             }
-          }
-        }
+          },
+        },
       ]
     );
-  };
+  }, [showError, showSuccess, t]);
 
-  // The header menu lives in a setOptions closure; read the handlers through a
-  // ref so it always sees the current cards/selection.
-  moreMenuActionsRef.current = { edit: handleEditSelectedCard, delete: handleDeleteSelectedCard };
+  // Back from the edit page with the saved card.
+  const editedCard = route.params?.editedCard;
+  useEffect(() => {
+    if (!editedCard) return;
+    navigation.setParams({ editedCard: undefined });
+    cardDetailsRef.current.set(editedCard.id, editedCard);
+    setCards((prev) => prev.map((c) => (c.id === editedCard.id ? { ...c, ...editedCard } : c)));
+    setSelectedCard((prev) => ({ ...(prev || {}), ...editedCard, isFullDataLoaded: true }));
+    setDetailVisible(true);
+  }, [editedCard, navigation]);
 
   // Full card details (image, example, note) fetched for the detail view, by
   // id. Kept out of `cards` on purpose: writing them into the list re-rendered
@@ -616,10 +448,10 @@ export default function DeckCardsScreen({ route, navigation }) {
     }
   }, []);
 
-  const handleListItemPress = useCallback((item) => {
-    setEditMode(false);
-    fetchAndSetCardDetail(item);
-  }, [fetchAndSetCardDetail]);
+  const fetchAndSetCardDetailRef = useRef(fetchAndSetCardDetail);
+  fetchAndSetCardDetailRef.current = fetchAndSetCardDetail;
+
+  const handleListItemPress = openDetail;
 
   const handleListItemDelete = useCallback((item) => {
     Alert.alert(
@@ -659,7 +491,6 @@ export default function DeckCardsScreen({ route, navigation }) {
 
   const showAddCardFab =
     !showFullScreenLoading &&
-    !selectedCard &&
     currentUserId &&
     deck.user_id === currentUserId &&
     !deck.is_shared;
@@ -676,21 +507,10 @@ export default function DeckCardsScreen({ route, navigation }) {
     );
   }, [loadingMore, colors.text, t]);
 
+  const isDeckOwner = Boolean(currentUserId && deck.user_id === currentUserId);
+
   return (
     <>
-      {selectedCard && editMode ? (
-        <AddEditCardInlineForm
-          card={selectedCard}
-          deck={deck}
-          onSave={updatedCard => {
-            cardDetailsRef.current.set(updatedCard.id, updatedCard);
-            setCards(cards.map(c => c.id === updatedCard.id ? updatedCard : c));
-            setSelectedCard(updatedCard);
-            setEditMode(false);
-          }}
-          onCancel={() => setEditMode(false)}
-        />
-      ) : (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
 
           {/* --- ALT KATMAN: KARTLAR LİSTESİ --- 
@@ -714,6 +534,17 @@ export default function DeckCardsScreen({ route, navigation }) {
                   <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
                 }
                 ListHeaderComponent={
+                  <>
+                    {/* Browse the cards; re-mounted (back to the first card)
+                        when the search or filter changes the list. */}
+                    {cards.length > 0 ? (
+                      <CardStackSlider
+                        key={`${debouncedSearch}|${cardSort}`}
+                        cards={cards}
+                        onOpenDetail={openDetail}
+                        onEndReached={loadMore}
+                      />
+                    ) : null}
                   <View style={styles.cardsBlurSearchContainer}>
                     <SearchBar
                       value={search}
@@ -726,6 +557,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                       onChange={handleSortChange}
                     />
                   </View>
+                  </>
                 }
                 ListEmptyComponent={
                   <View style={styles.noDecksEmpty} pointerEvents="none">
@@ -791,26 +623,19 @@ export default function DeckCardsScreen({ route, navigation }) {
             </AnimatedPressable>
           )}
 
-          {/* --- ÜST KATMAN: KART DETAY SAYFASI --- 
-              (Eğer seçili bir kart varsa, listenin üzerine position: 'absolute' ile tam ekran olarak biner)
-          */}
-          {selectedCard && (
-            <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: colors.background, zIndex: 10 }}>
-              <View style={{ flex: 1, backgroundColor: colors.background }}>
-                <CardDetailView
-                  card={selectedCard}
-                  cards={cards}
-                  onSelectCard={fetchAndSetCardDetail}
-                  onEndReached={loadMore}
-                  isDeckOwner={currentUserId && deck.user_id === currentUserId}
-                />
-              </View>
-
-            </View>
-          )}
-
         </View>
-      )}
+
+      <CardDetailSheet
+        card={selectedCard}
+        visible={detailVisible}
+        onDismiss={() => setDetailVisible(false)}
+        isFavorite={Boolean(selectedCard && favoriteIdSet.has(selectedCard.id))}
+        onToggleFavorite={(card) => handleToggleFavoriteCard(card.id)}
+        onReport={isDeckOwner ? undefined : openReportCardModal}
+        onEdit={isDeckOwner ? handleSheetEdit : undefined}
+        onDelete={isDeckOwner ? handleSheetDelete : undefined}
+        showCreatedAt={isDeckOwner}
+      />
 
       <ReportModal
         visible={reportModalVisible}
@@ -824,17 +649,6 @@ export default function DeckCardsScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  // Same size as the icon: the iOS 26 bar draws its glass capsule around this.
-  headerMenuHost: {
-    width: 26,
-    height: 26,
-  },
-  headerMenuTrigger: {
-    width: 26,
-    height: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',

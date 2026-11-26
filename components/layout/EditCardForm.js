@@ -16,6 +16,24 @@ import { Iconify } from 'react-native-iconify';
 import CreateButton from '../tools/CreateButton';
 import UndoButton from '../tools/UndoButton';
 import BadgeText from '../tools/BadgeText';
+import { CommonActions } from '@react-navigation/native';
+
+/**
+ * "Kartı Düzenle" page (route EditCard), opened from the card detail sheet.
+ * params: { card, deck, returnKey } — returnKey is the cards screen's route
+ * key; the saved card is handed back to it as its `editedCard` param, then
+ * the page closes.
+ */
+export function EditCardScreen({ route, navigation }) {
+  const { card, deck, returnKey } = route.params || {};
+  const handleSave = (updatedCard) => {
+    if (returnKey) {
+      navigation.dispatch({ ...CommonActions.setParams({ editedCard: updatedCard }), source: returnKey });
+    }
+    navigation.goBack();
+  };
+  return <AddEditCardInlineForm card={card} deck={deck} onSave={handleSave} onCancel={() => navigation.goBack()} />;
+}
 
 export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) {
   const { colors } = useTheme();
