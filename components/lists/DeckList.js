@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { triggerHaptic } from '../../lib/hapticManager';
 import CommunityDeckCard from '../ui/CommunityDeckCard';
 import Svg, { Path } from 'react-native-svg';
+import { getCategoryColors, getCategoryIcon } from '../../theme/colors';
 
 // Grid deck cards keep a fixed portrait ratio instead of a share of the screen
 // height, so they never turn square on short phones or wide on tablets.
@@ -623,43 +624,6 @@ const DeckList = ({
     [favoriteDecks]
   );
 
-  const getCategoryColors = useCallback(
-    (sortOrder) => {
-      if (
-        colors.categoryColors &&
-        colors.categoryColors[sortOrder]
-      ) {
-        return colors.categoryColors[
-          sortOrder
-        ];
-      }
-
-      return ['#6F8EAD', '#3F5E78'];
-    },
-    [colors]
-  );
-
-  const getCategoryIcon = useCallback(
-    (sortOrder) => {
-      const icons = {
-        1: 'hugeicons:language-skill',
-        2: 'clarity:atom-solid',
-        3: 'mdi:math-compass',
-        4: 'game-icons:tied-scroll',
-        5: 'arcticons:world-geography-alt',
-        6: 'map:museum',
-        7: 'ic:outline-self-improvement',
-        8: 'streamline-ultimate:module-puzzle-2-bold',
-      };
-
-      return (
-        icons[sortOrder] ||
-        'hugeicons:language-skill'
-      );
-    },
-    []
-  );
-
   const rows = useMemo(() => {
     if (
       !Array.isArray(decks) ||
@@ -673,7 +637,7 @@ const DeckList = ({
 
       gradientColors:
         getCategoryColors(
-          deck.categories?.sort_order
+          colors, deck.categories?.sort_order
         ),
 
       categoryIcon:
@@ -748,8 +712,7 @@ const DeckList = ({
     decks,
     renderLeadingItem,
     layoutMode,
-    getCategoryColors,
-    getCategoryIcon,
+    colors,
   ]);
 
   const renderDoubleRow = useCallback(

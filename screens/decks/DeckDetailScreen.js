@@ -29,6 +29,7 @@ import { BottomSheetModal, BottomSheetFlatList } from '@expo/ui/community/bottom
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import HeroPullBackdrop from '../../components/layout/HeroPullBackdrop';
 import { useListBottomInset } from '../../components/ui/CustomTabBar';
+import { getCategoryIcon } from '../../theme/colors';
 
 // Hero gradient direction (colours come from the deck's category).
 const HERO_GRADIENT_START = { x: 0, y: 0 };
@@ -1061,21 +1062,6 @@ export default function DeckDetailScreen({ route, navigation }) {
     } else {
       return [...originalCards];
     }
-  };
-
-  // Kategori ikonunu sort_order değerine göre al
-  const getCategoryIcon = (sortOrder) => {
-    const icons = {
-      1: "hugeicons:language-skill", // Dil
-      2: "clarity:atom-solid", // Bilim
-      3: "mdi:math-compass", // Matematik
-      4: "game-icons:tied-scroll", // Tarih
-      5: "arcticons:world-geography-alt", // Coğrafya
-      6: "map:museum", // Sanat ve Kültür
-      7: "ic:outline-self-improvement", // Kişisel Gelişim
-      8: "streamline-ultimate:module-puzzle-2-bold" // Genel Kültür
-    };
-    return icons[sortOrder] || "hugeicons:language-skill";
   };
 
 

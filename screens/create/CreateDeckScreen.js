@@ -20,6 +20,7 @@ import DeckLanguageModal, { DeckLanguageField } from '../../components/modals/De
 import BadgeText from '../../components/tools/BadgeText';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getCategoryIcon } from '../../theme/colors';
 
 export default function CreateScreen() {
   const { session } = useAuth();
@@ -77,20 +78,6 @@ export default function CreateScreen() {
   }, []);
 
 
-
-  const getCategoryIcon = (sortOrder) => {
-    const icons = {
-      1: "hugeicons:language-skill", // Dil
-      2: "clarity:atom-solid", // Bilim
-      3: "mdi:math-compass", // Matematik
-      4: "game-icons:tied-scroll", // Tarih
-      5: "arcticons:world-geography-alt", // Coğrafya
-      6: "map:museum", // Sanat ve Kültür
-      7: "ic:outline-self-improvement", // Kişisel Gelişim
-      8: "garden:puzzle-piece-fill-16" // Genel Kültür
-    };
-    return icons[sortOrder] || "material-symbols:category";
-  };
 
   // Kategorileri yükle - hem ID hem de name çekelim
   React.useEffect(() => {
@@ -392,7 +379,7 @@ export default function CreateScreen() {
               <View style={styles.categoryRow}>
                 {selectedCategory && (
                   <Iconify
-                    icon={getCategoryIcon(categories.find(c => c.id === selectedCategory)?.sort_order)}
+                    icon={getCategoryIcon(categories.find(c => c.id === selectedCategory)?.sort_order, { picker: true })}
                     size={20}
                     color={selectedCategory ? colors.text : colors.muted}
                     style={styles.categoryIcon}

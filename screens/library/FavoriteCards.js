@@ -376,7 +376,7 @@ export default function FavoriteCards() {
           <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100, marginTop: -65 }} />
         </View>
       ) : selectedCard ? (
-        <CardDetailView card={selectedCard} cards={cards} onSelectCard={fetchAndSetCardDetail} />
+        <CardDetailView card={selectedCard} cards={cards} onSelectCard={fetchAndSetCardDetail} onEndReached={loadMore} />
       ) : (
         <FlatList
           ref={flatListRef}

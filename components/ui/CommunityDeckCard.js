@@ -6,6 +6,7 @@ import { Iconify } from 'react-native-iconify';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { useTranslation } from 'react-i18next';
 import { fontSizes, fonts } from '../../theme/typography';
+import { getCategoryColors, getCategoryIcon } from '../../theme/colors';
 
 
 const CommunityDeckCard = ({
@@ -29,28 +30,7 @@ const CommunityDeckCard = ({
         onToggleFavorite?.(deck.id);
     };
 
-    const getCategoryColors = (sortOrder) => {
-        if (colors?.categoryColors && colors.categoryColors[sortOrder]) {
-            return colors.categoryColors[sortOrder];
-        }
-        return ['#3F5E78', '#203345'];
-    };
-
-    const getCategoryIcon = (sortOrder) => {
-        const icons = {
-            1: 'hugeicons:language-skill',
-            2: 'clarity:atom-solid',
-            3: 'mdi:math-compass',
-            4: 'game-icons:tied-scroll',
-            5: 'arcticons:world-geography-alt',
-            6: 'map:museum',
-            7: 'ic:outline-self-improvement',
-            8: 'streamline-ultimate:module-puzzle-2-bold',
-        };
-        return icons[sortOrder] || 'material-symbols:category';
-    };
-
-    const gradientColors = getCategoryColors(deck.categories?.sort_order);
+    const gradientColors = getCategoryColors(colors, deck.categories?.sort_order);
     const categoryIcon = getCategoryIcon(deck.categories?.sort_order);
 
     const username = deck.is_admin_created ? 'Knowia' : deck.profiles?.username || 'Kullanıcı';

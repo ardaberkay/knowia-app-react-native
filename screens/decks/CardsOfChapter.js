@@ -529,6 +529,11 @@ export default function ChapterCardsScreen({ route, navigation }) {
   // ref so it always sees the current selection.
   moreMenuActionsRef.current = { edit: handleEditSelectedCard, delete: handleDeleteSelectedCard };
 
+  // Full card details (image, example, note) fetched for the detail view, by
+  // id. Kept out of `cards` on purpose: writing them into the list re-rendered
+  // the whole screen on every card change while swiping the detail carousel.
+  const cardDetailsRef = useRef(new Map());
+
   const fetchAndSetCardDetail = useCallback(async (card) => {
     if (!card) {
       setSelectedCard(null);
@@ -536,19 +541,23 @@ export default function ChapterCardsScreen({ route, navigation }) {
     }
     const cardId = card.id;
     latestDetailFetchRef.current = cardId;
+    const cached = cardDetailsRef.current.get(cardId);
+    if (cached) {
+      setSelectedCard({ ...card, ...cached, isFullDataLoaded: true });
+      return;
+    }
+    // Show the light data (question / answer) right away, details when loaded.
     setSelectedCard(card);
-
-    if (!card.isFullDataLoaded) {
-      try {
-        const detail = await getCardDetail(cardId);
-        if (latestDetailFetchRef.current === cardId && detail) {
-          const updatedCard = { ...card, ...detail, isFullDataLoaded: true };
-          setSelectedCard(prev => prev?.id === cardId ? updatedCard : prev);
-          setCards(prevCards => prevCards.map(c => c.id === cardId ? updatedCard : c));
-        }
-      } catch (e) {
-        // keep lightweight data
+    if (card.isFullDataLoaded) return;
+    try {
+      const detail = await getCardDetail(cardId);
+      if (!detail) return;
+      cardDetailsRef.current.set(cardId, detail);
+      if (latestDetailFetchRef.current === cardId) {
+        setSelectedCard((prev) => (prev?.id === cardId ? { ...prev, ...detail, isFullDataLoaded: true } : prev));
       }
+    } catch (e) {
+      // keep lightweight data
     }
   }, []);
 
@@ -698,6 +707,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
             card={selectedCard}
             deck={deck}
             onSave={async (updatedCard) => {
+              cardDetailsRef.current.set(updatedCard.id, updatedCard);
               setCards(cards.map(c => c.id === updatedCard.id ? updatedCard : c));
               setSelectedCard(updatedCard);
               setEditCardMode(false);
@@ -716,6 +726,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
                 fetchAndSetCardDetail(card);
                 setEditCardMode(false);
               }}
+              onEndReached={loadMoreChapterCards}
               showCreatedAt={true}
               isDeckOwner={isOwner}
             />

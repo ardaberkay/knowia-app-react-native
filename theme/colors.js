@@ -127,3 +127,32 @@ export const darkColors = {
     },
 
 };
+
+// --- Category look, one place for every screen ---
+// Keys are categories.sort_order from Supabase.
+
+const DEFAULT_CATEGORY_COLORS = ['#6F8EAD', '#3F5E78'];
+
+/** Gradient pair of a category, from the active theme's colors. */
+export const getCategoryColors = (colors, sortOrder) =>
+    colors?.categoryColors?.[sortOrder] || DEFAULT_CATEGORY_COLORS;
+
+export const CATEGORY_ICONS = {
+    1: 'hugeicons:language-skill', // Dil
+    2: 'clarity:atom-solid', // Bilim
+    3: 'mdi:math-compass', // Matematik
+    4: 'game-icons:tied-scroll', // Tarih
+    5: 'arcticons:world-geography-alt', // Coğrafya
+    6: 'map:museum', // Sanat ve Kültür
+    7: 'ic:outline-self-improvement', // Kişisel Gelişim
+    8: 'streamline-ultimate:module-puzzle-2-bold', // Genel Kültür
+};
+// Category pickers (create / edit deck) show a filled puzzle for Genel Kültür.
+const CATEGORY_PICKER_ICONS = { 8: 'garden:puzzle-piece-fill-16' };
+// Used when the category isn't known (e.g. card lists don't load the deck's
+// category); same icon the card detail and deck lists always fell back to.
+const DEFAULT_CATEGORY_ICON = 'hugeicons:language-skill';
+
+/** Icon of a category; `{ picker: true }` for the category pickers. */
+export const getCategoryIcon = (sortOrder, { picker = false } = {}) =>
+    (picker && CATEGORY_PICKER_ICONS[sortOrder]) || CATEGORY_ICONS[sortOrder] || DEFAULT_CATEGORY_ICON;

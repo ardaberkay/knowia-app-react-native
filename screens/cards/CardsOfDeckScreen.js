@@ -584,38 +584,35 @@ export default function DeckCardsScreen({ route, navigation }) {
   // ref so it always sees the current cards/selection.
   moreMenuActionsRef.current = { edit: handleEditSelectedCard, delete: handleDeleteSelectedCard };
 
+  // Full card details (image, example, note) fetched for the detail view, by
+  // id. Kept out of `cards` on purpose: writing them into the list re-rendered
+  // the whole screen on every card change while swiping the detail carousel.
+  const cardDetailsRef = useRef(new Map());
+
   const fetchAndSetCardDetail = useCallback(async (card) => {
     if (!card) {
       setSelectedCard(null);
       return;
     }
-
     const cardId = card.id;
-
-    // 1. Kullanıcıyı bekletmemek için eldeki hafif veriyi (soru/cevap) anında ekrana bas
+    latestDetailFetchRef.current = cardId;
+    const cached = cardDetailsRef.current.get(cardId);
+    if (cached) {
+      setSelectedCard({ ...card, ...cached, isFullDataLoaded: true });
+      return;
+    }
+    // Show the light data (question / answer) right away, details when loaded.
     setSelectedCard(card);
-
-    // 2. Eğer bu kartın 'note', 'image' gibi detayları henüz çekilmediyse API'ye git
-    // isFullDataLoaded adında kendimiz bir işaret (flag) koyuyoruz.
-    if (!card.isFullDataLoaded) {
-      try {
-        const detail = await getCardDetail(cardId);
-
-        if (detail) {
-          // Gelen yeni veriyi eski veriyle birleştir ve "artık tam yüklendi" diye işaretle
-          const updatedCard = { ...card, ...detail, isFullDataLoaded: true };
-
-          // Ekranda açık olan detayı güncelle (veriler sessizce yerine otursun)
-          setSelectedCard(prev => prev?.id === cardId ? updatedCard : prev);
-
-          // ÇOK ÖNEMLİ: Ana listedeki kartı da bu yeni verilerle güncelle!
-          // Böylece kullanıcı slider'da sağa/sola gidip tekrar bu karta gelirse 
-          // yanıp sönme olmaz ve boşuna internet harcanmaz.
-          setCards(prevCards => prevCards.map(c => c.id === cardId ? updatedCard : c));
-        }
-      } catch (e) {
-        console.error("Kart detayları çekilemedi:", e);
+    if (card.isFullDataLoaded) return;
+    try {
+      const detail = await getCardDetail(cardId);
+      if (!detail) return;
+      cardDetailsRef.current.set(cardId, detail);
+      if (latestDetailFetchRef.current === cardId) {
+        setSelectedCard((prev) => (prev?.id === cardId ? { ...prev, ...detail, isFullDataLoaded: true } : prev));
       }
+    } catch (e) {
+      console.error("Kart detayları çekilemedi:", e);
     }
   }, []);
 
@@ -686,6 +683,7 @@ export default function DeckCardsScreen({ route, navigation }) {
           card={selectedCard}
           deck={deck}
           onSave={updatedCard => {
+            cardDetailsRef.current.set(updatedCard.id, updatedCard);
             setCards(cards.map(c => c.id === updatedCard.id ? updatedCard : c));
             setSelectedCard(updatedCard);
             setEditMode(false);
@@ -803,6 +801,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                   card={selectedCard}
                   cards={cards}
                   onSelectCard={fetchAndSetCardDetail}
+                  onEndReached={loadMore}
                   isDeckOwner={currentUserId && deck.user_id === currentUserId}
                 />
               </View>

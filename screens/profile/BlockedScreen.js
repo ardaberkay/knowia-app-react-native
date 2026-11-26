@@ -12,6 +12,7 @@ import { triggerHaptic } from '../../lib/hapticManager';
 import * as BlockService from '../../services/BlockService';
 import LottieView from 'lottie-react-native';
 import { useListBottomInset } from '../../components/ui/CustomTabBar';
+import { getCategoryIcon } from '../../theme/colors';
 
 export default function BlockedScreen() {
   const { colors } = useTheme();
@@ -104,20 +105,6 @@ export default function BlockedScreen() {
       ]
     );
   }, [authUserId, t, showSuccess, showError]);
-
-  const getCategoryIcon = (sortOrder) => {
-    const icons = {
-      1: 'hugeicons:language-skill',
-      2: 'clarity:atom-solid',
-      3: 'mdi:math-compass',
-      4: 'game-icons:tied-scroll',
-      5: 'arcticons:world-geography-alt',
-      6: 'map:museum',
-      7: 'ic:outline-self-improvement',
-      8: 'streamline-ultimate:module-puzzle-2-bold',
-    };
-    return icons[sortOrder] || 'material-symbols:category';
-  };
 
   return (
     <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>

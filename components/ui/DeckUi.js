@@ -1,21 +1,13 @@
-import React, { memo, useCallback, useMemo, useRef, useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { TouchableOpacity, View, Image, StyleSheet, useWindowDimensions } from 'react-native';
-import Reanimated, {
-  Extrapolation,
-  interpolate,
-  interpolateColor,
-  runOnJS,
-  useAnimatedReaction,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useSharedValue,
-} from 'react-native-reanimated';
 import { Text } from './AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { triggerHaptic } from '../../lib/hapticManager';
-import { fontSizes, fonts } from '../../theme/typography'; // Titreşim yöneticimizi ekledik
+import { fontSizes, fonts } from '../../theme/typography';
+import { getCategoryColors, getCategoryIcon } from '../../theme/colors';
+import StackCarousel from './StackCarousel';
 
 // Deck cards are always portrait rectangles: 140 wide (at most 36% of the
 // screen on narrow phones) with a fixed 1:1.4 ratio, so they never turn square.
@@ -117,28 +109,7 @@ const DeckCard = ({
   // -----------------------------------
 
 
-  const getCategoryColors = (sortOrder) => {
-    if (colors.categoryColors && colors.categoryColors[sortOrder]) {
-      return colors.categoryColors[sortOrder];
-    }
-    return ['#6F8EAD', '#3F5E78'];
-  };
-
-  const getCategoryIcon = (sortOrder) => {
-    const icons = {
-      1: "hugeicons:language-skill",
-      2: "clarity:atom-solid",
-      3: "mdi:math-compass",
-      4: "game-icons:tied-scroll",
-      5: "arcticons:world-geography-alt",
-      6: "map:museum",
-      7: "ic:outline-self-improvement",
-      8: "streamline-ultimate:module-puzzle-2-bold"
-    };
-    return icons[sortOrder] || "material-symbols:category";
-  };
-
-  const gradientColors = getCategoryColors(deck.categories?.sort_order);
+  const gradientColors = getCategoryColors(colors, deck.categories?.sort_order);
   const categoryIcon = getCategoryIcon(deck.categories?.sort_order);
   const isInProgressVariant = variant === 'inProgress';
   const progressValue = Math.max(0, Math.min(1, Number(deck?.deckProgress?.progress || 0)));
@@ -314,178 +285,40 @@ const DeckCard = ({
   );
 };
 
-// --- DeckStackCarousel ---
-// Favourite decks: the deck in the middle sits in front at full size; its
-// neighbours are smaller, dimmed and tucked behind it, peeking out on each
-// side. At most three decks show at once (two at either end). Native scroll
-// with snapping, one deck per swipe. Tapping a side deck brings it to the
-// front; tapping the front deck opens it.
-const CAROUSEL_CARD_WIDTH_RATIO = 0.46; // of the container width
-const CAROUSEL_CARD_MAX_WIDTH = 190;
-const CAROUSEL_VERTICAL_PADDING = 16; // space above the cards
-// Indicator under the cards, a small copy of the stack: the front deck's mark
-// is a line in the middle, its neighbours are dots on each side, the rest are
-// hidden (at most 3 marks, 2 at either end). The marks slide with the scroll.
-const CAROUSEL_DOT_SIZE = 6;
-const CAROUSEL_ACTIVE_DOT_WIDTH = 20;
-const CAROUSEL_DOT_SPACING = 18; // between the centres of neighbouring marks
-const CAROUSEL_DOTS_WIDTH = CAROUSEL_ACTIVE_DOT_WIDTH + 4 * CAROUSEL_DOT_SPACING;
-const CAROUSEL_DOTS_GAP = 14; // between the cards and the indicator
-const CAROUSEL_STEP_RATIO = 0.62; // scroll distance per deck, of the card width
-const CAROUSEL_SIDE_OFFSET_RATIO = 0.42; // neighbour's centre from the front deck's
-const CAROUSEL_FAR_OFFSET_RATIO = 0.46; // second neighbour: hidden behind the first
-const CAROUSEL_SIDE_SCALE = 0.84;
-const CAROUSEL_FAR_SCALE = 0.7;
-const CAROUSEL_SIDE_DIM = 0.35;
-const CAROUSEL_RADIUS = 18; // DeckCard's corner radius
-
-const DeckStackItem = memo(({
-  deck, index, scrollX, step, cardWidth, cardHeight, colors, typography, onItemPress,
-}) => {
-  const sideOffset = cardWidth * CAROUSEL_SIDE_OFFSET_RATIO;
-  const farOffset = cardWidth * CAROUSEL_FAR_OFFSET_RATIO;
-
-  // r: this deck's distance from the centre in scroll space. Scrolling moves
-  // it by r; translateX swaps that for the stacked offset.
-  const stackStyle = useAnimatedStyle(() => {
-    const r = index * step - scrollX.value;
-    const d = Math.abs(r) / step;
-    const offset = interpolate(
-      r,
-      [-2 * step, -step, 0, step, 2 * step],
-      [-farOffset, -sideOffset, 0, sideOffset, farOffset],
-      Extrapolation.CLAMP
-    );
-    return {
-      zIndex: Math.round(100 - d * 10),
-      opacity: interpolate(d, [1, 1.7], [1, 0], Extrapolation.CLAMP),
-      transform: [
-        { translateX: offset - r },
-        { scale: interpolate(d, [0, 1, 2], [1, CAROUSEL_SIDE_SCALE, CAROUSEL_FAR_SCALE], Extrapolation.CLAMP) },
-      ],
-    };
-  });
-  const dimStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(Math.abs(index * step - scrollX.value) / step, [0, 1], [0, CAROUSEL_SIDE_DIM], Extrapolation.CLAMP),
-  }));
-
-  return (
-    <Reanimated.View style={[{ width: step, height: cardHeight, alignItems: 'center' }, stackStyle]}>
-      <View style={{ width: cardWidth, height: cardHeight }}>
-        <DeckCard
-          deck={deck}
-          colors={colors}
-          typography={typography}
-          variant="featured"
-          width={cardWidth}
-          height={cardHeight}
-          onPress={() => onItemPress(index, deck)}
-        />
-        <Reanimated.View
-          pointerEvents="none"
-          style={[StyleSheet.absoluteFill, { backgroundColor: '#000', borderRadius: CAROUSEL_RADIUS }, dimStyle]}
-        />
-      </View>
-    </Reanimated.View>
-  );
-});
-
-// One indicator mark, placed by its distance from the front deck (rel, in
-// decks): a line at 0, a faint dot at ±1, faded out past that (UI thread).
-const DeckStackDot = memo(({ index, scrollX, step, activeColor, inactiveColor }) => {
-  const dotStyle = useAnimatedStyle(() => {
-    const rel = Math.max(-2, Math.min(2, index - scrollX.value / step));
-    const d = Math.abs(rel);
-    const width = interpolate(d, [0, 1], [CAROUSEL_ACTIVE_DOT_WIDTH, CAROUSEL_DOT_SIZE], Extrapolation.CLAMP);
-    return {
-      width,
-      opacity: interpolate(d, [0, 1, 1.6], [1, 0.45, 0], Extrapolation.CLAMP),
-      backgroundColor: interpolateColor(Math.min(1, d), [0, 1], [activeColor, inactiveColor]),
-      transform: [{ translateX: CAROUSEL_DOTS_WIDTH / 2 + rel * CAROUSEL_DOT_SPACING - width / 2 }],
-    };
-  });
-  return <Reanimated.View style={[styles.carouselDot, dotStyle]} />;
-});
-
+// Favourite decks in a stacked carousel (see StackCarousel): large deck
+// cards; tapping the front deck opens it.
 export function DeckStackCarousel({ decks, colors, typography, onPress }) {
-  const [containerWidth, setContainerWidth] = useState(0);
-  const scrollRef = useRef(null);
-  const scrollX = useSharedValue(0);
-
-  const cardWidth = Math.min(CAROUSEL_CARD_MAX_WIDTH, containerWidth * CAROUSEL_CARD_WIDTH_RATIO);
-  const cardHeight = cardWidth * DECK_CARD_ASPECT_RATIO;
-  const step = cardWidth * CAROUSEL_STEP_RATIO;
-
-  const onScroll = useAnimatedScrollHandler((e) => {
-    scrollX.value = e.contentOffset.x;
-  });
-
-  // A light tick each time a new deck comes to the front.
-  const handleFrontChange = useCallback(() => triggerHaptic('selection'), []);
-  useAnimatedReaction(
-    () => (step > 0 ? Math.round(scrollX.value / step) : 0),
-    (index, previous) => {
-      if (previous !== null && index !== previous) runOnJS(handleFrontChange)();
-    },
-    [step]
-  );
-
-  const handleItemPress = useCallback((index, deck) => {
-    const front = step > 0 ? Math.round(scrollX.value / step) : 0;
-    if (index === front) onPress(deck);
-    else scrollRef.current?.scrollTo({ x: index * step, animated: true });
-  }, [onPress, scrollX, step]);
+  // Taps are handled by the carousel (onFrontPress); the card gets none.
+  const renderItem = useCallback(({ item, width, height }) => (
+    <DeckCard
+      deck={item}
+      colors={colors}
+      typography={typography}
+      variant="featured"
+      width={width}
+      height={height}
+      onPress={noop}
+    />
+  ), [colors, typography]);
 
   return (
-    <View
-      onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
-      style={{ paddingTop: CAROUSEL_VERTICAL_PADDING }}
-    >
-      {containerWidth > 0 ? (
-        <Reanimated.ScrollView
-          ref={scrollRef}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          snapToInterval={step}
-          decelerationRate="fast"
-          disableIntervalMomentum
-          onScroll={onScroll}
-          scrollEventThrottle={16}
-          contentContainerStyle={{ paddingHorizontal: (containerWidth - step) / 2 }}
-        >
-          {decks.map((deck, index) => (
-            <DeckStackItem
-              key={deck.id}
-              deck={deck}
-              index={index}
-              scrollX={scrollX}
-              step={step}
-              cardWidth={cardWidth}
-              cardHeight={cardHeight}
-              colors={colors}
-              typography={typography}
-              onItemPress={handleItemPress}
-            />
-          ))}
-        </Reanimated.ScrollView>
-      ) : null}
-      {containerWidth > 0 && decks.length > 1 ? (
-        <View style={styles.carouselDots}>
-          {decks.map((deck, index) => (
-            <DeckStackDot
-              key={deck.id}
-              index={index}
-              scrollX={scrollX}
-              step={step}
-              activeColor={colors.buttonColor}
-              inactiveColor={colors.muted}
-            />
-          ))}
-        </View>
-      ) : null}
-    </View>
+    <StackCarousel
+      items={decks}
+      keyExtractor={deckKey}
+      renderItem={renderItem}
+      variant="stack"
+      onFrontPress={onPress}
+      widthRatio={0.46}
+      maxWidth={190}
+      aspectRatio={DECK_CARD_ASPECT_RATIO}
+      activeColor={colors.buttonColor}
+      inactiveColor={colors.muted}
+      paddingTop={16}
+    />
   );
 }
+const deckKey = (deck) => String(deck.id);
+const noop = () => {};
 
 const styles = StyleSheet.create({
   deckCardModern: {
@@ -524,20 +357,6 @@ const styles = StyleSheet.create({
   deckCardFeatured: {
     marginRight: 0,
     marginBottom: 0,
-  },
-  // Fixed width, centred; marks are positioned inside it by DeckStackDot.
-  carouselDots: {
-    width: CAROUSEL_DOTS_WIDTH,
-    height: CAROUSEL_DOT_SIZE,
-    alignSelf: 'center',
-    marginTop: CAROUSEL_DOTS_GAP,
-  },
-  carouselDot: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    height: CAROUSEL_DOT_SIZE,
-    borderRadius: CAROUSEL_DOT_SIZE / 2,
   },
   deckTitleFeatured: {
     fontSize: fontSizes.title3,

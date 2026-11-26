@@ -49,6 +49,7 @@ import { MenuView } from '@expo/ui/community/menu';
 import { isSpeechAvailable, useCardSpeech } from '../../lib/speech';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { maybePromptForReview, getReviewMilestones } from '../../services/ReviewPromptService';
+import { getCategoryColors } from '../../theme/colors';
 
 // Eğer henüz yoksa AnimatedPressable'ı oluştur (önceki sayfalardaki gibi)
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
@@ -538,13 +539,6 @@ export default function SwipeDeckScreen({ route, navigation }) {
     toggleReversed,
     t,
   ]);
-
-  const getCategoryColors = (sortOrder) => {
-    if (colors.categoryColors && colors.categoryColors[sortOrder]) {
-      return colors.categoryColors[sortOrder];
-    }
-    return ['#A88D6B', '#7A5F3A'];
-  };
 
   const leftInactiveColor = '#f3a14c';
   const leftActiveColor = colors.buttonColor;
@@ -1458,7 +1452,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     cardHeight,
   } = {}) => {
     const cardId = card?.card_id;
-    const gradientColors = getCategoryColors(categorySortOrder);
+    const gradientColors = getCategoryColors(colors, categorySortOrder);
     const isPlaceholder = !card || !card.cards;
 
     return (
@@ -1488,7 +1482,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
         />
       </View>
     );
-  }, [categorySortOrder, colors.cardBackground, colors.text, getCategoryColors, handleBackOverflowChange, isReversed, leftActiveColor, rightActiveColor]);
+  }, [categorySortOrder, colors.cardBackground, colors.categoryColors, colors.text, handleBackOverflowChange, isReversed, leftActiveColor, rightActiveColor]);
 
   const renderSwipeCardActions = useCallback((card, params = {}) => {
     const {
@@ -1830,7 +1824,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
                 even in reverse mode. */}
             <View style={styles.expandedCard}>
               <LinearGradient
-                colors={getCategoryColors(categorySortOrder)}
+                colors={getCategoryColors(colors, categorySortOrder)}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={StyleSheet.absoluteFill}

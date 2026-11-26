@@ -9,6 +9,7 @@ import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
+import { getCategoryIcon } from '../../theme/colors';
 
 
 export default function CategorySelector({ isVisible, onClose, categories = [], selectedCategoryId, onSelectCategory }) {
@@ -36,20 +37,6 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
   // --- ORİJİNAL FONKSİYONLARIN (KORUNDU) ---
   const getCategoryName = (category) => t(`categories.${category.sort_order}`, null);
 
-  const getCategoryIcon = (sortOrder) => {
-    const icons = {
-      1: "hugeicons:language-skill",
-      2: "clarity:atom-solid",
-      3: "mdi:math-compass",
-      4: "game-icons:tied-scroll",
-      5: "arcticons:world-geography-alt",
-      6: "map:museum",
-      7: "ic:outline-self-improvement",
-      8: "garden:puzzle-piece-fill-16"
-    };
-    return icons[sortOrder] || "material-symbols:category";
-  };
-
   const renderItem = useCallback(({ item: category }) => {
     const isSelected = selectedCategoryId === category.id;
 
@@ -73,7 +60,7 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
       >
         <View style={styles.iconWrapper}>
           <Iconify
-            icon={getCategoryIcon(category.sort_order)}
+            icon={getCategoryIcon(category.sort_order, { picker: true })}
             size={26}
             color={isSelected ? primaryColor : colors.text}
           />

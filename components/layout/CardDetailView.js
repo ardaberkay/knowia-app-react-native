@@ -1,285 +1,105 @@
-import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, Image, FlatList, TouchableOpacity, Animated, PixelRatio, useWindowDimensions } from 'react-native';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { View, StyleSheet, ScrollView, Image } from 'react-native';
+import Reanimated, {
+  useAnimatedReaction,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { Text } from '../ui/AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/theme';
+import { getCategoryColors } from '../../theme/colors';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import Svg, { Path } from 'react-native-svg';
+import StackCarousel from '../ui/StackCarousel';
 
-export default function CardDetailView({ card, cards = [], onSelectCard, showCreatedAt = true, isDeckOwner = false }) {
+// Card size in the carousel: 240 × 315 at most (61% of the width on narrow
+// phones), same proportions as before.
+const CARD_MAX_WIDTH = 240;
+const CARD_WIDTH_RATIO = 0.61;
+const CARD_ASPECT_RATIO = 315 / 240;
+const CARD_RADIUS = 20;
+const FLIP_DURATION = 300;
+
+/**
+ * Card detail: the deck's cards in a deck carousel (swipe, or tap a card
+ * behind to bring it up; tap the front card to flip it) and the selected
+ * card's content under it.
+ *
+ * `card` is the selected card, `cards` the list it belongs to,
+ * `onSelectCard(card)` is called when another card comes to the front (the
+ * parent may fetch its details and pass them back as `card`), and
+ * `onEndReached()` (optional) near the end of `cards`, to load the next page
+ * so the carousel keeps going.
+ */
+export default function CardDetailView({ card, cards = [], onSelectCard, onEndReached, showCreatedAt = true, isDeckOwner = false }) {
   const { colors } = useTheme();
-  const { t } = useTranslation();
-  const { width: screenWidth } = useWindowDimensions();
-  const flatListRef = useRef(null);
-  const [flippedCards, setFlippedCards] = useState({});
+  const { t, i18n } = useTranslation();
+  const carouselRef = useRef(null);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const flipAnimations = useRef({});
-  const dotAnimations = useRef({});
-
-  // Kategoriye göre renkleri al (Supabase sort_order kullanarak)
-  const getCategoryColors = (sortOrder) => {
-    if (colors.categoryColors && colors.categoryColors[sortOrder]) {
-      return colors.categoryColors[sortOrder];
-    }
-    // Varsayılan renkler (Tarih kategorisi - sort_order: 4)
-    return ['#6F8EAD', '#3F5E78'];
-  };
-
-  // Kategori ikonunu sort_order değerine göre al
-  const getCategoryIcon = (sortOrder) => {
-    const icons = {
-      1: "hugeicons:language-skill", // Dil
-      2: "clarity:atom-solid", // Bilim
-      3: "mdi:math-compass", // Matematik
-      4: "game-icons:tied-scroll", // Tarih
-      5: "arcticons:world-geography-alt", // Coğrafya
-      6: "map:museum", // Sanat ve Kültür
-      7: "ic:outline-self-improvement", // Kişisel Gelişim
-      8: "streamline-ultimate:module-puzzle-2-bold" // Genel Kültür
-    };
-    return icons[sortOrder] || "hugeicons:language-skill";
-  };
 
   const currentIndex = useMemo(() => {
-    if (!cards || cards.length === 0 || !card) return 0;
-    const idx = cards.findIndex(c => c?.id === card?.id);
+    const idx = cards.findIndex((c) => c?.id === card?.id);
     return idx >= 0 ? idx : 0;
-  }, [cards, card]);
+  }, [cards, card?.id]);
 
-  // Dot indikatör için görüntülenecek kartları hesapla
-  const getVisibleCards = useMemo(() => {
-    if (!cards || cards.length === 0) return [];
-
-    const totalCards = cards.length;
-    const currentIdx = currentIndex;
-
-    if (totalCards <= 3) {
-      // 3 veya daha az kart varsa hepsini göster
-      return cards.map((card, index) => ({ card, index }));
-    }
-
-    // Mevcut kartı ortada tutacak şekilde görüntülenecek kartları belirle
-    let startIndex = currentIdx - 1;
-    let endIndex = currentIdx + 1;
-
-    // Başlangıçta sınır kontrolü
-    if (startIndex < 0) {
-      startIndex = 0;
-      endIndex = 2;
-    }
-
-    // Sonda sınır kontrolü
-    if (endIndex >= totalCards) {
-      endIndex = totalCards - 1;
-      startIndex = endIndex - 2;
-    }
-
-    return cards.slice(startIndex, endIndex + 1).map((card, relativeIndex) => ({
-      card,
-      index: startIndex + relativeIndex
-    }));
-  }, [cards, currentIndex]);
-
-  // Dot animasyonlarını başlat
+  // The carousel reports the card it brought to the front; the parent then
+  // selects it. When the selection changes from outside (e.g. the card was
+  // deleted and the next one is selected), move the carousel to it.
+  const frontIndexRef = useRef(currentIndex);
+  const handleFrontChange = useCallback((index) => {
+    frontIndexRef.current = index;
+    const next = cards[index];
+    if (next && next.id !== card?.id) onSelectCard?.(next);
+  }, [cards, card?.id, onSelectCard]);
   useEffect(() => {
-    getVisibleCards.forEach(({ card: dotCard, index: dotIndex }) => {
-      const cardId = dotCard?.id || `dot-${dotIndex}`;
-
-      if (!dotAnimations.current[cardId]) {
-        dotAnimations.current[cardId] = {
-          scale: new Animated.Value(dotIndex === currentIndex ? 1.5 : 1),
-          opacity: new Animated.Value(dotIndex === currentIndex ? 1 : 0.4),
-        };
-      }
-
-      // Animasyonu başlat
-      Animated.parallel([
-        Animated.spring(dotAnimations.current[cardId].scale, {
-          toValue: dotIndex === currentIndex ? 1.5 : 1,
-          useNativeDriver: true,
-          tension: 100,
-          friction: 8,
-        }),
-        Animated.timing(dotAnimations.current[cardId].opacity, {
-          toValue: dotIndex === currentIndex ? 1 : 0.4,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    });
-  }, [currentIndex, getVisibleCards]);
-
-  const flipCard = (cardId) => {
-    if (!flipAnimations.current[cardId]) {
-      flipAnimations.current[cardId] = new Animated.Value(0);
+    if (currentIndex !== frontIndexRef.current) {
+      frontIndexRef.current = currentIndex;
+      carouselRef.current?.scrollToIndex(currentIndex);
     }
-
-    const toValue = flippedCards[cardId] ? 0 : 1;
-
-    Animated.timing(flipAnimations.current[cardId], {
-      toValue,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-
-    setFlippedCards(prev => ({
-      ...prev,
-      [cardId]: !prev[cardId]
-    }));
-  };
-
-  const pixelRatio = useMemo(() => PixelRatio.get(), []);
+  }, [currentIndex]);
 
   useEffect(() => {
     setImageLoaded(false);
   }, [card?.id, card?.image]);
 
-  const getFlipInterpolation = (cardId) => {
-    if (!flipAnimations.current[cardId]) {
-      flipAnimations.current[cardId] = new Animated.Value(0);
-    }
+  // Each card registers its flip; a tap on the front card (reported by the
+  // carousel) runs it.
+  const flipsRef = useRef(new Map());
+  const registerFlip = useCallback((id, flip) => {
+    flipsRef.current.set(id, flip);
+    return () => {
+      if (flipsRef.current.get(id) === flip) flipsRef.current.delete(id);
+    };
+  }, []);
+  const handleFrontPress = useCallback((item) => {
+    flipsRef.current.get(item?.id)?.();
+  }, []);
 
-    const anim = flipAnimations.current[cardId];
-
-    const frontRotateY = anim.interpolate({
-      inputRange: [0, 1],
-      outputRange: ['0deg', '180deg'],
-    });
-
-    const backRotateY = anim.interpolate({
-      inputRange: [0, 1],
-      outputRange: ['180deg', '360deg'],
-    });
-
-    const frontOpacity = anim.interpolate({
-      inputRange: [0, 0.5, 0.51, 1],
-      outputRange: [1, 1, 0, 0],
-    });
-
-    const backOpacity = anim.interpolate({
-      inputRange: [0, 0.49, 0.5, 1],
-      outputRange: [0, 0, 1, 1],
-    });
-
-    const frontZIndex = anim.interpolate({
-      inputRange: [0, 0.5, 0.51, 1],
-      outputRange: [10, 10, 0, 0],
-    });
-
-    const backZIndex = anim.interpolate({
-      inputRange: [0, 0.49, 0.5, 1],
-      outputRange: [0, 0, 10, 10],
-    });
-
-    return { frontRotateY, backRotateY, frontOpacity, backOpacity, frontZIndex, backZIndex };
-  };
-
-  const getCardItemLayout = useCallback((data, index) => ({
-    length: screenWidth, offset: screenWidth * index, index,
-  }), [screenWidth]);
-
-  const handleScrollEnd = useCallback((evt) => {
-    const offsetX = evt?.nativeEvent?.contentOffset?.x || 0;
-    const index = Math.round(offsetX / screenWidth);
-    const next = cards[index];
-    if (next && onSelectCard) onSelectCard(next);
-  }, [screenWidth, cards, onSelectCard]);
-
-  const renderCardSliderItem = useCallback(({ item }) => {
-    const cardId = item?.id || `card-${item?.name || 'unknown'}`;
-    const { frontRotateY, backRotateY, frontOpacity, backOpacity, frontZIndex, backZIndex } = getFlipInterpolation(cardId);
-    const categorySortOrder = item?.deck?.categories?.sort_order;
-    const gradientColors = getCategoryColors(categorySortOrder);
-    const categoryIcon = getCategoryIcon(categorySortOrder);
-
-    const questionText = item?.question || item?.name || item?.title || t('cardDetail.unnamed', 'İsimsiz Kart');
-    const answerText = item?.answer || t('cardDetail.noAnswer', 'Cevap yok');
-
-    return (
-      <View style={{ width: screenWidth, paddingHorizontal: 18, marginVertical: 27, justifyContent: 'center', alignItems: 'center' }}>
-        <View style={styles.flipContainer}>
-
-          <Animated.View
-            shouldRasterizeIOS={true}
-            rasterizationScale={pixelRatio}
-            renderToHardwareTextureAndroid={true}
-            style={[
-              styles.sliderItem,
-              {
-                backfaceVisibility: 'hidden',
-                position: 'absolute',
-                opacity: frontOpacity,
-                zIndex: frontZIndex,
-                transform: [{ rotateY: frontRotateY }],
-              },
-            ]}
-          >
-            <LinearGradient
-              colors={gradientColors}
-              start={{ x: 0, y: 1 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.sliderItemGradient}
-            >
-              <View style={styles.backgroundCategoryIcon}>
-                <Iconify icon={categoryIcon} size={200} color="rgba(0, 0, 0, 0.1)" style={styles.categoryIconStyle} />
-              </View>
-              <TouchableOpacity activeOpacity={0.9} onPress={() => flipCard(cardId)} style={styles.cardTouchable}>
-                <View style={[styles.quarterCircle, styles.quarterCircleContainer, { backgroundColor: colors.buttonColor }]}>
-                  <Iconify icon="uil:comment-alt-question" size={26} color="rgba(255, 255, 255, 0.9)" />
-                </View>
-                <View style={styles.flipIconContainer}>
-                  <Iconify icon="fluent:card-ui-portrait-flip-24-regular" size={24} color="rgba(255, 255, 255, 0.9)" />
-                </View>
-                <View style={styles.cardFaceContent}>
-                  <Text style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText }]} numberOfLines={3}>{questionText}</Text>
-                </View>
-              </TouchableOpacity>
-            </LinearGradient>
-          </Animated.View>
-
-          <Animated.View
-            shouldRasterizeIOS={true}
-            rasterizationScale={pixelRatio}
-            renderToHardwareTextureAndroid={true}
-            style={[
-              styles.sliderItem,
-              {
-                backfaceVisibility: 'hidden',
-                position: 'absolute',
-                opacity: backOpacity,
-                zIndex: backZIndex,
-                transform: [{ rotateY: backRotateY }],
-              },
-            ]}
-          >
-            <LinearGradient
-              colors={gradientColors}
-              start={{ x: 0, y: 1 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.sliderItemGradient}
-            >
-              <View style={styles.backgroundCategoryIcon}>
-                <Iconify icon={categoryIcon} size={200} color="rgba(0, 0, 0, 0.1)" style={styles.categoryIconStyle} />
-              </View>
-              <TouchableOpacity activeOpacity={0.9} onPress={() => flipCard(cardId)} style={styles.cardTouchable}>
-                <View style={[styles.quarterCircle, styles.quarterCircleContainer, { backgroundColor: colors.buttonColor }]}>
-                  <Iconify icon="uil:comment-alt-check" size={26} color="rgba(255, 255, 255, 0.9)" />
-                </View>
-                <View style={styles.cardFaceContent}>
-                  <Text style={[typography.styles.body, styles.sliderItemTitle, { color: colors.headText }]} numberOfLines={4}>{answerText}</Text>
-                </View>
-              </TouchableOpacity>
-            </LinearGradient>
-          </Animated.View>
-
-        </View>
-      </View>
-    );
-  }, [screenWidth, colors, flippedCards, t, pixelRatio]);
+  const renderCard = useCallback(({ item, index, width, height, progress }) => (
+    <FlipCard
+      card={item}
+      index={index}
+      width={width}
+      height={height}
+      progress={progress}
+      registerFlip={registerFlip}
+      colors={colors}
+      t={t}
+    />
+  ), [colors, registerFlip, t]);
 
   if (!card) return null;
+
+  const sections = [
+    { key: 'question', icon: 'uil:comment-alt-question', label: t('cardDetail.question', 'Soru'), text: card.question },
+    { key: 'answer', icon: 'uil:comment-alt-check', label: t('cardDetail.answer', 'Cevap'), text: card.answer },
+    { key: 'example', icon: 'lucide:lightbulb', label: t('cardDetail.example', 'Örnek'), text: card.example },
+    { key: 'note', icon: 'material-symbols-light:stylus-note', label: t('cardDetail.note', 'Not'), text: card.note },
+  ].filter((section) => section.key === 'question' || section.text);
 
   return (
     <ScrollView
@@ -287,168 +107,74 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
       contentContainerStyle={{ paddingBottom: 32, flexGrow: 1 }}
       showsVerticalScrollIndicator={false}
     >
-      {/* Deck Slider */}
-      <View style={{
-        width: '100%',
-        position: 'relative',
-        paddingVertical: 20,
-      }}>
-        {/* Kıvrımlı arka plan */}
-        <View style={styles.curvedBackgroundContainer}>
-          <Svg
-            height="100%"
-            width="100%"
-            style={StyleSheet.absoluteFill}
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-          >
-            <Path
-              d="M0,0 L100,0 L100,70 Q75,90 50,70 Q25,50 0,70 Z"
-              fill={colors.cardBackground}
-            />
+      <View style={styles.carouselArea}>
+        {/* Curved background behind the cards */}
+        <View style={styles.curvedBackground}>
+          <Svg height="100%" width="100%" style={StyleSheet.absoluteFill} viewBox="0 0 100 100" preserveAspectRatio="none">
+            <Path d="M0,0 L100,0 L100,70 Q75,90 50,70 Q25,50 0,70 Z" fill={colors.cardBackground} />
           </Svg>
         </View>
-        {/* Sol Ok Butonu */}
-        {currentIndex > 0 && (
-          <TouchableOpacity
-            style={[styles.navButton, styles.leftNavButton, { backgroundColor: colors.buttonColor, borderColor: colors.cardBorder }]}
-            onPress={() => {
-              const prevIndex = currentIndex - 1;
-              if (prevIndex >= 0 && flatListRef.current) {
-                flatListRef.current.scrollToIndex({ index: prevIndex, animated: true });
-                if (onSelectCard) onSelectCard(cards[prevIndex]);
-              }
-            }}
-          >
-            <Iconify icon="material-symbols:arrow-back-ios-new-rounded" size={22} color={'#FFFFFF'} />
-          </TouchableOpacity>
-        )}
-
-        <FlatList
-          ref={flatListRef}
-          data={cards}
-          keyExtractor={(item, index) => (item?.id ? String(item.id) : `card-${index}`)}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-
-          // GECİKME ÇÖZÜMÜ 1: İlk açılışta hemen çizilecek kartları hesapla
-          initialScrollIndex={currentIndex}
-          getItemLayout={getCardItemLayout}
-
-          // GECİKME ÇÖZÜMÜ 2: Render motorunu hızlandıran proplar
-          removeClippedSubviews={false} // iOS'te true ise swipe sırasında titreme/kaybolma yapabilir! False yap.
-          initialNumToRender={5} // İlk açılışta daha fazla kart hazırda beklesin
-          maxToRenderPerBatch={5}
-          windowSize={5}
-
-          renderItem={renderCardSliderItem}
-          onMomentumScrollEnd={handleScrollEnd}
-
-          // GECİKME ÇÖZÜMÜ 3 (Opsiyonel ama etkili): Render hatasında çökmeyi engeller, sessizce o karta gider
-          onScrollToIndexFailed={(info) => {
-            const wait = new Promise(resolve => setTimeout(resolve, 50));
-            wait.then(() => {
-              flatListRef.current?.scrollToIndex({ index: info.index, animated: false });
-            });
-          }}
+        <StackCarousel
+          ref={carouselRef}
+          items={cards}
+          keyExtractor={cardKey}
+          renderItem={renderCard}
+          variant="deck"
+          onFrontPress={handleFrontPress}
+          widthRatio={CARD_WIDTH_RATIO}
+          maxWidth={CARD_MAX_WIDTH}
+          aspectRatio={CARD_ASPECT_RATIO}
+          radius={CARD_RADIUS}
+          initialIndex={currentIndex}
+          onFrontChange={handleFrontChange}
+          onEndReached={onEndReached}
+          activeColor={colors.buttonColor}
+          inactiveColor={colors.muted}
+          paddingTop={27}
+          dotsGap={27}
         />
-
-        {/* Sağ Ok Butonu */}
-        {currentIndex < cards.length - 1 && (
-          <TouchableOpacity
-            style={[styles.navButton, styles.rightNavButton, { backgroundColor: colors.buttonColor, borderColor: colors.cardBorder }]}
-            onPress={() => {
-              const nextIndex = currentIndex + 1;
-              if (nextIndex < cards.length && flatListRef.current) {
-                flatListRef.current.scrollToIndex({ index: nextIndex, animated: true });
-                if (onSelectCard) onSelectCard(cards[nextIndex]);
-              }
-            }}
-          >
-            <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={22} color={'#FFFFFF'} />
-          </TouchableOpacity>
-        )}
-
-        {/* Dot Indikatör */}
-        {cards && cards.length > 1 && (
-          <View style={styles.dotContainer}>
-            {getVisibleCards.map(({ card: dotCard, index: dotIndex }) => {
-              const cardId = dotCard?.id || `dot-${dotIndex}`;
-              const animation = dotAnimations.current[cardId];
-
-              return (
-                <Animated.View
-                  key={cardId}
-                  style={[
-                    {
-                      transform: [{ scale: animation?.scale || 1 }],
-                      opacity: animation?.opacity || 0.4,
-                    }
-                  ]}
-                >
-                  <TouchableOpacity
-                    style={[
-                      dotIndex === currentIndex ? styles.activeDot : styles.inactiveDot,
-                      {
-                        backgroundColor: dotIndex === currentIndex
-                          ? colors.buttonColor
-                          : colors.border,
-                      }
-                    ]}
-                    onPress={() => {
-                      if (flatListRef.current) {
-                        flatListRef.current.scrollToIndex({ index: dotIndex, animated: true });
-                        if (onSelectCard) onSelectCard(cards[dotIndex]);
-                      }
-                    }}
-                  />
-                </Animated.View>
-              );
-            })}
-          </View>
-        )}
       </View>
 
-      {/* Kart Detayları - Ayrı Kartlar */}
-      <View style={styles.cardDetailsContainer}>
-
-        {/* Görsel Kartı */}
-        {card?.image ? (
-          <View style={[styles.detailCard, {
-            backgroundColor: colors.cardBackground,
-            borderColor: colors.cardBorder,
-            shadowColor: colors.shadowColor,
-            shadowOffset: colors.shadowOffset,
-            shadowOpacity: colors.shadowOpacity,
-            shadowRadius: colors.shadowRadius,
-            elevation: colors.elevation,
-          }]}>
-            <View style={[styles.cardHeader, { borderBottomColor: colors.cardBorder }]}>
-              <View style={styles.labelRow}>
-                <Iconify icon="mage:image-fill" size={24} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.cardQuestionText }]}>
-                  {t("cardDetail.image", "Kart Görseli")}
-                </Text>
-              </View>
+      <View style={styles.sections}>
+        {card.image ? (
+          <DetailSection icon="mage:image-fill" label={t('cardDetail.image', 'Kart Görseli')} colors={colors}>
+            <View style={styles.imageBox}>
+              {!imageLoaded && <View style={[styles.imagePlaceholder, { backgroundColor: colors.border }]} />}
+              <Image
+                source={{ uri: card.image }}
+                style={[styles.image, !imageLoaded && { opacity: 0 }]}
+                onLoadEnd={() => setImageLoaded(true)}
+              />
             </View>
-            <View style={styles.cardContent}>
-              <View style={styles.cardImageContainer}>
-                {!imageLoaded && (
-                  <View style={[styles.cardImagePlaceholder, { backgroundColor: colors.border }]} />
-                )}
-                <Image
-                  source={{ uri: card.image }}
-                  style={[styles.cardImage, !imageLoaded && { opacity: 0 }]}
-                  onLoadEnd={() => setImageLoaded(true)}
-                />
-              </View>
-            </View>
-          </View>
+          </DetailSection>
         ) : null}
+        {sections.map((section) => (
+          <DetailSection key={section.key} icon={section.icon} label={section.label} colors={colors}>
+            <Text style={[typography.styles.body, styles.sectionText, { color: colors.cardAnswerText }]}>
+              {section.text}
+            </Text>
+          </DetailSection>
+        ))}
+      </View>
 
-        {/* Soru Kartı */}
-        <View style={[styles.detailCard, {
+      {showCreatedAt && isDeckOwner && card.created_at ? (
+        <Text style={[typography.styles.subhead, styles.createdAt, { color: colors.muted }]}>
+          {`${t('cardDetail.createdAt', 'Oluşturulma Tarihi')} ${new Date(card.created_at).toLocaleString(i18n.language)}`}
+        </Text>
+      ) : null}
+    </ScrollView>
+  );
+}
+
+const cardKey = (card, index) => (card?.id ? String(card.id) : `card-${index}`);
+
+// One block under the carousel: icon + label header, then its content.
+function DetailSection({ icon, label, colors, children }) {
+  return (
+    <View
+      style={[
+        styles.section,
+        {
           backgroundColor: colors.cardBackground,
           borderColor: colors.cardBorder,
           shadowColor: colors.shadowColor,
@@ -456,329 +182,200 @@ export default function CardDetailView({ card, cards = [], onSelectCard, showCre
           shadowOpacity: colors.shadowOpacity,
           shadowRadius: colors.shadowRadius,
           elevation: colors.elevation,
-        }]}>
-          <View style={[styles.cardHeader, { borderBottomColor: colors.cardBorder }]}>
-            <View style={styles.labelRow}>
-              <Iconify icon="uil:comment-alt-question" size={24} color="#F98A21" style={styles.labelIcon} />
-              <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.cardQuestionText }]}>
-                {t("cardDetail.question", "Soru")}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.cardContent}>
-            <Text
-              style={[typography.styles.body, { fontSize: fontSizes.body, color: colors.cardAnswerText, marginLeft: 24 }]}
-            >
-              {card?.question}
-            </Text>
-          </View>
-        </View>
-
-        {/* Cevap Kartı */}
-        {card?.answer ? (
-          <View style={[styles.detailCard, {
-            backgroundColor: colors.cardBackground,
-            borderColor: colors.cardBorder,
-            shadowColor: colors.shadowColor,
-            shadowOffset: colors.shadowOffset,
-            shadowOpacity: colors.shadowOpacity,
-            shadowRadius: colors.shadowRadius,
-            elevation: colors.elevation,
-          }]}>
-            <View style={[styles.cardHeader, { borderBottomColor: colors.cardBorder }]}>
-              <View style={styles.labelRow}>
-                <Iconify icon="uil:comment-alt-check" size={24} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.cardQuestionText }]}>
-                  {t("cardDetail.answer", "Cevap")}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.cardContent}>
-              <Text
-                style={[typography.styles.body, { fontSize: fontSizes.body, color: colors.cardAnswerText, marginLeft: 24 }]}
-              >
-                {card.answer}
-              </Text>
-            </View>
-          </View>
-        ) : null}
-
-        {/* Örnek Kartı */}
-        {card?.example ? (
-          <View style={[styles.detailCard, {
-            backgroundColor: colors.cardBackground,
-            borderColor: colors.cardBorder,
-            shadowColor: colors.shadowColor,
-            shadowOffset: colors.shadowOffset,
-            shadowOpacity: colors.shadowOpacity,
-            shadowRadius: colors.shadowRadius,
-            elevation: colors.elevation,
-          }]}>
-            <View style={[styles.cardHeader, { borderBottomColor: colors.cardBorder }]}>
-              <View style={styles.labelRow}>
-                <Iconify icon="lucide:lightbulb" size={24} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.cardQuestionText }]}>
-                  {t("cardDetail.example", "Örnek")}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.cardContent}>
-              <Text
-                style={[typography.styles.body, { fontSize: fontSizes.body, color: colors.cardAnswerText, marginLeft: 24 }]}
-              >
-                {card.example}
-              </Text>
-            </View>
-          </View>
-        ) : null}
-
-        {/* Not Kartı */}
-        {card?.note ? (
-          <View style={[styles.detailCard, {
-            backgroundColor: colors.cardBackground,
-            borderColor: colors.cardBorder,
-            shadowColor: colors.shadowColor,
-            shadowOffset: colors.shadowOffset,
-            shadowOpacity: colors.shadowOpacity,
-            shadowRadius: colors.shadowRadius,
-            elevation: colors.elevation,
-          }]}>
-            <View style={[styles.cardHeader, { borderBottomColor: colors.cardBorder }]}>
-              <View style={styles.labelRow}>
-                <Iconify icon="material-symbols-light:stylus-note" size={24} color="#F98A21" style={styles.labelIcon} />
-                <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.cardQuestionText }]}>
-                  {t("cardDetail.note", "Not")}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.cardContent}>
-              <Text
-                style={[typography.styles.body, { fontSize: fontSizes.body, color: colors.cardAnswerText, marginLeft: 24 }]}
-              >
-                {card.note}
-              </Text>
-            </View>
-          </View>
-        ) : null}
-
+        },
+      ]}
+    >
+      <View style={[styles.sectionHeader, { borderBottomColor: colors.cardBorder }]}>
+        <Iconify icon={icon} size={24} color="#F98A21" />
+        <Text style={[styles.sectionLabel, { color: colors.cardQuestionText }]}>{label}</Text>
       </View>
+      <View style={styles.sectionContent}>{children}</View>
+    </View>
+  );
+}
 
-      {/* Oluşturulma tarihi */}
-      {showCreatedAt && isDeckOwner && card?.created_at ? (
-        <View style={{ paddingHorizontal: 18, marginTop: 'auto', marginBottom: 56 }}>
-          <Text
-            style={[typography.styles.subhead, { color: colors.muted, textAlign: 'center', fontSize: fontSizes.subhead }]}
-          >
-            {`${t("cardDetail.createdAt", "Oluşturulma Tarihi")} ${new Date(card.created_at).toLocaleString('tr-TR')}`}
-          </Text>
+// A card in the carousel. A tap on the front card (reported by the carousel)
+// flips it, on the UI thread with nothing re-rendering; a flipped card turns
+// back once it leaves the front.
+const FlipCard = memo(({ card, index, width, height, progress, registerFlip, colors, t }) => {
+  const flip = useSharedValue(0); // 0 = question side, 1 = answer side
+
+  const toggle = useCallback(() => {
+    flip.value = withTiming(flip.value > 0.5 ? 0 : 1, { duration: FLIP_DURATION });
+  }, [flip]);
+  useEffect(() => registerFlip(card?.id, toggle), [card?.id, registerFlip, toggle]);
+
+  useAnimatedReaction(
+    () => Math.abs(progress.value - index) > 0.5,
+    (away, wasAway) => {
+      if (away && !wasAway && flip.value > 0) flip.value = withTiming(0, { duration: FLIP_DURATION });
+    },
+    [index]
+  );
+
+  const frontStyle = useAnimatedStyle(() => ({
+    opacity: flip.value < 0.5 ? 1 : 0,
+    transform: [{ perspective: 1000 }, { rotateY: `${flip.value * 180}deg` }],
+  }));
+  const backStyle = useAnimatedStyle(() => ({
+    opacity: flip.value < 0.5 ? 0 : 1,
+    transform: [{ perspective: 1000 }, { rotateY: `${flip.value * 180 - 180}deg` }],
+  }));
+
+  const faceProps = {
+    gradientColors: getCategoryColors(colors, card?.deck?.categories?.sort_order),
+    colors,
+  };
+
+  return (
+    <View style={{ width, height }}>
+      <Reanimated.View style={[styles.face, frontStyle]}>
+        <CardFace
+          {...faceProps}
+          cornerIcon="uil:comment-alt-question"
+          showFlipHint
+          text={card?.question || card?.name || card?.title || t('cardDetail.unnamed', 'İsimsiz Kart')}
+          numberOfLines={3}
+        />
+      </Reanimated.View>
+      <Reanimated.View style={[styles.face, backStyle]}>
+        <CardFace
+          {...faceProps}
+          cornerIcon="uil:comment-alt-check"
+          text={card?.answer || t('cardDetail.noAnswer', 'Cevap yok')}
+          numberOfLines={4}
+        />
+      </Reanimated.View>
+    </View>
+  );
+});
+
+// The category watermark is only used on deck cards, not on single cards.
+function CardFace({ gradientColors, colors, cornerIcon, showFlipHint = false, text, numberOfLines }) {
+  return (
+    <LinearGradient colors={gradientColors} start={{ x: 0, y: 1 }} end={{ x: 1, y: 0 }} style={styles.faceGradient}>
+      <View style={[styles.cornerBadge, { backgroundColor: colors.buttonColor }]}>
+        <Iconify icon={cornerIcon} size={26} color="rgba(255, 255, 255, 0.9)" />
+      </View>
+      {showFlipHint ? (
+        <View style={styles.flipHint}>
+          <Iconify icon="fluent:card-ui-portrait-flip-24-regular" size={24} color="rgba(255, 255, 255, 0.9)" />
         </View>
       ) : null}
-    </ScrollView>
+      <View style={styles.faceContent}>
+        <Text style={[styles.faceText, { color: colors.headText }]} numberOfLines={numberOfLines}>
+          {text}
+        </Text>
+      </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  sliderItem: {
-    height: 315,
-    width: 240,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+  carouselArea: {
+    width: '100%',
+    paddingVertical: 20,
   },
-  sliderItemGradient: {
-    height: 315,
-    width: 240,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
+  curvedBackground: {
+    ...StyleSheet.absoluteFill,
+    zIndex: -1,
+  },
+
+  // Card faces
+  face: {
+    ...StyleSheet.absoluteFill,
+    backfaceVisibility: 'hidden',
+  },
+  faceGradient: {
+    flex: 1,
+    borderRadius: CARD_RADIUS,
     overflow: 'hidden',
   },
-  sliderItemTitle: {
+  cornerBadge: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#F98A21',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  flipHint: {
+    position: 'absolute',
+    top: 7,
+    right: 4,
+    zIndex: 1,
+  },
+  faceContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  faceText: {
     fontSize: fontSizes.bodyLarge,
     fontFamily: fonts.bold,
     textAlign: 'center',
   },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 2,
-  },
-  labelIcon: {
-    marginRight: 8,
-  },
-  label: {
-    fontSize: fontSizes.bodyLarge,
-    fontFamily: fonts.semibold,
-    letterSpacing: 0.3,
-  },
-  cardImage: {
-    width: '100%',
-    height: 160,
-    resizeMode: 'contain',
-    backgroundColor: 'transparent',
-    alignSelf: 'center',
-  },
-  cardImageContainer: {
-    width: '100%',
-    height: 160,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  cardImagePlaceholder: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 12,
-    opacity: 0.35,
-  },
-  flipContainer: {
-    width: 240,
-    height: 315,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardFaceContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    width: '100%',
-  },
-  quarterCircleContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    zIndex: 1,
-    width: 40,
-    height: 40,
-    overflow: 'hidden',
-  },
-  flipIconContainer: {
-    position: 'absolute',
-    top: 7,
-    right: 0,
-    zIndex: 1,
-    width: 32,
-    height: 32,
-    overflow: 'hidden',
-  },
-  quarterCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#F98A21',
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 8,
-  },
-  cardTouchable: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cardDetailsContainer: {
+
+  // Sections under the carousel
+  sections: {
     width: '100%',
     paddingHorizontal: 18,
     paddingVertical: 8,
   },
-  detailCard: {
-    backgroundColor: '#fff',
+  section: {
     borderRadius: 30,
     padding: 16,
     marginVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 6,
     borderWidth: 1,
     minHeight: 140,
-    justifyContent: 'space-between',
   },
-  cardHeader: {
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
     paddingBottom: 8,
     marginBottom: 8,
   },
-  cardContent: {
+  sectionLabel: {
+    fontSize: fontSizes.bodyLarge,
+    fontFamily: fonts.semibold,
+    letterSpacing: 0.3,
+  },
+  sectionContent: {
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 16,
   },
-  navButton: {
-    position: 'absolute',
-    top: '50%',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  sectionText: {
+    marginLeft: 24,
   },
-  leftNavButton: {
-    left: 15,
-  },
-  rightNavButton: {
-    right: 15,
-
-  },
-  backgroundCategoryIcon: {
-    position: 'absolute',
-    left: -120, // İkonun yarısının taşması için
+  imageBox: {
     width: '100%',
-    height: '100%',
+    height: 160,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 0, // En altta kalması için
-    overflow: 'hidden', // Taşan kısmı gizle
   },
-  categoryIconStyle: {
-    // Subtle background effect için
-    opacity: 0.8,
+  imagePlaceholder: {
+    ...StyleSheet.absoluteFill,
+    borderRadius: 12,
+    opacity: 0.35,
   },
-  dotContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-
-    paddingHorizontal: 20,
+  image: {
+    width: '100%',
+    height: 160,
+    resizeMode: 'contain',
   },
-  activeDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 8,
-    marginHorizontal: 6,
-  },
-  inactiveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 5,
-    marginHorizontal: 4,
-  },
-  curvedBackgroundContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: -1,
+  createdAt: {
+    textAlign: 'center',
+    paddingHorizontal: 18,
+    marginTop: 'auto',
+    marginBottom: 56,
   },
 });

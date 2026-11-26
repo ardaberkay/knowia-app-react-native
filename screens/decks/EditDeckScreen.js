@@ -18,6 +18,7 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import BadgeText from '../../components/tools/BadgeText';
 import DeckLanguageModal, { DeckLanguageField } from '../../components/modals/DeckLanguageModal';
 import { triggerHaptic } from '../../lib/hapticManager';
+import { getCategoryIcon } from '../../theme/colors';
 
 export default function DeckEditScreen() {
   const route = useRoute();
@@ -50,21 +51,6 @@ export default function DeckEditScreen() {
     loadLanguages();
   }, []);
 
-
-  // Kategori ikonunu sort_order değerine göre al
-  const getCategoryIcon = (sortOrder) => {
-    const icons = {
-      1: "hugeicons:language-skill", // Dil
-      2: "clarity:atom-solid", // Bilim
-      3: "mdi:math-compass", // Matematik
-      4: "game-icons:tied-scroll", // Tarih
-      5: "arcticons:world-geography-alt", // Coğrafya
-      6: "map:museum", // Sanat ve Kültür
-      7: "ic:outline-self-improvement", // Kişisel Gelişim
-      8: "garden:puzzle-piece-fill-16" // Genel Kültür
-    };
-    return icons[sortOrder] || "material-symbols:category";
-  };
 
   // Kategorileri yükle - hem ID hem de name çekelim
   React.useEffect(() => {
@@ -344,7 +330,7 @@ export default function DeckEditScreen() {
 
                 return sortOrder ? (
                   <Iconify
-                    icon={getCategoryIcon(sortOrder)}
+                    icon={getCategoryIcon(sortOrder, { picker: true })}
                     size={20}
                     color={selectedCategory ? colors.text : colors.muted}
                     style={styles.categoryIcon}
