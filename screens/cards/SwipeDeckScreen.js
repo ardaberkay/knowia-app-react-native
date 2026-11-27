@@ -1937,7 +1937,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 48,
-    paddingVertical: 10,
+    // 9.5 + 18 + 14 + 9.5 = 51: the same height as before the 16/12 text bump.
+    paddingVertical: 9.5,
     paddingHorizontal: 4,
     backgroundColor: 'transparent',
     borderRightWidth: 0,
@@ -1953,13 +1954,13 @@ const styles = StyleSheet.create({
   timeButtonLabel: {
     ...typography.styles.headline,
     fontSize: 16, // between the body (15) and bodyLarge (17) steps, by request
-    lineHeight: 20,
+    lineHeight: 18,
     textAlign: 'center',
   },
   timeButtonTime: {
     fontFamily: fonts.regular,
     fontSize: fontSizes.caption,
-    lineHeight: 15,
+    lineHeight: 14,
     opacity: 0.85,
     textAlign: 'center',
   },
