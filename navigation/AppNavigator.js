@@ -207,11 +207,14 @@ export default function AppNavigator() {
           <>
             <Stack.Screen name="Onboarding" component={OnboardingScreen} />
           </>
+        ) : isRecoveryMode ? (
+          // Password-reset link: AuthContext exchanged the code; this is the only
+          // screen until the new password is saved or the flow is cancelled.
+          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
         ) : showAuthStack ? (
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} options={{ headerBackButtonDisplayMode: 'minimal' }} />
-            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false, headerBackButtonDisplayMode: 'minimal' }} />
           </>
         ) : (
           <>

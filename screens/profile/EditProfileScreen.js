@@ -6,7 +6,7 @@ import FormScrollView from '../../components/layout/FormScrollView';
 import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { getCurrentUserProfile, updateProfile } from '../../services/ProfileService';
-import { uploadAvatar, removeAvatar } from '../../services/StorageService';
+import { uploadAvatar, removeAvatar, storagePathFromPublicUrl } from '../../services/StorageService';
 import { useProfile } from '../../contexts/ProfileContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -81,7 +81,7 @@ export default function EditProfileScreen({ navigation }) {
           image_url: data.image_url || '',
           email: data.email || '',
         });
-        setImageFilePath(data.image_url ? getStoragePathFromUrl(data.image_url) : null);
+        setImageFilePath(data.image_url ? storagePathFromPublicUrl(data.image_url, 'avatars') : null);
       } catch (err) {
         setError(err.message || t('common.profileUpdatedError'));
       } finally {
@@ -89,16 +89,6 @@ export default function EditProfileScreen({ navigation }) {
       }
     })();
   }, [session]); // session değiştiğinde useEffect'in tetiklenmesi için dependency array'e ekledik
-
-  // Storage public url'den dosya yolunu çıkar
-  function getStoragePathFromUrl(url) {
-    // ör: https://xxxx.supabase.co/storage/v1/object/public/avatars/user_xxx.webp
-    const idx = url.lastIndexOf('/');
-    if (idx === -1) return null;
-    const path = url.substring(idx + 1); // user_xxx.webp
-    console.log('getStoragePathFromUrl:', url, '->', path);
-    return path;
-  }
 
   // Fotoğraf seç ve WebP olarak yükle
   const handlePickImage = async () => {
@@ -126,17 +116,10 @@ export default function EditProfileScreen({ navigation }) {
   };
 
   // Fotoğrafı kaldır
-  const handleRemovePhoto = async () => {
-    try {
-      if (imageFilePath) {
-        await removeAvatar(imageFilePath);
-      }
-      setImageUrl('');
-      setImageChanged(true);
-      setImageFilePath(null);
-    } catch (err) {
-      showError(t('common.imageRemoveError') + ': ' + err.message);
-    }
+  // Only marks the photo for removal; the file is deleted after Save succeeds.
+  const handleRemovePhoto = () => {
+    setImageUrl('');
+    setImageChanged(true);
   };
 
   // Profil kaydet
@@ -195,26 +178,35 @@ export default function EditProfileScreen({ navigation }) {
       }
     }
     let newImageUrl = imageUrl;
-    let newImageFilePath = imageFilePath;
+    let uploadedFilePath = null;
     try {
-      // 1. Fotoğraf değiştiyse önce eski fotoğrafı sil
-      if (imageChanged && imageFilePath) {
-        await removeAvatar(imageFilePath);
-      }
-      // 2. Fotoğraf değiştiyse yeni fotoğrafı yükle
+      // 1. Fotoğraf değiştiyse yeni fotoğrafı yükle (eski dosya, kayıt başarılı olunca silinir)
       if (imageChanged && imageUrl) {
         const base64 = await FileSystem.readAsStringAsync(imageUrl, { encoding: FileSystem.EncodingType.Base64 });
         const buffer = Buffer.from(base64, 'base64');
         const result = await uploadAvatar(profile.id, buffer);
-        newImageFilePath = result.filePath;
+        uploadedFilePath = result.filePath;
         newImageUrl = result.publicUrl;
       }
       // Fotoğraf kaldırıldıysa profil tablosunda image_url alanını boşalt
       if (imageChanged && !imageUrl) {
         newImageUrl = '';
       }
-      // 3. Profil tablosunu güncelle
-      await updateProfile(profile.id, { username, imageUrl: newImageUrl });
+      // 2. Profil tablosunu güncelle
+      try {
+        await updateProfile(profile.id, { username, imageUrl: newImageUrl });
+      } catch (updateErr) {
+        // Kayıt başarısız: yeni yüklenen dosya boşta kalmasın, eski fotoğraf yerinde kalır
+        if (uploadedFilePath) removeAvatar(uploadedFilePath).catch(() => { });
+        throw updateErr;
+      }
+
+      // 3. Kayıt başarılı: eski fotoğrafı şimdi sil
+      if (imageChanged && imageFilePath) {
+        removeAvatar(imageFilePath).catch(() => { });
+      }
+      setImageFilePath(uploadedFilePath);
+      setImageChanged(false);
 
       // 4. Cache'i güncelle - eski cache'i temizle ve yeni veriyi cache'le
       await clearUserCache(profile.id);

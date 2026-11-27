@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import FormScrollView from '../../components/layout/FormScrollView';
 import { useAuth } from '../../contexts/AuthContext';
 import { createCard } from '../../services/CardService';
-import { uploadCardImage } from '../../services/StorageService';
+import { uploadCardImage, removeUnusedCardImages } from '../../services/StorageService';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
@@ -130,6 +130,8 @@ export default function AddCardScreen() {
       });
       handleCardSaved(newCard);
     } catch (e) {
+      // Kart kaydedilemediyse yüklenen görsel boşta kalmasın
+      if (imageUrl) removeUnusedCardImages([imageUrl]);
       showError(e.message || t('common.addCardError', 'Kart eklenemedi.'));
     } finally {
       setLoading(false);

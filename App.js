@@ -16,12 +16,10 @@ import { useFonts } from 'expo-font';
 import { View, StyleSheet } from 'react-native';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
-import { supabase } from './lib/supabase';
 import './lib/i18n';
 import { cleanupStaleCache } from './services/CacheService';
 import * as NavigationBar from 'expo-navigation-bar';
 import * as Notifications from 'expo-notifications';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Splash ayarlarını sabitliyoruz (fade efekti ile yumuşak geçiş)
 SplashScreen.setOptions({
@@ -94,65 +92,8 @@ function AppContent() {
     cleanupStaleCache();
   }, []);
 
-  useEffect(() => {
-    const handleUrl = async ({ url }) => {
-      // ... (Senin Linking/Supabase mantığın aynı kalıyor, dokunmadım)
-      const parsed = Linking.parse(url);
-      let params = {};
-      if (parsed.fragment) {
-        try {
-          params = Object.fromEntries(
-            parsed.fragment.split('&').map(p => {
-              const [key, value] = p.split('=');
-              return [key, decodeURIComponent(value || '')];
-            })
-          );
-        } catch {}
-      }
-      if (parsed.queryParams) {
-        params = { ...params, ...parsed.queryParams };
-      }
-      if (!params.access_token && url.includes('access_token')) {
-        const tokenMatch = url.match(/access_token=([^&]+)/);
-        const refreshMatch = url.match(/refresh_token=([^&]+)/);
-        if (tokenMatch) params.access_token = decodeURIComponent(tokenMatch[1]);
-        if (refreshMatch) params.refresh_token = decodeURIComponent(refreshMatch[1]);
-      }
-      if (params.access_token && params.refresh_token) {
-        // Şifre sıfırlama e-postası: oturum açmadan ResetPassword ekranına yönlendir
-        const isRecovery = params.type === 'recovery' || (url && url.includes('type=recovery'));
-        if (isRecovery) {
-          await supabase.auth.signOut();
-          await AsyncStorage.multiSet([
-            ['recovery_access_token', params.access_token],
-            ['recovery_refresh_token', params.refresh_token],
-          ]);
-          setTimeout(() => {
-            if (navigationRef.isReady()) {
-              navigationRef.navigate('ResetPassword');
-            }
-          }, 300);
-          return;
-        }
-        const { data, error } = await supabase.auth.setSession({
-          access_token: params.access_token,
-          refresh_token: params.refresh_token,
-        });
-        if (!error && data?.user) {
-          setTimeout(() => {
-            if (navigationRef.isReady()) {
-              navigationRef.navigate('MainTabs', { screen: 'Home' });
-            }
-          }, 300);
-        }
-      }
-    };
-    const sub = Linking.addEventListener('url', handleUrl);
-    Linking.getInitialURL().then(url => {
-      if (url) handleUrl({ url });
-    });
-    return () => sub.remove();
-  }, []);
+  // Auth deep links (PKCE code exchange, password reset) are handled in
+  // contexts/AuthContext.js; links carrying raw tokens are no longer accepted.
 
   // Theme renklerini zorla değiştirmedik, kendi temanın renklerini paslıyoruz.
   const navigationTheme = {

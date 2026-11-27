@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { StyleSheet, View, TouchableOpacity, Alert, ImageBackground, ActivityIndicator } from 'react-native';
 import { Text, TextInput } from '../../components/ui/AppText';
 import FormScrollView from '../../components/layout/FormScrollView';
@@ -6,19 +6,17 @@ import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../contexts/AuthContext';
 import PhosphorIcon from '../../components/ui/PhosphorIcon';
 import { ICONS } from '../../theme/icons';
 
-export default function ResetPasswordScreen({ navigation }) {
+export default function ResetPasswordScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [tokens, setTokens] = useState(null);
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { setIsRecoveryMode } = useAuth();
@@ -32,126 +30,53 @@ export default function ResetPasswordScreen({ navigation }) {
   
   const isPasswordValid = hasUpperCase && hasLowerCase && hasNumber && hasMinLength && passwordsMatch;
 
-  // AsyncStorage'dan token'ları al
+  const completedRef = useRef(false);
+
+  // AuthContext already exchanged the reset link's one-time code for a session
+  // (PKCE) and switched the app into recovery mode. No session = bad/expired link.
   useEffect(() => {
-    // Recovery modunu aktifleştir (session olsa bile auth stack'te kal)
-    setIsRecoveryMode(true);
-    
-    const loadTokens = async () => {
-      try {
-        const access_token = await AsyncStorage.getItem('recovery_access_token');
-        const refresh_token = await AsyncStorage.getItem('recovery_refresh_token');
-        
-        console.log('ResetPassword: Token\'lar yükleniyor...', access_token ? 'Var' : 'Yok');
-        
-        if (access_token && refresh_token) {
-          setTokens({ access_token, refresh_token });
-          console.log('ResetPassword: Token\'lar yüklendi');
-        } else {
-          console.log('ResetPassword: Token bulunamadı');
-          setIsRecoveryMode(false);
-          Alert.alert(
-            t('resetPassword.error', 'Hata'),
-            t('resetPassword.tokenNotFound', 'Şifre sıfırlama linki geçersiz veya süresi dolmuş. Lütfen yeni bir link talep edin.'),
-            [{ text: t('resetPassword.ok', 'Tamam'), onPress: () => navigation.navigate('Login') }]
-          );
-        }
-      } catch (err) {
-        console.log('ResetPassword: Token yükleme hatası:', err);
-        setIsRecoveryMode(false);
+    let active = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!active) return;
+      if (!data?.session) {
         Alert.alert(
           t('resetPassword.error', 'Hata'),
-          t('resetPassword.tokenError', 'Bir hata oluştu. Lütfen tekrar deneyin.'),
-          [{ text: t('resetPassword.ok', 'Tamam'), onPress: () => navigation.navigate('Login') }]
+          t('resetPassword.tokenNotFound', 'Şifre sıfırlama linki geçersiz veya süresi dolmuş. Lütfen yeni bir link talep edin.'),
+          [{ text: t('resetPassword.ok', 'Tamam'), onPress: () => setIsRecoveryMode(false) }]
         );
-      } finally {
-        setInitializing(false);
       }
-    };
-    
-    loadTokens();
-    
-    // Cleanup: Sayfa unmount olduğunda
-    return () => {
-      setIsRecoveryMode(false);
-      // Sadece recovery token'ları hâlâ duruyorsa (akış yarım kaldıysa) oturumu kapat.
-      // Başarılı sıfırlamadan sonra token'lar silinir; kullanıcı giriş yaptığında unmount
-      // burada yeni oturumu signOut etmemeli.
-      void (async () => {
-        try {
-          const access = await AsyncStorage.getItem('recovery_access_token');
-          const refresh = await AsyncStorage.getItem('recovery_refresh_token');
-          if (!access && !refresh) return;
-          const { data } = await supabase.auth.getSession();
-          if (data.session) {
-            console.log('ResetPassword: Cleanup - Yarım kalan recovery oturumu temizleniyor');
-            await supabase.auth.signOut();
-          }
-        } catch (e) {
-          console.log('ResetPassword: Cleanup hatası', e);
-        }
-      })();
-    };
+      setInitializing(false);
+    });
+    return () => { active = false; };
   }, []);
+
+  // Leaving without saving: drop the recovery session so it can't be used to log in.
+  const exitRecovery = useCallback(async () => {
+    if (!completedRef.current) {
+      try { await supabase.auth.signOut(); } catch { }
+    }
+    setIsRecoveryMode(false);
+  }, [setIsRecoveryMode]);
 
   const handleResetPassword = async () => {
     if (loading || !isPasswordValid) return;
-    
-    if (!tokens) {
-      Alert.alert(t('resetPassword.error', 'Hata'), t('resetPassword.tokenNotFound', 'Şifre sıfırlama linki geçersiz.'));
-      return;
-    }
-
     try {
       setLoading(true);
-      
-      // Önce token'larla session set et (şifre güncellemek için gerekli)
-      console.log('ResetPassword: Session set ediliyor...');
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-      });
-      
-      if (sessionError) {
-        console.log('ResetPassword: Session error:', sessionError);
-        throw new Error(t('resetPassword.sessionError', 'Oturum açılamadı. Lütfen linki tekrar kontrol edin.'));
-      }
-      
-      console.log('ResetPassword: Session set edildi, şifre güncelleniyor...');
-      
-      // Şifreyi güncelle
       const { error: updateError } = await supabase.auth.updateUser({
         password: password.trim()
       });
-      
       if (updateError) throw updateError;
-      
-      console.log('ResetPassword: Şifre güncellendi');
-      
-      // Token'ları AsyncStorage'dan temizle
-      await AsyncStorage.removeItem('recovery_access_token');
-      await AsyncStorage.removeItem('recovery_refresh_token');
-      
-      // Logout yap (kullanıcı yeni şifresiyle giriş yapsın)
+
+      // The user logs in again with the new password.
+      completedRef.current = true;
       await supabase.auth.signOut();
-      
-      // Recovery modunu kapat
-      setIsRecoveryMode(false);
-      
+
       Alert.alert(
         t('resetPassword.success', 'Başarılı'),
         t('resetPassword.successMessage', 'Şifreniz başarıyla güncellendi. Lütfen yeni şifrenizle giriş yapın.'),
-        [
-          {
-            text: t('resetPassword.ok', 'Tamam'),
-            onPress: () => navigation.navigate('Login')
-          }
-        ]
+        [{ text: t('resetPassword.ok', 'Tamam'), onPress: () => setIsRecoveryMode(false) }]
       );
     } catch (error) {
-      console.log('ResetPassword: Hata:', error);
-      // Session aktif kalır, kullanıcı tekrar deneyebilir
-      // Sayfadan ayrılırsa cleanup'ta signOut yapılacak
       Alert.alert(t('resetPassword.error', 'Hata'), error.message);
     } finally {
       setLoading(false);
@@ -294,7 +219,7 @@ export default function ResetPasswordScreen({ navigation }) {
             <Text style={[typography.styles.body, { color: colors.text }]}>
               {t('resetPassword.rememberPassword', 'Şifreni mi hatırladın?')}
             </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Login')} disabled={loading}>
+            <TouchableOpacity onPress={exitRecovery} disabled={loading}>
               <Text style={[typography.styles.body, { color: colors.secondary, fontFamily: fonts.semibold, marginLeft: 5 }]}>
                 {t('resetPassword.loginLink', 'Giriş yap')}
               </Text>

@@ -6,8 +6,18 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { Alert, AppState } from 'react-native';
 import * as Linking from 'expo-linking';
 import { updateLastActiveAt } from '../services/ProfileService';
+import i18n from '../lib/i18n';
 
 const OAUTH_REDIRECT = 'knowia://auth/callback';
+const RESET_REDIRECT = 'knowia://auth/reset';
+
+// knowia://auth/(callback|reset)?code=…  →  { kind, code } | null
+function parseAuthLink(url) {
+  const m = /^knowia:\/\/auth\/(callback|reset)\/?\?([^#]*)/.exec(url || '');
+  if (!m) return null;
+  const code = new URLSearchParams(m[2]).get('code');
+  return code ? { kind: m[1], code } : null;
+}
 
 // Context oluştur
 const AuthContext = createContext({});
@@ -19,6 +29,7 @@ export function AuthProvider({ children }) {
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   const { colors } = useTheme();
   const currentUserIdRef = useRef(null);
+  const oauthInProgressRef = useRef(false);
 
   const touchLastActive = useCallback(async (userId) => {
     if (!userId) return;
@@ -64,38 +75,26 @@ export function AuthProvider({ children }) {
       }
     });
 
-    // 🔥 3. YENİ EKLENEN: DIŞARIDAN GELEN (GOOGLE) LİNKİ YAKALAYICI
-    const handleDeepLink = async (event) => {
-      const url = event.url;
-
-      // Şifre sıfırlama linki App.js tarafından işlenir; burada setSession yapma
-      if (url && url.includes('type=recovery')) {
-        return;
-      }
-      
-      // Eğer gelen linkin içinde token varsa (Google girişi ise)
-      if (url && url.includes('access_token')) {
-        const tokenMatch = url.match(/access_token=([^&]+)/);
-        const refreshMatch = url.match(/refresh_token=([^&]+)/);
-
-        if (tokenMatch && refreshMatch) {
-          const access_token = decodeURIComponent(tokenMatch[1]);
-          const refresh_token = decodeURIComponent(refreshMatch[1]);
-
-          console.log("🔑 Tokenlar yakalandı, Supabase'e veriliyor...");
-
-          // Supabase'e manuel giriş emri ver!
-          // Bu işlem başarılı olunca, yukarıdaki onAuthStateChange otomatik tetiklenecek!
-          const { error } = await supabase.auth.setSession({
-            access_token,
-            refresh_token,
-          });
-
-          if (error) {
-            console.error("Giriş Hatası:", error.message);
-          } else {
-            console.log("✅ Google ile giriş kusursuz tamamlandı!");
-          }
+    // 3. Auth links (PKCE). Only knowia://auth/callback?code=… (sign-up
+    // confirmation, OAuth) and knowia://auth/reset?code=… (password reset) are
+    // accepted. Links carrying access/refresh tokens are ignored: a code can only
+    // be exchanged with the verifier this device stored, so a forged link can't
+    // log anyone in.
+    const handleDeepLink = async ({ url }) => {
+      const link = parseAuthLink(url);
+      if (!link) return;
+      if (link.kind === 'callback' && oauthInProgressRef.current) return; // signInWithGoogle exchanges it
+      const isRecovery = link.kind === 'reset';
+      if (isRecovery) setIsRecoveryMode(true);
+      const { error } = await supabase.auth.exchangeCodeForSession(link.code);
+      if (error) {
+        if (__DEV__) console.warn('Auth link exchange failed:', error.message);
+        if (isRecovery) {
+          setIsRecoveryMode(false);
+          Alert.alert(
+            i18n.t('resetPassword.error', 'Hata'),
+            i18n.t('resetPassword.tokenNotFound', 'Şifre sıfırlama linki geçersiz veya süresi dolmuş. Lütfen yeni bir link talep edin.'),
+          );
         }
       }
     };
@@ -140,7 +139,7 @@ const register = async (email, password) => {
       email,
       password,
       options: {
-        emailRedirectTo: 'knowia://auth'
+        emailRedirectTo: OAUTH_REDIRECT
       }
     });
 
@@ -177,6 +176,7 @@ const register = async (email, password) => {
 
   // Google ile giriş fonksiyonu
   const signInWithGoogle = async () => {
+    oauthInProgressRef.current = true;
     try {
       console.log('Supabase Google OAuth başlatılıyor...');
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -199,29 +199,12 @@ const register = async (email, password) => {
         });
 
         if (result.type === 'success' && result.url) {
-          // 1. Google'dan gelen URL içindeki gizli şifreleri (token) çekiyoruz
-          const tokenMatch = result.url.match(/access_token=([^&]+)/);
-          const refreshMatch = result.url.match(/refresh_token=([^&]+)/);
-
-          if (tokenMatch && refreshMatch) {
-            const access_token = decodeURIComponent(tokenMatch[1]);
-            const refresh_token = decodeURIComponent(refreshMatch[1]);
-
-            // 2. Supabase'e "Al bu şifreleri, kapıyı aç" diyoruz (Manuel Giriş)
-            const { error: sessionError } = await supabase.auth.setSession({
-              access_token,
-              refresh_token,
-            });
-
-            if (sessionError) {
-              Alert.alert("Giriş Başarısız", sessionError.message);
-            } else {
-              // GİRİŞ BAŞARILI! 
-              // Eğer uygulaman otomatik yönlenmezse buraya bir Alert ekleyebilir veya yönlendirme kodu yazabilirsin.
-            }
-          } else {
-            // Eğer URL'de token yoksa, Google bir hata fırlatmış demektir
+          const link = parseAuthLink(result.url);
+          if (!link) {
             Alert.alert("Bağlantı Hatası", "Google bilgileri göndermedi.");
+          } else {
+            const { error: sessionError } = await supabase.auth.exchangeCodeForSession(link.code);
+            if (sessionError) Alert.alert("Giriş Başarısız", sessionError.message);
           }
         }
       }
@@ -230,6 +213,8 @@ const register = async (email, password) => {
       console.log('Supabase OAuth catch bloğu:', error);
       Alert.alert("Hata", "Beklenmeyen bir hata oluştu.");
       return { error };
+    } finally {
+      oauthInProgressRef.current = false;
     }
   };
 
@@ -272,7 +257,7 @@ const register = async (email, password) => {
   const resetPasswordForEmail = async (email) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'knowia://auth',
+        redirectTo: RESET_REDIRECT,
       });
       if (error) throw error;
       return { error: null };

@@ -3,7 +3,7 @@ import { View, StyleSheet, TouchableOpacity, Alert, Image, ActivityIndicator } f
 import { Text, TextInput } from '../ui/AppText';
 import FormScrollView from './FormScrollView';
 import { updateCard } from '../../services/CardService';
-import { uploadCardImage } from '../../services/StorageService';
+import { uploadCardImage, removeUnusedCardImages } from '../../services/StorageService';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
 import * as ImagePicker from 'expo-image-picker';
@@ -60,7 +60,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
         const manipResult = await ImageManipulator.manipulateAsync(
           result.assets[0].uri,
           [{ resize: { width: 512 } }],
-          { compress: 0.7, format: 'jpeg' }
+          { compress: 0.7, format: 'webp' }
         );
         setImage(manipResult.uri);
         setImageChanged(true);
@@ -102,12 +102,14 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
     }
     setLoading(true);
     let imageUrl = card?.image || '';
+    let uploadedUrl = null;
     try {
       if (imageChanged) {
         if (image) {
           const base64 = await FileSystem.readAsStringAsync(image, { encoding: FileSystem.EncodingType.Base64 });
           const buffer = Buffer.from(base64, 'base64');
           imageUrl = await uploadCardImage(deck.id, userId, buffer);
+          uploadedUrl = imageUrl;
         } else {
           imageUrl = null;
         }
@@ -121,6 +123,8 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
       });
       onSave(updatedCard);
     } catch (e) {
+      // Kayıt başarısız: yeni yüklenen görsel boşta kalmasın (eski görsel yerinde)
+      if (uploadedUrl) removeUnusedCardImages([uploadedUrl]);
       Alert.alert(t('common.error', 'Hata'), e.message || t('common.cardNotSaved', 'Kart güncellenemedi.'));
     } finally {
       setLoading(false);

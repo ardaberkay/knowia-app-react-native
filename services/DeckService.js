@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import { getCachedBlockedAndHidden, filterDecksByBlockAndHide } from './BlockService';
 import { invalidateCache, cacheData, getCachedData, CACHE_DURATIONS } from './CacheService';
 import { getFavoriteDeckIds } from './FavoriteService';
+import { removeUnusedCardImages } from './StorageService';
 
 const DECK_LIST_SELECT = 'id, name, to_name, description, card_count, user_id, category_id, is_shared, is_admin_created, shared_at, updated_at, created_at, profiles:profiles(username, image_url), categories:categories(id, name, sort_order), decks_languages(language_id), chapters:chapters(count)';
 
@@ -402,30 +403,6 @@ export const deleteDeck = async (deckId) => {
 
     if (cardsError) throw cardsError;
 
-    // 2. Tam URL'leri parçalayıp Supabase'in istediği dosya yollarına (path) çeviriyoruz.
-    const imagePaths = cards
-      .filter(card => card.image)
-      .map(card => {
-        // Örnek URL: https://[proje].supabase.co/storage/v1/object/public/images/kartlar/resim.jpg
-        // split('/images/') yaptığımızda dizinin 2. elemanı (index 1) 'kartlar/resim.jpg' olur.
-        const urlParts = card.image.split('/images/');
-        return urlParts.length > 1 ? urlParts[1] : null;
-      })
-      .filter(path => path !== null); // Olası hatalı parçalamaları diziden çıkarıyoruz
-
-    // 3. Eğer silinecek görsel yolu varsa, 'images' bucket'ından topluca siliyoruz.
-    if (imagePaths.length > 0) {
-      const { error: storageError } = await supabase
-        .storage
-        .from('images') // Senin belirttiğin bucket adı
-        .remove(imagePaths);
-
-      if (storageError) {
-        console.error("Görseller storage'dan silinirken hata:", storageError);
-        // Not: Görseller silinemese bile desteyi silmek istersen burayı böyle bırakabilirsin.
-      }
-    }
-
     // 4. Desteyi veritabanından siliyoruz (Senin mevcut kodun)
     const { error: deleteError } = await supabase
       .from('decks')
@@ -433,6 +410,9 @@ export const deleteDeck = async (deckId) => {
       .eq('id', deckId);
 
     if (deleteError) throw deleteError;
+
+    // Deste ve kartları silindi: görselleri şimdi sil (başka kartın kullandıkları kalır)
+    await removeUnusedCardImages(cards.map((card) => card.image));
 
     // 5. Önbelleği (Cache) temizliyoruz
     await invalidateCache(`deck_detail_${deckId}`);

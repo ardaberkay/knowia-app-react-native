@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { invalidateCache, cacheData, getCachedData, CACHE_DURATIONS } from './CacheService';
+import { removeUnusedCardImages } from './StorageService';
 
 const PAGE_SIZE = 50;
 
@@ -369,29 +370,6 @@ export const updateCard = async (cardId, cardData) => {
     const oldImage = existingCard?.image;
     const newImage = cardData.image || null;
 
-    // 2. KONTROL: Eğer eski bir görsel varsa VE yeni görselden farklıysa
-    // (Yani kullanıcı resmi değiştirdiyse VEYA resmi tamamen sildiyse)
-    if (oldImage && oldImage !== newImage) {
-      
-      // Eski görselin tam URL'sini parçalayıp Supabase'in istediği yolu buluyoruz
-      const urlParts = oldImage.split('/images/');
-      const oldImagePath = urlParts.length > 1 ? urlParts[1] : null;
-
-      // 3. Eski görseli 'images' bucket'ından siliyoruz
-      if (oldImagePath) {
-        const { error: storageError } = await supabase
-          .storage
-          .from('images')
-          .remove([oldImagePath]);
-
-        if (storageError) {
-          console.error("Eski görsel storage'dan silinemedi, ancak güncelleme devam edecek:", storageError);
-          // Not: Görsel silinemese bile kartın metin verilerini güncellemek 
-          // kullanıcı deneyimi açısından daha iyidir, bu yüzden burada 'throw' yapmıyoruz.
-        }
-      }
-    }
-
     // 4. Kartı veritabanında güncelliyoruz (Senin mevcut kodun)
     const { data, error: updateError } = await supabase
       .from('cards')
@@ -409,7 +387,12 @@ export const updateCard = async (cardId, cardData) => {
 
     const card = data?.[0] || null;
 
-    // 5. Önbelleği (Cache) temizliyoruz
+    // 5. Kayıt başarılı: görsel değiştiyse veya kaldırıldıysa eski dosyayı sil
+    if (oldImage && oldImage !== newImage) {
+      await removeUnusedCardImages([oldImage]);
+    }
+
+    // 6. Önbelleği (Cache) temizliyoruz
     if (card) {
       await invalidateCache(`card_detail_${cardId}`);
       if (card.deck_id) await invalidateCache(`cards_deck_${card.deck_id}`);
@@ -436,24 +419,6 @@ export const deleteCard = async (cardId, deckId = null) => {
 
   if (fetchError) throw fetchError;
 
-  // 2. Eğer kartın bir görseli varsa, tam URL'yi parçalayıp Storage'dan siliyoruz
-  if (card && card.image) {
-    const urlParts = card.image.split('/images/');
-    const imagePath = urlParts.length > 1 ? urlParts[1] : null;
-
-    if (imagePath) {
-      const { error: storageError } = await supabase
-        .storage
-        .from('images')
-        .remove([imagePath]);
-
-      if (storageError) {
-        console.error("Görsel storage'dan silinemedi:", storageError);
-        // Hata olsa bile kartın veritabanından silinmesini engellememek için throw kullanmıyoruz.
-      }
-    }
-  }
-
   // 3. Kartı veritabanından siliyoruz (Senin orijinal kodun)
   const { error } = await supabase
     .from('cards')
@@ -461,6 +426,9 @@ export const deleteCard = async (cardId, deckId = null) => {
     .eq('id', cardId);
 
   if (error) throw error;
+
+  // Kayıt silindi: artık hiçbir kartın kullanmadığı görseli sil
+  if (card?.image) await removeUnusedCardImages([card.image]);
 
   // 4. Önbelleği temizliyoruz (Senin orijinal kodun)
   await invalidateCache(`card_detail_${cardId}`);
