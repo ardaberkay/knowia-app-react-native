@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 import SearchBar from '../../components/tools/SearchBar';
 import CardDetailSheet from '../../components/layout/CardDetailView';
 import { listChapters, distributeUnassignedEvenly, getDeckChaptersProgressRpc } from '../../services/ChapterService';
-import { deleteCard, getCardsByChapter, getUserCardProgressForCards, getChapterProgressCounts, getCardDetail } from '../../services/CardService';
+import { deleteCard, getCardsByChapter, getUserCardProgressForCards, getCardDetail } from '../../services/CardService';
 import { addFavoriteCard, removeFavoriteCard, getFavoriteCardIdsForCards } from '../../services/FavoriteService';
 import { LinearGradient } from 'expo-linear-gradient';
 import LottieView from 'lottie-react-native';
@@ -278,15 +278,26 @@ export default function ChapterCardsScreen({ route, navigation }) {
     );
   }, [cards, search]);
 
+  // Each first-page load gets an id; a response (or a load-more) that belongs
+  // to an older load is ignored, so pages of two loads never mix.
+  const listRequestIdRef = useRef(0);
+
   const fetchChapterCards = async () => {
+    const requestId = ++listRequestIdRef.current;
     try {
       setLoading(true);
       const chapterId = chapter?.id || null;
+      const emptyStats = { total: 0, learning: 0, learned: 0, new: 0 };
 
+      // Header counts come from the same RPC as Chapters / DeckDetail, so every
+      // screen shows the same numbers.
       const [cardsData, stats] = await Promise.all([
         getCardsByChapter(deck.id, chapterId, 0, PAGE_SIZE, userId || null),
-        userId ? getChapterProgressCounts(userId, deck.id, chapterId) : Promise.resolve({ total: 0, learning: 0, learned: 0, new: 0 }),
+        userId
+          ? getDeckChaptersProgressRpc(deck.id, userId).then((map) => map.get(chapterId || 'unassigned') || emptyStats)
+          : Promise.resolve(emptyStats),
       ]);
+      if (requestId !== listRequestIdRef.current) return;
 
       setChapterStats(stats);
       setCards(cardsData);
@@ -310,6 +321,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
         setFavoriteCards([]);
       }
     } catch (error) {
+      if (requestId !== listRequestIdRef.current) return;
       console.error('Error fetching chapter cards:', error);
       setCards([]);
       setCardStatusMap(new Map());
@@ -337,10 +349,12 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const loadMoreChapterCards = async () => {
     if (!hasMoreCards || loadingMore || loading) return;
     setLoadingMore(true);
+    const requestId = listRequestIdRef.current;
     try {
       const nextPage = pageNum + 1;
       const chapterId = chapter?.id || null;
       const cardsData = await getCardsByChapter(deck.id, chapterId, nextPage, PAGE_SIZE, userId || null);
+      if (requestId !== listRequestIdRef.current) return;
       if (cardsData.length === 0) {
         setHasMoreCards(false);
         return;
@@ -362,7 +376,10 @@ export default function ChapterCardsScreen({ route, navigation }) {
         setCardStatusMap(newStatusMap);
       }
 
-      setCards(prev => [...prev, ...cardsData]);
+      setCards(prev => {
+        const have = new Set(prev.map(c => c.id));
+        return [...prev, ...cardsData.filter(c => !have.has(c.id))];
+      });
       setPageNum(nextPage);
       setHasMoreCards(cardsData.length >= PAGE_SIZE);
     } catch (e) {

@@ -466,10 +466,10 @@
     "emailChangeMessage": "Ein Bestätigungslink wurde an deine neue E-Mail Adresse gesendet. Deine aktuelle E-Mail bleibt aktiv, bis du den Link bestätigst."
   },
   "swipeDeck": {
-    "minutes": "15 Min+",
+    "minutes": "10 Min+",
     "hours": "1 Std+",
     "days": "1 T+",
-    "sevenDays": "7 T+",
+    "sevenDays": "1 Wo+",
     "levelHard": "Schwer",
     "levelOkay": "Mittel",
     "levelGood": "Gut",
@@ -546,7 +546,7 @@
       "swipeTitle": "Mit Wischen lernen",
       "swipeDescription": "Wische gelernte Karten nach rechts. Karten, die du öfter wiederholen möchtest, nach links.",
       "intervalTitle": "Wiederholzeit wählen",
-      "intervalDescription": "Wähle je nach Sicherheit eine Wiederholzeit: 15 Minuten, 1 Stunde, 1 Tag oder 7 Tage. Je besser du die Karte kannst, desto seltener musst du sie sehen.",
+      "intervalDescription": "Wähle je nach Sicherheit eine Wiederholzeit: 10 Minuten, 1 Stunde, 1 Tag oder 1 Woche. Je besser du die Karte kannst, desto seltener musst du sie sehen.",
       "swipeHintLeft": "Wiederholen",
       "swipeHintRight": "Gelernt",
       "skip": "Überspringen",

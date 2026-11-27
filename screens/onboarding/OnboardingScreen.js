@@ -199,10 +199,10 @@ export default function OnboardingScreen({ navigation, route }) {
               ]}
             >
               {[
-                { label: t('swipeDeck.levelHard', 'Zor'), time: t('swipeDeck.minutes', '15dk+') },
+                { label: t('swipeDeck.levelHard', 'Zor'), time: t('swipeDeck.minutes', '10dk+') },
                 { label: t('swipeDeck.levelOkay', 'Orta'), time: t('swipeDeck.hours', '1sa+') },
                 { label: t('swipeDeck.levelGood', 'İyi'), time: t('swipeDeck.days', '1g+') },
-                { label: t('swipeDeck.levelEasy', 'Kolay'), time: t('swipeDeck.sevenDays', '7g+') },
+                { label: t('swipeDeck.levelEasy', 'Kolay'), time: t('swipeDeck.sevenDays', '1hf+') },
               ].map(({ label, time }, i) => (
                 <View
                   key={i}

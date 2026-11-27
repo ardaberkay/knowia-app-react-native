@@ -25,11 +25,12 @@ import {
   recordSwipeSessionSwipe,
   undoLastSwipe,
   endSwipeSession,
+  getSwipeClientConfig,
 } from '../../services/CardService';
 import { getDeckById } from '../../services/DeckService';
 import { invalidateCache, hasSeenSwipeTutorial, markSwipeTutorialSeen } from '../../services/CacheService';
 import { getActivitySummary, invalidateActivitySummary } from '../../services/ProfileService';
-import { listChapters, mergeChapterProgressIntoCache } from '../../services/ChapterService';
+import { listChapters } from '../../services/ChapterService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { addFavoriteCard, removeFavoriteCard, getFavoriteCardIds } from '../../services/FavoriteService';
@@ -277,7 +278,20 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const SWIPE_ANIMATION_MS = 450;
   const REVIEW_PROMPT_DELAY_MS = 600;
   const PRE_FETCH_THRESHOLD = 5;
+  // Every card_id this mount has received. A known card coming back from the
+  // server is only accepted as a reinsert (its last local swipe was "left").
   const seenCardIdsRef = useRef(new Set());
+  const lastDirectionByCardRef = useRef(new Map());
+  // The latest record_swipe; fetches and undo wait for it so the server state
+  // they read already includes the swipe.
+  const lastRecordPromiseRef = useRef(Promise.resolve());
+  // How often due reinserts are checked; follows the server's left delay.
+  const dueCheckIntervalMsRef = useRef(60000);
+  // Server keeps only the last N undo snapshots per session (swipe_config).
+  const undoLimitRef = useRef(10);
+  const [undoDepth, setUndoDepth] = useState(0);
+  const isMountedRef = useRef(true);
+  const progressCachesClearedRef = useRef(false);
   const sessionCountedCardKeysRef = useRef(new Set());
   const sessionProgressCountRef = useRef(0);
   const historyStateSnapshotsRef = useRef([]);
@@ -309,7 +323,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     },
     {
       title: t('swipeDeck.tutorial.intervalTitle', 'Tekrar zamanını seç'),
-      description: t('swipeDeck.tutorial.intervalDescription', 'Kartı ne kadar iyi bildiğine göre tekrar süresini seç. 15 dakika, 1 saat, 1 gün veya 7 gün sonra yeniden karşına çıksın. Öğrendikçe kartı daha seyrek görmen yeterli olacaktır.'),
+      description: t('swipeDeck.tutorial.intervalDescription', 'Kartı ne kadar iyi bildiğine göre tekrar süresini seç. 10 dakika, 1 saat, 1 gün veya 1 hafta sonra yeniden karşına çıksın. Öğrendikçe kartı daha seyrek görmen yeterli olacaktır.'),
       target: 'interval',
       icon: ICONS.reviewInterval,
     },
@@ -552,11 +566,34 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const rightActiveColor = '#3e8e41';
 
   useEffect(() => {
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
+
+  // Progress counts shown on DeckDetail / Chapters / ChapterSelector come from
+  // the server RPC; after a swipe their caches are stale. Cleared once on the
+  // first swipe and again on exit, before the session is closed, so a screen
+  // that focuses while we leave never reads the old numbers.
+  const clearDeckProgressCaches = useCallback(async () => {
+    if (!deck?.id || !authUserId) return;
+    await Promise.all([
+      invalidateCache(`deck_progress_${deck.id}_${authUserId}`),
+      invalidateCache(`progress_deck_${deck.id}_${authUserId}`),
+      invalidateCache(`progress_chapters_${deck.id}_${authUserId}`),
+    ]);
+  }, [deck?.id, authUserId]);
+
+  useEffect(() => {
+    let cancelled = false;
     const fetchCards = async () => {
       setLoading(true);
       setRightCount(0);
       setLeftCount(0);
       seenCardIdsRef.current = new Set();
+      lastDirectionByCardRef.current = new Map();
+      lastRecordPromiseRef.current = Promise.resolve();
+      progressCachesClearedRef.current = false;
+      setUndoDepth(0);
       sessionCountedCardKeysRef.current = new Set();
       sessionProgressCountRef.current = 0;
       historyStateSnapshotsRef.current = [];
@@ -574,12 +611,20 @@ export default function SwipeDeckScreen({ route, navigation }) {
           : (chapter === null ? null : chapter.id);
         const unassignedOnly = chapter === null;
 
-        const sessionId = await startSwipeSession({
-          deckId: deck.id,
-          chapterId,
-          unassignedOnly,
-        });
+        const [sessionId, swipeConfig] = await Promise.all([
+          startSwipeSession({ deckId: deck.id, chapterId, unassignedOnly }),
+          getSwipeClientConfig(),
+        ]);
 
+        if (cancelled || !isMountedRef.current) {
+          // Left the screen while the session was starting: close it now,
+          // nothing else would.
+          endSwipeSession({ sessionId }).catch(() => { });
+          return;
+        }
+
+        dueCheckIntervalMsRef.current = Math.max(15, swipeConfig.left_delay_seconds) * 1000;
+        undoLimitRef.current = swipeConfig.undo_limit;
         sessionIdRef.current = sessionId;
         const targetCount = await getSwipeSessionQueueCount(sessionId);
         setSessionTargetCount(targetCount);
@@ -662,29 +707,19 @@ export default function SwipeDeckScreen({ route, navigation }) {
       } catch (error) {
         console.error("Swipe sayfasında veri çekme hatası:", error.message);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     fetchCards();
+    return () => { cancelled = true; };
   }, [deck.id, chapter?.id]);
 
   useEffect(() => {
     return () => {
       if (reviewPromptTimeoutRef.current) clearTimeout(reviewPromptTimeoutRef.current);
-      if (!deck?.id || !authUserId) return;
-      invalidateCache(`progress_deck_${deck.id}_${authUserId}`);
-      const statsChapterId =
-        typeof chapter === 'undefined'
-          ? undefined
-          : (chapter === null ? null : chapter.id);
-      if (statsChapterId === undefined) {
-        invalidateCache(`progress_chapters_${deck.id}_${authUserId}`);
-      } else {
-        mergeChapterProgressIntoCache(deck.id, authUserId, statsChapterId).catch(() => { });
-      }
     };
-  }, [deck?.id, authUserId, chapter]);
+  }, []);
 
   useEffect(() => {
     if (loading || currentIndex === 0) return;
@@ -699,29 +734,17 @@ export default function SwipeDeckScreen({ route, navigation }) {
     const handleExit = async () => {
       if (flushed) return;
       flushed = true;
+      await clearDeckProgressCaches();
       const activeSessionId = sessionIdRef.current;
       if (activeSessionId) {
-        try {
-          await endSwipeSession({ sessionId: activeSessionId });
-        } catch (err) {
-          console.warn('endSwipeSession failed:', err);
-        } finally {
-          if (sessionIdRef.current === activeSessionId) {
-            sessionIdRef.current = null;
-          }
-        }
-      }
-      if (authUserId && deck?.id) {
-        invalidateCache(`progress_deck_${deck.id}_${authUserId}`);
-        const statsChapterId =
-          typeof chapter === 'undefined'
-            ? undefined
-            : (chapter === null ? null : chapter.id);
-        if (statsChapterId === undefined) {
-          await invalidateCache(`progress_chapters_${deck.id}_${authUserId}`);
-        } else {
-          await mergeChapterProgressIntoCache(deck.id, authUserId, statsChapterId);
-        }
+        sessionIdRef.current = null;
+        // Wait for the last swipe so it isn't lost when the queue is deleted.
+        await lastRecordPromiseRef.current;
+        // A failed end is harmless: the next session start removes this
+        // user's open sessions and the hourly cleanup catches the rest.
+        endSwipeSession({ sessionId: activeSessionId }).catch((err) => {
+          if (__DEV__) console.warn('endSwipeSession failed:', err?.message);
+        });
       }
     };
     const unsubscribe = navigation.addListener('blur', handleExit);
@@ -729,7 +752,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       unsubscribe();
       handleExit();
     };
-  }, [navigation, authUserId, deck?.id, chapter]);
+  }, [navigation, clearDeckProgressCaches]);
 
   useEffect(() => {
     if (Platform.OS !== 'android') return;
@@ -780,55 +803,58 @@ export default function SwipeDeckScreen({ route, navigation }) {
     transform: [{ scale: rightCounterPop.value }],
   }));
 
+  // Counters follow the card's own swipe phases (components/layout/SwipeFlipCard):
+  // the number fades out exactly while the card text fades (55–68% of the
+  // label distance), and the icon + colour come in exactly while the card's
+  // "Tekrar et" / "Öğrendim" label comes in (68–100%). Same distance formula.
+  const SWIPE_TEXT_FADE = [0.55, 0.68];
+  const SWIPE_LABEL_START = 0.68;
+
   const animatedLeftCounter = useAnimatedStyle(() => {
-    const progress = Math.min(1, Math.max(0, -activeSwipeX.value / Math.max(90, cardWidthValue.value * 0.28)));
+    const p = Math.min(1, Math.max(0, -activeSwipeX.value / Math.max(80, cardWidthValue.value * 0.28)));
+    const v = Math.min(1, Math.max(0, (p - SWIPE_LABEL_START) / (1 - SWIPE_LABEL_START)));
     return {
-      backgroundColor: interpolateColor(
-        progress,
-        [0, 1],
-        [leftInactiveColor, leftActiveColor]
-      ),
+      backgroundColor: interpolateColor(v, [0, 1], [leftInactiveColor, leftActiveColor]),
     };
   }, [cardWidthValue, leftActiveColor, leftInactiveColor]);
 
   const animatedRightCounter = useAnimatedStyle(() => {
-    const progress = Math.min(1, Math.max(0, activeSwipeX.value / Math.max(90, cardWidthValue.value * 0.28)));
+    const p = Math.min(1, Math.max(0, activeSwipeX.value / Math.max(80, cardWidthValue.value * 0.28)));
+    const v = Math.min(1, Math.max(0, (p - SWIPE_LABEL_START) / (1 - SWIPE_LABEL_START)));
     return {
-      backgroundColor: interpolateColor(
-        progress,
-        [0, 1],
-        [rightInactiveColor, rightActiveColor]
-      ),
+      backgroundColor: interpolateColor(v, [0, 1], [rightInactiveColor, rightActiveColor]),
     };
   }, [cardWidthValue, rightActiveColor, rightInactiveColor]);
 
   const animatedLeftCount = useAnimatedStyle(() => {
-    const progress = Math.min(1, Math.max(0, -activeSwipeX.value / Math.max(90, cardWidthValue.value * 0.28)));
+    const p = Math.min(1, Math.max(0, -activeSwipeX.value / Math.max(80, cardWidthValue.value * 0.28)));
     return {
-      opacity: interpolate(progress, [0, 0.14, 0.28], [1, 0.5, 0], 'clamp'),
+      opacity: interpolate(p, SWIPE_TEXT_FADE, [1, 0], 'clamp'),
     };
   }, [cardWidthValue]);
 
   const animatedRightCount = useAnimatedStyle(() => {
-    const progress = Math.min(1, Math.max(0, activeSwipeX.value / Math.max(90, cardWidthValue.value * 0.28)));
+    const p = Math.min(1, Math.max(0, activeSwipeX.value / Math.max(80, cardWidthValue.value * 0.28)));
     return {
-      opacity: interpolate(progress, [0, 0.14, 0.28], [1, 0.5, 0], 'clamp'),
+      opacity: interpolate(p, SWIPE_TEXT_FADE, [1, 0], 'clamp'),
     };
   }, [cardWidthValue]);
 
   const animatedLeftIcon = useAnimatedStyle(() => {
-    const progress = Math.min(1, Math.max(0, -activeSwipeX.value / Math.max(90, cardWidthValue.value * 0.28)));
+    const p = Math.min(1, Math.max(0, -activeSwipeX.value / Math.max(80, cardWidthValue.value * 0.28)));
+    const v = Math.min(1, Math.max(0, (p - SWIPE_LABEL_START) / (1 - SWIPE_LABEL_START)));
     return {
-      opacity: interpolate(progress, [0, 0.10, 0.30], [0, 0.28, 1], 'clamp'),
-      transform: [{ scale: interpolate(progress, [0, 0.16, 0.34], [0.78, 0.94, 1], 'clamp') }],
+      opacity: interpolate(v, [0, 0.35, 1], [0, 0.35, 1]),
+      transform: [{ scale: interpolate(v, [0, 1], [0.9, 1]) }],
     };
   }, [cardWidthValue]);
 
   const animatedRightIcon = useAnimatedStyle(() => {
-    const progress = Math.min(1, Math.max(0, activeSwipeX.value / Math.max(90, cardWidthValue.value * 0.28)));
+    const p = Math.min(1, Math.max(0, activeSwipeX.value / Math.max(80, cardWidthValue.value * 0.28)));
+    const v = Math.min(1, Math.max(0, (p - SWIPE_LABEL_START) / (1 - SWIPE_LABEL_START)));
     return {
-      opacity: interpolate(progress, [0, 0.10, 0.30], [0, 0.28, 1], 'clamp'),
-      transform: [{ scale: interpolate(progress, [0, 0.16, 0.34], [0.78, 0.94, 1], 'clamp') }],
+      opacity: interpolate(v, [0, 0.35, 1], [0, 0.35, 1]),
+      transform: [{ scale: interpolate(v, [0, 1], [0.9, 1]) }],
     };
   }, [cardWidthValue]);
 
@@ -866,14 +892,38 @@ export default function SwipeDeckScreen({ route, navigation }) {
     return `card:${String(card.card_id)}`;
   }, []);
 
+  const queueKey = (c) => (c?.queue_id != null ? String(c.queue_id) : String(c?.card_id || ''));
+
+  // (sort_key, queue_id) order, the server's queue order.
+  const compareQueuePosition = (a, b) => {
+    const ak = Number(a?.sort_key);
+    const bk = Number(b?.sort_key);
+    if (ak !== bk) return ak - bk;
+    return Number(a?.queue_id ?? 0) - Number(b?.queue_id ?? 0);
+  };
+
+  const toLearningCard = (card) => ({
+    queue_id: card.queue_id,
+    sort_key: card.sort_key,
+    card_id: card.card_id,
+    status: card.status || 'new',
+    next_review: card.next_review || new Date().toISOString(),
+    cards: {
+      id: card.card_id,
+      question: card.question,
+      answer: card.answer,
+      image: card.image,
+      example: card.example,
+      note: card.note,
+      chapter_id: card.chapter_id,
+    },
+  });
+
   const normalizeIncomingCards = useCallback((incomingCards) => {
     if (!Array.isArray(incomingCards) || incomingCards.length === 0) return [];
-
     const unique = new Map();
     incomingCards.forEach((card) => {
-      const key = card?.queue_id != null
-        ? String(card.queue_id)
-        : String(card?.card_id || '');
+      const key = queueKey(card);
       if (!key || unique.has(key)) return;
       unique.set(key, card);
     });
@@ -890,29 +940,23 @@ export default function SwipeDeckScreen({ route, navigation }) {
     const consumed = safeActiveIndex >= 0 ? prev.slice(0, safeActiveIndex + 1) : [];
     const upcoming = safeActiveIndex >= 0 ? prev.slice(safeActiveIndex + 1) : [...prev];
 
-    const upcomingKeys = new Set(
-      upcoming
-        .map((c) => c?.queue_id != null ? String(c.queue_id) : String(c?.card_id || ''))
-        .filter(Boolean)
-    );
-    const keysToMerge = new Set();
+    // A card already waiting in the upcoming queue is never added twice.
+    const upcomingCardIds = new Set(upcoming.map((c) => c?.card_id).filter(Boolean));
+    const cardsToMerge = normalized.filter((c) => c?.card_id && !upcomingCardIds.has(c.card_id));
+    if (cardsToMerge.length === 0) return;
 
-    const cardsToMerge = normalized.filter((c) => {
-      const key = c?.queue_id != null ? String(c.queue_id) : String(c?.card_id || '');
-      if (!key || upcomingKeys.has(key) || keysToMerge.has(key)) return false;
-      keysToMerge.add(key);
-      return true;
+    // Each card goes to its server position (sort_key) instead of the end of
+    // the loaded batch; that is where the server put a reinserted card. The
+    // immediate next card stays protected so it can't be swapped under the
+    // active one for a frame.
+    const protectedNext = upcoming.slice(0, 1);
+    const rest = upcoming.slice(1);
+    cardsToMerge.sort(compareQueuePosition).forEach((card) => {
+      const at = rest.findIndex((c) => compareQueuePosition(c, card) > 0);
+      if (at === -1) rest.push(card); else rest.splice(at, 0, card);
     });
 
-    // Never reorder the already-visible queue. In particular, keep the
-    // immediate next card protected so an async fetch/reinsert cannot swap
-    // the card underneath the active one for a frame. New cards are appended
-    // after the existing upcoming queue.
-    const protectedNext = upcoming.slice(0, 1);
-    const remainingUpcoming = upcoming.slice(1);
-    const mergedUpcoming = [...protectedNext, ...remainingUpcoming, ...cardsToMerge];
-
-    const merged = [...consumed, ...mergedUpcoming];
+    const merged = [...consumed, ...protectedNext, ...rest];
     cardsRef.current = merged;
     setCards(merged);
     prefetchCardImages(merged);
@@ -931,13 +975,11 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
     if (isAnimatingRef.current) {
       const current = normalizeIncomingCards(pendingIncomingCardsRef.current);
-      const existing = new Set(
-        current.map((c) => c?.queue_id != null ? String(c.queue_id) : String(c?.card_id || '')).filter(Boolean)
-      );
+      const existing = new Set(current.map(queueKey).filter(Boolean));
       pendingIncomingCardsRef.current = [
         ...current,
         ...normalized.filter((c) => {
-          const key = c?.queue_id != null ? String(c.queue_id) : String(c?.card_id || '');
+          const key = queueKey(c);
           if (!key || existing.has(key)) return false;
           existing.add(key);
           return true;
@@ -963,11 +1005,43 @@ export default function SwipeDeckScreen({ route, navigation }) {
     mergeIncomingCardsNow(pending);
   }, [mergeIncomingCardsNow, sessionTargetCount]);
 
+  // Sorts one next_cards response into what this mount should show, and moves
+  // the pagination cursor. Rules:
+  // - A card_id never seen before is a normal page row: it is accepted, and
+  //   only these rows move the cursor (the cursor never goes backwards).
+  // - A known card_id is accepted only as a server reinsert, i.e. when its
+  //   last local swipe was "left". Anything else (a stale row after a right
+  //   swipe or a skip) is dropped. This is what stops cards from repeating.
+  const ingestServerRows = useCallback((rows) => {
+    let next = paginationCursorRef.current;
+    const accepted = [];
+    (rows || []).forEach((row) => {
+      if (!row?.card_id) return;
+      if (seenCardIdsRef.current.has(row.card_id)) {
+        if (lastDirectionByCardRef.current.get(row.card_id) !== 'left') return;
+        lastDirectionByCardRef.current.delete(row.card_id); // one reinsert per left swipe
+        accepted.push(toLearningCard(row));
+        return;
+      }
+      seenCardIdsRef.current.add(row.card_id);
+      accepted.push(toLearningCard(row));
+      const isAhead = next.afterSortKey == null
+        || compareQueuePosition(row, { sort_key: next.afterSortKey, queue_id: next.afterQueueId }) > 0;
+      if (isAhead) next = { afterSortKey: row.sort_key, afterQueueId: row.queue_id };
+    });
+    paginationCursorRef.current = next;
+    return accepted;
+  }, []);
+
   const fetchMoreCards = useCallback(async () => {
     if (sessionTargetCount > 0 && sessionProgressCountRef.current >= sessionTargetCount) return;
     if (isFetchingMoreRef.current || !userId || !sessionIdRef.current || !hasMoreCardsRef.current) return;
     isFetchingMoreRef.current = true;
     try {
+      // Read the queue only after the latest swipe is stored (a right-swiped
+      // card must already be gone from it).
+      await lastRecordPromiseRef.current;
+      if (!sessionIdRef.current) return;
       const moreCards = await getSwipeSessionNextCards({
         sessionId: sessionIdRef.current,
         afterSortKey: paginationCursorRef.current.afterSortKey,
@@ -977,58 +1051,27 @@ export default function SwipeDeckScreen({ route, navigation }) {
         limit: SESSION_BATCH_LIMIT,
       });
       lastDueCheckAtRef.current = Date.now();
+      if (!isMountedRef.current) return;
 
-      const activeIndex = currentIndexRef.current;
-      const upcomingQueueIds = new Set(
-        cardsRef.current
-          .slice(activeIndex + 1)
-          .map(c => c?.queue_id)
-          .filter(Boolean)
-      );
-
-      const newCards = moreCards
-        .filter(c => !upcomingQueueIds.has(c.queue_id))
-        .map(card => ({
-          queue_id: card.queue_id,
-          sort_key: card.sort_key,
-          card_id: card.card_id,
-          status: card.status || 'new',
-          next_review: card.next_review || new Date().toISOString(),
-          cards: {
-            id: card.card_id,
-            question: card.question,
-            answer: card.answer,
-            image: card.image,
-            example: card.example,
-            note: card.note,
-            chapter_id: card.chapter_id,
-          }
-        }));
-
-      if (newCards.length > 0) {
-        newCards.forEach(c => seenCardIdsRef.current.add(c.card_id));
-        const lastFetchedCard = newCards[newCards.length - 1];
-        paginationCursorRef.current = {
-          afterSortKey: lastFetchedCard.sort_key,
-          afterQueueId: lastFetchedCard.queue_id,
-        };
-        commitIncomingCards(newCards);
-      } else if (moreCards.length === 0) {
+      if (moreCards.length === 0) {
         hasMoreCardsRef.current = false;
+        return;
       }
+      const newCards = ingestServerRows(moreCards);
+      if (newCards.length > 0) commitIncomingCards(newCards);
     } catch (error) {
       console.error('Error fetching more cards:', error);
     } finally {
       isFetchingMoreRef.current = false;
     }
-  }, [userId, commitIncomingCards, sessionTargetCount]);
+  }, [userId, commitIncomingCards, ingestServerRows, sessionTargetCount]);
 
   const checkDueReinserts = useCallback(async () => {
     if (sessionTargetCount > 0 && sessionProgressCountRef.current >= sessionTargetCount) return;
     if (isDueCheckingRef.current) return;
     if (!sessionIdRef.current) return;
     if (isFetchingMoreRef.current) return;
-    if (Date.now() - lastDueCheckAtRef.current < 120000) return;
+    if (Date.now() - lastDueCheckAtRef.current < dueCheckIntervalMsRef.current) return;
 
     isDueCheckingRef.current = true;
     try {
@@ -1040,46 +1083,36 @@ export default function SwipeDeckScreen({ route, navigation }) {
         currentQueueId: currentPositionCursorRef.current.currentQueueId,
         limit: 5,
       });
-
       lastDueCheckAtRef.current = Date.now();
+      if (!isMountedRef.current) return;
 
-      const activeIndex = currentIndexRef.current;
-      const upcomingQueueIds = new Set(
-        cardsRef.current
-          .slice(activeIndex + 1)
-          .map(c => c?.queue_id)
-          .filter(Boolean)
-      );
-
-      const newCards = dueCards
-        .filter(c => !upcomingQueueIds.has(c.queue_id))
-        .map(card => ({
-          queue_id: card.queue_id,
-          sort_key: card.sort_key,
-          card_id: card.card_id,
-          status: card.status || 'new',
-          next_review: card.next_review || new Date().toISOString(),
-          cards: {
-            id: card.card_id,
-            question: card.question,
-            answer: card.answer,
-            image: card.image,
-            example: card.example,
-            note: card.note,
-            chapter_id: card.chapter_id,
-          }
-        }));
-
-      if (newCards.length > 0) {
-        newCards.forEach(c => seenCardIdsRef.current.add(c.card_id));
-        commitIncomingCards(newCards);
-      }
+      const newCards = ingestServerRows(dueCards);
+      if (newCards.length > 0) commitIncomingCards(newCards);
     } catch (error) {
       console.error('Error checking due reinserts:', error);
     } finally {
       isDueCheckingRef.current = false;
     }
-  }, [commitIncomingCards, sessionTargetCount]);
+  }, [commitIncomingCards, ingestServerRows, sessionTargetCount]);
+
+  // One retry for a dropped request. "Queue item not found" is final (the card
+  // is no longer in this session), so it is not retried.
+  const recordSwipeWithRetry = async (args) => {
+    try {
+      await recordSwipeSessionSwipe(args);
+    } catch (error) {
+      if (String(error?.message || '').includes('Queue item not found')) {
+        if (__DEV__) console.warn('record_swipe skipped:', error.message);
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      try {
+        await recordSwipeSessionSwipe(args);
+      } catch (retryError) {
+        console.error('Failed to record swipe session swipe:', retryError?.message);
+      }
+    }
+  };
 
   const handleSwipe = useCallback(async (cardIndex, direction, meta = null) => {
     if (showSwipeTutorial) return;
@@ -1169,16 +1202,26 @@ export default function SwipeDeckScreen({ route, navigation }) {
       currentQueueId: card.queue_id,
     };
 
-    try {
-      await recordSwipeSessionSwipe({
-        sessionId: sessionIdRef.current,
-        cardId: card.card_id,
-        direction: actualDirection,
-        skipMinutes: actualSkipMinutes,
-      });
-    } catch (error) {
-      console.error('Failed to record swipe session swipe:', error);
+    lastDirectionByCardRef.current.set(card.card_id, actualDirection);
+    setUndoDepth((d) => Math.min(d + 1, undoLimitRef.current));
+
+    // Swipes are stored strictly in order; fetches and undo wait on this chain.
+    const recordArgs = {
+      sessionId: sessionIdRef.current,
+      cardId: card.card_id,
+      direction: actualDirection,
+      skipMinutes: actualSkipMinutes,
+    };
+    lastRecordPromiseRef.current = lastRecordPromiseRef.current
+      .then(() => recordSwipeWithRetry(recordArgs))
+      .catch(() => { });
+    await lastRecordPromiseRef.current;
+
+    if (!progressCachesClearedRef.current) {
+      progressCachesClearedRef.current = true;
+      clearDeckProgressCaches();
     }
+    if (!isMountedRef.current) return;
 
     checkDueReinserts();
     requestAnimationFrame(() => {
@@ -1186,6 +1229,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     });
   }, [
     checkDueReinserts,
+    clearDeckProgressCaches,
     flushPendingIncomingCards,
     getSessionProgressCardKey,
     scheduleReviewCheck,
@@ -1213,7 +1257,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
 
   const handleUndo = async () => {
     if (showSwipeTutorial) return;
-    if (undoDisabled || history.length === 0 || !sessionIdRef.current) return;
+    if (undoDisabled || history.length === 0 || undoDepth === 0 || !sessionIdRef.current) return;
     if (isAnimatingRef.current) return;
 
     setUndoDisabled(true);
@@ -1229,9 +1273,27 @@ export default function SwipeDeckScreen({ route, navigation }) {
     const lastDirection = historyDirections[historyDirections.length - 1];
 
     try {
+      // The swipe being undone must be stored first, or the server would undo
+      // the one before it.
+      await lastRecordPromiseRef.current;
       const result = await undoLastSwipe({ sessionId: sessionIdRef.current });
       if (result?.success === false && result?.reason === 'empty_stack') {
+        setUndoDepth(0);
         return;
+      }
+      setUndoDepth((d) => Math.max(0, d - 1));
+      if (undoneCard?.card_id) {
+        lastDirectionByCardRef.current.delete(undoneCard.card_id);
+        // A reinserted copy of this card may already wait further down the
+        // local queue; the server just moved it back, so drop the copy.
+        const before = cardsRef.current;
+        const pruned = before.filter((c, i) => i <= lastIndex || c?.card_id !== undoneCard.card_id);
+        if (pruned.length !== before.length) {
+          cardsRef.current = pruned;
+          setCards(pruned);
+        }
+        pendingIncomingCardsRef.current = pendingIncomingCardsRef.current
+          .filter((c) => c?.card_id !== undoneCard.card_id);
       }
 
       if ((lastDirection === 'left' || lastDirection === 'skip') && undoneCard) {
@@ -1275,7 +1337,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       console.error('Failed to undo swipe session action:', error);
     } finally {
       setTimeout(() => {
-        setUndoDisabled(false);
+        if (isMountedRef.current) setUndoDisabled(false);
       }, 350);
     }
   };
@@ -1355,13 +1417,14 @@ export default function SwipeDeckScreen({ route, navigation }) {
   const [textIndex, setTextIndex] = useState(0);
 
   useEffect(() => {
+    let swapTimeout = null;
     const interval = setInterval(() => {
       // Eski text'i çıkar
       opacity.value = withTiming(0, { duration: 250 });
       translateX.value = withTiming(-15, { duration: 250 });
 
       // Text'i JS tarafında değiştir
-      setTimeout(() => {
+      swapTimeout = setTimeout(() => {
         setTextIndex((prev) => (prev + 1) % texts.length);
 
         // Yeni text sağdan gelsin
@@ -1372,7 +1435,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
       }, 250);
     }, 3000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (swapTimeout) clearTimeout(swapTimeout);
+    };
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -1700,9 +1766,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
           style={[styles.horizontalButtonRow, { backgroundColor: colors.buttonColor }]}
         >
           <AnimatedTimeButton
-            onPress={() => handleSkip(15)}
+            onPress={() => handleSkip(10)}
             label={t('swipeDeck.levelHard', 'Zor')}
-            time={t('swipeDeck.minutes', '15dk+')}
+            time={t('swipeDeck.minutes', '10dk+')}
             buttonStyle={[styles.horizontalButton, { borderRightWidth: 1, borderRightColor: '#e0e0e0' }]}
             textColor={colors.buttonText}
           />
@@ -1726,7 +1792,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
           <AnimatedTimeButton
             onPress={() => handleSkip(7 * 24 * 60)}
             label={t('swipeDeck.levelEasy', 'Kolay')}
-            time={t('swipeDeck.sevenDays', '7g+')}
+            time={t('swipeDeck.sevenDays', '1hf+')}
             buttonStyle={styles.horizontalButton}
             textColor={colors.buttonText}
           />

@@ -245,6 +245,8 @@ export const getCardsByChapter = async (deckId, chapterId, page = 0, pageSize = 
     .select('id, question, answer, created_at')
     .eq('deck_id', deckId)
     .order('created_at', { ascending: false })
+    // id breaks ties so page boundaries are stable (no repeated/missing cards)
+    .order('id', { ascending: false })
     .range(from, from + pageSize - 1);
   if (chapterId) {
     query = query.eq('chapter_id', chapterId);
@@ -641,6 +643,24 @@ export const undoLastSwipe = async ({ sessionId }) => {
   });
   if (error) throw error;
   return data;
+};
+
+// Server-side swipe settings (public.swipe_config). Read once per app run; the
+// defaults match the config so an older database still behaves the same.
+const SWIPE_CLIENT_CONFIG_DEFAULTS = { left_delay_seconds: 60, undo_limit: 10 };
+let swipeClientConfigPromise = null;
+export const getSwipeClientConfig = () => {
+  if (!swipeClientConfigPromise) {
+    swipeClientConfigPromise = supabase
+      .rpc('swipe_client_config')
+      .then(({ data, error }) => (error || !data ? SWIPE_CLIENT_CONFIG_DEFAULTS : { ...SWIPE_CLIENT_CONFIG_DEFAULTS, ...data }))
+      .catch(() => SWIPE_CLIENT_CONFIG_DEFAULTS)
+      .then((cfg) => {
+        if (cfg === SWIPE_CLIENT_CONFIG_DEFAULTS) swipeClientConfigPromise = null; // retry next time
+        return cfg;
+      });
+  }
+  return swipeClientConfigPromise;
 };
 
 export const endSwipeSession = async ({ sessionId }) => {

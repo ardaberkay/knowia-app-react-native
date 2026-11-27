@@ -464,10 +464,10 @@
     "emailChangeMessage": "Um link de verificação foi enviado para seu novo endereço de email. Seu email atual permanecerá ativo até que você clique no link de verificação."
   },
   "swipeDeck": {
-    "minutes": "15 min+",
+    "minutes": "10 min+",
     "hours": "1 h+",
     "days": "1 d+",
-    "sevenDays": "7 d+",
+    "sevenDays": "1 sem+",
     "levelHard": "Difícil",
     "levelOkay": "Médio",
     "levelGood": "Bom",
@@ -544,7 +544,7 @@
       "swipeTitle": "Aprenda deslizando",
       "swipeDescription": "Deslize para a direita os cartões aprendidos. Para a esquerda, os que quer revisar mais.",
       "intervalTitle": "Escolha a revisão",
-      "intervalDescription": "Escolha o tempo conforme você sabe o cartão: 15 minutos, 1 hora, 1 dia ou 7 dias. Quanto melhor aprender, menos vezes precisará vê-lo.",
+      "intervalDescription": "Escolha o tempo conforme você sabe o cartão: 10 minutos, 1 hora, 1 dia ou 1 semana. Quanto melhor aprender, menos vezes precisará vê-lo.",
       "swipeHintLeft": "Revisar",
       "swipeHintRight": "Aprendido",
       "skip": "Pular",

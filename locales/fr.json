@@ -464,10 +464,10 @@
     "emailChangeMessage": "Un lien de vérification a été envoyé à votre nouvelle adresse email. Votre email actuel restera actif jusqu'à ce que vous cliquiez sur le lien de vérification."
   },
   "swipeDeck": {
-    "minutes": "15 min+",
+    "minutes": "10 min+",
     "hours": "1 h+",
     "days": "1 j+",
-    "sevenDays": "7 j+",
+    "sevenDays": "1 sem+",
     "levelHard": "Dur",
     "levelOkay": "Moyen",
     "levelGood": "Bien",
@@ -544,7 +544,7 @@
       "swipeTitle": "Apprenez en glissant",
       "swipeDescription": "Glissez à droite les cartes apprises. Glissez à gauche celles à revoir plus souvent.",
       "intervalTitle": "Choisissez le délai",
-      "intervalDescription": "Choisissez le délai selon votre maîtrise : 15 minutes, 1 heure, 1 jour ou 7 jours. Plus vous progressez, moins vous aurez besoin de revoir la carte.",
+      "intervalDescription": "Choisissez le délai selon votre maîtrise : 10 minutes, 1 heure, 1 jour ou 1 semaine. Plus vous progressez, moins vous aurez besoin de revoir la carte.",
       "swipeHintLeft": "Réviser",
       "swipeHintRight": "Apprise",
       "skip": "Passer",

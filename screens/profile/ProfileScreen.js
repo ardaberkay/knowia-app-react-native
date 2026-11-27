@@ -523,8 +523,12 @@ export default function ProfileScreen() {
       getActivitySummary(authUserId, { days: HEATMAP_DAYS }).then((summary) => {
         if (active && summary) setActivity(summary);
       });
+      // EditProfile writes the saved profile to this cache, so showing it on
+      // focus picks up a new photo/username without a network request.
       getCachedProfile(authUserId).then((cached) => {
-        if (active && !cached) loadProfile(false);
+        if (!active) return;
+        if (cached) setProfile(cached);
+        else loadProfile(false);
       });
       return () => { active = false; };
     }, [authUserId, loadProfile])

@@ -80,10 +80,16 @@ export function AuthProvider({ children }) {
     // accepted. Links carrying access/refresh tokens are ignored: a code can only
     // be exchanged with the verifier this device stored, so a forged link can't
     // log anyone in.
+    // A cold start delivers the same link twice (getInitialURL and the 'url'
+    // event). A code works only once, so the second exchange would fail and
+    // throw the user out of the reset screen: each code is handled once.
+    const handledCodes = new Set();
     const handleDeepLink = async ({ url }) => {
       const link = parseAuthLink(url);
       if (!link) return;
       if (link.kind === 'callback' && oauthInProgressRef.current) return; // signInWithGoogle exchanges it
+      if (handledCodes.has(link.code)) return;
+      handledCodes.add(link.code);
       const isRecovery = link.kind === 'reset';
       if (isRecovery) setIsRecoveryMode(true);
       const { error } = await supabase.auth.exchangeCodeForSession(link.code);
