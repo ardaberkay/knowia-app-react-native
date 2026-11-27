@@ -6,13 +6,12 @@ import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { Iconify } from 'react-native-iconify';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { triggerHaptic } from '../../lib/hapticManager';
 import * as BlockService from '../../services/BlockService';
 import LottieView from 'lottie-react-native';
 import { useListBottomInset } from '../../components/ui/TabBarInset';
-import { getCategoryIcon } from '../../theme/icons';
+import { getCategoryIcon, ICONS } from '../../theme/icons';
 import PhosphorIcon from '../../components/ui/PhosphorIcon';
 
 export default function BlockedScreen() {
@@ -138,7 +137,7 @@ export default function BlockedScreen() {
       ) : blockedTab === 'users' ? (
         blockedUsers.length === 0 ? (
           <View style={styles.emptyState}>
-            <Iconify icon="gridicons:block" size={72} color={colors.subtext || '#999'} style={styles.emptyStateIcon} />
+            <PhosphorIcon icon={ICONS.block} size={72} color={colors.subtext || '#999'} style={styles.emptyStateIcon} />
             <Text style={[typography.styles.body, { color: colors.subtext }, styles.emptyStateText]}>
               {t('profile.noBlockedUsers', 'Engellenen kullanıcı yok')}
             </Text>
@@ -159,7 +158,7 @@ export default function BlockedScreen() {
                   onPress={() => handleUnblockUser(user.id, user.username)}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 >
-                  <Iconify icon="gridicons:block" size={32} color={colors.error || '#ff5252'} />
+                  <PhosphorIcon icon={ICONS.block} size={32} color={colors.error || '#ff5252'} />
                 </TouchableOpacity>
               </View>
             ))}
@@ -167,7 +166,7 @@ export default function BlockedScreen() {
         )
       ) : hiddenDecks.length === 0 ? (
         <View style={styles.emptyState}>
-          <Iconify icon="mdi:cards" size={72} color={colors.subtext || '#999'} style={styles.emptyStateIcon} />
+          <PhosphorIcon icon={ICONS.stack} size={72} color={colors.subtext || '#999'} style={styles.emptyStateIcon} />
           <Text style={[typography.styles.body, { color: colors.subtext }, styles.emptyStateText]}>
             {t('profile.noHiddenDecks', 'Gizlenen deste yok')}
           </Text>
@@ -177,7 +176,7 @@ export default function BlockedScreen() {
           {hiddenDecks.map((deck) => (
             <View key={deck.id} style={[styles.deckCard, { backgroundColor: colors.border + '18', borderColor: colors.border + '40' }]}>
               <View style={[styles.deckCardThumb, { backgroundColor: colors.buttonColor + '20' }]}>
-                <PhosphorIcon {...getCategoryIcon(deck.categories?.sort_order)} size={28} color={colors.buttonColor} />
+                <PhosphorIcon icon={getCategoryIcon(deck.categories?.sort_order)} size={28} color={colors.buttonColor} />
               </View>
               <View style={styles.deckCardBody}>
                 <Text style={[styles.deckCardTitle, { color: colors.text }]} numberOfLines={1}>{deck.name}</Text>
@@ -191,7 +190,7 @@ export default function BlockedScreen() {
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 activeOpacity={0.7}
               >
-                <Iconify icon="oi:eye" size={20} color={colors.buttonColor} />
+                <PhosphorIcon icon={ICONS.visible} size={20} color={colors.buttonColor} />
                 <Text style={[styles.deckCardActionLabel, { color: colors.buttonColor }]}>{t('profile.unhideConfirmButton', 'Göster')}</Text>
               </TouchableOpacity>
             </View>

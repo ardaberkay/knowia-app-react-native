@@ -10,7 +10,6 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
-import { Iconify } from 'react-native-iconify';
 import CategorySelector from '../../components/modals/CategorySelector';
 import UndoButton from '../../components/tools/UndoButton';
 import CreateButton from '../../components/tools/CreateButton';
@@ -18,7 +17,7 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import BadgeText from '../../components/tools/BadgeText';
 import DeckLanguageModal, { DeckLanguageField } from '../../components/modals/DeckLanguageModal';
 import { triggerHaptic } from '../../lib/hapticManager';
-import { getCategoryIcon } from '../../theme/icons';
+import { getCategoryIcon, ICONS } from '../../theme/icons';
 import PhosphorIcon from '../../components/ui/PhosphorIcon';
 
 export default function DeckEditScreen() {
@@ -157,7 +156,7 @@ export default function DeckEditScreen() {
         >
           <View style={styles.labelRow}>
             <View style={styles.labelTextContainer}>
-              <Iconify icon="ion:book" size={24} color="#F98A21" style={styles.labelIcon} />
+              <PhosphorIcon icon={ICONS.deckName} size={24} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.text }]}>{t('create.name', 'Deste Adı')}</Text>
             </View>
             <View>
@@ -181,7 +180,7 @@ export default function DeckEditScreen() {
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 style={{ marginLeft: 8, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
               >
-                <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                <PhosphorIcon icon={ICONS.close} size={18} color={colors.muted} />
               </TouchableOpacity>
             ) : null}
           </View>
@@ -203,7 +202,7 @@ export default function DeckEditScreen() {
         >
           <View style={styles.labelRow}>
             <View style={styles.labelTextContainer}>
-              <Iconify icon="icon-park-outline:translation" size={24} color="#F98A21" style={styles.labelIcon} />
+              <PhosphorIcon icon={ICONS.pair} size={24} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.text }]}>{t('create.toName', 'Karşılığı')}</Text>
             </View>
             <View>
@@ -227,7 +226,7 @@ export default function DeckEditScreen() {
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 style={{ marginLeft: 8, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
               >
-                <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                <PhosphorIcon icon={ICONS.close} size={18} color={colors.muted} />
               </TouchableOpacity>
             ) : null}
           </View>
@@ -249,7 +248,7 @@ export default function DeckEditScreen() {
         >
           <View style={styles.labelRow}>
             <View style={styles.labelTextContainer}>
-              <Iconify icon="tabler:file-description-filled" size={24} color="#F98A21" style={styles.labelIcon} />
+              <PhosphorIcon icon={ICONS.description} size={24} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.text }]}>{t('create.description', 'Açıklama')}</Text>
             </View>
             <View>
@@ -278,7 +277,7 @@ export default function DeckEditScreen() {
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 style={{ position: 'absolute', right: 8, top: 8, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
               >
-                <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                <PhosphorIcon icon={ICONS.close} size={18} color={colors.muted} />
               </TouchableOpacity>
             ) : null}
           </View>
@@ -302,7 +301,7 @@ export default function DeckEditScreen() {
         >
           <View style={styles.labelRow}>
             <View style={styles.labelTextContainer}>
-              <Iconify icon="mdi:category-plus-outline" size={24} color="#F98A21" style={styles.labelIcon} />
+              <PhosphorIcon icon={ICONS.category} size={24} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.text }]}>{t('createDeck.categoryLabel', 'Kategori')}</Text>
             </View>
             <View>
@@ -331,7 +330,7 @@ export default function DeckEditScreen() {
 
                 return sortOrder ? (
                   <PhosphorIcon
-                    {...getCategoryIcon(sortOrder)}
+                    icon={getCategoryIcon(sortOrder)}
                     size={20}
                     color={selectedCategory ? colors.text : colors.muted}
                     style={styles.categoryIcon}
@@ -353,7 +352,7 @@ export default function DeckEditScreen() {
                 })() : t('createDeck.selectCategory')}
               </Text>
             </View>
-            <Iconify icon="flowbite:caret-down-solid" size={20} color={colors.muted} />
+            <PhosphorIcon icon={ICONS.dropdown} size={20} color={colors.muted} />
           </TouchableOpacity>
         </View>
 
@@ -374,7 +373,7 @@ export default function DeckEditScreen() {
         >
           <View style={styles.labelRow}>
             <View style={styles.labelTextContainer}>
-              <Iconify icon="mdi:spoken-language" size={24} color="#F98A21" style={styles.labelIcon} />
+              <PhosphorIcon icon={ICONS.language} size={24} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.text }]}>
                 {t('create.language', 'İçerik Dili')}
               </Text>

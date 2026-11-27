@@ -2,12 +2,11 @@ import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { TouchableOpacity, View, Image, StyleSheet, useWindowDimensions } from 'react-native';
 import { Text } from './AppText';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Iconify } from 'react-native-iconify';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { fontSizes, fonts } from '../../theme/typography';
 import { getCategoryColors } from '../../theme/colors';
-import { getCategoryIcon } from '../../theme/icons';
+import { getCategoryIcon, ICONS } from '../../theme/icons';
 import PhosphorIcon from './PhosphorIcon';
 import StackCarousel from './StackCarousel';
 
@@ -154,7 +153,7 @@ const DeckCard = ({
           {/* Background Category Icon */}
           <View style={styles.backgroundCategoryIcon}>
             <PhosphorIcon
-              {...categoryIcon}
+              icon={categoryIcon}
               size={isFeatured ? 170 : 120}
               color="rgba(0, 0, 0, 0.1)"
               style={styles.categoryIconStyle}
@@ -197,14 +196,14 @@ const DeckCard = ({
                 {/* Popularity Badge */}
                 {showPopularityBadge && deck.popularity_score && deck.popularity_score > 0 && (
                   <View style={[styles.popularityBadge, { backgroundColor: 'rgba(255, 255, 255, 0.25)' }]}>
-                    <Iconify icon="mdi:fire" size={12} color="#fff" style={{ marginRight: 3 }} />
+                    <PhosphorIcon icon={ICONS.trending} size={12} color="#fff" style={{ marginRight: 3 }} />
                     <Text style={[styles.popularityBadgeText, { color: '#fff' }]}>
                       {Math.round(deck.popularity_score)}
                     </Text>
                   </View>
                 )}
                 <View style={styles.deckCountBadge}>
-                  <Iconify icon="ri:stack-fill" size={15} color="#fff" style={{ marginRight: 3 }} />
+                  <PhosphorIcon icon={ICONS.stack} size={15} color="#fff" style={{ marginRight: 3 }} />
                   <Text style={[typography.styles.body, styles.deckCountBadgeText]}>{deck.card_count || 0}</Text>
                 </View>
               </View>
@@ -229,8 +228,8 @@ const DeckCard = ({
                   />
                   <View style={styles.progressPercentChipInner}>
                     {isProgressCompleted ? (
-                      <Iconify
-                        icon="streamline:check-solid"
+                      <PhosphorIcon
+                        icon={ICONS.check}
                         size={16}
                         color="#FFFFFF"
                       />
@@ -274,8 +273,8 @@ const DeckCard = ({
               onPress={handleFavoritePress} // YENİ FONKSİYONUMUZA BAĞLADIK
               activeOpacity={0.7}
             >
-              <Iconify
-                icon={localFavorite ? 'solar:heart-bold' : 'solar:heart-broken'} // ARTIK LOKAL STATE'İ DİNLİYOR
+              <PhosphorIcon
+                icon={localFavorite ? ICONS.favorite : ICONS.favoriteOff} // ARTIK LOKAL STATE'İ DİNLİYOR
                 size={20}
                 color={localFavorite ? '#F98A21' : colors.headText} // ARTIK LOKAL STATE'İ DİNLİYOR
               />

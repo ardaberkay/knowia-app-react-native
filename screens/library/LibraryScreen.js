@@ -9,7 +9,6 @@ import { typography, fontSizes, fonts, lineHeights } from '../../theme/typograph
 import { spacing } from '../../theme/layout';
 import { getDecksByCategory, deleteDeck, getLibrarySummary } from '../../services/DeckService';
 import { deleteCard, getUserCardProgressForCards } from '../../services/CardService';
-import { Iconify } from 'react-native-iconify';
 import { getFavoriteDecks, getFavoriteCards, addFavoriteDeck, removeFavoriteDeck, addFavoriteCard, removeFavoriteCard } from '../../services/FavoriteService';
 import { useTranslation } from 'react-i18next';
 import PagerView from 'react-native-pager-view';
@@ -30,6 +29,8 @@ import ProfileAvatarButton from '../../components/layout/ProfileAvatarButton';
 import { getLanguages, languagesInUse } from '../../services/LanguageService';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { useListBottomInset } from '../../components/ui/TabBarInset';
+import PhosphorIcon from '../../components/ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 const MY_DECKS_SEARCH_THRESHOLD = 10;
 // Favorilerim overview: newest decks in the carousel, newest cards in the list.
@@ -590,7 +591,7 @@ export default function LibraryScreen() {
         <View style={[createCardStyles.plusHalo, { backgroundColor: `${colors.buttonColor}1F` }]}>
           <View style={[createCardStyles.plusRing, { borderColor: `${colors.buttonColor}66` }]}>
             <View style={[createCardStyles.plusCore, { backgroundColor: colors.buttonColor, shadowColor: colors.buttonColor }]}>
-              <Iconify icon="ic:round-plus" size={28} color="#FFFFFF" />
+              <PhosphorIcon icon={ICONS.add} size={28} color="#FFFFFF" />
             </View>
           </View>
         </View>
@@ -661,7 +662,7 @@ export default function LibraryScreen() {
   // "Tümü ›" link.
   const renderFavoriteSectionHeader = ({ icon, title, onSeeAll }) => (
     <View style={styles.favoriteSectionHeader}>
-      <Iconify icon={icon} size={22} color="#F98A21" />
+      <PhosphorIcon icon={icon} size={22} color="#F98A21" />
       <Text style={[typography.styles.title3, styles.favoriteSectionTitle, { color: colors.text }]} numberOfLines={1}>
         {title}
       </Text>
@@ -675,7 +676,7 @@ export default function LibraryScreen() {
         <Text style={[typography.styles.subhead, styles.seeAllText, { color: colors.secondary }]}>
           {t('library.all', 'Tümü')}
         </Text>
-        <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={13} color={colors.secondary} />
+        <PhosphorIcon icon={ICONS.chevronRight} size={13} color={colors.secondary} />
       </TouchableOpacity>
     </View>
   );
@@ -800,7 +801,7 @@ export default function LibraryScreen() {
               scrollEventThrottle={16}
             >
               {renderFavoriteSectionHeader({
-                icon: 'ph:cards-fill',
+                icon: ICONS.deck,
                 title: t('library.decksSection', 'Desteler'),
                 onSeeAll: () => navigation.navigate('FavoriteDecks'),
               })}
@@ -819,7 +820,7 @@ export default function LibraryScreen() {
 
               <View style={styles.favoriteSectionGap} />
               {renderFavoriteSectionHeader({
-                icon: 'mdi:cards',
+                icon: ICONS.stack,
                 title: t('library.cardsSection', 'Kartlar'),
                 onSeeAll: () => navigation.navigate('FavoriteCards'),
               })}

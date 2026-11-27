@@ -5,10 +5,11 @@ import FormScrollView from '../../components/layout/FormScrollView';
 import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
-import { Iconify } from 'react-native-iconify';
 import { supabase } from '../../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../contexts/AuthContext';
+import PhosphorIcon from '../../components/ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 export default function ResetPasswordScreen({ navigation }) {
   const [password, setPassword] = useState('');
@@ -160,8 +161,8 @@ export default function ResetPasswordScreen({ navigation }) {
   // Validation item component
   const ValidationItem = ({ isValid, text }) => (
     <View style={styles.validationItem}>
-      <Iconify 
-        icon={isValid ? 'solar:library-bold-duotone' : 'solar:library-line-duotone'} 
+      <PhosphorIcon 
+        icon={isValid ? ICONS.valid : ICONS.invalid} 
         size={18} 
         color={isValid ? '#4CAF50' : colors.muted} 
       />
@@ -206,7 +207,7 @@ export default function ResetPasswordScreen({ navigation }) {
           {/* Şifre input */}
           <View style={styles.inputContainer}>
             <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
-              <Iconify icon="carbon:password" size={22} color={colors.muted} />
+              <PhosphorIcon icon={ICONS.password} size={22} color={colors.muted} />
             </View>
             <TextInput
               style={[styles.input, typography.styles.body]}
@@ -222,14 +223,14 @@ export default function ResetPasswordScreen({ navigation }) {
               style={{justifyContent: 'center', alignItems: 'center', width: 28, height: 22}}
               disabled={loading}
             >
-              <Iconify icon={showPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={22} color={colors.muted} />
+              <PhosphorIcon icon={showPassword ? ICONS.visible : ICONS.hidden} size={22} color={colors.muted} />
             </TouchableOpacity>
           </View>
 
           {/* Şifre onay input */}
           <View style={styles.inputContainer}>
             <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
-              <Iconify icon="carbon:password" size={22} color={colors.muted} />
+              <PhosphorIcon icon={ICONS.password} size={22} color={colors.muted} />
             </View>
             <TextInput
               style={[styles.input, typography.styles.body]}
@@ -245,7 +246,7 @@ export default function ResetPasswordScreen({ navigation }) {
               style={{justifyContent: 'center', alignItems: 'center', width: 28, height: 22}}
               disabled={loading}
             >
-              <Iconify icon={showConfirmPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={22} color={colors.muted} />
+              <PhosphorIcon icon={showConfirmPassword ? ICONS.visible : ICONS.hidden} size={22} color={colors.muted} />
             </TouchableOpacity>
           </View>
 

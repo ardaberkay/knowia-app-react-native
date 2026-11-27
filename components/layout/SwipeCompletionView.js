@@ -2,10 +2,11 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import { Text } from '../ui/AppText';
 import { typography, fontSizes, fonts } from '../../theme/typography';
+import PhosphorIcon from '../ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 // "in 5 min" / "in 2 h" / "in 3 days"; also used by the card detail sheet.
 export const formatFutureReview = (dateString, t) => {
@@ -92,7 +93,7 @@ export default function SwipeCompletionView({
         <View style={styles.completionHero}>
           <LinearGradient colors={[colors.buttonColor, '#FF6B35']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.completionHeroCard, { backgroundColor: colors.buttonColor }]}>
             <View style={styles.completionHeroTitleRow}>
-              <Iconify icon="material-symbols:trophy" size={36} color="#FFFFFF" />
+              <PhosphorIcon icon={ICONS.trophy} size={36} color="#FFFFFF" />
               <Text style={[typography.styles.title2, styles.completionTitle, { color: '#FFFFFF' }]}>{t('swipeDeck.completion.title', 'Oturum Tamamlandı!')}</Text>
             </View>
             <View style={styles.completionHeroMetricCircle}>
@@ -133,8 +134,8 @@ export default function SwipeCompletionView({
             </View>
             {completionActivity ? (
               <View style={styles.completionGoalRow}>
-                <Iconify
-                  icon={completionActivity.today_goal_met ? 'mdi:fire' : 'lets-icons:clock-fill'}
+                <PhosphorIcon
+                  icon={completionActivity.today_goal_met ? ICONS.fire : ICONS.time}
                   size={18}
                   color="#FFFFFF"
                 />
@@ -157,7 +158,7 @@ export default function SwipeCompletionView({
         <View style={[styles.completionChapterCard, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
           <View style={styles.completionChapterHeader}>
             <View style={styles.completionChapterTitleRow}>
-              <Iconify icon="streamline-flex:module-puzzle-2" size={20} color={colors.buttonColor} />
+              <PhosphorIcon icon={ICONS.chapter} size={20} color={colors.buttonColor} />
               <Text style={[typography.styles.bodyLarge, { color: colors.text }]}>{t('swipeDeck.completion.chapterProgress', 'Bölüm İlerlemesi')}</Text>
             </View>
             <Text style={[styles.completionChapterProgressValue, { color: colors.buttonColor }]}>{chapterProgress ? `%${chapterPercent}` : '--'}</Text>
@@ -172,14 +173,14 @@ export default function SwipeCompletionView({
           <View style={[styles.completionChapterDivider, { backgroundColor: colors.border }]} />
           <View style={styles.completionReviewGrid}>
             <View style={styles.completionReviewItem}>
-              <Iconify icon="lets-icons:clock-fill" size={22} color={colors.buttonColor} />
+              <PhosphorIcon icon={ICONS.time} size={22} color={colors.buttonColor} />
               <View style={styles.completionReviewTextGroup}>
                 <Text style={[styles.completionReviewMetric, { color: colors.text }]}>{nearestReview ? formatFutureReview(nearestReview.at, t) : '—'}</Text>
                 <Text style={[typography.styles.subhead, styles.completionReviewLabel, { color: colors.muted }]}>{nearestReview ? t('swipeDeck.completion.cardsReady', { count: nearestReview.count, defaultValue: `${nearestReview.count} kart hazır` }) : t('swipeDeck.completion.nearestReview', 'En yakın tekrar')}</Text>
               </View>
             </View>
             <View style={styles.completionReviewItem}>
-              <Iconify icon="solar:calendar-bold" size={22} color={colors.secondary} />
+              <PhosphorIcon icon={ICONS.calendar} size={22} color={colors.secondary} />
               <View style={styles.completionReviewTextGroup}>
                 <Text style={[styles.completionReviewMetric, { color: colors.text }]}>{farthestReview ? formatFutureReview(farthestReview.at, t) : '—'}</Text>
                 <Text style={[typography.styles.subhead, styles.completionReviewLabel, { color: colors.muted }]}>{t('swipeDeck.completion.farthestReview', 'En uzak tekrar')}</Text>

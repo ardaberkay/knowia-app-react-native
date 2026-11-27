@@ -7,9 +7,8 @@ import { BottomSheetModal, BottomSheetFlatList } from '@expo/ui/community/bottom
 
 import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
-import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
-import { getCategoryIcon } from '../../theme/icons';
+import { getCategoryIcon, ICONS } from '../../theme/icons';
 import PhosphorIcon from '../ui/PhosphorIcon';
 
 
@@ -61,7 +60,7 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
       >
         <View style={styles.iconWrapper}>
           <PhosphorIcon
-            {...getCategoryIcon(category.sort_order)}
+            icon={getCategoryIcon(category.sort_order)}
             size={26}
             color={isSelected ? primaryColor : colors.text}
           />
@@ -103,7 +102,7 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
           hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
           style={styles.closeBtnWrapper}
         >
-          <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
+          <PhosphorIcon icon={ICONS.close} size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
 

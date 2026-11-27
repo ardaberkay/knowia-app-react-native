@@ -21,10 +21,11 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { cacheProfile, getCachedProfile, cacheProfileImage } from '../../services/CacheService';
 import { useTranslation } from 'react-i18next';
-import { Iconify } from 'react-native-iconify';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { useListBottomInset } from '../../components/ui/TabBarInset';
+import PhosphorIcon from '../../components/ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '';
 
@@ -56,7 +57,8 @@ function goalName(goal, t) {
  * Menu rows in an iOS-style inset grouped card (used by Profile and its
  * Account / Settings / Info pages): no border, continuous corners, hairline
  * separators inset to where the text starts, grey highlight while pressed.
- * item: { label, icon?, right?, onPress?, chevron? }.
+ * item: { label, icon?, right?, onPress?, chevron? }; icon is an ICONS entry
+ * (theme/icons.js), always drawn bold so the column of row icons matches.
  */
 export function ProfileMenuCard({ items, colors }) {
   return (
@@ -81,14 +83,14 @@ export function ProfileMenuCard({ items, colors }) {
             />
           ) : null}
           {item.icon ? (
-            <Iconify icon={item.icon} size={20} color={item.iconColor || colors.buttonColor} />
+            <PhosphorIcon icon={item.icon} weight="bold" size={20} color={item.iconColor || colors.buttonColor} />
           ) : null}
           <Text style={[typography.styles.body, { color: item.labelColor || colors.text, flex: 1 }]} numberOfLines={1}>
             {item.label}
           </Text>
           {item.right ?? null}
           {item.chevron ? (
-            <Iconify icon="ion:chevron-forward" size={18} color={colors.muted} />
+            <PhosphorIcon icon={ICONS.chevronRight} size={18} color={colors.muted} />
           ) : null}
         </Pressable>
       ))}
@@ -391,7 +393,7 @@ const DailyGoalSheet = React.memo(function DailyGoalSheet({ sheetRef, goal, onSe
             accessibilityLabel={t('cardDetail.close', 'Kapat')}
             style={sheetStyles.close}
           >
-            <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
+            <PhosphorIcon icon={ICONS.close} size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -415,7 +417,7 @@ const DailyGoalSheet = React.memo(function DailyGoalSheet({ sheetRef, goal, onSe
                   {`${meta(preset.goal)} · ${t(`profile.activity.goals.${preset.key}.desc`)}`}
                 </Text>
               </View>
-              {selected ? <Iconify icon="hugeicons:tick-01" size={22} color={colors.buttonColor} /> : null}
+              {selected ? <PhosphorIcon icon={ICONS.check} size={22} color={colors.buttonColor} /> : null}
             </TouchableOpacity>
           );
         })}
@@ -471,7 +473,7 @@ const DailyGoalSheet = React.memo(function DailyGoalSheet({ sheetRef, goal, onSe
             ) : null}
           </View>
           {!isPreset && !customOpen ? (
-            <Iconify icon="hugeicons:tick-01" size={22} color={colors.buttonColor} />
+            <PhosphorIcon icon={ICONS.check} size={22} color={colors.buttonColor} />
           ) : null}
         </TouchableOpacity>
       </BottomSheetView>
@@ -553,7 +555,7 @@ export default function ProfileScreen() {
   const stats = [
     {
       key: 'streak',
-      icon: 'mdi:fire',
+      icon: ICONS.fire,
       value: String(activity?.current_streak ?? 0),
       label: t('profile.activity.streak', 'Seri'),
     },
@@ -587,9 +589,9 @@ export default function ProfileScreen() {
   );
 
   const pages = [
-    { key: 'account', icon: 'solar:user-bold', label: t('profile.account', 'Hesap'), chevron: true, onPress: () => navigation.navigate('ProfileAccount') },
-    { key: 'settings', icon: 'mage:filter', label: t('profile.settings', 'Ayarlar'), chevron: true, onPress: () => navigation.navigate('ProfileSettings') },
-    { key: 'info', icon: 'material-symbols:info-outline', label: t('profile.info', 'Bilgi ve destek'), chevron: true, onPress: () => navigation.navigate('ProfileInfo') },
+    { key: 'account', icon: ICONS.user, label: t('profile.account', 'Hesap'), chevron: true, onPress: () => navigation.navigate('ProfileAccount') },
+    { key: 'settings', icon: ICONS.settings, label: t('profile.settings', 'Ayarlar'), chevron: true, onPress: () => navigation.navigate('ProfileSettings') },
+    { key: 'info', icon: ICONS.info, label: t('profile.info', 'Bilgi ve destek'), chevron: true, onPress: () => navigation.navigate('ProfileInfo') },
   ];
 
   return (
@@ -625,7 +627,7 @@ export default function ProfileScreen() {
                   accessibilityLabel={t('profile.edit', 'Profili düzenle')}
                   style={[styles.editButton, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)' }]}
                 >
-                  <Iconify icon="lucide:edit" size={18} color={colors.text} />
+                  <PhosphorIcon icon={ICONS.edit} size={18} color={colors.text} />
                 </TouchableOpacity>
               </View>
               <Text style={[styles.email, { color: colors.muted }]} numberOfLines={1}>{profile?.email || ' '}</Text>
@@ -639,7 +641,7 @@ export default function ProfileScreen() {
                 style={[styles.stat, index > 0 && { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.border }]}
               >
                 <View style={styles.statValueRow}>
-                  {stat.icon ? <Iconify icon={stat.icon} size={16} color={colors.buttonColor} /> : null}
+                  {stat.icon ? <PhosphorIcon icon={stat.icon} size={16} color={colors.buttonColor} /> : null}
                   <Text style={[styles.statValue, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                     {stat.value}
                   </Text>
@@ -658,7 +660,7 @@ export default function ProfileScreen() {
             <View style={styles.sectionHeader}>
               {/* Same icon the Home hero used for the daily goal. */}
               <View style={styles.sectionTitleRow}>
-                <Iconify icon="fluent:arrow-trending-sparkle-24-filled" size={16} color={colors.buttonColor} />
+                <PhosphorIcon icon={ICONS.trending} size={16} color={colors.buttonColor} />
                 <Text style={[styles.sectionLabel, { color: colors.muted }]}>
                   {t('profile.activity.goalTitle', 'Günlük hedef')}
                 </Text>
@@ -685,7 +687,7 @@ export default function ProfileScreen() {
                 })}
               </Text>
               {activity?.today_goal_met ? (
-                <Iconify icon="hugeicons:tick-01" size={18} color={colors.buttonColor} />
+                <PhosphorIcon icon={ICONS.check} size={18} color={colors.buttonColor} />
               ) : null}
             </View>
             <View style={[styles.goalTrack, { backgroundColor: isDarkMode ? '#3A3A3A' : '#E6E2D8' }]}>

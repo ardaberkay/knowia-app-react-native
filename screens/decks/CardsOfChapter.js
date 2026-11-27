@@ -7,7 +7,6 @@ import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useAuth } from '../../contexts/AuthContext';
 import { updateCardsChapter } from '../../services/CardService';
-import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import SearchBar from '../../components/tools/SearchBar';
 import CardDetailSheet from '../../components/layout/CardDetailView';
@@ -21,6 +20,8 @@ import ChapterSelector from '../../components/modals/ChapterSelector';
 import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring } from 'react-native-reanimated';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { useListBottomInset } from '../../components/ui/TabBarInset';
+import PhosphorIcon from '../../components/ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 
@@ -33,12 +34,12 @@ const MemoizedCardItem = memo(({
   onToggle,
   onPress
 }) => {
-  let statusIcon = 'streamline-freehand:view-eye-off'; // default: new
+  let statusIcon = ICONS.hidden; // default: new
 
   if (status === 'learning') {
-    statusIcon = 'mdi:fire';
+    statusIcon = ICONS.fire;
   } else if (status === 'learned') {
-    statusIcon = 'dashicons:welcome-learn-more';
+    statusIcon = ICONS.learned;
   }
 
   return (
@@ -79,7 +80,7 @@ const MemoizedCardItem = memo(({
               ]}
             >
               {isSelected && (
-                <Iconify icon="hugeicons:tick-01" size={18} color="#FFFFFF" />
+                <PhosphorIcon icon={ICONS.check} size={18} color="#FFFFFF" />
               )}
             </TouchableOpacity>
           </View>
@@ -113,7 +114,7 @@ const MemoizedCardItem = memo(({
             backgroundColor: colors.cardBackground ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.1)',
           }
         ]}>
-          <Iconify
+          <PhosphorIcon
             icon={statusIcon}
             size={50}
             color={'#444444'}
@@ -258,8 +259,8 @@ export default function ChapterCardsScreen({ route, navigation }) {
           activeOpacity={0.7}
           hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
         >
-          <Iconify
-            icon={editMode ? "mingcute:close-fill" : "lucide:edit"}
+          <PhosphorIcon
+            icon={editMode ? ICONS.close : ICONS.edit}
             size={22}
             color={colors.text}
           />
@@ -589,7 +590,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
     );
   }
 
-  const chapterIcon = chapter?.id ? 'streamline-freehand:plugin-jigsaw-puzzle' : 'mage:inbox-star';
+  const chapterIcon = chapter?.id ? ICONS.chapter : ICONS.unassigned;
   const chapterName = chapter?.name || t('chapterCards.noChapter', 'Atanmamış Kartlar');
 
   return (
@@ -607,7 +608,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
             <View style={styles.heroContent}>
               <View style={styles.heroIconContainer}>
                 <View style={[styles.iconCircle, { backgroundColor: colors.buttonColor + '20' }]}>
-                  <Iconify icon={chapterIcon} size={28} color={colors.buttonColor} />
+                  <PhosphorIcon icon={chapterIcon} size={28} color={colors.buttonColor} />
                 </View>
               </View>
               <View style={styles.heroTextContainer}>
@@ -623,7 +624,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
               {/* Total */}
               <View style={styles.statItem}>
                 <View style={styles.iconBox}>
-                  <Iconify icon="ri:stack-fill" size={18} color={colors.buttonColor} />
+                  <PhosphorIcon icon={ICONS.stack} size={18} color={colors.buttonColor} />
                 </View>
                 <Text style={[styles.statText, { color: colors.text }]}>
                   {chapterStats.total}
@@ -635,7 +636,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
               {/* New */}
               <View style={styles.statItem}>
                 <View style={styles.iconBox}>
-                  <Iconify icon="basil:eye-closed-outline" size={22} color={colors.buttonColor} />
+                  <PhosphorIcon icon={ICONS.hidden} size={22} color={colors.buttonColor} />
                 </View>
                 <Text style={[styles.statText, { color: colors.text }]}>
                   {chapterStats.new}
@@ -647,7 +648,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
               {/* Learning */}
               <View style={styles.statItem}>
                 <View style={styles.iconBox}>
-                  <Iconify icon="mdi:fire" size={20} color={colors.buttonColor} />
+                  <PhosphorIcon icon={ICONS.fire} size={20} color={colors.buttonColor} />
                 </View>
                 <Text style={[styles.statText, { color: colors.text }]}>
                   {chapterStats.learning}
@@ -659,7 +660,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
               {/* Learned */}
               <View style={styles.statItem}>
                 <View style={styles.iconBox}>
-                  <Iconify icon="dashicons:welcome-learn-more" size={18} color={colors.buttonColor} />
+                  <PhosphorIcon icon={ICONS.learned} size={18} color={colors.buttonColor} />
                 </View>
                 <Text style={[styles.statText, { color: colors.text }]}>
                   {chapterStats.learned}
@@ -689,11 +690,20 @@ export default function ChapterCardsScreen({ route, navigation }) {
                   style={styles.actionPillButton}
                   activeOpacity={0.7}
                 >
-                  <Iconify
-                    icon={selectedCards.size === filteredCards.length ? "material-symbols:all-out-rounded" : "material-symbols:all-out-outline-rounded"}
-                    size={18}
-                    color={colors.text}
-                  />
+                  {/* Same box as the card checkboxes, at pill size. */}
+                  <View
+                    style={[
+                      styles.selectAllBox,
+                      {
+                        borderColor: colors.buttonColor,
+                        backgroundColor: selectedCards.size === filteredCards.length ? colors.buttonColor : 'transparent',
+                      },
+                    ]}
+                  >
+                    {selectedCards.size === filteredCards.length && (
+                      <PhosphorIcon icon={ICONS.check} size={13} color="#FFFFFF" />
+                    )}
+                  </View>
                   <Text style={[styles.actionPillText, { color: colors.text }]}>
                     {selectedCards.size === filteredCards.length
                       ? t('chapterCards.deselectAll', 'Tümünü Kaldır')
@@ -724,8 +734,8 @@ export default function ChapterCardsScreen({ route, navigation }) {
                     <Text style={[styles.moveButtonText, { color: colors.buttonColor }]}>
                       {t('chapterCards.move', 'Taşı')}
                     </Text>
-                    <Iconify
-                      icon="ion:chevron-forward"
+                    <PhosphorIcon
+                      icon={ICONS.chevronRight}
                       size={16}
                       color={colors.buttonColor}
                       style={{ marginLeft: 4 }}
@@ -807,7 +817,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
             {distLoading ? (
               <ActivityIndicator size="large" color="#FFFFFF" />
             ) : (
-              <Iconify icon="fluent:arrow-shuffle-24-filled" size={28} color="#FFFFFF" />
+              <PhosphorIcon icon={ICONS.shuffle} size={28} color="#FFFFFF" />
             )}
           </LinearGradient>
         </AnimatedPressable>
@@ -1058,6 +1068,14 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 6,
     borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectAllBox: {
+    width: 18,
+    height: 18,
+    borderRadius: 5,
+    borderWidth: 1.5,
     justifyContent: 'center',
     alignItems: 'center',
   },

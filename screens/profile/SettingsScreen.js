@@ -13,6 +13,7 @@ import { getHapticPreference, setHapticPreference, triggerHaptic } from '../../l
 import LanguageSelector from '../../components/modals/LanguageSelector';
 import { ProfileMenuCard } from './ProfileScreen';
 import { fontSizes, fonts } from '../../theme/typography';
+import { ICONS } from '../../theme/icons';
 
 const LANGUAGE_NAMES = {
   tr: 'Türkçe',
@@ -95,6 +96,7 @@ export default function SettingsScreen() {
   const items = [
     {
       key: 'language',
+      icon: ICONS.language,
       label: t('profile.language'),
       onPress: () => {
         triggerHaptic('selection');
@@ -112,11 +114,13 @@ export default function SettingsScreen() {
     },
     {
       key: 'haptics',
+      icon: ICONS.haptics,
       label: t('profile.haptics', 'Titreşim'),
       right: <Switch value={hapticsEnabled} onValueChange={handleToggleHaptics} {...switchProps(hapticsEnabled)} />,
     },
     {
       key: 'notifications',
+      icon: ICONS.notifications,
       label: t('profile.notifications'),
       right: (
         <Switch

@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import { Text } from '../ui/AppText';
 import { typography, fonts } from '../../theme/typography';
+import PhosphorIcon from '../ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 /**
  * First-run coachmarks on the swipe screen. Dims everything except the
@@ -111,7 +112,7 @@ export default function SwipeTutorialOverlay({
             <Text style={styles.swipeTutorialStepText}>{stepIndex + 1}/{steps.length}</Text>
           </View>
           <View style={styles.swipeTutorialTitleRow}>
-            <Iconify icon={activeStep.icon} size={20} color="#F98A21" />
+            <PhosphorIcon icon={activeStep.icon} size={20} color="#F98A21" />
             <Text style={[styles.swipeTutorialTitle, { color: colors.text }]}>{activeStep.title}</Text>
           </View>
           <Text style={[styles.swipeTutorialDescription, { color: colors.muted }]}>{activeStep.description}</Text>
@@ -151,7 +152,7 @@ export default function SwipeTutorialOverlay({
           <View style={[styles.swipeTutorialSwipeBadge, styles.swipeTutorialSwipeBadgeLeft]}>
             <View style={[styles.swipeTutorialSwipeBadgeGlow, styles.swipeTutorialSwipeBadgeGlowLeft]} />
             <View style={[styles.swipeTutorialSwipeBadgeContent, styles.swipeTutorialSwipeBadgeContentLeft]}>
-              <Iconify icon="ion:arrow-undo" size={16} color="#FFFFFF" />
+              <PhosphorIcon icon={ICONS.swipeLeft} size={16} color="#FFFFFF" />
               <Text style={styles.swipeTutorialSwipeHintText}>{t('swipeDeck.tutorial.swipeHintLeft', 'Tekrar Et')}</Text>
             </View>
           </View>
@@ -159,7 +160,7 @@ export default function SwipeTutorialOverlay({
             <View style={[styles.swipeTutorialSwipeBadgeGlow, styles.swipeTutorialSwipeBadgeGlowRight]} />
             <View style={[styles.swipeTutorialSwipeBadgeContent, styles.swipeTutorialSwipeBadgeContentRight]}>
               <Text style={styles.swipeTutorialSwipeHintText}>{t('swipeDeck.tutorial.swipeHintRight', 'Öğrendim')}</Text>
-              <Iconify icon="ion:arrow-redo" size={16} color="#FFFFFF" />
+              <PhosphorIcon icon={ICONS.swipeRight} size={16} color="#FFFFFF" />
             </View>
           </View>
         </View>

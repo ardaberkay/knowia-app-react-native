@@ -1,11 +1,12 @@
 import React from 'react';
 import { View, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Text } from '../ui/AppText';
-import { Iconify } from 'react-native-iconify';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import ProfileAvatarButton from './ProfileAvatarButton';
+import PhosphorIcon from '../ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 export default function StandardCustomAppBar({
   title,
@@ -76,7 +77,7 @@ export default function StandardCustomAppBar({
               ]}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, opacity: streak > 0 ? 1 : 0.7 }}>
-                <Iconify icon="mdi:fire" size={18} color={textColor} />
+                <PhosphorIcon icon={ICONS.fire} size={18} color={textColor} />
                 <Text style={[styles.streakText, { color: textColor }]}>{streak}</Text>
               </View>
             </TouchableOpacity>

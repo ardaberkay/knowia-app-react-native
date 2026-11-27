@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { MenuView } from '@expo/ui/community/menu';
-import Icon from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
 import { triggerHaptic } from '../../lib/hapticManager';
+import PhosphorIcon from '../ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 const BUTTON_SIZE = 48;
 
@@ -48,7 +49,7 @@ const FilterIcon = ({ style, size, color, value = 'original', onChange, hideFavo
           { borderColor, backgroundColor },
         ]}
       >
-        <Icon icon="lsicon:filter-filled" size={size || 24} color={resolvedIconColor} />
+        <PhosphorIcon icon={ICONS.filterMenu} size={size || 24} color={resolvedIconColor} />
       </View>
     </MenuView>
   );

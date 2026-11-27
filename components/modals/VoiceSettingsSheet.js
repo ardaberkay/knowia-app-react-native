@@ -4,13 +4,14 @@ import { Text } from '../ui/AppText';
 import { BottomSheetModal } from '@expo/ui/community/bottom-sheet';
 import { Gesture, GestureDetector, GestureHandlerRootView, ScrollView as GHScrollView } from 'react-native-gesture-handler';
 import Reanimated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { SPEECH_RATE, SPEECH_RATES, formatRate, voiceRank } from '../../lib/speech';
 import DeckLanguageModal from './DeckLanguageModal';
 import { languageNativeName } from '../../services/LanguageService';
+import PhosphorIcon from '../ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 // Stepped speed bar for the voice sheet: tap a stop or drag along the track.
 // The thumb snaps to the nearest stop on the UI thread (light haptic per
@@ -153,9 +154,9 @@ const VoiceRow = memo(function VoiceRow({ row, selected, first, base, locale, on
         ) : null}
       </View>
       {selected ? (
-        <Iconify icon="hugeicons:tick-01" size={22} color={colors.buttonColor} />
+        <PhosphorIcon icon={ICONS.check} size={22} color={colors.buttonColor} />
       ) : (
-        <Iconify icon="streamline:button-play-solid" size={14} color={colors.muted} />
+        <PhosphorIcon icon={ICONS.play} size={14} color={colors.muted} />
       )}
     </Pressable>
   );
@@ -261,7 +262,7 @@ const VoiceSettingsSheet = memo(function VoiceSettingsSheet({
           accessibilityLabel={t('cardDetail.close', 'Kapat')}
           style={styles.voiceSheetClose}
         >
-          <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
+          <PhosphorIcon icon={ICONS.close} size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
       <GHScrollView
@@ -283,7 +284,7 @@ const VoiceSettingsSheet = memo(function VoiceSettingsSheet({
             <Text style={[typography.styles.body, { color: colors.text, flex: 1 }]} numberOfLines={1}>
               {readingNames.length ? readingNames.join(' → ') : t('swipeDeck.voice.readingLanguagePick', 'Dil seç')}
             </Text>
-            <Iconify icon="ion:chevron-forward" size={18} color={colors.muted} />
+            <PhosphorIcon icon={ICONS.chevronRight} size={18} color={colors.muted} />
           </Pressable>
         </View>
         <Text style={[styles.voiceHint, { color: colors.muted, marginTop: 8 }]}>
@@ -354,8 +355,8 @@ const VoiceSettingsSheet = memo(function VoiceSettingsSheet({
                         defaultValue: `Diğer sesler (${restRows.length})`,
                       })}
                     </Text>
-                    <Iconify
-                      icon={othersOpen ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'}
+                    <PhosphorIcon
+                      icon={othersOpen ? ICONS.dropdownOpen : ICONS.dropdown}
                       size={16}
                       color={colors.muted}
                     />

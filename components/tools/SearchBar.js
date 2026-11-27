@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { TextInput } from '../ui/AppText';
-import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { typography, fontSizes } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
+import PhosphorIcon from '../ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 const searchBarDimensions = {
   height: 48,
@@ -47,8 +48,8 @@ export default function SearchBar({ value, onChangeText, placeholder, style, var
       }, 
       style
     ]}>
-      <Iconify 
-        icon="iconamoon:search" 
+      <PhosphorIcon 
+        icon={ICONS.search} 
         size={searchBarDimensions.iconSize} 
         color={iconColor} 
         style={[{ marginRight: searchBarDimensions.iconMarginRight, marginLeft: searchBarDimensions.iconMarginLeft }]} 

@@ -2,17 +2,20 @@ import React, { useRef, useEffect, useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, ScrollView, useWindowDimensions, Platform } from 'react-native';
 import { Text } from '../ui/AppText';
 import { useTheme } from '../../theme/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheetModal, BottomSheetView } from '@expo/ui/community/bottom-sheet';
 import { typography, fontSizes, fonts } from '../../theme/typography';
-import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import BadgeText from '../tools/BadgeText';
 import { triggerHaptic } from '../../lib/hapticManager';
+import PhosphorIcon from '../ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 
 export default function HowToCreateModal({ isVisible, onClose }) {
   const { height: SCREEN_HEIGHT } = useWindowDimensions();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
 
   
@@ -35,37 +38,37 @@ export default function HowToCreateModal({ isVisible, onClose }) {
 
   const steps = [
     {
-      icon: 'ion:book',
+      icon: ICONS.deckName,
       title: t('howToCreate.step1Title', 'Deste Adı Ekle'),
       description: t('howToCreate.step1Desc', 'Destenize bir isim verin. Bu isim destenizi tanımlar ve arama sonuçlarında görünür. Örn: "İngilizce Kelimeler", "Tarih Notları"'),
       required: <BadgeText required={true} />,
     },
     {
-      icon: 'icon-park-outline:translation',
+      icon: ICONS.pair,
       title: t('howToCreate.step2Title', 'Karşılığı Ekle (Opsiyonel)'),
       description: t('howToCreate.step2Desc', 'Eğer desteniz çeviri veya eşleştirme içeriyorsa, karşılık alanını doldurabilirsiniz. Bu alan boş bırakılabilir. Örn: "English Words" için karşılık "Türkçe Kelimeler" olabilir.'),
       required: <BadgeText required={false} />,
     },
     {
-      icon: 'tabler:file-description-filled',
+      icon: ICONS.description,
       title: t('howToCreate.step3Title', 'Açıklama Ekle (Opsiyonel)'),
       description: t('howToCreate.step3Desc', 'Destenizin amacını, içeriğini veya kullanım şeklini açıklayabilirsiniz. Bu bilgi diğer kullanıcılar için faydalı olabilir.'),
       required: <BadgeText required={false} />,
     },
     {
-      icon: 'mdi:category-plus-outline',
+      icon: ICONS.category,
       title: t('howToCreate.step4Title', 'Kategori Seç'),
       description: t('howToCreate.step4Desc', 'Destenizin hangi konuya ait olduğunu belirlemek için bir kategori seçin. Bu, destenizin keşfedilmesini ve organize edilmesini kolaylaştırır.'),
       required: <BadgeText required={true} />,
     },
     {
-      icon: 'mdi:spoken-language',
+      icon: ICONS.language,
       title: t('howToCreate.step6Title', 'İçerik Dili Seç'),
       description: t('howToCreate.step6Desc', 'Destenizin içerik dilini en fazla 2 dil olacak şekilde seçin. Bu, destenizin diğer kullanıcılar tarafından keşfedilmesini ve organize edilmesini kolaylaştırır.'),
       required: <BadgeText required={true} />,
     },
     {
-      icon: 'fluent:tab-add-24-regular',
+      icon: ICONS.deck,
       title: t('howToCreate.step5Title', 'Oluştur Butonuna Bas'),
       description: t('howToCreate.step5Desc', 'Tüm bilgileri doldurduktan sonra "Oluştur" butonuna basın. Deste oluşturulduktan sonra kart eklemeye başlayabilirsiniz.'),
     }
@@ -84,13 +87,13 @@ export default function HowToCreateModal({ isVisible, onClose }) {
           {/* Header */}
           <View style={styles.headerRow}>
             <View style={styles.headerTitleContainer}>
-              <Iconify icon="material-symbols:info-outline" size={24} color={colors.secondary} style={{ marginRight: 8 }} />
+              <PhosphorIcon icon={ICONS.info} size={24} color={colors.secondary} style={{ marginRight: 8 }} />
               <Text style={[typography.styles.title2, { color: colors.text }]}>
                 {t('howToCreate.title', 'Nasıl Oluşturulur?')}
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButtonIcon} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
+              <PhosphorIcon icon={ICONS.close} size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
 
@@ -98,7 +101,7 @@ export default function HowToCreateModal({ isVisible, onClose }) {
           <ScrollView 
             style={styles.scrollView}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 16 }]}
             bounces={true}
           >
             <Text style={[styles.introText, typography.styles.body, { color: colors.muted, marginBottom: 24 }]}>
@@ -109,7 +112,7 @@ export default function HowToCreateModal({ isVisible, onClose }) {
               <View key={index} style={[styles.stepContainer, { backgroundColor: colors.cardBackgroundTransparent || colors.cardBackground, borderColor: colors.cardBorder }]}>
                 <View style={styles.stepHeader}>
                   <View style={[styles.stepIconContainer, { backgroundColor: colors.iconBackground }]}>
-                    <Iconify icon={step.icon} size={24} color={colors.secondary} />
+                    <PhosphorIcon icon={step.icon} size={24} color={colors.secondary} />
                   </View>
                   <View style={styles.stepTitleContainer}>
                     <View style={styles.stepTitleRow}>
@@ -127,26 +130,13 @@ export default function HowToCreateModal({ isVisible, onClose }) {
             ))}
 
             <View style={[styles.tipContainer, { backgroundColor: colors.secondary + '15', borderColor: colors.secondary + '30' }]}>
-              <Iconify icon="lucide:lightbulb" size={20} color={colors.secondary} style={{ marginRight: 8 }} />
+              <PhosphorIcon icon={ICONS.hint} size={20} color={colors.secondary} style={{ marginRight: 8 }} />
               <Text style={[styles.tipText, typography.styles.subhead, { color: colors.text, flex: 1 }]}>
                 {t('howToCreate.tip', 'İpucu: Deste oluşturduktan sonra istediğiniz zaman düzenleyebilir veya kart ekleyebilirsiniz.')}
               </Text>
             </View>
           </ScrollView>
 
-          {/* Alt Buton */}
-          <TouchableOpacity
-            style={[styles.closeButton, { backgroundColor: colors.secondary }]}
-            onPress={() => {
-              triggerHaptic('light');
-              onClose();
-            }}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.closeButtonText, { fontSize: fontSizes.body }, { color: '#fff' }]}>
-              {t('common.ok', 'Tamam')}
-            </Text>
-          </TouchableOpacity>
 
       </BottomSheetView>
     </BottomSheetModal>
@@ -232,20 +222,9 @@ const styles = StyleSheet.create({
   tipText: {
     lineHeight: 20,
   },
-  closeButton: {
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 16,
-  },
   closeButtonIcon: {
     backgroundColor: 'rgba(150, 150, 150, 0.1)',
     padding: 6,
     borderRadius: 99,
-  },
-  closeButtonText: {
-    fontFamily: fonts.semibold,
-    color: '#fff',
   },
 });

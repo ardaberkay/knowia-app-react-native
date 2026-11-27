@@ -2,7 +2,6 @@ import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, TouchableOpacity, Animated, RefreshControl, Image, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { Text } from '../ui/AppText';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
@@ -10,7 +9,7 @@ import { triggerHaptic } from '../../lib/hapticManager';
 import CommunityDeckCard from '../ui/CommunityDeckCard';
 import Svg, { Path } from 'react-native-svg';
 import { getCategoryColors } from '../../theme/colors';
-import { getCategoryIcon } from '../../theme/icons';
+import { getCategoryIcon, ICONS } from '../../theme/icons';
 import PhosphorIcon from '../ui/PhosphorIcon';
 
 // Grid deck cards keep a fixed portrait ratio instead of a share of the screen
@@ -48,11 +47,11 @@ const getInProgressGradient = (percent) => {
 function getRankingBadge(mode, deck) {
   if (!mode) return null;
   if (mode === true || mode === 'trend') {
-    return { icon: 'mdi:fire', value: Math.max(1, Math.round(Number(deck?.popularity_score) || 0)) };
+    return { icon: ICONS.trending, value: Math.max(1, Math.round(Number(deck?.popularity_score) || 0)) };
   }
   const count = Number(mode === 'likes' ? deck?.favorite_count : deck?.unique_started_count) || 0;
   if (count <= 0) return null;
-  return { icon: mode === 'likes' ? 'solar:heart-bold' : 'fluent:people-community-20-filled', value: count };
+  return { icon: mode === 'likes' ? ICONS.favorite : ICONS.community, value: count };
 }
 
 const DeckCard = React.memo(
@@ -197,8 +196,8 @@ const DeckCard = React.memo(
               />
             </Svg>
             <View style={styles.myDecksBadgeContent}>
-              <Iconify
-                icon="ri:stack-fill"
+              <PhosphorIcon
+                icon={ICONS.stack}
                 size={16}
                 color="#fff"
                 style={{ marginRight: 3 }}
@@ -210,8 +209,8 @@ const DeckCard = React.memo(
 
               <View style={styles.myDecksDivider} />
 
-              <Iconify
-                icon="streamline-flex:module-puzzle-2"
+              <PhosphorIcon
+                icon={ICONS.chapter}
                 size={16}
                 color="#fff"
                 style={{ marginRight: 3 }}
@@ -228,8 +227,8 @@ const DeckCard = React.memo(
       return (
         <View style={styles.deckCountBadge}>
           <View style={styles.cardCountContent}>
-            <Iconify
-              icon="ri:stack-fill"
+            <PhosphorIcon
+              icon={ICONS.stack}
               size={18}
               color="#fff"
               style={{ marginRight: 3 }}
@@ -289,8 +288,8 @@ const DeckCard = React.memo(
             style={styles.progressPercentChipInner}
           >
             {isProgressCompleted ? (
-              <Iconify
-                icon="streamline:check-solid"
+              <PhosphorIcon
+                icon={ICONS.check}
                 size={16}
                 color="#FFFFFF"
               />
@@ -388,7 +387,7 @@ const DeckCard = React.memo(
             ]}
           >
             <PhosphorIcon
-              {...categoryIcon}
+              icon={categoryIcon}
               size={
                 iconDimensions.verticalIconSize
               }
@@ -456,8 +455,8 @@ const DeckCard = React.memo(
                 }
                 activeOpacity={0.7}
               >
-                <Iconify
-                  icon="mdi:garbage"
+                <PhosphorIcon
+                  icon={ICONS.delete}
                   size={21}
                   color="#E74C3C"
                 />
@@ -467,7 +466,7 @@ const DeckCard = React.memo(
           {/* Ranking badge: what the list is sorted by (see BADGE_MODES). */}
           {badge && (
             <View style={styles.popularityBadge}>
-              <Iconify
+              <PhosphorIcon
                 icon={badge.icon}
                 size={14}
                 color="#fff"
@@ -515,12 +514,8 @@ const DeckCard = React.memo(
             }
             activeOpacity={0.7}
           >
-            <Iconify
-              icon={
-                localFavorite
-                  ? 'solar:heart-bold'
-                  : 'solar:heart-broken'
-              }
+            <PhosphorIcon
+              icon={localFavorite ? ICONS.favorite : ICONS.favoriteOff}
               size={21}
               color={
                 localFavorite

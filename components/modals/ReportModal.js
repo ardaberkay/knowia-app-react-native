@@ -5,7 +5,8 @@ import { useTheme } from '../../theme/theme';
 import { BottomSheetModal, BottomSheetView } from '@expo/ui/community/bottom-sheet';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
-import { Iconify } from 'react-native-iconify';
+import PhosphorIcon from '../ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 export const REPORT_REASON_OPTIONS = {
   user: ['harassment', 'spam', 'hate_speech', 'inappropriate', 'impersonation', 'other'],
@@ -86,7 +87,7 @@ export default function ReportModal({
               hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
               style={styles.closeBtnWrapper}
             >
-              <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
+              <PhosphorIcon icon={ICONS.close} size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
 
@@ -142,7 +143,7 @@ export default function ReportModal({
                       {isSelected && <View style={[styles.radioInner, { backgroundColor: secondaryColor }]} />}
                     </View>
                   ) : (
-                    <Iconify icon="fontisto:locked" size={16} color={colors.muted} />
+                    <PhosphorIcon icon={ICONS.locked} size={16} color={colors.muted} />
                   )}
                 </TouchableOpacity>
               );

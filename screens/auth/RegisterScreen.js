@@ -7,7 +7,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../theme/theme';
 import { typography } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
-import { Iconify } from 'react-native-iconify';
+import PhosphorIcon from '../../components/ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 const REGISTER_LINKS = {
   privacy: 'https://www.knowia.online/policy',
@@ -83,7 +84,7 @@ export default function RegisterScreen({ navigation }) {
         <View style={styles.form}>
           <View style={styles.inputContainer}>
             <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
-              <Iconify icon="tabler:mail-filled" size={22} color={colors.muted} />
+              <PhosphorIcon icon={ICONS.email} size={22} color={colors.muted} />
             </View>
             <TextInput
               style={[styles.input, typography.styles.body]}
@@ -97,7 +98,7 @@ export default function RegisterScreen({ navigation }) {
           </View>
           <View style={styles.inputContainer}>
             <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
-              <Iconify icon="carbon:password" size={22} color={colors.muted} />
+              <PhosphorIcon icon={ICONS.password} size={22} color={colors.muted} />
             </View>
             <TextInput
               style={[styles.input, typography.styles.body]}
@@ -112,12 +113,12 @@ export default function RegisterScreen({ navigation }) {
               style={{justifyContent: 'center', alignItems: 'center', width: 28, height: 22}}
               disabled={loading}
             >
-              <Iconify icon={showPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={22} color={colors.muted} />
+              <PhosphorIcon icon={showPassword ? ICONS.visible : ICONS.hidden} size={22} color={colors.muted} />
             </TouchableOpacity>
           </View>
           <View style={styles.inputContainer}>
             <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
-              <Iconify icon="carbon:password" size={22} color={colors.muted} />
+              <PhosphorIcon icon={ICONS.password} size={22} color={colors.muted} />
             </View>
             <TextInput
               style={[styles.input, typography.styles.body]}
@@ -132,7 +133,7 @@ export default function RegisterScreen({ navigation }) {
               style={{justifyContent: 'center', alignItems: 'center', width: 28, height: 22}}
               disabled={loading}
             >
-              <Iconify icon={showConfirmPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={22} color={colors.muted} />
+              <PhosphorIcon icon={showConfirmPassword ? ICONS.visible : ICONS.hidden} size={22} color={colors.muted} />
             </TouchableOpacity>
           </View>
           <View style={styles.policyLinksRow}>

@@ -4,10 +4,11 @@ import { Text } from '../ui/AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
-import { Iconify } from 'react-native-iconify';
+import PhosphorIcon from '../ui/PhosphorIcon';
 import { fontSizes, fonts } from '../../theme/typography';
 
-export default function CreateButton({ onPress, disabled = false, text, loading = false, style, textStyle, colors, showIcon = false, iconName }) {
+// icon: an ICONS entry from theme/icons.js, shown before the text when showIcon.
+export default function CreateButton({ onPress, disabled = false, text, loading = false, style, textStyle, colors, showIcon = false, icon }) {
   const { colors: themeColors } = useTheme();
   const { t } = useTranslation();
 
@@ -30,13 +31,8 @@ export default function CreateButton({ onPress, disabled = false, text, loading 
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
       >
-        {showIcon && iconName && (
-          <Iconify 
-            icon={iconName} 
-            size={20} 
-            color="#fff" 
-            style={{ marginRight: 6 }} 
-          />
+        {showIcon && icon && (
+          <PhosphorIcon icon={icon} size={20} color="#fff" style={{ marginRight: 6 }} />
         )}
         <Text style={[
           styles.createButtonText,

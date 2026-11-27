@@ -31,7 +31,6 @@ import { invalidateCache, hasSeenSwipeTutorial, markSwipeTutorialSeen } from '..
 import { getActivitySummary, invalidateActivitySummary } from '../../services/ProfileService';
 import { listChapters, mergeChapterProgressIntoCache } from '../../services/ChapterService';
 import { useAuth } from '../../contexts/AuthContext';
-import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import { addFavoriteCard, removeFavoriteCard, getFavoriteCardIds } from '../../services/FavoriteService';
 import LottieView from 'lottie-react-native';
@@ -50,6 +49,8 @@ import { isSpeechAvailable, useCardSpeech } from '../../lib/speech';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { maybePromptForReview, getReviewMilestones } from '../../services/ReviewPromptService';
 import { getCategoryColors } from '../../theme/colors';
+import PhosphorIcon from '../../components/ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 // Eğer henüz yoksa AnimatedPressable'ı oluştur (önceki sayfalardaki gibi)
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
@@ -297,20 +298,20 @@ export default function SwipeDeckScreen({ route, navigation }) {
       title: t('swipeDeck.tutorial.flipTitle', 'Kartı çevir'),
       description: t('swipeDeck.tutorial.flipDescription', 'Cevabı tahmin ettikten sonra karta dokunarak arka yüzünü görebilirsin.'),
       target: 'card',
-      icon: 'fluent:card-ui-portrait-flip-24-regular',
+      icon: ICONS.tapToFlip,
     },
     {
       title: t('swipeDeck.tutorial.swipeTitle', 'Kaydırarak öğren'),
       description: t('swipeDeck.tutorial.swipeDescription', 'Tamamen öğrendiğin kartları sağa kaydır. Sık tekrar etmek istediklerini sola kaydır.'),
       target: 'card',
       showSwipeHint: true,
-      icon: 'carbon:ibm-event-automation',
+      icon: ICONS.swipeToLearn,
     },
     {
       title: t('swipeDeck.tutorial.intervalTitle', 'Tekrar zamanını seç'),
       description: t('swipeDeck.tutorial.intervalDescription', 'Kartı ne kadar iyi bildiğine göre tekrar süresini seç. 15 dakika, 1 saat, 1 gün veya 7 gün sonra yeniden karşına çıksın. Öğrendikçe kartı daha seyrek görmen yeterli olacaktır.'),
       target: 'interval',
-      icon: 'hugeicons:chat-delay-01',
+      icon: ICONS.reviewInterval,
     },
   ]), [t]);
 
@@ -505,7 +506,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
                 accessibilityLabel={t('swipeDeck.reverseActive', 'Ters mod: önce cevap')}
                 style={styles.reverseBadge}
               >
-                <Iconify icon="material-symbols:swap-vert-rounded" size={18} color="#FFFFFF" />
+                <PhosphorIcon icon={ICONS.reverse} size={18} color="#FFFFFF" />
               </TouchableOpacity>
             ) : null}
             <MenuView
@@ -523,8 +524,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
               style={styles.headerMenuHost}
             >
               <View style={styles.headerMenuTrigger}>
-                <Iconify
-                  icon="iconamoon:menu-kebab-horizontal-bold"
+                <PhosphorIcon
+                  icon={ICONS.more}
                   size={24}
                   color="#FFFFFF"
                 />
@@ -1585,7 +1586,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
               {leftCount}
             </Reanimated.Text>
             <Reanimated.View pointerEvents="none" style={[styles.counterIconOverlay, animatedLeftIcon]}>
-              <Iconify icon="mingcute:time-fill" size={18} color="#fff" />
+              <PhosphorIcon icon={ICONS.time} size={18} color="#fff" />
             </Reanimated.View>
           </View>
         </Reanimated.View>
@@ -1632,7 +1633,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
               return (
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <View style={iconWrapStyle}>
-                    <Iconify icon="fluent:arrow-repeat-all-48-regular" size={22} color={colors.text} />
+                    <PhosphorIcon icon={ICONS.repeat} size={22} color={colors.text} />
                   </View>
                   <Text style={[styles.deckProgressText, { color: colors.text }]}>{t('swipeDeck.vaktiGeldi', 'Vakti Geldi')}</Text>
                 </View>
@@ -1642,7 +1643,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 {activeCardIsReinserted && (
                   <View style={iconWrapStyle}>
-                    <Iconify icon="fluent:arrow-repeat-all-48-regular" size={18} color={colors.text} />
+                    <PhosphorIcon icon={ICONS.repeat} size={18} color={colors.text} />
                   </View>
                 )}
                 <Text style={[styles.deckProgressText, { color: colors.text }]}>{currentCardNumber}/{sessionTargetCount}</Text>
@@ -1663,7 +1664,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
               {rightCount}
             </Reanimated.Text>
             <Reanimated.View pointerEvents="none" style={[styles.counterIconOverlay, animatedRightIcon]}>
-              <Iconify icon="streamline:check-solid" size={16} color="#fff" />
+              <PhosphorIcon icon={ICONS.check} size={16} color="#fff" />
             </Reanimated.View>
           </View>
         </Reanimated.View>
@@ -1761,7 +1762,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
             disabled={undoDisabled}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Iconify icon="lets-icons:refund-back" size={28} color={colors.orWhite} />
+            <PhosphorIcon icon={ICONS.undo} size={28} color={colors.orWhite} />
           </TouchableOpacity>
           <Reanimated.Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER} style={[animatedStyle, {
             color: '#8A8A8A', ...typography.styles.subhead, textAlign: 'center', fontFamily: fonts.bold
@@ -1777,9 +1778,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             {autoPlay ? (
-              <Iconify icon="material-symbols:pause-rounded" size={30} color={colors.orWhite} />
+              <PhosphorIcon icon={ICONS.pause} size={30} color={colors.orWhite} />
             ) : (
-              <Iconify icon="streamline:button-play-solid" size={22} color={colors.orWhite} />
+              <PhosphorIcon icon={ICONS.play} size={22} color={colors.orWhite} />
             )}
           </TouchableOpacity>
         </View>
@@ -1951,14 +1952,14 @@ const styles = StyleSheet.create({
   },
   timeButtonLabel: {
     ...typography.styles.headline,
-    fontSize: fontSizes.subhead,
-    lineHeight: 17,
+    fontSize: 16, // between the body (15) and bodyLarge (17) steps, by request
+    lineHeight: 20,
     textAlign: 'center',
   },
   timeButtonTime: {
     fontFamily: fonts.regular,
-    fontSize: fontSizes.micro,
-    lineHeight: 14,
+    fontSize: fontSizes.caption,
+    lineHeight: 15,
     opacity: 0.85,
     textAlign: 'center',
   },

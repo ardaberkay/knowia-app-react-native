@@ -5,9 +5,8 @@ import { useTheme } from '../../theme/theme';
 import { BottomSheetModal, BottomSheetView } from '@expo/ui/community/bottom-sheet';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Iconify } from 'react-native-iconify';
 import PhosphorIcon from '../ui/PhosphorIcon';
-import { getCategoryIcon } from '../../theme/icons';
+import { getCategoryIcon, ICONS } from '../../theme/icons';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { languageCode, languageNativeName, languageEnglishName } from '../../services/LanguageService';
@@ -47,8 +46,8 @@ export const FilterModalButton = ({ onPress, variant }) => {
       hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
       activeOpacity={0.8}
     >
-      <Iconify
-        icon="mage:filter"
+      <PhosphorIcon
+        icon={ICONS.filterSheet}
         size={24}
         color={iconColor}
       />
@@ -168,7 +167,7 @@ const FilterModal = ({
         backgroundColor: isSelected ? primaryColor : 'transparent'
       }
     ]}>
-      {isSelected && <Iconify icon="hugeicons:tick-01" size={16} color="#FFF" />}
+      {isSelected && <PhosphorIcon icon={ICONS.check} size={16} color="#FFF" />}
     </View>
   );
 
@@ -184,7 +183,7 @@ const FilterModal = ({
           {/* Header */}
           <View style={styles.modalHeader}>
             <View style={styles.headerLeft}>
-              <Iconify icon="si:filter-list-alt-fill" size={28} color={colors.text} />
+              <PhosphorIcon icon={ICONS.filterSheet} size={28} color={colors.text} />
               <Text style={[typography.styles.title2, { color: colors.text, fontSize: fontSizes.title2 }]}>
                 {t('common.filters', 'Filtreler')}
               </Text>
@@ -194,7 +193,7 @@ const FilterModal = ({
               hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
               style={styles.closeBtnWrapper}
             >
-              <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
+              <PhosphorIcon icon={ICONS.close} size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
 
@@ -205,7 +204,7 @@ const FilterModal = ({
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <View style={[styles.headerAccent, { backgroundColor: primaryColor }]} />
-                  <Iconify icon="lucide:sort-asc" size={20} color={colors.text} />
+                  <PhosphorIcon icon={ICONS.sort} size={20} color={colors.text} />
                   <Text style={[styles.sectionTitle, { color: colors.text }]}>
                     {t('common.sortBy', 'Sıralama')}
                   </Text>
@@ -221,7 +220,7 @@ const FilterModal = ({
                       {selectedSortLabel}
                     </Text>
                   </View>
-                  <Iconify icon={isSortOpen ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'} size={20} color={colors.text} />
+                  <PhosphorIcon icon={isSortOpen ? ICONS.dropdownOpen : ICONS.dropdown} size={20} color={colors.text} />
                 </TouchableOpacity>
 
                 {isSortOpen && (
@@ -267,7 +266,7 @@ const FilterModal = ({
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <View style={[styles.headerAccent, { backgroundColor: primaryColor }]} />
-                <Iconify icon="material-symbols:category-search-rounded" size={20} color={colors.text} />
+                <PhosphorIcon icon={ICONS.category} size={20} color={colors.text} />
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
                   {t('common.categories', 'Kategoriler')}
                 </Text>
@@ -288,7 +287,7 @@ const FilterModal = ({
                     </View>
                   )}
                 </View>
-                <Iconify icon={isCategoryOpen ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'} size={20} color={colors.text} />
+                <PhosphorIcon icon={isCategoryOpen ? ICONS.dropdownOpen : ICONS.dropdown} size={20} color={colors.text} />
               </TouchableOpacity>
 
               {isCategoryOpen && (
@@ -314,7 +313,7 @@ const FilterModal = ({
                       >
                         <View style={styles.optionCardLeft}>
                           <View style={styles.optionIconWrapper}>
-                            <PhosphorIcon {...option.icon} size={22} color={isSelected ? primaryColor : colors.text} />
+                            <PhosphorIcon icon={option.icon} size={22} color={isSelected ? primaryColor : colors.text} />
                           </View>
                           <Text style={[
                             styles.optionCardText,
@@ -339,7 +338,7 @@ const FilterModal = ({
             <View style={[styles.section, { marginBottom: 20 }]}>
               <View style={styles.sectionHeader}>
                 <View style={[styles.headerAccent, { backgroundColor: primaryColor }]} />
-                <Iconify icon="fa:language" size={20} color={colors.text} />
+                <PhosphorIcon icon={ICONS.language} size={20} color={colors.text} />
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
                   {t('create.language', 'İçerik Dili')}
                 </Text>
@@ -360,7 +359,7 @@ const FilterModal = ({
                     </View>
                   )}
                 </View>
-                <Iconify icon={isLanguageOpen ? 'flowbite:caret-up-solid' : 'flowbite:caret-down-solid'} size={20} color={colors.text} />
+                <PhosphorIcon icon={isLanguageOpen ? ICONS.dropdownOpen : ICONS.dropdown} size={20} color={colors.text} />
               </TouchableOpacity>
 
               {isLanguageOpen && (
@@ -476,7 +475,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'transparent',
     borderRadius: 32,
-    paddingHorizontal: 12,
     borderWidth: 1,
     height: 46,
     width: 46,

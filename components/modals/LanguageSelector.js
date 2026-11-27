@@ -7,8 +7,9 @@ import { BottomSheetModal, BottomSheetFlatList } from '@expo/ui/community/bottom
 import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
-import { Iconify } from 'react-native-iconify';
 import { triggerHaptic } from '../../lib/hapticManager';
+import PhosphorIcon from '../ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 
 export default function LanguageSelector({ isVisible, onClose, onLanguageChange }) {
@@ -109,7 +110,7 @@ export default function LanguageSelector({ isVisible, onClose, onLanguageChange 
             hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
             style={styles.closeBtnWrapper}
           >
-            <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
+            <PhosphorIcon icon={ICONS.close} size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
       </View>

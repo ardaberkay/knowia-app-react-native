@@ -12,14 +12,13 @@ import { BottomSheetModal, BottomSheetScrollView } from '@expo/ui/community/bott
 import { MenuView } from '@expo/ui/community/menu';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
-import { Iconify } from 'react-native-iconify';
 import { Text } from '../ui/AppText';
 import StackCarousel from '../ui/StackCarousel';
 import { formatFutureReview } from './SwipeCompletionView';
 import { ShimmerBox } from '../skeleton/DeckSkeleton';
 import { useTheme } from '../../theme/theme';
 import { getCategoryColors } from '../../theme/colors';
-import { getCategoryIcon } from '../../theme/icons';
+import { getCategoryIcon, ICONS } from '../../theme/icons';
 import PhosphorIcon from '../ui/PhosphorIcon';
 import { typography, fontSizes, fonts, lineHeights } from '../../theme/typography';
 import { triggerHaptic } from '../../lib/hapticManager';
@@ -221,7 +220,7 @@ function CardFace({ gradientColors, colors, text, numberOfLines }) {
       </View>
       {/* Opens the detail; the tap itself is handled by the carousel. */}
       <View style={styles.detailButton}>
-        <Iconify icon="material-symbols:info-outline" size={20} color="#FFFFFF" />
+        <PhosphorIcon icon={ICONS.info} size={20} color="#FFFFFF" />
       </View>
     </LinearGradient>
     </View>
@@ -345,7 +344,7 @@ export default function CardDetailSheet({
           accessibilityLabel={t('cardDetail.close', 'Kapat')}
           style={headerButtonStyle}
         >
-          <Iconify icon="material-symbols:close-rounded" size={22} color={colors.text} />
+          <PhosphorIcon icon={ICONS.close} size={22} color={colors.text} />
         </TouchableOpacity>
         {hasMenu ? (
           <View style={styles.sheetHeaderActions}>
@@ -356,7 +355,7 @@ export default function CardDetailSheet({
               style={styles.headerMenuHost}
             >
               <View style={headerButtonStyle}>
-                <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={22} color={colors.text} />
+                <PhosphorIcon icon={ICONS.more} size={22} color={colors.text} />
               </View>
             </MenuView>
           </View>
@@ -435,7 +434,7 @@ function CardDetailContent({ card, deck, colors, showCreatedAt, speakingKey, onS
         <View style={styles.metaRow}>
           {categoryName ? (
             <View style={[styles.categoryChip, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
-              <PhosphorIcon {...getCategoryIcon(sortOrder)} size={14} color={accent} />
+              <PhosphorIcon icon={getCategoryIcon(sortOrder)} size={14} color={accent} />
               <Text style={[styles.categoryChipText, { color: colors.text }]} numberOfLines={1}>{categoryName}</Text>
             </View>
           ) : null}
@@ -550,7 +549,7 @@ function SectionLabel({ text, colors, speaking = false, onSpeak, flush = false, 
           accessibilityLabel={t('cardDetail.speak', 'Sesli oku')}
           style={[styles.speakButton, buttonLook]}
         >
-          <Iconify icon="solar:volume-loud-bold" size={16} color={iconColor} />
+          <PhosphorIcon icon={ICONS.speak} size={16} color={iconColor} />
         </TouchableOpacity>
       ) : null}
     </View>

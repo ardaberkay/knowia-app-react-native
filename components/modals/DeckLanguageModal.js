@@ -7,7 +7,6 @@ import { BottomSheetModal, BottomSheetFlatList } from '@expo/ui/community/bottom
 import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
-import { Iconify } from 'react-native-iconify';
 import { triggerHaptic } from '../../lib/hapticManager';
 import {
   languageCode,
@@ -16,6 +15,8 @@ import {
   sortLanguagesForPicker,
   filterLanguages,
 } from '../../services/LanguageService';
+import PhosphorIcon from '../ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 
 // Code badge ("JA") instead of a flag: languages aren't countries, and there
@@ -157,7 +158,7 @@ export default function DeckLanguageModal({
           <Text style={[styles.slotValue, { color: colors.text }]} numberOfLines={1}>
             {languageNativeName(language, t)}
           </Text>
-          <Iconify icon="material-symbols:close-rounded" size={16} color={colors.muted} />
+          <PhosphorIcon icon={ICONS.close} size={16} color={colors.muted} />
         </View>
       ) : (
         <Text style={[styles.slotPlaceholder, { color: colors.muted }]} numberOfLines={2}>
@@ -234,7 +235,7 @@ export default function DeckLanguageModal({
             <Text style={[styles.infoText, { color: isDarkMode ? '#aaa' : '#666' }]}>{subtitle ?? t('create.languageSub')}</Text>
           </View>
           <TouchableOpacity onPress={() => bottomSheetModalRef.current?.dismiss()} style={styles.closeButton}>
-            <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
+            <PhosphorIcon icon={ICONS.close} size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -254,7 +255,7 @@ export default function DeckLanguageModal({
             accessibilityRole="button"
             accessibilityLabel={t('create.languageSwap', 'Yerlerini değiştir')}
           >
-            <Iconify icon="material-symbols:swap-horiz-rounded" size={20} color={isFull ? primaryColor : colors.muted} />
+            <PhosphorIcon icon={ICONS.pair} size={20} color={isFull ? primaryColor : colors.muted} />
           </TouchableOpacity>
           {renderSlot(
             t('create.languageBack', 'Arka yüz'),
@@ -271,7 +272,7 @@ export default function DeckLanguageModal({
         )}
 
         <View style={[styles.searchBox, { backgroundColor: neutralFill }]}>
-          <Iconify icon="iconamoon:search" size={18} color={colors.muted} />
+          <PhosphorIcon icon={ICONS.search} size={18} color={colors.muted} />
           <TextInput
             value={query}
             onChangeText={setQuery}
@@ -346,7 +347,7 @@ export function DeckLanguageField({ languages = [], selectedLanguage = [], onPre
       ) : back ? (
         <View style={fieldStyles.pairRow}>
           {renderFace(t('create.languageFront', 'Ön yüz'), front)}
-          <Iconify icon="material-symbols:arrow-forward-rounded" size={18} color={colors.muted} />
+          <PhosphorIcon icon={ICONS.arrowRight} size={18} color={colors.muted} />
           {renderFace(t('create.languageBack', 'Arka yüz'), back)}
         </View>
       ) : (
@@ -363,10 +364,10 @@ export function DeckLanguageField({ languages = [], selectedLanguage = [], onPre
           accessibilityRole="button"
           accessibilityLabel={t('create.languageSwap', 'Yerlerini değiştir')}
         >
-          <Iconify icon="material-symbols:swap-horiz-rounded" size={20} color={primaryColor} />
+          <PhosphorIcon icon={ICONS.pair} size={20} color={primaryColor} />
         </TouchableOpacity>
       ) : (
-        <Iconify icon="flowbite:caret-down-solid" size={20} color={colors.muted} />
+        <PhosphorIcon icon={ICONS.dropdown} size={20} color={colors.muted} />
       )}
     </TouchableOpacity>
   );

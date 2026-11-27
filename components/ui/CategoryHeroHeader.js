@@ -2,7 +2,8 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text } from './AppText';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Iconify } from 'react-native-iconify';
+import PhosphorIcon from './PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import SearchBar from '../tools/SearchBar';
 
@@ -10,20 +11,20 @@ import SearchBar from '../tools/SearchBar';
 export function getCategoryConfig(category, t) {
   const configs = {
     inProgressDecks: {
-      icon: 'dashicons:welcome-learn-more',
+      icon: ICONS.inProgressDecks,
       // Canlı turuncu-kırmızı: enerji ve ilerleme hissi (belirgin gradyant)
       gradient: ['#ffa726', '#ff6b35'],
       accentColor: '#ff6b35',
       description: t('home.inProgressDecksDescription', 'Çalıştığınız destelerle bilginizi pekiştirin'),
     },
     defaultDecks: {
-      icon: 'mdi:resource-description-framework',
+      icon: ICONS.readyDecks,
       gradient: ['#667eea', '#764ba2'], // Sakin mor-mavi - güvenilir
       accentColor: '#f093fb',
       description: t('home.defaultDecksDescription', 'Hazır destelerle hızlıca öğrenmeye başlayın'),
     },
     communityDecks: {
-      icon: 'fluent:people-community-20-filled',
+      icon: ICONS.community,
       gradient: ['#f093fb', '#f5576c'], // Sosyal pembe-kırmızı - sıcak ve davetkar
       accentColor: '#ff6b9d',
       description: t('home.communityDecksDescription', 'Topluluk destelerini keşfedin ve paylaşın'),
@@ -31,7 +32,7 @@ export function getCategoryConfig(category, t) {
   };
 
   return configs[category] || {
-    icon: 'solar:user-bold',
+    icon: ICONS.deck,
     gradient: ['#38f9d7', '#43e97b'],
     accentColor: '#6f8ead',
     description: t('home.allDecksDescription', 'Tüm desteleri keşfedin'),
@@ -61,7 +62,7 @@ export default function CategoryHeroHeader({
         <View style={styles.heroContent}>
           <View style={styles.heroIconContainer}>
             <View style={[styles.iconCircle, { backgroundColor: config.accentColor + '20' }]}>
-              <Iconify icon={config.icon} size={28} color="#fff" />
+              <PhosphorIcon icon={config.icon} size={28} color="#fff" />
             </View>
           </View>
           <View style={styles.heroTextContainer}>

@@ -7,7 +7,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getDecksByCategory } from '../../services/DeckService';
 import { useNavigation, useFocusEffect, useScrollToTop } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
-import { Iconify } from 'react-native-iconify';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { getFavoriteDecks, addFavoriteDeck, removeFavoriteDeck } from '../../services/FavoriteService';
 import {
@@ -28,15 +27,17 @@ import StandardCustomAppBar from '../../components/layout/StandardCustomAppBar';
 import HeroPullBackdrop from '../../components/layout/HeroPullBackdrop';
 import CommunityDeckCard from '../../components/ui/CommunityDeckCard';
 import { useListBottomInset } from '../../components/ui/TabBarInset';
+import PhosphorIcon from '../../components/ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 
 // Kategoriye göre ikon seçen yardımcı fonksiyon
 function getCategoryIcon(category) {
   switch (category) {
-    case 'inProgressDecks': return 'dashicons:welcome-learn-more';
-    case 'defaultDecks': return 'mdi:resource-description-framework';
-    case 'communityDecks': return 'fluent:people-community-20-filled';
-    default: return 'solar:user-bold';
+    case 'inProgressDecks': return ICONS.inProgressDecks;
+    case 'defaultDecks': return ICONS.readyDecks;
+    case 'communityDecks': return ICONS.community;
+    default: return ICONS.deck;
   }
 }
 
@@ -344,8 +345,8 @@ export default function HomeScreen() {
                 activeOpacity={0.8}
                 onPress={handleHeroPress}
               >
-                <Iconify
-                  icon="streamline:button-play-solid"
+                <PhosphorIcon
+                  icon={ICONS.play}
                   size={13}
                   color="#ff6b35"
                 />
@@ -430,7 +431,7 @@ export default function HomeScreen() {
           marginHorizontal: isInProgressSection ? 0 : 8,
         }]}>
           <View style={styles.sectionHeaderLeft}>
-            <Iconify
+            <PhosphorIcon
               icon={getCategoryIcon(category)}
               size={22}
               color="#F98A21"
@@ -450,7 +451,7 @@ export default function HomeScreen() {
             </View>
           </View>
           <View>
-            <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={20} color="#007AFF" />
+            <PhosphorIcon icon={ICONS.chevronRight} size={20} color="#007AFF" />
           </View>
         </HeaderWrapper>
         {isCategoryLoading ? (
@@ -514,8 +515,8 @@ export default function HomeScreen() {
                       },
                     ]}
                   >
-                    <Iconify
-                      icon="ic:round-plus"
+                    <PhosphorIcon
+                      icon={ICONS.add}
                       size={40}
                       color={
                         isDarkMode
@@ -604,7 +605,7 @@ export default function HomeScreen() {
                     },
                   ]}
                 >
-                  <Iconify icon="material-symbols:arrow-forward-ios-rounded" size={30} color="#F98A21" style={{ marginLeft: 2, marginTop: 1 }} />
+                  <PhosphorIcon icon={ICONS.chevronRight} size={30} color="#F98A21" style={{ marginLeft: 2, marginTop: 1 }} />
                 </View>
               </View>
             )}

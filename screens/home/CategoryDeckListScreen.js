@@ -12,7 +12,7 @@ import DeckList from '../../components/lists/DeckList';
 import { useAuth } from '../../contexts/AuthContext';
 import { getDecksByCategory } from '../../services/DeckService';
 import { addFavoriteDeck, removeFavoriteDeck, getFavoriteDeckIds } from '../../services/FavoriteService';
-import { Iconify } from 'react-native-iconify';
+import PhosphorIcon from '../../components/ui/PhosphorIcon';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { getCategoryConfig } from '../../components/ui/CategoryHeroHeader';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
@@ -281,7 +281,7 @@ export default function CategoryDeckListScreen({ route }) {
                     backgroundColor: config.accentColor + '20',
                   }
                 ]}>
-                  <Iconify icon={config.icon} size={heroDimensions.iconInnerSize} color="#fff" />
+                  <PhosphorIcon icon={config.icon} size={heroDimensions.iconInnerSize} color="#fff" />
                 </View>
               </View>
               <View style={styles.heroTextContainer}>

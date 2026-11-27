@@ -5,7 +5,6 @@ import { Text } from '../ui/AppText';
 import { useTheme } from '../../theme/theme';
 import { BottomSheetModal, BottomSheetView } from '@expo/ui/community/bottom-sheet';
 import { typography, fontSizes, fonts } from '../../theme/typography';
-import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as DocumentPicker from 'expo-document-picker';
@@ -17,6 +16,8 @@ import { supabase } from '../../lib/supabase';
 import { uploadCardImage } from '../../services/StorageService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSnackbarHelpers } from '../ui/Snackbar';
+import PhosphorIcon from '../ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 
 // A native menu (SwiftUI Menu / Material DropdownMenu) laid over a trigger of
@@ -589,7 +590,7 @@ export default function CsvUploadModal({
               hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
               style={styles.closeBtnWrapper}
             >
-              <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
+              <PhosphorIcon icon={ICONS.close} size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
 
@@ -602,7 +603,7 @@ export default function CsvUploadModal({
             {/* TABLO NASIL OLUŞTURULUR REHBERİ: always open, written straight on the sheet */}
             <View style={styles.guideSection}>
               <View style={styles.guideHeading}>
-                <Iconify icon="material-symbols:info-outline" size={22} color={colors.primary || '#007AFF'} style={{ marginRight: 10 }} />
+                <PhosphorIcon icon={ICONS.info} size={22} color={colors.primary || '#007AFF'} style={{ marginRight: 10 }} />
                 <Text style={[styles.guideHeadingText, { color: colors.text }]}>
                   {t('addCard.howToCreateTable', 'Tablo Nasıl Oluşturulur?')}
                 </Text>
@@ -625,7 +626,7 @@ export default function CsvUploadModal({
                     </View>
 
                     <View style={styles.alertInline}>
-                      <Iconify icon="mdi:required" size={22} color={colors.secondary || '#F39C12'} style={{ marginRight: 6 }} />
+                      <PhosphorIcon icon={ICONS.required} size={22} color={colors.secondary || '#F39C12'} style={{ marginRight: 6 }} />
                       <Text style={[styles.alertInlineText, { color: colors.secondary || '#F39C12' }]}>
                         {t('addCard.requiredColumns', 'Soru ve Cevap sütunları zorunludur!')}
                       </Text>
@@ -651,7 +652,7 @@ export default function CsvUploadModal({
                       resizeMode="contain"
                     />
                     <View style={styles.zoomIconBadge}>
-                      <Iconify icon="fluent:scan-camera-20-regular" size={22} color="#FFF" />
+                      <PhosphorIcon icon={ICONS.zoom} size={22} color="#FFF" />
                     </View>
                   </TouchableOpacity>
                 </View>
@@ -669,7 +670,7 @@ export default function CsvUploadModal({
                   onPress={() => setImageModalVisible(false)}
                 >
                   <TouchableOpacity style={styles.fullScreenCloseBtn} onPress={() => setImageModalVisible(false)}>
-                    <Iconify icon="mingcute:close-fill" size={24} color="white" />
+                    <PhosphorIcon icon={ICONS.close} size={24} color="white" />
                   </TouchableOpacity>
 
                   {/* Görsele tıklayınca modalın kapanmaması için TouchableWithoutFeedback */}
@@ -690,7 +691,7 @@ export default function CsvUploadModal({
 
                 {/* Dosya Adı Barı */}
                 <View style={[styles.fileNameBar, { backgroundColor: isDarkMode ? '#222' : '#F4F6F8' }]}>
-                  <Iconify icon="hugeicons:document-validation" size={22} color={colors.primary || '#007AFF'} />
+                  <PhosphorIcon icon={ICONS.csvFile} size={22} color={colors.primary || '#007AFF'} />
                   <Text style={[styles.fileNameText, { color: colors.text }]} numberOfLines={1}>
                     {csvPreview.fileName}
                   </Text>
@@ -717,7 +718,7 @@ export default function CsvUploadModal({
                 {/* SVG Uyarısı */}
                 {csvPreview.cardsWithSvg && csvPreview.cardsWithSvg.length > 0 && (
                   <View style={styles.alertBoxWarning}>
-                    <Iconify icon="mdi:information-variant" size={24} color="#B7791F" style={{ marginRight: 10 }} />
+                    <PhosphorIcon icon={ICONS.info} size={24} color="#B7791F" style={{ marginRight: 10 }} />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.alertBoxTitleWarning}>{t('addCard.svgWarning', 'SVG Desteklenmiyor')}</Text>
                       <Text style={styles.alertBoxTextWarning}>
@@ -731,7 +732,7 @@ export default function CsvUploadModal({
                 {csvPreview.errors.length > 0 && (
                   <View style={styles.alertBoxError}>
                     <View style={styles.errorHeaderRow}>
-                      <Iconify icon="material-symbols:info-outline" size={20} color="#D32F2F" style={{ marginRight: 8 }} />
+                      <PhosphorIcon icon={ICONS.info} size={20} color="#D32F2F" style={{ marginRight: 8 }} />
                       <Text style={styles.alertBoxTitleError}>{t('addCard.errors', 'Hatalar (İlk 5)')}</Text>
                     </View>
                     {csvPreview.errors.map((err, idx) => (
@@ -760,7 +761,7 @@ export default function CsvUploadModal({
                         style={[styles.pickImgBtn, { backgroundColor: colors.primary || '#007AFF', flex: 1 }]}
                         disabled={csvLoading}
                       >
-                        <Iconify icon="mage:image-fill" size={18} color="#FFF" style={{ marginRight: 6 }} />
+                        <PhosphorIcon icon={ICONS.image} size={18} color="#FFF" style={{ marginRight: 6 }} />
                         <Text style={styles.pickImgBtnText}>{t('addCard.pickImages', 'Seç')}</Text>
                       </TouchableOpacity>
                     </View>
@@ -804,7 +805,7 @@ export default function CsvUploadModal({
                                   ) : (
                                     <Text style={[styles.dropdownTriggerPlaceholder, { color: colors.muted }]}>{t('addCard.matchImages', 'Eşleştir')}</Text>
                                   )}
-                                  <Iconify icon="flowbite:caret-down-solid" size={16} color={colors.text} style={{ marginLeft: 6 }} />
+                                  <PhosphorIcon icon={ICONS.dropdown} size={16} color={colors.text} style={{ marginLeft: 6 }} />
                                 </View>
                               </MenuOverlay>
                             </View>
@@ -846,7 +847,7 @@ export default function CsvUploadModal({
           {!csvPreview && (
             <View style={styles.bottomActions}>
               <TouchableOpacity onPress={handleDownloadTemplate} style={styles.btnDownloadTemplate}>
-                <Iconify icon="tabler:file-download-filled" size={20} color="#F98A21" style={{ marginRight: 8 }} />
+                <PhosphorIcon icon={ICONS.download} size={20} color="#F98A21" style={{ marginRight: 8 }} />
                 <Text style={styles.btnDownloadTemplateText}>{t('addCard.downloadTemplate', 'Örnek CSV İndir')}</Text>
               </TouchableOpacity>
 
@@ -855,7 +856,7 @@ export default function CsvUploadModal({
                 style={[styles.btnPickCsv, { backgroundColor: colors.primary || '#007AFF' }]}
                 disabled={csvLoading}
               >
-                <Iconify icon="cuida:upload-outline" size={20} color="#FFF" style={{ marginRight: 8 }} />
+                <PhosphorIcon icon={ICONS.upload} size={20} color="#FFF" style={{ marginRight: 8 }} />
                 <Text style={styles.btnPickCsvText}>
                   {csvLoading ? t('addCard.loading', 'Yükleniyor...') : t('addCard.selectCSV', 'CSV Yükle')}
                 </Text>

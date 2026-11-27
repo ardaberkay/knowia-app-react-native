@@ -4,7 +4,8 @@ import { Text } from './AppText';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
-import { Iconify } from 'react-native-iconify';
+import PhosphorIcon from './PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { fontSizes, fonts } from '../../theme/typography';
 
@@ -96,9 +97,9 @@ export const SnackbarProvider = ({ children }) => {
     }), [translateY, hideSnackbar]);
 
   const getIconName = () => {
-    if (type === 'success') return 'hugeicons:tick-01';
-    if (type === 'error') return 'bitcoin-icons:cross-filled';
-    return 'mdi:information-variant';
+    if (type === 'success') return ICONS.check;
+    if (type === 'error') return ICONS.close;
+    return ICONS.info;
   };
 
   const hexToRgba = (hex, alpha) => {
@@ -166,7 +167,7 @@ export const SnackbarProvider = ({ children }) => {
                     borderColor: getIconBorderColor(),
                     backgroundColor: getIconBorderColor(),
                   }]}>
-                    <Iconify 
+                    <PhosphorIcon
                       icon={getIconName()} 
                       size={20}
                       color={

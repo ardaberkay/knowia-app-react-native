@@ -8,7 +8,6 @@ import React, {
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Text, MAX_FONT_SIZE_MULTIPLIER } from '../ui/AppText';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import Reanimated, {
   cancelAnimation,
@@ -24,6 +23,8 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { triggerHaptic } from '../../lib/hapticManager';
+import PhosphorIcon from '../ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 const PERSPECTIVE = 1200;
 const ENTRANCE_OFFSET = 8;
@@ -427,8 +428,8 @@ function SwipeFlipCard({
                 <Pill
                   label={t('swipeDeck.answer', 'Answer')}
                   icon={
-                    <Iconify
-                      icon="uil:comment-alt-check"
+                    <PhosphorIcon
+                      icon={ICONS.answer}
                       size={18}
                       color="#fff"
                     />
@@ -456,7 +457,7 @@ function SwipeFlipCard({
                   <View style={styles.answerSection}>
                     <Pill
                       label={t('swipeDeck.example', 'Example')}
-                      icon={<Iconify icon="lucide:lightbulb" size={18} color="#fff" />}
+                      icon={<PhosphorIcon icon={ICONS.hint} size={18} color="#fff" />}
                     />
                     <Text
                       style={subTextStyle}
@@ -474,8 +475,8 @@ function SwipeFlipCard({
                     <Pill
                       label={t('swipeDeck.note', 'Note')}
                       icon={
-                        <Iconify
-                          icon="material-symbols-light:stylus-note"
+                        <PhosphorIcon
+                          icon={ICONS.note}
                           size={18}
                           color="#fff"
                         />
@@ -691,10 +692,10 @@ export const SwipeCardActions = memo(function SwipeCardActions({
 
   // Speaker (top-left): same two-face flip as the heart, so it turns with the
   // card. It looks the same while speaking; tapping again stops.
-  const speakIcon = 'solar:volume-loud-bold';
+  const speakIcon = ICONS.speak;
   const speakIconColor = '#FFF7ED';
 
-  const favoriteIcon = isFavorite ? 'solar:heart-bold' : 'solar:heart-broken';
+  const favoriteIcon = isFavorite ? ICONS.favorite : ICONS.favoriteOff;
   const favoriteIconColor = isFavorite ? favoriteColor : '#FFF7ED';
 
   return (
@@ -723,12 +724,12 @@ export const SwipeCardActions = memo(function SwipeCardActions({
             <Reanimated.View
               style={[styles.cardActionIconFace, styles.cardActionIconFrontFace, frontFlipStyle]}
             >
-              <Iconify icon={speakIcon} size={25} color={speakIconColor} />
+              <PhosphorIcon icon={speakIcon} size={25} color={speakIconColor} />
             </Reanimated.View>
             <Reanimated.View
               style={[styles.cardActionIconFace, styles.cardActionIconBackFace, backFlipStyle]}
             >
-              <Iconify icon={speakIcon} size={25} color={speakIconColor} />
+              <PhosphorIcon icon={speakIcon} size={25} color={speakIconColor} />
             </Reanimated.View>
           </Reanimated.View>
         </AnimatedActionPressable>
@@ -753,7 +754,7 @@ export const SwipeCardActions = memo(function SwipeCardActions({
           <Reanimated.View
             style={[styles.cardActionIconFace, styles.cardActionIconFrontFace, frontFlipStyle]}
           >
-            <Iconify
+            <PhosphorIcon
               icon={favoriteIcon}
               size={25}
               color={favoriteIconColor}
@@ -763,7 +764,7 @@ export const SwipeCardActions = memo(function SwipeCardActions({
           <Reanimated.View
             style={[styles.cardActionIconFace, styles.cardActionIconBackFace, backFlipStyle]}
           >
-            <Iconify
+            <PhosphorIcon
               icon={favoriteIcon}
               size={25}
               color={favoriteIconColor}
@@ -786,7 +787,7 @@ export const SwipeCardActions = memo(function SwipeCardActions({
             style={[styles.showMoreButton, showMoreStyle]}
           >
             <Text style={[styles.showMoreText, { color: showMoreTextColor }]}>{showMoreLabel}</Text>
-            <Iconify icon="flowbite:caret-down-solid" size={14} color={showMoreTextColor} />
+            <PhosphorIcon icon={ICONS.dropdown} size={14} color={showMoreTextColor} />
           </AnimatedActionPressable>
         </View>
       ) : null}

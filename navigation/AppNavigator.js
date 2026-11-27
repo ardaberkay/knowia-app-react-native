@@ -24,7 +24,7 @@ import InfoScreen from '../screens/profile/InfoScreen';
 import DeckEditScreen from '../screens/decks/EditDeckScreen';
 import { withTabBarInset } from '../components/ui/TabBarInset';
 import { PHOSPHOR_FAMILIES, phosphorGlyph } from '../components/ui/PhosphorIcon';
-import { TAB_ICONS } from '../theme/icons';
+import { TAB_ICONS, ICONS } from '../theme/icons';
 import AddCardScreen from '../screens/cards/CreateCardScreen';
 import DeckCardsScreen from '../screens/cards/CardsOfDeckScreen';
 import { EditCardScreen } from '../components/layout/EditCardForm';
@@ -35,11 +35,11 @@ import FavoriteCards from '../screens/library/FavoriteCards';
 import { TouchableOpacity, Platform, View } from 'react-native';
 import { Text } from '../components/ui/AppText';
 import { useTranslation } from 'react-i18next';
-import { Iconify } from 'react-native-iconify';
 import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { triggerHaptic } from '../lib/hapticManager';
 import { fontSizes, fonts } from '../theme/typography';
+import PhosphorIcon from '../components/ui/PhosphorIcon';
 
 const Stack = createNativeStackNavigator();
 
@@ -316,7 +316,7 @@ export default function AppNavigator() {
                     <Text style={{ color: colors.text, fontFamily: fonts.bold, fontSize: fontSizes.body, marginRight: 6 }}>
                       CSV
                     </Text>
-                    <Iconify icon="solar:cloud-upload-broken" size={22} color={colors.text} />
+                    <PhosphorIcon icon={ICONS.upload} size={22} color={colors.text} />
                   </TouchableOpacity>
                 ),
               })}

@@ -8,6 +8,7 @@ import SegmentedControl from '../ui/SegmentedControl';
 import { useTheme } from '../../theme/theme';
 import { typography, fonts, lineHeights } from '../../theme/typography';
 import { SCREEN_TITLE_HEIGHT, spacing } from '../../theme/layout';
+import { ICONS } from '../../theme/icons';
 
 /**
  * Library header: part of the page (no card surface), lit by a soft top glow
@@ -44,7 +45,7 @@ function LibraryHeader({ progress, onTabPress, summary, collapsed, collapseDista
     {
       key: 'myDecks',
       label: t('library.myDecks', 'Destelerim'),
-      icon: 'ph:cards-fill',
+      icon: ICONS.deck,
       subtitle: t('library.myDecksHeroText', 'Kendi destelerinle öğrenmeye başla.'),
       summary: summary
         ? `${t('library.summaryDecks', { count: summary.myDecks })} · ${t('library.summaryCards', { count: summary.myCards })}`
@@ -55,7 +56,7 @@ function LibraryHeader({ progress, onTabPress, summary, collapsed, collapseDista
     {
       key: 'favorites',
       label: t('library.favorites', 'Favorilerim'),
-      icon: 'solar:heart-bold',
+      icon: ICONS.favorite,
       subtitle: t('library.favoritesHeroText', 'Beğendiğin desteler ve kartlar.'),
       summary: summary
         ? `${t('library.summaryDecks', { count: summary.favoriteDecks })} · ${t('library.summaryCards', { count: summary.favoriteCards })}`

@@ -13,11 +13,12 @@ import DiscoverDecksSkeleton from '../../components/skeleton/DiscoverDecksSkelet
 import { useAuth } from '../../contexts/AuthContext';
 import { getDiscoverDecks } from '../../services/DeckService';
 import { addFavoriteDeck, removeFavoriteDeck } from '../../services/FavoriteService';
-import { Iconify } from 'react-native-iconify';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { SCREEN_TITLE_HEIGHT, spacing } from '../../theme/layout';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { useListBottomInset } from '../../components/ui/TabBarInset';
+import PhosphorIcon from '../../components/ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 // Tabs. `key` is the DeckService tab (it maps to get_discover_decks' sort):
 //  trend     -> 'popular'       time-decayed score (favourites + people + starts)
@@ -26,10 +27,10 @@ import { useListBottomInset } from '../../components/ui/TabBarInset';
 //  new       -> 'new'           newest first
 // Only "Popüler" and "Beğenilen" take a time window; Trend weighs time itself.
 const TABS = [
-  { key: 'trend', labelKey: 'discover.tabs.trend', fallback: 'Trend', color: '#8B7CF6', icon: 'fluent:arrow-trending-sparkle-24-filled' },
-  { key: 'unique', labelKey: 'discover.tabs.popular', fallback: 'Popüler', color: '#FF6B35', icon: 'mdi:fire' },
-  { key: 'favorites', labelKey: 'discover.tabs.liked', fallback: 'Beğenilen', color: '#F5576C', icon: 'solar:heart-bold' },
-  { key: 'new', labelKey: 'discover.tabs.new', fallback: 'Yeni', color: '#2EC4A6', icon: 'mdi:cards' },
+  { key: 'trend', labelKey: 'discover.tabs.trend', fallback: 'Trend', color: '#8B7CF6', icon: ICONS.trending },
+  { key: 'unique', labelKey: 'discover.tabs.popular', fallback: 'Popüler', color: '#FF6B35', icon: ICONS.popular },
+  { key: 'favorites', labelKey: 'discover.tabs.liked', fallback: 'Beğenilen', color: '#F5576C', icon: ICONS.favorite },
+  { key: 'new', labelKey: 'discover.tabs.new', fallback: 'Yeni', color: '#2EC4A6', icon: ICONS.newDecks },
 ];
 const TABS_WITH_TIME_FILTER = new Set(['unique', 'favorites']);
 // Rolling windows on the server: year = 365d, month = 30d, week = 7d.
@@ -256,11 +257,11 @@ export default function DiscoverScreen() {
       pointerEvents="none"
       style={[styles.timePill, { backgroundColor: 'rgba(255, 255, 255, 0.08)' }]}
     >
-      <Iconify icon="solar:calendar-minimalistic-bold" size={14} color={colors.muted} />
+      <PhosphorIcon icon={ICONS.calendar} size={14} color={colors.muted} />
       <Text style={[styles.timePillText, { color: colors.text }]} numberOfLines={1}>
         {t(activeTime.labelKey, activeTime.fallback)}
       </Text>
-      <Iconify icon="flowbite:caret-down-solid" size={12} color={colors.muted} />
+      <PhosphorIcon icon={ICONS.dropdown} size={12} color={colors.muted} />
     </View>
     <MenuView
       actions={TIME_FILTERS.map((f) => ({
@@ -338,7 +339,7 @@ export default function DiscoverScreen() {
                   pressed && { opacity: 0.7 },
                 ]}
               >
-                <Iconify icon={tab.icon} size={15} color={selected ? '#FFFFFF' : colors.muted} />
+                <PhosphorIcon icon={tab.icon} size={15} color={selected ? '#FFFFFF' : colors.muted} />
                 <Text style={[styles.chipText, { color: selected ? '#FFFFFF' : colors.text }]}>
                   {t(tab.labelKey, tab.fallback)}
                 </Text>

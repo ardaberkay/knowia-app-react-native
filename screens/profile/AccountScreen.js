@@ -10,6 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { ProfileMenuCard } from './ProfileScreen';
+import { ICONS } from '../../theme/icons';
 
 /** Profile › Account: edit profile, invite, blocked list, log out, delete account. */
 // iOS: the scroll view's automatic inset (see-through header,
@@ -89,9 +90,9 @@ export default function AccountScreen() {
   }, [t, callEdgeFunction, showSuccess, showError, logout]);
 
   const items = [
-    { key: 'edit', icon: 'lucide:edit', label: t('profile.edit'), chevron: true, onPress: () => navigation.navigate('EditProfile') },
-    { key: 'invite', icon: 'fluent:people-community-20-filled', label: t('profile.invite'), chevron: true, onPress: handleInviteFriends },
-    { key: 'blocked', icon: 'gridicons:block', label: t('profile.blockedSection', 'Engellenenler'), chevron: true, onPress: () => navigation.navigate('Blocked') },
+    { key: 'edit', icon: ICONS.edit, label: t('profile.edit'), chevron: true, onPress: () => navigation.navigate('EditProfile') },
+    { key: 'invite', icon: ICONS.community, label: t('profile.invite'), chevron: true, onPress: handleInviteFriends },
+    { key: 'blocked', icon: ICONS.block, label: t('profile.blockedSection', 'Engellenenler'), chevron: true, onPress: () => navigation.navigate('Blocked') },
   ];
 
   return (

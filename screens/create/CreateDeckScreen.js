@@ -10,7 +10,6 @@ import { useNavigation } from '@react-navigation/native';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
 import { useTranslation } from 'react-i18next';
-import { Iconify } from 'react-native-iconify';
 import CategorySelector from '../../components/modals/CategorySelector';
 import HowToCreateModal from '../../components/modals/HowToCreateModal';
 import UndoButton from '../../components/tools/UndoButton';
@@ -20,7 +19,7 @@ import DeckLanguageModal, { DeckLanguageField } from '../../components/modals/De
 import BadgeText from '../../components/tools/BadgeText';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getCategoryIcon } from '../../theme/icons';
+import { getCategoryIcon, ICONS } from '../../theme/icons';
 import PhosphorIcon from '../../components/ui/PhosphorIcon';
 
 export default function CreateScreen() {
@@ -160,7 +159,7 @@ export default function CreateScreen() {
           <View style={[styles.headerCard, styles.headerCardContainer, { borderRadius: 44, backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, borderWidth: 1 }]}>
             <View style={[styles.headerCardContent, styles.headerContent]}>
               <View style={styles.headerTitleContainer}>
-                <Iconify icon="fluent:tab-add-24-regular" size={26} color="#F98A21" style={{ marginRight: 6 }} />
+                <PhosphorIcon icon={ICONS.deck} size={26} color="#F98A21" style={{ marginRight: 6 }} />
                 <Text style={[typography.styles.title2, { color: colors.text }]}>
                   {t('createDeck.title', 'Desteni Oluştur')}
                 </Text>
@@ -180,7 +179,7 @@ export default function CreateScreen() {
                       });
                     }}
                   >
-                    <Iconify icon="material-symbols:info-outline" size={16} color={colors.secondary} style={{ marginRight: 4 }} />
+                    <PhosphorIcon icon={ICONS.info} size={16} color={colors.secondary} style={{ marginRight: 4 }} />
                     <Text style={[typography.styles.subhead, { color: colors.secondary, fontFamily: fonts.semibold}]}>
                       {t('createDeck.howToCreate', 'Nasıl Oluşturulur?')}
                     </Text>
@@ -214,7 +213,7 @@ export default function CreateScreen() {
           >
             <View style={styles.labelRow}>
               <View style={styles.labelTextContainer}>
-                <Iconify icon="ion:book" size={20} color="#F98A21" style={styles.labelIcon} />
+                <PhosphorIcon icon={ICONS.deckName} size={20} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.name', 'Deste Adı')}</Text>
               </View>
               <View>
@@ -238,7 +237,7 @@ export default function CreateScreen() {
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={{ marginLeft: 8, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
                 >
-                  <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                  <PhosphorIcon icon={ICONS.close} size={18} color={colors.muted} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -260,7 +259,7 @@ export default function CreateScreen() {
           >
             <View style={styles.labelRow}>
               <View style={styles.labelTextContainer}>
-              <Iconify icon="icon-park-outline:translation" size={20} color="#F98A21" style={styles.labelIcon} />
+              <PhosphorIcon icon={ICONS.pair} size={20} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.toName', 'Karşılığı')}</Text>
               </View>
               <View>
@@ -284,7 +283,7 @@ export default function CreateScreen() {
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={{ marginLeft: 8, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
                 >
-                  <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                  <PhosphorIcon icon={ICONS.close} size={18} color={colors.muted} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -306,7 +305,7 @@ export default function CreateScreen() {
           >
             <View style={styles.labelRow}>
               <View style={styles.labelTextContainer}>
-              <Iconify icon="tabler:file-description-filled" size={20} color="#F98A21" style={styles.labelIcon} />
+              <PhosphorIcon icon={ICONS.description} size={20} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('create.description', 'Açıklama')}</Text>
               </View>
               <View>
@@ -335,7 +334,7 @@ export default function CreateScreen() {
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={{ position: 'absolute', right: 8, top: 8, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
                 >
-                  <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                  <PhosphorIcon icon={ICONS.close} size={18} color={colors.muted} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -359,7 +358,7 @@ export default function CreateScreen() {
           >
             <View style={styles.labelRow}>
               <View style={styles.labelTextContainer}>
-                <Iconify icon="mdi:category-plus-outline" size={21} color="#F98A21" style={styles.labelIcon}/>
+                <PhosphorIcon icon={ICONS.category} size={21} color="#F98A21" style={styles.labelIcon}/>
                 <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>{t('createDeck.categoryLabel', 'Kategori')}</Text>
               </View>
               <View>
@@ -380,7 +379,7 @@ export default function CreateScreen() {
               <View style={styles.categoryRow}>
                 {selectedCategory && (
                   <PhosphorIcon
-                    {...getCategoryIcon(categories.find(c => c.id === selectedCategory)?.sort_order)}
+                    icon={getCategoryIcon(categories.find(c => c.id === selectedCategory)?.sort_order)}
                     size={20}
                     color={selectedCategory ? colors.text : colors.muted}
                     style={styles.categoryIcon}
@@ -390,7 +389,7 @@ export default function CreateScreen() {
                   {selectedCategory ? t(`categories.${categories.find(c => c.id === selectedCategory)?.sort_order}`) || categories.find(c => c.id === selectedCategory)?.name || t('createDeck.selectCategory') : t('createDeck.selectCategory')}
                 </Text>
               </View>
-              <Iconify icon="flowbite:caret-down-solid" size={20} color={colors.muted} />
+              <PhosphorIcon icon={ICONS.dropdown} size={20} color={colors.muted} />
             </TouchableOpacity>
           </View>
           {/* Desteye Ait Dil Seçimi */}
@@ -411,7 +410,7 @@ export default function CreateScreen() {
           >
             <View style={styles.labelRow}>
               <View style={styles.labelTextContainer}>
-              <Iconify icon="mdi:spoken-language" size={21} color="#F98A21" style={styles.labelIcon} />
+              <PhosphorIcon icon={ICONS.language} size={21} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, typography.styles.body, { color: colors.text }]}>
                   {t('create.language', 'İçerik Dili')}
                 </Text>

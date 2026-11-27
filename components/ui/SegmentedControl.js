@@ -3,7 +3,8 @@ import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from './AppText';
 import { typography, fontSizes } from '../../theme/typography';
 import { triggerHaptic } from '../../lib/hapticManager';
-import { Iconify } from 'react-native-iconify';
+import PhosphorIcon from './PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 /**
  * Segmented tabs driven by a native Animated value.
@@ -20,13 +21,13 @@ import { Iconify } from 'react-native-iconify';
  * Label colour cannot be animated on the native driver, so each label is drawn
  * twice (inactive + active) and the active layer's opacity is interpolated.
  */
-// Optional leading icon (segment.icon, an Iconify name listed in
-// babel.config.js) + label, drawn in one colour.
+// Optional leading icon (segment.icon, an ICONS entry from theme/icons.js)
+// + label, drawn in one colour.
 function SegmentContent({ segment, color }) {
   return (
     <View style={styles.segmentContent}>
       {segment.icon ? (
-        <Iconify icon={segment.icon} size={16} color={color} />
+        <PhosphorIcon icon={segment.icon} size={16} color={color} />
       ) : null}
       <Text style={[styles.label, { color }]} numberOfLines={1}>
         {segment.label}

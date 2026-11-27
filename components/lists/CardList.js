@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
 import { Text } from '../ui/AppText';
-import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { fontSizes, fonts } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
 import { triggerHaptic } from '../../lib/hapticManager';
+import PhosphorIcon from '../ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 // export default function yerine const ile tanımlıyoruz
 const CardListItem = ({
@@ -75,9 +76,9 @@ const CardListItem = ({
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             onPress={handleFavoritePress} // Yeni fonksiyonumuzu buraya bağladık
           >
-            <Iconify
+            <PhosphorIcon
               // Artık üstten geleni değil, kendi anında değişen state'imizi dinliyor
-              icon={localIsFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
+              icon={localIsFavorite ? ICONS.favorite : ICONS.favoriteOff}
               size={22}
               color={localIsFavorite ? '#F98A21' : '#B0B0B0'}
             />
@@ -97,7 +98,7 @@ const CardListItem = ({
                 }}
                 activeOpacity={0.7}
               >
-                <Iconify icon="mdi:garbage-can-empty" size={22} color="#E74C3C" />
+                <PhosphorIcon icon={ICONS.delete} size={22} color="#E74C3C" />
               </TouchableOpacity>
             ) : (
               <Pressable
@@ -112,7 +113,7 @@ const CardListItem = ({
                 android_ripple={null}
                 pressRetentionOffset={0}
               >
-                <Iconify icon="mdi:garbage" size={22} color="#999" />
+                <PhosphorIcon icon={ICONS.delete} size={22} color="#999" />
               </Pressable>
             )
           ) : null}

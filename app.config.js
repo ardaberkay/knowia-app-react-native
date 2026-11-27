@@ -100,6 +100,7 @@ export default {
             "./assets/fonts/Inter-Bold.ttf",
             "./assets/fonts/Phosphor.ttf",
             "./assets/fonts/Phosphor-Fill.ttf",
+            "./assets/fonts/Phosphor-Bold.ttf",
           ],
         },
       ],

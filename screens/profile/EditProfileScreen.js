@@ -17,10 +17,11 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { Buffer } from 'buffer';
 import { useTranslation } from 'react-i18next';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
-import { Iconify } from 'react-native-iconify';
 import UndoButton from '../../components/tools/UndoButton';
 import CreateButton from '../../components/tools/CreateButton';
 import LottieView from 'lottie-react-native';
+import PhosphorIcon from '../../components/ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 
 export default function EditProfileScreen({ navigation }) {
@@ -321,7 +322,7 @@ export default function EditProfileScreen({ navigation }) {
           borderWidth: 1,
         }]}>
           <View style={styles.labelRow}>
-            <Iconify icon="mage:image-fill" size={20} color={colors.buttonColor} style={styles.labelIcon} />
+            <PhosphorIcon icon={ICONS.image} size={20} color={colors.buttonColor} style={styles.labelIcon} />
             <Text style={[typography.styles.body, { color: colors.text, fontFamily: fonts.semibold }]}>
               {t('editProfile.profilePhoto')}
             </Text>
@@ -337,7 +338,7 @@ export default function EditProfileScreen({ navigation }) {
                 onPress={handlePickImage}
                 activeOpacity={0.8}
               >
-                <Iconify icon="mage:image-fill" size={18} color="#fff" />
+                <PhosphorIcon icon={ICONS.image} size={18} color="#fff" />
               </TouchableOpacity>
             </View>
             <View style={styles.photoButtonRow}>
@@ -349,7 +350,7 @@ export default function EditProfileScreen({ navigation }) {
                 onPress={handlePickImage}
                 activeOpacity={0.7}
               >
-                <Iconify icon="lucide:edit" size={18} color={colors.buttonColor} style={{ marginRight: 6 }} />
+                <PhosphorIcon icon={ICONS.edit} size={18} color={colors.buttonColor} style={{ marginRight: 6 }} />
                 <Text style={[typography.styles.headline, { color: colors.buttonColor, fontSize: fontSizes.subhead }]}>
                   {t('editProfile.changePhoto')}
                 </Text>
@@ -363,7 +364,7 @@ export default function EditProfileScreen({ navigation }) {
                   onPress={handleRemovePhoto}
                   activeOpacity={0.7}
                 >
-                  <Iconify icon="mdi:garbage-can-empty" size={18} color={colors.error} style={{ marginRight: 6 }} />
+                  <PhosphorIcon icon={ICONS.delete} size={18} color={colors.error} style={{ marginRight: 6 }} />
                   <Text style={[typography.styles.headline, { color: colors.error, fontSize: fontSizes.subhead }]}>
                     {t('editProfile.removePhoto')}
                   </Text>
@@ -385,7 +386,7 @@ export default function EditProfileScreen({ navigation }) {
           borderWidth: 1,
         }]}>
           <View style={styles.labelRow}>
-            <Iconify icon="solar:user-bold" size={20} color={colors.buttonColor} style={styles.labelIcon} />
+            <PhosphorIcon icon={ICONS.user} size={20} color={colors.buttonColor} style={styles.labelIcon} />
             <Text style={[typography.styles.body, { color: colors.text, fontFamily: fonts.semibold }]}>
               {t('editProfile.userName')}
             </Text>
@@ -423,11 +424,11 @@ export default function EditProfileScreen({ navigation }) {
         }]}>
           {isOAuthUser && (
             <View style={{ position: 'absolute', top: 16, right: 20, zIndex: 10 }}>
-              <Iconify icon="fontisto:locked" size={22} color={colors.muted} />
+              <PhosphorIcon icon={ICONS.locked} size={22} color={colors.muted} />
             </View>
           )}
           <View style={styles.labelRow}>
-            <Iconify icon="tabler:mail-filled" size={20} color={colors.buttonColor} style={styles.labelIcon} />
+            <PhosphorIcon icon={ICONS.email} size={20} color={colors.buttonColor} style={styles.labelIcon} />
             <Text style={[typography.styles.body, { color: colors.text, fontFamily: fonts.semibold }]}>
               {t('editProfile.email')}
             </Text>
@@ -465,11 +466,11 @@ export default function EditProfileScreen({ navigation }) {
         }]}>
           {isOAuthUser && (
             <View style={{ position: 'absolute', top: 16, right: 20, zIndex: 10 }}>
-              <Iconify icon="fontisto:locked" size={22} color={colors.muted} />
+              <PhosphorIcon icon={ICONS.locked} size={22} color={colors.muted} />
             </View>
           )}
           <View style={styles.labelRow}>
-            <Iconify icon="carbon:password" size={20} color={colors.buttonColor} style={styles.labelIcon} />
+            <PhosphorIcon icon={ICONS.password} size={20} color={colors.buttonColor} style={styles.labelIcon} />
             <Text style={[typography.styles.body, { color: colors.text, fontFamily: fonts.semibold }]}>
               {t('editProfile.currentPassword')}
             </Text>
@@ -497,8 +498,8 @@ export default function EditProfileScreen({ navigation }) {
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               disabled={isOAuthUser}
             >
-              <Iconify
-                icon={showCurrentPassword ? "oi:eye" : "system-uicons:eye-no"}
+              <PhosphorIcon
+                icon={showCurrentPassword ? ICONS.visible : ICONS.hidden}
                 size={20}
                 color={colors.muted}
               />
@@ -515,7 +516,7 @@ export default function EditProfileScreen({ navigation }) {
               alignItems: 'center',
               marginRight: 6,
             }}>
-              <Iconify icon="mdi:information-variant" size={14} color={colors.muted} />
+              <PhosphorIcon icon={ICONS.info} size={14} color={colors.muted} />
             </View>
             <Text style={[typography.styles.subhead, { color: colors.muted, flex: 1 }]}>
               {t('editProfile.currentPasswordNote')}
@@ -538,11 +539,11 @@ export default function EditProfileScreen({ navigation }) {
         }]}>
           {isOAuthUser && (
             <View style={{ position: 'absolute', top: 16, right: 20, zIndex: 10 }}>
-              <Iconify icon="fontisto:locked" size={22} color={colors.muted} />
+              <PhosphorIcon icon={ICONS.locked} size={22} color={colors.muted} />
             </View>
           )}
           <View style={styles.labelRow}>
-            <Iconify icon="carbon:password" size={20} color={colors.buttonColor} style={styles.labelIcon} />
+            <PhosphorIcon icon={ICONS.password} size={20} color={colors.buttonColor} style={styles.labelIcon} />
             <Text style={[typography.styles.body, { color: colors.text, fontFamily: fonts.semibold }]}>
               {t('editProfile.newPassword')}
             </Text>
@@ -573,8 +574,8 @@ export default function EditProfileScreen({ navigation }) {
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               disabled={isOAuthUser}
             >
-              <Iconify
-                icon={showPassword ? "oi:eye" : "system-uicons:eye-no"}
+              <PhosphorIcon
+                icon={showPassword ? ICONS.visible : ICONS.hidden}
                 size={20}
                 color={colors.muted}
               />
@@ -603,8 +604,8 @@ export default function EditProfileScreen({ navigation }) {
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               disabled={isOAuthUser}
             >
-              <Iconify
-                icon={showPasswordConfirm ? "oi:eye" : "system-uicons:eye-no"}
+              <PhosphorIcon
+                icon={showPasswordConfirm ? ICONS.visible : ICONS.hidden}
                 size={20}
                 color={colors.muted}
               />
@@ -615,7 +616,7 @@ export default function EditProfileScreen({ navigation }) {
         {/* Error Message */}
         {error && (
           <View style={[styles.errorCard, { backgroundColor: colors.error + '15', borderColor: colors.error }]}>
-            <Iconify icon="mdi:information-variant" size={20} color={colors.error} style={{ marginRight: 8 }} />
+            <PhosphorIcon icon={ICONS.info} size={20} color={colors.error} style={{ marginRight: 8 }} />
             <Text style={[typography.styles.subhead, { color: colors.error, flex: 1 }]}>{error}</Text>
           </View>
         )}

@@ -11,7 +11,6 @@ import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTheme } from '../../theme/theme';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
-import { Iconify } from 'react-native-iconify';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Buffer } from 'buffer';
@@ -22,6 +21,8 @@ import HowToCreateCardModal from '../../components/modals/HowToCreateCardModal';
 import CsvUploadModal from '../../components/modals/CsvUploadModal';
 import BadgeText from '../../components/tools/BadgeText';
 import { triggerHaptic } from '../../lib/hapticManager';
+import PhosphorIcon from '../../components/ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 export default function AddCardScreen() {
   const { session } = useAuth();
@@ -162,7 +163,7 @@ export default function AddCardScreen() {
         <View style={[styles.headerCard, styles.headerCardContainer, { borderRadius: 44, backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, borderWidth: 1 }]}>
           <View style={[styles.headerCardContent, styles.headerContent]}>
             <View style={styles.headerTitleContainer}>
-              <Iconify icon="hugeicons:file-add" size={26} color="#F98A21" style={{ marginRight: 6 }} />
+              <PhosphorIcon icon={ICONS.createCard} size={26} color="#F98A21" style={{ marginRight: 6 }} />
               <Text style={[typography.styles.title2, { color: colors.text }]}>
                 {t('addCard.title', 'Kart Oluştur')}
               </Text>
@@ -182,7 +183,7 @@ export default function AddCardScreen() {
                     });
                   }}
                 >
-                  <Iconify icon="material-symbols:info-outline" size={16} color={colors.secondary} style={{ marginRight: 4 }} />
+                  <PhosphorIcon icon={ICONS.info} size={16} color={colors.secondary} style={{ marginRight: 4 }} />
                   <Text style={[typography.styles.subhead, { color: colors.secondary, fontFamily: fonts.semibold}]}>
                     {t('addCard.howToCreate', 'Nasıl Oluşturulur?')}
                   </Text>
@@ -212,7 +213,7 @@ export default function AddCardScreen() {
           <View style={{ flex: 1 }}>
             <View style={styles.labelRow}>
               <View style={styles.labelTextContainer}>
-                <Iconify icon="mage:image-fill" size={24} color="#F98A21" style={styles.labelIcon} />
+                <PhosphorIcon icon={ICONS.image} size={24} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.text }]}>{t("addCard.image", "Kart Görseli")}</Text>
               </View>
               <View>
@@ -228,7 +229,7 @@ export default function AddCardScreen() {
               </View>
             ) : (
               <TouchableOpacity onPress={handlePickImage} style={styles.addImageButton}>
-                <Iconify icon="ic:round-plus" size={24} color="#F98A21" />
+                <PhosphorIcon icon={ICONS.add} size={24} color="#F98A21" />
                 <Text style={styles.addImageButtonText}>{t("addCard.addImage", "Fotoğraf Ekle")}</Text>
               </TouchableOpacity>
             )}
@@ -247,7 +248,7 @@ export default function AddCardScreen() {
           <View style={{ flex: 1 }}>
             <View style={styles.labelRow}>
               <View style={styles.labelTextContainer}>
-              <Iconify icon="uil:comment-alt-question" size={24} color="#F98A21" style={styles.labelIcon} />
+              <PhosphorIcon icon={ICONS.question} size={24} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.text }]}>{t("addCard.question", "Soru")}</Text>
               </View>
               <View>
@@ -270,7 +271,7 @@ export default function AddCardScreen() {
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
                 >
-                  <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                  <PhosphorIcon icon={ICONS.close} size={18} color={colors.muted} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -289,7 +290,7 @@ export default function AddCardScreen() {
           <View style={{ flex: 1 }}>
             <View style={styles.labelRow}>
               <View style={styles.labelTextContainer}>
-                <Iconify icon="uil:comment-alt-check" size={24} color="#F98A21" style={styles.labelIcon} />
+                <PhosphorIcon icon={ICONS.answer} size={24} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.text }]}>{t("addCard.answer", "Cevap")}</Text>
               </View>
               <View>
@@ -312,7 +313,7 @@ export default function AddCardScreen() {
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
                 >
-                  <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                  <PhosphorIcon icon={ICONS.close} size={18} color={colors.muted} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -331,7 +332,7 @@ export default function AddCardScreen() {
           <View style={{ flex: 1 }}>
             <View style={styles.labelRow}>
               <View style={styles.labelTextContainer}>
-              <Iconify icon="lucide:lightbulb" size={24} color="#F98A21" style={styles.labelIcon} />
+              <PhosphorIcon icon={ICONS.hint} size={24} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.text }]}>{t("addCard.example", "Örnek")}</Text>
               </View>
               <View>
@@ -354,7 +355,7 @@ export default function AddCardScreen() {
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
                 >
-                  <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                  <PhosphorIcon icon={ICONS.close} size={18} color={colors.muted} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -373,7 +374,7 @@ export default function AddCardScreen() {
           <View style={{ flex: 1 }}>
             <View style={styles.labelRow}>
               <View style={styles.labelTextContainer}>
-              <Iconify icon="material-symbols-light:stylus-note" size={24} color="#F98A21" style={styles.labelIcon} />
+              <PhosphorIcon icon={ICONS.note} size={24} color="#F98A21" style={styles.labelIcon} />
               <Text style={[styles.label, { fontSize: fontSizes.body }, { color: colors.text }]}>{t("addCard.note", "Not")}</Text>
               </View>
               <View>
@@ -396,7 +397,7 @@ export default function AddCardScreen() {
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
                 >
-                  <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                  <PhosphorIcon icon={ICONS.close} size={18} color={colors.muted} />
                 </TouchableOpacity>
               ) : null}
             </View>

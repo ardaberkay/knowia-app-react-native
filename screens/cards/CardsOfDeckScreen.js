@@ -4,7 +4,6 @@ import { Text } from '../../components/ui/AppText';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
-import { Iconify } from 'react-native-iconify';
 import LottieView from 'lottie-react-native';
 import { useTranslation } from 'react-i18next';
 import CardListItem from '../../components/lists/CardList';
@@ -23,6 +22,8 @@ import { triggerHaptic } from '../../lib/hapticManager';
 import { LinearGradient } from 'expo-linear-gradient';
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useListBottomInset } from '../../components/ui/TabBarInset';
+import PhosphorIcon from '../../components/ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 
@@ -625,7 +626,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
               >
-                <Iconify icon="ic:round-plus" size={26} color="#FFFFFF" />
+                <PhosphorIcon icon={ICONS.add} size={26} color="#FFFFFF" />
                 <Text style={styles.addCardFabLabel} numberOfLines={1}>
                   {t('deckDetail.addCard', 'Kart Ekle')}
                 </Text>

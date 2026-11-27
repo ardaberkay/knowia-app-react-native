@@ -12,11 +12,12 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { Buffer } from 'buffer';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
-import { Iconify } from 'react-native-iconify';
 import CreateButton from '../tools/CreateButton';
 import UndoButton from '../tools/UndoButton';
 import BadgeText from '../tools/BadgeText';
 import { CommonActions } from '@react-navigation/native';
+import PhosphorIcon from '../ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 /**
  * "Kartı Düzenle" page (route EditCard), opened from the card detail sheet.
@@ -147,7 +148,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
             <View style={{ flex: 1 }}>
               <View style={styles.labelRow}>
                 <View style={styles.labelTextContainer}>
-                  <Iconify icon="mage:image-fill" size={24} color="#F98A21" style={styles.labelIcon} />
+                  <PhosphorIcon icon={ICONS.image} size={24} color="#F98A21" style={styles.labelIcon} />
                   <Text style={[styles.label, { fontSize: fontSizes.body }, {color: colors.text}]}>{t("cardDetail.image", "Kart Görseli")}</Text>
                 </View>
                 <View>
@@ -163,7 +164,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
               </View>
             ) : (
               <TouchableOpacity onPress={handlePickImage} style={styles.addImageButton}>
-                <Iconify icon="ic:round-plus" size={24} color="#F98A21" />
+                <PhosphorIcon icon={ICONS.add} size={24} color="#F98A21" />
                 <Text style={styles.addImageButtonText}>{t("cardDetail.addImage", "Fotoğraf Ekle")}</Text>
               </TouchableOpacity>
             )}
@@ -182,7 +183,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
             <View style={{ flex: 1 }}>
               <View style={styles.labelRow}>
                 <View style={styles.labelTextContainer}>
-                <Iconify icon="uil:comment-alt-question" size={24} color="#F98A21" />
+                <PhosphorIcon icon={ICONS.question} size={24} color="#F98A21" />
                 <Text style={[styles.label, { fontSize: fontSizes.body }, {color: colors.text}]}>{t("cardDetail.question", "Soru")}</Text>
                 </View>
                 <View>
@@ -205,7 +206,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
                   >
-                    <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                    <PhosphorIcon icon={ICONS.close} size={18} color={colors.muted} />
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -224,7 +225,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
             <View style={{ flex: 1 }}>
               <View style={styles.labelRow}>
                 <View style={styles.labelTextContainer}>
-                <Iconify icon="uil:comment-alt-check" size={24} color="#F98A21" style={styles.labelIcon} />
+                <PhosphorIcon icon={ICONS.answer} size={24} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, { fontSize: fontSizes.body }, {color: colors.text}]}>{t("cardDetail.answer", "Cevap")}</Text>
                 </View>
                 <View>
@@ -247,7 +248,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
                   >
-                    <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                    <PhosphorIcon icon={ICONS.close} size={18} color={colors.muted} />
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -266,7 +267,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
             <View style={{ flex: 1 }}>
               <View style={styles.labelRow}>
                 <View style={styles.labelTextContainer}>
-                <Iconify icon="lucide:lightbulb" size={24} color="#F98A21" style={styles.labelIcon} />
+                <PhosphorIcon icon={ICONS.hint} size={24} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, { fontSize: fontSizes.body }, {color: colors.text}]}>{t("cardDetail.example", "Örnek")}</Text>
                 </View>
                 <View>
@@ -289,7 +290,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
                   >
-                    <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                    <PhosphorIcon icon={ICONS.close} size={18} color={colors.muted} />
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -308,7 +309,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
             <View style={{ flex: 1 }}>
               <View style={styles.labelRow}>
                 <View style={styles.labelTextContainer}>
-                <Iconify icon="material-symbols-light:stylus-note" size={24} color="#F98A21" style={styles.labelIcon} />
+                <PhosphorIcon icon={ICONS.note} size={24} color="#F98A21" style={styles.labelIcon} />
                 <Text style={[styles.label, { fontSize: fontSizes.body }, {color: colors.text}]}>{t("cardDetail.note", "Not")}</Text>
                 </View>
                 <View>
@@ -331,7 +332,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     style={{ position: 'absolute', right: 12, top: 12, padding: 6, borderRadius: 12, backgroundColor: colors.iconBackground }}
                   >
-                    <Iconify icon="material-symbols:close-rounded" size={18} color={colors.muted} />
+                    <PhosphorIcon icon={ICONS.close} size={18} color={colors.muted} />
                   </TouchableOpacity>
                 ) : null}
               </View>

@@ -10,7 +10,6 @@ import { getDeckById, getDeckLanguages } from '../../services/DeckService';
 import { getAllCardsForDeck } from '../../services/CardService';
 import { getFavoriteDeckIds, getFavoriteCardIds } from '../../services/FavoriteService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import CircularProgress from '../../components/ui/CircularProgress';
 import { useAuth } from '../../contexts/AuthContext';
@@ -29,7 +28,7 @@ import { BottomSheetModal, BottomSheetFlatList } from '@expo/ui/community/bottom
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import HeroPullBackdrop from '../../components/layout/HeroPullBackdrop';
 import { useListBottomInset } from '../../components/ui/TabBarInset';
-import { getCategoryIcon } from '../../theme/icons';
+import { getCategoryIcon, ICONS } from '../../theme/icons';
 import PhosphorIcon from '../../components/ui/PhosphorIcon';
 
 // Hero gradient direction (colours come from the deck's category).
@@ -1019,8 +1018,8 @@ export default function DeckDetailScreen({ route, navigation }) {
             activeOpacity={0.7}
             hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
           >
-            <Iconify
-              icon={isFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
+            <PhosphorIcon
+              icon={isFavorite ? ICONS.favorite : ICONS.favoriteOff}
               size={24}
               color={isFavorite ? '#F98A21' : colors.text}
             />
@@ -1045,7 +1044,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                 style={styles.headerMenuHost}
               >
                 <View style={styles.headerMenuTrigger}>
-                  <Iconify icon="iconamoon:menu-kebab-horizontal-bold" size={24} color={colors.text} />
+                  <PhosphorIcon icon={ICONS.more} size={24} color={colors.text} />
                 </View>
               </MenuView>
             ) : null}
@@ -1196,7 +1195,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                 circle bleeding off the bottom-left. */}
             <View style={styles.gfHeroDecor} pointerEvents="none">
               <View style={styles.gfDecorIcon}>
-                <PhosphorIcon {...getCategoryIcon(categoryInfo?.sort_order)} size={HERO_ICON_SIZE} color="rgba(255,255,255,0.08)" />
+                <PhosphorIcon icon={getCategoryIcon(categoryInfo?.sort_order)} size={HERO_ICON_SIZE} color="rgba(255,255,255,0.08)" />
               </View>
               <View style={[styles.gfDecorCircle, styles.gfDecorCircle3]} />
               <View style={[styles.gfDecorCircle, styles.gfDecorCircle2]} />
@@ -1208,7 +1207,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             {/* Title - Scrollable if overflows */}
             <View style={styles.gfTitleContainer}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Iconify icon="ion:book" size={28} color="#fff" />
+                <PhosphorIcon icon={ICONS.deckName} size={28} color="#fff" />
                 <ScrollView
                   ref={nameScrollRef}
                   horizontal
@@ -1248,7 +1247,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             {deck.to_name && (
               <View style={styles.gfTitleContainer}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <Iconify icon="icon-park-outline:translation" size={28} color="#fff" />
+                  <PhosphorIcon icon={ICONS.pair} size={28} color="#fff" />
                   <ScrollView
                     ref={toNameScrollRef}
                     horizontal
@@ -1317,8 +1316,8 @@ export default function DeckDetailScreen({ route, navigation }) {
                       {descriptionExpanded ? t('common.showLess', 'Daha az göster') : t('common.showMore', 'Daha fazla göster')}
                     </Text>
                     <View style={{ marginTop: 1 }}>
-                      <Iconify
-                        icon="flowbite:caret-down-solid"
+                      <PhosphorIcon
+                        icon={ICONS.dropdown}
                         size={14}
                         color="rgba(255,255,255,0.9)"
                         style={{ transform: [{ rotate: descriptionExpanded ? '180deg' : '0deg' }] }}
@@ -1345,7 +1344,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                   <Text style={styles.gfCreatorName}>
                     {deck.profiles?.username || t('common.user', 'Kullanıcı')}
                   </Text>
-                  <Iconify icon="flowbite:caret-down-solid" size={18} color="#fff" style={{ marginLeft: 2 }} />
+                  <PhosphorIcon icon={ICONS.dropdown} size={18} color="#fff" style={{ marginLeft: 2 }} />
                 </View>
                 <MenuView
                   actions={[
@@ -1420,7 +1419,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                   end={{ x: 1, y: 1 }}
                   style={styles.gfTotalBadgeGradient}
                 >
-                  <Iconify icon="ri:stack-fill" size={18} color="#fff" />
+                  <PhosphorIcon icon={ICONS.stack} size={18} color="#fff" />
                   <View style={styles.gfTotalBadgeTextWrap}>
                     <Text style={styles.gfTotalBadgeNumber}>{deckStats.total}</Text>
                     <Text style={styles.gfTotalBadgeLabel}>{t('deckDetail.cards', 'Kart')}</Text>
@@ -1434,7 +1433,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                       colors={['#27AE60', '#2ECC71']}
                       style={styles.gfStatRowIcon}
                     >
-                      <Iconify icon="dashicons:welcome-learn-more" size={18} color="#fff" />
+                      <PhosphorIcon icon={ICONS.learned} size={18} color="#fff" />
                     </LinearGradient>
                     <View style={styles.gfStatRowText}>
                       <Text style={[styles.gfStatRowValue, { color: colors.cardQuestionText }]}>{deckStats.learned}</Text>
@@ -1447,7 +1446,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                       colors={['#F98A21', '#FF6B35']}
                       style={styles.gfStatRowIcon}
                     >
-                      <Iconify icon="mdi:fire" size={18} color="#fff" />
+                      <PhosphorIcon icon={ICONS.fire} size={18} color="#fff" />
                     </LinearGradient>
                     <View style={styles.gfStatRowText}>
                       <Text style={[styles.gfStatRowValue, { color: colors.cardQuestionText }]}>{deckStats.learning}</Text>
@@ -1460,7 +1459,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                       colors={[colors.secondary, colors.secondary + 'CC']}
                       style={styles.gfStatRowIcon}
                     >
-                      <Iconify icon="basil:eye-closed-outline" size={18} color="#fff" />
+                      <PhosphorIcon icon={ICONS.hidden} size={18} color="#fff" />
                     </LinearGradient>
                     <View style={styles.gfStatRowText}>
                       <Text style={[styles.gfStatRowValue, { color: colors.cardQuestionText }]}>{deckStats.new}</Text>
@@ -1499,7 +1498,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                 colors={[colors.secondary, colors.secondary + 'CC']}
                 style={styles.gfStudyChapterIcon}
               >
-                <Iconify icon="streamline-flex:module-puzzle-2" size={22} color="#fff" />
+                <PhosphorIcon icon={ICONS.chapter} size={22} color="#fff" />
               </LinearGradient>
               <View style={styles.gfStudyTextWrap}>
                 <Text style={[styles.gfStudyPrimaryText, { color: colors.cardQuestionText }]}>
@@ -1515,7 +1514,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                   </Text>
                 )}
               </View>
-              <Iconify icon="flowbite:caret-down-solid" size={18} color={colors.muted} />
+              <PhosphorIcon icon={ICONS.dropdown} size={18} color={colors.muted} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1534,7 +1533,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                 end={{ x: 1, y: 0 }}
               >
                 <View style={styles.gfStartMain}>
-                  <Iconify icon="streamline:button-play-solid" size={20} color="#fff" />
+                  <PhosphorIcon icon={ICONS.play} size={20} color="#fff" />
                   <Text style={styles.gfStartButtonText}>{t('deckDetail.start', 'Başla')}</Text>
                 </View>
               </LinearGradient>
@@ -1564,13 +1563,13 @@ export default function DeckDetailScreen({ route, navigation }) {
               colors={[colors.buttonColor, colors.buttonColor + 'DD']}
               style={styles.gfActionIconBox}
             >
-              <Iconify icon="ph:cards-fill" size={24} color="#fff" />
+              <PhosphorIcon icon={ICONS.stack} size={24} color="#fff" />
             </LinearGradient>
             <View style={styles.gfActionTextWrap}>
               <Text style={[styles.gfActionTitle, { color: colors.cardQuestionText }]}>{t('deckDetail.cards', 'Kartlar')}</Text>
               <Text style={[styles.gfActionDesc, { color: colors.muted }]}>{t('deckDetail.browseCards', 'Tüm kartları görüntüle')}</Text>
             </View>
-            <Iconify icon="ion:chevron-forward" size={22} color={colors.muted} />
+            <PhosphorIcon icon={ICONS.chevronRight} size={22} color={colors.muted} />
           </TouchableOpacity>
 
           {/* Divider */}
@@ -1586,13 +1585,13 @@ export default function DeckDetailScreen({ route, navigation }) {
               colors={[colors.secondary, colors.secondary + 'DD']}
               style={styles.gfActionIconBox}
             >
-              <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={24} color="#fff" />
+              <PhosphorIcon icon={ICONS.chapter} size={24} color="#fff" />
             </LinearGradient>
             <View style={styles.gfActionTextWrap}>
               <Text style={[styles.gfActionTitle, { color: colors.cardQuestionText }]}>{t('deckDetail.chapters', 'Bölümler')}</Text>
               <Text style={[styles.gfActionDesc, { color: colors.muted }]}>{chapters.length} {t('deckDetail.chaptersCount', 'bölüm')}</Text>
             </View>
-            <Iconify icon="ion:chevron-forward" size={22} color={colors.muted} />
+            <PhosphorIcon icon={ICONS.chevronRight} size={22} color={colors.muted} />
           </TouchableOpacity>
         </EntranceBlock>
 
@@ -1612,7 +1611,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                 colors={isShared ? ['#27AE60', '#2ECC71'] : [colors.muted + '30', colors.muted + '20']}
                 style={styles.gfShareIconBg}
               >
-                <Iconify icon="fluent:people-community-20-filled" size={22} color={isShared ? '#fff' : colors.muted} />
+                <PhosphorIcon icon={ICONS.community} size={22} color={isShared ? '#fff' : colors.muted} />
               </LinearGradient>
               <View style={styles.gfShareContent}>
                 <Text style={[styles.gfShareTitle, { color: colors.cardQuestionText }]}>
@@ -1635,7 +1634,7 @@ export default function DeckDetailScreen({ route, navigation }) {
               onPress={handleShowShareDetails}
               activeOpacity={0.7}
             >
-              <Iconify icon="material-symbols:info-outline" size={18} color={colors.secondary} />
+              <PhosphorIcon icon={ICONS.info} size={18} color={colors.secondary} />
               <Text style={[styles.gfShareInfoText, { color: colors.secondary }]}>
                 {t('deckDetail.moreInfo', 'Daha fazla bilgi')}
               </Text>
@@ -1715,7 +1714,7 @@ export default function DeckDetailScreen({ route, navigation }) {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Iconify icon="ic:round-plus" size={26} color="#FFFFFF" />
+              <PhosphorIcon icon={ICONS.add} size={26} color="#FFFFFF" />
               <Text style={styles.addCardFabLabel} numberOfLines={1}>
                 {t('deckDetail.addCard', 'Kart Ekle')}
               </Text>
@@ -1756,7 +1755,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
             style={styles.chapterSheetCloseBtn}
           >
-            <Iconify icon="material-symbols:close-rounded" size={22} color={colors.muted} />
+            <PhosphorIcon icon={ICONS.close} size={22} color={colors.muted} />
           </TouchableOpacity>
         </View>
 
@@ -1805,7 +1804,7 @@ export default function DeckDetailScreen({ route, navigation }) {
               >
                 {isAction ? (
                   <LinearGradient colors={['#F98A21', '#FF6B35']} style={styles.chapterSheetIcon}>
-                    <Iconify icon="streamline:startup-solid" size={16} color="#fff" />
+                    <PhosphorIcon icon={ICONS.start} size={16} color="#fff" />
                   </LinearGradient>
                 ) : (
                   <View style={styles.chapterSheetProgressBadge}>
@@ -1835,19 +1834,19 @@ export default function DeckDetailScreen({ route, navigation }) {
                   ) : (
                     <View style={styles.chapterSheetStatRow}>
                       <View style={styles.chapterSheetStatItem}>
-                        <Iconify icon="ri:stack-fill" size={13} color={colors.muted} />
+                        <PhosphorIcon icon={ICONS.stack} size={13} color={colors.muted} />
                         <Text style={[styles.chapterSheetStatText, { color: colors.muted }]}>{chapterProgress.total || 0}</Text>
                       </View>
                       <View style={styles.chapterSheetStatItem}>
-                        <Iconify icon="basil:eye-closed-outline" size={13} color={colors.muted} />
+                        <PhosphorIcon icon={ICONS.hidden} size={13} color={colors.muted} />
                         <Text style={[styles.chapterSheetStatText, { color: colors.muted }]}>{chapterProgress.new || 0}</Text>
                       </View>
                       <View style={styles.chapterSheetStatItem}>
-                        <Iconify icon="mdi:fire" size={13} color={colors.muted} />
+                        <PhosphorIcon icon={ICONS.fire} size={13} color={colors.muted} />
                         <Text style={[styles.chapterSheetStatText, { color: colors.muted }]}>{chapterProgress.learning || 0}</Text>
                       </View>
                       <View style={styles.chapterSheetStatItem}>
-                        <Iconify icon="dashicons:welcome-learn-more" size={13} color={colors.muted} />
+                        <PhosphorIcon icon={ICONS.learned} size={13} color={colors.muted} />
                         <Text style={[styles.chapterSheetStatText, { color: colors.muted }]}>{chapterProgress.learned || 0}</Text>
                       </View>
                     </View>

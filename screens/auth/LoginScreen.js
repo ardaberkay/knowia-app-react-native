@@ -6,8 +6,23 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
-import { Iconify } from 'react-native-iconify';
+import Svg, { Path } from 'react-native-svg';
 import LanguageSelector from '../../components/modals/LanguageSelector';
+import PhosphorIcon from '../../components/ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
+
+// Google's multicolour "G" (Google sign-in branding asks for the full-colour
+// mark). Same artwork the button used before (Iconify logos:google-icon).
+function GoogleLogo({ size = 24 }) {
+  return (
+    <Svg width={size} height={size * 262 / 256} viewBox="0 0 256 262">
+      <Path fill="#4285F4" d="M255.878 133.451c0-10.734-.871-18.567-2.756-26.69H130.55v48.448h71.947c-1.45 12.04-9.283 30.172-26.69 42.356l-.244 1.622l38.755 30.023l2.685.268c24.659-22.774 38.875-56.282 38.875-96.027" />
+      <Path fill="#34A853" d="M130.55 261.1c35.248 0 64.839-11.605 86.453-31.622l-41.196-31.913c-11.024 7.688-25.82 13.055-45.257 13.055c-34.523 0-63.824-22.773-74.269-54.25l-1.531.13l-40.298 31.187l-.527 1.465C35.393 231.798 79.49 261.1 130.55 261.1" />
+      <Path fill="#FBBC05" d="M56.281 156.37c-2.756-8.123-4.351-16.827-4.351-25.82c0-8.994 1.595-17.697 4.206-25.82l-.073-1.73L15.26 71.312l-1.335.635C5.077 89.644 0 109.517 0 130.55s5.077 40.905 13.925 58.602z" />
+      <Path fill="#EB4335" d="M130.55 50.479c24.514 0 41.05 10.589 50.479 19.438l36.844-35.974C195.245 12.91 165.798 0 130.55 0C79.49 0 35.393 29.301 13.925 71.947l42.211 32.783c10.59-31.477 39.891-54.251 74.414-54.251" />
+    </Svg>
+  );
+}
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -125,14 +140,14 @@ export default function LoginScreen({ navigation }) {
             style={styles.languageButton}
             onPress={() => setLanguageModalVisible(true)}
           >
-            <Iconify icon="material-symbols:translate-rounded" size={20} color="#fff" />
+            <PhosphorIcon icon={ICONS.language} size={20} color="#fff" />
             <Text style={[styles.languageButtonText, { color: '#fff' }]}>
               {i18n.language === 'tr' ? 'Türkçe' : i18n.language === 'en' ? 'English' : i18n.language === 'es' ? 'Spanish' : i18n.language === 'fr' ? 'French' : i18n.language === 'pt' ? 'Portuguese' : i18n.language === 'de' ? 'German' : ''}
             </Text>
           </TouchableOpacity>
           <View style={[styles.inputContainer, emailError && { borderColor: colors.error || '#FF3B30', borderWidth: 2 }]}>
             <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
-              <Iconify icon="tabler:mail-filled" size={22} color={emailError ? (colors.error || '#FF3B30') : colors.muted} /></View>
+              <PhosphorIcon icon={ICONS.email} size={22} color={emailError ? (colors.error || '#FF3B30') : colors.muted} /></View>
             <TextInput
               ref={emailInputRef}
               style={[styles.input, typography.styles.body]}
@@ -149,7 +164,7 @@ export default function LoginScreen({ navigation }) {
           </View>
           <View style={styles.inputContainer}>
             <View style={{justifyContent: 'center', alignItems: 'center', width: 25, height: 22}}>
-              <Iconify icon="carbon:password" size={22} color={colors.muted} /></View>
+              <PhosphorIcon icon={ICONS.password} size={22} color={colors.muted} /></View>
             <TextInput
               style={[styles.input, typography.styles.body]}
               placeholder={t('login.passwordPlaceholder', 'Şifre')}
@@ -163,7 +178,7 @@ export default function LoginScreen({ navigation }) {
               style={{justifyContent: 'center', alignItems: 'center', width: 28, height: 22}}
               disabled={loading}
             >
-              <Iconify icon={showPassword ? 'oi:eye' : 'system-uicons:eye-no'} size={22} color={colors.muted} />
+              <PhosphorIcon icon={showPassword ? ICONS.visible : ICONS.hidden} size={22} color={colors.muted} />
             </TouchableOpacity>
           </View>
 
@@ -221,7 +236,7 @@ export default function LoginScreen({ navigation }) {
             onPress={handleGoogleLogin}
             disabled={loading}
           >
-            <Iconify icon="logos:google-icon" size={24} color="#DB4437" />
+            <GoogleLogo size={24} />
             <Text style={[styles.googleButtonText, typography.styles.headline, { color: '#000' }]}>
               {t('login.loginWithGoogle', 'Google ile devam et')}
             </Text>
@@ -234,7 +249,7 @@ export default function LoginScreen({ navigation }) {
               onPress={handleAppleLogin}
               disabled={loading}
             >
-              <Iconify icon="grommet-icons:apple" size={24} color="#000" />
+              <PhosphorIcon icon={ICONS.apple} size={24} color="#000" />
               <Text style={[styles.appleButtonText, typography.styles.headline, { color: '#000' }]}>
                 {t('login.loginWithApple', 'Apple ile Giriş Yap')}
               </Text>

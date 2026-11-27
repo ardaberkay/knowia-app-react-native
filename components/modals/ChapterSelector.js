@@ -6,10 +6,11 @@ import { BottomSheetModal, BottomSheetFlatList } from '@expo/ui/community/bottom
 
 import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
-import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
 import CircularProgress from '../ui/CircularProgress';
 import { triggerHaptic } from '../../lib/hapticManager';
+import PhosphorIcon from '../ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 
 export default function ChapterSelector({
@@ -77,8 +78,8 @@ export default function ChapterSelector({
         {/* Chapter Header */}
         <View style={styles.chapterHeader}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Iconify
-              icon="streamline-freehand:plugin-jigsaw-puzzle"
+            <PhosphorIcon
+              icon={ICONS.chapter}
               size={22}
               color={colors.buttonColor}
               style={{ marginRight: 8 }}
@@ -109,7 +110,7 @@ export default function ChapterSelector({
           <View style={styles.statsContainer}>
             {/* Learning */}
             <View style={styles.statRow}>
-              <Iconify icon="mdi:fire" size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
+              <PhosphorIcon icon={ICONS.fire} size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
               <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
                 {t('chapters.learning', 'Learning')}: {learningCount}
               </Text>
@@ -117,7 +118,7 @@ export default function ChapterSelector({
 
             {/* Learned */}
             <View style={styles.statRow}>
-              <Iconify icon="dashicons:welcome-learn-more" size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
+              <PhosphorIcon icon={ICONS.learned} size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
               <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
                 {t('chapters.learned', 'Learned')}: {chapterProgress.learned}
               </Text>
@@ -125,7 +126,7 @@ export default function ChapterSelector({
 
             {/* Total */}
             <View style={styles.statRow}>
-              <Iconify icon="ri:stack-fill" size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
+              <PhosphorIcon icon={ICONS.stack} size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
               <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
                 {t('chapters.total', 'Total')}: {chapterProgress.total}
               </Text>
@@ -158,7 +159,7 @@ export default function ChapterSelector({
       <View style={styles.fixedHeader}>
         <View style={styles.headerRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={24} color={colors.buttonColor} style={{ marginRight: 8 }} />
+            <PhosphorIcon icon={ICONS.chapter} size={24} color={colors.buttonColor} style={{ marginRight: 8 }} />
             <Text style={[typography.styles.title2, { color: colors.text }]}>
               {t('chapterCards.selectChapter', 'Bölüm Seç')}
             </Text>
@@ -168,7 +169,7 @@ export default function ChapterSelector({
             hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
             style={styles.closeBtnWrapper}
           >
-            <Iconify icon="material-symbols:close-rounded" size={24} color={colors.text} />
+            <PhosphorIcon icon={ICONS.close} size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
       </View>

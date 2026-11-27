@@ -2,12 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Text } from './AppText';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Iconify } from 'react-native-iconify';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { useTranslation } from 'react-i18next';
 import { fontSizes, fonts } from '../../theme/typography';
 import { getCategoryColors } from '../../theme/colors';
-import { getCategoryIcon } from '../../theme/icons';
+import { getCategoryIcon, ICONS } from '../../theme/icons';
 import PhosphorIcon from './PhosphorIcon';
 
 
@@ -53,7 +52,7 @@ const CommunityDeckCard = ({
                 {/* SOL: Şeffaf Rozet ve İkon */}
                 <View style={styles.iconBadgeContainer}>
                     <PhosphorIcon
-                        {...categoryIcon}
+                        icon={categoryIcon}
                         size={34}
                         color="#FFFFFF"
                     />
@@ -92,8 +91,8 @@ const CommunityDeckCard = ({
                             onPress={handleFavoritePress}
                             activeOpacity={0.7}
                         >
-                            <Iconify
-                                icon={localFavorite ? 'solar:heart-bold' : 'solar:heart-broken'}
+                            <PhosphorIcon
+                                icon={localFavorite ? ICONS.favorite : ICONS.favoriteOff}
                                 size={20}
                                 color={localFavorite ? '#F98A21' : colors.headText}
                             />
@@ -127,8 +126,8 @@ const CommunityDeckCard = ({
 
                     {/* Alt Satır: Metrikler */}
                     <View style={styles.bottomRow}>
-                        <Iconify
-                            icon="ri:stack-fill"
+                        <PhosphorIcon
+                            icon={ICONS.stack}
                             size={13}
                             color="rgba(255, 255, 255, 0.9)"
                             style={{ marginRight: 4 }}
@@ -140,8 +139,8 @@ const CommunityDeckCard = ({
                             {deck.card_count || 0} {t('home.cardCount', 'Kart')}
                         </Text>
                         <Text style={[styles.separatorDot, { width: 4, height: 4 }]}></Text>
-                        <Iconify
-                            icon="streamline-flex:module-puzzle-2"
+                        <PhosphorIcon
+                            icon={ICONS.chapter}
                             size={13}
                             color="rgba(255, 255, 255, 0.9)"
                             style={{ marginRight: 4 }}

@@ -6,7 +6,6 @@ import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
-import { Iconify } from 'react-native-iconify';
 import { listChapters, getNextOrdinal, createChapter, getDeckChaptersProgressRpc, deleteChapter, reorderChapterOrdinals } from '../../services/ChapterService';
 import CircularProgress from '../../components/ui/CircularProgress';
 import { useAuth } from '../../contexts/AuthContext';
@@ -16,6 +15,8 @@ import { triggerHaptic } from '../../lib/hapticManager';
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useListBottomInset } from '../../components/ui/TabBarInset';
+import PhosphorIcon from '../../components/ui/PhosphorIcon';
+import { ICONS } from '../../theme/icons';
 
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 
@@ -43,7 +44,7 @@ const MemoizedChapterItem = memo(({ item, progressMap, editMode, colors, onPress
       <View style={styles.chapterHeader}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Iconify icon="streamline-freehand:plugin-jigsaw-puzzle" size={22} color={colors.buttonColor} style={{ marginRight: 8 }} />
+            <PhosphorIcon icon={ICONS.chapter} size={22} color={colors.buttonColor} style={{ marginRight: 8 }} />
             <Text style={[typography.styles.body, styles.chapterTitle, { color: colors.text }]}>{t('chapters.chapter', 'Bölüm')} {item.ordinal}</Text>
           </View>
           {editMode ? (
@@ -56,10 +57,10 @@ const MemoizedChapterItem = memo(({ item, progressMap, editMode, colors, onPress
               activeOpacity={0.7}
               hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
             >
-              <Iconify icon="mdi:garbage" size={24} color="#FF4444" />
+              <PhosphorIcon icon={ICONS.delete} size={24} color="#FF4444" />
             </TouchableOpacity>
           ) : (
-            <Iconify icon="ion:chevron-forward" size={26} color={colors.buttonColor} />
+            <PhosphorIcon icon={ICONS.chevronRight} size={26} color={colors.buttonColor} />
           )}
         </View>
       </View>
@@ -78,19 +79,19 @@ const MemoizedChapterItem = memo(({ item, progressMap, editMode, colors, onPress
         </View>
         <View style={styles.statsContainer}>
           <View style={styles.statRow}>
-            <Iconify icon="mdi:fire" size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
+            <PhosphorIcon icon={ICONS.fire} size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
             <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
               {t('chapters.learning', 'Learning')}: {learningCount}
             </Text>
           </View>
           <View style={styles.statRow}>
-            <Iconify icon="dashicons:welcome-learn-more" size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
+            <PhosphorIcon icon={ICONS.learned} size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
             <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
               {t('chapters.learned', 'Learned')}: {chapterProgress.learned}
             </Text>
           </View>
           <View style={styles.statRow}>
-            <Iconify icon="ri:stack-fill" size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
+            <PhosphorIcon icon={ICONS.stack} size={18} color={colors.buttonColor} style={{ marginRight: 8 }} />
             <Text style={[typography.styles.body, styles.statText, { color: colors.text }]}>
               {t('chapters.total', 'Total')}: {chapterProgress.total}
             </Text>
@@ -235,8 +236,8 @@ export default function ChaptersScreen({ route, navigation }) {
             activeOpacity={0.7}
             hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
           >
-            <Iconify
-              icon={editMode ? "mingcute:close-fill" : "lucide:edit"}
+            <PhosphorIcon
+              icon={editMode ? ICONS.close : ICONS.edit}
               size={22}
               color={colors.text}
             />
@@ -350,7 +351,7 @@ export default function ChaptersScreen({ route, navigation }) {
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Iconify icon="mage:inbox-star" size={24} color={colors.buttonColor} style={{ marginRight: 8 }} />
+              <PhosphorIcon icon={ICONS.unassigned} size={24} color={colors.buttonColor} style={{ marginRight: 8 }} />
               <Text style={[typography.styles.body, { color: colors.text }]}>{t('chapters.unassigned', 'Atanmamış')}</Text>
             </View>
             {unassignedCount > 0 && (
@@ -367,8 +368,8 @@ export default function ChaptersScreen({ route, navigation }) {
   const listEmpty = useCallback(() => (
     <View style={styles.emptyStateContainer}>
       <View style={styles.emptyState}>
-        <Iconify
-          icon="streamline-freehand:plugin-jigsaw-puzzle"
+        <PhosphorIcon
+          icon={ICONS.chapter}
           size={120}
           color={colors.muted}
           style={{ marginBottom: 12, opacity: 0.5 }}
@@ -439,7 +440,7 @@ export default function ChaptersScreen({ route, navigation }) {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Iconify icon="ic:round-plus" size={30} color="#FFFFFF" />
+              <PhosphorIcon icon={ICONS.add} size={30} color="#FFFFFF" />
             </LinearGradient>
           </AnimatedPressable>
         )}
