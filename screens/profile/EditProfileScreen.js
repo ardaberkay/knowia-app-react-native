@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Image, StatusBar, Alert, Keyboard } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, StatusBar, Alert, Keyboard } from 'react-native';
+import { Image } from '../../components/ui/AppImage';
 import { Text, TextInput } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FormScrollView from '../../components/layout/FormScrollView';

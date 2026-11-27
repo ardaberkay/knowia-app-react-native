@@ -12,7 +12,6 @@ import { ThemeProvider, useTheme } from './theme/theme';
 import { SnackbarProvider } from './components/ui/Snackbar';
 import AppNavigator from './navigation/AppNavigator';
 import { useEffect, useCallback } from 'react';
-import { useFonts } from 'expo-font';
 import { View, StyleSheet } from 'react-native';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
@@ -48,12 +47,9 @@ export const navigationRef = createNavigationContainerRef();
 
 function MainAppRunner({ colors, isDarkMode, linking, navigationTheme }) {
   const { loading: isAuthLoading } = useAuth();
-  // TEMPORARY: Phosphor-Bold is embedded from the next native build on (expo-font
-  // plugin, app.config.js). Until every installed build has it, load it at
-  // runtime too so bold icons don't render empty. Remove after that build.
-  const [boldIconsLoaded] = useFonts({ 'Phosphor-Bold': require('./assets/fonts/Phosphor-Bold.ttf') });
-  
-  const isReady = !isAuthLoading && boldIconsLoaded;
+  // All fonts (Inter, Phosphor regular / fill / bold) are embedded at build
+  // time (expo-font plugin, app.config.js): nothing to load at runtime.
+  const isReady = !isAuthLoading;
 
   // 🔥 2. ADIM: Asıl sihir burada. 
   // Uygulama navigasyonu hazır olduğunda tetiklenir.

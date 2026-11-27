@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { View, StyleSheet, Image, TouchableOpacity, Pressable, Animated, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Pressable, Animated, Platform } from 'react-native';
+import { Image } from '../../components/ui/AppImage';
 import { Text } from '../../components/ui/AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';

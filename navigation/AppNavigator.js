@@ -234,6 +234,8 @@ export default function AppNavigator() {
                 title: '',
                 headerTransparent: true,
                 headerStyle: { backgroundColor: 'transparent' },
+                // no bar shadow on the first frame either (it showed on the first visit)
+                headerShadowVisible: false,
                 headerTintColor: '#FFFFFF',
                 scrollEdgeEffects: { top: 'hidden', bottom: 'automatic', left: 'automatic', right: 'automatic' },
                 headerTitleAlign: 'center',

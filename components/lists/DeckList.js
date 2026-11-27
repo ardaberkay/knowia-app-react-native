@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, RefreshControl, Image, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, RefreshControl, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { Image } from '../ui/AppImage';
 import { Text } from '../ui/AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/theme';

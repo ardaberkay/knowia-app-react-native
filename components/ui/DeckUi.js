@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import { TouchableOpacity, View, Image, StyleSheet, useWindowDimensions } from 'react-native';
+import { TouchableOpacity, View, StyleSheet, useWindowDimensions } from 'react-native';
+import { Image } from './AppImage';
 import { Text } from './AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
@@ -151,7 +152,8 @@ const DeckCard = ({
           style={styles.deckCardGradient}
         >
           {/* Background Category Icon */}
-          <View style={styles.backgroundCategoryIcon}>
+          {/* icon centre on the card's left edge: half of it shows, on every card size */}
+          <View style={[styles.backgroundCategoryIcon, { left: -DECK_CARD_WIDTH / 2 }]}>
             <PhosphorIcon
               icon={categoryIcon}
               size={isFeatured ? 170 : 120}
@@ -424,7 +426,6 @@ const styles = StyleSheet.create({
   },
   backgroundCategoryIcon: {
     position: 'absolute',
-    left: -60, // İkonun yarısının taşması için
     width: '100%',
     height: '100%',
     justifyContent: 'center',

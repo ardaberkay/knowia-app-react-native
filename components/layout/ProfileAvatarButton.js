@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { Image, StyleSheet, Pressable, Platform } from 'react-native'; // TouchableOpacity'yi Pressable ile değiştirdik
+import { StyleSheet, Pressable, Platform } from 'react-native'; // TouchableOpacity'yi Pressable ile değiştirdik
+import { Image } from '../ui/AppImage';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import { useProfile } from '../../contexts/ProfileContext';

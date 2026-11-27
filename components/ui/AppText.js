@@ -1,6 +1,7 @@
 import React, { createContext, useContext } from 'react';
-import { Text as RNText, TextInput as RNTextInput } from 'react-native';
+import { Text as RNText, TextInput as RNTextInput, StyleSheet } from 'react-native';
 import { fonts } from '../../theme/typography';
+import i18n from '../../lib/i18n';
 
 // App-wide Text / TextInput. They follow the OS accessibility text size but
 // never grow past 1.2×, so large system font sizes can't break layouts.
@@ -16,15 +17,32 @@ export const MAX_FONT_SIZE_MULTIPLIER = 1.2;
 const BASE_STYLE = { fontFamily: fonts.regular };
 const InsideText = createContext(false);
 
+// textTransform: 'uppercase' ignores the language: in Turkish "i" became "I"
+// (ÖĞRENILDI). Upper-casing is done here with the app language instead
+// (i → İ, ı → I in Turkish), and the native transform is switched off.
+const NO_TRANSFORM = { textTransform: 'none' };
+const upperForLanguage = (text) => {
+  if (String(i18n.language || '').toLowerCase().startsWith('tr')) {
+    return text.replace(/i/g, 'İ').toUpperCase();
+  }
+  return text.toUpperCase();
+};
+const upperChildren = (children) => React.Children.map(children, (child) => (
+  typeof child === 'string' ? upperForLanguage(child) : child
+));
+
 // React 19 passes `ref` as a regular prop, so spreading props forwards it.
-export function Text({ style, ...props }) {
+export function Text({ style, children, ...props }) {
   const nested = useContext(InsideText);
+  const uppercase = style != null && StyleSheet.flatten(style)?.textTransform === 'uppercase';
   const text = (
     <RNText
       maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
       {...props}
-      style={nested ? style : [BASE_STYLE, style]}
-    />
+      style={[...(nested ? [] : [BASE_STYLE]), style, uppercase ? NO_TRANSFORM : null]}
+    >
+      {uppercase ? upperChildren(children) : children}
+    </RNText>
   );
   return nested ? text : <InsideText.Provider value>{text}</InsideText.Provider>;
 }

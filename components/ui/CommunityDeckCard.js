@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { Image } from './AppImage';
 import { Text } from './AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { triggerHaptic } from '../../lib/hapticManager';

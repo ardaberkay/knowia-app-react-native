@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Platform, Pressable, Image, Switch, Animated, RefreshControl } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Platform, Pressable, Switch, Animated, RefreshControl } from 'react-native';
+import { Image } from '../../components/ui/AppImage';
 import { Text } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
@@ -1013,6 +1014,7 @@ export default function DeckDetailScreen({ route, navigation }) {
     navigation.setOptions({
       headerTransparent: true,
       headerStyle: { backgroundColor: 'transparent' },
+      headerShadowVisible: false,
       // iOS 26 draws a soft scroll-edge shadow under a transparent nav bar.
       // The hero already starts under the bar, so the band would split the
       // hero from the pull-to-refresh backdrop. Hide it at the top only.
@@ -2216,7 +2218,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   gfStatRowLabel: {
-    fontSize: fontSizes.micro,
+    fontSize: fontSizes.micro - 1,
     fontFamily: fonts.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.2,

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { Image } from '../ui/AppImage';
 import { Text, TextInput } from '../ui/AppText';
 import FormScrollView from './FormScrollView';
 import { updateCard } from '../../services/CardService';

@@ -1,5 +1,6 @@
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Image, Platform, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, Platform, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { Image } from '../ui/AppImage';
 import Reanimated, {
   Easing,
   interpolate,

@@ -5,7 +5,8 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Image } from '../ui/AppImage';
 import { Text, MAX_FONT_SIZE_MULTIPLIER } from '../ui/AppText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
