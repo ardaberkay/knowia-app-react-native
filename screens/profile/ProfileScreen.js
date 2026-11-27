@@ -10,6 +10,7 @@ import { typography, fontSizes, fonts } from '../../theme/typography';
 import {
   getCurrentUserProfile,
   getActivitySummary,
+  peekActivitySummary,
   setDailyGoal,
   DAILY_GOAL_PRESETS,
   DEFAULT_DAILY_GOAL,
@@ -515,7 +516,17 @@ export default function ProfileScreen() {
   // Study activity: heatmap + streak + goal. Cached; refetched when a study
   // session ends or the day changes (see ProfileService). On focus the profile
   // is reloaded only if editing it cleared its cache.
-  const [activity, setActivity] = useState(null);
+  // Last loaded summary shows on the first frame (no 0 → real number flash);
+  // the tab also loads it on mount, before it is first opened.
+  const [activity, setActivity] = useState(() => peekActivitySummary(authUserId, HEATMAP_DAYS));
+  useEffect(() => {
+    if (!authUserId) return undefined;
+    let active = true;
+    getActivitySummary(authUserId, { days: HEATMAP_DAYS }).then((summary) => {
+      if (active && summary) setActivity(summary);
+    });
+    return () => { active = false; };
+  }, [authUserId]);
   useFocusEffect(
     useCallback(() => {
       if (!authUserId) return undefined;

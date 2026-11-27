@@ -6,7 +6,7 @@ import { useTheme } from '../../theme/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { getFavoriteCards, addFavoriteCard, removeFavoriteCard } from '../../services/FavoriteService';
-import { deleteCard, getCardDetail, getUserCardProgressForCards } from '../../services/CardService';
+import { deleteCard, getCardDetail, filterCardsWhileSearching, normSearchText } from '../../services/CardService';
 import SearchBar from '../../components/tools/SearchBar';
 import FilterIcon from '../../components/modals/CardFilterIcon';
 import CardListItem from '../../components/lists/CardList';
@@ -53,6 +53,8 @@ export default function FavoriteCards() {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [query, setQuery] = useState('');
+  // the search the cards on screen were loaded for (see filterCardsWhileSearching)
+  const [cardsSearch, setCardsSearch] = useState('');
   const [sort, setSort] = useState('original');
   const [selectedCard, setSelectedCard] = useState(null);
   // Detail sheet: selectedCard is its content, detailVisible opens / closes it.
@@ -63,11 +65,13 @@ export default function FavoriteCards() {
   const flatListRef = useRef(null);
   const serverSearchRef = useRef('');
   const favFetchGenRef = useRef(0);
+  const firstPageInFlightRef = useRef(false);
   const debouncedQueryFetchBootRef = useRef(true);
   const [refreshing, setRefreshing] = useState(false);
   const [debouncedQuery, setDebouncedQuery] = useState('');
 
   const favoriteCardsSet = useMemo(() => new Set(favoriteCards), [favoriteCards]);
+  const visibleCards = useMemo(() => filterCardsWhileSearching(cards, query, cardsSearch), [cards, query, cardsSearch]);
 
   const fetchData = useCallback(async (silent = false, forceRefresh = false, sortOverride = null) => {
     if (!userId) {
@@ -81,21 +85,19 @@ export default function FavoriteCards() {
     const filter = ['learned', 'unlearned'].includes(currentSort) ? currentSort : null;
     const searchArg = serverSearchRef.current || null;
     const fetchId = ++favFetchGenRef.current;
+    firstPageInFlightRef.current = true;
     if (!silent) setLoading(true);
     setCurrentUserId(userId);
     try {
       const cardsData = await getFavoriteCards(userId, 0, PAGE_SIZE, forceRefresh, sortBy, filter, searchArg);
       if (fetchId !== favFetchGenRef.current) return;
-      const cardIds = (cardsData || []).map(c => c.id);
-      const statusMap = cardIds.length > 0
-        ? await getUserCardProgressForCards(userId, cardIds)
-        : {};
-      if (fetchId !== favFetchGenRef.current) return;
+      // status comes with the rows (list_favorite_cards RPC)
       const cardsWithProgress = (cardsData || []).map(card => ({
         ...card,
-        status: statusMap[card.id] || 'new',
+        status: card.status || 'new',
       }));
       setCards(cardsWithProgress);
+      setCardsSearch(searchArg || '');
       setFavoriteCards(cardsWithProgress.map(card => card.id));
       setPage(0);
       setHasMore((cardsData || []).length >= PAGE_SIZE);
@@ -105,12 +107,18 @@ export default function FavoriteCards() {
         setFavoriteCards([]);
       }
     } finally {
+      if (fetchId === favFetchGenRef.current) firstPageInFlightRef.current = false;
       if (!silent) setLoading(false);
     }
   }, [userId, sort]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || loadingMore || loading || !userId) return;
+    // a first page (often a silent search) is still loading: no next page yet
+    if (firstPageInFlightRef.current) return;
+    // A new search is on its way: don't load the next page of the old one
+    // (that was the loader under the instantly filtered results).
+    if (normSearchText(query) !== normSearchText(cardsSearch)) return;
     setLoadingMore(true);
     const loadGen = favFetchGenRef.current;
     try {
@@ -123,13 +131,9 @@ export default function FavoriteCards() {
         setHasMore(false);
         return;
       }
-      const cardIds = cardsData.map(c => c.id);
-      const statusMap = cardIds.length > 0
-        ? await getUserCardProgressForCards(userId, cardIds)
-        : {};
       const newCards = cardsData.map(card => ({
         ...card,
-        status: statusMap[card.id] || 'new',
+        status: card.status || 'new',
       }));
       if (loadGen !== favFetchGenRef.current) return;
       setCards(prev => {
@@ -151,7 +155,7 @@ export default function FavoriteCards() {
     } finally {
       setLoadingMore(false);
     }
-  }, [hasMore, loadingMore, loading, page, userId]);
+  }, [hasMore, loadingMore, loading, page, userId, query, cardsSearch]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -165,7 +169,7 @@ export default function FavoriteCards() {
   }, [userId, fetchData]);
 
   useEffect(() => {
-    const id = setTimeout(() => setDebouncedQuery(query.trim()), 350);
+    const id = setTimeout(() => setDebouncedQuery(query.trim()), 250);
     return () => clearTimeout(id);
   }, [query]);
 
@@ -272,7 +276,7 @@ export default function FavoriteCards() {
       {cards.length > 0 ? (
         <CardStackSlider
           key={`${debouncedQuery}|${sort}`}
-          cards={cards}
+          cards={visibleCards}
           onOpenDetail={openDetail}
           onEndReached={loadMore}
         />
@@ -324,7 +328,7 @@ export default function FavoriteCards() {
       ) : (
         <FlatList
           ref={flatListRef}
-          data={cards}
+          data={visibleCards}
           keyExtractor={item => item.id?.toString()}
           showsVerticalScrollIndicator={false}
           // iOS: starts below the see-through header (SCROLL_EDGE_HEADER);

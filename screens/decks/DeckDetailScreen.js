@@ -15,7 +15,7 @@ import CircularProgress from '../../components/ui/CircularProgress';
 import { useAuth } from '../../contexts/AuthContext';
 import { listChapters, getDeckChaptersProgressRpc } from '../../services/ChapterService';
 import { deleteDeck, updateDeckShare, insertDeckStats } from '../../services/DeckService';
-import { getDeckProgressCounts } from '../../services/CardService';
+import { getDeckProgressCounts, peekDeckProgressCounts } from '../../services/CardService';
 import { addFavoriteDeck, removeFavoriteDeck } from '../../services/FavoriteService';
 import * as BlockService from '../../services/BlockService';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
@@ -83,10 +83,24 @@ export default function DeckDetailScreen({ route, navigation }) {
   // Favori durumunu route.params'dan al (eğer varsa), yoksa false
   const [isFavorite, setIsFavorite] = useState(deck?.is_favorite || false);
   const [favLoading, setFavLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [progressLoading, setProgressLoading] = useState(true);
-  const [learnedCardsCount, setLearnedCardsCount] = useState(0);
-  const [deckStats, setDeckStats] = useState({ total: 0, learned: 0, learning: 0, new: 0 });
+  // Last known totals (cache, no request) show on the first frame; without
+  // them the numbers show "–" until the server answers, never a false 0.
+  // Or the counts the list row already had ("Çalıştığım Desteler" rows carry
+  // learned + learning), handed over with the deck.
+  const [peekedStats] = useState(() => {
+    const cached = deck?.id ? peekDeckProgressCounts(userId, deck.id) : null;
+    if (cached) return cached;
+    const p = deck?.deckProgress;
+    if (p && p.learning != null) {
+      return { total: p.total, learned: p.learned, learning: p.learning, new: Math.max(p.total - p.learned - p.learning, 0) };
+    }
+    return null;
+  });
+  const [progress, setProgress] = useState(() => (peekedStats?.total ? peekedStats.learned / peekedStats.total : 0));
+  const [progressLoading, setProgressLoading] = useState(!peekedStats);
+  const [learnedCardsCount, setLearnedCardsCount] = useState(peekedStats?.learned || 0);
+  const [deckStats, setDeckStats] = useState(peekedStats || { total: deck?.card_count || 0, learned: 0, learning: 0, new: 0 });
+  const statText = (value) => (progressLoading ? '–' : value);
   const [cards, setCards] = useState([]);
   const [showAddCardHint, setShowAddCardHint] = useState(false);
   const [search, setSearch] = useState('');
@@ -350,13 +364,13 @@ export default function DeckDetailScreen({ route, navigation }) {
     await fetchProgressFromAPI(true);
   };
 
-  const fetchProgressFromAPI = async (showLoading = true) => {
+  const fetchProgressFromAPI = async (showLoading = true, forceRefresh = false) => {
     if (!canApplyDetailState()) return;
     if (showLoading) {
       setProgressLoading(true);
     }
     try {
-      const stats = await getDeckProgressCounts(userId, deck.id);
+      const stats = await getDeckProgressCounts(userId, deck.id, forceRefresh);
       if (!canApplyDetailState()) {
         if (showLoading) setProgressLoading(false);
         return;
@@ -419,7 +433,9 @@ export default function DeckDetailScreen({ route, navigation }) {
   useEffect(() => {
     if (deck?.id) {
       // Cache'den hızlıca yükle, sonra API'den güncelle
-      fetchProgress(true); // useCache = true
+      // known totals are already on screen: refresh them silently
+      if (peekedStats) fetchProgressFromAPI(false);
+      else fetchProgress(true); // useCache = true
     }
   }, [deck?.id, session?.user?.id]); // deck.id ve session değiştiğinde tekrar yükle
 
@@ -489,7 +505,7 @@ export default function DeckDetailScreen({ route, navigation }) {
 
       // 2. ADIM: İstatistikleri (Toplam, Learned, Learning) güncelle
       // Bu fonksiyon getDeckProgressCounts'u çağırır ve hafiftir.
-      await fetchProgressFromAPI(false);
+      await fetchProgressFromAPI(false, true);
 
       // 3. ADIM: Bölüm progress özetini tazele (sheet + seçili bölüm %)
       if (uid && chapters.length > 0) {
@@ -1436,7 +1452,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                       <PhosphorIcon icon={ICONS.learned} size={18} color="#fff" />
                     </LinearGradient>
                     <View style={styles.gfStatRowText}>
-                      <Text style={[styles.gfStatRowValue, { color: colors.cardQuestionText }]}>{deckStats.learned}</Text>
+                      <Text style={[styles.gfStatRowValue, { color: colors.cardQuestionText }]}>{statText(deckStats.learned)}</Text>
                       <Text style={[styles.gfStatRowLabel, { color: colors.muted }]}>{t('deckDetail.learned', 'Öğrenildi')}</Text>
                     </View>
                   </View>
@@ -1449,7 +1465,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                       <PhosphorIcon icon={ICONS.fire} size={18} color="#fff" />
                     </LinearGradient>
                     <View style={styles.gfStatRowText}>
-                      <Text style={[styles.gfStatRowValue, { color: colors.cardQuestionText }]}>{deckStats.learning}</Text>
+                      <Text style={[styles.gfStatRowValue, { color: colors.cardQuestionText }]}>{statText(deckStats.learning)}</Text>
                       <Text style={[styles.gfStatRowLabel, { color: colors.muted }]}>{t('deckDetail.learning', 'Öğreniliyor')}</Text>
                     </View>
                   </View>
@@ -1462,7 +1478,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                       <PhosphorIcon icon={ICONS.hidden} size={18} color="#fff" />
                     </LinearGradient>
                     <View style={styles.gfStatRowText}>
-                      <Text style={[styles.gfStatRowValue, { color: colors.cardQuestionText }]}>{deckStats.new}</Text>
+                      <Text style={[styles.gfStatRowValue, { color: colors.cardQuestionText }]}>{statText(deckStats.new)}</Text>
                       <Text style={[styles.gfStatRowLabel, { color: colors.muted }]}>{t('deckDetail.new', 'Yeni')}</Text>
                     </View>
                   </View>

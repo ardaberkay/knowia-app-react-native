@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
-import { getCachedBlockedAndHidden, filterDecksByBlockAndHide } from './BlockService';
-import { invalidateCache, cacheData, getCachedData, CACHE_DURATIONS } from './CacheService';
+import { getCachedBlockedAndHidden } from './BlockService';
+import { invalidateCache, cachedQuery } from './CacheService';
+import { STALE } from '../lib/queryClient';
 import { getFavoriteDeckIds } from './FavoriteService';
 import { removeUnusedCardImages } from './StorageService';
 
@@ -14,12 +15,29 @@ const DECK_SELECT_SINGLE = 'id, name, to_name, description, card_count, user_id,
 // null = legacy row or filter-only language (not used for speech).
 const SIDE_ORDER = { front: 0, back: 1 };
 const sideRank = (side) => (side in SIDE_ORDER ? SIDE_ORDER[side] : 2);
-const toLanguageRelations = (deckId, languageIds) =>
-  languageIds.slice(0, 2).map((languageId, index) => ({
-    deck_id: deckId,
-    language_id: languageId,
-    side: index === 0 ? 'front' : 'back',
-  }));
+
+/**
+ * One page of decks from the list_decks RPC. Block/hide, category, language,
+ * favourites-only, search (Türkçe harf eşitlemeli) and A–Z all run in SQL
+ * before paging, so pages are complete and A–Z sorts the whole list.
+ * Rows come back in the same shape as DECK_LIST_SELECT (+ chapter_count,
+ * is_favorite, favorited_at).
+ */
+export const listDecksRpc = async ({ category, searchQuery = '', sortBy = 'default', categorySortOrders = [], languageIds = [], favoritesOnly = false, offset = 0, limit = null }) => {
+  const pageLimit = typeof limit === 'number' && limit > 0 ? limit : null;
+  const { data, error } = await supabase.rpc('list_decks', {
+    p_category: category,
+    p_search: searchQuery && String(searchQuery).trim() ? String(searchQuery).trim() : null,
+    p_sort: sortBy === 'az' ? 'az' : 'default',
+    p_category_sort_orders: categorySortOrders?.length ? categorySortOrders : null,
+    p_language_ids: languageIds?.length ? languageIds : null,
+    p_favorites_only: !!favoritesOnly,
+    p_offset: offset || 0,
+    p_limit: pageLimit,
+  });
+  if (error) throw error;
+  return data || [];
+};
 
 export const getDecksByCategory = async (userId, category, options = false) => {
   // options hem eski boolean forceRefresh çağrılarını hem de yeni { forceRefresh, page, limit } yapısını destekler
@@ -47,310 +65,70 @@ export const getDecksByCategory = async (userId, category, options = false) => {
     favoritesOnly = Boolean(options.favoritesOnly);
   }
 
-  if (category === 'myDecks' && userId && !forceRefresh) {
-    const cached = await getCachedData(`mydecks_${userId}`, CACHE_DURATIONS.MY_DECKS);
-    if (cached && !cached.isStale) return cached.data;
-  }
+  // "Destelerim" is cached by TanStack Query in LibraryScreen (RAM + the plain
+  // first page on disk), so no AsyncStorage copy here.
 
   if (category === 'inProgressDecks') {
-    if (!userId) {
-      return [];
-    }
-    const { data: statsData, error: statsError } = await supabase
-      .from('decks_stats')
-      .select('deck_id, started_at')
-      .eq('user_id', userId);
-    if (statsError) {
-      console.error('Error fetching decks_stats:', statsError);
-      return [];
-    }
-
-    if (!statsData || statsData.length === 0) {
-      return [];
-    }
-
-    // deck_id başına en son started_at (MAX)
-    const lastStartedAtByDeck = {};
-    statsData.forEach((row) => {
-      const t = new Date(row.started_at || 0).getTime();
-      if (!lastStartedAtByDeck[row.deck_id] || lastStartedAtByDeck[row.deck_id] < t) {
-        lastStartedAtByDeck[row.deck_id] = t;
-      }
+    if (!userId) return includeHasMore ? { decks: [], hasMore: false, totalCount: 0 } : [];
+    const pageLimit = typeof limit === 'number' && limit > 0 ? limit : null;
+    const { data, error } = await supabase.rpc('list_in_progress_decks', {
+      p_search: searchQuery || null,
+      p_sort: sortBy === 'az' ? 'az' : 'default',
+      p_category_sort_orders: categorySortOrders.length ? categorySortOrders : null,
+      p_language_ids: languageIds.length ? languageIds : null,
+      p_favorites_only: favoritesOnly,
+      p_offset: pageLimit ? page * pageLimit : 0,
+      p_limit: pageLimit ? (includeHasMore ? pageLimit + 1 : pageLimit) : null,
     });
-    const deckIds = Object.keys(lastStartedAtByDeck);
-
-    const { data, error } = await supabase
-      .from('decks')
-      .select(DECK_LIST_SELECT)
-      .in('id', deckIds);
-
-    if (error) {
-      console.error(`Error fetching ${category} decks:`, error);
-      return [];
-    }
-
-    let resultData = data || [];
-    const [blockedIds, hiddenIds] = await getCachedBlockedAndHidden(userId);
-    resultData = filterDecksByBlockAndHide(resultData, blockedIds, hiddenIds);
-
-    // En son çalışılan en üstte sırala
-    resultData.sort((a, b) => (lastStartedAtByDeck[b.id] || 0) - (lastStartedAtByDeck[a.id] || 0));
-
-    // Favori durumunu ekle
-    if (userId && resultData.length > 0) {
-      try {
-        const favoriteDeckIds = resultData.map(deck => deck.id);
-        const { data: favoriteData, error: favoriteError } = await supabase
-          .from('favorite_decks')
-          .select('deck_id')
-          .eq('user_id', userId)
-          .in('deck_id', favoriteDeckIds);
-
-        if (!favoriteError && favoriteData) {
-          const favoriteDeckIdSet = new Set(favoriteData.map(f => f.deck_id));
-          resultData.forEach(deck => {
-            deck.is_favorite = favoriteDeckIdSet.has(deck.id);
-          });
-        }
-      } catch (e) {
-        console.error('Error fetching favorite status:', e);
-        resultData.forEach(deck => {
-          deck.is_favorite = false;
-        });
-      }
-    } else if (resultData.length > 0) {
-      resultData.forEach(deck => {
-        deck.is_favorite = false;
-      });
-    }
-
-    if (searchQuery) {
-      const q = searchQuery.toLocaleLowerCase();
-      resultData = resultData.filter((deck) =>
-        (deck.name || '').toLocaleLowerCase().includes(q) ||
-        (deck.to_name || '').toLocaleLowerCase().includes(q)
-      );
-    }
-
-    if (categorySortOrders.length > 0) {
-      const allowed = new Set(categorySortOrders);
-      resultData = resultData.filter((d) => d.categories?.sort_order != null && allowed.has(d.categories.sort_order));
-    }
-
-    if (languageIds.length > 0) {
-      const langSet = new Set(languageIds);
-      resultData = resultData.filter((d) => (d.decks_languages || []).some((dl) => langSet.has(dl.language_id)));
-    }
-
-    if (favoritesOnly) {
-      resultData = resultData.filter((d) => d.is_favorite === true);
-    }
-
-    if (sortBy === 'az') {
-      resultData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-    }
-
-    // Her deste için öğrenme ilerleme özetini ekle (deckProgress)
-    if (userId && resultData.length > 0) {
-      try {
-        const progressDeckIds = resultData.map((deck) => deck.id);
-        const { data: learnedProgressRows, error: learnedProgressError } = await supabase
-          .from('user_card_progress')
-          .select('cards!inner(deck_id)')
-          .eq('user_id', userId)
-          .eq('status', 'learned')
-          .in('cards.deck_id', progressDeckIds);
-
-        if (learnedProgressError) throw learnedProgressError;
-
-        const learnedByDeck = new Map();
-        (learnedProgressRows || []).forEach((row) => {
-          const deckId = row?.cards?.deck_id;
-          if (!deckId) return;
-          learnedByDeck.set(deckId, (learnedByDeck.get(deckId) || 0) + 1);
-        });
-
-        resultData = resultData.map((deck) => {
-          const total = Number(deck.card_count || 0);
-          const learned = Math.min(Number(learnedByDeck.get(deck.id) || 0), total);
-          const remaining = Math.max(total - learned, 0);
-          const progress = total > 0 ? learned / total : 0;
-          return {
-            ...deck,
-            deckProgress: {
-              total,
-              learned,
-              remaining,
-              progress,
-            },
-          };
-        });
-      } catch (progressErr) {
-        console.error('Error fetching in-progress deck summary:', progressErr);
-        resultData = resultData.map((deck) => ({
-          ...deck,
-          deckProgress: {
-            total: Number(deck.card_count || 0),
-            learned: 0,
-            remaining: Number(deck.card_count || 0),
-            progress: 0,
-          },
-        }));
-      }
-    }
-
-    const totalCount = resultData.length;
+    if (error) throw error;
+    let rows = data || [];
+    const totalCount = Number(rows[0]?.total_count || 0);
     let hasMore = false;
-
-    // inProgressDecks için sayfalama: slice ile uygula
-    if (typeof limit === 'number' && limit > 0) {
-      const start = page * limit;
-      const requestedLimit = includeHasMore ? limit + 1 : limit;
-      const end = start + requestedLimit;
-      const paginatedData = resultData.slice(start, end);
-      hasMore = includeHasMore && paginatedData.length > limit;
-      resultData = includeHasMore ? paginatedData.slice(0, limit) : paginatedData;
+    if (includeHasMore && pageLimit) {
+      hasMore = rows.length > pageLimit;
+      rows = rows.slice(0, pageLimit);
     }
-
-    if (includeHasMore) {
+    const decks = rows.map(({ learned_count: learnedCount, learning_count: learningCount, progress_total: progressTotal, total_count: _total, ...deck }) => {
+      // progress_total = cards without the reported ones (same as DeckDetail)
+      const total = Number(progressTotal ?? deck.card_count ?? 0);
+      const learned = Math.min(Number(learnedCount || 0), total);
+      // learning_count comes from 20261128140000; without it only learned is known
+      const learning = learningCount == null ? null : Math.min(Number(learningCount), total - learned);
       return {
-        decks: resultData,
-        hasMore,
-        totalCount,
+        ...deck,
+        deckProgress: {
+          total,
+          learned,
+          learning,
+          remaining: Math.max(total - learned, 0),
+          progress: total > 0 ? learned / total : 0,
+        },
       };
-    }
-
-    return resultData;
-  }
-
-  // Diğer kategoriler için mevcut mantık
-  let query = supabase
-    .from('decks')
-    .select(DECK_LIST_SELECT);
-
-  switch (category) {
-    case 'myDecks':
-      query = query
-        .eq('user_id', userId)
-        .eq('is_admin_created', false)
-        .order('updated_at', { ascending: false });
-      break;
-    case 'defaultDecks':
-      query = query
-        .eq('is_admin_created', true)
-        .order('updated_at', { ascending: false });
-      break;
-    case 'communityDecks':
-      query = query
-        .eq('is_shared', true)
-        .eq('is_admin_created', false)
-        .order('shared_at', { ascending: false });
-      break;
-  }
-
-  const searchLike = searchQuery
-    ? `%${searchQuery.replace(/%/g, '').replace(/_/g, '').replace(/\\/g, '').replace(/"/g, '')}%`
-    : null;
-  if (searchLike) {
-    query = query.or(`name.ilike."${searchLike}",to_name.ilike."${searchLike}"`);
-  }
-
-  if (categorySortOrders.length > 0) {
-    const { data: categoryRows, error: categoryErr } = await supabase
-      .from('categories')
-      .select('id')
-      .in('sort_order', categorySortOrders);
-    if (categoryErr) throw categoryErr;
-    const categoryIds = (categoryRows || []).map((r) => r.id);
-    if (categoryIds.length === 0) return [];
-    query = query.in('category_id', categoryIds);
-  }
-
-  if (languageIds.length > 0) {
-    const { data: deckLangRows, error: deckLangErr } = await supabase
-      .from('decks_languages')
-      .select('deck_id')
-      .in('language_id', languageIds);
-    if (deckLangErr) throw deckLangErr;
-    const deckIds = Array.from(new Set((deckLangRows || []).map((r) => r.deck_id)));
-    if (deckIds.length === 0) return [];
-    query = query.in('id', deckIds);
-  }
-
-  // Sayfalama: limit belirtilmişse Supabase range kullan
-  if (typeof limit === 'number' && limit > 0) {
-    const from = page * limit;
-    const requestedLimit = includeHasMore ? limit + 1 : limit;
-    query = query.range(from, from + requestedLimit - 1);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error(`Error fetching ${category} decks:`, error);
-    throw error;
-  }
-
-  let resultData = (data || []).map((deck) => ({...deck, chapter_count: deck.chapters?.[0]?.count || 0}));
-  let hasMore = false;
-  if (includeHasMore && typeof limit === 'number' && limit > 0) {
-    hasMore = resultData.length > limit;
-    resultData = resultData.slice(0, limit);
-  }
-
-  if ((category === 'communityDecks' || category === 'defaultDecks') && userId) {
-    const [blockedIds, hiddenIds] = await getCachedBlockedAndHidden(userId);
-    resultData = filterDecksByBlockAndHide(resultData, blockedIds, hiddenIds);
-  }
-
-  // Favori durumunu ekle (eğer kullanıcı varsa)
-  if (userId && resultData.length > 0) {
-    try {
-      const deckIds = resultData.map(deck => deck.id);
-      const { data: favoriteData, error: favoriteError } = await supabase
-        .from('favorite_decks')
-        .select('deck_id')
-        .eq('user_id', userId)
-        .in('deck_id', deckIds);
-
-      if (!favoriteError && favoriteData) {
-        const favoriteDeckIds = new Set(favoriteData.map(f => f.deck_id));
-        resultData.forEach(deck => {
-          deck.is_favorite = favoriteDeckIds.has(deck.id);
-        });
-      }
-    } catch (e) {
-      console.error('Error fetching favorite status:', e);
-      resultData.forEach(deck => {
-        deck.is_favorite = false;
-      });
-    }
-  } else if (resultData.length > 0) {
-    resultData.forEach(deck => {
-      deck.is_favorite = false;
     });
+    return includeHasMore ? { decks, hasMore, totalCount } : decks;
   }
 
-  if (favoritesOnly) {
-    resultData = resultData.filter((deck) => deck.is_favorite === true);
+  // myDecks / defaultDecks / communityDecks → list_decks RPC
+  const pageLimit = typeof limit === 'number' && limit > 0 ? limit : null;
+  const rows = await listDecksRpc({
+    category,
+    searchQuery,
+    sortBy,
+    categorySortOrders,
+    languageIds,
+    favoritesOnly,
+    offset: pageLimit ? page * pageLimit : 0,
+    // one extra row tells whether another page exists
+    limit: pageLimit ? (includeHasMore ? pageLimit + 1 : pageLimit) : null,
+  });
+  let resultData = rows;
+  let hasMore = false;
+  if (includeHasMore && pageLimit) {
+    hasMore = resultData.length > pageLimit;
+    resultData = resultData.slice(0, pageLimit);
   }
 
-  if (sortBy === 'az') {
-    resultData = [...resultData].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  }
-
-  if (category === 'myDecks' && userId) {
-    await cacheData(`mydecks_${userId}`, resultData);
-  }
-
-  if (includeHasMore) {
-    return {
-      decks: resultData,
-      hasMore,
-    };
-  }
-
-  return resultData;
+  return includeHasMore ? { decks: resultData, hasMore } : resultData;
 };
 
 // Kullanıcı bir destede çalışmaya başladığında is_started alanını true yapar
@@ -363,33 +141,18 @@ export const setDeckStarted = async (userId, deckId) => {
   if (error) throw error;
 };
 
-export const getDecks = async () => {
-  const { data, error } = await supabase
-    .from('decks')
-    .select(DECK_LIST_SELECT);
-
-  if (error) throw error;
-  return data || [];
-};
-
 /**
  * Tekil deste detayını döndürür. 4 saat cache (mutation: düzenleme/silme/paylaşımda invalidate).
  */
-export const getDeckById = async (deckId, forceRefresh = false) => {
-  const cacheKey = `deck_detail_${deckId}`;
-  if (!forceRefresh) {
-    const cached = await getCachedData(cacheKey, CACHE_DURATIONS.DECK_DETAIL);
-    if (cached && !cached.isStale) return cached.data;
-  }
+export const getDeckById = async (deckId, forceRefresh = false) => cachedQuery(`deck_detail_${deckId}`, async () => {
   const { data, error } = await supabase
     .from('decks')
     .select(DECK_LIST_SELECT)
     .eq('id', deckId)
     .single();
   if (error) throw error;
-  if (data) await cacheData(cacheKey, data);
   return data;
-};
+}, { staleTime: STALE.SHARED, force: forceRefresh });
 
 export const deleteDeck = async (deckId) => {
   try {
@@ -445,77 +208,50 @@ export const insertDeckStats = async (deckId, userId) => {
       started_at: new Date().toISOString(),
     });
   if (error) throw error;
+  // the deck now belongs to "Çalıştığım Desteler"
+  await invalidateCache(`progress_deck_${deckId}_${userId}`);
 };
 
 /**
- * Yeni deste oluşturur. decks insert + decks_languages insert yapar.
+ * Yeni deste oluşturur (save_deck RPC: deste + diller tek transaction, B12).
  * @param {string} userId - Oluşturan kullanıcı id
  * @param {Object} payload - name, to_name?, description?, category_id, languageIds (uuid[])
  * @returns {Promise<Object>} Oluşturulan deck (profiles, categories ile)
  */
-export const createDeck = async (userId, payload) => {
+const saveDeckRpc = async (deckId, payload) => {
   const { name, to_name, description, category_id, languageIds = [] } = payload;
+  const { data, error } = await supabase.rpc('save_deck', {
+    p_deck_id: deckId || null,
+    p_name: (name || '').trim(),
+    p_to_name: (to_name || '').trim() || null,
+    p_description: (description || '').trim() || null,
+    p_category_id: category_id || null,
+    p_language_ids: languageIds.length ? languageIds.slice(0, 2) : null,
+  });
+  if (error) throw error;
+  return data;
+};
+
+export const createDeck = async (userId, payload) => {
+  const deckId = await saveDeckRpc(null, payload);
   const { data, error } = await supabase
     .from('decks')
-    .insert({
-      user_id: userId,
-      name: (name || '').trim(),
-      to_name: (to_name || '').trim() || null,
-      description: (description || '').trim() || null,
-      category_id: category_id || null,
-      is_shared: false,
-      is_admin_created: false,
-      card_count: 0,
-      is_started: false,
-    })
     .select(DECK_SELECT_SINGLE)
+    .eq('id', deckId)
     .single();
   if (error) throw error;
-
-  if (languageIds.length > 0) {
-    const { error: deckLangError } = await supabase
-      .from('decks_languages')
-      .insert(toLanguageRelations(data.id, languageIds));
-    if (deckLangError) throw deckLangError;
-  }
-
   await invalidateCache(`mydecks_${userId}`);
   return data;
 };
 
 /**
- * Deste bilgilerini ve dil ilişkilerini günceller. decks update + decks_languages delete + insert.
+ * Deste bilgilerini ve dillerini günceller (save_deck RPC: tek transaction, B12).
  * @param {string} deckId - Deste id
  * @param {string} userId - Deste sahibi kullanıcı id (yetki/cache için)
  * @param {Object} payload - name, to_name?, description?, category_id, languageIds (uuid[])
  */
 export const updateDeck = async (deckId, userId, payload) => {
-  const { name, to_name, description, category_id, languageIds = [] } = payload;
-  const { error } = await supabase
-    .from('decks')
-    .update({
-      name: (name || '').trim(),
-      to_name: (to_name || '').trim() || null,
-      description: (description || '').trim() || null,
-      category_id: category_id || null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', deckId);
-  if (error) throw error;
-
-  const { error: deleteError } = await supabase
-    .from('decks_languages')
-    .delete()
-    .eq('deck_id', deckId);
-  if (deleteError) throw deleteError;
-
-  if (languageIds.length > 0) {
-    const { error: deckLangError } = await supabase
-      .from('decks_languages')
-      .insert(toLanguageRelations(deckId, languageIds));
-    if (deckLangError) throw deckLangError;
-  }
-
+  await saveDeckRpc(deckId, payload);
   await invalidateCache(`deck_detail_${deckId}`);
   await invalidateCache(`mydecks_${userId}`);
 };
@@ -609,33 +345,23 @@ const transformRpcDeck = (d) => ({
 
 export const getDiscoverDecks = async (userId, tab = 'trend', timeFilter = 'all', limit = 50, forceRefresh = false) => {
   const sortBy = TAB_TO_SORT_BY[tab] || 'popular';
-  // v2: get_discover_decks v2 ranking + unique_started_count (drop older caches).
-  const cacheKey = `discover_v2_${tab}_${timeFilter}`;
-
-  if (!forceRefresh) {
-    const cached = await getCachedData(cacheKey, CACHE_DURATIONS.DISCOVER);
-    if (cached && !cached.isStale) {
-      const favIds = new Set(await getFavoriteDeckIds(userId));
-      return cached.data.map(d => ({ ...d, is_favorite: favIds.has(d.id) }));
-    }
-  }
-
-  const [blockedIds, hiddenIds] = await getCachedBlockedAndHidden(userId);
-
-  const { data, error } = await supabase.rpc('get_discover_decks', {
-    p_sort_by: sortBy,
-    p_time_filter: timeFilter,
-    p_limit: limit,
-    p_excluded_user_ids: Array.from(blockedIds),
-    p_excluded_deck_ids: Array.from(hiddenIds),
-  });
-  if (error) throw error;
-
-  const decks = (data || []).map(transformRpcDeck);
-  await cacheData(cacheKey, decks);
+  // v3: key carries the user (the list leaves out decks of users they blocked / decks they hid).
+  const decks = await cachedQuery(`discover_v3_${userId}_${tab}_${timeFilter}_${limit}`, async () => {
+    const [blockedIds, hiddenIds] = await getCachedBlockedAndHidden(userId);
+    const { data, error } = await supabase.rpc('get_discover_decks', {
+      p_sort_by: sortBy,
+      p_time_filter: timeFilter,
+      p_limit: limit,
+      p_excluded_user_ids: Array.from(blockedIds),
+      p_excluded_deck_ids: Array.from(hiddenIds),
+    });
+    if (error) throw error;
+    return (data || []).map(transformRpcDeck);
+  // only the 'all time' lists go to disk; the time-filtered ones stay in RAM
+  }, { staleTime: STALE.SHARED, force: forceRefresh, persist: timeFilter === 'all' });
 
   const favIds = new Set(await getFavoriteDeckIds(userId));
-  return decks.map(d => ({ ...d, is_favorite: favIds.has(d.id) }));
+  return (decks || []).map(d => ({ ...d, is_favorite: favIds.has(d.id) }));
 };
 /**
  * Counts for the Library hero summary line. The lists themselves are paged

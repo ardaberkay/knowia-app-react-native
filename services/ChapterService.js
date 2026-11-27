@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
-import { cacheData, getCachedData, invalidateCache, CACHE_DURATIONS } from './CacheService';
+import { cachedQuery, invalidateCache } from './CacheService';
+import { STALE } from '../lib/queryClient';
 
 /** @param {string} deckId @param {string} userId */
 export const chaptersProgressCacheKey = (deckId, userId) => `progress_chapters_${deckId}_${userId}`;
@@ -11,21 +12,16 @@ export const chaptersProgressCacheKey = (deckId, userId) => `progress_chapters_$
  * @param {boolean} forceRefresh - true ise cache bypass
  */
 export async function listChapters(deckId, forceRefresh = false) {
-  const cacheKey = `chapters_${deckId}`;
-  if (!forceRefresh) {
-    const cached = await getCachedData(cacheKey, CACHE_DURATIONS.CHAPTERS);
-    if (cached && !cached.isStale) return cached.data;
-  }
-  const { data, error } = await supabase
-    .from('chapters')
-    .select('id, ordinal, created_at')
-    .eq('deck_id', deckId)
-    .order('ordinal', { ascending: true })
-    .order('created_at', { ascending: true });
-  if (error) throw error;
-  const result = data || [];
-  await cacheData(cacheKey, result);
-  return result;
+  return cachedQuery(`chapters_${deckId}`, async () => {
+    const { data, error } = await supabase
+      .from('chapters')
+      .select('id, ordinal, created_at')
+      .eq('deck_id', deckId)
+      .order('ordinal', { ascending: true })
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  }, { staleTime: STALE.SHARED, force: forceRefresh });
 }
 
 /**
@@ -135,41 +131,26 @@ export async function reorderChapterOrdinals(deckId) {
  */
 export async function getDeckChaptersProgressRpc(deckId, userId, forceRefresh = false) {
   if (!deckId || !userId) return new Map();
-  const cacheKey = chaptersProgressCacheKey(deckId, userId);
-  if (!forceRefresh) {
-    const cached = await getCachedData(cacheKey, CACHE_DURATIONS.CHAPTER_PROGRESS);
-    if (cached && !cached.isStale && cached.data && typeof cached.data === 'object') {
-      const progressMap = new Map();
-      Object.entries(cached.data).forEach(([key, value]) => {
-        progressMap.set(key, value);
-      });
-      return progressMap;
-    }
-  }
-
-  const { data, error } = await supabase.rpc('get_deck_chapters_progress', {
-    p_deck_id: deckId,
-    p_user_id: userId,
-  });
-  if (error) throw error;
-
-  const progressMap = new Map();
-  (data || []).forEach((row) => {
-    const key = row?.scope_key || (row?.chapter_id ?? 'unassigned');
-    progressMap.set(key, {
-      total: Number(row?.total_count || 0),
-      learned: Number(row?.learned_count || 0),
-      learning: Number(row?.learning_count || 0),
-      new: Number(row?.new_count || 0),
-      progress: Number(row?.progress || 0),
+  // Cached as a plain object (JSON-safe), handed out as a Map keyed by chapter
+  // id or 'unassigned'. Swipe / chapter changes invalidate it.
+  const asObject = await cachedQuery(chaptersProgressCacheKey(deckId, userId), async () => {
+    const { data, error } = await supabase.rpc('get_deck_chapters_progress', {
+      p_deck_id: deckId,
+      p_user_id: userId,
     });
-  });
-
-  const asObject = {};
-  progressMap.forEach((value, key) => {
-    asObject[key] = value;
-  });
-  await cacheData(cacheKey, asObject);
-
-  return progressMap;
+    if (error) throw error;
+    const out = {};
+    (data || []).forEach((row) => {
+      const key = row?.scope_key || (row?.chapter_id ?? 'unassigned');
+      out[key] = {
+        total: Number(row?.total_count || 0),
+        learned: Number(row?.learned_count || 0),
+        learning: Number(row?.learning_count || 0),
+        new: Number(row?.new_count || 0),
+        progress: Number(row?.progress || 0),
+      };
+    });
+    return out;
+  }, { staleTime: STALE.OWN, force: forceRefresh });
+  return new Map(Object.entries(asObject || {}));
 }

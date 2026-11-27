@@ -885,8 +885,8 @@ const DeckList = ({
       onScroll={onScroll}
       scrollEventThrottle={onScroll ? 16 : undefined}
       contentInsetAdjustmentBehavior={contentInsetAdjustmentBehavior}
-      keyExtractor={(_, idx) =>
-        `row_${idx}`
+      keyExtractor={(row, idx) =>
+        row?.items?.length ? row.items.map((item) => item.id).join('_') : `row_${idx}`
       }
       contentContainerStyle={{
         paddingBottom:

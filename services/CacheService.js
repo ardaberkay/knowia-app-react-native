@@ -1,37 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { queryClient, invalidateQueriesForCacheKey, clearQueryCache, PERSIST_MAX_AGE } from '../lib/queryClient';
 
 const SWIPE_TUTORIAL_STORAGE_KEY = 'knowia_seen_swipe_tutorial';
 
-// Cache süreleri (milisaniye)
+// Profile cache (cache-first in ProfileScreen). Lists and the other service
+// caches live in TanStack Query: see cachedQuery below and lib/queryClient.js.
 export const CACHE_DURATIONS = {
-  // Referans veriler
-  LANGUAGES: 7 * 24 * 60 * 60 * 1000,       // 1 hafta
-  CATEGORIES: 7 * 24 * 60 * 60 * 1000,      // 1 hafta
-
-  // Profil
   PROFILE: 7 * 24 * 60 * 60 * 1000,         // 1 hafta (mutation: EditProfile çıkışında)
   PROFILE_IMAGE: 7 * 24 * 60 * 60 * 1000,   // 1 hafta
-
-  // Engel/Gizli
-  BLOCKED_HIDDEN: 24 * 60 * 60 * 1000,      // 24 saat (mutation: engel/gizle aksiyonunda)
-
-  // Paylaşılan içerik
-  DISCOVER: 4 * 60 * 60 * 1000,             // 4 saat (pull-to-refresh bypass)
-  DECK_LIST: 4 * 60 * 60 * 1000,            // 4 saat (pull-to-refresh bypass)
-  DECK_DETAIL: 4 * 60 * 60 * 1000,          // 4 saat (mutation: kendi destesinde düzenleme)
-  CARDS_CONTENT: 4 * 60 * 60 * 1000,        // 4 saat (mutation: kendi destesinde CRUD)
-  CARD_DETAIL: 4 * 60 * 60 * 1000,          // 4 saat (mutation: kart düzenleme/silme)
-  CHAPTERS: 4 * 60 * 60 * 1000,             // 4 saat (mutation: chapter CRUD)
-  /** Bölüm progress özetleri (deck+user); Swipe sonrası merge veya invalidate */
-  CHAPTER_PROGRESS: 4 * 60 * 60 * 1000,     // 4 saat
-
-  // Kullanıcıya özel
-  FAVORITES_DECK_IDS: 4 * 60 * 60 * 1000,   // 4 saat (mutation: favori toggle)
-  FAVORITES_CARD_IDS: 4 * 60 * 60 * 1000,   // 4 saat (mutation: favori toggle)
-  FAVORITES_CARDS_CONTENT: 4 * 60 * 60 * 1000, // 4 saat (favori kart listesi sayfalı)
-
-  // Destelerim listesi (mutation: yeni deste, düzenleme, silme, paylaşım)
-  MY_DECKS: 7 * 24 * 60 * 60 * 1000,       // 1 hafta
 };
 
 export const hasSeenSwipeTutorial = async () => {
@@ -164,111 +140,92 @@ export const clearUserCache = async (userId) => {
   }
 };
 
-/**
- * Discover deck verilerini cache'le
- * @param {string} tab - Tab adı (trend, favorites, starts, unique, new)
- * @param {string} timeFilter - Zaman filtresi (all, today, week, month, year)
- * @param {array} decks - Deck verileri
- */
-export const cacheDiscoverDecks = async (tab, timeFilter, decks) => {
-  try {
-    const cacheKey = `discover_${tab}_${timeFilter}`;
-    const cacheData = {
-      data: decks,
-      timestamp: Date.now(),
-    };
-    await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheData));
-  } catch (error) {
-    console.error('Error caching discover decks:', error);
-  }
-};
-
-/**
- * Cache'den discover deck verilerini yükle
- * @param {string} tab - Tab adı (trend, favorites, starts, unique, new)
- * @param {string} timeFilter - Zaman filtresi (all, today, week, month, year)
- * @returns {object|null} - Cache'lenmiş deck verileri ve timestamp veya null
- */
-export const getCachedDiscoverDecks = async (tab, timeFilter) => {
-  try {
-    const cacheKey = `discover_${tab}_${timeFilter}`;
-    const cached = await AsyncStorage.getItem(cacheKey);
-    
-    if (cached) {
-      const cacheData = JSON.parse(cached);
-      const cacheAge = Date.now() - (cacheData.timestamp || 0);
-      
-      // Cache süresi dolmamışsa (stale data bile kabul edilebilir)
-      if (cacheAge < CACHE_DURATIONS.DISCOVER) {
-        return {
-          data: cacheData.data,
-          timestamp: cacheData.timestamp,
-          isStale: false,
-        };
-      } else {
-        // Süresi dolmuş ama stale-while-revalidate için kullanılabilir
-        return {
-          data: cacheData.data,
-          timestamp: cacheData.timestamp,
-          isStale: true,
-        };
-      }
-    }
-    
-    return null;
-  } catch (error) {
-    console.error('Error getting cached discover decks:', error);
-    return null;
-  }
-};
-
-/**
- * Discover deck cache'ini temizle (belirli tab ve timeFilter için)
- * @param {string} tab - Tab adı (trend, favorites, starts, unique, new)
- * @param {string} timeFilter - Zaman filtresi (all, today, week, month, year)
- */
-export const clearDiscoverDecksCache = async (tab, timeFilter) => {
-  try {
-    const cacheKey = `discover_${tab}_${timeFilter}`;
-    await AsyncStorage.removeItem(cacheKey);
-  } catch (error) {
-    console.error('Error clearing discover decks cache:', error);
-  }
-};
-
 // ─── Genel Cache Helper'ları ───
 
-export const cacheData = async (key, data) => {
-  try {
-    await AsyncStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
-  } catch (error) {
-    console.error('Error caching data:', error);
-  }
+/**
+ * Read-through cache on TanStack Query (RAM, de-duplicated requests). Fresh
+ * data (younger than staleTime) comes back without a request; otherwise
+ * fetcher runs. persist = also kept on disk for a cold start (small entry
+ * point data only; card lists stay in RAM). invalidateCache(prefix) marks
+ * every key starting with prefix stale. A copy is returned, so callers may
+ * mutate the result without touching the cache.
+ */
+export const cachedQuery = async (cacheKey, fetcher, { staleTime, force = false, persist = true } = {}) => {
+  const data = await queryClient.fetchQuery({
+    queryKey: ['kv', cacheKey],
+    queryFn: async () => {
+      const result = await fetcher();
+      return result === undefined ? null : result;
+    },
+    staleTime: force ? 0 : staleTime,
+    gcTime: persist ? PERSIST_MAX_AGE : undefined,
+    meta: persist ? { persist: true } : undefined,
+  });
+  return data == null ? data : JSON.parse(JSON.stringify(data));
 };
 
-export const getCachedData = async (key, ttl) => {
-  try {
-    const cached = await AsyncStorage.getItem(key);
-    if (!cached) return null;
-    const { data, timestamp } = JSON.parse(cached);
-    const age = Date.now() - timestamp;
-    if (age < ttl) return { data, isStale: false };
-    if (age < ttl * 2) return { data, isStale: true };
-    await AsyncStorage.removeItem(key);
-    return null;
-  } catch (error) {
-    console.error('Error getting cached data:', error);
-    return null;
-  }
+/**
+ * Mark cachedQuery entries starting with prefix stale (RAM only, no request
+ * now): the next read fetches them. For changes that only touch a field shown
+ * in cached rows (e.g. a card's favourite / learned state).
+ */
+export const markCachedQueriesStale = (prefix) => queryClient.invalidateQueries({
+  predicate: (q) => q.queryKey[0] === 'kv' && String(q.queryKey[1]).startsWith(String(prefix)),
+  refetchType: 'none',
+});
+
+/**
+ * Change cachedQuery entries starting with prefix in place (no request): for
+ * a change we know exactly, e.g. one card's favourite flag. Entries stay
+ * fresh, so the next read shows the change without refetching the list.
+ */
+export const patchCachedQueries = (prefix, updater) => queryClient.setQueriesData(
+  { predicate: (q) => q.queryKey[0] === 'kv' && String(q.queryKey[1]).startsWith(String(prefix)) },
+  (data) => (data == null ? data : updater(data)),
+);
+
+/**
+ * What cachedQuery holds for this key right now, fresh or stale, without a
+ * request (a copy), or null. Lets a screen show the last list at once and
+ * refresh it silently (stale-while-revalidate).
+ */
+export const peekCachedQuery = (cacheKey) => {
+  const data = queryClient.getQueryData(['kv', cacheKey]);
+  return data == null ? null : JSON.parse(JSON.stringify(data));
 };
+
+/** Drop one cachedQuery entry (e.g. an incomplete answer that must not be reused). */
+export const dropCachedQuery = (cacheKey) => queryClient.removeQueries({ queryKey: ['kv', cacheKey], exact: true });
+
 
 export const invalidateCache = async (keyPrefix) => {
+  // Screens on TanStack Query: the matching queries are invalidated too.
+  invalidateQueriesForCacheKey(keyPrefix);
   try {
     const allKeys = await AsyncStorage.getAllKeys();
     const matching = allKeys.filter(k => k.startsWith(keyPrefix));
     if (matching.length > 0) await AsyncStorage.multiRemove(matching);
   } catch (error) {
     console.error('Error invalidating cache:', error);
+  }
+};
+
+// Every cache key prefix the app writes (user data and shared lists). The
+// Supabase session and device settings live under other keys and stay.
+const CACHE_KEY_PREFIXES = [
+  'cards_', 'card_detail_', 'deck_', 'discover_', 'chapters_', 'fav_', 'blocked_',
+  'progress_', 'languages_', 'categories_', 'mydecks_', 'profile_', 'activity_summary_',
+];
+
+/** Sign-out / account switch: no list of the previous user may survive (B6). */
+export const clearAllCaches = async () => {
+  await clearQueryCache();
+  try {
+    const allKeys = await AsyncStorage.getAllKeys();
+    const keys = allKeys.filter((k) => CACHE_KEY_PREFIXES.some((p) => k.startsWith(p)));
+    if (keys.length > 0) await AsyncStorage.multiRemove(keys);
+  } catch (error) {
+    console.error('Error clearing caches:', error);
   }
 };
 

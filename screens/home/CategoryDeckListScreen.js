@@ -70,6 +70,7 @@ export default function CategoryDeckListScreen({ route }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const PAGE_SIZE = 50;
   const fetchGenRef = useRef(0);
+  const firstPageLoadedRef = useRef(false);
   const isProgressDeck = category === 'inProgressDecks';
 
   useEffect(() => {
@@ -119,7 +120,9 @@ export default function CategoryDeckListScreen({ route }) {
 
     const sortBy = ['az', 'default', 'popularity'].includes(sortOverride) ? sortOverride : 'default';
     const favoritesOnly = sortOverride === 'favorites';
-    const requestGen = ++fetchGenRef.current;
+    // A new first page starts a new generation; a load-more belongs to the
+    // current one (so it never makes the first page's answer look stale).
+    const requestGen = append ? fetchGenRef.current : ++fetchGenRef.current;
 
     try {
       if (!append) setLoading(true);
@@ -148,6 +151,7 @@ export default function CategoryDeckListScreen({ route }) {
         return merged;
       });
       setPage(pageOverride);
+      if (!append) firstPageLoadedRef.current = true;
       setHasMore(safeDecks.length >= PAGE_SIZE);
     } catch (error) {
       console.error('Error loading decks:', error);
@@ -161,7 +165,8 @@ export default function CategoryDeckListScreen({ route }) {
   };
 
   const loadMoreDecks = async () => {
-    if (!category || loadingMore || loading || !hasMore) return;
+    // The decks handed over from Home (3 or 10) are not a page: wait for the real first page.
+    if (!category || loadingMore || loading || !hasMore || !firstPageLoadedRef.current) return;
     try {
       setLoadingMore(true);
       const nextPage = page + 1;

@@ -28,7 +28,7 @@ import {
   getSwipeClientConfig,
 } from '../../services/CardService';
 import { getDeckById } from '../../services/DeckService';
-import { invalidateCache, hasSeenSwipeTutorial, markSwipeTutorialSeen } from '../../services/CacheService';
+import { invalidateCache, markCachedQueriesStale, hasSeenSwipeTutorial, markSwipeTutorialSeen } from '../../services/CacheService';
 import { getActivitySummary, invalidateActivitySummary } from '../../services/ProfileService';
 import { listChapters } from '../../services/ChapterService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -470,9 +470,10 @@ export default function SwipeDeckScreen({ route, navigation }) {
     report: () => setTimeout(openReportCardModal, 250),
   };
 
+  // The header only needs to know whether a card is showing (menu actions are
+  // read through a ref), so it is not rebuilt on every swipe.
+  const hasCurrentCard = !!cards[currentIndex];
   useLayoutEffect(() => {
-    const currentCard = cards[currentIndex];
-
     navigation.setOptions({
       // Header her zaman layout'ta kalsın.
       // Böylece loading -> swipe geçişinde ekran yüksekliği değişmez.
@@ -495,7 +496,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       // Loading sırasında sağdaki araçları gizle.
       // Kart hazır olduğunda normal araçlar görünür.
       headerRight: () => {
-        if (loading || !currentCard) {
+        if (loading || !hasCurrentCard) {
           return null;
         }
 
@@ -551,8 +552,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
     });
   }, [
     navigation,
-    cards,
-    currentIndex,
+    hasCurrentCard,
     loading,
     isOwner,
     isReversed,
@@ -581,6 +581,9 @@ export default function SwipeDeckScreen({ route, navigation }) {
       invalidateCache(`progress_deck_${deck.id}_${authUserId}`),
       invalidateCache(`progress_chapters_${deck.id}_${authUserId}`),
     ]);
+    // cached card pages carry each card's learned state
+    markCachedQueriesStale(`cards_deck_${deck.id}_`);
+    markCachedQueriesStale(`fav_cards_${authUserId}`);
   }, [deck?.id, authUserId]);
 
   useEffect(() => {

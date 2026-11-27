@@ -11,8 +11,8 @@ import { useTranslation } from 'react-i18next';
 import SearchBar from '../../components/tools/SearchBar';
 import CardDetailSheet from '../../components/layout/CardDetailView';
 import { listChapters, distributeUnassignedEvenly, getDeckChaptersProgressRpc } from '../../services/ChapterService';
-import { deleteCard, getCardsByChapter, getUserCardProgressForCards, getCardDetail } from '../../services/CardService';
-import { addFavoriteCard, removeFavoriteCard, getFavoriteCardIdsForCards } from '../../services/FavoriteService';
+import { deleteCard, getCardsByChapter, getCardDetail, filterCardsWhileSearching, normSearchText } from '../../services/CardService';
+import { addFavoriteCard, removeFavoriteCard } from '../../services/FavoriteService';
 import { LinearGradient } from 'expo-linear-gradient';
 import LottieView from 'lottie-react-native';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
@@ -145,6 +145,14 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [favoriteCards, setFavoriteCards] = useState([]);
   const [search, setSearch] = useState('');
+  // the search the cards on screen were loaded for (see filterCardsWhileSearching)
+  const [cardsSearch, setCardsSearch] = useState('');
+  // Search runs on the server over the whole chapter (not just loaded pages).
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => clearTimeout(id);
+  }, [search]);
   const [cardStatusMap, setCardStatusMap] = useState(new Map());
   const [chapterStats, setChapterStats] = useState({ total: 0, learning: 0, learned: 0, new: 0 });
   const [selectedCard, setSelectedCard] = useState(null);
@@ -209,6 +217,15 @@ export default function ChapterCardsScreen({ route, navigation }) {
     checkOwnerAndLoadChapters();
   }, [chapter.id, deck?.id, userId]);
 
+  // New search → first page again (skip the initial empty value; the effect
+  // above already loaded it).
+  const searchBootRef = useRef(true);
+  useEffect(() => {
+    if (searchBootRef.current) { searchBootRef.current = false; return; }
+    // no full-screen loading: the list and the search bar (with the keyboard) stay
+    fetchChapterCards({ silent: true });
+  }, [debouncedSearch]);
+
   const checkOwnerAndLoadChapters = async () => {
     try {
       if (userId && deck) {
@@ -269,30 +286,28 @@ export default function ChapterCardsScreen({ route, navigation }) {
     });
   }, [loading, navigation, chapter?.id, currentUserId, deck?.user_id, deck?.is_shared, editMode, colors.text, colors.background, t]);
 
-  const filteredCards = useMemo(() => {
-    if (!search.trim()) return cards;
-    const s = search.trim().toLowerCase();
-    return cards.filter(c =>
-      (c.question && c.question.toLowerCase().includes(s)) ||
-      (c.answer && c.answer.toLowerCase().includes(s))
-    );
-  }, [cards, search]);
+  // The server applies the search; until its answer comes, the cards on
+  // screen are filtered locally so typing shows a result at once.
+  const filteredCards = useMemo(() => filterCardsWhileSearching(cards, search, cardsSearch), [cards, search, cardsSearch]);
 
   // Each first-page load gets an id; a response (or a load-more) that belongs
   // to an older load is ignored, so pages of two loads never mix.
   const listRequestIdRef = useRef(0);
+  const firstPageInFlightRef = useRef(false);
 
-  const fetchChapterCards = async () => {
+  const fetchChapterCards = async ({ silent = false } = {}) => {
     const requestId = ++listRequestIdRef.current;
+    firstPageInFlightRef.current = true;
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const chapterId = chapter?.id || null;
+      const searchForRequest = debouncedSearch;
       const emptyStats = { total: 0, learning: 0, learned: 0, new: 0 };
 
       // Header counts come from the same RPC as Chapters / DeckDetail, so every
       // screen shows the same numbers.
       const [cardsData, stats] = await Promise.all([
-        getCardsByChapter(deck.id, chapterId, 0, PAGE_SIZE, userId || null),
+        getCardsByChapter(deck.id, chapterId, 0, PAGE_SIZE, userId || null, searchForRequest || null),
         userId
           ? getDeckChaptersProgressRpc(deck.id, userId).then((map) => map.get(chapterId || 'unassigned') || emptyStats)
           : Promise.resolve(emptyStats),
@@ -301,25 +316,13 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
       setChapterStats(stats);
       setCards(cardsData);
+      setCardsSearch(searchForRequest);
       setPageNum(0);
       setHasMoreCards(cardsData.length >= PAGE_SIZE);
 
-      if (cardsData.length > 0 && userId) {
-        const cardIds = cardsData.map(c => c.id);
-        const [progressMap, favSet] = await Promise.all([
-          getUserCardProgressForCards(userId, cardIds),
-          getFavoriteCardIdsForCards(userId, cardIds),
-        ]);
-        const statusMap = new Map();
-        cardIds.forEach(id => { statusMap.set(id, progressMap[id] || 'new'); });
-        setCardStatusMap(statusMap);
-        setFavoriteCards(Array.from(favSet));
-      } else {
-        const statusMap = new Map();
-        cardsData.forEach(c => statusMap.set(c.id, 'new'));
-        setCardStatusMap(statusMap);
-        setFavoriteCards([]);
-      }
+      // status and is_favorite come with the rows (list_cards RPC)
+      setCardStatusMap(new Map(cardsData.map(c => [c.id, c.status || 'new'])));
+      setFavoriteCards(cardsData.filter(c => c.is_favorite).map(c => c.id));
     } catch (error) {
       if (requestId !== listRequestIdRef.current) return;
       console.error('Error fetching chapter cards:', error);
@@ -327,6 +330,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
       setCardStatusMap(new Map());
       setChapterStats({ total: 0, learning: 0, learned: 0, new: 0 });
     } finally {
+      if (requestId === listRequestIdRef.current) firstPageInFlightRef.current = false;
       setLoading(false);
     }
   };
@@ -348,33 +352,30 @@ export default function ChapterCardsScreen({ route, navigation }) {
 
   const loadMoreChapterCards = async () => {
     if (!hasMoreCards || loadingMore || loading) return;
+    // a first page (often a silent search) is still loading: no next page yet
+    if (firstPageInFlightRef.current) return;
+    // A new search is on its way: don't load the next page of the old one
+    // (that was the loader under the instantly filtered results).
+    if (normSearchText(search) !== normSearchText(cardsSearch)) return;
     setLoadingMore(true);
     const requestId = listRequestIdRef.current;
     try {
       const nextPage = pageNum + 1;
       const chapterId = chapter?.id || null;
-      const cardsData = await getCardsByChapter(deck.id, chapterId, nextPage, PAGE_SIZE, userId || null);
+      const cardsData = await getCardsByChapter(deck.id, chapterId, nextPage, PAGE_SIZE, userId || null, debouncedSearch || null);
       if (requestId !== listRequestIdRef.current) return;
       if (cardsData.length === 0) {
         setHasMoreCards(false);
         return;
       }
 
-      if (userId && cardsData.length > 0) {
-        const cardIds = cardsData.map(c => c.id);
-        const [progressMap, favSet] = await Promise.all([
-          getUserCardProgressForCards(userId, cardIds),
-          getFavoriteCardIdsForCards(userId, cardIds),
-        ]);
-        const newStatusMap = new Map(cardStatusMap);
-        cardIds.forEach(id => { newStatusMap.set(id, progressMap[id] || 'new'); });
-        setCardStatusMap(newStatusMap);
-        setFavoriteCards(prev => [...new Set([...prev, ...Array.from(favSet)])]);
-      } else {
-        const newStatusMap = new Map(cardStatusMap);
-        cardsData.forEach(c => newStatusMap.set(c.id, 'new'));
-        setCardStatusMap(newStatusMap);
-      }
+      setCardStatusMap(prev => {
+        const next = new Map(prev);
+        cardsData.forEach(c => next.set(c.id, c.status || 'new'));
+        return next;
+      });
+      const pageFavIds = cardsData.filter(c => c.is_favorite).map(c => c.id);
+      setFavoriteCards(prev => [...new Set([...prev, ...pageFavIds])]);
 
       setCards(prev => {
         const have = new Set(prev.map(c => c.id));

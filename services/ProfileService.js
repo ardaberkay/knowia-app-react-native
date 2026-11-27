@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Localization from 'expo-localization';
 import { supabase } from '../lib/supabase';
-import { invalidateCache, cacheData, getCachedData } from './CacheService';
+import { invalidateCache, cachedQuery, peekCachedQuery } from './CacheService';
+import { STALE } from '../lib/queryClient';
 
 export async function getCurrentUserProfile(userId) {
   if (!userId) throw new Error('Kullanıcı oturumu bulunamadı');
@@ -126,8 +127,8 @@ export const CUSTOM_GOAL_MAX = 500;
 export const SECONDS_PER_SWIPE = 12;
 export const goalMinutes = (goal) => Math.max(1, Math.round((goal * SECONDS_PER_SWIPE) / 60));
 
-const ACTIVITY_TTL = 30 * 60 * 1000;
-const activityKey = (userId, days) => `activity_summary_${userId}_${days}`;
+// The local date is part of the key: a summary from an earlier day is never reused.
+const activityKey = (userId, days) => `activity_summary_${userId}_${days}_${localDateString()}`;
 const TIMEZONE_SYNC_KEY = 'activity_timezone_synced';
 
 /** The device's local date as YYYY-MM-DD (matches the server's `today`). */
@@ -162,21 +163,22 @@ export function getDeviceTimeZone() {
 export async function getActivitySummary(userId, { days = 1, force = false } = {}) {
   if (!userId) return null;
   const key = activityKey(userId, days);
-  const cached = force ? null : await getCachedData(key, ACTIVITY_TTL);
-  // A summary from an earlier day is outdated even within the TTL.
-  if (cached && !cached.isStale && cached.data?.today === localDateString()) {
-    return cached.data;
-  }
   try {
-    const { data, error } = await supabase.rpc('get_activity_summary', { p_days: days });
-    if (error) throw error;
-    await cacheData(key, data);
-    return data;
+    // Only our own study sessions / goal changes change it, and they
+    // invalidate it (invalidateActivitySummary), so it can stay fresh long.
+    return await cachedQuery(key, async () => {
+      const { data, error } = await supabase.rpc('get_activity_summary', { p_days: days });
+      if (error) throw error;
+      return data;
+    }, { staleTime: STALE.OWN, force });
   } catch (e) {
     console.error('Aktivite özeti alınamadı:', e?.message || e);
-    return cached?.data ?? null;
+    return peekCachedQuery(key);
   }
 }
+
+/** Today's summary as last loaded (no request), or null. Lets a screen show it on the first frame. */
+export const peekActivitySummary = (userId, days = 1) => (userId ? peekCachedQuery(activityKey(userId, days)) : null);
 
 /** Drop cached summaries (after a study session or a goal change). */
 export async function invalidateActivitySummary(userId) {

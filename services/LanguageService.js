@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
-import { cacheData, getCachedData, CACHE_DURATIONS } from './CacheService';
+import { cachedQuery, dropCachedQuery } from './CacheService';
+import { STALE } from '../lib/queryClient';
 
 // v3: v2 may hold the 7-row list cached before the content-languages SQL ran.
 const CACHE_KEY = 'languages_all_v3';
@@ -8,28 +9,25 @@ const CACHE_KEY = 'languages_all_v3';
 // voice; native_name + english_name come from the table. Falls back to the old
 // columns if the new ones aren't there yet.
 export const getLanguages = async (forceRefresh = false) => {
-  if (!forceRefresh) {
-    const cached = await getCachedData(CACHE_KEY, CACHE_DURATIONS.LANGUAGES);
-    if (cached && !cached.isStale) return cached.data;
-  }
-
-  let { data, error } = await supabase
-    .from('languages')
-    .select('id, language_name, language_code, sort_order, native_name, english_name')
-    .order('sort_order', { ascending: true });
-  let complete = !error;
-  if (error) {
-    ({ data, error } = await supabase
+  let complete = true;
+  const result = await cachedQuery(CACHE_KEY, async () => {
+    let { data, error } = await supabase
       .from('languages')
-      .select('id, language_name, language_code, sort_order')
-      .order('sort_order', { ascending: true }));
-  }
-
-  if (error) throw error;
-  const result = data || [];
-  // Only cache the full list; the old-column fallback is fetched again next time.
-  if (complete) await cacheData(CACHE_KEY, result);
-  return result;
+      .select('id, language_name, language_code, sort_order, native_name, english_name')
+      .order('sort_order', { ascending: true });
+    complete = !error;
+    if (error) {
+      ({ data, error } = await supabase
+        .from('languages')
+        .select('id, language_name, language_code, sort_order')
+        .order('sort_order', { ascending: true }));
+    }
+    if (error) throw error;
+    return data || [];
+  }, { staleTime: STALE.STATIC, force: forceRefresh });
+  // Only the full list is kept; the old-column fallback is fetched again next time.
+  if (!complete) dropCachedQuery(CACHE_KEY);
+  return result || [];
 };
 
 // The first 7 rows also have translated names in the app (languages.<order>).

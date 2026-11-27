@@ -471,7 +471,8 @@ export default function StackCarousel({
             ))}
           </View>
           </GestureDetector>
-          {itemCount > 1 ? (
+          {/* shown for one item too, so the layout doesn't change */}
+          {itemCount > 0 ? (
             <View style={[styles.dots, { marginTop: dotsGap }]}>
               {renderedIndexes.map((index) => (
                 <StackDot

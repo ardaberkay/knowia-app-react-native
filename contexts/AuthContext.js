@@ -7,6 +7,7 @@ import { Alert, AppState } from 'react-native';
 import * as Linking from 'expo-linking';
 import { updateLastActiveAt } from '../services/ProfileService';
 import i18n from '../lib/i18n';
+import { clearAllCaches } from '../services/CacheService';
 
 const OAUTH_REDIRECT = 'knowia://auth/callback';
 const RESET_REDIRECT = 'knowia://auth/reset';
@@ -61,8 +62,14 @@ export function AuthProvider({ children }) {
     // 2. OTURUM DEĞİŞİKLİKLERİNİ DİNLE (Senin Kodun)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       console.log('Auth state change:', _event, session ? 'oturum var' : 'oturum yok');
-      setSession(session);
       const currentUserId = session?.user?.id || null;
+      // Signed out, or a different account signed in: drop every cached list
+      // so nothing of the previous user is shown (B6).
+      const previousUserId = currentUserIdRef.current;
+      if (_event === 'SIGNED_OUT' || (previousUserId && currentUserId && previousUserId !== currentUserId)) {
+        clearAllCaches();
+      }
+      setSession(session);
       currentUserIdRef.current = currentUserId;
       if ((_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED') && currentUserId) {
         touchLastActive(currentUserId);

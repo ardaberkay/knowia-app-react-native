@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
-import { cacheData, getCachedData, invalidateCache, CACHE_DURATIONS } from './CacheService';
+import { cachedQuery, invalidateCache } from './CacheService';
+import { STALE } from '../lib/queryClient';
 
 /**
  * Engellenen kullanıcı ID'lerini döndürür (blocker_id = userId).
@@ -84,14 +85,11 @@ export const getHiddenDecks = async (userId) => {
  */
 export const getCachedBlockedAndHidden = async (userId) => {
   if (!userId) return [new Set(), new Set()];
-  const cacheKey = `blocked_hidden_${userId}`;
-  const cached = await getCachedData(cacheKey, CACHE_DURATIONS.BLOCKED_HIDDEN);
-  if (cached && !cached.isStale) {
-    return [new Set(cached.data.blocked), new Set(cached.data.hidden)];
-  }
-  const [blocked, hidden] = await Promise.all([getBlockedUserIds(userId), getHiddenDeckIds(userId)]);
-  await cacheData(cacheKey, { blocked: [...blocked], hidden: [...hidden] });
-  return [blocked, hidden];
+  const data = await cachedQuery(`blocked_hidden_${userId}`, async () => {
+    const [blocked, hidden] = await Promise.all([getBlockedUserIds(userId), getHiddenDeckIds(userId)]);
+    return { blocked: [...blocked], hidden: [...hidden] };
+  }, { staleTime: STALE.OWN });
+  return [new Set(data?.blocked || []), new Set(data?.hidden || [])];
 };
 
 export const blockUser = async (blockerId, blockedId) => {
@@ -209,8 +207,7 @@ export const reportCard = async (reporterId, cardId, reasonCode, reasonText) => 
     reason,
   });
   if (error) throw error;
+  // reported cards leave the lists and the counts
+  await invalidateCache('progress_deck_');
+  await invalidateCache('cards_deck_');
 };
-
-export function filterDecksByBlockAndHide(decks, blockedIds, hiddenIds) {
-  return decks.filter((d) => !blockedIds.has(d.user_id) && !hiddenIds.has(d.id));
-}

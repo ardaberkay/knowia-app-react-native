@@ -122,9 +122,11 @@ function MainTabs() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        // Render a tab only when first opened (same as the old JS tabs), so
-        // Discover / Library / Profile don't all load at startup.
-        lazy: true,
+        // Other tabs render in the background after the first screen (React
+        // deferred render), so opening a tab shows its content at once instead
+        // of an empty dark page and then a skeleton. Their lists mostly come
+        // from the query cache (disk), so this costs few requests.
+        lazy: false,
         // Tab screens lay out their own top/bottom spacing; don't let iOS add
         // automatic scroll insets (that would push the Home hero down).
         overrideScrollViewContentInsetAdjustmentBehavior: false,

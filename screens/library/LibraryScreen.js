@@ -7,8 +7,10 @@ import { useTheme } from '../../theme/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { typography, fontSizes, fonts, lineHeights } from '../../theme/typography';
 import { spacing } from '../../theme/layout';
-import { getDecksByCategory, deleteDeck, getLibrarySummary } from '../../services/DeckService';
-import { deleteCard, getUserCardProgressForCards } from '../../services/CardService';
+import { useInfiniteQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+import { getDecksByCategory, getLibrarySummary } from '../../services/DeckService';
+import { qk, STALE } from '../../lib/queryClient';
+import { deleteCard } from '../../services/CardService';
 import { getFavoriteDecks, getFavoriteCards, addFavoriteDeck, removeFavoriteDeck, addFavoriteCard, removeFavoriteCard } from '../../services/FavoriteService';
 import { useTranslation } from 'react-i18next';
 import PagerView from 'react-native-pager-view';
@@ -78,10 +80,8 @@ export default function LibraryScreen() {
   const { showSuccess, showError } = useSnackbarHelpers();
   const listBottomInset = useListBottomInset();
   const [activeTab, setActiveTab] = useState('myDecks');
-  const [myDecks, setMyDecks] = useState([]);
   const [favoriteDecks, setFavoriteDecks] = useState([]);
   const [favoritesLoading, setFavoritesLoading] = useState(true);
-  const [loading, setLoading] = useState(true);
   const [myDecksRefreshing, setMyDecksRefreshing] = useState(false);
   const [favoritesFetched, setFavoritesFetched] = useState(false);
   const [activeDeckMenuId, setActiveDeckMenuId] = useState(null);
@@ -143,11 +143,20 @@ export default function LibraryScreen() {
   const [selectedCard, setSelectedCard] = useState(null);
   const [allLanguages, setAllLanguages] = useState([]);
   const [selectedLanguages, setSelectedLanguages] = useState([]);
-
-  // MyDecks sayfalama durumu
-  const [myDecksPage, setMyDecksPage] = useState(0);
-  const [myDecksHasMore, setMyDecksHasMore] = useState(true);
-  const [myDecksLoadingMore, setMyDecksLoadingMore] = useState(false);
+  // "Destelerim" search / filters / sort run on the server over all decks
+  // (list_decks), not only over the pages loaded so far.
+  const [myDecksDebouncedQuery, setMyDecksDebouncedQuery] = useState('');
+  useEffect(() => {
+    const id = setTimeout(() => setMyDecksDebouncedQuery(myDecksQuery.trim()), 350);
+    return () => clearTimeout(id);
+  }, [myDecksQuery]);
+  const myDecksServerOptions = useMemo(() => ({
+    searchQuery: myDecksDebouncedQuery,
+    sortBy: myDecksSort === 'az' ? 'az' : 'default',
+    categorySortOrders: myDecksSelectedCategories,
+    languageIds: selectedLanguages,
+    favoritesOnly: myDecksSort === 'favorites',
+  }), [myDecksDebouncedQuery, myDecksSort, myDecksSelectedCategories, selectedLanguages]);
 
   useEffect(() => {
     getLanguages().then(setAllLanguages);
@@ -182,49 +191,58 @@ export default function LibraryScreen() {
     // whole screen doesn't re-render while the pager is animating.
   };
 
-  const fetchMyDecks = useCallback(
-    async (forceRefresh = false) => {
-      if (!userId) {
-        setMyDecks([]);
-        setLoading(false);
-        setMyDecksRefreshing(false);
-        setMyDecksPage(0);
-        setMyDecksHasMore(false);
-        return;
-      }
-
-      if (forceRefresh) {
-        setMyDecksRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      try {
-        const decks = await getDecksByCategory(userId, 'myDecks', {
-          page: 0,
-          limit: MY_DECKS_PAGE_SIZE,
-          forceRefresh,
-        });
-        const safeDecks = decks || [];
-        setMyDecks(safeDecks);
-        setMyDecksPage(0);
-        setMyDecksHasMore(safeDecks.length >= MY_DECKS_PAGE_SIZE);
-      } catch (e) {
-        setMyDecks([]);
-        setMyDecksHasMore(false);
-      } finally {
-        if (forceRefresh) {
-          setMyDecksRefreshing(false);
-        } else {
-          setLoading(false);
-        }
-      }
-    },
-    [userId]
-  );
-
-  useEffect(() => {
-    fetchMyDecks(false);
-  }, [fetchMyDecks]);
+  // "Destelerim" (TanStack Query): pages live in RAM; the plain first page
+  // (no search / filter / sort) is also kept on disk for a cold start. Our own
+  // changes (new / edited / deleted deck, cards, chapters, favourites)
+  // invalidate it; otherwise it is re-checked after STALE.OWN.
+  const queryClient = useQueryClient();
+  const myDecksIsPlain = !myDecksServerOptions.searchQuery && myDecksServerOptions.sortBy !== 'az'
+    && !myDecksServerOptions.categorySortOrders.length && !myDecksServerOptions.languageIds.length
+    && !myDecksServerOptions.favoritesOnly;
+  const myDecksQueryKey = qk.myDecks(userId, myDecksServerOptions);
+  const myDecksQ = useInfiniteQuery({
+    queryKey: myDecksQueryKey,
+    queryFn: ({ pageParam }) => getDecksByCategory(userId, 'myDecks', {
+      page: pageParam,
+      limit: MY_DECKS_PAGE_SIZE,
+      ...myDecksServerOptions,
+    }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) =>
+      (lastPage?.length || 0) >= MY_DECKS_PAGE_SIZE ? allPages.length : undefined,
+    enabled: !!userId,
+    staleTime: STALE.OWN,
+    gcTime: myDecksIsPlain ? STALE.STATIC : undefined,
+    // a new search / filter keeps the current list on screen until it answers
+    placeholderData: keepPreviousData,
+    meta: { persist: myDecksIsPlain },
+  });
+  const myDecks = useMemo(() => {
+    const seen = new Set();
+    const out = [];
+    (myDecksQ.data?.pages || []).forEach((page) => (page || []).forEach((deck) => {
+      if (deck?.id && !seen.has(deck.id)) { seen.add(deck.id); out.push(deck); }
+    }));
+    return out;
+  }, [myDecksQ.data]);
+  const loading = !!userId && myDecksQ.isPending;
+  const myDecksHasMore = !!myDecksQ.hasNextPage;
+  const myDecksLoadingMore = myDecksQ.isFetchingNextPage;
+  const fetchMyDecks = useCallback(async () => {
+    setMyDecksRefreshing(true);
+    try {
+      await myDecksQ.refetch();
+    } finally {
+      setMyDecksRefreshing(false);
+    }
+  }, [myDecksQ.refetch]);
+  // Optimistic change of one deck in every cached "Destelerim" list.
+  const patchMyDeck = useCallback((deckId, patch) => {
+    queryClient.setQueriesData({ queryKey: ['myDecks', userId] }, (data) => (data?.pages ? {
+      ...data,
+      pages: data.pages.map((page) => (page || []).map((d) => (d.id === deckId ? { ...d, ...patch } : d))),
+    } : data));
+  }, [queryClient, userId]);
 
   // Favorilerim sekmesine geçildiğinde veri yoksa (veya henüz gelmediyse) yükle
   useEffect(() => {
@@ -261,12 +279,10 @@ export default function LibraryScreen() {
 
       // Newest favourites first; search and filters live on the "Tümü" screen.
       const cards = await getFavoriteCards(userId, 0, FAVORITE_CARDS_PAGE_SIZE, forceRefresh, 'original', null);
-      const cardIds = (cards || []).map(c => c.id);
-      const statusMap = await getUserCardProgressForCards(userId, cardIds);
-
+      // status comes with the rows (list_favorite_cards RPC)
       const cardsWithProgress = (cards || []).map(card => ({
         ...card,
-        status: statusMap[card.id] || 'new'
+        status: card.status || 'new'
       }));
 
       setFavoriteCards(cardsWithProgress);
@@ -289,29 +305,13 @@ export default function LibraryScreen() {
     }, [favoritesFetched])
   );
 
-  // Deck creation now starts from this screen (CreateDeck stack screen), so
-  // re-read "my decks" silently when coming back. createDeck/delete invalidate
-  // the mydecks cache, so this hits the network only when something changed.
-  const hasFocusedOnceRef = useRef(false);
-  const myDecksPageRef = useRef(0);
-  myDecksPageRef.current = myDecksPage;
+  // Back on this screen: refetch "Destelerim" only if it is stale. Our own
+  // changes (e.g. a deck created on the CreateDeck screen) already invalidated it.
   useFocusEffect(
     useCallback(() => {
-      if (!hasFocusedOnceRef.current) {
-        hasFocusedOnceRef.current = true;
-        return;
-      }
-      if (!userId || myDecksPageRef.current > 0) return;
-      let cancelled = false;
-      getDecksByCategory(userId, 'myDecks', { page: 0, limit: MY_DECKS_PAGE_SIZE })
-        .then((decks) => {
-          if (cancelled || !decks) return;
-          setMyDecks(decks);
-          setMyDecksHasMore(decks.length >= MY_DECKS_PAGE_SIZE);
-        })
-        .catch(() => {});
-      return () => { cancelled = true; };
-    }, [userId])
+      if (!userId) return;
+      queryClient.refetchQueries({ queryKey: ['myDecks', userId], stale: true, type: 'active' });
+    }, [queryClient, userId])
   );
 
   // Favoriler sekmesindeki birleşik liste kaldırıldı
@@ -321,7 +321,7 @@ export default function LibraryScreen() {
   // Favori deste ekleme/çıkarma fonksiyonları
   const handleAddFavoriteDeck = useCallback(async (deckId) => {
     if (!userId) return;
-    setMyDecks(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: true } : d));
+    patchMyDeck(deckId, { is_favorite: true });
     const deckToAdd = myDecks.find(d => d.id === deckId);
     if (deckToAdd) {
       const modified = deckToAdd.is_admin_created
@@ -332,23 +332,23 @@ export default function LibraryScreen() {
     try {
       await addFavoriteDeck(userId, deckId);
     } catch (e) {
-      setMyDecks(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: false } : d));
+      patchMyDeck(deckId, { is_favorite: false });
       if (deckToAdd) setFavoriteDecks(prev => prev.filter(d => d.id !== deckId));
     }
-  }, [userId, myDecks]);
+  }, [userId, myDecks, patchMyDeck]);
 
   const handleRemoveFavoriteDeck = useCallback(async (deckId) => {
     if (!userId) return;
-    setMyDecks(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: false } : d));
+    patchMyDeck(deckId, { is_favorite: false });
     const removedDeck = favoriteDecks.find(d => d.id === deckId);
     setFavoriteDecks(prev => prev.filter(d => d.id !== deckId));
     try {
       await removeFavoriteDeck(userId, deckId);
     } catch (e) {
-      setMyDecks(prev => prev.map(d => d.id === deckId ? { ...d, is_favorite: true } : d));
+      patchMyDeck(deckId, { is_favorite: true });
       if (removedDeck) setFavoriteDecks(prev => [removedDeck, ...prev]);
     }
-  }, [userId, favoriteDecks]);
+  }, [userId, favoriteDecks, patchMyDeck]);
 
 
   // Kart silme fonksiyonu (favorite cards için)
@@ -484,75 +484,8 @@ export default function LibraryScreen() {
     [favoriteDecks]
   );
 
-  const filteredMyDecks = useMemo(() => {
-    // Orijinal diziyi bozmamak için kopyalıyoruz
-    let list = myDecks.slice();
-
-    // 1. Search filter
-    if (myDecksQuery && myDecksQuery.trim()) {
-      const q = myDecksQuery.toLowerCase();
-      list = list.filter(d =>
-        (d.name || '').toLowerCase().includes(q) ||
-        (d.to_name || '').toLowerCase().includes(q)
-      );
-    }
-
-    // 2. Category filter
-    if (myDecksSelectedCategories.length > 0) {
-      list = list.filter(d => {
-        const deckSortOrder = d.categories?.sort_order;
-        return deckSortOrder != null && myDecksSelectedCategories.includes(deckSortOrder);
-      });
-    }
-
-    // 3. Language filter (İkinci koddan gelen yeni özellik)
-    if (typeof selectedLanguages !== 'undefined' && selectedLanguages.length > 0) {
-      list = list.filter(d => {
-        const deckLanguageIds = d.decks_languages?.map(dl => dl.language_id) || [];
-        return deckLanguageIds.some(id => selectedLanguages.includes(id));
-      });
-    }
-
-    // 4. Favorites filter (Eğer sort 'favorites' ise sadece favorileri gösterir)
-    if (myDecksSort === 'favorites') {
-      list = list.filter(d => d.is_favorite === true);
-    }
-
-    // 5. Apply sorting: updated_at'e göre (yeni oluşturulanda created_at atanıyor; güncellenince yine en üste çıkar). updated_at yoksa eski kayıt için created_at kullanılır.
-    const sortDate = (d) => new Date(d.updated_at != null ? d.updated_at : d.created_at || 0).getTime();
-    switch (myDecksSort) {
-      case 'az':
-        list.sort((a, b) => {
-          const cmp = (a.name || '').localeCompare(b.name || '');
-          return cmp !== 0 ? cmp : sortDate(b) - sortDate(a);
-        });
-        break;
-      case 'favorites':
-        list.sort((a, b) => {
-          const aIsFavorite = a.is_favorite === true;
-          const bIsFavorite = b.is_favorite === true;
-          if (aIsFavorite && !bIsFavorite) return -1;
-          if (!aIsFavorite && bIsFavorite) return 1;
-          return sortDate(b) - sortDate(a);
-        });
-        break;
-      case 'popularity':
-        list.sort((a, b) => {
-          const scoreA = a.popularity_score || 0;
-          const scoreB = b.popularity_score || 0;
-          if (scoreA !== scoreB) return scoreB - scoreA;
-          return sortDate(b) - sortDate(a);
-        });
-        break;
-      case 'default':
-      default:
-        list.sort((a, b) => sortDate(b) - sortDate(a));
-        break;
-    }
-
-    return list;
-    // Bağımlılık listesi: favoriteDecks artık sadece Favorilerim sekmesi için; Destelerim filtresi deck.is_favorite kullanır
-  }, [myDecks, myDecksQuery, myDecksSelectedCategories, myDecksSort, selectedLanguages]);
+  // Search, category, language, favourites and A–Z are applied by the server.
+  const filteredMyDecks = myDecks;
 
   const refreshLibrarySummary = useCallback(() => {
     getLibrarySummary(userId).then((s) => { if (s) setLibrarySummary(s); }).catch(() => {});
@@ -724,56 +657,11 @@ export default function LibraryScreen() {
               ListHeaderComponent={myDecksListHeader}
               renderLeadingItem={myDecksQuery?.trim() ? null : renderCreateDeckCard}
               refreshing={myDecksRefreshing}
-              onRefresh={() => fetchMyDecks(true)}
+              onRefresh={fetchMyDecks}
               onEndReached={
                 myDecksHasMore
-                  ? async () => {
-                    if (
-                      !userId ||
-                      myDecksLoadingMore ||
-                      !myDecksHasMore
-                    ) {
-                      return;
-                    }
-
-                    setMyDecksLoadingMore(true);
-
-                    try {
-                      const nextPage = myDecksPage + 1;
-
-                      const decks = await getDecksByCategory(
-                        userId,
-                        'myDecks',
-                        {
-                          page: nextPage,
-                          limit: MY_DECKS_PAGE_SIZE,
-                        }
-                      );
-
-                      const safeDecks = decks || [];
-
-                      if (safeDecks.length === 0) {
-                        setMyDecksHasMore(false);
-                      } else {
-                        setMyDecks((prev) => [
-                          ...prev,
-                          ...safeDecks,
-                        ]);
-
-                        setMyDecksPage(nextPage);
-
-                        if (
-                          safeDecks.length <
-                          MY_DECKS_PAGE_SIZE
-                        ) {
-                          setMyDecksHasMore(false);
-                        }
-                      }
-                    } catch {
-                      setMyDecksHasMore(false);
-                    } finally {
-                      setMyDecksLoadingMore(false);
-                    }
+                  ? () => {
+                    if (!myDecksQ.isFetchingNextPage) myDecksQ.fetchNextPage();
                   }
                   : undefined}
               cardVariant="myDecks"

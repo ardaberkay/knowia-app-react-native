@@ -1,8 +1,24 @@
 import { supabase } from '../lib/supabase';
-import { invalidateCache, cacheData, getCachedData, CACHE_DURATIONS } from './CacheService';
+import { invalidateCache, cachedQuery, peekCachedQuery } from './CacheService';
+import { STALE } from '../lib/queryClient';
 import { removeUnusedCardImages } from './StorageService';
 
 const PAGE_SIZE = 50;
+
+// Same text rule as the server's norm_search: trim, İ/I/ı → i, lower case.
+export const normSearchText = (text) => String(text ?? '').trim().replace(/[İIı]/g, 'i').toLowerCase();
+
+/**
+ * Instant search feedback: while the server answer for a new search is on its
+ * way, the cards already on screen are filtered with the same rule, so the
+ * list reacts to every key press. The server answer then replaces it.
+ * fetchedQuery = the search the current cards were loaded for.
+ */
+export const filterCardsWhileSearching = (cards, query, fetchedQuery) => {
+  const q = normSearchText(query);
+  if (!q || q === normSearchText(fetchedQuery)) return cards;
+  return cards.filter((card) => normSearchText(`${card.question || ''} ${card.answer || ''}`).includes(q));
+};
 
 const filterReportedCardsForUser = async (cards, userId) => {
   if (!userId || !cards || cards.length === 0) return cards;
@@ -42,166 +58,43 @@ const filterReportedLearningRowsForUser = async (rows, userId) => {
   return rows.filter((r) => !hiddenIds.has(r.card_id));
 };
 
-const buildNotInList = (ids) => `(${ids.map((id) => `"${id}"`).join(',')})`;
 
-const getHiddenCardIdsForScope = async (userId, deckId, chapterId, isAll, isUnassigned) => {
-  if (!userId) return [];
-
-  const { data: reports, error: reportsError } = await supabase
-    .from('reports')
-    .select('target_id')
-    .eq('reporter_id', userId)
-    .eq('report_type', 'card');
-
-  if (reportsError) throw reportsError;
-
-  const targetIds = (reports || []).map((r) => r.target_id);
-  if (targetIds.length === 0) return [];
-
-  let cardsQuery = supabase
-    .from('cards')
-    .select('id')
-    .eq('deck_id', deckId)
-    .in('id', targetIds);
-
-  if (!isAll) {
-    if (isUnassigned) {
-      cardsQuery = cardsQuery.is('chapter_id', null);
-    } else if (chapterId) {
-      cardsQuery = cardsQuery.eq('chapter_id', chapterId);
-    }
-  }
-
-  const { data: cardsData, error: cardsError } = await cardsQuery;
-  if (cardsError) throw cardsError;
-
-  return (cardsData || []).map((c) => c.id);
-};
 
 /**
- * Destedeki kartları sayfalı ve isteğe bağlı cache ile döndürür.
- * forceRefresh true ise cache bypass edilir (pull-to-refresh için).
- * @param {string} deckId - Deste id
- * @param {number} page - Sayfa (0 tabanlı)
- * @param {number} pageSize - Sayfa boyutu
- * @param {string} sortBy - 'original' | 'az'
- * @param {boolean} forceRefresh - Cache bypass
- * @param {string} [userId] - Filtre için gerekli (learned/unlearned/fav)
- * @param {string} [filter] - 'learned' | 'unlearned' | 'fav' - Tüm liste üzerinde sunucu tarafı filtre
- * @param {string|null} [searchQuery] - Soru/cevap metninde sunucu tarafı ilike (tüm deste)
+ * One page of a deck's (or a chapter's) cards from the list_cards RPC. Reported
+ * cards, the learned / unlearned / fav filter and the search run in SQL before
+ * paging, so pages are always full and never mix (B5, B7, 3.3).
+ * Search ignores case and treats İ/I/ı/i alike (norm_search).
+ * Only the plain first page (no search, no filter, default sort) is cached.
  */
-const buildIlikePattern = (searchQuery) => {
-  if (!searchQuery || typeof searchQuery !== 'string') return null;
-  const inner = searchQuery
-    .trim()
-    .replace(/%/g, '')
-    .replace(/_/g, '')
-    .replace(/\\/g, '')
-    .replace(/,/g, ' ')
-    .replace(/"/g, '');
-  if (!inner) return null;
-  return `%${inner}%`;
+const listCardsRpc = async ({ deckId, scope = 'deck', chapterId = null, filter = null, searchQuery = null, sortBy = 'original', page = 0, pageSize = PAGE_SIZE }) => {
+  const { data, error } = await supabase.rpc('list_cards', {
+    p_deck_id: deckId,
+    p_scope: scope,
+    p_chapter_id: chapterId,
+    p_filter: filter || null,
+    p_search: searchQuery && String(searchQuery).trim() ? String(searchQuery).trim() : null,
+    p_sort: sortBy === 'az' ? 'az' : 'original',
+    p_offset: page * pageSize,
+    p_limit: pageSize,
+  });
+  if (error) throw error;
+  return data || [];
 };
 
-const applyQuestionAnswerOrIlike = (query, likePattern, { nestedCards = false } = {}) => {
-  if (!likePattern) return query;
-  const escaped = likePattern.replace(/"/g, '');
-  const qCol = nestedCards ? 'cards.question' : 'question';
-  const aCol = nestedCards ? 'cards.answer' : 'answer';
-  return query.or(`${qCol}.ilike."${escaped}",${aCol}.ilike."${escaped}"`);
-};
+const cardsByDeckFirstPageKey = (deckId, userId) => `cards_deck_${deckId}_${userId}_first`;
+
+/** Last loaded plain first page of a deck's cards (even if stale), or null. No request. */
+export const peekCardsByDeck = (deckId, userId) => (userId ? peekCachedQuery(cardsByDeckFirstPageKey(deckId, userId)) : null);
 
 export const getCardsByDeck = async (deckId, page = 0, pageSize = PAGE_SIZE, sortBy = 'original', forceRefresh = false, userId = null, filter = null, searchQuery = null) => {
-  const searchNorm = searchQuery && String(searchQuery).trim() ? String(searchQuery).trim() : '';
-  const searchKeyPart = searchNorm ? `_q_${encodeURIComponent(searchNorm).slice(0, 80)}` : '';
-  const cacheKey = `cards_deck_${deckId}_p${page}_${sortBy}_${filter || 'all'}${searchKeyPart}`;
-  if (!forceRefresh) {
-    const cached = await getCachedData(cacheKey, CACHE_DURATIONS.CARDS_CONTENT);
-    if (cached && !cached.isStale) return cached.data;
-  }
-  const from = page * pageSize;
-  const likePattern = buildIlikePattern(searchNorm);
-
-  let result = [];
-
-  if (filter === 'learned' && userId) {
-    let query = supabase
-      .from('user_card_progress')
-      .select('card_id, status, cards!inner(id, question, answer, created_at, deck_id)')
-      .eq('user_id', userId)
-      .eq('status', 'learned')
-      .eq('cards.deck_id', deckId);
-    query = applyQuestionAnswerOrIlike(query, likePattern, { nestedCards: true });
-    query = query.order('card_id', { ascending: true });
-    const { data, error } = await query.range(from, from + pageSize - 1);
-    if (error) throw error;
-    result = (data || []).map((row) => ({ ...row.cards }));
-  } else if (filter === 'fav' && userId) {
-    let favQuery = supabase
-      .from('favorite_cards')
-      .select('card_id, created_at, cards!inner(id, question, answer, created_at, deck_id)')
-      .eq('user_id', userId)
-      .eq('cards.deck_id', deckId);
-    favQuery = applyQuestionAnswerOrIlike(favQuery, likePattern, { nestedCards: true });
-    favQuery = favQuery.order('created_at', { ascending: false });
-    const { data, error } = await favQuery.range(from, from + pageSize - 1);
-    if (error) throw error;
-    result = (data || []).map((row) => {
-      const { deck_id, ...card } = row.cards;
-      return card;
-    });
-  } else if (filter === 'unlearned' && userId) {
-    const { data: learnedRows } = await supabase
-      .from('user_card_progress')
-      .select('card_id, cards!inner(deck_id)')
-      .eq('user_id', userId)
-      .eq('status', 'learned')
-      .eq('cards.deck_id', deckId);
-    const learnedIds = (learnedRows || []).map((r) => r.card_id);
-    if (learnedIds.length > 0) {
-      let unlearnedQuery = supabase
-        .from('cards')
-        .select('id, question, answer, created_at')
-        .eq('deck_id', deckId)
-        .not('id', 'in', `(${learnedIds.map((id) => `"${id}"`).join(',')})`);
-      unlearnedQuery = applyQuestionAnswerOrIlike(unlearnedQuery, likePattern, { nestedCards: false });
-      unlearnedQuery = sortBy === 'az' ? unlearnedQuery.order('question', { ascending: true }) : unlearnedQuery.order('created_at', { ascending: false });
-      const { data, error } = await unlearnedQuery.range(from, from + pageSize - 1);
-      if (error) throw error;
-      result = data || [];
-    } else {
-      let unlearnedQuery = supabase
-        .from('cards')
-        .select('id, question, answer, created_at')
-        .eq('deck_id', deckId);
-      unlearnedQuery = applyQuestionAnswerOrIlike(unlearnedQuery, likePattern, { nestedCards: false });
-      unlearnedQuery = sortBy === 'az' ? unlearnedQuery.order('question', { ascending: true }) : unlearnedQuery.order('created_at', { ascending: false });
-      const { data, error } = await unlearnedQuery.range(from, from + pageSize - 1);
-      if (error) throw error;
-      result = data || [];
-    }
-  } else {
-    let query = supabase
-      .from('cards')
-      .select('id, question, answer, created_at')
-      .eq('deck_id', deckId);
-    query = applyQuestionAnswerOrIlike(query, likePattern, { nestedCards: false });
-    if (sortBy === 'az') {
-      query = query.order('question', { ascending: true });
-    } else {
-      query = query.order('created_at', { ascending: false });
-    }
-    const { data, error } = await query.range(from, from + pageSize - 1);
-    if (error) throw error;
-    result = data || [];
-  }
-
-  if (userId) {
-    result = await filterReportedCardsForUser(result, userId);
-  }
-
-  if (result.length > 0) await cacheData(cacheKey, result);
-  return result;
+  const hasSearch = !!(searchQuery && String(searchQuery).trim());
+  const cacheable = page === 0 && !filter && !hasSearch && sortBy !== 'az' && !!userId;
+  const cacheKey = cardsByDeckFirstPageKey(deckId, userId);
+  const fetchPage = () => listCardsRpc({ deckId, scope: 'deck', filter, searchQuery, sortBy, page, pageSize });
+  if (!cacheable) return fetchPage();
+  // RAM only: card lists can be large, they don't go to disk.
+  return cachedQuery(cacheKey, fetchPage, { staleTime: STALE.SHARED, force: forceRefresh, persist: false });
 };
 
 /**
@@ -235,29 +128,38 @@ export const updateCardsChapter = async (cardIds, targetChapterId, deckId = null
     .in('id', cardIds);
   if (error) throw error;
   if (deckId) await invalidateCache(`cards_deck_${deckId}`);
+  if (deckId) await invalidateCache(`progress_deck_${deckId}_`);
   if (deckId && userId) await invalidateCache(`progress_chapters_${deckId}_${userId}`);
 };
 
-export const getCardsByChapter = async (deckId, chapterId, page = 0, pageSize = PAGE_SIZE, userId = null) => {
-  const from = page * pageSize;
-  let query = supabase
-    .from('cards')
-    .select('id, question, answer, created_at')
-    .eq('deck_id', deckId)
-    .order('created_at', { ascending: false })
-    // id breaks ties so page boundaries are stable (no repeated/missing cards)
-    .order('id', { ascending: false })
-    .range(from, from + pageSize - 1);
-  if (chapterId) {
-    query = query.eq('chapter_id', chapterId);
-  } else {
-    query = query.is('chapter_id', null);
-  }
-  const { data, error } = await query;
+export const getCardsByChapter = async (deckId, chapterId, page = 0, pageSize = PAGE_SIZE, userId = null, searchQuery = null) => {
+  return listCardsRpc({
+    deckId,
+    scope: chapterId ? 'chapter' : 'unassigned',
+    chapterId: chapterId || null,
+    searchQuery,
+    page,
+    pageSize,
+  });
+};
+
+/**
+ * Total / learned / learning counts of a deck, a chapter or the unassigned
+ * cards in one RPC (card_progress_counts). Reported cards are left out in SQL
+ * (B7: no long NOT IN list, no separate reports request).
+ */
+const progressCountsRpc = async (deckId, scope, chapterId = null) => {
+  const { data, error } = await supabase.rpc('card_progress_counts', {
+    p_deck_id: deckId,
+    p_scope: scope,
+    p_chapter_id: chapterId,
+  });
   if (error) throw error;
-  const cards = data || [];
-  if (!userId) return cards;
-  return filterReportedCardsForUser(cards, userId);
+  const row = (Array.isArray(data) ? data[0] : data) || {};
+  const total = Number(row.total || 0);
+  const learned = Number(row.learned || 0);
+  const learning = Number(row.learning || 0);
+  return { total, learned, learning, new: total - learned - learning };
 };
 
 export const getChapterProgressCounts = async (userId, deckId, chapterId) => {
@@ -265,60 +167,9 @@ export const getChapterProgressCounts = async (userId, deckId, chapterId) => {
   // - undefined  -> Tüm kartlar (chapter filtresi yok)
   // - null       -> Sadece atanmamış kartlar (chapter_id IS NULL)
   // - string/id  -> Belirli bölüm (chapter_id = chapterId)
-  const isAll = typeof chapterId === 'undefined';
-  const isUnassigned = chapterId === null;
-
-  let totalQ = supabase
-    .from('cards')
-    .select('id', { count: 'exact', head: true })
-    .eq('deck_id', deckId);
-
-  if (!isAll) {
-    if (isUnassigned) totalQ = totalQ.is('chapter_id', null);
-    else totalQ = totalQ.eq('chapter_id', chapterId);
-  }
-
-  let learnedQ = supabase
-    .from('user_card_progress')
-    .select('id, cards!inner(id)', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('status', 'learned')
-    .eq('cards.deck_id', deckId);
-
-  if (!isAll) {
-    if (isUnassigned) learnedQ = learnedQ.is('cards.chapter_id', null);
-    else learnedQ = learnedQ.eq('cards.chapter_id', chapterId);
-  }
-
-  let learningQ = supabase
-    .from('user_card_progress')
-    .select('id, cards!inner(id)', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('status', 'learning')
-    .eq('cards.deck_id', deckId);
-
-  if (!isAll) {
-    if (isUnassigned) learningQ = learningQ.is('cards.chapter_id', null);
-    else learningQ = learningQ.eq('cards.chapter_id', chapterId);
-  }
-
-  const hiddenIds = await getHiddenCardIdsForScope(userId, deckId, chapterId, isAll, isUnassigned);
-  if (hiddenIds.length > 0) {
-    const notIn = buildNotInList(hiddenIds);
-    totalQ = totalQ.not('id', 'in', notIn);
-    learnedQ = learnedQ.not('cards.id', 'in', notIn);
-    learningQ = learningQ.not('cards.id', 'in', notIn);
-  }
-
-  const [totalR, learnedR, learningR] = await Promise.all([totalQ, learnedQ, learningQ]);
-  if (totalR.error) throw totalR.error;
-  if (learnedR.error) throw learnedR.error;
-  if (learningR.error) throw learningR.error;
-
-  const total = totalR.count || 0;
-  const learned = learnedR.count || 0;
-  const learning = learningR.count || 0;
-  return { total, learned, learning, new: total - learned - learning };
+  if (typeof chapterId === 'undefined') return progressCountsRpc(deckId, 'deck');
+  if (chapterId === null) return progressCountsRpc(deckId, 'unassigned');
+  return progressCountsRpc(deckId, 'chapter', chapterId);
 };
 
 export const ensureUserCardProgress = async (_deckId, _userId) => {
@@ -354,6 +205,7 @@ export const createCard = async (deckId, cardData) => {
     .select();
   if (error) throw error;
   await invalidateCache(`cards_deck_${deckId}`);
+  await invalidateCache(`progress_deck_${deckId}_`);
   return data?.[0] || null;
 };
 
@@ -398,6 +250,7 @@ export const updateCard = async (cardId, cardData) => {
     if (card) {
       await invalidateCache(`card_detail_${cardId}`);
       if (card.deck_id) await invalidateCache(`cards_deck_${card.deck_id}`);
+      if (card.deck_id) await invalidateCache(`progress_deck_${card.deck_id}_`);
     }
 
     return card;
@@ -412,10 +265,11 @@ export const updateCard = async (cardId, cardData) => {
  * Kartı siler. deckId verilirse ilgili deste kart listesi cache'i de temizlenir (mutation invalidation).
  */
 export const deleteCard = async (cardId, deckId = null) => {
-  // 1. Silinecek kartın görsel yolunu (URL) veritabanından çekiyoruz
+  // 1. Görsel yolu ve deste: deste id'si buradan alınır, çağıran vermese de
+  //    o destenin liste önbelleği temizlenir (B9).
   const { data: card, error: fetchError } = await supabase
     .from('cards')
-    .select('image')
+    .select('image, deck_id')
     .eq('id', cardId)
     .single();
 
@@ -434,41 +288,21 @@ export const deleteCard = async (cardId, deckId = null) => {
 
   // 4. Önbelleği temizliyoruz (Senin orijinal kodun)
   await invalidateCache(`card_detail_${cardId}`);
-  if (deckId) await invalidateCache(`cards_deck_${deckId}`);
+  const ownerDeckId = deckId || card?.deck_id;
+  if (ownerDeckId) await invalidateCache(`cards_deck_${ownerDeckId}`);
+  if (ownerDeckId) await invalidateCache(`progress_deck_${ownerDeckId}_`);
+  await invalidateCache('fav_cards_');
 };
 
-export const getCardDetail = async (cardId, forceRefresh = false) => {
-  const cacheKey = `card_detail_${cardId}`;
-  if (!forceRefresh) {
-    const cached = await getCachedData(cacheKey, CACHE_DURATIONS.CARD_DETAIL);
-    if (cached && !cached.isStale) return cached.data;
-  }
+export const getCardDetail = async (cardId, forceRefresh = false) => cachedQuery(`card_detail_${cardId}`, async () => {
   const { data, error } = await supabase
     .from('cards')
     .select('id, question, answer, image, example, note, created_at')
     .eq('id', cardId)
     .single();
   if (error) throw error;
-  if (data) await cacheData(cacheKey, data);
   return data;
-};
-
-export const getUserCardProgressForCards = async (userId, cardIds) => {
-  if (!userId || !cardIds || cardIds.length === 0) return {};
-  const CHUNK_SIZE = 200;
-  const statusMap = {};
-  for (let i = 0; i < cardIds.length; i += CHUNK_SIZE) {
-    const chunk = cardIds.slice(i, i + CHUNK_SIZE);
-    const { data, error } = await supabase
-      .from('user_card_progress')
-      .select('card_id, status')
-      .eq('user_id', userId)
-      .in('card_id', chunk);
-    if (error) throw error;
-    (data || []).forEach(p => { statusMap[p.card_id] = p.status; });
-  }
-  return statusMap;
-};
+}, { staleTime: STALE.SHARED, force: forceRefresh, persist: false });
 
 // One card's learning state for the user: { status, next_review }, or null
 // when it has never been studied.
@@ -563,38 +397,16 @@ export const getSwipeSessionCompletionCounts = async (sessionId, userId) => {
 
 export const getChapterFutureReviewSummary = async (userId, deckId, chapterId) => {
   if (!userId || !deckId || !chapterId) return { nearest: null, farthest: null };
-
-  let query = supabase
-    .from('user_card_progress')
-    .select('card_id, next_review, cards!inner(id)')
-    .eq('user_id', userId)
-    .neq('status', 'learned')
-    .gt('next_review', new Date().toISOString())
-    .eq('cards.deck_id', deckId)
-    .eq('cards.chapter_id', chapterId);
-
-  const hiddenIds = await getHiddenCardIdsForScope(userId, deckId, chapterId, false, false);
-  if (hiddenIds.length > 0) {
-    query = query.not('card_id', 'in', buildNotInList(hiddenIds));
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-
-  const reviewGroups = new Map();
-  (data || []).forEach(({ next_review: nextReview }) => {
-    if (!nextReview) return;
-    reviewGroups.set(nextReview, (reviewGroups.get(nextReview) || 0) + 1);
+  const { data, error } = await supabase.rpc('chapter_future_reviews', {
+    p_deck_id: deckId,
+    p_chapter_id: chapterId,
   });
-
-  const times = [...reviewGroups.keys()].sort((a, b) => new Date(a) - new Date(b));
-  if (times.length === 0) return { nearest: null, farthest: null };
-
-  const nearestAt = times[0];
-  const farthestAt = times[times.length - 1];
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row?.nearest_at) return { nearest: null, farthest: null };
   return {
-    nearest: { at: nearestAt, count: reviewGroups.get(nearestAt) || 0 },
-    farthest: { at: farthestAt },
+    nearest: { at: row.nearest_at, count: Number(row.nearest_count || 0) },
+    farthest: { at: row.farthest_at },
   };
 };
 
@@ -680,55 +492,16 @@ export const batchUpsertProgress = async (progressItems) => {
   if (error) throw error;
 };
 
-export const getDeckProgressCounts = async (userId, deckId) => {
-  let totalQ = supabase
-    .from('cards')
-    .select('id', { count: 'exact', head: true })
-    .eq('deck_id', deckId);
+// Deck totals (learned / learning / new) are cached (RAM + disk), so DeckDetail
+// shows the last numbers at once. Swipe, card add / delete and reports
+// invalidate them (progress_deck_<deck>_…).
+const deckProgressKey = (deckId, userId) => `progress_deck_${deckId}_${userId}`;
+export const getDeckProgressCounts = async (userId, deckId, forceRefresh = false) => (userId
+  ? cachedQuery(deckProgressKey(deckId, userId), () => progressCountsRpc(deckId, 'deck'), { staleTime: STALE.SHARED, force: forceRefresh })
+  : progressCountsRpc(deckId, 'deck'));
 
-  let learnedQ = supabase
-    .from('user_card_progress')
-    .select('id, cards!inner(id)', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('status', 'learned')
-    .eq('cards.deck_id', deckId);
-
-  let learningQ = supabase
-    .from('user_card_progress')
-    .select('id, cards!inner(id)', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('status', 'learning')
-    .eq('cards.deck_id', deckId);
-
-  const hiddenIds = await getHiddenCardIdsForScope(userId, deckId, undefined, true, false);
-  if (hiddenIds.length > 0) {
-    const notIn = buildNotInList(hiddenIds);
-    totalQ = totalQ.not('id', 'in', notIn);
-    learnedQ = learnedQ.not('cards.id', 'in', notIn);
-    learningQ = learningQ.not('cards.id', 'in', notIn);
-  }
-
-  const [totalResult, learnedResult, learningResult] = await Promise.all([
-    totalQ,
-    learnedQ,
-    learningQ,
-  ]);
-
-  if (totalResult.error) throw totalResult.error;
-  if (learnedResult.error) throw learnedResult.error;
-  if (learningResult.error) throw learningResult.error;
-
-  const total = totalResult.count || 0;
-  const learned = learnedResult.count || 0;
-  const learning = learningResult.count || 0;
-
-  return {
-    total,
-    learned,
-    learning,
-    new: total - learned - learning,
-  };
-};
+/** Last known deck totals (even if stale), or null. No request. */
+export const peekDeckProgressCounts = (userId, deckId) => (userId ? peekCachedQuery(deckProgressKey(deckId, userId)) : null);
 
 export const getTotalLearnedCardsCount = async (userId) => {
   if (!userId) return 0;

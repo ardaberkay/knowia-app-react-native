@@ -20,6 +20,8 @@ import './lib/i18n';
 import { cleanupStaleCache } from './services/CacheService';
 import * as NavigationBar from 'expo-navigation-bar';
 import * as Notifications from 'expo-notifications';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { queryClient, persistOptions } from './lib/queryClient';
 
 // Splash ayarlarını sabitliyoruz (fade efekti ile yumuşak geçiş)
 SplashScreen.setOptions({
@@ -146,11 +148,13 @@ function AppContent() {
 export default function App() {
   return (
     <GestureHandlerRootView style={styles.gestureRoot}>
-      <SafeAreaProvider initialWindowMetrics={initialWindowMetrics}>
-        <ThemeProvider>
-          <AppContent />
-        </ThemeProvider>
-      </SafeAreaProvider>
+      <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
+        <SafeAreaProvider initialWindowMetrics={initialWindowMetrics}>
+          <ThemeProvider>
+            <AppContent />
+          </ThemeProvider>
+        </SafeAreaProvider>
+      </PersistQueryClientProvider>
     </GestureHandlerRootView>
   );
 }

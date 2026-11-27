@@ -6,13 +6,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProfile } from '../../contexts/ProfileContext';
 import { getDecksByCategory } from '../../services/DeckService';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
+import { qk, STALE } from '../../lib/queryClient';
 import { useNavigation, useFocusEffect, useScrollToTop } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
-import { getFavoriteDecks, addFavoriteDeck, removeFavoriteDeck } from '../../services/FavoriteService';
+import { getFavoriteDeckIds, addFavoriteDeck, removeFavoriteDeck } from '../../services/FavoriteService';
 import {
   updateLastActiveAt,
   getActivitySummary,
+  peekActivitySummary,
   syncActivityTimeZone,
   DEFAULT_DAILY_GOAL,
 } from '../../services/ProfileService';
@@ -82,6 +85,11 @@ const HERO_GRADIENT_START = { x: 1, y: 0.1 };
 const HERO_GRADIENT_END = { x: 0, y: 1 };
 
 
+// Heart state on Home only needs the favourite deck ids (cached), not the
+// favourite decks themselves; rows keep the { id } shape the lists read.
+const COMMUNITY_HOME_COUNT = 3;
+const favoriteIdsToRows = (ids) => (ids || []).map((id) => ({ id }));
+
 export default function HomeScreen() {
   const { session } = useAuth();
   const userId = session?.user?.id;
@@ -105,12 +113,9 @@ export default function HomeScreen() {
     () => Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true }),
     [scrollY]
   );
-  const [decks, setDecks] = useState({});
-  const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [favoriteDecks, setFavoriteDecks] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
-  const decksLoadedRef = useRef(false);
   const notificationSetupDoneRef = useRef(false);
   const processingDecksRef = useRef(new Set());
   const { t } = useTranslation();
@@ -125,57 +130,46 @@ export default function HomeScreen() {
   useScrollToTop(scrollViewRef);
 
   useEffect(() => {
-    loadDecks();
     setCurrentUserId(userId);
     if (userId) {
-      getFavoriteDecks(userId).then(decks => setFavoriteDecks(decks || []));
+      getFavoriteDeckIds(userId).then(ids => setFavoriteDecks(favoriteIdsToRows(ids)));
     }
   }, []);
 
-  const loadDecks = async () => {
-    try {
-      setLoading(true);
-      const decksData = {};
-
-      // Tüm kategorilerdeki desteleri paralel olarak yükle
-      await Promise.all(
-        Object.keys(DECK_CATEGORIES).map(async (category) => {
-          try {
-            // Anasayfada 10 deste göster, 11. kayıt varsa devam işareti göster.
-            const limit = category === 'communityDecks' ? 3 : 10;
-            const community = category === 'communityDecks';
-            const result = await getDecksByCategory(userId, category, { limit, includeHasMore: !community });
-            decksData[category] = result || { decks: [], hasMore: false };
-          } catch (err) {
-            console.error(`Error loading ${category}:`, err);
-            decksData[category] = { decks: [], hasMore: false };
-          }
-        })
-      );
-
-      setDecks(decksData);
-      decksLoadedRef.current = true;
-    } catch (err) {
-      Alert.alert(t('home.errorMessage', 'Hata'), t('home.errorMessageDeck', 'Desteler yüklenirken bir hata oluştu'));
-    } finally {
-      setLoading(false);
-    }
+  // Home lists (TanStack Query, kept on disk for a cold start). Official and
+  // community decks change by others → STALE.SHARED; "Çalıştığım Desteler"
+  // changes only by our own study sessions, which invalidate it → STALE.OWN.
+  // Home shows 10 decks per list (+ "more" if an 11th exists); community shows
+  // 3 of its 10, the rest is there at once when "Tümü" opens.
+  const queryClient = useQueryClient();
+  const HOME_LIST_OPTIONS = {
+    inProgressDecks: { limit: 10, includeHasMore: true },
+    defaultDecks: { limit: 10, includeHasMore: true },
+    communityDecks: { limit: 10, includeHasMore: true },
   };
-
-  const loadInProgressDecks = useCallback(async () => {
-    try {
-      // Çalıştığım Desteler için de anasayfada yalnızca son 10 kayıt yeterli
-      const data = await getDecksByCategory(userId, 'inProgressDecks', { limit: 10, includeHasMore: true });
-      setDecks(prev => ({ ...prev, inProgressDecks: data || { decks: [], hasMore: false } }));
-    } catch (err) {
-      console.error('Error loading inProgressDecks:', err);
-      setDecks(prev => ({ ...prev, inProgressDecks: { decks: [], hasMore: false } }));
-    }
-  }, [userId]);
+  const homeCategories = Object.keys(DECK_CATEGORIES);
+  const homeQueries = useQueries({
+    queries: homeCategories.map((category) => ({
+      queryKey: qk.homeDecks(userId, category),
+      queryFn: async () => (await getDecksByCategory(userId, category, HOME_LIST_OPTIONS[category]))
+        || { decks: [], hasMore: false },
+      enabled: !!userId,
+      staleTime: category === 'inProgressDecks' ? STALE.OWN : STALE.SHARED,
+      gcTime: STALE.STATIC,
+      meta: { persist: true },
+    })),
+  });
+  const decks = {};
+  homeCategories.forEach((category, i) => {
+    const q = homeQueries[i];
+    // a failed list shows as empty instead of spinning forever
+    decks[category] = q.data ?? (q.isError ? { decks: [], hasMore: false } : undefined);
+  });
+  const loading = !!userId && homeQueries.some((q) => q.isPending && !q.isError);
 
   // Daily goal + streak shown in the hero. Cached on the device; refetched
   // only when a study session ends (SwipeDeck invalidates it) or a new day starts.
-  const [activity, setActivity] = useState(null);
+  const [activity, setActivity] = useState(() => peekActivitySummary(userId, 1));
   const loadActivity = useCallback(async () => {
     if (!userId) return;
     const summary = await getActivitySummary(userId, { days: 1 });
@@ -184,11 +178,11 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (decksLoadedRef.current) {
-        loadInProgressDecks();
-      }
-
       if (!userId) return;
+
+      // only stale lists refetch (a finished study session invalidates
+      // "Çalıştığım Desteler"), so switching tabs sends no request
+      queryClient.refetchQueries({ queryKey: ['homeDecks', userId], stale: true, type: 'active' });
 
       loadActivity();
 
@@ -196,7 +190,7 @@ export default function HomeScreen() {
         await syncActivityTimeZone(userId);
         await updateLastActiveAt(userId);
       })();
-    }, [loadActivity, loadInProgressDecks, userId])
+    }, [loadActivity, queryClient, userId])
   );
 
 
@@ -216,8 +210,8 @@ export default function HomeScreen() {
     try {
       setRefreshing(true);
       await Promise.all([
-        loadDecks(),
-        userId ? getFavoriteDecks(userId).then(decks => setFavoriteDecks(decks || [])) : Promise.resolve(),
+        queryClient.refetchQueries({ queryKey: ['homeDecks', userId] }),
+        userId ? getFavoriteDeckIds(userId).then(ids => setFavoriteDecks(favoriteIdsToRows(ids))) : Promise.resolve(),
         userId
           ? getActivitySummary(userId, { days: 1, force: true }).then((summary) => { if (summary) setActivity(summary); })
           : Promise.resolve(),
@@ -295,7 +289,7 @@ export default function HomeScreen() {
       }
 
       // 4. Güncel listeyi çekip state'e yaz
-      const decks = await getFavoriteDecks(userId);
+      const decks = favoriteIdsToRows(await getFavoriteDeckIds(userId));
       setFavoriteDecks(decks || []);
     } catch (error) {
       console.error('Favori işlemi sırasında hata oluştu:', error);
@@ -377,7 +371,9 @@ export default function HomeScreen() {
     const categoryDecks = Array.isArray(categoryData) ? categoryData : categoryData?.decks;
     const hasMoreDecks = Array.isArray(categoryData) ? false : Boolean(categoryData?.hasMore);
     const totalActiveDeckCount = Array.isArray(categoryData) ? undefined : categoryData?.totalCount;
-    const limitedDecks = categoryDecks || []; // Tüm desteler gösterilecek
+    const limitedDecks = category === 'communityDecks'
+      ? (categoryDecks || []).slice(0, COMMUNITY_HOME_COUNT)
+      : (categoryDecks || []);
     const isCategoryLoading = loading || categoryDecks === undefined;
     const isInProgressSection = category === 'inProgressDecks';
     const isDefaultDecksSection = category === 'defaultDecks';

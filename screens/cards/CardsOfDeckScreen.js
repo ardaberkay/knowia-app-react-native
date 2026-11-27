@@ -14,8 +14,8 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import * as BlockService from '../../services/BlockService';
-import { deleteCard, getCardsByDeck, getUserCardProgressForCards, getCardDetail } from '../../services/CardService';
-import { addFavoriteCard, removeFavoriteCard, getFavoriteCardIdsForCards } from '../../services/FavoriteService';
+import { deleteCard, getCardsByDeck, getCardDetail, peekCardsByDeck, filterCardsWhileSearching, normSearchText } from '../../services/CardService';
+import { addFavoriteCard, removeFavoriteCard } from '../../services/FavoriteService';
 import { invalidateCache } from '../../services/CacheService';
 import ReportModal from '../../components/modals/ReportModal';
 import { triggerHaptic } from '../../lib/hapticManager';
@@ -63,12 +63,20 @@ const MemoizedDeckCard = React.memo(({
 });
 
 
+const sameCardRows = (a, b) => a.length === b.length && a.every((card, i) => {
+  const other = b[i];
+  return card.id === other.id && card.status === other.status && card.question === other.question
+    && card.answer === other.answer && card.image === other.image;
+});
+
 export default function DeckCardsScreen({ route, navigation }) {
   const { deck } = route.params;
   const { colors } = useTheme();
   const { showSuccess, showError } = useSnackbarHelpers();
   const [cards, setCards] = useState([]);
   const [search, setSearch] = useState('');
+  // the search the cards on screen were loaded for (see filterCardsWhileSearching)
+  const [cardsSearch, setCardsSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [favoriteCards, setFavoriteCards] = useState([]);
   const [cardSort, setCardSort] = useState('original');
@@ -99,6 +107,9 @@ export default function DeckCardsScreen({ route, navigation }) {
   const { session } = useAuth();
   const userId = session?.user?.id;
   const showFullScreenLoading = loading && cards.length === 0;
+  const visibleCards = useMemo(() => filterCardsWhileSearching(cards, search, cardsSearch), [cards, search, cardsSearch]);
+  // Slider height, so an empty search / filter result keeps the search bar in place.
+  const [sliderHeight, setSliderHeight] = useState(0);
   const insets = useSafeAreaInsets();
   const listBottomInset = useListBottomInset(0, { automaticInsets: true });
   const addCardFabPressed = useSharedValue(0);
@@ -120,7 +131,7 @@ export default function DeckCardsScreen({ route, navigation }) {
   }, [favoriteCards]);
 
   useEffect(() => {
-    const id = setTimeout(() => setDebouncedSearch(search.trim()), 350);
+    const id = setTimeout(() => setDebouncedSearch(search.trim()), 250);
     return () => clearTimeout(id);
   }, [search]);
 
@@ -144,37 +155,31 @@ export default function DeckCardsScreen({ route, navigation }) {
     const nextSort = nextFilter ? 'original' : requestedSort;
 
     const fetchId = ++cardsFetchGenRef.current;
+    firstPageInFlightRef.current = true;
 
     if (!silent) setLoading(true);
     try {
       const cardsData = await getCardsByDeck(deck.id, 0, PAGE_SIZE, nextSort, forceRefresh, userId, nextFilter || undefined, nextSearch || null);
       if (fetchId !== cardsFetchGenRef.current) return;
 
-      let statusMap = {};
-      let favoriteCardIds = new Set();
-
-      if (userId && cardsData.length > 0) {
-        const cardIds = cardsData.map(c => c.id);
-        const [progressMap, favSet] = await Promise.all([
-          getUserCardProgressForCards(userId, cardIds),
-          getFavoriteCardIdsForCards(userId, cardIds),
-        ]);
-        statusMap = progressMap;
-        favoriteCardIds = favSet;
-      }
-
-      if (fetchId !== cardsFetchGenRef.current) return;
-
+      // status and is_favorite come with the rows (list_cards RPC)
+      const favoriteCardIds = new Set(cardsData.filter(c => c.is_favorite).map(c => c.id));
       const cardsWithProgress = cardsData.map(card => ({
         ...card,
-        status: statusMap[card.id] || (nextFilter === 'learned' ? 'learned' : 'new')
+        status: card.status || 'new'
       }));
 
       if (fetchId !== cardsFetchGenRef.current) return;
       serverSortRef.current = nextSort;
       serverFilterRef.current = nextFilter;
-      setCards(cardsWithProgress);
-      setFavoriteCards(Array.from(favoriteCardIds));
+      // Same cards as on screen (e.g. the cached list shown first): keep the
+      // current list so nothing flashes or jumps back.
+      setCards(prev => (sameCardRows(prev, cardsWithProgress) ? prev : cardsWithProgress));
+      setCardsSearch(nextSearch);
+      setFavoriteCards(prev => {
+        const next = Array.from(favoriteCardIds);
+        return prev.length === next.length && next.every(id => prev.includes(id)) ? prev : next;
+      });
       setPage(0);
       setHasMore(cardsData.length >= PAGE_SIZE);
       dataFetchedRef.current = true;
@@ -185,6 +190,7 @@ export default function DeckCardsScreen({ route, navigation }) {
         setFavoriteCards([]);
       }
     } finally {
+      if (fetchId === cardsFetchGenRef.current) firstPageInFlightRef.current = false;
       if (!silent) setLoading(false);
     }
   }, [deck.id, userId]);
@@ -214,8 +220,14 @@ export default function DeckCardsScreen({ route, navigation }) {
   // requested at once and, when it came back first (first visit, no cache),
   // showed up as the list until page 1 replaced it.
   const loadingMoreRef = useRef(false);
+  const firstPageInFlightRef = useRef(false);
   const loadMore = useCallback(async () => {
     if (!dataFetchedRef.current || loadingMoreRef.current) return;
+    // a first page (often a silent search) is still loading: no next page yet
+    if (firstPageInFlightRef.current) return;
+    // A new search is on its way: don't load the next page of the old one
+    // (that was the loader under the instantly filtered results).
+    if (normSearchText(search) !== normSearchText(cardsSearch)) return;
     if (!hasMore || loadingMore || loading) return;
     loadingMoreRef.current = true;
     setLoadingMore(true);
@@ -229,22 +241,10 @@ export default function DeckCardsScreen({ route, navigation }) {
         return;
       }
 
-      let statusMap = {};
-      let newFavIds = new Set();
-
-      if (userId && cardsData.length > 0) {
-        const cardIds = cardsData.map(c => c.id);
-        const [progressMap, favSet] = await Promise.all([
-          getUserCardProgressForCards(userId, cardIds),
-          getFavoriteCardIdsForCards(userId, cardIds),
-        ]);
-        statusMap = progressMap;
-        newFavIds = favSet;
-      }
-
+      const newFavIds = new Set(cardsData.filter(c => c.is_favorite).map(c => c.id));
       const newCards = cardsData.map(card => ({
         ...card,
-        status: statusMap[card.id] || 'new'
+        status: card.status || 'new'
       }));
 
       if (loadGen !== cardsFetchGenRef.current) return;
@@ -268,7 +268,7 @@ export default function DeckCardsScreen({ route, navigation }) {
       loadingMoreRef.current = false;
       setLoadingMore(false);
     }
-  }, [hasMore, loadingMore, loading, page, deck.id, userId]);
+  }, [hasMore, loadingMore, loading, page, deck.id, userId, search, cardsSearch]);
 
   useEffect(() => {
     dataFetchedRef.current = false;
@@ -279,7 +279,15 @@ export default function DeckCardsScreen({ route, navigation }) {
     setCardSort('original');
     setSearch('');
     setDebouncedSearch('');
-    fetchData(false, { sort: 'original', filter: null, search: '' });
+    // Last list from the cache (even if stale) shows at once; the fresh one
+    // replaces it silently, so re-entering the screen shows no loader.
+    const cached = peekCardsByDeck(deck.id, userId);
+    if (cached?.length) {
+      setCards(cached.map(card => ({ ...card, status: card.status || 'new' })));
+      setFavoriteCards(cached.filter(c => c.is_favorite).map(c => c.id));
+      setHasMore(cached.length >= PAGE_SIZE);
+    }
+    fetchData(!!cached?.length, { sort: 'original', filter: null, search: '' });
   }, [deck.id, fetchData]);
 
   useFocusEffect(
@@ -536,7 +544,7 @@ export default function DeckCardsScreen({ route, navigation }) {
             ) : (
               <FlatList
                 ref={flatListRef}
-                data={cards}
+                data={visibleCards}
                 keyExtractor={item => item.id?.toString()}
                 showsVerticalScrollIndicator={false}
                 contentInsetAdjustmentBehavior="automatic"
@@ -548,13 +556,17 @@ export default function DeckCardsScreen({ route, navigation }) {
                   <>
                     {/* Browse the cards; re-mounted (back to the first card)
                         when the search or filter changes the list. */}
-                    {cards.length > 0 ? (
-                      <CardStackSlider
-                        key={`${debouncedSearch}|${cardSort}`}
-                        cards={cards}
-                        onOpenDetail={openDetail}
-                        onEndReached={loadMore}
-                      />
+                    {visibleCards.length > 0 ? (
+                      <View onLayout={(e) => setSliderHeight(e.nativeEvent.layout.height)}>
+                        <CardStackSlider
+                          key={`${debouncedSearch}|${cardSort}`}
+                          cards={visibleCards}
+                          onOpenDetail={openDetail}
+                          onEndReached={loadMore}
+                        />
+                      </View>
+                    ) : sliderHeight > 0 ? (
+                      <View style={{ height: sliderHeight }} />
                     ) : null}
                   <View style={styles.cardsBlurSearchContainer}>
                     <SearchBar
