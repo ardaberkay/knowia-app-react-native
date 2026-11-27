@@ -17,7 +17,7 @@ import { Iconify } from 'react-native-iconify';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { SCREEN_TITLE_HEIGHT, spacing } from '../../theme/layout';
 import { triggerHaptic } from '../../lib/hapticManager';
-import { useListBottomInset } from '../../components/ui/CustomTabBar';
+import { useListBottomInset } from '../../components/ui/TabBarInset';
 
 // Tabs. `key` is the DeckService tab (it maps to get_discover_decks' sort):
 //  trend     -> 'popular'       time-decayed score (favourites + people + starts)

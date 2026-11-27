@@ -11,7 +11,6 @@ import { ProfileProvider } from './contexts/ProfileContext';
 import { ThemeProvider, useTheme } from './theme/theme';
 import { SnackbarProvider } from './components/ui/Snackbar';
 import AppNavigator from './navigation/AppNavigator';
-import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { useEffect, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import * as Linking from 'expo-linking';
@@ -46,11 +45,10 @@ Notifications.setNotificationHandler({
 
 export const navigationRef = createNavigationContainerRef();
 
-function MainAppRunner({ fontsLoaded, colors, isDarkMode, linking, navigationTheme }) {
+function MainAppRunner({ colors, isDarkMode, linking, navigationTheme }) {
   const { loading: isAuthLoading } = useAuth();
   
-  // Fontlar ve Auth hazır mı kontrolü
-  const isReady = fontsLoaded && !isAuthLoading;
+  const isReady = !isAuthLoading;
 
   // 🔥 2. ADIM: Asıl sihir burada. 
   // Uygulama navigasyonu hazır olduğunda tetiklenir.
@@ -83,12 +81,8 @@ function MainAppRunner({ fontsLoaded, colors, isDarkMode, linking, navigationThe
 function AppContent() {
   const { colors, isDarkMode } = useTheme();
 
-  const [fontsLoaded] = useFonts({
-    'Inter': Inter_400Regular,
-    'Inter-Medium': Inter_500Medium,
-    'Inter-SemiBold': Inter_600SemiBold,
-    'Inter-Bold': Inter_700Bold,
-  });
+  // Inter and Phosphor are embedded at build time (expo-font plugin in
+  // app.config.js, files in assets/), so there is nothing to load at runtime.
 
   useEffect(() => {
     WebBrowser.maybeCompleteAuthSession();
@@ -191,7 +185,6 @@ function AppContent() {
         <ProfileProvider>
           <SnackbarProvider>
             <MainAppRunner
-              fontsLoaded={fontsLoaded}
               colors={colors}
               isDarkMode={isDarkMode}
               linking={linking}

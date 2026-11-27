@@ -87,7 +87,22 @@ export default {
         }
       ],
       "expo-status-bar",
-      "expo-font",
+      [
+        "expo-font",
+        {
+          // Embedded fonts. The file names are the fontFamily names used in
+          // code (theme/typography.js, components/ui/PhosphorIcon.js): Android
+          // uses the file name, iOS the name inside the font, and they match.
+          fonts: [
+            "./assets/Inter.ttf",
+            "./assets/Inter-Medium.ttf",
+            "./assets/Inter-SemiBold.ttf",
+            "./assets/Inter-Bold.ttf",
+            "./assets/Phosphor.ttf",
+            "./assets/Phosphor-Fill.ttf",
+          ],
+        },
+      ],
       "expo-localization",
       "expo-dev-client",
       "expo-notifications",

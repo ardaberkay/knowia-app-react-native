@@ -11,7 +11,7 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { triggerHaptic } from '../../lib/hapticManager';
 import * as BlockService from '../../services/BlockService';
 import LottieView from 'lottie-react-native';
-import { useListBottomInset } from '../../components/ui/CustomTabBar';
+import { useListBottomInset } from '../../components/ui/TabBarInset';
 import { getCategoryIcon } from '../../theme/colors';
 
 export default function BlockedScreen() {

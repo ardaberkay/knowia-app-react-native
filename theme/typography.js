@@ -4,9 +4,10 @@
 // Inter has a taller x-height than the system fonts (Inter 15 reads like
 // SF 16–17). Weights are separate font files, so a weight is set with
 // `fontFamily` (fonts.*), never `fontWeight`: Android fakes bold when a custom
-// font gets `fontWeight`, and iOS only has the weights loaded in App.js.
+// font gets `fontWeight`, and iOS only has the weights embedded in the app.
 
-// Font files loaded in App.js (Inter 400 / 500 / 600 / 700).
+// Font files embedded from assets/ via the expo-font plugin in app.config.js
+// (Inter 400 / 500 / 600 / 700).
 export const fonts = {
   regular: 'Inter',
   medium: 'Inter-Medium',

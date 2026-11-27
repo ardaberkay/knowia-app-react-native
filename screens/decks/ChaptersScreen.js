@@ -15,7 +15,7 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { triggerHaptic } from '../../lib/hapticManager';
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useListBottomInset } from '../../components/ui/CustomTabBar';
+import { useListBottomInset } from '../../components/ui/TabBarInset';
 
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 

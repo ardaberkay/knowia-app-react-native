@@ -28,7 +28,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheetModal, BottomSheetFlatList } from '@expo/ui/community/bottom-sheet';
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import HeroPullBackdrop from '../../components/layout/HeroPullBackdrop';
-import { useListBottomInset } from '../../components/ui/CustomTabBar';
+import { useListBottomInset } from '../../components/ui/TabBarInset';
 import { getCategoryIcon } from '../../theme/colors';
 
 // Hero gradient direction (colours come from the deck's category).

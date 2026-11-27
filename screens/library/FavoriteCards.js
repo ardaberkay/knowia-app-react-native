@@ -15,7 +15,7 @@ import LottieView from 'lottie-react-native';
 import { typography, fontSizes } from '../../theme/typography';
 import { StyleSheet } from 'react-native';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
-import { useListBottomInset } from '../../components/ui/CustomTabBar';
+import { useListBottomInset } from '../../components/ui/TabBarInset';
 
 const MemoizedFavCardItem = memo(({ item, isFavorite, isOwner, onPress, onToggleFavorite, onDelete }) => (
   <View style={{ paddingHorizontal: 12, paddingVertical: 0 }}>

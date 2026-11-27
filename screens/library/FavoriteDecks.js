@@ -14,7 +14,7 @@ import LottieView from 'lottie-react-native';
 import { typography, fontSizes } from '../../theme/typography';
 import { StyleSheet } from 'react-native';
 import { getLanguages, languagesInUse } from '../../services/LanguageService';
-import { useListBottomInset } from '../../components/ui/CustomTabBar';
+import { useListBottomInset } from '../../components/ui/TabBarInset';
 
 export default function FavoriteDecks() {
   const navigation = useNavigation();

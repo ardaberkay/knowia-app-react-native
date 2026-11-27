@@ -27,7 +27,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import StandardCustomAppBar from '../../components/layout/StandardCustomAppBar';
 import HeroPullBackdrop from '../../components/layout/HeroPullBackdrop';
 import CommunityDeckCard from '../../components/ui/CommunityDeckCard';
-import { useListBottomInset } from '../../components/ui/CustomTabBar';
+import { useListBottomInset } from '../../components/ui/TabBarInset';
 
 
 // Kategoriye göre ikon seçen yardımcı fonksiyon

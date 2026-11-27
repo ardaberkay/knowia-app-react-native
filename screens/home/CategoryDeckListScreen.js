@@ -17,7 +17,7 @@ import { typography, fontSizes, fonts } from '../../theme/typography';
 import { getCategoryConfig } from '../../components/ui/CategoryHeroHeader';
 import FilterModal, { FilterModalButton } from '../../components/modals/FilterModal';
 import { getLanguages, languagesInUse } from '../../services/LanguageService';
-import { useListBottomInset } from '../../components/ui/CustomTabBar';
+import { useListBottomInset } from '../../components/ui/TabBarInset';
 
 const LIST_TOP_RADIUS = 28;
 const HEADER_BOTTOM_BLEED = 24;

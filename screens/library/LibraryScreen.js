@@ -29,7 +29,7 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import ProfileAvatarButton from '../../components/layout/ProfileAvatarButton';
 import { getLanguages, languagesInUse } from '../../services/LanguageService';
 import { triggerHaptic } from '../../lib/hapticManager';
-import { useListBottomInset } from '../../components/ui/CustomTabBar';
+import { useListBottomInset } from '../../components/ui/TabBarInset';
 
 const MY_DECKS_SEARCH_THRESHOLD = 10;
 // Favorilerim overview: newest decks in the carousel, newest cards in the list.

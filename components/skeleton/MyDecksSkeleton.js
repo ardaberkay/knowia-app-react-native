@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, useWindowDimensions } from 'react-native'
 import { useTheme } from '../../theme/theme';
 import { ShimmerBox as BaseShimmerBox } from './DeckSkeleton';
 import { useDeckGridCardHeight } from '../lists/DeckList';
-import { useListBottomInset } from '../ui/CustomTabBar';
+import { useListBottomInset } from '../ui/TabBarInset';
 
 // Same shimmer as DeckSkeleton, with a faster 2s sweep.
 const ShimmerBox = (props) => <BaseShimmerBox duration={2000} {...props} />;

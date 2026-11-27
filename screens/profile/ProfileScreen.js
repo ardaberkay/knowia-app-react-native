@@ -24,7 +24,7 @@ import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { triggerHaptic } from '../../lib/hapticManager';
-import { useListBottomInset } from '../../components/ui/CustomTabBar';
+import { useListBottomInset } from '../../components/ui/TabBarInset';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '';
 

@@ -11,7 +11,8 @@ import ProfileScreen from '../screens/profile/ProfileScreen';
 import DeckDetailScreen from '../screens/decks/DeckDetailScreen';
 import DiscoverScreen from '../screens/home/DiscoverScreen';
 import CategoryDeckListScreen from '../screens/home/CategoryDeckListScreen';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/unstable';
+import { renderToImageAsync } from 'expo-font';
 import React from 'react';
 import { useTheme } from '../theme/theme';
 import SwipeDeckScreen from '../screens/cards/SwipeDeckScreen';
@@ -21,7 +22,8 @@ import AccountScreen from '../screens/profile/AccountScreen';
 import SettingsScreen from '../screens/profile/SettingsScreen';
 import InfoScreen from '../screens/profile/InfoScreen';
 import DeckEditScreen from '../screens/decks/EditDeckScreen';
-import CustomTabBar from '../components/ui/CustomTabBar';
+import { withTabBarInset } from '../components/ui/TabBarInset';
+import { PHOSPHOR_FAMILIES, phosphorGlyph } from '../components/ui/PhosphorIcon';
 import AddCardScreen from '../screens/cards/CreateCardScreen';
 import DeckCardsScreen from '../screens/cards/CardsOfDeckScreen';
 import { EditCardScreen } from '../components/layout/EditCardForm';
@@ -29,14 +31,13 @@ import ChaptersScreen from '../screens/decks/ChaptersScreen';
 import ChapterCardsScreen from '../screens/decks/CardsOfChapter.js';
 import FavoriteDecks from '../screens/library/FavoriteDecks';
 import FavoriteCards from '../screens/library/FavoriteCards';
-import { TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { TouchableOpacity, Platform, View } from 'react-native';
 import { Text } from '../components/ui/AppText';
 import { useTranslation } from 'react-i18next';
 import { Iconify } from 'react-native-iconify';
 import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { triggerHaptic } from '../lib/hapticManager';
-import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { fontSizes, fonts } from '../theme/typography';
 
 const Stack = createNativeStackNavigator();
@@ -52,92 +53,87 @@ const SCROLL_EDGE_HEADER = Platform.OS === 'ios'
     scrollEdgeEffects: { top: 'automatic' },
   }
   : {};
-const Tab = createBottomTabNavigator();
+const Tab = createNativeBottomTabNavigator();
+
+// Tab screens, wrapped so useListBottomInset knows the native tab bar height.
+const HomeTab = withTabBarInset(HomeScreen);
+const DiscoverTab = withTabBarInset(DiscoverScreen);
+const LibraryTab = withTabBarInset(LibraryScreen);
+const ProfileTab = withTabBarInset(ProfileScreen);
+
+// Phosphor icon per tab: regular when idle, fill when selected. Android shows
+// one icon for both states (native limitation), so it always uses regular.
+const TAB_ICONS = { Home: 'house', DiscoverTab: 'compass', Library: 'books', Profile: 'user' };
+const TAB_ICON_SIZE = Platform.OS === 'ios' ? 26 : 24;
+
+// The native tab bar takes images, not React views, so the Phosphor glyphs are
+// rendered to images once (expo-font). They are tinted by the tab bar, so the
+// color here doesn't matter. Resolves to {} on failure: tabs then show labels only.
+let tabIconsPromise = null;
+function loadTabIcons() {
+  if (!tabIconsPromise) {
+    const render = async (name, weight) => {
+      const { uri, width, height, scale } = await renderToImageAsync(phosphorGlyph(name), {
+        fontFamily: PHOSPHOR_FAMILIES[weight],
+        size: TAB_ICON_SIZE,
+        color: 'black',
+      });
+      return { type: 'image', source: { uri, width, height, scale } };
+    };
+    tabIconsPromise = Promise.all(
+      Object.entries(TAB_ICONS).map(async ([route, name]) => [
+        route,
+        { regular: await render(name, 'regular'), fill: await render(name, 'fill') },
+      ])
+    )
+      .then(Object.fromEntries)
+      .catch((e) => {
+        console.warn('Tab icons could not be rendered', e);
+        return {};
+      });
+  }
+  return tabIconsPromise;
+}
 
 function MainTabs() {
-  const { colors, isDarkMode } = useTheme();
+  const { colors } = useTheme();
   const { t } = useTranslation();
+  const [icons, setIcons] = React.useState(null);
+
+  React.useEffect(() => {
+    let alive = true;
+    loadTabIcons().then((loaded) => alive && setIcons(loaded));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // Wait for the icons so the tab bar doesn't appear without them first.
+  if (!icons) return <View style={{ flex: 1, backgroundColor: colors.background }} />;
+
   return (
     <Tab.Navigator
-      tabBar={(props) => {
-        const route = props.state.routes[props.state.index];
-        const routeName = getFocusedRouteNameFromRoute(route) ?? route.name;
-
-        const hideOnScreens = ['Discover', 'CategoryDeckList', 'SwipeDeck'];
-
-        if (hideOnScreens.includes(routeName)) {
-          return null;
-        }
-
-        return <CustomTabBar {...props} />;
-      }}
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarShowLabel: true,
+        // Render a tab only when first opened (same as the old JS tabs), so
+        // Discover / Library / Profile don't all load at startup.
+        lazy: true,
+        // Tab screens lay out their own top/bottom spacing; don't let iOS add
+        // automatic scroll insets (that would push the Home hero down).
+        overrideScrollViewContentInsetAdjustmentBehavior: false,
         tabBarActiveTintColor: colors.buttonColor,
         tabBarInactiveTintColor: colors.subtext,
-        tabBarHideOnKeyboard: true,
-        tabBarStyle: {
-          display: 'none',
-        },
-        headerStyle: {
-          backgroundColor: colors.tabBarBackground,
-        },
-        tabBarLabelStyle: {
-          fontSize: fontSizes.caption,
-          marginBottom: 10,
-          fontFamily: fonts.regular,
-          textAlign: 'center',
-          marginTop: -8,
-        },
-        tabBarIconStyle: {
-          marginTop: 4,
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-        tabBarItemStyle: {
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-        tabBarIcon: ({ focused, color, size }) => {
-          let homeIcon;
-          if (route.name === 'Home') {
-            homeIcon = focused ? 'solar:home-smile-bold' : 'solar:home-angle-broken';
-          } else if (route.name === 'DiscoverTab') {
-            homeIcon = focused ? 'solar:compass-bold' : 'solar:compass-broken';
-          } else if (route.name === 'Library') {
-            homeIcon = focused ? 'solar:library-bold-duotone' : 'solar:library-line-duotone';
-          } else if (route.name === 'Profile') {
-            homeIcon = focused ? 'solar:user-bold' : 'solar:user-broken';
-          }
-
-          return (
-            <Iconify
-              icon={homeIcon}
-              size={28}
-              color={color}
-              style={{
-                opacity: focused ? 1 : 0.7,
-                alignSelf: 'center',
-                marginBottom: 0,
-              }}
-            />
-          );
-        },
+        tabBarStyle: { backgroundColor: colors.tabBarBackground }, // Android, iOS ≤18
+        tabBarLabelStyle: { fontFamily: fonts.medium },
+        tabBarIcon: icons[route.name]
+          ? ({ focused }) => (focused && Platform.OS === 'ios' ? icons[route.name].fill : icons[route.name].regular)
+          : undefined,
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ title: t('tabs.home', 'Anasayfa'), tabBarLabel: t('tabs.home', 'Anasayfa') }} />
-      <Tab.Screen name="DiscoverTab" component={DiscoverScreen} options={{ tabBarLabel: t('tabs.discover', 'Keşfet'), title: '', headerShown: false }} />
-      <Tab.Screen
-        name="Library"
-        component={LibraryScreen}
-        options={{
-          title: t('tabs.myLibrary', 'Kitaplığım'),
-          tabBarLabel: t('tabs.library', 'Kitaplığım'),
-          headerShown: false,
-        }}
-      />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: t('tabs.profile', 'Profilim'), tabBarLabel: t('tabs.profile', 'Profilim'), headerShown: false }} />
+      <Tab.Screen name="Home" component={HomeTab} options={{ title: t('tabs.home', 'Anasayfa'), tabBarLabel: t('tabs.home', 'Anasayfa') }} />
+      <Tab.Screen name="DiscoverTab" component={DiscoverTab} options={{ title: t('tabs.discover', 'Keşfet'), tabBarLabel: t('tabs.discover', 'Keşfet') }} />
+      <Tab.Screen name="Library" component={LibraryTab} options={{ title: t('tabs.myLibrary', 'Kitaplığım'), tabBarLabel: t('tabs.library', 'Kitaplığım') }} />
+      <Tab.Screen name="Profile" component={ProfileTab} options={{ title: t('tabs.profile', 'Profilim'), tabBarLabel: t('tabs.profile', 'Profilim') }} />
     </Tab.Navigator>
   );
 }
