@@ -9,7 +9,9 @@ import { useTranslation } from 'react-i18next';
 import { triggerHaptic } from '../../lib/hapticManager';
 import CommunityDeckCard from '../ui/CommunityDeckCard';
 import Svg, { Path } from 'react-native-svg';
-import { getCategoryColors, getCategoryIcon } from '../../theme/colors';
+import { getCategoryColors } from '../../theme/colors';
+import { getCategoryIcon } from '../../theme/icons';
+import PhosphorIcon from '../ui/PhosphorIcon';
 
 // Grid deck cards keep a fixed portrait ratio instead of a share of the screen
 // height, so they never turn square on short phones or wide on tablets.
@@ -385,8 +387,8 @@ const DeckCard = React.memo(
               },
             ]}
           >
-            <Iconify
-              icon={categoryIcon}
+            <PhosphorIcon
+              {...categoryIcon}
               size={
                 iconDimensions.verticalIconSize
               }
@@ -403,13 +405,13 @@ const DeckCard = React.memo(
               <Image
                 source={
                   deck.is_admin_created
-                    ? require('../../assets/app_icon.png')
+                    ? require('../../assets/images/app_icon.png')
                     : deck.profiles?.image_url
                       ? {
                         uri: deck.profiles
                           .image_url,
                       }
-                      : require('../../assets/avatar_default.webp')
+                      : require('../../assets/images/avatar_default.webp')
                 }
                 style={
                   styles.deckProfileAvatar
@@ -917,7 +919,7 @@ const DeckList = ({
             }}
           >
             <Image
-              source={require('../../assets/deckbg.webp')}
+              source={require('../../assets/images/deckbg.webp')}
               style={{
                 position: 'absolute',
                 alignSelf: 'center',

@@ -359,7 +359,7 @@ export default function HomeScreen() {
 
         {/* Görsel artık LinearGradient'in dışında */}
         <Image
-          source={require('../../assets/item.webp')}
+          source={require('../../assets/images/item.webp')}
           style={styles.heroIllustration}
           fadeDuration={0}
         />

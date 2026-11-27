@@ -612,7 +612,7 @@ export default function ProfileScreen() {
         <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
           <View style={styles.identity}>
             <Image
-              source={profile?.image_url ? { uri: profile.image_url } : require('../../assets/avatar_default.webp')}
+              source={profile?.image_url ? { uri: profile.image_url } : require('../../assets/images/avatar_default.webp')}
               style={[styles.avatar, { borderColor: colors.buttonColor }]}
             />
             <View style={{ flex: 1 }}>

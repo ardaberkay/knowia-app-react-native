@@ -24,6 +24,7 @@ import InfoScreen from '../screens/profile/InfoScreen';
 import DeckEditScreen from '../screens/decks/EditDeckScreen';
 import { withTabBarInset } from '../components/ui/TabBarInset';
 import { PHOSPHOR_FAMILIES, phosphorGlyph } from '../components/ui/PhosphorIcon';
+import { TAB_ICONS } from '../theme/icons';
 import AddCardScreen from '../screens/cards/CreateCardScreen';
 import DeckCardsScreen from '../screens/cards/CardsOfDeckScreen';
 import { EditCardScreen } from '../components/layout/EditCardForm';
@@ -61,9 +62,9 @@ const DiscoverTab = withTabBarInset(DiscoverScreen);
 const LibraryTab = withTabBarInset(LibraryScreen);
 const ProfileTab = withTabBarInset(ProfileScreen);
 
-// Phosphor icon per tab: regular when idle, fill when selected. Android shows
-// one icon for both states (native limitation), so it always uses regular.
-const TAB_ICONS = { Home: 'house', DiscoverTab: 'compass', Library: 'books', Profile: 'user' };
+// Phosphor icon per tab (TAB_ICONS, theme/icons.js): regular when idle, fill
+// when selected. Android shows one icon for both states (native limitation),
+// so it always uses regular.
 const TAB_ICON_SIZE = Platform.OS === 'ios' ? 26 : 24;
 
 // The native tab bar takes images, not React views, so the Phosphor glyphs are

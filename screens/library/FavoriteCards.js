@@ -304,7 +304,7 @@ export default function FavoriteCards() {
   const favListEmpty = useMemo(() => (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: 400, marginTop: -250, pointerEvents: 'none' }}>
       <Image
-        source={require('../../assets/cardbg.webp')}
+        source={require('../../assets/images/cardbg.webp')}
         style={{ width: 500, height: 500, opacity: 0.2 }}
         resizeMode="contain"
       />
@@ -318,8 +318,8 @@ export default function FavoriteCards() {
     <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
       {loading ? (
         <View style={styles.loadingContainer}>
-          <LottieView source={require('../../assets/flexloader.json')} speed={1.1} autoPlay loop style={{ width: 160, height: 160 }} />
-          <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100, marginTop: -65 }} />
+          <LottieView source={require('../../assets/animations/flexloader.json')} speed={1.1} autoPlay loop style={{ width: 160, height: 160 }} />
+          <LottieView source={require('../../assets/animations/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100, marginTop: -65 }} />
         </View>
       ) : (
         <FlatList

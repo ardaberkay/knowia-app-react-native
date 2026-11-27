@@ -32,7 +32,7 @@ function ProfileAvatarButton({ compact = false }) {
 
   // URI objesi her render'da yenilenirse Image gereksiz yeniden decode edebilir; uri + cache sabit tutulur.
   const imageSource = useMemo(() => {
-    if (!profile?.image_url) return require('../../assets/avatar_default.webp');
+    if (!profile?.image_url) return require('../../assets/images/avatar_default.webp');
     const uri = profile.image_url;
     if (Platform.OS === 'android') {
       return { uri, cache: 'force-cache' };

@@ -20,7 +20,8 @@ import DeckLanguageModal, { DeckLanguageField } from '../../components/modals/De
 import BadgeText from '../../components/tools/BadgeText';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getCategoryIcon } from '../../theme/colors';
+import { getCategoryIcon } from '../../theme/icons';
+import PhosphorIcon from '../../components/ui/PhosphorIcon';
 
 export default function CreateScreen() {
   const { session } = useAuth();
@@ -187,7 +188,7 @@ export default function CreateScreen() {
                 </View>
                 <View style={styles.headerImageContainer}>
                   <Image
-                    source={require('../../assets/create_deck_item.webp')}
+                    source={require('../../assets/images/create_deck_item.webp')}
                     style={styles.headerImage}
                     resizeMode="contain"
                     fadeDuration={0}
@@ -378,8 +379,8 @@ export default function CreateScreen() {
             >
               <View style={styles.categoryRow}>
                 {selectedCategory && (
-                  <Iconify
-                    icon={getCategoryIcon(categories.find(c => c.id === selectedCategory)?.sort_order, { picker: true })}
+                  <PhosphorIcon
+                    {...getCategoryIcon(categories.find(c => c.id === selectedCategory)?.sort_order)}
                     size={20}
                     color={selectedCategory ? colors.text : colors.muted}
                     style={styles.categoryIcon}

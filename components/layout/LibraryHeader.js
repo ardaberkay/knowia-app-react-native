@@ -50,7 +50,7 @@ function LibraryHeader({ progress, onTabPress, summary, collapsed, collapseDista
         ? `${t('library.summaryDecks', { count: summary.myDecks })} · ${t('library.summaryCards', { count: summary.myCards })}`
         : null,
       glow: colors.buttonColor,
-      image: require('../../assets/mydecks_item.webp'),
+      image: require('../../assets/images/mydecks_item.webp'),
     },
     {
       key: 'favorites',
@@ -61,7 +61,7 @@ function LibraryHeader({ progress, onTabPress, summary, collapsed, collapseDista
         ? `${t('library.summaryDecks', { count: summary.favoriteDecks })} · ${t('library.summaryCards', { count: summary.favoriteCards })}`
         : null,
       glow: '#F5576C',
-      image: require('../../assets/shared.webp'),
+      image: require('../../assets/images/shared.webp'),
       // This drawing sits right of centre with empty space top-left (its box
       // spans ~x 265-925, y 35-950 of 1024), so at the same size it read as
       // smaller and lower than Destelerim's full-bleed one. Scale it to fill

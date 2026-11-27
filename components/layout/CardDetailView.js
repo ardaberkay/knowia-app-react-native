@@ -18,7 +18,9 @@ import StackCarousel from '../ui/StackCarousel';
 import { formatFutureReview } from './SwipeCompletionView';
 import { ShimmerBox } from '../skeleton/DeckSkeleton';
 import { useTheme } from '../../theme/theme';
-import { getCategoryColors, getCategoryIcon } from '../../theme/colors';
+import { getCategoryColors } from '../../theme/colors';
+import { getCategoryIcon } from '../../theme/icons';
+import PhosphorIcon from '../ui/PhosphorIcon';
 import { typography, fontSizes, fonts, lineHeights } from '../../theme/typography';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { isSpeechAvailable, useSpeakText } from '../../lib/speech';
@@ -433,7 +435,7 @@ function CardDetailContent({ card, deck, colors, showCreatedAt, speakingKey, onS
         <View style={styles.metaRow}>
           {categoryName ? (
             <View style={[styles.categoryChip, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
-              <Iconify icon={getCategoryIcon(sortOrder)} size={14} color={accent} />
+              <PhosphorIcon {...getCategoryIcon(sortOrder)} size={14} color={accent} />
               <Text style={[styles.categoryChipText, { color: colors.text }]} numberOfLines={1}>{categoryName}</Text>
             </View>
           ) : null}

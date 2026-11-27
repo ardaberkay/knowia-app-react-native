@@ -29,7 +29,8 @@ import { BottomSheetModal, BottomSheetFlatList } from '@expo/ui/community/bottom
 import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import HeroPullBackdrop from '../../components/layout/HeroPullBackdrop';
 import { useListBottomInset } from '../../components/ui/TabBarInset';
-import { getCategoryIcon } from '../../theme/colors';
+import { getCategoryIcon } from '../../theme/icons';
+import PhosphorIcon from '../../components/ui/PhosphorIcon';
 
 // Hero gradient direction (colours come from the deck's category).
 const HERO_GRADIENT_START = { x: 0, y: 0 };
@@ -1195,9 +1196,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                 circle bleeding off the bottom-left. */}
             <View style={styles.gfHeroDecor} pointerEvents="none">
               <View style={styles.gfDecorIcon}>
-                <Iconify icon={getCategoryIcon(categoryInfo?.sort_order)} size={HERO_ICON_SIZE} color="rgba(255,255,255,0.08)" style={{
-                  transform: categoryInfo?.sort_order === 4 ? [{ scaleX: -1 }] : []
-                }} />
+                <PhosphorIcon {...getCategoryIcon(categoryInfo?.sort_order)} size={HERO_ICON_SIZE} color="rgba(255,255,255,0.08)" />
               </View>
               <View style={[styles.gfDecorCircle, styles.gfDecorCircle3]} />
               <View style={[styles.gfDecorCircle, styles.gfDecorCircle2]} />
@@ -1339,7 +1338,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                     source={
                       deck.profiles?.image_url
                         ? { uri: deck.profiles.image_url }
-                        : require('../../assets/avatar_default.webp')
+                        : require('../../assets/images/avatar_default.webp')
                     }
                     style={styles.gfCreatorAvatar}
                   />
@@ -1368,10 +1367,10 @@ export default function DeckDetailScreen({ route, navigation }) {
                   <Image
                     source={
                       deck.is_admin_created
-                        ? require('../../assets/app_icon.png')
+                        ? require('../../assets/images/app_icon.png')
                         : deck.profiles?.image_url
                           ? { uri: deck.profiles.image_url }
-                          : require('../../assets/avatar_default.webp')
+                          : require('../../assets/images/avatar_default.webp')
                     }
                     style={styles.gfCreatorAvatar}
                   />

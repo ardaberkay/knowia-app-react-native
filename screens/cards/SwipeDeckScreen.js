@@ -1529,7 +1529,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
       <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
         <View style={styles.loadingContent}>
           <LottieView
-            source={require('../../assets/cards.json')}
+            source={require('../../assets/animations/cards.json')}
             autoPlay
             loop
             speed={1.5}

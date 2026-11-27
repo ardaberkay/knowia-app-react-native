@@ -6,6 +6,8 @@ import { BottomSheetModal, BottomSheetView } from '@expo/ui/community/bottom-she
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Iconify } from 'react-native-iconify';
+import PhosphorIcon from '../ui/PhosphorIcon';
+import { getCategoryIcon } from '../../theme/icons';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { languageCode, languageNativeName, languageEnglishName } from '../../services/LanguageService';
@@ -54,16 +56,12 @@ export const FilterModalButton = ({ onPress, variant }) => {
   );
 };
 
-const getCategoryOptions = (t) => [
-  { sortOrder: 1, label: t('categories.1', 'Dil'), icon: 'hugeicons:language-skill' },
-  { sortOrder: 2, label: t('categories.2', 'Bilim'), icon: 'clarity:atom-solid' },
-  { sortOrder: 3, label: t('categories.3', 'Matematik'), icon: 'mdi:math-compass' },
-  { sortOrder: 4, label: t('categories.4', 'Tarih'), icon: 'game-icons:tied-scroll' },
-  { sortOrder: 5, label: t('categories.5', 'Coğrafya'), icon: 'arcticons:world-geography-alt' },
-  { sortOrder: 6, label: t('categories.6', 'Sanat ve Kültür'), icon: 'map:museum' },
-  { sortOrder: 7, label: t('categories.7', 'Kişisel Gelişim'), icon: 'ic:outline-self-improvement' },
-  { sortOrder: 8, label: t('categories.8', 'Genel Kültür'), icon: 'garden:puzzle-piece-fill-16' },
-];
+const getCategoryOptions = (t) =>
+  [1, 2, 3, 4, 5, 6, 7, 8].map((sortOrder) => ({
+    sortOrder,
+    label: t(`categories.${sortOrder}`),
+    icon: getCategoryIcon(sortOrder),
+  }));
 
 const FilterModal = ({
   visible,
@@ -316,7 +314,7 @@ const FilterModal = ({
                       >
                         <View style={styles.optionCardLeft}>
                           <View style={styles.optionIconWrapper}>
-                            <Iconify icon={option.icon} size={22} color={isSelected ? primaryColor : colors.text} />
+                            <PhosphorIcon {...option.icon} size={22} color={isSelected ? primaryColor : colors.text} />
                           </View>
                           <Text style={[
                             styles.optionCardText,

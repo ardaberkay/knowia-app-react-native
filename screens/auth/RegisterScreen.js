@@ -69,7 +69,7 @@ export default function RegisterScreen({ navigation }) {
 
   return (
     <ImageBackground
-      source={require('../../assets/bgtwo.png')}
+      source={require('../../assets/images/bgtwo.png')}
       style={styles.backgroundImage}
       resizeMode="cover"
     >

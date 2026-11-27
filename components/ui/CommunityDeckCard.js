@@ -6,7 +6,9 @@ import { Iconify } from 'react-native-iconify';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { useTranslation } from 'react-i18next';
 import { fontSizes, fonts } from '../../theme/typography';
-import { getCategoryColors, getCategoryIcon } from '../../theme/colors';
+import { getCategoryColors } from '../../theme/colors';
+import { getCategoryIcon } from '../../theme/icons';
+import PhosphorIcon from './PhosphorIcon';
 
 
 const CommunityDeckCard = ({
@@ -50,8 +52,8 @@ const CommunityDeckCard = ({
             >
                 {/* SOL: Şeffaf Rozet ve İkon */}
                 <View style={styles.iconBadgeContainer}>
-                    <Iconify
-                        icon={categoryIcon}
+                    <PhosphorIcon
+                        {...categoryIcon}
                         size={34}
                         color="#FFFFFF"
                     />
@@ -65,10 +67,10 @@ const CommunityDeckCard = ({
                             <Image
                                 source={
                                     deck.is_admin_created
-                                        ? require('../../assets/app_icon.png')
+                                        ? require('../../assets/images/app_icon.png')
                                         : deck.profiles?.image_url
                                             ? { uri: deck.profiles.image_url }
-                                            : require('../../assets/avatar_default.webp')
+                                            : require('../../assets/images/avatar_default.webp')
                                 }
                                 style={styles.userAvatar}
                             />

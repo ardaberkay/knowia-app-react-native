@@ -196,13 +196,13 @@ export default function FavoriteDecks() {
     <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background, marginVertical: 10 }}>
       {loading ? (
         <View style={styles.loadingContainer}>
-          <LottieView source={require('../../assets/flexloader.json')} speed={1.1} autoPlay loop style={{ width: 160, height: 160 }} />
-          <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100, marginTop: -65 }} />
+          <LottieView source={require('../../assets/animations/flexloader.json')} speed={1.1} autoPlay loop style={{ width: 160, height: 160 }} />
+          <LottieView source={require('../../assets/animations/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100, marginTop: -65 }} />
         </View>
       ) : favoriteDecks.length === 0 ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: -150 }}>
           <Image
-            source={require('../../assets/deckbg.webp')}
+            source={require('../../assets/images/deckbg.webp')}
             style={{ width: 300, height: 300, opacity: 0.2 }}
             resizeMode="contain"
             fadeDuration={0}

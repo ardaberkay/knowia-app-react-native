@@ -18,7 +18,8 @@ import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import BadgeText from '../../components/tools/BadgeText';
 import DeckLanguageModal, { DeckLanguageField } from '../../components/modals/DeckLanguageModal';
 import { triggerHaptic } from '../../lib/hapticManager';
-import { getCategoryIcon } from '../../theme/colors';
+import { getCategoryIcon } from '../../theme/icons';
+import PhosphorIcon from '../../components/ui/PhosphorIcon';
 
 export default function DeckEditScreen() {
   const route = useRoute();
@@ -329,8 +330,8 @@ export default function DeckEditScreen() {
                 const sortOrder = category?.sort_order;
 
                 return sortOrder ? (
-                  <Iconify
-                    icon={getCategoryIcon(sortOrder, { picker: true })}
+                  <PhosphorIcon
+                    {...getCategoryIcon(sortOrder)}
                     size={20}
                     color={selectedCategory ? colors.text : colors.muted}
                     style={styles.categoryIcon}

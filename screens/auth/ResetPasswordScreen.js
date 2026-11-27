@@ -178,7 +178,7 @@ export default function ResetPasswordScreen({ navigation }) {
   if (initializing) {
     return (
       <ImageBackground
-        source={require('../../assets/bg.png')}
+        source={require('../../assets/images/bg.png')}
         style={styles.backgroundImage}
         resizeMode="cover"
       >
@@ -191,7 +191,7 @@ export default function ResetPasswordScreen({ navigation }) {
 
   return (
     <ImageBackground
-      source={require('../../assets/bg.png')}
+      source={require('../../assets/images/bg.png')}
       style={styles.backgroundImage}
       resizeMode="cover"
     >

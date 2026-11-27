@@ -583,8 +583,8 @@ export default function ChapterCardsScreen({ route, navigation }) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <LottieView source={require('../../assets/flexloader.json')} speed={1.1} autoPlay loop style={{ width: 160, height: 160 }} />
-        <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100, marginTop: -65 }} />
+        <LottieView source={require('../../assets/animations/flexloader.json')} speed={1.1} autoPlay loop style={{ width: 160, height: 160 }} />
+        <LottieView source={require('../../assets/animations/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100, marginTop: -65 }} />
       </View>
     );
   }
@@ -744,7 +744,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
         {cards.length === 0 ? (
           <View style={styles.emptyState}>
             <Image
-              source={require('../../assets/cardbg.webp')}
+              source={require('../../assets/images/cardbg.webp')}
               style={{ width: 500, height: 500, opacity: 0.2 }}
               resizeMode="contain"
             />

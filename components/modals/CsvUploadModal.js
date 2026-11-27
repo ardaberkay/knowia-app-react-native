@@ -646,7 +646,7 @@ export default function CsvUploadModal({
 
                   <TouchableOpacity activeOpacity={0.9} onPress={() => setImageModalVisible(true)} style={styles.imagePreviewWrapper}>
                     <Image
-                      source={require('../../assets/examtable.png')}
+                      source={require('../../assets/images/examtable.png')}
                       style={styles.exampleTableImage}
                       resizeMode="contain"
                     />
@@ -675,7 +675,7 @@ export default function CsvUploadModal({
                   {/* Görsele tıklayınca modalın kapanmaması için TouchableWithoutFeedback */}
                   <TouchableWithoutFeedback>
                     <Image
-                      source={require('../../assets/examtable.png')}
+                      source={require('../../assets/images/examtable.png')}
                       style={{ width: '90%', height: '70%' }}
                       resizeMode="contain"
                     />

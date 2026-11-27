@@ -28,7 +28,11 @@ export function withTabBarInset(Screen) {
             edges={{ bottom: true }}
             pointerEvents="none"
             style={styles.probe}
-            onLayout={(e) => setInset(e.nativeEvent.layout.height)}
+            onLayout={(e) => {
+              const h = e.nativeEvent.layout.height;
+              if (__DEV__) console.log('[TabBarInset] measured bottom inset:', h);
+              setInset(h);
+            }}
           />
         </View>
       </TabBarInsetContext.Provider>
@@ -45,11 +49,17 @@ export function withTabBarInset(Screen) {
 // automaticInsets: the list uses contentInsetAdjustmentBehavior="automatic"
 // (under a see-through header, SCROLL_EDGE_HEADER), which on iOS already adds
 // the bottom safe area; it is left out here so it isn't counted twice.
+// iOS UITabBar height above the home indicator. Floor for the measured value:
+// on device the probe came back without the tab bar (content ended up behind
+// it), so tab screens never get less than this plus the system inset.
+const IOS_TAB_BAR_HEIGHT = 49;
+
 export function useListBottomInset(extra = 0, { automaticInsets = false } = {}) {
   const tabInset = useContext(TabBarInsetContext);
   const insets = useSafeAreaInsets();
   const inTabs = tabInset !== undefined;
-  const bottom = inTabs ? tabInset ?? insets.bottom : insets.bottom;
+  const tabFloor = Platform.OS === 'ios' ? insets.bottom + IOS_TAB_BAR_HEIGHT : 0;
+  const bottom = inTabs ? Math.max(tabInset ?? insets.bottom, tabFloor) : insets.bottom;
   const systemAdded = !inTabs && automaticInsets && Platform.OS === 'ios' ? insets.bottom : 0;
   return Math.max(0, bottom - systemAdded) + spacing.xl + extra;
 }

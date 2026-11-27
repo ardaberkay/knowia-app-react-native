@@ -6,7 +6,7 @@ export default {
     version: "1.3.0",
     owner: "imati",
     orientation: "portrait",
-    icon: "./assets/app_icon.png",
+    icon: "./assets/images/app_icon.png",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     scheme: "knowia",
@@ -35,7 +35,7 @@ export default {
     android: {
       backgroundColor: "#FF8D1A",
       adaptiveIcon: {
-        foregroundImage: "./assets/android_logo.png",
+        foregroundImage: "./assets/images/android_logo.png",
         backgroundColor: "#FF8D1A"
       },
       package: "com.arda.knowia",
@@ -64,7 +64,7 @@ export default {
       ]
     },
     web: {
-      favicon: "./assets/app_icon.png"
+      favicon: "./assets/images/app_icon.png"
     },
     plugins: [
       "expo-asset",
@@ -75,12 +75,12 @@ export default {
         {
           backgroundColor: "#FF8D1A",
           ios: {
-            image: "./assets/splash.png",
+            image: "./assets/images/splash.png",
             resizeMode: "cover",
             enableFullScreenImage_legacy: true
           },
           android: {
-            image: "./assets/app_icon_splash.png",
+            image: "./assets/images/app_icon_splash.png",
             resizeMode: "contain",
             imageWidth: 200
           }
@@ -94,12 +94,12 @@ export default {
           // code (theme/typography.js, components/ui/PhosphorIcon.js): Android
           // uses the file name, iOS the name inside the font, and they match.
           fonts: [
-            "./assets/Inter.ttf",
-            "./assets/Inter-Medium.ttf",
-            "./assets/Inter-SemiBold.ttf",
-            "./assets/Inter-Bold.ttf",
-            "./assets/Phosphor.ttf",
-            "./assets/Phosphor-Fill.ttf",
+            "./assets/fonts/Inter.ttf",
+            "./assets/fonts/Inter-Medium.ttf",
+            "./assets/fonts/Inter-SemiBold.ttf",
+            "./assets/fonts/Inter-Bold.ttf",
+            "./assets/fonts/Phosphor.ttf",
+            "./assets/fonts/Phosphor-Fill.ttf",
           ],
         },
       ],

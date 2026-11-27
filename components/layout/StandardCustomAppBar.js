@@ -37,7 +37,7 @@ export default function StandardCustomAppBar({
         {showLogo ? (
           <View style={styles.logoContainer}>
             <Image
-              source={require('../../assets/home_logo.png')}
+              source={require('../../assets/images/home_logo.png')}
               style={styles.logoImage}
               resizeMode="contain"
             />

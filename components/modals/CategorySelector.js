@@ -9,7 +9,8 @@ import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { Iconify } from 'react-native-iconify';
 import { useTranslation } from 'react-i18next';
-import { getCategoryIcon } from '../../theme/colors';
+import { getCategoryIcon } from '../../theme/icons';
+import PhosphorIcon from '../ui/PhosphorIcon';
 
 
 export default function CategorySelector({ isVisible, onClose, categories = [], selectedCategoryId, onSelectCategory }) {
@@ -59,8 +60,8 @@ export default function CategorySelector({ isVisible, onClose, categories = [], 
         activeOpacity={0.7}
       >
         <View style={styles.iconWrapper}>
-          <Iconify
-            icon={getCategoryIcon(category.sort_order, { picker: true })}
+          <PhosphorIcon
+            {...getCategoryIcon(category.sort_order)}
             size={26}
             color={isSelected ? primaryColor : colors.text}
           />

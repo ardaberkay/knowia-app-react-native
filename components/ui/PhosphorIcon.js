@@ -1,11 +1,11 @@
 import React from 'react';
 import { Text } from 'react-native';
-import glyphs from '../../assets/phosphor-glyphs.json';
+import glyphs from '../../assets/fonts/phosphor-glyphs.json';
 
 // Phosphor icons drawn as font glyphs (much lighter than SVG). The fonts are
 // embedded from assets/ (expo-font plugin, app.config.js) under these family
 // names. Phosphor 2.1.2; every weight uses the same
-// codepoints, so one glyph map (assets/phosphor-glyphs.json, generated from
+// codepoints, so one glyph map (assets/fonts/phosphor-glyphs.json, generated from
 // Phosphor's regular style.css) covers all of them.
 // Usage: <PhosphorIcon name="house" weight="fill" size={24} color={colors.text} />
 // Names are the kebab-case names from phosphoricons.com.

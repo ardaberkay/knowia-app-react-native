@@ -59,7 +59,7 @@ export default function OnboardingScreen({ navigation, route }) {
           "Knowia'nın uzman desteleriyle hemen öğrenmeye başla veya topluluğun paylaştığı binlerce desteyi keşfet."
         ),
         type: 'image',
-        source: require('../../assets/on_boarding.webp'),
+        source: require('../../assets/images/on_boarding.webp'),
       },
       {
         key: 'create',
@@ -69,7 +69,7 @@ export default function OnboardingScreen({ navigation, route }) {
           'Kendi destelerini oluştur, ister kendine sakla ister tüm dünyayla paylaşarak topluluğa katkı sağla.'
         ),
         type: 'image',
-        source: require('../../assets/shared.webp'),
+        source: require('../../assets/images/shared.webp'),
       },
       {
         key: 'start',
@@ -79,7 +79,7 @@ export default function OnboardingScreen({ navigation, route }) {
           'Öğrenme alışkanlığını bugün başlat. İlk desteğini seç ve kaydırmaya başla.'
         ),
         type: 'image',
-        source: require('../../assets/hats_amico.webp'),
+        source: require('../../assets/images/hats_amico.webp'),
       },
     ],
     [t]
@@ -181,7 +181,7 @@ export default function OnboardingScreen({ navigation, route }) {
           <View style={styles.lottieSlideColumn}>
             <LottieView
               ref={lottieCardRef}
-              source={require('../../assets/swipecard.json')}
+              source={require('../../assets/animations/swipecard.json')}
               loop
               speed={0.95}
               style={{ width: Math.min(width * 0.92, 360), height: cardHeight }}

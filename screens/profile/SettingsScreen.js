@@ -4,7 +4,6 @@ import { Text } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import { useTranslation } from 'react-i18next';
-import { Iconify } from 'react-native-iconify';
 import { useTheme } from '../../theme/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProfile } from '../../contexts/ProfileContext';
@@ -13,15 +12,15 @@ import { registerForPushNotificationsAsync } from '../../services/NotificationSe
 import { getHapticPreference, setHapticPreference, triggerHaptic } from '../../lib/hapticManager';
 import LanguageSelector from '../../components/modals/LanguageSelector';
 import { ProfileMenuCard } from './ProfileScreen';
-import { fontSizes } from '../../theme/typography';
+import { fontSizes, fonts } from '../../theme/typography';
 
-const LANGUAGE_FLAGS = {
-  tr: ['twemoji:flag-for-flag-turkey', 'Türkçe'],
-  en: ['twemoji:flag-england', 'English'],
-  es: ['twemoji:flag-spain', 'Spanish'],
-  fr: ['twemoji:flag-france', 'French'],
-  pt: ['twemoji:flag-portugal', 'Portuguese'],
-  de: ['twemoji:flag-germany', 'German'],
+const LANGUAGE_NAMES = {
+  tr: 'Türkçe',
+  en: 'English',
+  es: 'Spanish',
+  fr: 'French',
+  pt: 'Portuguese',
+  de: 'German',
 };
 
 /**
@@ -85,7 +84,7 @@ export default function SettingsScreen() {
     await i18n.changeLanguage(lng);
     setLanguageModalVisible(false);
   }, [i18n]);
-  const [flag, languageName] = LANGUAGE_FLAGS[i18n.language] || ['', ''];
+  const languageName = LANGUAGE_NAMES[i18n.language] || '';
 
   const switchProps = (value) => ({
     trackColor: { false: '#ccc', true: '#5AA3F0' },
@@ -103,7 +102,9 @@ export default function SettingsScreen() {
       },
       right: (
         <View style={styles.languageRow}>
-          {flag ? <Iconify icon={flag} size={20} /> : null}
+          {languageName ? (
+            <Text style={{ color: colors.subtext, fontSize: fontSizes.footnote, fontFamily: fonts.semibold }}>{i18n.language.toUpperCase()}</Text>
+          ) : null}
           <Text style={{ color: colors.text, fontSize: fontSizes.body }}>{languageName}</Text>
         </View>
       ),

@@ -6,7 +6,9 @@ import { Iconify } from 'react-native-iconify';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { triggerHaptic } from '../../lib/hapticManager';
 import { fontSizes, fonts } from '../../theme/typography';
-import { getCategoryColors, getCategoryIcon } from '../../theme/colors';
+import { getCategoryColors } from '../../theme/colors';
+import { getCategoryIcon } from '../../theme/icons';
+import PhosphorIcon from './PhosphorIcon';
 import StackCarousel from './StackCarousel';
 
 // Deck cards are always portrait rectangles: 140 wide (at most 36% of the
@@ -151,8 +153,8 @@ const DeckCard = ({
         >
           {/* Background Category Icon */}
           <View style={styles.backgroundCategoryIcon}>
-            <Iconify
-              icon={categoryIcon}
+            <PhosphorIcon
+              {...categoryIcon}
               size={isFeatured ? 170 : 120}
               color="rgba(0, 0, 0, 0.1)"
               style={styles.categoryIconStyle}
@@ -163,10 +165,10 @@ const DeckCard = ({
               <Image
                 source={
                   deck.is_admin_created
-                    ? require('../../assets/app_icon.png')
+                    ? require('../../assets/images/app_icon.png')
                     : deck.profiles?.image_url
                       ? { uri: deck.profiles.image_url }
-                      : require('../../assets/avatar_default.webp')
+                      : require('../../assets/images/avatar_default.webp')
                 }
                 style={styles.deckProfileAvatar}
               />

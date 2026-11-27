@@ -24,12 +24,12 @@ export default function LanguageSelector({ isVisible, onClose, onLanguageChange 
   const primaryColor = colors.buttonColor || colors.primary || '#F98A21';
 
   const languages = useMemo(() => [
-    { code: 'tr', name: 'Türkçe', icon: 'twemoji:flag-for-flag-turkey' },
-    { code: 'en', name: 'English', icon: 'twemoji:flag-england' },
-    { code: 'es', name: 'Spanish', icon: 'twemoji:flag-spain' },
-    { code: 'fr', name: 'French', icon: 'twemoji:flag-france' },
-    { code: 'pt', name: 'Portuguese', icon: 'twemoji:flag-portugal' },
-    { code: 'de', name: 'German', icon: 'twemoji:flag-germany' },
+    { code: 'tr', name: 'Türkçe' },
+    { code: 'en', name: 'English' },
+    { code: 'es', name: 'Spanish' },
+    { code: 'fr', name: 'French' },
+    { code: 'pt', name: 'Portuguese' },
+    { code: 'de', name: 'German' },
   ], []);
 
   // --- MODAL GÖRÜNÜRLÜK KONTROLÜ ---
@@ -71,7 +71,9 @@ export default function LanguageSelector({ isVisible, onClose, onLanguageChange 
         activeOpacity={0.8}
       >
         <View style={styles.iconWrapper}>
-          <Iconify icon={language.icon} size={28} />
+          <Text style={[styles.languageCode, { color: isSelected ? primaryColor : colors.subtext }]}>
+            {language.code.toUpperCase()}
+          </Text>
         </View>
         <Text style={[
           styles.languageText,
@@ -84,7 +86,7 @@ export default function LanguageSelector({ isVisible, onClose, onLanguageChange 
         </Text>
       </TouchableOpacity>
     );
-  }, [selectedLanguage, isDarkMode, primaryColor, colors.text]);
+  }, [selectedLanguage, isDarkMode, primaryColor, colors.text, colors.subtext]);
 
   return (
     <BottomSheetModal
@@ -163,6 +165,12 @@ const styles = StyleSheet.create({
   },
   iconWrapper: {
     marginRight: 14,
+    width: 28,
+    alignItems: 'center',
+  },
+  languageCode: {
+    fontSize: fontSizes.subhead,
+    fontFamily: fonts.bold,
   },
   languageText: {
     fontSize: fontSizes.body,

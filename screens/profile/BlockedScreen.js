@@ -12,7 +12,8 @@ import { triggerHaptic } from '../../lib/hapticManager';
 import * as BlockService from '../../services/BlockService';
 import LottieView from 'lottie-react-native';
 import { useListBottomInset } from '../../components/ui/TabBarInset';
-import { getCategoryIcon } from '../../theme/colors';
+import { getCategoryIcon } from '../../theme/icons';
+import PhosphorIcon from '../../components/ui/PhosphorIcon';
 
 export default function BlockedScreen() {
   const { colors } = useTheme();
@@ -131,8 +132,8 @@ export default function BlockedScreen() {
 
       {loadingBlocked ? (
         <View style={styles.loadingContainer}>
-          <LottieView source={require('../../assets/flexloader.json')} speed={1.15} autoPlay loop style={{ width: 160, height: 160 }} />
-          <LottieView source={require('../../assets/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100, marginTop: -65 }} />
+          <LottieView source={require('../../assets/animations/flexloader.json')} speed={1.15} autoPlay loop style={{ width: 160, height: 160 }} />
+          <LottieView source={require('../../assets/animations/loaders.json')} speed={1.1} autoPlay loop style={{ width: 100, height: 100, marginTop: -65 }} />
         </View>
       ) : blockedTab === 'users' ? (
         blockedUsers.length === 0 ? (
@@ -147,7 +148,7 @@ export default function BlockedScreen() {
             {blockedUsers.map((user) => (
               <View key={user.id} style={[styles.row, { borderBottomColor: colors.border + '99' }]}>
                 <Image
-                  source={user.image_url ? { uri: user.image_url } : require('../../assets/avatar_default.webp')}
+                  source={user.image_url ? { uri: user.image_url } : require('../../assets/images/avatar_default.webp')}
                   style={styles.avatar}
                 />
                 <Text style={[typography.styles.body, { color: colors.text }, styles.label]} numberOfLines={1}>
@@ -176,7 +177,7 @@ export default function BlockedScreen() {
           {hiddenDecks.map((deck) => (
             <View key={deck.id} style={[styles.deckCard, { backgroundColor: colors.border + '18', borderColor: colors.border + '40' }]}>
               <View style={[styles.deckCardThumb, { backgroundColor: colors.buttonColor + '20' }]}>
-                <Iconify icon={getCategoryIcon(deck.categories?.sort_order)} size={28} color={colors.buttonColor} />
+                <PhosphorIcon {...getCategoryIcon(deck.categories?.sort_order)} size={28} color={colors.buttonColor} />
               </View>
               <View style={styles.deckCardBody}>
                 <Text style={[styles.deckCardTitle, { color: colors.text }]} numberOfLines={1}>{deck.name}</Text>
