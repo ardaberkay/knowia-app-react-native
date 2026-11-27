@@ -648,7 +648,8 @@
     "errorMessageNotification": "Permission de notification non accordée !",
     "errorMessageNotificationDevice": "Un appareil physique est nécessaire pour recevoir des notifications.",
     "openSettingsHint": "Pour activer les notifications, allez dans Réglages.",
-    "openSettings": "Réglages"
+    "openSettings": "Réglages",
+    "channelName": "Rappels d'étude"
   },
   "categories": {
     "1": "Langue",

@@ -1,6 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
-import { Alert, Linking } from 'react-native';
+import { Alert, Linking, Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
 import i18n from '../lib/i18n';
 
@@ -28,6 +28,16 @@ export async function registerForPushNotificationsAsync(userId) {
   }
 
   try {
+    // Android: the channel reminders arrive on (the server sends without a
+    // channelId, so they use 'default'). Created before asking permission,
+    // as Android 13+ expects.
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: i18n.t('notifications.channelName', 'Çalışma hatırlatmaları'),
+        importance: Notifications.AndroidImportance.DEFAULT,
+      });
+    }
+
     // Mevcut izin durumunu kontrol et
     const { status: existingStatus } =
       await Notifications.getPermissionsAsync();

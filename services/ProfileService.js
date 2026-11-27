@@ -3,6 +3,7 @@ import * as Localization from 'expo-localization';
 import { supabase } from '../lib/supabase';
 import { invalidateCache, cachedQuery, peekCachedQuery } from './CacheService';
 import { STALE } from '../lib/queryClient';
+import i18n from '../lib/i18n';
 
 export async function getCurrentUserProfile(userId) {
   if (!userId) throw new Error('Kullanıcı oturumu bulunamadı');
@@ -203,6 +204,27 @@ export async function syncActivityTimeZone(userId) {
     await invalidateActivitySummary(userId);
   } catch (e) {
     console.error('Saat dilimi kaydedilemedi:', e?.message || e);
+  }
+}
+
+const LANGUAGE_SYNC_KEY = 'profile_language_synced';
+
+/**
+ * Saves the app language on the server (profiles.language) when it differs
+ * from the last one sent: study reminders are written in it (Turkish → TR,
+ * everything else → EN). Cheap to call on focus.
+ */
+export async function syncProfileLanguage(userId, language = i18n.language) {
+  const lang = String(language || '').toLowerCase().split(/[-_]/)[0];
+  if (!userId || !/^[a-z]{2}$/.test(lang)) return;
+  try {
+    const synced = await AsyncStorage.getItem(LANGUAGE_SYNC_KEY);
+    if (synced === `${userId}:${lang}`) return;
+    const { error } = await supabase.from('profiles').update({ language: lang }).eq('id', userId);
+    if (error) throw error;
+    await AsyncStorage.setItem(LANGUAGE_SYNC_KEY, `${userId}:${lang}`);
+  } catch (e) {
+    if (__DEV__) console.warn('Dil kaydedilemedi:', e?.message || e);
   }
 }
 

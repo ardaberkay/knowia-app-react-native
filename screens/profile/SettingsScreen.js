@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProfile } from '../../contexts/ProfileContext';
-import { updateNotificationPreference, clearPushToken } from '../../services/ProfileService';
+import { updateNotificationPreference, clearPushToken, syncProfileLanguage } from '../../services/ProfileService';
 import { registerForPushNotificationsAsync } from '../../services/NotificationService';
 import { getHapticPreference, setHapticPreference, triggerHaptic } from '../../lib/hapticManager';
 import LanguageSelector from '../../components/modals/LanguageSelector';
@@ -92,7 +92,9 @@ export default function SettingsScreen() {
   const handleLanguageChange = useCallback(async (lng) => {
     await i18n.changeLanguage(lng);
     setLanguageModalVisible(false);
-  }, [i18n]);
+    // reminders follow the app language
+    syncProfileLanguage(authUserId, lng);
+  }, [i18n, authUserId]);
   const languageName = LANGUAGE_NAMES[i18n.language] || '';
 
   const switchProps = (value) => ({

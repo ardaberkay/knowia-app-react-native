@@ -684,7 +684,8 @@
     "errorMessageNotification": "Push bildirim izni verilmedi!",
     "errorMessageNotificationDevice": "Push bildirimleri için gerçek bir cihaz gereklidir.",
     "openSettingsHint": "Bildirimleri açmak için Ayarlar'a gidin.",
-    "openSettings": "Ayarlar"
+    "openSettings": "Ayarlar",
+    "channelName": "Çalışma hatırlatmaları"
   },
   "chapters": {
     "title": "Bölümler",

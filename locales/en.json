@@ -685,7 +685,8 @@
     "errorMessageNotification": "Notification permission not granted!",
     "errorMessageNotificationDevice": "A physical device is required to receive notifications.",
     "openSettingsHint": "To enable notifications, go to Settings.",
-    "openSettings": "Settings"
+    "openSettings": "Settings",
+    "channelName": "Study reminders"
   },
   "chapters": {
     "title": "Chapters",

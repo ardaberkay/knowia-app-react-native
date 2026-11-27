@@ -648,7 +648,8 @@
     "errorMessageNotification": "Permiso de notificación no concedido!",
     "errorMessageNotificationDevice": "Un dispositivo físico es necesario para recibir notificaciones.",
     "openSettingsHint": "Para activar las notificaciones, ve a Ajustes.",
-    "openSettings": "Ajustes"
+    "openSettings": "Ajustes",
+    "channelName": "Recordatorios de estudio"
   },
   "categories": {
     "1": "Idioma",

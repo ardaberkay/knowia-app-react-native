@@ -650,7 +650,8 @@
     "errorMessageNotification": "Benachrichtigungsberechtigung nicht erteilt!",
     "errorMessageNotificationDevice": "Zum Empfangen von Benachrichtigungen ist ein physisches Gerät erforderlich.",
     "openSettingsHint": "Aktivieren Sie Benachrichtigungen in den Einstellungen.",
-    "openSettings": "Einstellungen"
+    "openSettings": "Einstellungen",
+    "channelName": "Lernerinnerungen"
   },
   "chapters": {
     "title": "Kapitel",

@@ -648,7 +648,8 @@
     "errorMessageNotification": "Permissão de notificação não concedida!",
     "errorMessageNotificationDevice": "Um dispositivo físico é necessário para receber notificações.",
     "openSettingsHint": "Para ativar notificações, vá em Configurações.",
-    "openSettings": "Configurações"
+    "openSettings": "Configurações",
+    "channelName": "Lembretes de estudo"
   },
   "categories": {
     "1": "Idioma",
