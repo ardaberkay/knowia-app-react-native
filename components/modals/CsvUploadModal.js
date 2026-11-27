@@ -538,7 +538,7 @@ export default function CsvUploadModal({
         const card = processedCards[i];
         const { data, error } = await supabase.from('cards').insert(card).select();
         if (error) {
-          console.error('Supabase insert hatası:', JSON.stringify(error), 'Kart:', JSON.stringify(card));
+          console.error('Supabase insert hatası:', error?.message);
           errorCount++;
         } else { successCount++; }
       }

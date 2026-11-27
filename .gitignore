@@ -43,3 +43,10 @@ yarn-error.*
 # Apple Secrets
 apple-jwt.js
 dist/
+# Local Supabase schema dump (supabase db dump), never commit
+knowia_schema.sql
+
+# Local work plan (moved from ~/.claude/plans), never commit
+knowia_plan.md
+# Supabase CLI local state
+supabase/.temp/

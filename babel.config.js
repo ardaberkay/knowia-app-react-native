@@ -1,5 +1,6 @@
 module.exports = function (api) {
-  api.cache(true);
+  // Cache per NODE_ENV so a production build never reuses the dev config.
+  api.cache.using(() => process.env.NODE_ENV);
   
   // Production'da console.log'ları kaldır (error ve warn hariç)
   const removeConsolePlugin = process.env.NODE_ENV === 'production' 

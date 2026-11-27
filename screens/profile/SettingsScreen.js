@@ -33,7 +33,7 @@ export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const { session } = useAuth();
   const authUserId = session?.user?.id;
-  const { profile: contextProfile } = useProfile();
+  const { profile: contextProfile, refetch: refetchProfile } = useProfile();
 
   // Haptics
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
@@ -54,30 +54,38 @@ export default function SettingsScreen() {
     return () => { active = false; };
   }, [contextProfile?.notifications_enabled]);
   const handleToggleNotifications = async (value) => {
-    if (value) {
-      const { status } = await Notifications.requestPermissionsAsync();
-      if (status === 'granted') {
-        setNotificationsEnabled(true);
-        await updateNotificationPreference(authUserId, true);
-        if (authUserId) await registerForPushNotificationsAsync(authUserId);
+    try {
+      if (value) {
+        const { status } = await Notifications.requestPermissionsAsync();
+        if (status === 'granted') {
+          setNotificationsEnabled(true);
+          await updateNotificationPreference(authUserId, true);
+          if (authUserId) await registerForPushNotificationsAsync(authUserId);
+        } else {
+          setNotificationsEnabled(false);
+          await updateNotificationPreference(authUserId, false);
+          Alert.alert(
+            t('profile.notifications'),
+            t('notifications.openSettingsHint', 'Bildirimleri açmak için Ayarlar\'a gidin.'),
+            [
+              { text: t('common.cancel', 'İptal'), style: 'cancel' },
+              { text: t('notifications.openSettings', 'Ayarlar'), onPress: () => Linking.openSettings() },
+            ]
+          );
+        }
       } else {
         setNotificationsEnabled(false);
         await updateNotificationPreference(authUserId, false);
-        Alert.alert(
-          t('profile.notifications'),
-          t('notifications.openSettingsHint', 'Bildirimleri açmak için Ayarlar\'a gidin.'),
-          [
-            { text: t('common.cancel', 'İptal'), style: 'cancel' },
-            { text: t('notifications.openSettings', 'Ayarlar'), onPress: () => Linking.openSettings() },
-          ]
-        );
+        if (authUserId) await clearPushToken(authUserId);
       }
-    } else {
-      setNotificationsEnabled(false);
-      await updateNotificationPreference(authUserId, false);
-      if (authUserId) await clearPushToken(authUserId);
+    } catch (e) {
+      if (__DEV__) console.warn('Notification toggle failed:', e?.message);
+    } finally {
+      // Keep the shared profile in sync so this screen and Home read the new value.
+      refetchProfile();
     }
   };
+
 
   // Language
   const [languageModalVisible, setLanguageModalVisible] = useState(false);

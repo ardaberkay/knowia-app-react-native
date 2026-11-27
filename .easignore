@@ -1,7 +1,20 @@
-w# Önemli: android/ klasörünü komple gizle
+# Önemli: android/ klasörünü komple gizle
 node_modules/
 android/
 ios/
 apple-jwt.js
 .expo/
 dist/
+
+# Secrets and signing keys
+.env*.local
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Local-only files
+supabase/.temp/
+knowia_schema.sql
+knowia_plan.md

@@ -67,7 +67,6 @@ export function AuthProvider({ children }) {
     // 🔥 3. YENİ EKLENEN: DIŞARIDAN GELEN (GOOGLE) LİNKİ YAKALAYICI
     const handleDeepLink = async (event) => {
       const url = event.url;
-      console.log("🔗 Dışarıdan link geldi:", url);
 
       // Şifre sıfırlama linki App.js tarafından işlenir; burada setSession yapma
       if (url && url.includes('type=recovery')) {

@@ -4,6 +4,7 @@ import { Text } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
+import { useProfile } from '../../contexts/ProfileContext';
 import { getDecksByCategory } from '../../services/DeckService';
 import { useNavigation, useFocusEffect, useScrollToTop } from '@react-navigation/native';
 import { useTheme } from '../../theme/theme';
@@ -11,7 +12,6 @@ import { typography, fontSizes, fonts } from '../../theme/typography';
 import { getFavoriteDecks, addFavoriteDeck, removeFavoriteDeck } from '../../services/FavoriteService';
 import {
   updateLastActiveAt,
-  updateNotificationPreference,
   getActivitySummary,
   syncActivityTimeZone,
   DEFAULT_DAILY_GOAL,
@@ -85,6 +85,7 @@ const HERO_GRADIENT_END = { x: 0, y: 1 };
 export default function HomeScreen() {
   const { session } = useAuth();
   const userId = session?.user?.id;
+  const { profile, loading: profileLoading } = useProfile();
   const navigation = useNavigation();
   const { colors, isDarkMode } = useTheme();
   const insets = useSafeAreaInsets();
@@ -194,19 +195,22 @@ export default function HomeScreen() {
       (async () => {
         await syncActivityTimeZone(userId);
         await updateLastActiveAt(userId);
-
-        if (notificationSetupDoneRef.current) return;
-        notificationSetupDoneRef.current = true;
-
-        const token = await registerForPushNotificationsAsync(userId);
-
-        if (token) {
-          await updateNotificationPreference(userId, true);
-        }
       })();
     }, [loadActivity, loadInProgressDecks, userId])
   );
 
+
+  // Push token setup, once per mount. Never writes the preference: a user who
+  // turned notifications off in Settings stays off; only an enabled profile
+  // (the default for new users) registers or refreshes its token.
+  useEffect(() => {
+    if (!userId || profileLoading || !profile) return;
+    if (notificationSetupDoneRef.current) return;
+    notificationSetupDoneRef.current = true;
+    if (profile.notifications_enabled) {
+      registerForPushNotificationsAsync(userId).catch(() => { });
+    }
+  }, [userId, profile, profileLoading]);
 
   const onRefresh = async () => {
     try {
