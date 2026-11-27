@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ActivityIndicator, Alert } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Image, ActivityIndicator, Alert, Platform } from 'react-native';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { Text } from '../../components/ui/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
@@ -16,6 +17,10 @@ import PhosphorIcon from '../../components/ui/PhosphorIcon';
 
 export default function BlockedScreen() {
   const { colors } = useTheme();
+  // iOS: the header is see-through (SCROLL_EDGE_HEADER) and the tab switcher sits
+  // outside the lists, so it needs the header's height itself.
+  const headerHeight = useHeaderHeight();
+  const topInset = Platform.OS === 'ios' ? headerHeight : 0;
   const listBottomInset = useListBottomInset(0, { automaticInsets: true });
   const { session } = useAuth();
   const authUserId = session?.user?.id;
@@ -107,7 +112,7 @@ export default function BlockedScreen() {
   }, [authUserId, t, showSuccess, showError]);
 
   return (
-    <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingTop: topInset + 16 }]}>
       <View style={[styles.tabs, { backgroundColor: colors.border + '40' }]}>
         <TouchableOpacity
           style={[styles.tab, blockedTab === 'users' && { backgroundColor: colors.buttonColor }]}

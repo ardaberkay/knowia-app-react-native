@@ -304,7 +304,7 @@ export default function EditProfileScreen({ navigation }) {
   return (
     <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <FormScrollView
+      <FormScrollView contentInsetAdjustmentBehavior="automatic"
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"

@@ -1765,7 +1765,7 @@ export default function SwipeDeckScreen({ route, navigation }) {
             <PhosphorIcon icon={ICONS.undo} size={28} color={colors.orWhite} />
           </TouchableOpacity>
           <Reanimated.Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER} style={[animatedStyle, {
-            color: '#8A8A8A', ...typography.styles.subhead, textAlign: 'center', fontFamily: fonts.bold
+            color: '#8A8A8A', ...typography.styles.footnote, textAlign: 'center', fontFamily: fonts.medium
           }]}>
             {texts[textIndex]}
           </Reanimated.Text>

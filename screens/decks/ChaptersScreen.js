@@ -60,7 +60,7 @@ const MemoizedChapterItem = memo(({ item, progressMap, editMode, colors, onPress
               <PhosphorIcon icon={ICONS.delete} size={24} color="#FF4444" />
             </TouchableOpacity>
           ) : (
-            <PhosphorIcon icon={ICONS.chevronRight} size={26} color={colors.buttonColor} />
+            <PhosphorIcon icon={ICONS.chevronRight} size={22} color={colors.buttonColor} />
           )}
         </View>
       </View>

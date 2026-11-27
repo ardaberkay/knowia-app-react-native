@@ -133,7 +133,7 @@ export default function DeckEditScreen() {
 
   return (
     <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
-      <FormScrollView
+      <FormScrollView contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.formContainer}
         keyboardShouldPersistTaps="handled"
         extraScrollHeight={20}

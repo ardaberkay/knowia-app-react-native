@@ -54,6 +54,12 @@ const SCROLL_EDGE_HEADER = Platform.OS === 'ios'
     scrollEdgeEffects: { top: 'automatic' },
   }
   : {};
+// For screens that make their header transparent with setOptions (both
+// platforms): the same look from the first frame, before setOptions runs.
+const TRANSPARENT_HEADER_FIRST_FRAME = {
+  headerTransparent: true,
+  headerStyle: { backgroundColor: 'transparent' },
+};
 const Tab = createNativeBottomTabNavigator();
 
 // Tab screens, wrapped so useListBottomInset knows the native tab bar height.
@@ -215,7 +221,16 @@ export default function AppNavigator() {
               component={DeckDetailScreen}
               options={{
                 headerShown: true,
-                title: t('tabs.deckInfo', 'Deste Bilgisi'),
+                // Same header look DeckDetailScreen sets with setOptions, given
+                // here too so it applies from the first frame: setOptions only
+                // runs once the screen is focused, so the first visit of a
+                // session showed one frame of the default header (with the
+                // scroll-edge shadow).
+                title: '',
+                headerTransparent: true,
+                headerStyle: { backgroundColor: 'transparent' },
+                headerTintColor: '#FFFFFF',
+                scrollEdgeEffects: { top: 'hidden', bottom: 'automatic', left: 'automatic', right: 'automatic' },
                 headerTitleAlign: 'center',
                 headerBackButtonDisplayMode: 'minimal',
                 contentStyle: { backgroundColor: colors.background },
@@ -270,15 +285,16 @@ export default function AppNavigator() {
                 headerTitleAlign: 'center',
                 headerBackButtonDisplayMode: 'minimal',
                 contentStyle: { backgroundColor: colors.background },
+                ...SCROLL_EDGE_HEADER,
               }}
             />
-            <Stack.Screen name="SwipeDeck" component={SwipeDeckScreen} options={{ headerShown: true, headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', gestureEnabled: false }} />
-            <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: t('tabs.profileEdit', 'Profili Düzenle'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
+            <Stack.Screen name="SwipeDeck" component={SwipeDeckScreen} options={{ headerShown: true, headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', gestureEnabled: false, ...TRANSPARENT_HEADER_FIRST_FRAME, headerTintColor: '#FFFFFF' }} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: t('tabs.profileEdit', 'Profili Düzenle'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', ...SCROLL_EDGE_HEADER }} />
             <Stack.Screen name="Blocked" component={BlockedScreen} options={{ headerShown: true, title: t('profile.blockedSection', 'Engellenenler'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', ...SCROLL_EDGE_HEADER }} />
             <Stack.Screen name="ProfileAccount" component={AccountScreen} options={{ headerShown: true, title: t('profile.account', 'Hesap'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', ...SCROLL_EDGE_HEADER }} />
-            <Stack.Screen name="ProfileSettings" component={SettingsScreen} options={{ headerShown: true, title: t('profile.settings', 'Ayarlar'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
+            <Stack.Screen name="ProfileSettings" component={SettingsScreen} options={{ headerShown: true, title: t('profile.settings', 'Ayarlar'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', ...SCROLL_EDGE_HEADER }} />
             <Stack.Screen name="ProfileInfo" component={InfoScreen} options={{ headerShown: true, title: t('profile.info', 'Bilgi ve destek'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', ...SCROLL_EDGE_HEADER }} />
-            <Stack.Screen name="DeckEdit" component={DeckEditScreen} options={{ headerShown: true, title: t('tabs.deckEdit', 'Desteyi Düzenle'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
+            <Stack.Screen name="DeckEdit" component={DeckEditScreen} options={{ headerShown: true, title: t('tabs.deckEdit', 'Desteyi Düzenle'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', ...SCROLL_EDGE_HEADER }} />
             <Stack.Screen
               name="AddCard"
               component={AddCardScreen}
@@ -287,6 +303,7 @@ export default function AppNavigator() {
                 title: t('tabs.addCard', 'Kart Ekle'),
                 headerTitleAlign: 'center',
                 headerBackButtonDisplayMode: 'minimal',
+                ...SCROLL_EDGE_HEADER,
                 headerRight: () => (
                   <TouchableOpacity
                     onPress={() => {
@@ -321,12 +338,13 @@ export default function AppNavigator() {
                 ),
               })}
             />
-            <Stack.Screen name="EditCard" component={EditCardScreen} options={{ headerShown: true, title: t('cardDetail.edit', 'Kartı Düzenle'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal' }} />
+            <Stack.Screen name="EditCard" component={EditCardScreen} options={{ headerShown: true, title: t('cardDetail.edit', 'Kartı Düzenle'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', ...SCROLL_EDGE_HEADER }} />
             <Stack.Screen name="DeckCards" component={DeckCardsScreen} options={{ headerShown: true, title: t('tabs.cards', 'Kartlar'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', ...SCROLL_EDGE_HEADER }} />
             <Stack.Screen name="Chapters" component={ChaptersScreen} options={{ headerShown: true, title: t('tabs.chapters', 'Bölümler'), headerTitleAlign: 'center', headerBackButtonDisplayMode: 'minimal', ...SCROLL_EDGE_HEADER }} />
             <Stack.Screen name="ChapterCards" component={ChapterCardsScreen} options={{
               headerShown: true,
               title: '',
+              ...TRANSPARENT_HEADER_FIRST_FRAME,
               headerTitleAlign: 'center',
               headerBackButtonDisplayMode: 'minimal',
             }} />

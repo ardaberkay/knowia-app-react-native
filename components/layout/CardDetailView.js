@@ -335,17 +335,8 @@ export default function CardDetailSheet({
       }}
       backgroundStyle={Platform.OS === 'android' ? { backgroundColor: colors.background } : undefined /* iOS: system Liquid Glass */}
     >
-      <View style={[styles.sheetHeader, !hasMenu && styles.sheetHeaderCloseOnly]}>
-        <TouchableOpacity
-          onPress={() => sheetRef.current?.dismiss()}
-          activeOpacity={0.7}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          accessibilityRole="button"
-          accessibilityLabel={t('cardDetail.close', 'Kapat')}
-          style={headerButtonStyle}
-        >
-          <PhosphorIcon icon={ICONS.close} size={22} color={colors.text} />
-        </TouchableOpacity>
+      {/* Top right, like every other sheet: the menu, then close at the edge. */}
+      <View style={styles.sheetHeader}>
         {hasMenu ? (
           <View style={styles.sheetHeaderActions}>
             <MenuView
@@ -360,6 +351,16 @@ export default function CardDetailSheet({
             </MenuView>
           </View>
         ) : null}
+        <TouchableOpacity
+          onPress={() => sheetRef.current?.dismiss()}
+          activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel={t('cardDetail.close', 'Kapat')}
+          style={headerButtonStyle}
+        >
+          <PhosphorIcon icon={ICONS.close} size={22} color={colors.text} />
+        </TouchableOpacity>
       </View>
 
       {/* A pull down on short content goes straight to the sheet: no bounce,
@@ -661,15 +662,13 @@ const styles = StyleSheet.create({
   sheetHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
+    gap: 10,
     paddingHorizontal: 12,
     paddingTop: 16,
     paddingBottom: 10,
   },
   // Only the ✕: on the right.
-  sheetHeaderCloseOnly: {
-    justifyContent: 'flex-end',
-  },
   sheetHeaderActions: {
     flexDirection: 'row',
     alignItems: 'center',

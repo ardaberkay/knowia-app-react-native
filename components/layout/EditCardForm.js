@@ -128,7 +128,7 @@ export default function AddEditCardInlineForm({ card, deck, onSave, onCancel }) 
   };
 
   return (
-    <FormScrollView
+    <FormScrollView contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={[styles.formContainer, { backgroundColor: colors.background }]}
       style={{ flex: 1 }}
       keyboardShouldPersistTaps="handled"

@@ -153,7 +153,7 @@ export default function AddCardScreen() {
         onClose={() => setCsvModalVisible(false)}
         deck={deck}
       />
-      <FormScrollView
+      <FormScrollView contentInsetAdjustmentBehavior="automatic"
         style={{ flex: 1 }}
         contentContainerStyle={[styles.formContainer]}
         keyboardShouldPersistTaps="handled"

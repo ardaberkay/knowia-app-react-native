@@ -137,7 +137,7 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}>
         <ProfileMenuCard items={items} colors={colors} />
       </ScrollView>
       <LanguageSelector

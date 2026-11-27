@@ -149,7 +149,7 @@ export default function CreateScreen() {
 
   return (
     <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
-      <FormScrollView
+      <FormScrollView contentInsetAdjustmentBehavior="automatic"
         style={{flex: 1}}
         contentContainerStyle={[styles.formContainer]}
         keyboardShouldPersistTaps="handled"
