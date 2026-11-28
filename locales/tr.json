@@ -916,27 +916,33 @@
     "totalDecks": "Deste"
   },
   "onboarding": {
-    "step": "{{current}} / {{total}}",
     "skip": "Atla",
     "next": "İleri",
-    "getStarted": "Başla",
-    "previewTitle": "Tanıtım",
-    "screen1": {
-      "title": "Oyunlaştırılmış, Kalıcı Öğrenme",
-      "subtitle": "Kartları kaydır, öğrenme hızını belirle ve algoritmamız sayesinde asla unutma."
-    },
-    "screen2": {
-      "title": "Asla Sıfırdan Başlama",
-      "subtitle": "Knowia'nın uzman desteleriyle hemen öğrenmeye başla veya topluluğun paylaştığı binlerce desteyi keşfet."
-    },
-    "screen3": {
-      "title": "Kendi Dünyanı Yarat",
-      "subtitle": "Kendi destelerini oluştur, ister kendine sakla ister tüm dünyayla paylaşarak topluluğa katkı sağla."
-    },
-    "screen4": {
-      "title": "Hemen Başla",
-      "subtitle": "Öğrenme alışkanlığını bugün başlat. İlk desteğini seç ve kaydırmaya başla."
-    }
+    "learnTitle": "Kaydırarak öğren",
+    "learnText": "Bildiğini sağa, tekrar etmek istediğini sola kaydır. Ne zaman tekrar göreceğine sen karar ver.",
+    "decksTitle": "Hazır desteler",
+    "decksText": "Knowia'nın hazır desteleriyle hemen başla ya da topluluğun paylaştıklarını keşfet.",
+    "createTitle": "Kendi desten",
+    "createText": "Kartlarını tek tek yaz ya da CSV ile yüzlercesini birden ekle. İstersen toplulukla paylaş.",
+    "dailyTitle": "Her gün biraz",
+    "dailyText": "Günlük hedefini seç, serini koru. Zamanı gelince küçük bir hatırlatma gelsin.",
+    "goalHint": "İstediğin zaman profilinden değiştirebilirsin.",
+    "start": "Hemen Başla",
+    "haveAccount": "Zaten hesabım var",
+    "share": "Paylaş",
+    "demoQuestion": "Soru",
+    "demoAnswer": "Cevap",
+    "demoTap": "Çevirmek için dokun",
+    "demoLearned": "Öğrendim",
+    "demoRepeat": "Tekrar Et",
+    "demoLearnedFeedback": "Öğrendin, bu kart bir daha gelmez.",
+    "demoRepeatFeedback": "Birkaç kart sonra yeniden gelecek.",
+    "demo1Q": "Book",
+    "demo1A": "Kitap",
+    "demo2Q": "Apple",
+    "demo2A": "Elma",
+    "demo3Q": "River",
+    "demo3A": "Nehir"
   },
   "languages": {
     "1": "Türkçe",

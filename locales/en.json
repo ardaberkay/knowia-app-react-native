@@ -917,27 +917,33 @@
     "totalDecks": "Deck"
   },
   "onboarding": {
-    "step": "{{current}} / {{total}}",
     "skip": "Skip",
     "next": "Next",
-    "getStarted": "Get started",
-    "previewTitle": "Introduction",
-    "screen1": {
-      "title": "Gamified, Lasting Learning",
-      "subtitle": "Swipe cards, choose your pace, and never forget thanks to our algorithm."
-    },
-    "screen2": {
-      "title": "Never Start From Scratch",
-      "subtitle": "Start learning instantly with expert decks, or explore thousands of community decks."
-    },
-    "screen3": {
-      "title": "Create Your Own World",
-      "subtitle": "Build your own decks—keep them private or share them with the world."
-    },
-    "screen4": {
-      "title": "Start Now",
-      "subtitle": "Begin your learning habit today. Pick your first deck and start swiping."
-    }
+    "learnTitle": "Learn by swiping",
+    "learnText": "Swipe right what you know, left what you want to repeat. You decide when you see it again.",
+    "decksTitle": "Ready decks",
+    "decksText": "Start right away with Knowia's ready decks or explore what the community shares.",
+    "createTitle": "Your own decks",
+    "createText": "Write your cards one by one or add hundreds at once with CSV. Share them if you like.",
+    "dailyTitle": "A little every day",
+    "dailyText": "Pick a daily goal and keep your streak. A small reminder comes when it is time.",
+    "goalHint": "You can change it any time in your profile.",
+    "start": "Get Started",
+    "haveAccount": "I already have an account",
+    "share": "Share",
+    "demoQuestion": "Question",
+    "demoAnswer": "Answer",
+    "demoTap": "Tap to flip",
+    "demoLearned": "Learned",
+    "demoRepeat": "Repeat",
+    "demoLearnedFeedback": "Learned, this card won't come back.",
+    "demoRepeatFeedback": "It comes back a few cards later.",
+    "demo1Q": "Libro",
+    "demo1A": "Book",
+    "demo2Q": "Manzana",
+    "demo2A": "Apple",
+    "demo3Q": "Río",
+    "demo3A": "River"
   },
   "languages": {
     "1": "Turkish",

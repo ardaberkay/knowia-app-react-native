@@ -18,6 +18,7 @@ import {
   peekActivitySummary,
   syncActivityTimeZone,
   syncProfileLanguage,
+  applyPendingDailyGoal,
   DEFAULT_DAILY_GOAL,
 } from '../../services/ProfileService';
 import { registerForPushNotificationsAsync } from '../../services/NotificationService';
@@ -189,6 +190,7 @@ export default function HomeScreen() {
 
       (async () => {
         await syncActivityTimeZone(userId);
+        await applyPendingDailyGoal(userId); // goal picked in onboarding
         await syncProfileLanguage(userId);
         await updateLastActiveAt(userId);
       })();

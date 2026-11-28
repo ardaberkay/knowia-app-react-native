@@ -152,6 +152,8 @@ export default function AppNavigator() {
   const { session, loading, isRecoveryMode } = useAuth();
   const { t } = useTranslation();
   const [hasSeenOnboarding, setHasSeenOnboarding] = React.useState(null);
+  // onboarding's last slide: 'register' (Hemen Başla) or 'login' (Zaten hesabım var)
+  const [authStart, setAuthStart] = React.useState('login');
 
   React.useEffect(() => {
     let mounted = true;
@@ -169,8 +171,9 @@ export default function AppNavigator() {
     };
   }, []);
 
-  const onFinishOnboarding = React.useCallback(async () => {
+  const onFinishOnboarding = React.useCallback(async (target = 'login') => {
     await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+    setAuthStart(target === 'register' ? 'register' : 'login');
     setHasSeenOnboarding(true);
   }, []);
 
@@ -214,10 +217,18 @@ export default function AppNavigator() {
           // screen until the new password is saved or the flow is cancelled.
           <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
         ) : showAuthStack ? (
-          <>
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Register" component={RegisterScreen} options={{ headerBackButtonDisplayMode: 'minimal' }} />
-          </>
+          // the first screen listed opens first (onboarding picks it)
+          authStart === 'register' ? (
+            <>
+              <Stack.Screen name="Register" component={RegisterScreen} options={{ headerBackButtonDisplayMode: 'minimal' }} />
+              <Stack.Screen name="Login" component={LoginScreen} />
+            </>
+          ) : (
+            <>
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="Register" component={RegisterScreen} options={{ headerBackButtonDisplayMode: 'minimal' }} />
+            </>
+          )
         ) : (
           <>
             <Stack.Screen name="MainTabs" component={MainTabs} options={{ freezeOnBlur: true, headerBackButtonDisplayMode: 'minimal' }} />

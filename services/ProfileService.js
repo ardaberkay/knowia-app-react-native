@@ -228,6 +228,25 @@ export async function syncProfileLanguage(userId, language = i18n.language) {
   }
 }
 
+// Daily goal picked in onboarding (before an account exists): kept on the
+// device, written to the profile on the first Home visit after sign-in.
+const PENDING_GOAL_KEY = 'pending_daily_goal';
+export async function savePendingDailyGoal(goal) {
+  try { await AsyncStorage.setItem(PENDING_GOAL_KEY, String(goal)); } catch { /* optional */ }
+}
+export async function applyPendingDailyGoal(userId) {
+  if (!userId) return;
+  try {
+    const raw = await AsyncStorage.getItem(PENDING_GOAL_KEY);
+    if (!raw) return;
+    const goal = Number(raw);
+    if (Number.isFinite(goal) && goal >= CUSTOM_GOAL_MIN && goal <= CUSTOM_GOAL_MAX) await setDailyGoal(userId, goal);
+    await AsyncStorage.removeItem(PENDING_GOAL_KEY);
+  } catch (e) {
+    if (__DEV__) console.warn('Bekleyen günlük hedef yazılamadı:', e?.message || e);
+  }
+}
+
 /** Sets the daily goal (swipes per day). Throws on failure. */
 export async function setDailyGoal(userId, goal) {
   if (!userId) return;
