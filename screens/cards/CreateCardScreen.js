@@ -153,6 +153,10 @@ export default function AddCardScreen() {
       <CsvUploadModal
         isVisible={csvModalVisible}
         onClose={() => setCsvModalVisible(false)}
+        onImported={() => {
+          // let the sheet slide away, then back to the deck (or open it)
+          setTimeout(() => navigation.popTo('DeckDetail', { deck }, { merge: true }), 300);
+        }}
         deck={deck}
       />
       <FormScrollView contentInsetAdjustmentBehavior="automatic"

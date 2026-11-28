@@ -12,12 +12,14 @@ import * as Sharing from 'expo-sharing';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Buffer } from 'buffer';
-import { supabase } from '../../lib/supabase';
-import { uploadCardImage } from '../../services/StorageService';
+import { uploadCardImage, removeUnusedCardImages } from '../../services/StorageService';
+import { importCards } from '../../services/CardService';
+import { CARD_LIMITS, CSV_LIMITS, CARD_IMAGE } from '../../lib/limits';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSnackbarHelpers } from '../ui/Snackbar';
 import PhosphorIcon from '../ui/PhosphorIcon';
 import { ICONS } from '../../theme/icons';
+import { GuideSteps, GuideTip } from './HowToGuideSheet';
 
 
 // A native menu (SwiftUI Menu / Material DropdownMenu) laid over a trigger of
@@ -42,6 +44,7 @@ function MenuOverlay({ actions, onPressAction, children }) {
 export default function CsvUploadModal({
   isVisible,
   onClose,
+  onImported, // "Tamam" after cards were added: the parent goes back to the deck
   deck
 }) {
   const { colors, isDarkMode } = useTheme();
@@ -56,6 +59,11 @@ export default function CsvUploadModal({
   const [imageIds, setImageIds] = useState([]);
   const [imageIdMap, setImageIdMap] = useState({});
   const [isImageModalVisible, setImageModalVisible] = useState(false);
+  // While importing: { phase: 'images' | 'cards', done, total }. After: the result.
+  const [importProgress, setImportProgress] = useState(null);
+  const [importResult, setImportResult] = useState(null);
+  const importingRef = useRef(false);
+  const isImporting = importProgress != null;
   const scrollViewRef = useRef(null);
 
   // Native sheet: SwiftUI sheet on iOS, Material ModalBottomSheet on Android.
@@ -74,7 +82,6 @@ export default function CsvUploadModal({
     if (visibleRef.current) handleClose();
   };
 
-  // --- FONKSİYONEL KISIMLAR (HİÇ DOKUNULMADI) ---
 
   const normalizeTurkishChars = (str) => {
     if (!str) return '';
@@ -143,94 +150,98 @@ export default function CsvUploadModal({
 
   const validateCard = (card, rowNumber) => {
     const errors = [];
-    const MAX_QUESTION_LENGTH = 400;
-    const MAX_ANSWER_LENGTH = 300;
-    const MAX_EXAMPLE_LENGTH = 200;
-    const MAX_NOTE_LENGTH = 200;
-    if (card.question && card.question.trim().length > MAX_QUESTION_LENGTH) {
-      errors.push({ type: 'QUESTION_TOO_LONG', row: rowNumber, message: t("addCard.questionTooLong", "Soru en fazla 400 karakter olabilir") });
-    }
-    if (card.answer && card.answer.trim().length > MAX_ANSWER_LENGTH) {
-      errors.push({ type: 'ANSWER_TOO_LONG', row: rowNumber, message: t("addCard.answerTooLong", "Cevap en fazla 300 karakter olabilir") });
-    }
-    if (card.example && card.example.trim().length > MAX_EXAMPLE_LENGTH) {
-      errors.push({ type: 'EXAMPLE_TOO_LONG', row: rowNumber, message: t("addCard.exampleTooLong", "Örnek en fazla 200 karakter olabilir") });
-    }
-    if (card.note && card.note.trim().length > MAX_NOTE_LENGTH) {
-      errors.push({ type: 'NOTE_TOO_LONG', row: rowNumber, message: t("addCard.noteTooLong", "Not en fazla 200 karakter olabilir") });
-    }
+    const tooLong = (field, type, key, fallback) => {
+      if (card[field] && card[field].trim().length > CARD_LIMITS[field]) {
+        errors.push({ type, row: rowNumber, message: t(key, fallback) });
+      }
+    };
+    tooLong('question', 'QUESTION_TOO_LONG', 'addCard.questionTooLong', `Soru en fazla ${CARD_LIMITS.question} karakter olabilir`);
+    tooLong('answer', 'ANSWER_TOO_LONG', 'addCard.answerTooLong', `Cevap en fazla ${CARD_LIMITS.answer} karakter olabilir`);
+    tooLong('example', 'EXAMPLE_TOO_LONG', 'addCard.exampleTooLong', `Örnek en fazla ${CARD_LIMITS.example} karakter olabilir`);
+    tooLong('note', 'NOTE_TOO_LONG', 'addCard.noteTooLong', `Not en fazla ${CARD_LIMITS.note} karakter olabilir`);
     if (!card.question || card.question.trim() === '') {
       errors.push({ type: 'EMPTY_QUESTION', row: rowNumber, message: t("addCard.emptyQuestion", "Soru alanı boş olamaz") });
     }
     if (!card.answer || card.answer.trim() === '') {
       errors.push({ type: 'EMPTY_ANSWER', row: rowNumber, message: t("addCard.emptyAnswer", "Cevap alanı boş olamaz") });
     }
-    if (card.question && card.question.length > 500) {
-      errors.push({ type: 'QUESTION_TOO_LONG', row: rowNumber, message: t("addCard.questionTooLong", "Soru 500 karakterden uzun olamaz") });
-    }
     return { isValid: errors.length === 0, errors: errors };
   };
 
-  const parseCSV = (csvContent) => {
-    const lines = csvContent.split(/\r?\n/).filter(line => line.trim());
-    if (lines.length < 2) return { validCards: [], errors: [], ignoredColumns: [] };
+  // Separator from the header line: Excel saves with ";" in Turkish, German,
+  // French… and with "," in English; tab is accepted too.
+  const detectDelimiter = (text) => {
+    const counts = { ',': 0, ';': 0, '\t': 0 };
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (ch === '"') inQuotes = !inQuotes;
+      else if (!inQuotes && (ch === '\n' || ch === '\r')) break;
+      else if (!inQuotes && counts[ch] !== undefined) counts[ch]++;
+    }
+    if (counts[';'] > counts[','] && counts[';'] >= counts['\t']) return ';';
+    if (counts['\t'] > counts[','] && counts['\t'] > counts[';']) return '\t';
+    return ',';
+  };
 
-    const parseCsvLine = (line) => {
-      const result = [];
-      let current = '';
-      let inQuotes = false;
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        if (char === '"' && line[i + 1] === '"') {
-          current += '"';
-          i++;
-        } else if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-          result.push(current);
-          current = '';
-        } else {
-          current += char;
-        }
+  // Whole-text CSV parser: a quoted cell may contain the separator, "" and
+  // line breaks (a line break inside a cell no longer splits the row).
+  const parseCsvRows = (text, delimiter) => {
+    const rows = [];
+    let row = [];
+    let cell = '';
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (inQuotes) {
+        if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+        else if (ch === '"') inQuotes = false;
+        else cell += ch;
+      } else if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === delimiter) {
+        row.push(cell); cell = '';
+      } else if (ch === '\n' || ch === '\r') {
+        if (ch === '\r' && text[i + 1] === '\n') i++;
+        row.push(cell); rows.push(row); row = []; cell = '';
+      } else {
+        cell += ch;
       }
-      result.push(current);
-      return result.map(v => v.trim().replace(/^"|"$/g, '').replace(/\r$/, ''));
-    };
+    }
+    if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+    return rows.map((cells) => cells.map((v) => v.trim()));
+  };
 
-    const rawHeaders = parseCsvLine(lines[0]);
-    const headers = rawHeaders.map(h => h.toLowerCase());
-    console.log('CSV Headers Debug:', { rawHeaders, headers });
+  const parseCSV = (csvContent) => {
+    const text = String(csvContent || '').replace(/^\uFEFF/, '');
+    const rows = parseCsvRows(text, detectDelimiter(text)).filter((cells) => cells.some((v) => v !== ''));
+    if (rows.length < 2) return { validCards: [], errors: [], ignoredColumns: [], totalRows: Math.max(rows.length - 1, 0) };
 
+    const headers = rows[0].map(h => h.toLowerCase());
     const { columnMap, ignoredColumns } = processHeaders(headers);
-    console.log('CSV ColumnMap Debug:', { columnMap, ignoredColumns });
 
     if (columnMap.question === undefined || columnMap.answer === undefined) {
       return {
         validCards: [],
         errors: [{ type: 'MISSING_REQUIRED_HEADERS', message: t('common.missingRequiredHeaders', 'Soru ve cevap sütunları gerekli') }],
         ignoredColumns: ignoredColumns,
-        totalRows: lines.length - 1
+        totalRows: rows.length - 1
       };
     }
 
     const validCards = [];
     const errors = [];
-
-    for (let i = 1; i < lines.length; i++) {
-      const values = parseCsvLine(lines[i]);
+    for (let i = 1; i < rows.length; i++) {
+      const values = rows[i];
       const card = {};
-
       Object.keys(columnMap).forEach(field => {
-        const valueIndex = columnMap[field];
-        card[field] = values[valueIndex] || '';
+        card[field] = values[columnMap[field]] || '';
       });
-
       const validation = validateCard(card, i + 1);
       if (validation.isValid) { validCards.push(card); }
       else { errors.push(...validation.errors); }
     }
-
-    return { validCards, errors, ignoredColumns, totalRows: lines.length - 1 };
+    return { validCards, errors, ignoredColumns, totalRows: rows.length - 1 };
   };
 
   const handleDownloadTemplate = async () => {
@@ -244,14 +255,6 @@ export default function CsvUploadModal({
     }
   };
 
-  const getFileNameWithoutExtension = (fileName) => {
-    if (!fileName) return '';
-    let name = fileName;
-    if (fileName.includes('/')) { name = fileName.split('/').pop() || fileName; }
-    if (name.includes('\\')) { name = name.split('\\').pop() || name; }
-    if (name.includes('?')) { name = name.split('?')[0]; }
-    return name.replace(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i, '').toLowerCase().trim();
-  };
 
   const getImageType = (imageValue) => {
     if (!imageValue || typeof imageValue !== 'string' || imageValue.trim() === '') return null;
@@ -270,101 +273,74 @@ export default function CsvUploadModal({
     return url.toLowerCase().endsWith('.svg') || url.toLowerCase().includes('.svg?');
   };
 
-  const downloadAndConvertImage = async (url) => {
-    try {
-      if (isSvgUrl(url)) {
-        console.log('SVG dosyası tespit edildi, direkt URL kullanılacak:', url);
-        return null;
-      }
-      const downloadResult = await FileSystem.downloadAsync(
-        url,
-        FileSystem.cacheDirectory + `temp_image_${Date.now()}.tmp`
-      );
-      if (!downloadResult.uri) { throw new Error('Görsel indirilemedi'); }
-      const manipResult = await ImageManipulator.manipulateAsync(
-        downloadResult.uri,
-        [{ resize: { width: 512 } }],
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-      );
-      return manipResult.uri;
-    } catch (error) {
-      console.error('Görsel indirme/çevirme hatası:', error);
-      return null;
-    }
+  // One key per distinct image (file name, web link or Supabase link): an
+  // image used by several cards is processed and uploaded once.
+  const imageKeyOf = (card) => (typeof card?.image === 'string' && card.image.trim()) || null;
+  // Images this import has to upload (Supabase links are reused as they are).
+  const needsUpload = (key) => {
+    const type = getImageType(key);
+    return type === 'file_name' || type === 'local_file' || (type === 'external_url' && !isSvgUrl(key));
   };
 
-  const uploadImageToSupabase = async (imageUri) => {
-    try {
-      if (!userId) throw new Error('Kullanıcı bulunamadı');
-      const base64 = await FileSystem.readAsStringAsync(imageUri, { encoding: 'base64' });
-      const buffer = Buffer.from(base64, 'base64');
-      return await uploadCardImage(deck.id, userId, buffer);
-    } catch (error) {
-      console.error('Supabase yükleme hatası:', error);
-      return null;
-    }
+  // Resized and saved as real WebP (the file was JPEG with a .webp name before).
+  const toWebp = async (uri) => (await ImageManipulator.manipulateAsync(
+    uri,
+    [{ resize: { width: CARD_IMAGE.width } }],
+    { compress: CARD_IMAGE.compress, format: ImageManipulator.SaveFormat.WEBP }
+  )).uri;
+
+  const uploadImageFile = async (uri) => {
+    if (!userId) throw new Error('no user');
+    const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
+    return uploadCardImage(deck.id, userId, Buffer.from(base64, 'base64'));
   };
 
-  const processImage = async (imageValue, imageIndex = null) => {
-    const imageType = getImageType(imageValue);
-    if (!imageType) return null;
-    try {
-      switch (imageType) {
-        case 'supabase_url':
-          return imageValue.trim();
-        case 'external_url':
-          if (isSvgUrl(imageValue.trim())) {
-            console.log('SVG dosyası desteklenmiyor, atlanıyor:', imageValue.trim());
-            return null;
-          }
-          const downloadedUri = await downloadAndConvertImage(imageValue.trim());
-          if (!downloadedUri) {
-            console.log('Görsel indirilemedi, direkt URL kullanılıyor:', imageValue.trim());
-            return imageValue.trim();
-          }
-          return await uploadImageToSupabase(downloadedUri);
-        case 'local_file':
-        case 'file_name':
-          const fileName = imageValue.trim();
-          const fileNameWithoutExt = getFileNameWithoutExtension(fileName);
-          let matchedImage = null;
-          matchedImage = selectedImages.find(img => {
-            const imgName = img.name || img.fileName || img.uri?.split('/').pop() || img.uri?.split('\\').pop() || '';
-            const selectedName = getFileNameWithoutExtension(imgName);
-            return selectedName === fileNameWithoutExt;
-          });
-          if (!matchedImage && imageIndex !== null && imageIndex < selectedImages.length) {
-            console.log('Dosya adı eşleşmedi, sıralı eşleştirme kullanılıyor:', { imageIndex, fileNameWithoutExt, selectedImageFileName: selectedImages[imageIndex]?.fileName });
-            matchedImage = selectedImages[imageIndex];
-          }
-          console.log('Yerel dosya eşleştirme:', { fileName, fileNameWithoutExt, imageIndex, selectedImagesCount: selectedImages.length, matched: !!matchedImage, matchedImageFileName: matchedImage?.fileName });
-          if (matchedImage) {
-            console.log('Görsel işleniyor:', matchedImage.uri);
-            const manipResult = await ImageManipulator.manipulateAsync(
-              matchedImage.uri,
-              [{ resize: { width: 512 } }],
-              { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-            );
-            const uploadedUrl = await uploadImageToSupabase(manipResult.uri);
-            console.log('Görsel yüklendi:', uploadedUrl);
-            return uploadedUrl;
-          }
-          console.log('Eşleşme bulunamadı:', { fileNameWithoutExt, imageIndex, selectedImagesNames: selectedImages.map(img => getFileNameWithoutExtension(img.name || img.fileName || img.uri?.split('/').pop() || '')) });
-          return null;
-        default:
-          return null;
+  // → { url } or { error: 'svg' | 'download' | 'tooLarge' | 'unmatched' | 'upload' }
+  const prepareImage = async (key) => {
+    const type = getImageType(key);
+    if (type === 'supabase_url') return { url: key };
+    if (type === 'external_url') {
+      if (isSvgUrl(key)) return { error: 'svg' };
+      const tmp = `${FileSystem.cacheDirectory}csv_img_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.tmp`;
+      try {
+        const res = await FileSystem.downloadAsync(key, tmp);
+        if (!res?.uri || (res.status && res.status >= 400)) return { error: 'download' };
+        const info = await FileSystem.getInfoAsync(res.uri);
+        if (info?.size && info.size > CSV_LIMITS.maxUrlImageBytes) return { error: 'tooLarge' };
+        try { return { url: await uploadImageFile(await toWebp(res.uri)) }; }
+        catch { return { error: 'upload' }; }
+      } catch {
+        return { error: 'download' };
+      } finally {
+        FileSystem.deleteAsync(tmp, { idempotent: true }).catch(() => {});
       }
-    } catch (error) {
-      console.error('Görsel işleme hatası:', error);
-      return null;
     }
+    // file name in the CSV → the picked photo the user matched to it
+    const picked = imageIdMap[key];
+    if (!picked) return { error: 'unmatched' };
+    try { return { url: await uploadImageFile(await toWebp(picked.uri)) }; }
+    catch { return { error: 'upload' }; }
+  };
+
+  // Runs worker over items with at most `limit` at the same time (memory and
+  // storage rate limits: not every image at once).
+  const runPool = async (items, limit, worker) => {
+    let next = 0;
+    const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (next < items.length) {
+        const index = next++;
+        await worker(items[index], index);
+      }
+    });
+    await Promise.all(runners);
   };
 
   const handlePickImages = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsMultipleSelection: true,
+        selectionLimit: CSV_LIMITS.maxImages,
         quality: 1,
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -372,7 +348,6 @@ export default function CsvUploadModal({
           const originalFileName = img.name || img.fileName || img.uri?.split('/').pop() || img.uri?.split('\\').pop() || '';
           return { ...img, originalFileName: originalFileName };
         });
-        console.log('Seçilen görseller:', assetsWithOriginalNames.map(img => ({ name: img.name, fileName: img.fileName, originalFileName: img.originalFileName, uri: img.uri?.substring(0, 50), type: img.type })));
         setSelectedImages(assetsWithOriginalNames);
         showSuccess(`${result.assets.length} ${t('addCard.imagesSelected', 'görsel seçildi')}`);
       }
@@ -426,9 +401,22 @@ export default function CsvUploadModal({
           setCsvLoading(false);
           return;
         }
+        if (file.size && file.size > CSV_LIMITS.maxFileBytes) {
+          showError(t('addCard.csvTooLarge', 'CSV dosyası en fazla 5 MB olabilir.'));
+          return;
+        }
         const csvContent = await readPickedCsvAsString(file.uri);
 
         const { validCards, errors, ignoredColumns, totalRows } = parseCSV(csvContent);
+        if (validCards.length > CSV_LIMITS.maxCards) {
+          showError(t('addCard.csvTooManyCards', { count: CSV_LIMITS.maxCards, defaultValue: `Bir CSV'de en fazla ${CSV_LIMITS.maxCards} kart olabilir.` }));
+          return;
+        }
+        const uploadKeys = new Set(validCards.map(imageKeyOf).filter((key) => key && needsUpload(key)));
+        if (uploadKeys.size > CSV_LIMITS.maxImages) {
+          showError(t('addCard.csvTooManyImages', { count: CSV_LIMITS.maxImages, defaultValue: `Bir CSV'de en fazla ${CSV_LIMITS.maxImages} farklı görsel olabilir.` }));
+          return;
+        }
         const hasImageColumn = validCards.some(card => card.image && typeof card.image === 'string' && card.image.trim() !== '');
         const hasLocalImageFiles = hasImageColumn && validCards.some(card => {
           if (!card.image || typeof card.image !== 'string') return false;
@@ -448,7 +436,6 @@ export default function CsvUploadModal({
           return isSvgUrl(card.image.trim());
         });
 
-        console.log('CSV Parse Debug:', { totalCards: validCards.length, hasImageColumn, hasLocalImageFiles, imageIds: uniqueImageIds, sampleCard: validCards[0], allCardsWithImages: validCards.filter(c => c.image !== undefined), imageColumnMap: validCards.filter(c => c.image !== undefined).map(c => ({ question: c.question, image: c.image, imageType: getImageType(c.image) })) });
 
         setCsvPreview({
           fileName: file.name,
@@ -483,6 +470,7 @@ export default function CsvUploadModal({
   };
 
   const handleImportCards = async () => {
+    if (importingRef.current) return;
     if (!csvPreview.allValidCards.length) {
       showError(t('addCard.noValidCards', 'Geçerli kart yok.'));
       return;
@@ -499,61 +487,66 @@ export default function CsvUploadModal({
       }
     }
 
-    let successCount = 0;
-    let errorCount = 0;
-    setCsvLoading(true);
+    importingRef.current = true;
+    const cards = csvPreview.allValidCards;
+    const keys = [...new Set(cards.map(imageKeyOf).filter(Boolean))];
+    const urlByKey = {};
+    const uploaded = [];       // uploaded by this import, removed again if unused
+    const imageFailures = [];  // { key, reason }
     try {
-      const processedCards = await Promise.all(
-        csvPreview.allValidCards.map(async (card) => {
-          let imageUrl = null;
-          if (card.image && card.image.trim() !== '') {
-            const imageType = getImageType(card.image);
-            const imageId = card.image.trim();
-            if (imageType === 'file_name' || imageType === 'local_file') {
-              const matchedImage = imageIdMap[imageId];
-              if (matchedImage) {
-                const manipResult = await ImageManipulator.manipulateAsync(
-                  matchedImage.uri,
-                  [{ resize: { width: 512 } }],
-                  { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-                );
-                imageUrl = await uploadImageToSupabase(manipResult.uri);
-              }
-            } else {
-              imageUrl = await processImage(card.image, null);
-            }
-          }
-          return {
-            deck_id: deck.id,
-            question: card.question?.trim() || '',
-            answer: card.answer?.trim() || '',
-            example: card.example?.trim() || null,
-            note: card.note?.trim() || null,
-            image: imageUrl || null,
-          };
-        })
-      );
+      // 1) every distinct image once, a few at a time
+      let doneImages = 0;
+      setImportProgress({ phase: 'images', done: 0, total: keys.length });
+      await runPool(keys, CSV_LIMITS.imageConcurrency, async (key) => {
+        const res = await prepareImage(key);
+        if (res.url) {
+          urlByKey[key] = res.url;
+          if (getImageType(key) !== 'supabase_url') uploaded.push(res.url);
+        } else {
+          imageFailures.push({ key, reason: res.error });
+        }
+        doneImages += 1;
+        setImportProgress({ phase: 'images', done: doneImages, total: keys.length });
+      });
 
-      for (let i = 0; i < processedCards.length; i++) {
-        const card = processedCards[i];
-        const { data, error } = await supabase.from('cards').insert(card).select();
-        if (error) {
-          console.error('Supabase insert hatası:', error?.message);
-          errorCount++;
-        } else { successCount++; }
-      }
-      const message = `${successCount} ${t('addCard.importCompletedMessage', 'kart başarıyla eklendi.')}${errorCount > 0 ? ` ${errorCount} ${t('addCard.importCompletedError', 'kart eklenemedi.')}` : ''}`;
-      showSuccess(message);
-      setTimeout(() => {
-        setCsvPreview(null);
-        setSelectedImages([]);
-        onClose();
-      }, 1500);
+      // 2) cards in batches
+      const rows = cards.map((card) => ({
+        question: card.question?.trim() || '',
+        answer: card.answer?.trim() || '',
+        example: card.example?.trim() || null,
+        note: card.note?.trim() || null,
+        image: urlByKey[imageKeyOf(card)] || null,
+      }));
+      setImportProgress({ phase: 'cards', done: 0, total: rows.length });
+      const { inserted, failedRows } = await importCards(deck.id, rows, {
+        batchSize: CSV_LIMITS.insertBatchSize,
+        onProgress: (done) => setImportProgress({ phase: 'cards', done, total: rows.length }),
+      });
+
+      // images no card uses (failed batches) don't stay in storage
+      if (failedRows.length && uploaded.length) await removeUnusedCardImages(uploaded);
+
+      setImportResult({
+        inserted,
+        failed: failedRows.length,
+        skipped: csvPreview.allErrors.length,
+        withoutImage: rows.filter((row, i) => imageKeyOf(cards[i]) && !row.image).length,
+        imageFailures,
+      });
     } catch (e) {
-      console.error('Import exception:', e);
-      showError(t('addCard.errorImport', 'Kartlar eklenirken bir hata oluştu: ') + e.message);
+      if (__DEV__) console.warn('CSV import failed:', e?.message || e);
+      if (uploaded.length) await removeUnusedCardImages(uploaded);
+      setImportResult({
+        inserted: 0,
+        failed: cards.length,
+        skipped: csvPreview.allErrors.length,
+        withoutImage: 0,
+        imageFailures,
+        fatal: true,
+      });
     } finally {
-      setCsvLoading(false);
+      importingRef.current = false;
+      setImportProgress(null);
     }
   };
 
@@ -562,6 +555,8 @@ export default function CsvUploadModal({
   };
 
   const handleClose = () => {
+    if (importingRef.current) return; // the import keeps running: stay open
+    setImportResult(null);
     setCsvPreview(null);
     setSelectedImages([]);
     setImageIds([]);
@@ -569,13 +564,82 @@ export default function CsvUploadModal({
     onClose();
   };
 
-  // --- UI RENDER KISMI ---
+  const handleResultDone = () => {
+    const added = (importResult?.inserted || 0) > 0;
+    handleClose();
+    if (added) onImported?.();
+  };
+
+  const imageFailureText = (reason) => ({
+    svg: t('addCard.imageFailSvg', 'SVG desteklenmiyor'),
+    download: t('addCard.imageFailDownload', 'İndirilemedi'),
+    tooLarge: t('addCard.imageFailTooLarge', "2 MB'tan büyük"),
+    unmatched: t('addCard.imageFailUnmatched', 'Eşleşen fotoğraf yok'),
+    upload: t('addCard.imageFailUpload', 'Yüklenemedi'),
+  }[reason] || t('addCard.imageFailUpload', 'Yüklenemedi'));
+
+  const progressLabel = importProgress
+    ? (importProgress.phase === 'images'
+      ? t('addCard.importingImages', { done: importProgress.done, total: importProgress.total, defaultValue: `Görseller hazırlanıyor ${importProgress.done}/${importProgress.total}` })
+      : t('addCard.importingCards', { done: importProgress.done, total: importProgress.total, defaultValue: `Kartlar ekleniyor ${importProgress.done}/${importProgress.total}` }))
+    : '';
+  const progressRatio = importProgress && importProgress.total > 0 ? importProgress.done / importProgress.total : 0;
+
+  const renderResult = () => {
+    const res = importResult;
+    const ok = !res.fatal && res.failed === 0;
+    const rows = [
+      res.failed > 0 && { key: 'failed', color: '#D32F2F', text: t('addCard.resultFailed', { count: res.failed, defaultValue: `${res.failed} kart eklenemedi` }) },
+      res.skipped > 0 && { key: 'skipped', color: '#B7791F', text: t('addCard.resultSkipped', { count: res.skipped, defaultValue: `${res.skipped} satır hatalı olduğu için atlandı` }) },
+      res.withoutImage > 0 && { key: 'noimg', color: '#B7791F', text: t('addCard.resultWithoutImage', { count: res.withoutImage, defaultValue: `${res.withoutImage} kart görselsiz eklendi` }) },
+    ].filter(Boolean);
+    return (
+      <View style={styles.resultWrap}>
+        <View style={[styles.resultIconCircle, { backgroundColor: (ok ? '#27AE60' : '#B7791F') + '22' }]}>
+          <PhosphorIcon icon={ok ? ICONS.valid : ICONS.info} size={40} color={ok ? '#27AE60' : '#B7791F'} />
+        </View>
+        <Text style={[styles.resultCount, { color: colors.text }]}>{res.inserted}</Text>
+        <Text style={[styles.resultTitle, { color: colors.text }]}>
+          {res.fatal
+            ? t('addCard.resultFatal', 'İçe aktarma tamamlanamadı')
+            : t('addCard.resultAdded', 'kart desteye eklendi')}
+        </Text>
+        {rows.length > 0 && (
+          <View style={[styles.resultList, { backgroundColor: isDarkMode ? '#222' : '#F4F6F8' }]}>
+            {rows.map((row) => (
+              <View key={row.key} style={styles.resultRow}>
+                <View style={[styles.resultDot, { backgroundColor: row.color }]} />
+                <Text style={[styles.resultRowText, { color: colors.text }]}>{row.text}</Text>
+              </View>
+            ))}
+            {res.imageFailures.slice(0, 5).map((f) => (
+              <Text key={f.key} style={[styles.resultFailText, { color: colors.muted }]} numberOfLines={1}>
+                {f.key} · {imageFailureText(f.reason)}
+              </Text>
+            ))}
+            {res.imageFailures.length > 5 && (
+              <Text style={[styles.resultFailText, { color: colors.muted }]}>
+                {t('addCard.resultMoreImages', { count: res.imageFailures.length - 5, defaultValue: `+${res.imageFailures.length - 5} görsel daha` })}
+              </Text>
+            )}
+          </View>
+        )}
+        <TouchableOpacity
+          onPress={handleResultDone}
+          style={[styles.resultDoneBtn, { backgroundColor: colors.buttonColor || '#007AFF' }]}
+        >
+          <Text style={styles.btnImportText}>{t('common.done', 'Tamam')}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
 
   return (
     <BottomSheetModal
       ref={sheetRef}
       onDismiss={handleSheetDismiss}
-      enablePanDownToClose
+      enablePanDownToClose={!isImporting}
       backgroundStyle={Platform.OS === 'android' ? { backgroundColor: colors.background } : undefined /* iOS: system Liquid Glass */}
       snapPoints={['100%']}
     >
@@ -587,20 +651,22 @@ export default function CsvUploadModal({
             </Text>
             <TouchableOpacity
               onPress={handleClose}
+              disabled={isImporting}
               hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-              style={styles.closeBtnWrapper}
+              style={[styles.closeBtnWrapper, isImporting && { opacity: 0.3 }]}
             >
               <PhosphorIcon icon={ICONS.close} size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
 
+          {importResult ? renderResult() : (
+          <>
           <ScrollView ref={scrollViewRef} style={styles.scrollView} showsVerticalScrollIndicator={false}>
 
             <Text style={[styles.description, { color: colors.muted }]}>
               {t('addCard.csvUploadDescriptionMain', 'Kartlarınızı Excel veya Google Sheets\'te hazırlayın ve CSV olarak kaydedin. CSV dosyanızı yükleyin ve kartlarınız hazır!')}
             </Text>
-
-            {/* TABLO NASIL OLUŞTURULUR REHBERİ: always open, written straight on the sheet */}
+            {/* TABLO NASIL OLUŞTURULUR REHBERİ: the same numbered steps as the "how to" guides */}
             <View style={styles.guideSection}>
               <View style={styles.guideHeading}>
                 <PhosphorIcon icon={ICONS.info} size={22} color={colors.primary || '#007AFF'} style={{ marginRight: 10 }} />
@@ -609,53 +675,81 @@ export default function CsvUploadModal({
                 </Text>
               </View>
 
-                <View style={styles.guideContent}>
-
-                  <View style={[styles.guideCard, { backgroundColor: isDarkMode ? '#2A2A2A' : '#FFFFFF', borderColor: isDarkMode ? '#333' : '#EEE' }]}>
-                    <Text style={[styles.guideTitle, { color: colors.text }]}>
-                      {t('addCard.tableStructureTitle', 'CSV Formatı')}
-                    </Text>
-                    <Text style={[styles.guideText, { color: colors.text }]}>
-                      {t('addCard.tableStructure', 'Tablo 2 zorunlu, 3 opsiyonel olmak üzere en fazla 5 sütundan oluşabilir:')}
-                    </Text>
-
-                    <View style={[styles.codeBadge, { backgroundColor: isDarkMode ? '#111' : '#F0F0F0', borderColor: isDarkMode ? '#333' : '#E0E0E0' }]}>
-                      <Text style={[styles.codeBadgeText, { color: colors.primary || '#ffffff' }]}>
-                        {t('addCard.tableColumnsText', 'soru, cevap, ornek, not, gorsel')}
-                      </Text>
-                    </View>
-
-                    <View style={styles.alertInline}>
-                      <PhosphorIcon icon={ICONS.required} size={22} color={colors.secondary || '#F39C12'} style={{ marginRight: 6 }} />
-                      <Text style={[styles.alertInlineText, { color: colors.secondary || '#F39C12' }]}>
-                        {t('addCard.requiredColumns', 'Soru ve Cevap sütunları zorunludur!')}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={[styles.guideCard, { backgroundColor: isDarkMode ? '#2A2A2A' : '#FFFFFF', borderColor: isDarkMode ? '#333' : '#EEE' }]}>
-                    <Text style={[styles.guideTitle, { color: colors.text }]}>
-                      {t('addCard.tableImageInstructionsTitle', 'Görsel Ekleme')}
-                    </Text>
-                    <Text style={[styles.guideText, { color: colors.text }]}>
-                      {t('addCard.imageInstructions', 'Görsel sütununa eklemek istediğiniz resmin URL adresini yapıştırabilir veya telefonunuzdan seçeceğiniz görselin dosya ismini yazabilirsiniz.')}
-                    </Text>
-                    <Text style={[styles.guideText, { color: colors.muted, fontStyle: 'italic', marginTop: 4 }]}>
-                      {t('addCard.svgNote', 'Not: SVG formatı desteklenmemektedir.')}
-                    </Text>
-                  </View>
-
-                  <TouchableOpacity activeOpacity={0.9} onPress={() => setImageModalVisible(true)} style={styles.imagePreviewWrapper}>
-                    <Image
-                      source={require('../../assets/images/examtable.png')}
-                      style={styles.exampleTableImage}
-                      resizeMode="contain"
-                    />
-                    <View style={styles.zoomIconBadge}>
-                      <PhosphorIcon icon={ICONS.zoom} size={22} color="#FFF" />
-                    </View>
-                  </TouchableOpacity>
-                </View>
+              <GuideSteps
+                animate={false}
+                steps={[
+                  {
+                    icon: ICONS.csvFile,
+                    title: t('addCard.tableStructureTitle', 'CSV Formatı'),
+                    description: t('addCard.tableStructure', 'Tablo 2 zorunlu 3 opsiyonel olmak üzere 5 sütundan oluşabilir. Sütunlar:'),
+                    required: true,
+                    children: (
+                      <>
+                        <View style={[styles.codeBadge, { backgroundColor: isDarkMode ? '#111' : '#F0F0F0', borderColor: isDarkMode ? '#333' : '#E0E0E0' }]}>
+                          <Text style={[styles.codeBadgeText, { color: colors.primary || '#ffffff' }]}>
+                            {t('addCard.tableColumnsText', 'soru, cevap, ornek, not, gorsel')}
+                          </Text>
+                        </View>
+                        <View style={styles.alertInline}>
+                          <PhosphorIcon icon={ICONS.required} size={20} color={colors.secondary || '#F39C12'} style={{ marginRight: 6 }} />
+                          <Text style={[styles.alertInlineText, { color: colors.secondary || '#F39C12' }]}>
+                            {t('addCard.requiredColumnsOnly', 'soru ve cevap sütunları zorunludur!')}
+                          </Text>
+                        </View>
+                        <Text style={[styles.guideText, { color: colors.muted, marginLeft: 26 }]}>
+                          {t('addCard.optionalColumns', 'ornek, not, gorsel sütunları isteğe bağlıdır.')}
+                        </Text>
+                      </>
+                    ),
+                  },
+                  {
+                    icon: ICONS.image,
+                    title: t('addCard.tableImageInstructionsTitle', 'Görsel Ekleme'),
+                    description: t('addCard.imageInstructionsLead', 'Görsel eklemek istediğin satırın görsel sütununu iki şekilde doldurabilirsin:'),
+                    required: false,
+                    children: (
+                      <View style={styles.guideBullets}>
+                        {[
+                          t('addCard.imageWayName', "Bir görsel ismi yaz (Ör: 'kitap'). CSV'yi yükledikten sonra görselleri seç ve menüden eşleştir."),
+                          t('addCard.imageWayUrl', 'Ya da görselin URL adresini yaz (Ör: https://example.com/image.png), yüklemeyi bize bırak.'),
+                        ].map((line, i) => (
+                          <View key={i} style={styles.guideBulletRow}>
+                            <View style={[styles.guideBulletDot, { backgroundColor: colors.secondary || '#F98A21' }]} />
+                            <Text style={[styles.guideText, { color: colors.text, flex: 1 }]}>{line}</Text>
+                          </View>
+                        ))}
+                        <Text style={[styles.guideText, { color: colors.muted, fontStyle: 'italic' }]}>
+                          {t('addCard.svgNote', 'Not: SVG formatı desteklenmemektedir.')}
+                        </Text>
+                      </View>
+                    ),
+                  },
+                  {
+                    icon: ICONS.upload,
+                    title: t('addCard.saveAndUploadTitle', 'Kaydet ve Yükle'),
+                    description: t('addCard.saveAndUpload', "Tabloyu CSV olarak kaydet ve aşağıdaki butonla yükle. Örnek tablo:"),
+                    children: (
+                      <TouchableOpacity activeOpacity={0.9} onPress={() => setImageModalVisible(true)} style={styles.imagePreviewWrapper}>
+                        <Image
+                          source={require('../../assets/images/examtable.png')}
+                          style={styles.exampleTableImage}
+                          resizeMode="contain"
+                        />
+                        <View style={styles.zoomIconBadge}>
+                          <PhosphorIcon icon={ICONS.zoom} size={22} color="#FFF" />
+                        </View>
+                      </TouchableOpacity>
+                    ),
+                  },
+                ]}
+              />
+              <GuideTip
+                text={t('addCard.csvLimitsShort', {
+                  cards: CSV_LIMITS.maxCards,
+                  images: CSV_LIMITS.maxImages,
+                  defaultValue: `Tek seferde en fazla ${CSV_LIMITS.maxCards} kart ve ${CSV_LIMITS.maxImages} görsel yükleyebilirsin. Virgül (,) ya da noktalı virgül (;) ile ayrılmış dosyalar kabul edilir.`,
+                })}
+              />
 
               {/* Büyütülmüş Resim Modalı - Core Modal'a taşındı */}
               <Modal
@@ -816,7 +910,21 @@ export default function CsvUploadModal({
                   </View>
                 )}
 
-                {/* Aksiyon Butonları (İçeridekiler) */}
+                {/* Aksiyon Butonları (İçeridekiler) / içe aktarma sürerken ilerleme */}
+                {isImporting ? (
+                  <View style={styles.progressWrap}>
+                    <View style={styles.progressHeader}>
+                      <Text style={[styles.progressLabel, { color: colors.text }]}>{progressLabel}</Text>
+                      <Text style={[styles.progressPercent, { color: colors.muted }]}>{Math.round(progressRatio * 100)}%</Text>
+                    </View>
+                    <View style={[styles.progressTrack, { backgroundColor: isDarkMode ? '#333' : '#E5E7EB' }]}>
+                      <View style={[styles.progressFill, { width: `${Math.max(4, progressRatio * 100)}%`, backgroundColor: colors.buttonColor || '#007AFF' }]} />
+                    </View>
+                    <Text style={[styles.progressHint, { color: colors.muted }]}>
+                      {t('addCard.importKeepOpen', 'Bitene kadar bu ekranı kapatma.')}
+                    </Text>
+                  </View>
+                ) : (
                 <View style={styles.previewActionButtons}>
                   <TouchableOpacity
                     onPress={() => {
@@ -837,6 +945,7 @@ export default function CsvUploadModal({
                     </Text>
                   </TouchableOpacity>
                 </View>
+                )}
 
               </View>
             )}
@@ -863,6 +972,8 @@ export default function CsvUploadModal({
               </TouchableOpacity>
             </View>
           )}
+          </>
+          )}
 
       </BottomSheetView>
     </BottomSheetModal>
@@ -870,6 +981,23 @@ export default function CsvUploadModal({
 }
 
 const styles = StyleSheet.create({
+  progressWrap: { marginTop: 24, marginBottom: 32, gap: 10 },
+  progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  progressLabel: { fontSize: fontSizes.body, fontFamily: fonts.semibold },
+  progressPercent: { fontSize: fontSizes.footnote, fontFamily: fonts.medium },
+  progressTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 4 },
+  progressHint: { fontSize: fontSizes.footnote, fontFamily: fonts.regular },
+  resultWrap: { flex: 1, alignItems: 'center', paddingTop: 32, paddingHorizontal: 8 },
+  resultIconCircle: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  resultCount: { fontSize: fontSizes.display, fontFamily: fonts.bold, lineHeight: 46 },
+  resultTitle: { fontSize: fontSizes.bodyLarge, fontFamily: fonts.medium, marginTop: 2, marginBottom: 24, textAlign: 'center' },
+  resultList: { alignSelf: 'stretch', borderRadius: 16, padding: 16, gap: 10 },
+  resultRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  resultDot: { width: 8, height: 8, borderRadius: 4 },
+  resultRowText: { flex: 1, fontSize: fontSizes.subhead, fontFamily: fonts.medium },
+  resultFailText: { fontSize: fontSizes.footnote, fontFamily: fonts.regular, marginLeft: 18 },
+  resultDoneBtn: { alignSelf: 'stretch', marginTop: 'auto', marginBottom: 32, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   sheetContent: {
     paddingHorizontal: 20,
     paddingBottom: 16,
@@ -909,26 +1037,28 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.body,
     fontFamily: fonts.bold,
   },
-  guideContent: {
-    gap: 12,
+  guideBullets: {
+    gap: 8,
+    marginTop: 2,
   },
-  guideCard: {
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
+  guideBulletRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
   },
-  guideTitle: {
-    fontFamily: fonts.bold,
-    fontSize: fontSizes.subhead,
-    marginBottom: 6,
+  guideBulletDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginTop: 7,
   },
   guideText: {
     fontSize: fontSizes.footnote,
     lineHeight: 18,
   },
   codeBadge: {
-    marginTop: 8,
-    marginBottom: 10,
+    marginTop: 4,
+    marginBottom: 6,
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,

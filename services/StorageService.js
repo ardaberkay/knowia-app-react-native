@@ -5,7 +5,8 @@ import { supabase } from '../lib/supabase';
 // contain the userId (card_{deckId}_{userId}_{ts}.webp, user_{userId}_{ts}.webp).
 
 export const uploadCardImage = async (deckId, userId, buffer) => {
-  const filePath = `${userId}/card_${deckId}_${Date.now()}.webp`;
+  // random part: several images can be uploaded in the same millisecond (CSV import)
+  const filePath = `${userId}/card_${deckId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.webp`;
   const { error } = await supabase.storage
     .from('images')
     .upload(filePath, buffer, { contentType: 'image/webp', upsert: true });

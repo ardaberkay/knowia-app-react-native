@@ -29,6 +29,7 @@ export const ICONS = {
   delete: { name: 'trash', weight: 'fill' },
   chevronRight: { name: 'caret-right', weight: 'bold' }, // rows, "see all", next
   arrowRight: { name: 'arrow-right', weight: 'bold' }, // "from → to"
+  back: { name: 'arrow-left', weight: 'bold' }, // previous step (tutorial)
   dropdown: { name: 'caret-down', weight: 'fill' }, // pickers, expand
   dropdownOpen: { name: 'caret-up', weight: 'fill' }, // collapse
   more: { name: 'dots-three', weight: 'bold' }, // kebab menus

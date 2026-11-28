@@ -209,19 +209,13 @@ export default function ChaptersScreen({ route, navigation }) {
   }, [deck?.id, userId]);
 
   // Navigation header'a edit butonu ekle
+  // Ownership is known on the first render (session + deck params), so the
+  // edit icon doesn't wait for the chapters to load.
   useLayoutEffect(() => {
-    // Loading bitene kadar header ikonlarını gösterme
-    if (loading) {
-      navigation.setOptions({
-        headerRight: () => null,
-      });
-      return;
-    }
-
     navigation.setOptions({
       headerRight: () => {
         // Kullanıcı deste sahibiyse ve deste paylaşılmamışsa göster
-        if (!currentUserId || !deck?.user_id || currentUserId !== deck.user_id || deck.is_shared) {
+        if (!userId || !deck?.user_id || userId !== deck.user_id || deck.is_shared) {
           return null;
         }
         return (
@@ -246,7 +240,7 @@ export default function ChaptersScreen({ route, navigation }) {
         );
       },
     });
-  }, [loading, navigation, currentUserId, deck?.user_id, deck?.is_shared, editMode]);
+  }, [navigation, userId, deck?.user_id, deck?.is_shared, editMode]);
 
   const handleAddChapter = async () => {
     if (!deck?.id) return;
@@ -417,7 +411,7 @@ export default function ChaptersScreen({ route, navigation }) {
 
           </View>
         )}
-        {!loading && isOwner && (
+        {Boolean(userId) && userId === deck?.user_id && !deck?.is_shared && (
           <AnimatedPressable
             style={[styles.fab, addChapterAnimatedStyle, { bottom: insets.bottom + 24 }]} // Modern stili bağladık
             onPressIn={() => {

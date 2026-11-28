@@ -132,12 +132,15 @@ export const updateCardsChapter = async (cardIds, targetChapterId, deckId = null
   if (deckId && userId) await invalidateCache(`progress_chapters_${deckId}_${userId}`);
 };
 
-export const getCardsByChapter = async (deckId, chapterId, page = 0, pageSize = PAGE_SIZE, userId = null, searchQuery = null) => {
+// filter: null | 'learned' | 'unlearned' | 'fav', sortBy: 'original' | 'az'
+export const getCardsByChapter = async (deckId, chapterId, page = 0, pageSize = PAGE_SIZE, userId = null, searchQuery = null, { filter = null, sortBy = 'original' } = {}) => {
   return listCardsRpc({
     deckId,
     scope: chapterId ? 'chapter' : 'unassigned',
     chapterId: chapterId || null,
+    filter,
     searchQuery,
+    sortBy,
     page,
     pageSize,
   });
@@ -207,6 +210,40 @@ export const createCard = async (deckId, cardData) => {
   await invalidateCache(`cards_deck_${deckId}`);
   await invalidateCache(`progress_deck_${deckId}_`);
   return data?.[0] || null;
+};
+
+/**
+ * Adds many cards in a few requests (CSV import). Rows are sent in batches;
+ * a failed batch doesn't stop the others. Returns how many were added and
+ * the rows that failed, so the caller can report them and clean up images.
+ */
+export const importCards = async (deckId, rows, { batchSize = 100, onProgress } = {}) => {
+  let inserted = 0;
+  const failedRows = [];
+  for (let i = 0; i < rows.length; i += batchSize) {
+    const batch = rows.slice(i, i + batchSize).map((row) => ({
+      deck_id: deckId,
+      question: row.question,
+      answer: row.answer,
+      example: row.example || null,
+      note: row.note || null,
+      image: row.image || null,
+    }));
+    const { error } = await supabase.from('cards').insert(batch);
+    if (error) {
+      if (__DEV__) console.warn('Card batch insert failed:', error.message);
+      failedRows.push(...rows.slice(i, i + batchSize));
+    } else {
+      inserted += batch.length;
+    }
+    onProgress?.(Math.min(i + batchSize, rows.length));
+  }
+  if (inserted > 0) {
+    await invalidateCache(`cards_deck_${deckId}`);
+    await invalidateCache(`progress_deck_${deckId}_`);
+    await invalidateCache(`deck_detail_${deckId}`);
+  }
+  return { inserted, failedRows };
 };
 
 export const updateCard = async (cardId, cardData) => {
@@ -367,32 +404,21 @@ export const getSwipeSessionQueueCount = async (sessionId) => {
   return count || 0;
 };
 
+/**
+ * End-of-session summary in one RPC (swipe_session_summary): cards studied,
+ * now learned / learning, and the nearest review of the learning ones.
+ */
 export const getSwipeSessionCompletionCounts = async (sessionId, userId) => {
-  if (!sessionId || !userId) return { learned: 0, planned: 0 };
-
-  const { data: queueRows, error: queueError } = await supabase
-    .from('swipe_session_queue')
-    .select('card_id')
-    .eq('session_id', sessionId);
-  if (queueError) throw queueError;
-
-  const cardIds = [...new Set((queueRows || []).map(row => row.card_id).filter(Boolean))];
-  if (cardIds.length === 0) return { learned: 0, planned: 0 };
-
-  const { data: progressRows, error: progressError } = await supabase
-    .from('user_card_progress')
-    .select('card_id, status')
-    .eq('user_id', userId)
-    .in('card_id', cardIds);
-  if (progressError) throw progressError;
-
-  const learned = new Set(
-    (progressRows || [])
-      .filter(row => row.status === 'learned')
-      .map(row => row.card_id)
-  ).size;
-
-  return { learned, planned: cardIds.length - learned };
+  if (!sessionId || !userId) return null;
+  const { data, error } = await supabase.rpc('swipe_session_summary', { p_session_id: sessionId });
+  if (error) throw error;
+  const row = (Array.isArray(data) ? data[0] : data) || {};
+  return {
+    studied: Number(row.studied || 0),
+    learned: Number(row.learned || 0),
+    learning: Number(row.learning || 0),
+    nextReview: row.next_review_at ? { at: row.next_review_at, count: Number(row.next_review_count || 0) } : null,
+  };
 };
 
 export const getChapterFutureReviewSummary = async (userId, deckId, chapterId) => {

@@ -31,6 +31,23 @@ import HeroPullBackdrop from '../../components/layout/HeroPullBackdrop';
 import { useListBottomInset } from '../../components/ui/TabBarInset';
 import { getCategoryIcon, ICONS } from '../../theme/icons';
 import PhosphorIcon from '../../components/ui/PhosphorIcon';
+import SwipeTutorialOverlay from '../../components/layout/SwipeTutorialOverlay';
+
+// First-run guide of the deck page: one for the deck's owner, one for decks
+// made by others. Each is shown once (its own flag).
+const DECK_TUTORIAL_KEYS = {
+  owner: 'knowia_seen_deck_tutorial_owner',
+  visitor: 'knowia_seen_deck_tutorial_visitor',
+};
+// Targets inside the scroll view: scrolled into view before they are framed.
+const DECK_TUTORIAL_SCROLL_TARGETS = new Set(['study', 'start', 'chapterPicker', 'cards', 'chapters']);
+const measureNodeInWindow = (node) => new Promise((resolve) => {
+  if (!node?.measureInWindow) { resolve(null); return; }
+  node.measureInWindow((x, y, width, height) => resolve(
+    [x, y, width, height].every(Number.isFinite) && width > 0 && height > 0 ? { x, y, width, height } : null,
+  ));
+});
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Hero gradient direction (colours come from the deck's category).
 const HERO_GRADIENT_START = { x: 0, y: 0 };
@@ -103,7 +120,6 @@ export default function DeckDetailScreen({ route, navigation }) {
   const [deckStats, setDeckStats] = useState(peekedStats || { total: deck?.card_count || 0, learned: 0, learning: 0, new: 0 });
   const statText = (value) => (progressLoading ? '–' : value);
   const [cards, setCards] = useState([]);
-  const [showAddCardHint, setShowAddCardHint] = useState(false);
   const [search, setSearch] = useState('');
   const [filteredCards, setFilteredCards] = useState([]);
   const [favoriteCards, setFavoriteCards] = useState([]);
@@ -204,10 +220,29 @@ export default function DeckDetailScreen({ route, navigation }) {
     setHeroSize((prev) => (prev && Math.abs(prev.w - w) < 0.5 && Math.abs(prev.h - h) < 0.5 ? prev : { w, h }));
   }, []);
   const scrollY = useRef(new Animated.Value(0)).current;
+  const scrollViewRef = useRef(null);
+  const scrollOffsetRef = useRef(0); // JS copy of the offset (tutorial scrolls targets into view)
   const onScroll = useMemo(
-    () => Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true }),
+    () => Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+      useNativeDriver: true,
+      listener: (e) => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; },
+    }),
     [scrollY]
   );
+  // Deck tutorial: root + target views it frames
+  const tutorialRootRef = useRef(null);
+  const tutorialFabRef = useRef(null);
+  const tutorialChapterPickerRef = useRef(null);
+  const tutorialStartRef = useRef(null);
+  const tutorialCardsRef = useRef(null);
+  const tutorialChaptersRef = useRef(null);
+  const tutorialMenuRef = useRef(null);
+  const [deckTutorial, setDeckTutorial] = useState(null); // 'owner' | 'visitor' | null
+  const [deckTutorialStep, setDeckTutorialStep] = useState(0);
+  const [deckTutorialLayouts, setDeckTutorialLayouts] = useState({});
+  const deckTutorialStepRef = useRef(0);
+  const deckTutorialCheckedRef = useRef(false);
+  const deckTutorialBusyRef = useRef(false);
   const addCardFabPressed = useSharedValue(0);
 
   useFocusEffect(
@@ -1043,7 +1078,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             />
           </TouchableOpacity>
 
-          <View style={{ width: 24, alignItems: 'center' }}>
+          <View ref={tutorialMenuRef} collapsable={false} style={{ width: 24, alignItems: 'center' }}>
             {currentUserId ? (
               <MenuView
                 actions={
@@ -1106,54 +1141,159 @@ export default function DeckDetailScreen({ route, navigation }) {
     deck.user_id === currentUserId &&
     !isShared;
 
-  useEffect(() => {
-    // Kartlar bu ekranda performans için tek tek yüklenmiyor; güncel toplam deckStats'tan geliyor.
-    if (deckStats.total > 0) {
-      setShowAddCardHint(false);
-      return;
+  // ---- Deck tutorial ----
+  const isDeckOwner = Boolean(currentUserId) && deck?.user_id === currentUserId;
+  const deckTutorialSteps = useMemo(() => {
+    if (deckTutorial === 'owner') {
+      return [
+        showAddCardFab && {
+          target: 'fab', radius: 30, pad: 6, icon: ICONS.add,
+          title: t('deckDetail.tutorial.addTitle', 'Kart ekle'),
+          description: t('deckDetail.tutorial.addDesc', 'Destene kart eklemek için bu butona dokun.'),
+          points: [
+            { icon: ICONS.createCard, text: t('deckDetail.tutorial.addOne', 'Tek tek: Soru ve cevabı yazarak kart oluştur.') },
+            { icon: ICONS.csvFile, text: t('deckDetail.tutorial.addCsv', 'Toplu: Kart ekleme ekranındaki CSV ile Yükle seçeneğiyle yüzlerce kartı tek seferde ekle.') },
+          ],
+        },
+        {
+          target: 'chapters', radius: 18, pad: 4, icon: ICONS.chapter,
+          title: t('deckDetail.tutorial.chaptersTitle', 'Bölümler'),
+          description: t('deckDetail.tutorial.chaptersOwnerDesc', 'Kartlarını bölümlere ayır; her bölümü ayrı ayrı çalışabilirsin.'),
+        },
+        {
+          target: 'study', radius: 18, pad: 6, icon: ICONS.play,
+          title: t('deckDetail.tutorial.startTitle', 'Çalışmaya başla'),
+          description: t('deckDetail.tutorial.startOwnerDesc', "Bir bölüm seç ve Başla'ya dokun. Kartlar tek tek gelir; çevir, bildiklerini sağa, tekrar etmek istediklerini sola kaydır."),
+        },
+        {
+          target: 'menu', radius: 22, pad: 8, icon: ICONS.edit,
+          title: t('deckDetail.tutorial.menuOwnerTitle', 'Deste menüsü'),
+          description: t('deckDetail.tutorial.menuOwnerDesc', 'Desteni buradan düzenleyebilir ya da silebilirsin.'),
+        },
+      ].filter(Boolean);
     }
+    if (deckTutorial === 'visitor') {
+      return [
+        {
+          target: 'start', radius: 18, pad: 6, icon: ICONS.play,
+          title: t('deckDetail.tutorial.startTitle', 'Çalışmaya başla'),
+          description: t('deckDetail.tutorial.startVisitorDesc', 'Buradan başlarsın. Kartlar tek tek gelir; çevir, bildiklerini sağa, tekrar etmek istediklerini sola kaydır.'),
+        },
+        {
+          target: 'chapterPicker', radius: 18, pad: 6, icon: ICONS.chapter,
+          title: t('deckDetail.tutorial.pickChapterTitle', 'Bölüm seç'),
+          description: t('deckDetail.tutorial.pickChapterDesc', 'Deste bölümlere ayrılmışsa istediğin bölümü seçip bölüm bölüm ilerleyebilirsin.'),
+        },
+        {
+          target: 'cards', radius: 18, pad: 4, icon: ICONS.stack,
+          title: t('deckDetail.tutorial.cardsTitle', 'Kartlar'),
+          description: t('deckDetail.tutorial.cardsDesc', 'Çalışmadan önce bütün kartlara göz atabilir, arama yapabilirsin.'),
+        },
+      ];
+    }
+    return [];
+  }, [deckTutorial, showAddCardFab, t]);
 
-    // İlk yükleme tamamlanmadan gösterme; aksi halde dolu destelerde kısa bir flash oluşabilir.
-    if (progressLoading || !showAddCardFab) return;
-
-    let isActive = true;
-    const loadAddCardHint = async () => {
-      try {
-        const seenHint = await AsyncStorage.getItem('knowia_seen_add_card_hint');
-        if (isActive && !seenHint) {
-          setShowAddCardHint(true);
-        }
-      } catch (e) {
-        // Storage okunamasa da yönlendirme uygulama akışını etkilemesin.
-        if (isActive) setShowAddCardHint(false);
+  // Measures a target relative to the screen root; content targets are first
+  // scrolled so they sit in the upper part of the screen, with room for the card.
+  const measureDeckTutorialTarget = useCallback(async (target) => {
+    const nodesFor = {
+      fab: [tutorialFabRef],
+      study: [tutorialChapterPickerRef, tutorialStartRef],
+      start: [tutorialStartRef],
+      chapterPicker: [tutorialChapterPickerRef],
+      cards: [tutorialCardsRef],
+      chapters: [tutorialChaptersRef],
+      menu: [tutorialMenuRef],
+    };
+    const measureUnion = async () => {
+      const rects = (await Promise.all((nodesFor[target] || []).map((r) => measureNodeInWindow(r.current)))).filter(Boolean);
+      if (!rects.length) return null;
+      const x = Math.min(...rects.map((r) => r.x));
+      const y = Math.min(...rects.map((r) => r.y));
+      return {
+        x, y,
+        width: Math.max(...rects.map((r) => r.x + r.width)) - x,
+        height: Math.max(...rects.map((r) => r.y + r.height)) - y,
+      };
+    };
+    const root = await measureNodeInWindow(tutorialRootRef.current);
+    let rect = await measureUnion();
+    if (!root || !rect) return null;
+    if (DECK_TUTORIAL_SCROLL_TARGETS.has(target)) {
+      const desiredTop = root.y + Math.max(insets.top + 80, root.height * 0.22);
+      const delta = rect.y - desiredTop;
+      if (Math.abs(delta) > 24) {
+        scrollViewRef.current?.scrollTo({ y: Math.max(0, scrollOffsetRef.current + delta), animated: true });
+        await wait(380);
+        rect = (await measureUnion()) || rect;
       }
-    };
-
-    loadAddCardHint();
-    return () => {
-      isActive = false;
-    };
-  }, [deckStats.total, progressLoading, showAddCardFab]);
-
-  const handleDismissAddCardHint = async () => {
-    setShowAddCardHint(false);
-    try {
-      await AsyncStorage.setItem('knowia_seen_add_card_hint', 'true');
-    } catch (e) {
-      console.error('Add card hint could not be saved:', e);
     }
-  };
+    return { x: rect.x - root.x, y: rect.y - root.y, width: rect.width, height: rect.height };
+  }, [insets.top]);
+
+  const goToDeckTutorialStep = useCallback(async (steps, index) => {
+    if (deckTutorialBusyRef.current) return;
+    deckTutorialBusyRef.current = true;
+    try {
+      const step = steps[index];
+      const layout = step ? await measureDeckTutorialTarget(step.target) : null;
+      if (!deckDetailMountedRef.current) return;
+      if (step) setDeckTutorialLayouts((prev) => ({ ...prev, [step.target]: layout }));
+      deckTutorialStepRef.current = index;
+      setDeckTutorialStep(index);
+    } finally {
+      deckTutorialBusyRef.current = false;
+    }
+  }, [measureDeckTutorialTarget]);
+
+  // Start once per mount, after the numbers loaded and the entrance animation ran.
+  useEffect(() => {
+    if (deckTutorialCheckedRef.current || progressLoading || !isFocused || !deck?.id) return;
+    deckTutorialCheckedRef.current = true;
+    const kind = isDeckOwner ? 'owner' : 'visitor';
+    (async () => {
+      let seen = 'true';
+      try { seen = await AsyncStorage.getItem(DECK_TUTORIAL_KEYS[kind]); } catch { /* storage unreadable: skip the guide */ }
+      if (seen) return;
+      await wait(700);
+      if (!deckDetailMountedRef.current || !detailScreenActiveRef.current) {
+        deckTutorialCheckedRef.current = false; // left meanwhile: try again on the next focus
+        return;
+      }
+      scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+      setDeckTutorialLayouts({});
+      deckTutorialStepRef.current = -1;
+      setDeckTutorialStep(-1); // hidden until the first target is measured
+      setDeckTutorial(kind);
+    })();
+  }, [progressLoading, isFocused, deck?.id, isDeckOwner]);
+
+  // First step: measured once the steps for the chosen guide exist.
+  useEffect(() => {
+    if (!deckTutorial || deckTutorialStepRef.current !== -1 || !deckTutorialSteps.length) return;
+    goToDeckTutorialStep(deckTutorialSteps, 0);
+  }, [deckTutorial, deckTutorialSteps, goToDeckTutorialStep]);
+
+  const handleDeckTutorialStepChange = useCallback((updater) => {
+    const current = deckTutorialStepRef.current;
+    const next = typeof updater === 'function' ? updater(current) : updater;
+    if (next === current) return;
+    goToDeckTutorialStep(deckTutorialSteps, next);
+  }, [deckTutorialSteps, goToDeckTutorialStep]);
+
+  const completeDeckTutorial = useCallback(() => {
+    const kind = deckTutorial;
+    setDeckTutorial(null);
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    if (kind) AsyncStorage.setItem(DECK_TUTORIAL_KEYS[kind], 'true').catch(() => {});
+  }, [deckTutorial]);
 
   const handleAddCard = () => {
-    // 1. İpucu varsa arka planda kapatmayı başlat (await ETMEDEN)
-    if (showAddCardHint) {
-      handleDismissAddCardHint();
-    }
-
-    // 2. Buton animasyon durumunu sıfırla
+    // Buton animasyon durumunu sıfırla
     addCardFabPressed.value = 0;
 
-    // 3. Anında geri bildirim ver ve sayfaya geç
+    // Anında geri bildirim ver ve sayfaya geç
     triggerHaptic('light');
     requestAnimationFrame(() => {
       navigation.navigate('AddCard', { deck });
@@ -1175,6 +1315,7 @@ export default function DeckDetailScreen({ route, navigation }) {
       />
 
       <Animated.ScrollView
+        ref={scrollViewRef}
         contentContainerStyle={{ paddingBottom: scrollContentPaddingBottom }}
         showsVerticalScrollIndicator={false}
         onScroll={onScroll}
@@ -1508,6 +1649,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             ]}
           >
             <TouchableOpacity
+              ref={tutorialChapterPickerRef}
               style={[styles.gfStudyChapterButton, { borderColor: colors.border, backgroundColor: colors.background }]}
               onPress={openChapterSheet}
               activeOpacity={0.75}
@@ -1536,6 +1678,7 @@ export default function DeckDetailScreen({ route, navigation }) {
             </TouchableOpacity>
 
             <TouchableOpacity
+              ref={tutorialStartRef}
               style={[
                 styles.gfStartButton,
                 { opacity: selectedChapter?.id ? 1 : 0.92 },
@@ -1573,6 +1716,7 @@ export default function DeckDetailScreen({ route, navigation }) {
         >
           {/* Cards Button */}
           <TouchableOpacity
+            ref={tutorialCardsRef}
             style={styles.gfActionRow}
             onPress={() => navigation.navigate('DeckCards', { deck })}
             activeOpacity={0.7}
@@ -1595,6 +1739,7 @@ export default function DeckDetailScreen({ route, navigation }) {
 
           {/* Chapters Button */}
           <TouchableOpacity
+            ref={tutorialChaptersRef}
             style={styles.gfActionRow}
             onPress={() => navigation.navigate('Chapters', { deck })}
             activeOpacity={0.7}
@@ -1661,61 +1806,15 @@ export default function DeckDetailScreen({ route, navigation }) {
         )}
       </Animated.ScrollView>
 
-      {isFocused && showAddCardFab && (
+      {showAddCardFab && (
         <>
-          {showAddCardHint && deckStats.total === 0 && (
-            <Pressable
-              accessibilityLabel="Kart ekleme yönlendirmesi"
-              onPress={() => { }}
-              style={styles.addCardHintOverlay}
-            />
-          )}
-
-          {showAddCardHint && deckStats.total === 0 && (
-            <View
-              style={[
-                styles.addCardCoachmark,
-                {
-                  bottom: insets.bottom + 102,
-                  backgroundColor: colors.cardBackground,
-                  borderColor: colors.cardBorder,
-                },
-              ]}
-            >
-              <View style={[styles.addCardCoachmarkArrow, { borderTopColor: colors.cardBackground }]} />
-              <Text style={[styles.addCardHintTitle, { color: colors.cardQuestionText || colors.text }]}>
-                {t('deckDetail.addCardHintTitle', 'İlk kartını ekle')}
-              </Text>
-              <Text style={[styles.addCardHintDescription, { color: colors.muted }]}>
-                {t('deckDetail.addCardHintDescription', 'Bu butona dokunarak destene ilk kartını ekleyebilirsin.')}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('deckDetail.addCardHintDismiss', 'Anladım')}
-                onPress={handleDismissAddCardHint}
-                style={({ pressed }) => [styles.addCardHintSecondaryButton, { borderColor: '#F98A21', opacity: pressed ? 0.8 : 1 }]}
-              >
-                <Text style={styles.addCardHintSecondaryButtonText}>{t('deckDetail.addCardHintDismiss', 'Anladım')}</Text>
-              </Pressable>
-            </View>
-          )}
-
           <AnimatedPressable
             accessibilityRole="button"
             accessibilityLabel={t('deckDetail.addCard', 'Kart Ekle')}
             style={[
               styles.addCardFab,
               addCardFabAnimatedStyle,
-              {
-                bottom: insets.bottom + 24,
-                zIndex: showAddCardHint ? 7 : 3,
-                borderWidth: showAddCardHint ? 2 : 0,
-                borderColor: showAddCardHint ? '#FFE1C2' : 'transparent',
-                shadowColor: showAddCardHint ? '#F98A21' : '#000000',
-                shadowOpacity: showAddCardHint ? 0.45 : 0.12,
-                shadowRadius: showAddCardHint ? 6 : 4,
-                elevation: showAddCardHint ? 3 : 2,
-              },
+              { bottom: insets.bottom + 24, zIndex: 3 },
             ]}
             onPressIn={() => {
               addCardFabPressed.value = 1;
@@ -1725,6 +1824,8 @@ export default function DeckDetailScreen({ route, navigation }) {
             }}
             onPress={handleAddCard}
           >
+            {/* measured by the deck tutorial */}
+            <View ref={tutorialFabRef} collapsable={false} pointerEvents="none" style={StyleSheet.absoluteFill} />
             <LinearGradient
               colors={['#F98A21', '#FF6B35']}
               locations={[0, 0.99]}
@@ -1740,6 +1841,17 @@ export default function DeckDetailScreen({ route, navigation }) {
           </AnimatedPressable>
         </>
       )}
+
+      {isFocused && deckTutorial && deckTutorialStep >= 0 && deckTutorialSteps.length > 0 ? (
+        <SwipeTutorialOverlay
+          steps={deckTutorialSteps}
+          stepIndex={Math.min(deckTutorialStep, deckTutorialSteps.length - 1)}
+          onStepChange={handleDeckTutorialStepChange}
+          onComplete={completeDeckTutorial}
+          targetLayouts={deckTutorialLayouts}
+          colors={colors}
+        />
+      ) : null}
 
       <BottomSheetModal
         ref={chapterSheetModalRef}
@@ -1885,6 +1997,9 @@ export default function DeckDetailScreen({ route, navigation }) {
         onSubmit={handleReportModalSubmit}
       />
 
+      {/* Deck tutorial measures against this. Kept last: iOS finds the scroll
+          view for the nav bar's scroll-edge effect through the first children. */}
+      <View ref={tutorialRootRef} collapsable={false} pointerEvents="none" style={StyleSheet.absoluteFill} />
     </SafeAreaView>
   );
 }
@@ -1925,63 +2040,6 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.body,
     fontFamily: fonts.bold,
     color: '#FFFFFF',
-  },
-  addCardHintOverlay: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    zIndex: 4,
-  },
-  addCardCoachmark: {
-    position: 'absolute',
-    right: 20,
-    width: 280,
-    padding: 16,
-    borderRadius: 18,
-    borderWidth: StyleSheet.hairlineWidth,
-    zIndex: 6,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.28,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  addCardCoachmarkArrow: {
-    position: 'absolute',
-    right: 42,
-    bottom: -9,
-    width: 0,
-    height: 0,
-    borderLeftWidth: 9,
-    borderRightWidth: 9,
-    borderTopWidth: 9,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-  },
-  addCardHintTitle: {
-    fontSize: fontSizes.body,
-    fontFamily: fonts.bold,
-    marginBottom: 4,
-  },
-  addCardHintDescription: {
-    fontSize: fontSizes.footnote,
-    lineHeight: 18,
-  },
-  addCardHintSecondaryButton: {
-    alignSelf: 'flex-end',
-    marginTop: 14,
-    borderWidth: 1.5,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  addCardHintSecondaryButtonText: {
-    color: '#F98A21',
-    fontSize: fontSizes.footnote,
-    fontFamily: fonts.bold,
   },
   // GRADIENT FLOW STYLES - Modern & Eye-catching
   gfHeroBanner: {

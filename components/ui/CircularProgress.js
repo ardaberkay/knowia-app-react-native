@@ -45,6 +45,7 @@ const CircularProgress = ({
   containerStyle = {},
   shouldAnimate = true,
   fullCircle = false,
+  label = null, // small caption under the percentage
 }) => {
   const { colors } = useTheme();
   const normalizedProgress = useMemo(() => Math.max(0, Math.min(1, progress)), [progress]);
@@ -133,6 +134,15 @@ const CircularProgress = ({
             colors={colors}
             textStyle={textStyle}
           />
+          {label ? (
+            <Text
+              maxFontSizeMultiplier={1.2}
+              numberOfLines={1}
+              style={{ fontSize: fontSizes.caption, fontFamily: fonts.medium, color: colors.muted, marginTop: -2 }}
+            >
+              {label}
+            </Text>
+          ) : null}
         </View>
       )}
     </View>

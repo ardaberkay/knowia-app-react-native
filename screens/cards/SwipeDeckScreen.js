@@ -316,16 +316,24 @@ export default function SwipeDeckScreen({ route, navigation }) {
     },
     {
       title: t('swipeDeck.tutorial.swipeTitle', 'Kaydırarak öğren'),
-      description: t('swipeDeck.tutorial.swipeDescription', 'Tamamen öğrendiğin kartları sağa kaydır. Sık tekrar etmek istediklerini sola kaydır.'),
+      description: t('swipeDeck.tutorial.swipeLead', 'Kartın arkasını gördükten sonra kaydırarak karar ver.'),
       target: 'card',
       showSwipeHint: true,
       icon: ICONS.swipeToLearn,
+      points: [
+        { icon: ICONS.swipeRight, color: '#3E8E41', text: t('swipeDeck.tutorial.pointRight', 'Sağa: Öğrendim. Kart öğrenildi olur ve bu destede bir daha karşına çıkmaz.') },
+        { icon: ICONS.swipeLeft, color: '#F3A14C', text: t('swipeDeck.tutorial.pointLeft', 'Sola: Tekrar Et. Kart bu oturumda birkaç kart sonra yeniden gelir.') },
+      ],
     },
     {
       title: t('swipeDeck.tutorial.intervalTitle', 'Tekrar zamanını seç'),
-      description: t('swipeDeck.tutorial.intervalDescription', 'Kartı ne kadar iyi bildiğine göre tekrar süresini seç. 10 dakika, 1 saat, 1 gün veya 1 hafta sonra yeniden karşına çıksın. Öğrendikçe kartı daha seyrek görmen yeterli olacaktır.'),
+      description: t('swipeDeck.tutorial.intervalLead', 'Seçtiğin süre boyunca kart karşına çıkmaz, bu oturumda da gelmez.'),
       target: 'interval',
       icon: ICONS.reviewInterval,
+      points: [
+        { icon: ICONS.repeat, color: '#F3A14C', text: t('swipeDeck.tutorial.pointShort', '10 dk · 1 saat: Az bildiğin kartlar için, sık tekrar.') },
+        { icon: ICONS.time, color: '#3E8E41', text: t('swipeDeck.tutorial.pointLong', '1 gün · 1 hafta: İyi bildiğin kartlar için, seyrek tekrar.') },
+      ],
     },
   ]), [t]);
 
@@ -1473,7 +1481,8 @@ export default function SwipeDeckScreen({ route, navigation }) {
     let cancelled = false;
     const fetchCompletionSummary = async () => {
       try {
-        const sessionCountsPromise = getSwipeSessionCompletionCounts(sessionIdRef.current, userId);
+        // a failed summary must not take the rest of the screen down
+        const sessionCountsPromise = getSwipeSessionCompletionCounts(sessionIdRef.current, userId).catch(() => null);
         const hasChapterScope = Boolean(chapter?.id);
         const chapterProgressPromise = hasChapterScope
           ? getChapterProgressCounts(userId, deck.id, chapter.id)

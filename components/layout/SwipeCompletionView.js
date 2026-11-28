@@ -1,11 +1,12 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
+import Reanimated, { FadeInDown } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
-import { Text } from '../ui/AppText';
+import { Text, MAX_FONT_SIZE_MULTIPLIER } from '../ui/AppText';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import PhosphorIcon from '../ui/PhosphorIcon';
+import CircularProgress from '../ui/CircularProgress';
 import { ICONS } from '../../theme/icons';
 
 // "in 5 min" / "in 2 h" / "in 3 days"; also used by the card detail sheet.
@@ -17,13 +18,22 @@ export const formatFutureReview = (dateString, t) => {
   return t('swipeDeck.completion.daysFromNow', { count: Math.ceil(hours / 24), defaultValue: `${Math.ceil(hours / 24)} gün sonra` });
 };
 
+const ORANGE = '#F98A21';
+const GREEN = '#27AE60';
+const BLUE = '#2F80ED';
+
+// Staggered entrance for the blocks (runs once when the screen appears).
+const enter = (index) => FadeInDown.duration(420).delay(80 + index * 70);
+
 /**
- * End of a swipe session: session totals, today's goal, chapter progress,
- * upcoming reviews and back / next-chapter buttons. An empty chapter gets a
- * short "nothing to study right now" version.
+ * End of a swipe session.
  *
- * sessionLearned is the screen's right counter: the backend session summary
- * can lag behind the UI write, and the counter is updated at swipe commit.
+ * Numbers come from the server summary (swipe_session_summary: cards studied,
+ * learned, to review, nearest review). Until it arrives, or if it fails, the
+ * screen's own counters are shown (studied = session size, learned = right
+ * swipes). Then today's goal + streak, the chapter's progress (chapter
+ * sessions) and the actions: next chapter when there is one, done.
+ * An empty chapter gets a short "nothing to study right now" version.
  */
 export default function SwipeCompletionView({
   isEmptyChapter,
@@ -39,401 +49,237 @@ export default function SwipeCompletionView({
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
-  const sessionPlanned = Math.max(0, sessionTargetCount - sessionLearned);
-  const chapterProgress = completionSummary?.chapterProgress;
-  const chapterLearned = chapterProgress?.learned || 0;
-  const chapterUnfinished = chapterProgress ? chapterProgress.total - chapterLearned : 0;
-  const chapterPercent = chapterProgress?.total
-    ? Math.round((chapterLearned / chapterProgress.total) * 100)
-    : 0;
-  const completionActivity = completionSummary?.activity;
-  const nearestReview = completionSummary?.reviews?.nearest;
-  const farthestReview = completionSummary?.reviews?.farthest;
+  const counts = completionSummary?.sessionCounts;
+  const studied = counts?.studied || sessionTargetCount || 0;
+  const learned = Math.min(counts ? counts.learned : (sessionLearned || 0), studied);
+  const toReview = counts ? counts.learning : Math.max(studied - learned, 0);
+  const ratio = studied > 0 ? learned / studied : 0;
 
-  const ctaArea = (
-    <View style={styles.completionCtaArea}>
-      <View style={styles.completionButtonRow}>
-        <TouchableOpacity style={[styles.completionButton, styles.completionButtonHalf, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder, borderWidth: StyleSheet.hairlineWidth }]} onPress={onBack}>
-          <Text style={[typography.styles.headline, { color: colors.text }]}>{t('swipeDeck.completion.back', 'Geri Dön')}</Text>
+  const activity = completionSummary?.activity;
+  const goal = activity?.daily_goal ?? 0;
+  const todaySwipes = activity?.today_swipes ?? 0;
+  const goalRatio = goal > 0 ? Math.min(1, todaySwipes / goal) : 0;
+
+  const chapterProgress = completionSummary?.chapterProgress;
+  const chapterPercent = chapterProgress?.total
+    ? Math.round((chapterProgress.learned / chapterProgress.total) * 100)
+    : 0;
+  const nextReview = counts?.nextReview || completionSummary?.reviews?.nearest || null;
+
+  const title = ratio >= 0.8
+    ? t('swipeDeck.completion.titleGreat', 'Mükemmel!')
+    : ratio >= 0.5
+      ? t('swipeDeck.completion.titleGood', 'Harika iş!')
+      : t('swipeDeck.completion.titleKeepGoing', 'İyi gidiyorsun');
+
+  const actions = (
+    <View style={styles.actions}>
+      {nextChapter ? (
+        <>
+          <TouchableOpacity activeOpacity={0.85} style={[styles.primaryBtn, { backgroundColor: colors.buttonColor }]} onPress={onNextChapter}>
+            <Text style={[styles.primaryBtnText, { color: colors.buttonText }]}>{t('swipeDeck.completion.nextChapter', 'Sonraki Bölüm')}</Text>
+            <PhosphorIcon icon={ICONS.arrowRight} size={18} color={colors.buttonText} />
+          </TouchableOpacity>
+          <Text style={[styles.nextMeta, { color: colors.muted }]}>
+            {t('swipeDeck.completion.chapterMeta', { chapter: nextChapter.ordinal, count: nextChapter.totalCards, defaultValue: `Bölüm ${nextChapter.ordinal} • ${nextChapter.totalCards} kart` })}
+          </Text>
+          <TouchableOpacity activeOpacity={0.7} style={styles.secondaryBtn} onPress={onBack}>
+            <Text style={[styles.secondaryBtnText, { color: colors.text }]}>{t('swipeDeck.completion.done', 'Bitir')}</Text>
+          </TouchableOpacity>
+        </>
+      ) : (
+        <TouchableOpacity activeOpacity={0.85} style={[styles.primaryBtn, { backgroundColor: colors.buttonColor }]} onPress={onBack}>
+          <Text style={[styles.primaryBtnText, { color: colors.buttonText }]}>{t('swipeDeck.completion.done', 'Bitir')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          disabled={!nextChapter}
-          style={[styles.completionButton, styles.completionButtonHalf, { backgroundColor: nextChapter ? colors.buttonColor : colors.cardBackground, borderColor: nextChapter ? 'transparent' : colors.cardBorder, borderWidth: nextChapter ? 0 : StyleSheet.hairlineWidth, opacity: nextChapter ? 1 : 0.55 }]}
-          onPress={onNextChapter}
-        >
-          <Text style={[typography.styles.headline, { color: nextChapter ? colors.buttonText : colors.muted }]}>{t('swipeDeck.completion.nextChapter', 'Sonraki Bölüm')}</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.completionNextMetaRow}>
-        <View style={styles.completionNextMetaSpacer} />
-        <Text style={[styles.nextChapterMeta, { color: colors.muted }]}>{nextChapter ? t('swipeDeck.completion.chapterMeta', { chapter: nextChapter.ordinal, count: nextChapter.totalCards, defaultValue: `Bölüm ${nextChapter.ordinal} • ${nextChapter.totalCards} kart` }) : t('swipeDeck.completion.noNextChapter', 'Sonraki bölüm yok')}</Text>
-      </View>
+      )}
     </View>
   );
 
   if (isEmptyChapter) {
     return (
-      <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingBottom: insets.bottom }]}>
-        <View style={styles.emptyCompletionContent}>
-          <Text style={styles.emptyCompletionIcon}>📚</Text>
-          <Text style={[typography.styles.title2, styles.emptyCompletionTitle, { color: colors.text }]}>{t('swipeDeck.completion.emptyTitle', 'Bu bölümde şu anda çalışılacak kart yok.')}</Text>
-          <View style={[styles.emptyCompletionInfo, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
-            <Text style={[styles.completionReviewMetric, { color: colors.text }]}>{nearestReview ? formatFutureReview(nearestReview.at, t) : '—'}</Text>
-            <Text style={[typography.styles.subhead, styles.completionReviewLabel, { color: colors.muted }]}>{nearestReview ? t('swipeDeck.completion.cardsReady', { count: nearestReview.count, defaultValue: `${nearestReview.count} kart hazır` }) : t('swipeDeck.completion.nearestReview', 'En yakın tekrar')}</Text>
-          </View>
-          {ctaArea}
+      <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingBottom: insets.bottom + 16 }]}>
+        <View style={styles.emptyContent}>
+          <Reanimated.View entering={enter(0)} style={[styles.emptyIcon, { backgroundColor: ORANGE + '1F' }]}>
+            <PhosphorIcon icon={ICONS.time} size={36} color={ORANGE} />
+          </Reanimated.View>
+          <Reanimated.Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER} entering={enter(1)} style={[styles.emptyTitle, { color: colors.text }]}>
+            {t('swipeDeck.completion.emptyTitle', 'Bu bölümde şu anda çalışılacak kart yok.')}
+          </Reanimated.Text>
+          <Reanimated.Text maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER} entering={enter(2)} style={[styles.emptyText, { color: colors.muted }]}>
+            {nextReview
+              ? t('swipeDeck.completion.emptyNext', {
+                when: formatFutureReview(nextReview.at, t),
+                count: nextReview.count,
+                defaultValue: `Sıradaki tekrar ${formatFutureReview(nextReview.at, t)}: ${nextReview.count} kart.`,
+              })
+              : t('swipeDeck.completion.emptyNoReview', 'Bütün kartları öğrendin.')}
+          </Reanimated.Text>
         </View>
+        <View style={styles.footer}>{actions}</View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background, paddingBottom: insets.bottom, paddingTop: insets.top + 50 }]}>
-      <ScrollView contentContainerStyle={[styles.completionContent, { paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
-        <View style={styles.completionHero}>
-          <LinearGradient colors={[colors.buttonColor, '#FF6B35']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.completionHeroCard, { backgroundColor: colors.buttonColor }]}>
-            <View style={styles.completionHeroTitleRow}>
-              <PhosphorIcon icon={ICONS.trophy} size={36} color="#FFFFFF" />
-              <Text style={[typography.styles.title2, styles.completionTitle, { color: '#FFFFFF' }]}>{t('swipeDeck.completion.title', 'Oturum Tamamlandı!')}</Text>
-            </View>
-            <View style={styles.completionHeroMetricCircle}>
-              <Text style={[styles.completionHeroMetric, { color: '#FFFFFF' }]}>{sessionTargetCount}</Text>
-              <Text style={[typography.styles.body, styles.completionHeroLabel, { color: 'rgba(255,255,255,0.88)' }]}>{t('swipeDeck.completion.cardsStudied', 'Kart Çalışıldı')}</Text>
-            </View>
-            <View style={styles.completionHeroSessionStats}>
-              <View style={styles.completionHeroSessionStat}>
-                <Text style={styles.completionHeroSessionNumber}>
-                  {sessionLearned ?? '—'}
-                </Text>
-                <Text style={styles.completionHeroSessionLabel}>
-                  {t('swipeDeck.completion.learned', 'Öğrenildi')}
-                </Text>
-              </View>
-
-              <View style={styles.completionHeroSessionDivider} />
-
-              <View style={styles.completionHeroSessionStat}>
-                <Text style={styles.completionHeroSessionNumber}>
-                  {sessionPlanned ?? '—'}
-                </Text>
-                <Text style={styles.completionHeroSessionLabel}>
-                  {t('swipeDeck.completion.reviewPlanned', 'Tekrar Planlandı')}
-                </Text>
-              </View>
-
-              <View style={styles.completionHeroSessionDivider} />
-
-              <View style={styles.completionHeroSessionStat}>
-                <Text style={styles.completionHeroSessionNumber}>
-                  {totalSwipeCount ?? '—'}
-                </Text>
-                <Text style={styles.completionHeroSessionLabel}>
-                  {t('swipeDeck.completion.totalSwipes', 'Toplam Kaydırma')}
-                </Text>
-              </View>
-            </View>
-            {completionActivity ? (
-              <View style={styles.completionGoalRow}>
-                <PhosphorIcon
-                  icon={completionActivity.today_goal_met ? ICONS.fire : ICONS.time}
-                  size={18}
-                  color="#FFFFFF"
-                />
-                <Text style={styles.completionGoalText} numberOfLines={2}>
-                  {completionActivity.today_goal_met
-                    ? t('swipeDeck.completion.goalDone', {
-                      count: completionActivity.current_streak,
-                      defaultValue: `Günlük hedef tamam! Seri: ${completionActivity.current_streak} gün`,
-                    })
-                    : t('swipeDeck.completion.goalLeft', {
-                      count: Math.max((completionActivity.daily_goal ?? 0) - (completionActivity.today_swipes ?? 0), 0),
-                      defaultValue: `Günlük hedefe ${Math.max((completionActivity.daily_goal ?? 0) - (completionActivity.today_swipes ?? 0), 0)} kart kaldı`,
-                    })}
-                </Text>
-              </View>
-            ) : null}
-          </LinearGradient>
-        </View>
-
-        <View style={[styles.completionChapterCard, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
-          <View style={styles.completionChapterHeader}>
-            <View style={styles.completionChapterTitleRow}>
-              <PhosphorIcon icon={ICONS.chapter} size={20} color={colors.buttonColor} />
-              <Text style={[typography.styles.bodyLarge, { color: colors.text }]}>{t('swipeDeck.completion.chapterProgress', 'Bölüm İlerlemesi')}</Text>
-            </View>
-            <Text style={[styles.completionChapterProgressValue, { color: colors.buttonColor }]}>{chapterProgress ? `%${chapterPercent}` : '--'}</Text>
+    <SafeAreaView edges={['left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 56, paddingBottom: insets.bottom + 24 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Hero: share of the session's cards now learned */}
+        <Reanimated.View entering={enter(0)} style={styles.hero}>
+          <Text style={[styles.eyebrow, { color: colors.muted }]}>{t('swipeDeck.completion.eyebrow', 'Oturum tamamlandı')}</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+          <View style={styles.ring}>
+            <CircularProgress progress={ratio} size={156} strokeWidth={14} showText={true} shouldAnimate={true} label={t('swipeDeck.completion.ringLabel', 'öğrenme oranı')} />
           </View>
-          <View style={[styles.completionChapterProgressTrack, { backgroundColor: colors.progressBarSwipe || colors.border }]}>
-            <View style={[styles.completionChapterProgressFill, { width: `${chapterProgress ? chapterPercent : 0}%`, backgroundColor: colors.buttonColor }]} />
-          </View>
-          <View style={styles.completionChapterMetrics}>
-            <Text style={[typography.styles.body, { color: colors.text }]}>{chapterProgress ? `• ${t('swipeDeck.completion.learnedCount', { count: chapterLearned, defaultValue: `${chapterLearned} Öğrenildi` })}` : '—'}</Text>
-            <Text style={[typography.styles.body, { color: colors.muted }]}>{chapterProgress ? `• ${t('swipeDeck.completion.learningCount', { count: chapterUnfinished, defaultValue: `${chapterUnfinished} Öğrenme Sürecinde` })}` : '—'}</Text>
-          </View>
-          <View style={[styles.completionChapterDivider, { backgroundColor: colors.border }]} />
-          <View style={styles.completionReviewGrid}>
-            <View style={styles.completionReviewItem}>
-              <PhosphorIcon icon={ICONS.time} size={22} color={colors.buttonColor} />
-              <View style={styles.completionReviewTextGroup}>
-                <Text style={[styles.completionReviewMetric, { color: colors.text }]}>{nearestReview ? formatFutureReview(nearestReview.at, t) : '—'}</Text>
-                <Text style={[typography.styles.subhead, styles.completionReviewLabel, { color: colors.muted }]}>{nearestReview ? t('swipeDeck.completion.cardsReady', { count: nearestReview.count, defaultValue: `${nearestReview.count} kart hazır` }) : t('swipeDeck.completion.nearestReview', 'En yakın tekrar')}</Text>
-              </View>
-            </View>
-            <View style={styles.completionReviewItem}>
-              <PhosphorIcon icon={ICONS.calendar} size={22} color={colors.secondary} />
-              <View style={styles.completionReviewTextGroup}>
-                <Text style={[styles.completionReviewMetric, { color: colors.text }]}>{farthestReview ? formatFutureReview(farthestReview.at, t) : '—'}</Text>
-                <Text style={[typography.styles.subhead, styles.completionReviewLabel, { color: colors.muted }]}>{t('swipeDeck.completion.farthestReview', 'En uzak tekrar')}</Text>
-              </View>
-            </View>
-          </View>
-        </View>
+          <Text style={[styles.heroCaption, { color: colors.muted }]}>
+            {t('swipeDeck.completion.heroCaption', { learned, studied, defaultValue: `${studied} karttan ${learned} tanesini öğrendin` })}
+          </Text>
+        </Reanimated.View>
 
-        {ctaArea}
+        {/* Session numbers */}
+        <Reanimated.View entering={enter(1)} style={styles.statsRow}>
+          {[
+            { key: 'studied', icon: ICONS.stack, color: BLUE, value: studied, label: t('swipeDeck.completion.statStudied', 'Çalışılan') },
+            { key: 'learned', icon: ICONS.valid, color: GREEN, value: learned, label: t('swipeDeck.completion.statLearned', 'Öğrenildi') },
+            { key: 'review', icon: ICONS.time, color: ORANGE, value: toReview, label: t('swipeDeck.completion.statReviewShort', 'Tekrar') },
+          ].map((stat) => (
+            <View key={stat.key} style={[styles.statTile, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
+              <View style={[styles.statIcon, { backgroundColor: stat.color + '22' }]}>
+                <PhosphorIcon icon={stat.icon} size={16} color={stat.color} />
+              </View>
+              <Text style={[styles.statValue, { color: colors.text }]}>{stat.value}</Text>
+              <Text style={[styles.statLabel, { color: colors.muted }]} numberOfLines={1}>{stat.label}</Text>
+            </View>
+          ))}
+        </Reanimated.View>
+
+        {/* Today's goal + streak */}
+        {activity ? (
+          <Reanimated.View entering={enter(2)} style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
+            <View style={styles.cardHeader}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>{t('swipeDeck.completion.todayGoal', 'Günlük hedef')}</Text>
+              <Text style={[styles.cardValue, { color: activity.today_goal_met ? GREEN : colors.muted }]}>
+                {todaySwipes}/{goal}
+              </Text>
+            </View>
+            <View style={[styles.track, { backgroundColor: colors.progressBar }]}>
+              <View style={[styles.fill, { width: `${Math.max(goalRatio > 0 ? 3 : 0, goalRatio * 100)}%`, backgroundColor: activity.today_goal_met ? GREEN : ORANGE }]} />
+            </View>
+            <View style={styles.cardFooterRow}>
+              <PhosphorIcon icon={ICONS.fire} size={16} color={activity.current_streak > 0 ? ORANGE : colors.muted} />
+              <Text style={[styles.cardFooterText, { color: colors.text }]}>
+                {activity.today_goal_met
+                  ? t('swipeDeck.completion.streakDays', { count: activity.current_streak, defaultValue: `${activity.current_streak} günlük seri` })
+                  : t('swipeDeck.completion.goalLeft', {
+                    count: Math.max(goal - todaySwipes, 0),
+                    defaultValue: `Günlük hedefe ${Math.max(goal - todaySwipes, 0)} kart kaldı`,
+                  })}
+              </Text>
+            </View>
+          </Reanimated.View>
+        ) : null}
+
+        {/* Chapter progress (chapter sessions) */}
+        {chapterProgress ? (
+          <Reanimated.View entering={enter(3)} style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
+            <View style={styles.cardHeader}>
+              <View style={styles.cardTitleRow}>
+                <PhosphorIcon icon={ICONS.chapter} size={16} color={ORANGE} />
+                <Text style={[styles.cardTitle, { color: colors.text }]}>{t('swipeDeck.completion.chapterProgress', 'Bölüm İlerlemesi')}</Text>
+              </View>
+              <Text style={[styles.cardValue, { color: ORANGE }]}>%{chapterPercent}</Text>
+            </View>
+            <View style={[styles.track, { backgroundColor: colors.progressBar }]}>
+              <View style={[styles.fill, { width: `${chapterPercent}%`, backgroundColor: ORANGE }]} />
+            </View>
+            <View style={styles.legendRow}>
+              {[
+                { key: 'l', color: GREEN, value: chapterProgress.learned, label: t('swipeDeck.completion.legendLearned', 'öğrenildi') },
+                { key: 'g', color: ORANGE, value: chapterProgress.learning, label: t('swipeDeck.completion.legendLearning', 'öğreniliyor') },
+                { key: 'n', color: colors.muted, value: chapterProgress.new, label: t('swipeDeck.completion.legendNew', 'yeni') },
+              ].map((item) => (
+                <View key={item.key} style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+                  <Text style={[styles.legendText, { color: colors.text }]}>
+                    <Text style={{ fontFamily: fonts.bold }}>{item.value}</Text> {item.label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </Reanimated.View>
+        ) : null}
+
+        {/* Next review of this session's cards */}
+        {nextReview ? (
+          <Reanimated.View entering={enter(4)} style={[styles.card, styles.reviewCard, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
+            <View style={[styles.statIcon, styles.reviewIcon, { backgroundColor: BLUE + '22' }]}>
+              <PhosphorIcon icon={ICONS.calendar} size={18} color={BLUE} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>
+                {t('swipeDeck.completion.nextReviewTitle', { when: formatFutureReview(nextReview.at, t), defaultValue: `Sıradaki tekrar ${formatFutureReview(nextReview.at, t)}` })}
+              </Text>
+              <Text style={[styles.cardFooterText, { color: colors.muted, marginTop: 2 }]}>
+                {t('swipeDeck.completion.cardsReady', { count: nextReview.count, defaultValue: `${nextReview.count} kart hazır` })}
+              </Text>
+            </View>
+          </Reanimated.View>
+        ) : null}
+
+        <Reanimated.View entering={enter(5)} style={{ width: '100%' }}>
+          {actions}
+        </Reanimated.View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  completionContent: {
-    width: '100%',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 18,
-  },
-  completionHero: {
-    width: '100%',
-    alignItems: 'center',
-    zIndex: 1,
-    marginBottom: 22,
-  },
-  completionGoalRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 18,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-  },
-  completionGoalText: {
-    ...typography.styles.headline,
-    fontSize: fontSizes.subhead,
-    color: '#FFFFFF',
-    flexShrink: 1,
-  },
-  completionHeroCard: {
-    width: '100%',
-    alignItems: 'center',
-    borderRadius: 30,
-    paddingTop: 24,
-    paddingBottom: 28,
-    paddingHorizontal: 20,
-    overflow: 'hidden',
-    shadowColor: '#F98A21',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.22,
-    shadowRadius: 14,
-    elevation: 5,
-  },
-  completionHeroTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginBottom: 16,
-  },
-  completionHeroMetricCircle: {
-    width: 136,
-    height: 136,
-    borderRadius: 68,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.18)',
-  },
-  completionTitle: {
-    textAlign: 'center',
-    marginBottom: 0,
-  },
-  completionHeroMetric: {
-    fontSize: fontSizes.display,
-    fontFamily: fonts.bold,
-    lineHeight: 56,
-  },
-  completionHeroLabel: {
-    fontFamily: fonts.bold,
-  },
-  completionHeroSessionStats: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  completionHeroSessionStat: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  completionHeroSessionNumber: {
-    color: '#FFFFFF',
-    fontSize: fontSizes.title2,
-    fontFamily: fonts.bold,
-  },
-  completionHeroSessionLabel: {
-    color: 'rgba(255,255,255,0.78)',
-    fontSize: fontSizes.caption,
-    marginTop: 2,
-    textAlign: 'center',
-  },
-  completionHeroSessionDivider: {
-    width: StyleSheet.hairlineWidth,
-    height: 36,
-    backgroundColor: 'rgba(255,255,255,0.35)',
-  },
+  container: { flex: 1 },
+  content: { paddingHorizontal: 16, alignItems: 'center', gap: 12 },
 
-  emptyCompletionContent: {
-    flex: 1,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  emptyCompletionIcon: {
-    fontSize: fontSizes.display,
-    marginBottom: 16,
-  },
-  emptyCompletionTitle: {
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  emptyCompletionInfo: {
-    width: '100%',
-    alignItems: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 22,
-    padding: 18,
-    marginBottom: 24,
-  },
-  emptyCompletionTime: {
-    marginTop: 6,
-    textAlign: 'center',
-  },
-  completionChapterCard: {
-    width: '100%',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 22,
-    padding: 18,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  completionChapterHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  completionChapterTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  completionChapterProgressValue: {
-    fontSize: fontSizes.title2,
-    fontFamily: fonts.bold,
-  },
-  completionChapterProgressTrack: {
-    height: 12,
-    borderRadius: 6,
-    overflow: 'hidden',
-    marginTop: 16,
-  },
-  completionChapterProgressFill: {
-    height: '100%',
-    borderRadius: 6,
-  },
+  hero: { alignItems: 'center', width: '100%', marginBottom: 8 },
+  eyebrow: { fontSize: fontSizes.footnote, fontFamily: fonts.semibold, textTransform: 'uppercase', letterSpacing: 0.6 },
+  title: { ...typography.styles.title1, fontFamily: fonts.bold, marginTop: 4 },
+  ring: { marginTop: 20, marginBottom: 12 },
+  heroCaption: { fontSize: fontSizes.subhead, fontFamily: fonts.medium, textAlign: 'center' },
 
-  completionChapterMetrics: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginTop: 16,
-  },
-  completionChapterDivider: {
-    height: StyleSheet.hairlineWidth,
-    marginVertical: 18,
-  },
-  completionReviewGrid: {
-    width: '100%',
-    flexDirection: 'row',
-    gap: 10,
-  },
-  completionReviewItem: {
-    flex: 1,
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  completionReviewTextGroup: {
-    minHeight: 42,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  statsRow: { flexDirection: 'row', gap: 10, width: '100%' },
+  statTile: { flex: 1, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, paddingVertical: 14, paddingHorizontal: 8, gap: 6, alignItems: 'center' },
+  statIcon: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  statValue: { fontSize: fontSizes.title2, fontFamily: fonts.bold },
+  statLabel: { fontSize: fontSizes.caption, fontFamily: fonts.medium, textAlign: 'center' },
 
-  completionReviewMetric: {
-    fontSize: fontSizes.title3,
-    fontFamily: fonts.bold,
-    textAlign: 'center',
-  },
-  completionReviewLabel: {
-    marginTop: 1,
-    textAlign: 'center',
-  },
+  card: { width: '100%', borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, padding: 16, gap: 10 },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  cardTitle: { fontSize: fontSizes.body, fontFamily: fonts.semibold },
+  cardValue: { fontSize: fontSizes.body, fontFamily: fonts.bold },
+  track: { height: 8, borderRadius: 4, overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: 4 },
+  cardFooterRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  cardFooterText: { fontSize: fontSizes.footnote, fontFamily: fonts.medium },
 
-  completionButton: {
-    width: '100%',
-    minHeight: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    borderRadius: 18,
-    paddingHorizontal: 16,
-  },
-  completionCtaArea: {
-    width: '100%',
-    marginTop: 4,
-    marginBottom: 28,
-  },
-  completionButtonRow: {
-    width: '100%',
-    flexDirection: 'row',
-    gap: 10,
-    alignItems: 'flex-start',
-  },
-  completionButtonHalf: {
-    flex: 1,
-    width: undefined,
-  },
+  legendRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendText: { fontSize: fontSizes.footnote, fontFamily: fonts.regular },
 
-  nextChapterMeta: {
-    ...typography.styles.body,
-    textAlign: 'center',
-    flex: 1,
-    marginTop: 6,
-  },
-  completionNextMetaRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  completionNextMetaSpacer: {
-    flex: 1,
-  },
+  reviewCard: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  reviewIcon: { width: 36, height: 36, borderRadius: 18 },
+
+  actions: { width: '100%', marginTop: 8, alignItems: 'center' },
+  primaryBtn: { width: '100%', height: 54, borderRadius: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  primaryBtnText: { fontSize: fontSizes.bodyLarge, fontFamily: fonts.bold },
+  nextMeta: { fontSize: fontSizes.footnote, fontFamily: fonts.medium, marginTop: 8 },
+  secondaryBtn: { height: 48, paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  secondaryBtnText: { fontSize: fontSizes.body, fontFamily: fonts.semibold },
+
+  emptyContent: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 12 },
+  emptyIcon: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  emptyTitle: { ...typography.styles.title2, fontFamily: fonts.bold, textAlign: 'center' },
+  emptyText: { fontSize: fontSizes.body, fontFamily: fonts.regular, textAlign: 'center' },
+  footer: { paddingHorizontal: 16 },
 });

@@ -8,6 +8,7 @@ import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useAuth } from '../../contexts/AuthContext';
 import { updateCardsChapter } from '../../services/CardService';
 import { useTranslation } from 'react-i18next';
+import FilterIcon from '../../components/modals/CardFilterIcon';
 import SearchBar from '../../components/tools/SearchBar';
 import CardDetailSheet from '../../components/layout/CardDetailView';
 import { listChapters, distributeUnassignedEvenly, getDeckChaptersProgressRpc } from '../../services/ChapterService';
@@ -145,6 +146,12 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [favoriteCards, setFavoriteCards] = useState([]);
   const [search, setSearch] = useState('');
+  // filter / sort menu next to the search bar: 'original' | 'az' | 'fav' | 'learned' | 'unlearned'
+  const [cardSort, setCardSort] = useState('original');
+  const listOptionsFor = (value) => ({
+    filter: ['fav', 'learned', 'unlearned'].includes(value) ? value : null,
+    sortBy: value === 'az' ? 'az' : 'original',
+  });
   // the search the cards on screen were loaded for (see filterCardsWhileSearching)
   const [cardsSearch, setCardsSearch] = useState('');
   // Search runs on the server over the whole chapter (not just loaded pages).
@@ -226,6 +233,12 @@ export default function ChapterCardsScreen({ route, navigation }) {
     fetchChapterCards({ silent: true });
   }, [debouncedSearch]);
 
+  const sortBootRef = useRef(true);
+  useEffect(() => {
+    if (sortBootRef.current) { sortBootRef.current = false; return; }
+    fetchChapterCards({ silent: true });
+  }, [cardSort]);
+
   const checkOwnerAndLoadChapters = async () => {
     try {
       if (userId && deck) {
@@ -243,19 +256,8 @@ export default function ChapterCardsScreen({ route, navigation }) {
   };
 
   useLayoutEffect(() => {
-    const isOwnerUser = currentUserId && deck?.user_id === currentUserId && !deck?.is_shared;
-
-    if (loading) {
-      navigation.setOptions({
-        headerShown: true,
-        headerTransparent: true,
-        headerStyle: { backgroundColor: 'transparent' },
-        headerTintColor: colors.text,
-        headerTitle: '',
-        headerRight: () => null,
-      });
-      return;
-    }
+    // Known on the first render (session + deck params): no wait for the list.
+    const isOwnerUser = Boolean(userId) && deck?.user_id === userId && !deck?.is_shared;
 
     navigation.setOptions({
       headerShown: true,
@@ -284,7 +286,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
         </TouchableOpacity>
       ) : () => null,
     });
-  }, [loading, navigation, chapter?.id, currentUserId, deck?.user_id, deck?.is_shared, editMode, colors.text, colors.background, t]);
+  }, [navigation, chapter?.id, userId, deck?.user_id, deck?.is_shared, editMode, colors.text, colors.background, t]);
 
   // The server applies the search; until its answer comes, the cards on
   // screen are filtered locally so typing shows a result at once.
@@ -307,7 +309,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
       // Header counts come from the same RPC as Chapters / DeckDetail, so every
       // screen shows the same numbers.
       const [cardsData, stats] = await Promise.all([
-        getCardsByChapter(deck.id, chapterId, 0, PAGE_SIZE, userId || null, searchForRequest || null),
+        getCardsByChapter(deck.id, chapterId, 0, PAGE_SIZE, userId || null, searchForRequest || null, listOptionsFor(cardSort)),
         userId
           ? getDeckChaptersProgressRpc(deck.id, userId).then((map) => map.get(chapterId || 'unassigned') || emptyStats)
           : Promise.resolve(emptyStats),
@@ -362,7 +364,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
     try {
       const nextPage = pageNum + 1;
       const chapterId = chapter?.id || null;
-      const cardsData = await getCardsByChapter(deck.id, chapterId, nextPage, PAGE_SIZE, userId || null, debouncedSearch || null);
+      const cardsData = await getCardsByChapter(deck.id, chapterId, nextPage, PAGE_SIZE, userId || null, debouncedSearch || null, listOptionsFor(cardSort));
       if (requestId !== listRequestIdRef.current) return;
       if (cardsData.length === 0) {
         setHasMoreCards(false);
@@ -695,6 +697,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
                 placeholder={t('chapterCards.searchPlaceholder', 'Kartlarda ara...')}
                 style={styles.searchBar}
               />
+              <FilterIcon value={cardSort} onChange={setCardSort} />
             </View>
 
             {/* Edit mode'da seçim butonları */}
@@ -808,7 +811,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
       </View>
 
       {/* Floating Action Button - Atanmamış kartlar için dağıtım butonu */}
-      {!chapter?.id && !editMode && currentUserId && deck?.user_id === currentUserId && !deck?.is_shared && (
+      {!chapter?.id && !editMode && Boolean(userId) && deck?.user_id === userId && !deck?.is_shared && (
         <AnimatedPressable
           style={[styles.fab, shuffleAnimatedStyle, { bottom: insets.bottom + 24 }]} // Dönüş ve küçülme stilini verdik
           disabled={distLoading} // Yüklenirken tıklamayı kapat

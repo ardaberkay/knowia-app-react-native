@@ -507,10 +507,10 @@ export default function DeckCardsScreen({ route, navigation }) {
     );
   }, [currentUserId, deck?.user_id, favoriteIdSet, handleListItemPress, handleToggleFavoriteCard, handleListItemDelete]);
 
+  // Known on the first render (session + deck params): no wait for the list.
   const showAddCardFab =
-    !showFullScreenLoading &&
-    currentUserId &&
-    deck.user_id === currentUserId &&
+    Boolean(userId) &&
+    deck.user_id === userId &&
     !deck.is_shared;
 
   // The add-card FAB (~56 tall) sits at the bottom; leave room for it.
