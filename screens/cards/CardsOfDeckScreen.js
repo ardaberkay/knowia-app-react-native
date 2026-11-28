@@ -24,43 +24,34 @@ import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-
 import { useListBottomInset } from '../../components/ui/TabBarInset';
 import PhosphorIcon from '../../components/ui/PhosphorIcon';
 import { ICONS } from '../../theme/icons';
+import { isSpeechAvailable, useSpeakText } from '../../lib/speech';
 
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 
-// DeckCardsScreen.js (Ana fonksiyonun DIŞINA yazılacak)
-
+// One row of the list. Default shallow memo: the screen passes stable
+// callbacks, so a row re-renders only when its card, favourite or
+// read-aloud state changes.
 const MemoizedDeckCard = React.memo(({
   item,
   isFavorite,
-  isOwner,
+  isSpeaking,
   onPress,
   onToggleFavorite,
-  onDelete
-}) => {
-  return (
-    <View style={styles.cardListItem}>
-      <CardListItem
-        question={item.question}
-        answer={item.answer}
-        isFavorite={isFavorite}
-        isOwner={isOwner}
-        canDelete={true}
-        onPress={() => onPress(item)}
-        onToggleFavorite={() => onToggleFavorite(item.id)}
-        onDelete={() => onDelete(item)}
-      />
-    </View>
-  );
-}, (prevProps, nextProps) => {
-  // Sadece bu 5 değer değişirse kart kendini yenilesin:
-  return (
-    prevProps.item.id === nextProps.item.id &&
-    prevProps.item.question === nextProps.item.question &&
-    prevProps.item.answer === nextProps.item.answer &&
-    prevProps.isFavorite === nextProps.isFavorite &&
-    prevProps.isOwner === nextProps.isOwner
-  );
-});
+  onSpeak,
+}) => (
+  <View style={styles.cardListItem}>
+    <CardListItem
+      question={item.question}
+      answer={item.answer}
+      status={item.status}
+      isFavorite={isFavorite}
+      isSpeaking={isSpeaking}
+      onPress={() => onPress(item)}
+      onToggleFavorite={() => onToggleFavorite(item.id)}
+      onSpeak={onSpeak ? () => onSpeak(item) : undefined}
+    />
+  </View>
+));
 
 
 const sameCardRows = (a, b) => a.length === b.length && a.every((card, i) => {
@@ -471,41 +462,23 @@ export default function DeckCardsScreen({ route, navigation }) {
 
   const handleListItemPress = openDetail;
 
-  const handleListItemDelete = useCallback((item) => {
-    Alert.alert(
-      t('cardDetail.deleteConfirmation', 'Kart Silinsin mi?'),
-      t('cardDetail.deleteConfirm', 'Kartı silmek istediğinize emin misiniz?'),
-      [
-        { text: t('cardDetail.cancel', 'İptal'), style: 'cancel' },
-        {
-          text: t('cardDetail.delete', 'Sil'), style: 'destructive', onPress: async () => {
-            try {
-              await deleteCard(item.id);
+  // Read-aloud of the question: one state for the whole list (one card at a time).
+  const { speakingKey, speak: speakText, stop: stopSpeaking } = useSpeakText(deck?.id ?? null);
+  const handleSpeakCard = useCallback((item) => {
+    speakText(`list_${item.id}`, item.question, 'front');
+  }, [speakText]);
+  useFocusEffect(useCallback(() => () => stopSpeaking(), [stopSpeaking]));
 
-              setCards(prevCards => prevCards.filter(c => c.id !== item.id));
-              showSuccess(t('cardDetail.deleteSuccess', 'Kart başarıyla silindi'));
-            } catch (e) {
-              showError(t('cardDetail.deleteError', 'Kart silinemedi'));
-            }
-          }
-        }
-      ]
-    );
-  }, [t, showSuccess, showError]);
-
-  const renderCardItem = useCallback(({ item }) => {
-    const isOwner = currentUserId && deck.user_id === currentUserId;
-    return (
-      <MemoizedDeckCard
-        item={item}
-        isFavorite={favoriteIdSet.has(item.id)}
-        isOwner={isOwner}
-        onPress={handleListItemPress}
-        onToggleFavorite={handleToggleFavoriteCard}
-        onDelete={handleListItemDelete}
-      />
-    );
-  }, [currentUserId, deck?.user_id, favoriteIdSet, handleListItemPress, handleToggleFavoriteCard, handleListItemDelete]);
+  const renderCardItem = useCallback(({ item }) => (
+    <MemoizedDeckCard
+      item={item}
+      isFavorite={favoriteIdSet.has(item.id)}
+      isSpeaking={speakingKey === `list_${item.id}`}
+      onPress={handleListItemPress}
+      onToggleFavorite={handleToggleFavoriteCard}
+      onSpeak={isSpeechAvailable ? handleSpeakCard : undefined}
+    />
+  ), [favoriteIdSet, speakingKey, handleListItemPress, handleToggleFavoriteCard, handleSpeakCard]);
 
   // Known on the first render (session + deck params): no wait for the list.
   const showAddCardFab =
@@ -600,7 +573,7 @@ export default function DeckCardsScreen({ route, navigation }) {
                   </View>
                 }
                 renderItem={renderCardItem}
-                extraData={favoriteCards}
+                extraData={speakingKey}
                 onEndReached={loadMore}
                 onEndReachedThreshold={0.5}
                 ListFooterComponent={listFooter}
@@ -726,7 +699,7 @@ const styles = StyleSheet.create({
   },
   cardListItem: {
     paddingHorizontal: 12,
-    paddingVertical: 0,
+    marginBottom: 10,
   },
   listFooterLoading: {
     paddingVertical: 16,

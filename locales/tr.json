@@ -420,7 +420,9 @@
     "statusDue": "Tekrar zamanı geldi",
     "statusLearned": "Öğrenildi",
     "nextReview": "Sonraki tekrar: {{time}}",
-    "speak": "Sesli oku"
+    "speak": "Sesli oku",
+    "stopReading": "Okumayı durdur",
+    "readQuestion": "Soruyu sesli oku"
   },
   "addCard": {
     "title": "Kart Oluştur",

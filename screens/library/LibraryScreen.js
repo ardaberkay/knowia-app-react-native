@@ -2,6 +2,7 @@ import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react'
 import { View, StyleSheet, TouchableOpacity, Alert, Animated, useWindowDimensions } from 'react-native';
 import { Text } from '../../components/ui/AppText';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { isSpeechAvailable, useSpeakText } from '../../lib/speech';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/theme';
 import { useAuth } from '../../contexts/AuthContext';
@@ -350,6 +351,10 @@ export default function LibraryScreen() {
     }
   }, [userId, favoriteDecks, patchMyDeck]);
 
+
+  // Read-aloud of a favourite card's question (its own deck's language).
+  const { speakingKey, speak: speakText, stop: stopSpeaking } = useSpeakText(null);
+  useFocusEffect(useCallback(() => () => stopSpeaking(), [stopSpeaking]));
 
   // Kart silme fonksiyonu (favorite cards için)
   const handleDeleteCard = async (cardId) => {
@@ -715,20 +720,23 @@ export default function LibraryScreen() {
               {favoriteCardsPreview.length > 0 ? (
                 <View style={styles.favoriteCardsList}>
                   {favoriteCardsPreview.map((card) => (
-                    <CardListItem
-                      key={card.id}
-                      question={card.question}
-                      answer={card.answer}
-                      isFavorite={true}
-                      onPress={() => {
-                        setSelectedCard(card);
-                        setCardDetailModalVisible(true);
-                      }}
-                      onToggleFavorite={() => handleRemoveFavoriteCard(card.id)}
-                      canDelete={true}
-                      onDelete={() => handleDeleteCard(card.id)}
-                      isOwner={Boolean(userId && card.deck?.user_id && card.deck.user_id === userId)}
-                    />
+                    <View key={card.id} style={styles.favoriteCardRow}>
+                      <CardListItem
+                        question={card.question}
+                        answer={card.answer}
+                        status={card.status}
+                        isFavorite={true}
+                        isSpeaking={speakingKey === `list_${card.id}`}
+                        onPress={() => {
+                          setSelectedCard(card);
+                          setCardDetailModalVisible(true);
+                        }}
+                        onToggleFavorite={() => handleRemoveFavoriteCard(card.id)}
+                        onSpeak={isSpeechAvailable
+                          ? () => speakText(`list_${card.id}`, card.question, 'front', card.deck?.id ?? card.deck_id ?? null)
+                          : undefined}
+                      />
+                    </View>
                   ))}
                 </View>
               ) : (
@@ -758,6 +766,7 @@ export default function LibraryScreen() {
         onDismiss={() => setCardDetailModalVisible(false)}
         isFavorite={Boolean(selectedCard && favoriteCardIds.includes(selectedCard.id))}
         onToggleFavorite={(card) => handleToggleFavoriteCard(card.id)}
+        onDelete={userId && selectedCard?.deck?.user_id === userId ? (card) => handleDeleteCard(card.id) : undefined}
       />
 
       {/* MyDecks Filter Modal */}
@@ -808,6 +817,9 @@ const styles = StyleSheet.create({
   },
   favoriteCardsList: {
     paddingHorizontal: spacing.lg,
+  },
+  favoriteCardRow: {
+    marginBottom: 10,
   },
   favoriteEmptyText: {
     paddingHorizontal: spacing.lg,

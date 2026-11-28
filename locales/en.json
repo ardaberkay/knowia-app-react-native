@@ -419,7 +419,9 @@
     "statusDue": "Due for review",
     "statusLearned": "Learned",
     "nextReview": "Next review: {{time}}",
-    "speak": "Read aloud"
+    "speak": "Read aloud",
+    "stopReading": "Stop reading",
+    "readQuestion": "Read the question aloud"
   },
   "addCard": {
     "title": "Create Card",

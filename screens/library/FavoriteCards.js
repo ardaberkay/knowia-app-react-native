@@ -10,6 +10,8 @@ import { deleteCard, getCardDetail, filterCardsWhileSearching, normSearchText } 
 import SearchBar from '../../components/tools/SearchBar';
 import FilterIcon from '../../components/modals/CardFilterIcon';
 import CardListItem from '../../components/lists/CardList';
+import { useFocusEffect } from '@react-navigation/native';
+import { isSpeechAvailable, useSpeakText } from '../../lib/speech';
 import CardDetailSheet, { CardStackSlider } from '../../components/layout/CardDetailView';
 import LottieView from 'lottie-react-native';
 import { typography, fontSizes } from '../../theme/typography';
@@ -17,25 +19,21 @@ import { StyleSheet } from 'react-native';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
 import { useListBottomInset } from '../../components/ui/TabBarInset';
 
-const MemoizedFavCardItem = memo(({ item, isFavorite, isOwner, onPress, onToggleFavorite, onDelete }) => (
-  <View style={{ paddingHorizontal: 12, paddingVertical: 0 }}>
+// Default shallow memo: the screen passes stable callbacks, so a row
+// re-renders only when its card, favourite or read-aloud state changes.
+const MemoizedFavCardItem = memo(({ item, isFavorite, isSpeaking, onPress, onToggleFavorite, onSpeak }) => (
+  <View style={{ paddingHorizontal: 12, marginBottom: 10 }}>
     <CardListItem
       question={item.question}
       answer={item.answer}
+      status={item.status}
       isFavorite={isFavorite}
+      isSpeaking={isSpeaking}
       onPress={() => onPress(item)}
       onToggleFavorite={() => onToggleFavorite(item.id)}
-      canDelete={true}
-      onDelete={() => onDelete(item.id)}
-      isOwner={isOwner}
+      onSpeak={onSpeak ? () => onSpeak(item) : undefined}
     />
   </View>
-), (prevProps, nextProps) => (
-  prevProps.item.id === nextProps.item.id &&
-  prevProps.item.question === nextProps.item.question &&
-  prevProps.item.answer === nextProps.item.answer &&
-  prevProps.isFavorite === nextProps.isFavorite &&
-  prevProps.isOwner === nextProps.isOwner
 ));
 
 export default function FavoriteCards() {
@@ -256,19 +254,24 @@ export default function FavoriteCards() {
   };
 
 
-  const renderFavCardItem = useCallback(({ item }) => {
-    const isOwner = currentUserId && item.deck?.user_id && item.deck.user_id === currentUserId;
-    return (
-      <MemoizedFavCardItem
-        item={item}
-        isFavorite={favoriteCardsSet.has(item.id)} // Artık doğrudan Set'e bakıyor
-        isOwner={isOwner}
-        onPress={openDetail}
-        onToggleFavorite={handleToggleFavoriteCard}
-        onDelete={handleDeleteCard}
-      />
-    );
-  }, [currentUserId, favoriteCardsSet, openDetail, handleToggleFavoriteCard, handleDeleteCard]);
+  // Read-aloud of the question in the card's own deck language (cards come
+  // from different decks); one state for the whole list.
+  const { speakingKey, speak: speakText, stop: stopSpeaking } = useSpeakText(null);
+  const handleSpeakCard = useCallback((item) => {
+    speakText(`list_${item.id}`, item.question, 'front', item.deck?.id ?? item.deck_id ?? null);
+  }, [speakText]);
+  useFocusEffect(useCallback(() => () => stopSpeaking(), [stopSpeaking]));
+
+  const renderFavCardItem = useCallback(({ item }) => (
+    <MemoizedFavCardItem
+      item={item}
+      isFavorite={favoriteCardsSet.has(item.id)}
+      isSpeaking={speakingKey === `list_${item.id}`}
+      onPress={openDetail}
+      onToggleFavorite={handleToggleFavoriteCard}
+      onSpeak={isSpeechAvailable ? handleSpeakCard : undefined}
+    />
+  ), [favoriteCardsSet, speakingKey, openDetail, handleToggleFavoriteCard, handleSpeakCard]);
 
   const favListHeader = useMemo(() => (
     <>
@@ -349,7 +352,7 @@ export default function FavoriteCards() {
           ListHeaderComponent={favListHeader}
           ListEmptyComponent={favListEmpty}
           renderItem={renderFavCardItem}
-          extraData={favoriteCards}
+          extraData={speakingKey}
           ListFooterComponent={loadingMore ? (
             <View style={{ paddingVertical: 16, alignItems: 'center' }}>
               <ActivityIndicator size="small" color={colors.text} />
@@ -369,6 +372,7 @@ export default function FavoriteCards() {
         onDismiss={() => setDetailVisible(false)}
         isFavorite={Boolean(selectedCard && favoriteCardsSet.has(selectedCard.id))}
         onToggleFavorite={(card) => handleToggleFavoriteCard(card.id)}
+        onDelete={currentUserId && selectedCard?.deck?.user_id === currentUserId ? (card) => handleDeleteCard(card.id) : undefined}
       />
     </SafeAreaView>
   );

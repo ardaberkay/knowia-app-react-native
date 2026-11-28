@@ -1618,7 +1618,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                       colors={[colors.secondary, colors.secondary + 'CC']}
                       style={styles.gfStatRowIcon}
                     >
-                      <PhosphorIcon icon={ICONS.hidden} size={18} color="#fff" />
+                      <PhosphorIcon icon={ICONS.statusNew} size={18} color="#fff" />
                     </LinearGradient>
                     <View style={styles.gfStatRowText}>
                       <Text style={[styles.gfStatRowValue, { color: colors.cardQuestionText }]}>{statText(deckStats.new)}</Text>
@@ -1968,7 +1968,7 @@ export default function DeckDetailScreen({ route, navigation }) {
                         <Text style={[styles.chapterSheetStatText, { color: colors.muted }]}>{chapterProgress.total || 0}</Text>
                       </View>
                       <View style={styles.chapterSheetStatItem}>
-                        <PhosphorIcon icon={ICONS.hidden} size={13} color={colors.muted} />
+                        <PhosphorIcon icon={ICONS.statusNew} size={13} color={colors.muted} />
                         <Text style={[styles.chapterSheetStatText, { color: colors.muted }]}>{chapterProgress.new || 0}</Text>
                       </View>
                       <View style={styles.chapterSheetStatItem}>

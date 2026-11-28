@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, memo, useMemo } from 'react';
-import { View, StyleSheet, TouchableOpacity, FlatList, TouchableHighlight, ActivityIndicator, Image, Pressable, RefreshControl, Alert } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Image, Pressable, RefreshControl, Alert } from 'react-native';
 import { Text } from '../../components/ui/AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
@@ -23,116 +23,42 @@ import { triggerHaptic } from '../../lib/hapticManager';
 import { useListBottomInset } from '../../components/ui/TabBarInset';
 import PhosphorIcon from '../../components/ui/PhosphorIcon';
 import { ICONS } from '../../theme/icons';
+import CardListItem from '../../components/lists/CardList';
+import { useFocusEffect } from '@react-navigation/native';
+import { isSpeechAvailable, useSpeakText } from '../../lib/speech';
 
 const AnimatedPressable = Reanimated.createAnimatedComponent(Pressable);
 
+// One row: the shared card row. Default shallow memo; the screen passes
+// stable callbacks, so a row re-renders only when its own state changes.
 const MemoizedCardItem = memo(({
   card,
   status,
+  isFavorite,
+  isSpeaking,
   isSelected,
   editMode,
-  colors,
   onToggle,
-  onPress
-}) => {
-  let statusIcon = ICONS.hidden; // default: new
-
-  if (status === 'learning') {
-    statusIcon = ICONS.fire;
-  } else if (status === 'learned') {
-    statusIcon = ICONS.learned;
-  }
-
-  return (
-    <TouchableHighlight
-      style={[
-        styles.cardItem,
-        {
-          backgroundColor: colors.cardBackground,
-          borderColor: editMode && isSelected ? colors.buttonColor : colors.cardBorder,
-          borderWidth: editMode && isSelected ? 2 : 1,
-          shadowColor: colors.shadowColor,
-          shadowOffset: colors.shadowOffset,
-          shadowOpacity: colors.shadowOpacity,
-          shadowRadius: colors.shadowRadius,
-          elevation: colors.elevation,
-        },
-      ]}
-      onPress={() => {
-        if (editMode) {
-          onToggle(card.id);
-        } else {
-          onPress(card);
-        }
-      }}
-      underlayColor={colors.cardBackground === '#F4F1EA' ? '#EBE7DD' : '#383838'}
-    >
-      <View style={styles.cardContent}>
-        {editMode && (
-          <View style={styles.checkboxContainer}>
-            <TouchableOpacity
-              onPress={() => onToggle(card.id)}
-              style={[
-                styles.checkbox,
-                {
-                  backgroundColor: isSelected ? colors.buttonColor : 'transparent',
-                  borderColor: colors.buttonColor,
-                }
-              ]}
-            >
-              {isSelected && (
-                <PhosphorIcon icon={ICONS.check} size={18} color="#FFFFFF" />
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
-
-        <View style={[
-          styles.leftSection,
-          {
-            borderRightColor: colors.cardBorder,
-            flex: editMode ? 2 : 3,
-          }
-        ]}>
-          <Text
-            style={[styles.question, { fontSize: fontSizes.body }, { color: colors.cardQuestionText }]}
-            numberOfLines={1}
-          >
-            {card.question}
-          </Text>
-          <View style={[styles.divider, { backgroundColor: colors.cardDivider }]} />
-          <Text
-            style={[styles.question, { fontSize: fontSizes.body }, { color: colors.cardQuestionText }]}
-            numberOfLines={1}
-          >
-            {card.answer}
-          </Text>
-        </View>
-
-        <View style={[
-          styles.rightSection,
-          {
-            backgroundColor: colors.cardBackground ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.1)',
-          }
-        ]}>
-          <PhosphorIcon
-            icon={statusIcon}
-            size={50}
-            color={'#444444'}
-          />
-        </View>
-      </View>
-    </TouchableHighlight>
-  );
-}, (prevProps, nextProps) => {
-  return (
-    prevProps.status === nextProps.status &&
-    prevProps.isSelected === nextProps.isSelected &&
-    prevProps.editMode === nextProps.editMode &&
-    prevProps.card.id === nextProps.card.id &&
-    prevProps.colors === nextProps.colors
-  );
-});
+  onPress,
+  onToggleFavorite,
+  onSpeak,
+}) => (
+  <View style={styles.cardRow}>
+    <CardListItem
+      question={card.question}
+      answer={card.answer}
+      status={status}
+      isFavorite={isFavorite}
+      isSpeaking={isSpeaking}
+      onPress={() => onPress(card)}
+      onToggleFavorite={() => onToggleFavorite(card.id)}
+      onSpeak={onSpeak ? () => onSpeak(card) : undefined}
+      selectionMode={editMode}
+      isSelected={isSelected}
+      onToggleSelect={() => onToggle(card.id)}
+    />
+  </View>
+));
 
 // Side padding of the cards list (in the list content, see the FlatList).
 const LIST_SIDE_PADDING = 18;
@@ -202,14 +128,10 @@ export default function ChapterCardsScreen({ route, navigation }) {
   const BAR_HEIGHT = 50;
   const MARGIN_TOP = 12;
 
-  const animatedBarStyle = useAnimatedStyle(() => {
-    return {
-      height: withTiming(editMode ? BAR_HEIGHT : 0, { duration: 300 }),
-      opacity: withTiming(editMode ? 1 : 0, { duration: 300 }),
-      marginTop: withTiming(editMode ? MARGIN_TOP : 0, { duration: 300 }),
-      overflow: 'hidden',
-    };
-  }, [editMode, BAR_HEIGHT, MARGIN_TOP]);
+  // Edit bar: shown / hidden at once (no height animation).
+  const editBarStyle = editMode
+    ? { height: BAR_HEIGHT, marginTop: MARGIN_TOP, overflow: 'hidden' }
+    : { height: 0, marginTop: 0, opacity: 0, overflow: 'hidden' };
 
   const selectedCount = selectedCards.size;
 
@@ -392,16 +314,27 @@ export default function ChapterCardsScreen({ route, navigation }) {
     }
   };
 
+  // ref: the toggle stays the same function, so rows don't all re-render
+  const favoriteCardsRef = useRef(favoriteCards);
+  favoriteCardsRef.current = favoriteCards;
+  const favoriteIdSet = useMemo(() => new Set(favoriteCards), [favoriteCards]);
   const handleToggleFavoriteCard = useCallback(async (cardId) => {
     if (!userId) return;
-    const wasFavorite = favoriteCards.includes(cardId);
+    const wasFavorite = favoriteCardsRef.current.includes(cardId);
     setFavoriteCards(prev => wasFavorite ? prev.filter(id => id !== cardId) : [...prev, cardId]);
     try {
       wasFavorite ? await removeFavoriteCard(userId, cardId) : await addFavoriteCard(userId, cardId);
     } catch (e) {
       setFavoriteCards(prev => wasFavorite ? [...prev, cardId] : prev.filter(id => id !== cardId));
     }
-  }, [userId, favoriteCards]);
+  }, [userId]);
+
+  // Read-aloud of the question: one state for the whole list.
+  const { speakingKey, speak: speakText, stop: stopSpeaking } = useSpeakText(deck?.id ?? null);
+  const handleSpeakCard = useCallback((card) => {
+    speakText(`list_${card.id}`, card.question, 'front');
+  }, [speakText]);
+  useFocusEffect(useCallback(() => () => stopSpeaking(), [stopSpeaking]));
 
   // --- Detail sheet ---
   const openDetail = useCallback((card) => {
@@ -592,14 +525,17 @@ export default function ChapterCardsScreen({ route, navigation }) {
       <MemoizedCardItem
         card={card}
         status={cardStatusMap.get(card.id) || 'new'}
+        isFavorite={favoriteIdSet.has(card.id)}
+        isSpeaking={speakingKey === `list_${card.id}`}
         isSelected={selectedCards.has(card.id)}
         editMode={editMode}
-        colors={colors}
         onToggle={handleToggleCardSelection}
         onPress={handleCardPress}
+        onToggleFavorite={handleToggleFavoriteCard}
+        onSpeak={isSpeechAvailable ? handleSpeakCard : undefined}
       />
     );
-  }, [cardStatusMap, selectedCards, editMode, colors, handleToggleCardSelection, handleCardPress]);
+  }, [cardStatusMap, favoriteIdSet, speakingKey, selectedCards, editMode, handleToggleCardSelection, handleCardPress, handleToggleFavoriteCard, handleSpeakCard]);
 
   if (loading) {
     return (
@@ -656,7 +592,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
               {/* New */}
               <View style={styles.statItem}>
                 <View style={styles.iconBox}>
-                  <PhosphorIcon icon={ICONS.hidden} size={22} color={colors.buttonColor} />
+                  <PhosphorIcon icon={ICONS.statusNew} size={22} color={colors.buttonColor} />
                 </View>
                 <Text style={[styles.statText, { color: colors.text }]}>
                   {chapterStats.new}
@@ -701,7 +637,7 @@ export default function ChapterCardsScreen({ route, navigation }) {
             </View>
 
             {/* Edit mode'da seçim butonları */}
-            <Reanimated.View style={[styles.editModeBar, animatedBarStyle]}>
+            <Reanimated.View style={[styles.editModeBar, editBarStyle]}>
               {/* İçeriğin ezilmemesi için sabit bir kapsayıcı (container) */}
               <View style={styles.editModeContent}>
 
@@ -1000,42 +936,6 @@ const styles = StyleSheet.create({
   cardsList: {
     paddingBottom: 20,
   },
-  cardItem: {
-    width: '100%',
-    minHeight: 110,
-    borderRadius: 30,
-    marginBottom: 12,
-    padding: 0,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  cardContent: {
-    flexDirection: 'row',
-    width: '100%',
-    minHeight: 110,
-    alignSelf: 'stretch',
-  },
-  leftSection: {
-    flex: 3,
-    padding: 20,
-    justifyContent: 'center',
-    borderRightWidth: 5,
-    minHeight: 110,
-  },
-  rightSection: {
-    width: '25%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 20,
-    minHeight: 110,
-  },
-  question: {
-    fontFamily: fonts.semibold,
-    fontSize: fontSizes.bodyLarge,
-    marginBottom: 8,
-    letterSpacing: 0.3,
-    marginTop: 4,
-  },
   divider: {
     height: 2,
     alignSelf: 'stretch',
@@ -1062,6 +962,9 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: fontSizes.body,
   },
+  cardRow: {
+    marginBottom: 10,
+  },
   fab: {
     position: 'absolute',
     right: 20,
@@ -1078,19 +981,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 35,
-  },
-  checkboxContainer: {
-    padding: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   selectAllBox: {
     width: 18,

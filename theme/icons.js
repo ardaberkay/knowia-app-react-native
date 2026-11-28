@@ -41,7 +41,7 @@ export const ICONS = {
   language: { name: 'translate', weight: 'bold' },
   info: { name: 'info', weight: 'bold' }, // hints, notices, snackbar info
   visible: { name: 'eye', weight: 'bold' },
-  hidden: { name: 'eye-slash', weight: 'bold' }, // hidden, also "not seen yet"
+  hidden: { name: 'eye-slash', weight: 'bold' }, // hidden (password fields)
   user: { name: 'user', weight: 'fill' },
   haptics: { name: 'vibrate', weight: 'bold' },
   notifications: { name: 'bell', weight: 'bold' },
@@ -73,7 +73,8 @@ export const ICONS = {
   learned: { name: 'graduation-cap', weight: 'fill' },
   trending: { name: 'trend-up', weight: 'bold' }, // trend tab, popularity score
   popular: { name: 'crown-simple', weight: 'fill' },
-  newDecks: { name: 'star-four', weight: 'fill' }, // decks published recently
+  newDecks: { name: 'sparkle', weight: 'fill' }, // decks published recently (Keşfet 'Yeni')
+  statusNew: { name: 'star-four', weight: 'fill' }, // card status: not studied yet
   calendar: { name: 'calendar-blank', weight: 'fill' },
   time: { name: 'clock', weight: 'fill' },
   trophy: { name: 'trophy', weight: 'fill' },
@@ -103,6 +104,7 @@ export const ICONS = {
   play: { name: 'play', weight: 'fill' },
   pause: { name: 'pause', weight: 'fill' },
   speak: { name: 'speaker-high', weight: 'fill' },
+  stopSpeak: { name: 'stop', weight: 'fill' },
   shuffle: { name: 'shuffle', weight: 'bold' },
   repeat: { name: 'repeat', weight: 'bold' },
   reverse: { name: 'arrows-down-up', weight: 'bold' }, // answer first
