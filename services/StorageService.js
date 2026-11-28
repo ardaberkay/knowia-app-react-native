@@ -1,4 +1,30 @@
 import { supabase } from '../lib/supabase';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+import * as FileSystem from 'expo-file-system/legacy';
+import { Buffer } from 'buffer';
+import { CARD_IMAGE } from '../lib/limits';
+
+/**
+ * Picks one photo from the library and resizes it to the card / avatar size
+ * as real WebP. Returns the local uri, or null when cancelled.
+ */
+export const pickResizedImage = async () => {
+  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, quality: 1 });
+  if (result.canceled || !result.assets?.length) return null;
+  const resized = await ImageManipulator.manipulateAsync(
+    result.assets[0].uri,
+    [{ resize: { width: CARD_IMAGE.width } }],
+    { compress: CARD_IMAGE.compress, format: ImageManipulator.SaveFormat.WEBP },
+  );
+  return resized.uri;
+};
+
+// Local file → bytes for an upload.
+export const readFileBuffer = async (uri) => Buffer.from(
+  await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 }),
+  'base64',
+);
 
 // New uploads live under the owner's folder ({userId}/…), so storage rules and
 // account deletion can work per user. Older files use flat names that still

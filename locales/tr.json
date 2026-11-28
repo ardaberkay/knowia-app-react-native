@@ -217,7 +217,8 @@
     "languageBoth": "Ön ve arka yüz",
     "languageExample": "Örnek: ön yüz İngilizce “apple”, arka yüz Türkçe “elma”",
     "requiredLanguage": "Lütfen kartın ön yüzündeki dili seç.",
-    "languageSearch": "Dil ara"
+    "languageSearch": "Dil ara",
+    "moreDetails": "Karşılığı ve açıklama ekle"
   },
   "common": {
     "error": "Bir hata oluştu",
@@ -266,7 +267,9 @@
     "done": "Tamam",
     "required": "Zorunlu",
     "optional": "Opsiyonel",
-    "example": "Örnek"
+    "example": "Örnek",
+    "cancel": "İptal",
+    "clear": "Temizle"
   },
   "moderation": {
     "reportUser": "Kullanıcıyı şikayet et",
@@ -517,7 +520,11 @@
     "saveAndUploadTitle": "Kaydet ve Yükle",
     "saveAndUpload": "Tabloyu CSV olarak kaydet ve aşağıdaki butonla yükle. Örnek tablo:",
     "csvLimitsShort": "Tek seferde en fazla {{cards}} kart ve {{images}} görsel yükleyebilirsin. Virgül (,) ya da noktalı virgül (;) ile ayrılmış dosyalar kabul edilir.",
-    "imageFailTooLarge": "2 MB'tan büyük"
+    "imageFailTooLarge": "2 MB'tan büyük",
+    "moreDetails": "Örnek, not ve görsel ekle",
+    "questionRequired": "Soru zorunludur.",
+    "answerRequired": "Cevap zorunludur.",
+    "changeImage": "Değiştir"
   },
   "editProfile": {
     "userName": "Kullanıcı Adı",
@@ -547,7 +554,19 @@
     "emailChangeVerificationSent": "Yeni e-posta adresinize bir doğrulama linki gönderildi. Lütfen e-postanızı kontrol edin ve değişikliği tamamlamak için linke tıklayın.",
     "emailAlreadyExists": "Bu e-posta adresi zaten kayıtlı.",
     "emailChangeTitle": "E-posta Değişikliği Doğrulaması",
-    "emailChangeMessage": "Yeni e-posta adresinize bir doğrulama linki gönderildi. Mevcut e-posta adresiniz, doğrulama linkine tıklayana kadar aktif kalacaktır."
+    "emailChangeMessage": "Yeni e-posta adresinize bir doğrulama linki gönderildi. Mevcut e-posta adresiniz, doğrulama linkine tıklayana kadar aktif kalacaktır.",
+    "oauthLocked": "Google veya Apple ile giriş yaptığın için e-posta ve şifre buradan değiştirilemez.",
+    "sameEmail": "Bu zaten mevcut e-posta adresin.",
+    "newPasswordRequired": "Yeni şifreyi yaz.",
+    "passwordUpdated": "Şifren güncellendi.",
+    "changeEmail": "E-postayı değiştir",
+    "changePassword": "Şifreyi değiştir",
+    "newEmail": "Yeni e-posta",
+    "currentPasswordWhy": "Bu değişikliği senin yaptığından emin olmak için.",
+    "update": "Güncelle",
+    "choosePhoto": "Fotoğraf seç",
+    "removePhotoAction": "Fotoğrafı kaldır",
+    "password": "Şifre"
   },
   "swipeDeck": {
     "minutes": "10dk+",
@@ -926,5 +945,21 @@
     "5": "Fransızca",
     "6": "Portekizce",
     "7": "Arapça"
+  },
+  "form": {
+    "unsavedTitle": "Değişiklikler kaydedilmedi",
+    "unsavedMessage": "Çıkarsan yaptığın değişiklikler kaybolacak.",
+    "keepEditing": "Düzenlemeye devam et",
+    "discardAndLeave": "Çık",
+    "discardTitle": "Değişiklikler geri alınsın mı?",
+    "discardMessage": "Yaptığın değişiklikler silinecek.",
+    "discard": "Geri Al",
+    "filledCount": "{{count}} dolu",
+    "showPassword": "Şifreyi göster",
+    "hidePassword": "Şifreyi gizle",
+    "howToTitle": "Nasıl oluşturulur?",
+    "howToSub": "Adım adım kısa rehber",
+    "undoChanges": "Değişiklikleri geri al",
+    "clearForm": "Formu temizle"
   }
 }

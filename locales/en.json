@@ -220,7 +220,8 @@
     "languageBoth": "Front and back",
     "languageExample": "Example: front in Spanish “manzana”, back in English “apple”",
     "requiredLanguage": "Please select the language on the front of the cards.",
-    "languageSearch": "Search languages"
+    "languageSearch": "Search languages",
+    "moreDetails": "Add translation and description"
   },
   "common": {
     "error": "An error occurred",
@@ -269,7 +270,9 @@
     "done": "Done",
     "required": "Required",
     "optional": "Optional",
-    "example": "Example"
+    "example": "Example",
+    "cancel": "Cancel",
+    "clear": "Clear"
   },
   "moderation": {
     "reportUser": "Report user",
@@ -516,7 +519,11 @@
     "saveAndUploadTitle": "Save and Upload",
     "saveAndUpload": "Save the table as CSV and upload it with the button below. Example table:",
     "csvLimitsShort": "You can upload up to {{cards}} cards and {{images}} images at a time. Comma (,) or semicolon (;) separated files are accepted.",
-    "imageFailTooLarge": "Larger than 2 MB"
+    "imageFailTooLarge": "Larger than 2 MB",
+    "moreDetails": "Add example, note and image",
+    "questionRequired": "The question is required.",
+    "answerRequired": "The answer is required.",
+    "changeImage": "Change"
   },
   "editProfile": {
     "userName": "User Name",
@@ -546,7 +553,19 @@
     "emailChangeVerificationSent": "A verification link has been sent to your new email address. Please check your email and click the link to complete the change.",
     "emailAlreadyExists": "This email address is already registered.",
     "emailChangeTitle": "Email Change Verification",
-    "emailChangeMessage": "A verification link has been sent to your new email address. Your current email will remain active until you click the verification link."
+    "emailChangeMessage": "A verification link has been sent to your new email address. Your current email will remain active until you click the verification link.",
+    "oauthLocked": "You signed in with Google or Apple, so your e-mail and password can't be changed here.",
+    "sameEmail": "This is already your e-mail address.",
+    "newPasswordRequired": "Enter the new password.",
+    "passwordUpdated": "Your password was updated.",
+    "changeEmail": "Change e-mail",
+    "changePassword": "Change password",
+    "newEmail": "New e-mail",
+    "currentPasswordWhy": "So we know it is really you making this change.",
+    "update": "Update",
+    "choosePhoto": "Choose photo",
+    "removePhotoAction": "Remove photo",
+    "password": "Password"
   },
   "swipeDeck": {
     "minutes": "10m+",
@@ -927,5 +946,21 @@
     "5": "French",
     "6": "Portuguese",
     "7": "Arabic"
+  },
+  "form": {
+    "unsavedTitle": "Changes not saved",
+    "unsavedMessage": "If you leave, your changes will be lost.",
+    "keepEditing": "Keep editing",
+    "discardAndLeave": "Leave",
+    "discardTitle": "Discard your changes?",
+    "discardMessage": "The changes you made will be removed.",
+    "discard": "Undo",
+    "filledCount": "{{count}} filled",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "howToTitle": "How does it work?",
+    "howToSub": "A short step-by-step guide",
+    "undoChanges": "Undo changes",
+    "clearForm": "Clear the form"
   }
 }

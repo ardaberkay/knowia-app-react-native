@@ -96,6 +96,7 @@ export const ICONS = {
   question: { name: 'question', weight: 'bold' },
   answer: { name: 'check-circle', weight: 'bold' },
   hint: { name: 'lightbulb', weight: 'bold' },
+  guide: { name: 'book-open-text', weight: 'fill' }, // 'Nasıl oluşturulur?' row on the create pages
   note: { name: 'note-pencil', weight: 'bold' },
   image: { name: 'image', weight: 'fill' },
 

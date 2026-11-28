@@ -1,288 +1,318 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, StatusBar, Alert, Keyboard } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { View, StyleSheet, TouchableOpacity, StatusBar, Alert, Keyboard, Platform, Pressable } from 'react-native';
+import { BottomSheetModal, BottomSheetView } from '@expo/ui/community/bottom-sheet';
+import { MenuView } from '@expo/ui/community/menu';
 import { Image } from '../../components/ui/AppImage';
-import { Text, TextInput } from '../../components/ui/AppText';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Text } from '../../components/ui/AppText';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import FormScrollView from '../../components/layout/FormScrollView';
+import {
+  useForm, useUnsavedChangesGuard, confirmDiscard, FORM_SIDE_PADDING,
+  FormActions, FormCard, FormField,
+} from '../../components/layout/FormField';
 import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { getCurrentUserProfile, updateProfile } from '../../services/ProfileService';
-import { uploadAvatar, removeAvatar, storagePathFromPublicUrl } from '../../services/StorageService';
+import { uploadAvatar, removeAvatar, storagePathFromPublicUrl, pickResizedImage, readFileBuffer } from '../../services/StorageService';
 import { useProfile } from '../../contexts/ProfileContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { cacheProfile, cacheProfileImage, clearUserCache } from '../../services/CacheService';
-import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator';
-import * as FileSystem from 'expo-file-system/legacy';
-import { Buffer } from 'buffer';
 import { useTranslation } from 'react-i18next';
 import { useSnackbarHelpers } from '../../components/ui/Snackbar';
-import UndoButton from '../../components/tools/UndoButton';
+import { triggerHaptic } from '../../lib/hapticManager';
+import { PROFILE_LIMITS } from '../../lib/limits';
 import CreateButton from '../../components/tools/CreateButton';
 import LottieView from 'lottie-react-native';
 import PhosphorIcon from '../../components/ui/PhosphorIcon';
 import { ICONS } from '../../theme/icons';
 
+const ACCENT = '#F98A21';
+const AVATAR_SIZE = 112;
+const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+const isLocalFile = (uri) => Boolean(uri) && !/^https?:\/\//i.test(uri);
 
-export default function EditProfileScreen({ navigation }) {
-  const { colors, isDarkMode } = useTheme();
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
-  const [username, setUsername] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+// The current password is checked by signing in with it again.
+const verifyPassword = async (email, password) => {
+  const { error } = await supabase.auth.signInWithPassword({ email, password }).catch((e) => ({ error: e }));
+  return !error;
+};
+
+/**
+ * E-mail or password change in its own native sheet (only the fields that
+ * change needs). kind: 'email' | 'password'. Saves on its own; onDone closes.
+ */
+function AccountSheet({ kind, visible, currentEmail, onClose }) {
+  const { colors } = useTheme();
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const { showSuccess, showError } = useSnackbarHelpers();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
-  const [initialState, setInitialState] = useState({});
-  const [imageChanged, setImageChanged] = useState(false);
-  const [imageFilePath, setImageFilePath] = useState(null); // storage path
-  const [showPassword, setShowPassword] = useState(false);
-  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const { t } = useTranslation();
-  const { showSuccess, showError } = useSnackbarHelpers();
-  const { refetch: refetchProfile } = useProfile();
-  const { session } = useAuth();
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+  const firstRef = useRef(null);
+  const confirmRef = useRef(null);
+  const currentRef = useRef(null);
 
-  const isOAuthUser = React.useMemo(() => {
-    const provider = session?.user?.app_metadata?.provider;
-    if (provider === 'google' || provider === 'apple') return true;
-    return session?.user?.identities?.some(i => i.provider === 'google' || i.provider === 'apple') ?? false;
-  }, [session]);
-
-  // Email validasyonu için regex
-  const isValidEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
+  const sheetRef = useRef(null);
+  const visibleRef = useRef(visible);
+  visibleRef.current = visible;
   useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-
-        // Session veya user id yoksa işlemi durdur
-        if (!session?.user?.id) {
-          throw new Error(t('common.sessionNotFound') || 'Oturum bulunamadı');
-        }
-
-        // userId'yi parametre olarak gönderiyoruz
-        const data = await getCurrentUserProfile(session.user.id);
-
-        setProfile(data);
-        setUsername(data.username || '');
-        setImageUrl(data.image_url || '');
-        setEmail(data.email || '');
-        setInitialState({
-          username: data.username || '',
-          image_url: data.image_url || '',
-          email: data.email || '',
-        });
-        setImageFilePath(data.image_url ? storagePathFromPublicUrl(data.image_url, 'avatars') : null);
-      } catch (err) {
-        setError(err.message || t('common.profileUpdatedError'));
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [session]); // session değiştiğinde useEffect'in tetiklenmesi için dependency array'e ekledik
-
-  // Fotoğraf seç ve WebP olarak yükle
-  const handlePickImage = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        quality: 1,
-      });
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const manipResult = await ImageManipulator.manipulateAsync(
-          result.assets[0].uri,
-          [{ resize: { width: 512 } }],
-          { compress: 0.7, format: 'webp' }
-        );
-        setImageUrl(manipResult.uri);
-        setImageChanged(true);
-      }
-    } catch (err) {
-      console.log('Fotoğraf seçme hatası:', err);
-      if (err?.message) {
-        showError(t('common.imageNotSelected'));
-      }
+    if (visible) {
+      setEmail(''); setPassword(''); setPasswordConfirm(''); setCurrentPassword(''); setErrors({});
+      sheetRef.current?.present();
+    } else {
+      sheetRef.current?.dismiss();
     }
-  };
+  }, [visible]);
+  const handleSheetDismiss = () => { if (visibleRef.current) onClose(); };
 
-  // Fotoğrafı kaldır
-  // Only marks the photo for removal; the file is deleted after Save succeeds.
-  const handleRemovePhoto = () => {
-    setImageUrl('');
-    setImageChanged(true);
+  const fail = (field, message, ref) => {
+    setErrors({ [field]: message });
+    triggerHaptic('error');
+    requestAnimationFrame(() => ref?.current?.focus());
   };
+  const clearError = (field) => setErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
 
-  // Profil kaydet
-  const handleSave = async () => {
+  const handleSubmit = async () => {
+    Keyboard.dismiss();
+    if (kind === 'email') {
+      const next = email.trim();
+      if (!isValidEmail(next)) return fail('email', t('editProfile.invalidEmail'), firstRef);
+      if (next.toLowerCase() === (currentEmail || '').toLowerCase()) return fail('email', t('editProfile.sameEmail', 'Bu zaten mevcut e-posta adresin.'), firstRef);
+    } else {
+      if (!password) return fail('password', t('editProfile.newPasswordRequired', 'Yeni şifreyi yaz.'), firstRef);
+      if (password !== passwordConfirm) return fail('passwordConfirm', t('common.passwordMatchError'), confirmRef);
+    }
+    if (!currentPassword) return fail('currentPassword', t('editProfile.currentPasswordRequired'), currentRef);
+
     setSaving(true);
-    setError(null);
-
-    // Username validasyonu
-    if (username.length < 3 || username.length > 16) {
-      setError(t('common.usernameLengthError'));
-      setSaving(false);
-      return;
-    }
-
-    // Email validasyonu
-    if (email && !isValidEmail(email)) {
-      setError(t('editProfile.invalidEmail'));
-      setSaving(false);
-      return;
-    }
-
-    // Email veya şifre değişikliği varsa mevcut şifre kontrolü
-    const emailChanged = email !== initialState.email && email !== '';
-    const passwordChanged = password !== '';
-
-    if ((emailChanged || passwordChanged) && !currentPassword) {
-      setError(t('editProfile.currentPasswordRequired'));
-      setSaving(false);
-      return;
-    }
-
-    // Şifre eşleşme kontrolü
-    if (password && password !== passwordConfirm) {
-      setError(t('common.passwordMatchError'));
-      setSaving(false);
-      return;
-    }
-
-    // Email veya şifre değişikliği varsa mevcut şifreyi doğrula
-    if ((emailChanged || passwordChanged) && currentPassword) {
-      try {
-        const { error: verifyError } = await supabase.auth.signInWithPassword({
-          email: initialState.email, // eski email
-          password: currentPassword // kullanıcının girdiği mevcut şifre
-        });
-
-        if (verifyError) {
-          setError(t('editProfile.invalidCurrentPassword'));
-          setSaving(false);
-          return;
-        }
-      } catch (err) {
-        setError(t('editProfile.invalidCurrentPassword'));
-        setSaving(false);
+    try {
+      if (!(await verifyPassword(currentEmail, currentPassword))) {
+        fail('currentPassword', t('editProfile.invalidCurrentPassword'), currentRef);
         return;
       }
-    }
-    let newImageUrl = imageUrl;
-    let uploadedFilePath = null;
-    try {
-      // 1. Fotoğraf değiştiyse yeni fotoğrafı yükle (eski dosya, kayıt başarılı olunca silinir)
-      if (imageChanged && imageUrl) {
-        const base64 = await FileSystem.readAsStringAsync(imageUrl, { encoding: FileSystem.EncodingType.Base64 });
-        const buffer = Buffer.from(base64, 'base64');
-        const result = await uploadAvatar(profile.id, buffer);
-        uploadedFilePath = result.filePath;
-        newImageUrl = result.publicUrl;
-      }
-      // Fotoğraf kaldırıldıysa profil tablosunda image_url alanını boşalt
-      if (imageChanged && !imageUrl) {
-        newImageUrl = '';
-      }
-      // 2. Profil tablosunu güncelle
-      try {
-        await updateProfile(profile.id, { username, imageUrl: newImageUrl });
-      } catch (updateErr) {
-        // Kayıt başarısız: yeni yüklenen dosya boşta kalmasın, eski fotoğraf yerinde kalır
-        if (uploadedFilePath) removeAvatar(uploadedFilePath).catch(() => { });
-        throw updateErr;
-      }
-
-      // 3. Kayıt başarılı: eski fotoğrafı şimdi sil
-      if (imageChanged && imageFilePath) {
-        removeAvatar(imageFilePath).catch(() => { });
-      }
-      setImageFilePath(uploadedFilePath);
-      setImageChanged(false);
-
-      // 4. Cache'i güncelle - eski cache'i temizle ve yeni veriyi cache'le
-      await clearUserCache(profile.id);
-
-      // Güncellenmiş profil bilgilerini al ve cache'le
-      const updatedProfile = await getCurrentUserProfile(profile.id);
-      await cacheProfile(profile.id, updatedProfile);
-      if (newImageUrl) {
-        await cacheProfileImage(profile.id, newImageUrl);
-      }
-
-      // 5. E-posta değiştiyse güncelle
-      if (emailChanged) {
-        const { error: emailError } = await supabase.auth.updateUser({ email });
-        if (emailError) {
-          // Email zaten kullanılıyor mu kontrol et
-          if (emailError.message.includes('already registered') ||
-            emailError.message.includes('already exists') ||
-            emailError.message.includes('User already registered')) {
-            setError(t('editProfile.emailAlreadyExists'));
-          } else {
-            setError(emailError.message);
-          }
-          setSaving(false);
+      if (kind === 'email') {
+        const { error } = await supabase.auth.updateUser({ email: email.trim() });
+        if (error) {
+          const exists = /already registered|already exists/i.test(error.message || '');
+          fail('email', exists ? t('editProfile.emailAlreadyExists') : error.message, firstRef);
           return;
         }
-
-        // Email değişikliği başarılı - Alert göster
-        Alert.alert(
-          t('editProfile.emailChangeTitle'),
-          t('editProfile.emailChangeMessage'),
-          [{ text: t('common.ok') }]
-        );
-      }
-
-      // 6. Şifre değiştiyse güncelle
-      if (passwordChanged) {
-        const { error: passError } = await supabase.auth.updateUser({ password });
-        if (passError) {
-          setError(passError.message);
-          setSaving(false);
+        onClose();
+        Alert.alert(t('editProfile.emailChangeTitle'), t('editProfile.emailChangeMessage'), [{ text: t('common.ok') }]);
+      } else {
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) {
+          showError(error.message);
           return;
         }
-        // Şifre değişikliği başarılı - Snackbar zaten var
+        onClose();
+        showSuccess(t('editProfile.passwordUpdated', 'Şifren güncellendi.'));
       }
-
-      // Email değişikliği yoksa normal başarı mesajı göster
-      if (!emailChanged) {
-        showSuccess(t('common.profileUpdated'));
-      }
-
-      // Global profil cache'ini (ProfileContext) güncelle; avatar ve diğer ekranlar güncel veriyi gösterir
-      await refetchProfile();
-
-      setTimeout(() => {
-        navigation.goBack();
-      }, 500);
-    } catch (err) {
-      console.log('Profil güncelleme hatası:', err);
-      setError(err.message || t('common.profileUpdatedError'));
-      showError(err.message || t('common.profileUpdatedError'));
+    } catch (e) {
+      showError(e?.message || t('common.profileUpdatedError'));
     } finally {
       setSaving(false);
     }
   };
 
-  // Değişiklikleri geri al
-  const handleCancel = () => {
-    setUsername(initialState.username);
-    setImageUrl(initialState.image_url);
-    setEmail(initialState.email);
-    setPassword('');
-    setPasswordConfirm('');
-    setCurrentPassword('');
-    setImageChanged(false);
+  const title = kind === 'email' ? t('editProfile.changeEmail', 'E-postayı değiştir') : t('editProfile.changePassword', 'Şifreyi değiştir');
+
+  return (
+    <BottomSheetModal
+      ref={sheetRef}
+      onDismiss={handleSheetDismiss}
+      enablePanDownToClose={!saving}
+      backgroundStyle={Platform.OS === 'android' ? { backgroundColor: colors.background } : undefined /* iOS: system Liquid Glass */}
+    >
+      <BottomSheetView style={styles.sheet}>
+        <View style={styles.sheetHeader}>
+          <Text style={[typography.styles.title2, styles.sheetTitle, { color: colors.text }]}>{title}</Text>
+          <TouchableOpacity onPress={onClose} disabled={saving} style={styles.sheetClose} hitSlop={10}>
+            <PhosphorIcon icon={ICONS.close} size={20} color={colors.text} />
+          </TouchableOpacity>
+        </View>
+        <View style={[styles.sheetBody, { paddingBottom: insets.bottom + 16 }]}>
+          {kind === 'email' ? (
+            <FormField
+              ref={firstRef}
+              icon={ICONS.email}
+              label={t('editProfile.newEmail', 'Yeni e-posta')}
+              value={email}
+              onChangeText={(v) => { setEmail(v); clearError('email'); }}
+              placeholder={currentEmail || t('editProfile.emailPlaceholder')}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              autoComplete="email"
+              error={errors.email}
+            />
+          ) : (
+            <>
+              <FormField
+                ref={firstRef}
+                icon={ICONS.password}
+                label={t('editProfile.newPassword')}
+                value={password}
+                onChangeText={(v) => { setPassword(v); clearError('password'); }}
+                placeholder={t('editProfile.newPasswordPlaceholder')}
+                autoCapitalize="none"
+                autoComplete="password-new"
+                secure
+                error={errors.password}
+              />
+              <FormField
+                ref={confirmRef}
+                icon={ICONS.password}
+                label={t('editProfile.confirmPasswordPlaceholder')}
+                value={passwordConfirm}
+                onChangeText={(v) => { setPasswordConfirm(v); clearError('passwordConfirm'); }}
+                placeholder={t('editProfile.confirmPasswordPlaceholder')}
+                autoCapitalize="none"
+                autoComplete="password-new"
+                secure
+                error={errors.passwordConfirm}
+              />
+            </>
+          )}
+          <FormField
+            ref={currentRef}
+            icon={ICONS.locked}
+            label={t('editProfile.currentPassword')}
+            value={currentPassword}
+            onChangeText={(v) => { setCurrentPassword(v); clearError('currentPassword'); }}
+            placeholder={t('editProfile.currentPasswordPlaceholder')}
+            autoCapitalize="none"
+            autoComplete="password"
+            secure
+            error={errors.currentPassword}
+            hint={t('editProfile.currentPasswordWhy', 'Bu değişikliği senin yaptığından emin olmak için.')}
+          />
+          <CreateButton
+            onPress={handleSubmit}
+            disabled={saving}
+            loading={saving}
+            text={saving ? t('editProfile.saving') : t('editProfile.update', 'Güncelle')}
+            style={styles.sheetButton}
+          />
+        </View>
+      </BottomSheetView>
+    </BottomSheetModal>
+  );
+}
+
+/**
+ * "Profili Düzenle": avatar (tap → choose / remove), username card, and the
+ * e-mail / password rows that open their own sheets. Save covers photo + name.
+ */
+export default function EditProfileScreen({ navigation }) {
+  const { colors, isDarkMode } = useTheme();
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const { showSuccess, showError } = useSnackbarHelpers();
+  const { refetch: refetchProfile } = useProfile();
+  const { session } = useAuth();
+
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [imageFilePath, setImageFilePath] = useState(null); // storage path of the saved photo
+  const [sheet, setSheet] = useState(null); // 'email' | 'password' | null
+  const { values, setValue, errors, setErrors, reset, isDirty, initialValues } = useForm({ username: '', image: '' });
+  const leave = useUnsavedChangesGuard(isDirty);
+  const usernameRef = useRef(null);
+  const email = profile?.email || session?.user?.email || '';
+
+  const isOAuthUser = useMemo(() => {
+    const provider = session?.user?.app_metadata?.provider;
+    if (provider === 'google' || provider === 'apple') return true;
+    return session?.user?.identities?.some((i) => i.provider === 'google' || i.provider === 'apple') ?? false;
+  }, [session]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        if (!session?.user?.id) throw new Error(t('common.sessionNotFound') || 'Oturum bulunamadı');
+        const data = await getCurrentUserProfile(session.user.id);
+        setProfile(data);
+        reset({ username: data.username || '', image: data.image_url || '' });
+        setImageFilePath(data.image_url ? storagePathFromPublicUrl(data.image_url, 'avatars') : null);
+      } catch (err) {
+        showError(err.message || t('common.profileUpdatedError'));
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [session]);
+
+  const handlePickImage = async () => {
+    try {
+      const uri = await pickResizedImage();
+      if (uri) setValue('image', uri);
+    } catch {
+      showError(t('common.imageNotSelected'));
+    }
+  };
+
+  const photoActions = [
+    { id: 'pick', title: t('editProfile.choosePhoto', 'Fotoğraf seç'), image: 'photo' },
+    values.image ? { id: 'remove', title: t('editProfile.removePhotoAction', 'Fotoğrafı kaldır'), image: 'trash', attributes: { destructive: true } } : null,
+  ].filter(Boolean);
+
+  const handleUndo = () => {
+    Keyboard.dismiss();
+    confirmDiscard(t, isDirty, () => reset());
+  };
+
+  const handleSave = async () => {
+    Keyboard.dismiss();
+    const name = values.username.trim();
+    if (name.length < PROFILE_LIMITS.usernameMin || name.length > PROFILE_LIMITS.usernameMax) {
+      setErrors({ username: t('common.usernameLengthError') });
+      triggerHaptic('error');
+      usernameRef.current?.focus();
+      return;
+    }
+    setSaving(true);
+    let uploadedFilePath = null;
+    try {
+      // new photo → upload (the old file is removed once the save succeeds); '' = removed
+      const imageChanged = values.image !== initialValues.image;
+      let newImageUrl = values.image;
+      if (imageChanged && isLocalFile(values.image)) {
+        const result = await uploadAvatar(profile.id, await readFileBuffer(values.image));
+        uploadedFilePath = result.filePath;
+        newImageUrl = result.publicUrl;
+      }
+      if (imageChanged && !values.image) newImageUrl = '';
+
+      try {
+        await updateProfile(profile.id, { username: name, imageUrl: newImageUrl });
+      } catch (updateErr) {
+        if (uploadedFilePath) removeAvatar(uploadedFilePath).catch(() => { });
+        throw updateErr;
+      }
+      if (imageChanged && imageFilePath) removeAvatar(imageFilePath).catch(() => { });
+      if (imageChanged) setImageFilePath(uploadedFilePath);
+
+      await clearUserCache(profile.id);
+      const updatedProfile = await getCurrentUserProfile(profile.id);
+      await cacheProfile(profile.id, updatedProfile);
+      if (newImageUrl) await cacheProfileImage(profile.id, newImageUrl);
+      await refetchProfile();
+
+      showSuccess(t('common.profileUpdated'));
+      reset({ username: name, image: newImageUrl });
+      leave(() => navigation.goBack());
+    } catch (err) {
+      showError(err?.message || t('common.profileUpdatedError'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -294,463 +324,123 @@ export default function EditProfileScreen({ navigation }) {
     );
   }
 
+  const renderAccountRow = (key, icon, label, value) => (
+    <Pressable
+      onPress={() => { if (isOAuthUser) return; triggerHaptic('selection'); Keyboard.dismiss(); setSheet(key); }}
+      disabled={isOAuthUser}
+      accessibilityRole="button"
+      style={({ pressed }) => [styles.accountRow, { opacity: isOAuthUser ? 0.5 : pressed ? 0.7 : 1 }]}
+    >
+      <PhosphorIcon icon={icon} size={18} color={ACCENT} />
+      <Text style={[styles.accountLabel, { color: colors.text }]}>{label}</Text>
+      <Text style={[styles.accountValue, { color: colors.muted }]} numberOfLines={1}>{value}</Text>
+      <PhosphorIcon icon={isOAuthUser ? ICONS.locked : ICONS.chevronRight} size={16} color={colors.muted} />
+    </Pressable>
+  );
+
   return (
-    <SafeAreaView edges={['bottom', 'left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <FormScrollView contentInsetAdjustmentBehavior="automatic"
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+      <FormScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        style={{ flex: 1 }}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Profile Photo Card */}
-        <View style={[styles.inputCard, {
-          backgroundColor: colors.cardBackground,
-          shadowColor: colors.shadowColor,
-          shadowOffset: colors.shadowOffset,
-          shadowOpacity: colors.shadowOpacity,
-          shadowRadius: colors.shadowRadius,
-          elevation: colors.elevation,
-          borderColor: colors.cardBorder,
-          borderWidth: 1,
-        }]}>
-          <View style={styles.labelRow}>
-            <PhosphorIcon icon={ICONS.image} size={20} color={colors.buttonColor} style={styles.labelIcon} />
-            <Text style={[typography.styles.body, { color: colors.text, fontFamily: fonts.semibold }]}>
-              {t('editProfile.profilePhoto')}
-            </Text>
-          </View>
-          <View style={styles.profilePhotoContainer}>
-            <View style={styles.avatarContainer}>
-              <Image
-                source={imageUrl ? { uri: imageUrl } : require('../../assets/images/avatar_default.webp')}
-                style={[styles.avatarLarge, { borderColor: colors.border }]}
-              />
-              <TouchableOpacity
-                style={[styles.cameraButton, { backgroundColor: colors.buttonColor }]}
-                onPress={handlePickImage}
-                activeOpacity={0.8}
-              >
-                <PhosphorIcon icon={ICONS.image} size={18} color="#fff" />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.photoButtonRow}>
-              <TouchableOpacity
-                style={[styles.photoActionButton, {
-                  backgroundColor: colors.cardButtonBackground || colors.blurView,
-                  borderColor: colors.buttonColor,
-                }]}
-                onPress={handlePickImage}
-                activeOpacity={0.7}
-              >
-                <PhosphorIcon icon={ICONS.edit} size={18} color={colors.buttonColor} style={{ marginRight: 6 }} />
-                <Text style={[typography.styles.headline, { color: colors.buttonColor, fontSize: fontSizes.subhead }]}>
-                  {t('editProfile.changePhoto')}
-                </Text>
-              </TouchableOpacity>
-              {imageUrl && (
-                <TouchableOpacity
-                  style={[styles.photoActionButton, {
-                    backgroundColor: colors.cardButtonBackground || colors.blurView,
-                    borderColor: colors.error,
-                  }]}
-                  onPress={handleRemovePhoto}
-                  activeOpacity={0.7}
-                >
-                  <PhosphorIcon icon={ICONS.delete} size={18} color={colors.error} style={{ marginRight: 6 }} />
-                  <Text style={[typography.styles.headline, { color: colors.error, fontSize: fontSizes.subhead }]}>
-                    {t('editProfile.removePhoto')}
-                  </Text>
-                </TouchableOpacity>
-              )}
+        {/* avatar: tap → choose / remove */}
+        <MenuView
+          actions={photoActions}
+          onOpenMenu={() => triggerHaptic('selection')}
+          onPressAction={({ nativeEvent }) => {
+            if (nativeEvent.event === 'pick') handlePickImage();
+            else if (nativeEvent.event === 'remove') setValue('image', ''); // removed from storage after Save
+          }}
+          style={styles.avatarWrap}
+        >
+          <View>
+            <Image
+              source={values.image ? { uri: values.image } : require('../../assets/images/avatar_default.webp')}
+              style={[styles.avatar, { borderColor: colors.cardBorder }]}
+            />
+            <View style={[styles.avatarBadge, { backgroundColor: ACCENT, borderColor: colors.background }]}>
+              <PhosphorIcon icon={ICONS.edit} size={16} color="#FFFFFF" />
             </View>
           </View>
-        </View>
+        </MenuView>
 
-        {/* Username Card */}
-        <View style={[styles.inputCard, {
-          backgroundColor: colors.cardBackground,
-          shadowColor: colors.shadowColor,
-          shadowOffset: colors.shadowOffset,
-          shadowOpacity: colors.shadowOpacity,
-          shadowRadius: colors.shadowRadius,
-          elevation: colors.elevation,
-          borderColor: colors.cardBorder,
-          borderWidth: 1,
-        }]}>
-          <View style={styles.labelRow}>
-            <PhosphorIcon icon={ICONS.user} size={20} color={colors.buttonColor} style={styles.labelIcon} />
-            <Text style={[typography.styles.body, { color: colors.text, fontFamily: fonts.semibold }]}>
-              {t('editProfile.userName')}
-            </Text>
-          </View>
-          <TextInput
-            style={[styles.input, typography.styles.body, {
-              color: colors.text,
-              borderColor: colors.border,
-              backgroundColor: colors.blurView || colors.cardButtonBackground,
-            }]}
+        <FormCard>
+          <FormField
+            ref={usernameRef}
+            icon={ICONS.user}
+            label={t('editProfile.userName')}
+            value={values.username}
+            onChangeText={(v) => setValue('username', v)}
+            maxLength={PROFILE_LIMITS.usernameMax}
             placeholder={t('editProfile.userNamePlaceholder')}
-            placeholderTextColor={colors.muted}
-            value={username}
-            onChangeText={setUsername}
             autoCapitalize="none"
-            maxLength={16}
+            error={errors.username}
+            hint={t('editProfile.usernameHint')}
           />
-          <Text style={[typography.styles.subhead, { color: colors.muted, marginTop: 4 }]}>
-            {t('editProfile.usernameHint')}
+        </FormCard>
+
+        <FormCard style={styles.accountCard}>
+          {renderAccountRow('email', ICONS.email, t('editProfile.email'), email)}
+          <View style={[styles.rowDivider, { backgroundColor: colors.cardBorder }]} />
+          {renderAccountRow('password', ICONS.password, t('editProfile.password', 'Şifre'), '••••••••')}
+        </FormCard>
+        {isOAuthUser ? (
+          <Text style={[styles.oauthNote, { color: colors.muted }]}>
+            {t('editProfile.oauthLocked', 'Google veya Apple ile giriş yaptığın için e-posta ve şifre buradan değiştirilemez.')}
           </Text>
-        </View>
+        ) : null}
 
-        {/* Email Card - OAuth kullanıcıda kilitli */}
-        <View style={[styles.inputCard, {
-          backgroundColor: colors.cardBackground,
-          shadowColor: colors.shadowColor,
-          shadowOffset: colors.shadowOffset,
-          shadowOpacity: colors.shadowOpacity,
-          shadowRadius: colors.shadowRadius,
-          elevation: colors.elevation,
-          borderColor: colors.cardBorder,
-          borderWidth: 1,
-          opacity: isOAuthUser ? 0.80 : 1,
-          position: 'relative',
-        }]}>
-          {isOAuthUser && (
-            <View style={{ position: 'absolute', top: 16, right: 20, zIndex: 10 }}>
-              <PhosphorIcon icon={ICONS.locked} size={22} color={colors.muted} />
-            </View>
-          )}
-          <View style={styles.labelRow}>
-            <PhosphorIcon icon={ICONS.email} size={20} color={colors.buttonColor} style={styles.labelIcon} />
-            <Text style={[typography.styles.body, { color: colors.text, fontFamily: fonts.semibold }]}>
-              {t('editProfile.email')}
-            </Text>
-          </View>
-          <TextInput
-            style={[styles.input, typography.styles.body, {
-              color: colors.text,
-              borderColor: colors.border,
-              backgroundColor: colors.blurView || colors.cardButtonBackground,
-            }]}
-            placeholder={t('editProfile.emailPlaceholder')}
-            placeholderTextColor={colors.muted}
-            value={email}
-            onChangeText={setEmail}
-            editable={!isOAuthUser}
-            pointerEvents={isOAuthUser ? 'none' : 'auto'}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-          />
-        </View>
-
-        {/* Current Password Card - OAuth kullanıcıda kilitli */}
-        <View style={[styles.inputCard, {
-          backgroundColor: colors.cardBackground,
-          shadowColor: colors.shadowColor,
-          shadowOffset: colors.shadowOffset,
-          shadowOpacity: colors.shadowOpacity,
-          shadowRadius: colors.shadowRadius,
-          elevation: colors.elevation,
-          borderColor: colors.cardBorder,
-          borderWidth: 1,
-          opacity: isOAuthUser ? 0.80 : 1,
-          position: 'relative',
-        }]}>
-          {isOAuthUser && (
-            <View style={{ position: 'absolute', top: 16, right: 20, zIndex: 10 }}>
-              <PhosphorIcon icon={ICONS.locked} size={22} color={colors.muted} />
-            </View>
-          )}
-          <View style={styles.labelRow}>
-            <PhosphorIcon icon={ICONS.password} size={20} color={colors.buttonColor} style={styles.labelIcon} />
-            <Text style={[typography.styles.body, { color: colors.text, fontFamily: fonts.semibold }]}>
-              {t('editProfile.currentPassword')}
-            </Text>
-          </View>
-          <View style={styles.passwordInputContainer}>
-            <TextInput
-              style={[styles.input, styles.passwordInput, typography.styles.body, {
-                color: colors.text,
-                borderColor: colors.border,
-                backgroundColor: colors.blurView || colors.cardButtonBackground,
-              }]}
-              placeholder={t('editProfile.currentPasswordPlaceholder')}
-              placeholderTextColor={colors.muted}
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
-              editable={!isOAuthUser}
-              pointerEvents={isOAuthUser ? 'none' : 'auto'}
-              autoCapitalize="none"
-              secureTextEntry={!showCurrentPassword}
-              autoComplete="password"
-            />
-            <TouchableOpacity
-              style={styles.eyeButton}
-              onPress={() => setShowCurrentPassword(!showCurrentPassword)}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              disabled={isOAuthUser}
-            >
-              <PhosphorIcon
-                icon={showCurrentPassword ? ICONS.visible : ICONS.hidden}
-                size={20}
-                color={colors.muted}
-              />
-            </TouchableOpacity>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-            <View style={{
-              width: 20,
-              height: 20,
-              borderRadius: 99,
-              borderWidth: 1,
-              borderColor: colors.muted,
-              justifyContent: 'center',
-              alignItems: 'center',
-              marginRight: 6,
-            }}>
-              <PhosphorIcon icon={ICONS.info} size={14} color={colors.muted} />
-            </View>
-            <Text style={[typography.styles.subhead, { color: colors.muted, flex: 1 }]}>
-              {t('editProfile.currentPasswordNote')}
-            </Text>
-          </View>
-        </View>
-
-        {/* Password Card - OAuth kullanıcıda kilitli */}
-        <View style={[styles.inputCard, {
-          backgroundColor: colors.cardBackground,
-          shadowColor: colors.shadowColor,
-          shadowOffset: colors.shadowOffset,
-          shadowOpacity: colors.shadowOpacity,
-          shadowRadius: colors.shadowRadius,
-          elevation: colors.elevation,
-          borderColor: colors.cardBorder,
-          borderWidth: 1,
-          opacity: isOAuthUser ? 0.80 : 1,
-          position: 'relative',
-        }]}>
-          {isOAuthUser && (
-            <View style={{ position: 'absolute', top: 16, right: 20, zIndex: 10 }}>
-              <PhosphorIcon icon={ICONS.locked} size={22} color={colors.muted} />
-            </View>
-          )}
-          <View style={styles.labelRow}>
-            <PhosphorIcon icon={ICONS.password} size={20} color={colors.buttonColor} style={styles.labelIcon} />
-            <Text style={[typography.styles.body, { color: colors.text, fontFamily: fonts.semibold }]}>
-              {t('editProfile.newPassword')}
-            </Text>
-            <Text style={[typography.styles.subhead, { color: colors.muted, marginLeft: 6 }]}>
-              ({t('editProfile.optional')})
-            </Text>
-          </View>
-          <View style={styles.passwordInputContainer}>
-            <TextInput
-              style={[styles.input, styles.passwordInput, typography.styles.body, {
-                color: colors.text,
-                borderColor: colors.border,
-                backgroundColor: colors.blurView || colors.cardButtonBackground,
-              }]}
-              placeholder={t('editProfile.newPasswordPlaceholder')}
-              placeholderTextColor={colors.muted}
-              value={password}
-              onChangeText={setPassword}
-              editable={!isOAuthUser}
-              pointerEvents={isOAuthUser ? 'none' : 'auto'}
-              autoCapitalize="none"
-              secureTextEntry={!showPassword}
-              autoComplete="password-new"
-            />
-            <TouchableOpacity
-              style={styles.eyeButton}
-              onPress={() => setShowPassword(!showPassword)}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              disabled={isOAuthUser}
-            >
-              <PhosphorIcon
-                icon={showPassword ? ICONS.visible : ICONS.hidden}
-                size={20}
-                color={colors.muted}
-              />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.passwordInputContainer}>
-            <TextInput
-              style={[styles.input, styles.passwordInput, typography.styles.body, {
-                color: colors.text,
-                borderColor: colors.border,
-                backgroundColor: colors.blurView || colors.cardButtonBackground,
-              }]}
-              placeholder={t('editProfile.confirmPasswordPlaceholder')}
-              placeholderTextColor={colors.muted}
-              value={passwordConfirm}
-              onChangeText={setPasswordConfirm}
-              editable={!isOAuthUser}
-              pointerEvents={isOAuthUser ? 'none' : 'auto'}
-              autoCapitalize="none"
-              secureTextEntry={!showPasswordConfirm}
-              autoComplete="password-new"
-            />
-            <TouchableOpacity
-              style={styles.eyeButton}
-              onPress={() => setShowPasswordConfirm(!showPasswordConfirm)}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              disabled={isOAuthUser}
-            >
-              <PhosphorIcon
-                icon={showPasswordConfirm ? ICONS.visible : ICONS.hidden}
-                size={20}
-                color={colors.muted}
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Error Message */}
-        {error && (
-          <View style={[styles.errorCard, { backgroundColor: colors.error + '15', borderColor: colors.error }]}>
-            <PhosphorIcon icon={ICONS.info} size={20} color={colors.error} style={{ marginRight: 8 }} />
-            <Text style={[typography.styles.subhead, { color: colors.error, flex: 1 }]}>{error}</Text>
-          </View>
-        )}
-
-        {/* Action Buttons */}
-        <View style={styles.buttonRowModern}>
-          <UndoButton
-            onPress={handleCancel}
-            disabled={saving}
-            text={t('editProfile.undo')}
-          />
-          <CreateButton
-            onPress={handleSave}
-            disabled={saving}
-            loading={saving}
-            text={saving ? t('editProfile.saving') : t('editProfile.save')}
-          />
-        </View>
+        <FormActions
+          primaryText={saving ? t('editProfile.saving') : t('editProfile.save')}
+          onPrimary={handleSave}
+          loading={saving}
+          secondaryText={t('form.undoChanges', 'Değişiklikleri geri al')}
+          onSecondary={handleUndo}
+          showSecondary={isDirty}
+        />
       </FormScrollView>
+
+      <AccountSheet kind="email" visible={sheet === 'email'} currentEmail={email} onClose={() => setSheet(null)} />
+      <AccountSheet kind="password" visible={sheet === 'password'} currentEmail={email} onClose={() => setSheet(null)} />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 16,
-    paddingTop: 8,
-    paddingBottom: 32,
-  },
-  inputCard: {
-    width: '100%',
-    maxWidth: 440,
-    borderRadius: 28,
-    padding: 20,
-    marginBottom: 12,
-    alignSelf: 'center',
-    overflow: 'hidden',
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    gap: 8,
-  },
-  labelIcon: {
-    marginRight: 0,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: 200,
-    flexDirection: 'column',
-    marginTop: -120,
-  },
-  profilePhotoContainer: {
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  avatarContainer: {
-    position: 'relative',
-    marginBottom: 16,
-  },
-  avatarLarge: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#eee',
-    borderWidth: 3,
-  },
-  cameraButton: {
+  content: { flexGrow: 1, alignItems: 'center', paddingHorizontal: FORM_SIDE_PADDING, paddingTop: 12 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 200, marginTop: -120 },
+
+  avatarWrap: { alignSelf: 'center', marginBottom: 22 },
+  avatar: { width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: AVATAR_SIZE / 2, borderWidth: 3, backgroundColor: '#3A3A3A' },
+  avatarBadge: {
     position: 'absolute',
-    bottom: 0,
     right: 0,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
+    bottom: 2,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     borderWidth: 3,
-    borderColor: '#fff',
-  },
-  photoButtonRow: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  photoActionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-    flex: 1,
-    maxWidth: 150,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
-    width: '100%',
-    fontSize: fontSizes.body,
-  },
-  passwordInputContainer: {
-    position: 'relative',
-    marginBottom: 12,
-  },
-  passwordInput: {
-    paddingRight: 45,
-  },
-  eyeButton: {
-    position: 'absolute',
-    right: 12,
-    top: 14,
-    padding: 4,
-  },
-  errorCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    width: '100%',
-    maxWidth: 440,
-    alignSelf: 'center',
-  },
-  buttonRowModern: {
-    flexDirection: 'row',
-    gap: 20,
-    marginTop: 16,
-    marginBottom: 32,
-    width: '100%',
-    maxWidth: 440,
-    alignSelf: 'center',
-  },
-}); 
+
+  accountCard: { paddingVertical: 4 },
+  accountRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 56 },
+  accountLabel: { fontSize: fontSizes.subhead, fontFamily: fonts.semibold },
+  accountValue: { flex: 1, textAlign: 'right', fontSize: fontSizes.subhead, fontFamily: fonts.regular },
+  rowDivider: { height: StyleSheet.hairlineWidth },
+  oauthNote: { width: '100%', maxWidth: 440, fontSize: fontSizes.footnote, lineHeight: 18, paddingHorizontal: 8, marginTop: -4, marginBottom: 12 },
+
+
+  sheet: { paddingHorizontal: 20, paddingTop: 8 },
+  sheetHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  sheetTitle: { flex: 1, fontFamily: fonts.bold },
+  sheetClose: { backgroundColor: 'rgba(150, 150, 150, 0.14)', padding: 7, borderRadius: 99 },
+  sheetBody: { gap: 18 },
+  sheetButton: { flex: 0, marginTop: 4 },
+});

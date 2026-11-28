@@ -517,13 +517,13 @@ export default function LibraryScreen() {
       accessibilityRole="button"
       accessibilityLabel={t('tabs.createDeck', 'Deste Oluştur')}
     >
-      {/* Same surface as the Profile stats box (translucent, no border), with a
+      {/* Card surface (same as the form / card rows) with a soft shadow, a
           glowing ⊕ in the middle and the title + hint under it. The whole card
           is the button. */}
       <View
         style={[
           createCardStyles.surface,
-          { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)' },
+          { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder },
         ]}
       >
         <View style={[createCardStyles.plusHalo, { backgroundColor: `${colors.buttonColor}1F` }]}>
@@ -549,7 +549,7 @@ export default function LibraryScreen() {
         </Text>
       </View>
     </TouchableOpacity>
-  ), [colors.buttonColor, colors.text, colors.muted, isDarkMode, navigation, t]);
+  ), [colors.buttonColor, colors.text, colors.muted, colors.cardBackground, colors.cardBorder, navigation, t]);
 
   // Search + filter only earn their space once the library is big enough to
   // need them. Keep them visible while any query/filter is active so the user
@@ -845,9 +845,15 @@ const createCardStyles = StyleSheet.create({
   surface: {
     flex: 1,
     borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    elevation: 5,
   },
   // Soft halo > thin ring > solid orange core: the ⊕ glows without an image.
   plusHalo: {

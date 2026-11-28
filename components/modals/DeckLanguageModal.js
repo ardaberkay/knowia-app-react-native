@@ -17,6 +17,7 @@ import {
 } from '../../services/LanguageService';
 import PhosphorIcon from '../ui/PhosphorIcon';
 import { ICONS } from '../../theme/icons';
+import { useFieldBox } from '../layout/FormField';
 
 
 // Code badge ("JA") instead of a flag: languages aren't countries, and there
@@ -310,9 +311,10 @@ export default function DeckLanguageModal({
  * with face labels, plus a swap button when two languages are picked.
  * Tapping the field opens the picker (`onPress`).
  */
-export function DeckLanguageField({ languages = [], selectedLanguage = [], onPress, onSwap }) {
+export function DeckLanguageField({ languages = [], selectedLanguage = [], onPress, onSwap, error = false }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const box = useFieldBox({ error }); // same box as the form's text fields
   const primaryColor = colors.buttonColor || '#F98A21';
 
   const picked = selectedLanguage
@@ -336,7 +338,7 @@ export function DeckLanguageField({ languages = [], selectedLanguage = [], onPre
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={onPress}
-      style={[fieldStyles.field, { borderColor: colors.inputBorder, backgroundColor: colors.inputBackground }]}
+      style={[fieldStyles.field, box]}
       accessibilityRole="button"
       accessibilityLabel={t('create.selectLanguage', 'Dil seç')}
     >
@@ -367,7 +369,7 @@ export function DeckLanguageField({ languages = [], selectedLanguage = [], onPre
           <PhosphorIcon icon={ICONS.pair} size={20} color={primaryColor} />
         </TouchableOpacity>
       ) : (
-        <PhosphorIcon icon={ICONS.dropdown} size={20} color={colors.muted} />
+        <PhosphorIcon icon={ICONS.dropdown} size={18} color={colors.muted} />
       )}
     </TouchableOpacity>
   );
@@ -521,11 +523,7 @@ const fieldStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    minHeight: 52,
+    paddingVertical: 8,
   },
   placeholder: {
     flex: 1,
