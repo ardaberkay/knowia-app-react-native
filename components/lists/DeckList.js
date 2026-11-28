@@ -6,9 +6,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme/theme';
 import { typography, fontSizes, fonts } from '../../theme/typography';
 import { useTranslation } from 'react-i18next';
+import i18n from 'i18next';
 import { triggerHaptic } from '../../lib/hapticManager';
 import CommunityDeckCard from '../ui/CommunityDeckCard';
-import Svg, { Path } from 'react-native-svg';
 import { getCategoryColors } from '../../theme/colors';
 import { getCategoryIcon, ICONS } from '../../theme/icons';
 import PhosphorIcon from '../ui/PhosphorIcon';
@@ -27,21 +27,21 @@ export const useDeckGridCardHeight = () => {
   }, [width]);
 };
 
-const getInProgressGradient = (percent) => {
-  if (percent >= 75) {
-    return ['#FFCC70', '#FF7505', '#D74400'];
-  }
+// Progress chip: a soft orange in the bar's own hue while in progress; the
+// deep orange + ✓ at 100 %.
+const PROGRESS_CHIP_GRADIENT = ['#FFCC70', '#FF7505', '#D74400'];
+const PROGRESS_CHIP_SOFT = ['#FFB466', '#FF9A3D', '#F7852A'];
 
-  if (percent >= 50) {
-    return ['#FFC888', '#FB7A0E', '#E0500A'];
-  }
-
-  if (percent >= 25) {
-    return ['#FFC2A0', '#F28E2C', '#D45E16'];
-  }
-
-  return ['#FFB890', '#EA8F48', '#C66E30'];
+// 1234 → "1,2B" (TR) / "1.2K": the corner badge and the counts pill keep a fixed size.
+const compactCount = (value, lang) => {
+  const n = Number(value) || 0;
+  if (n < 1000) return String(n);
+  const short = (n / 1000).toFixed(n < 10000 ? 1 : 0).replace(/\.0$/, '');
+  return lang?.startsWith('tr') ? `${short.replace('.', ',')}B` : `${short}K`;
 };
+
+// Frosted look shared by the counts pill and the ranking circle.
+const FROSTED = { backgroundColor: 'rgba(255, 255, 255, 0.22)', borderColor: 'rgba(255, 255, 255, 0.35)' };
 
 // Badge in the card's top-right corner showing what Discover sorts by.
 // Returns { icon, value } or null (counts of 0 show no badge).
@@ -70,7 +70,6 @@ const DeckCard = React.memo(
     marginStyle,
     iconDimensions,
     showPopularityBadge = false,
-    onDeleteDeck,
   }) => {
     const [localFavorite, setLocalFavorite] = useState(
       isInitiallyFavorite
@@ -95,17 +94,12 @@ const DeckCard = React.memo(
     const isProgressCompleted =
       progressPercent >= 100;
     const chapterCount = deck.chapter_count || 0;
-    const isProgressNearComplete =
-      progressPercent >= 75 &&
-      progressPercent < 100;
 
     const progressChipOverlap = 11;
 
     const progressFillMinWidth =
       progressPercent > 0 ? 4 : 0;
 
-    const inProgressGradient =
-      getInProgressGradient(progressPercent);
 
     useEffect(() => {
       setLocalFavorite(isInitiallyFavorite);
@@ -117,14 +111,6 @@ const DeckCard = React.memo(
       setLocalFavorite((prev) => !prev);
 
       onToggleFavorite(deck.id);
-    };
-
-    const handleDeletePress = () => {
-      triggerHaptic('medium');
-
-      if (onDeleteDeck) {
-        onDeleteDeck(deck.id);
-      }
     };
 
     const renderDeckText = (text) => {
@@ -174,57 +160,21 @@ const DeckCard = React.memo(
 
     const renderCardCountBadge = () => {
       if (variant === 'myDecks') {
+        // fixed-size pill, top centre: cards | chapters
         return (
-          <View style={styles.myDecksBadge}>
-            <Svg
-              width={165}
-              height={36}
-              viewBox="0 0 165 36"
-              style={StyleSheet.absoluteFill}
-            >
-              <Path
-                d="
-              M 0 0
-              H 165
-              C 162 11, 153 23, 140 31
-              C 136 34, 131 35, 124 35
-              H 41
-              C 34 35, 29 34, 25 31
-              C 12 23, 3 11, 0 0
-              Z
-            "
-                fill="#FF8D1A"
-              />
-            </Svg>
-            <View style={styles.myDecksBadgeContent}>
-              <PhosphorIcon
-                icon={ICONS.stack}
-                size={16}
-                color="#fff"
-                style={{ marginRight: 3 }}
-              />
-
-              <Text style={styles.myDecksBadgeText}>
-                {deck.card_count || 0}
-              </Text>
-
-              <View style={styles.myDecksDivider} />
-
-              <PhosphorIcon
-                icon={ICONS.chapter}
-                size={16}
-                color="#fff"
-                style={{ marginRight: 3 }}
-              />
-
-              <Text style={styles.myDecksBadgeText}>
-                {deck.chapter_count || 0}
-              </Text>
+          <View style={styles.countsPill}>
+            <View style={styles.countsHalf}>
+              <PhosphorIcon icon={ICONS.stack} size={14} color="#fff" />
+              <Text style={styles.countsText}>{compactCount(deck.card_count, i18n.language)}</Text>
+            </View>
+            <View style={styles.countsDivider} />
+            <View style={styles.countsHalf}>
+              <PhosphorIcon icon={ICONS.chapter} size={14} color="#fff" />
+              <Text style={styles.countsText}>{compactCount(deck.chapter_count, i18n.language)}</Text>
             </View>
           </View>
         );
       }
-      // NORMAL DECKLER — mevcut yapın aynen
       return (
         <View style={styles.deckCountBadge}>
           <View style={styles.cardCountContent}>
@@ -261,28 +211,16 @@ const DeckCard = React.memo(
         <View
           style={[
             styles.progressPercentChip,
-            isProgressNearComplete &&
-            styles.progressPercentChipNearComplete,
             isProgressCompleted &&
             styles.progressPercentChipCompleted,
           ]}
         >
           <LinearGradient
-            colors={
-              isProgressCompleted
-                ? [
-                  '#FFCC70',
-                  '#FF7505',
-                  '#D74400',
-                ]
-                : inProgressGradient
-            }
+            colors={isProgressCompleted ? PROGRESS_CHIP_GRADIENT : PROGRESS_CHIP_SOFT}
             locations={[0, 0.45, 1]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={
-              styles.progressPercentChipGradient
-            }
+            style={styles.progressPercentChipGradient}
           />
 
           <View
@@ -350,9 +288,6 @@ const DeckCard = React.memo(
     const showCardCount =
       variant === 'myDecks' ||
       variant === 'favorite';
-
-    const showDelete =
-      variant === 'myDecks';
 
     const cardCountPositionStyle =
       variant === 'myDecks'
@@ -422,16 +357,13 @@ const DeckCard = React.memo(
                 style={{
                   flex: 1,
                   marginRight: 4,
-                  paddingRight: badge ? 30 : 0,
+                  paddingRight: badge ? 40 : 0,
                 }}
               >
                 <Text
                   numberOfLines={1}
                   ellipsizeMode="tail"
-                  style={[
-                    typography.styles.body,
-                    styles.deckProfileUsername,
-                  ]}
+                  style={styles.deckProfileUsername}
                 >
                   {deck.profiles?.username ||
                     'Kullanıcı'}
@@ -440,42 +372,12 @@ const DeckCard = React.memo(
             </View>
           )}
 
-          {/* Delete */}
-          {showDelete &&
-            onDeleteDeck && (
-              <TouchableOpacity
-                style={[
-                  styles.deckDeleteButton,
-                  {
-                    backgroundColor:
-                      colors.iconBackground,
-                  },
-                ]}
-                onPress={
-                  handleDeletePress
-                }
-                activeOpacity={0.7}
-              >
-                <PhosphorIcon
-                  icon={ICONS.delete}
-                  size={21}
-                  color="#E74C3C"
-                />
-              </TouchableOpacity>
-            )}
-
-          {/* Ranking badge: what the list is sorted by (see BADGE_MODES). */}
+          {/* Ranking badge: fixed 40 circle in the top-right (what the list is
+              sorted by: trend / people / likes icon + the number). */}
           {badge && (
-            <View style={styles.popularityBadge}>
-              <PhosphorIcon
-                icon={badge.icon}
-                size={14}
-                color="#fff"
-              />
-
-              <Text style={styles.popularityBadgeText}>
-                {badge.value}
-              </Text>
+            <View style={styles.cornerBadge} pointerEvents="none">
+              <PhosphorIcon icon={badge.icon} size={12} color="#fff" />
+              <Text style={styles.cornerBadgeText}>{compactCount(badge.value, i18n.language)}</Text>
             </View>
           )}
           {/* Bottom Left - Progress */}
@@ -517,7 +419,7 @@ const DeckCard = React.memo(
           >
             <PhosphorIcon
               icon={localFavorite ? ICONS.favorite : ICONS.favoriteOff}
-              size={21}
+              size={20}
               color={
                 localFavorite
                   ? '#F98A21'
@@ -526,36 +428,14 @@ const DeckCard = React.memo(
             />
           </TouchableOpacity>
 
-          {/* Deck Name */}
-          <View
-            style={{
-              flex: 1,
-              justifyContent: 'center',
-              alignItems: 'center',
-              width: '100%',
-              paddingHorizontal: 12,
-            }}
-          >
+          {/* Deck name: with a to_name the divider sits exactly in the middle
+              (name above it, to_name below), whatever their line counts. */}
+          <View style={styles.titleArea}>
             {deck.to_name ? (
               <>
-                {renderDeckText(deck.name)}
-
-                <View
-                  style={{
-                    width: 60,
-                    height: 2,
-                    backgroundColor:
-                      colors.divider,
-                    borderRadius:
-                      1,
-                    marginVertical:
-                      8,
-                  }}
-                />
-
-                {renderDeckText(
-                  deck.to_name
-                )}
+                <View style={styles.titleHalfTop}>{renderDeckText(deck.name)}</View>
+                <View style={[styles.titleDivider, { backgroundColor: colors.divider }]} />
+                <View style={styles.titleHalfBottom}>{renderDeckText(deck.to_name)}</View>
               </>
             ) : (
               renderDeckText(deck.name)
@@ -572,11 +452,11 @@ const DeckList = ({
   favoriteDecks,
   onToggleFavorite,
   onPressDeck,
-  onDeleteDeck,
   ListHeaderComponent,
   refreshing = false,
   onRefresh,
   showPopularityBadge = false,
+  // 'double': 2-column grid of vertical cards; 'horizontal': wide cards, one per row
   layoutMode = 'double',
   cardVariant = 'favorite',
   loadingMore = false,
@@ -671,41 +551,8 @@ const DeckList = ({
       return builtRows;
     }
 
-    /*
-     * 2 - 3 - 2 - 3...
-     */
-    const pattern = [2, 3];
-
-    let currentIndex = 0;
-    let patternIndex = 0;
-
-    while (
-      currentIndex < decks.length
-    ) {
-      const rowSize =
-        pattern[
-        patternIndex %
-        pattern.length
-        ];
-
-      const rowItems = decks
-        .slice(
-          currentIndex,
-          currentIndex + rowSize
-        )
-        .map(prepareDeck);
-
-      builtRows.push({
-        type:
-          rowSize === 2
-            ? 'double'
-            : 'triple',
-        items: rowItems,
-      });
-
-      currentIndex += rowSize;
-      patternIndex += 1;
-    }
+    // 'horizontal': one wide card per row (community decks)
+    decks.forEach((deck) => builtRows.push({ type: 'horizontal', items: [prepareDeck(deck)] }));
 
     return builtRows;
   }, [
@@ -794,9 +641,6 @@ const DeckList = ({
               showPopularityBadge={
                 showPopularityBadge
               }
-              onDeleteDeck={
-                onDeleteDeck
-              }
             />
           )
         )}
@@ -823,14 +667,13 @@ const DeckList = ({
       DECK_CARD_VERTICAL_HEIGHT,
       categoryIconDimensions,
       showPopularityBadge,
-      onDeleteDeck,
     ]
   );
 
-  const renderTripleRow = useCallback(
+  const renderHorizontalRow = useCallback(
     (row) => (
       <View
-        style={styles.communityList}
+        style={styles.horizontalRow}
       >
         {row.items.map((deck) => (
           <CommunityDeckCard
@@ -864,8 +707,8 @@ const DeckList = ({
           );
         }
 
-        if (row.type === 'triple') {
-          return renderTripleRow(
+        if (row.type === 'horizontal') {
+          return renderHorizontalRow(
             row
           );
         }
@@ -874,7 +717,7 @@ const DeckList = ({
       },
       [
         renderDoubleRow,
-        renderTripleRow,
+        renderHorizontalRow,
       ]
     );
 
@@ -1042,48 +885,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  myDecksBadge: {
-    width: 165,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  myDecksBadgeContent: {
+  // own decks: cards | chapters, fixed size, top centre
+  countsPill: {
+    width: 112,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    ...FROSTED,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
   },
+  countsHalf: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
+  countsText: { color: '#fff', fontFamily: fonts.bold, fontSize: fontSizes.footnote },
+  countsDivider: { width: 1, height: 14, backgroundColor: 'rgba(255, 255, 255, 0.4)' },
 
-  myDecksBadgeText: {
-    color: '#fff',
-    fontFamily: fonts.bold,
-    fontSize: fontSizes.body,
-  },
-
-  myDecksDivider: {
-    width: 1,
-    height: 20,
-    backgroundColor: 'rgba(255,255,255,0.45)',
-    marginHorizontal: 9,
-  },
-  chapterCountContainer: {
-    marginLeft: 7,
-    alignSelf: 'stretch',
-    paddingHorizontal: 7,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    borderRadius: 99,
-    gap: 2
-  },
-  chapterCountText: {
-    color: '#fff',
-    fontSize: fontSizes.footnote,
-    fontFamily: fonts.semibold,
-  },
+  titleArea: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
+  titleHalfTop: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'flex-end' },
+  titleHalfBottom: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'flex-start' },
+  titleDivider: { width: 60, height: 2, borderRadius: 1, marginVertical: 8 },
   progressContainer: {
     position: 'absolute',
     bottom:
@@ -1100,7 +919,7 @@ const styles = StyleSheet.create({
   },
 
   cardCountTopLeft: {
-    top: 0, left: 0, right: 0, alignItems: 'center',
+    top: 8, left: 0, right: 0, alignItems: 'center',
   },
 
   cardCountBottomLeft: {
@@ -1226,19 +1045,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
 
-  progressPercentChipNearComplete: {
-    shadowColor: '#FB7B0B',
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    shadowOpacity: 0.45,
-    shadowRadius:
-      7,
-    elevation: 4,
-    borderColor:
-      'rgba(255, 255, 255, 0.45)',
-  },
 
   progressPercentChipCompleted: {
     shadowColor: '#FF7505',
@@ -1274,81 +1080,57 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 10,
     top: 8,
-    left: 10,
+    left: 8,
+    right: 8,
   },
 
   deckProfileAvatar: {
     width: 32,
     height: 32,
-    borderRadius: 99,
-    marginRight: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
   },
 
   deckProfileUsername: {
-    fontSize:
-      fontSizes.body,
-    color: '#BDBDBD',
-    fontFamily: fonts.bold,
-    width: '95%',
+    fontSize: fontSizes.subhead,
+    fontFamily: fonts.semibold,
+    color: 'rgba(255, 255, 255, 0.8)',
   },
 
   favoriteButton: {
     position: 'absolute',
-    bottom:
-      8,
-    right: 10,
+    bottom: 8,
+    right: 8,
     zIndex: 10,
-    padding:
-      8,
-    borderRadius: 999,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
-  deckDeleteButton: {
+  // 44 circle centred on the card's corner arc (radius 18): it spills out of
+  // the corner and the card cuts it with a concentric curve
+  cornerBadge: {
     position: 'absolute',
-    top:
-      10,
-    right: 10,
-    zIndex: 10,
-    padding:
-      8,
-    borderRadius: 999,
-  },
-
-  popularityContainer: {
-    position: 'absolute',
-    bottom:
-      12,
-    left: 12,
-    zIndex: 10,
-  },
-  popularityBadge: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    width: 62,
-    height: 28,
-    backgroundColor: '#FF6B35',
-    borderBottomLeftRadius: 14,
-    flexDirection: 'row',
+    top: -4,
+    right: -4,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    ...FROSTED,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 3,
   },
-
-  popularityBadgeText: {
+  cornerBadgeText: {
     color: '#fff',
     fontSize: fontSizes.caption,
     fontFamily: fonts.bold,
-    marginLeft: 4,
-    textAlign: 'center',
+    lineHeight: 14,
   },
   noDecksEmpty: {
     height:
@@ -1370,13 +1152,8 @@ const styles = StyleSheet.create({
       150,
   },
 
-  communityList: {
-    marginTop:
-      16,
-    marginBottom:
-      8,
-    marginHorizontal:
-      2,
+  horizontalRow: {
+    marginHorizontal: 4,
   },
 });
 

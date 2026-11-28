@@ -74,20 +74,15 @@ const CommunityDeckCard = ({
                                 }
                                 style={styles.userAvatar}
                             />
-                            <Text style={[typography.styles.subhead, styles.usernameText]}
-                                numberOfLines={2}
+                            <Text style={styles.usernameText}
+                                numberOfLines={1}
                                 ellipsizeMode="tail">
                                 {username}
                             </Text>
                         </View>
 
                         <TouchableOpacity
-                            style={{
-                                backgroundColor: colors.iconBackground,
-                                padding: 5,
-                                borderRadius: 999,
-                                zIndex: 10,
-                            }}
+                            style={[styles.favoriteButton, { backgroundColor: colors.iconBackground }]}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                             onPress={handleFavoritePress}
                             activeOpacity={0.7}
@@ -100,29 +95,20 @@ const CommunityDeckCard = ({
                         </TouchableOpacity>
                     </View>
 
-                    {/* Orta Satır: MaskedView Tabanlı Başlık Alanı */}
+                    {/* Title + subtitle (to_name); without a to_name the name may take 2 lines */}
                     <View style={styles.titleBlock}>
                         <Text
-                            style={[typography.styles.headline, styles.mainTitle]}
-                            numberOfLines={1}
+                            style={styles.mainTitle}
+                            numberOfLines={deck.to_name ? 1 : 2}
                             ellipsizeMode="tail"
                         >
                             {deck.name}
                         </Text>
-
-                        {deck.to_name && (
-                            <>
-                                <Text style={styles.separatorDot}></Text>
-
-                                <Text
-                                    style={[typography.styles.headline, styles.subTitle]}
-                                    numberOfLines={1}
-                                    ellipsizeMode="tail"
-                                >
-                                    {deck.to_name}
-                                </Text>
-                            </>
-                        )}
+                        {deck.to_name ? (
+                            <Text style={styles.subTitle} numberOfLines={1} ellipsizeMode="tail">
+                                {deck.to_name}
+                            </Text>
+                        ) : null}
                     </View>
 
                     {/* Alt Satır: Metrikler */}
@@ -139,7 +125,7 @@ const CommunityDeckCard = ({
                         >
                             {deck.card_count || 0} {t('home.cardCount', 'Kart')}
                         </Text>
-                        <Text style={[styles.separatorDot, { width: 4, height: 4 }]}></Text>
+                        <View style={styles.metaDot} />
                         <PhosphorIcon
                             icon={ICONS.chapter}
                             size={13}
@@ -208,54 +194,61 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         flex: 1,
         marginRight: 10,
+        transform: [{ translateY: -2 }],
     },
     userAvatar: {
-        width: 24,
-        height: 24,
-        borderRadius: 99,
-        marginRight: 5,
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        marginRight: 8,
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.4)',
     },
     usernameText: {
-        fontFamily: fonts.bold,
-        fontSize: fontSizes.footnote,
-        color: 'rgba(255, 255, 255, 0.75)',
+        flexShrink: 1,
+        fontFamily: fonts.semibold,
+        fontSize: fontSizes.caption,
+        color: 'rgba(255, 255, 255, 0.8)',
+    },
+    favoriteButton: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 10,
     },
 
     // --- Başlık Stilleri ---
     titleBlock: {
-        height: 22,
-        justifyContent: 'center',
         width: '100%',
-        transform: [{ translateY: -4 }],
-
-    },
-    dualTitleWrapper: {
-        flexDirection: 'flex-start',
-        width: '100%',
+        gap: 2,
     },
     mainTitle: {
         fontSize: fontSizes.body,
         fontFamily: fonts.bold,
         color: '#FFFFFF',
+        lineHeight: 20,
     },
     subTitle: {
-        fontSize: fontSizes.body,
+        fontSize: fontSizes.subhead,
         fontFamily: fonts.medium,
-        color: '#FFFFFF',
+        color: 'rgba(255, 255, 255, 0.75)',
+        lineHeight: 18,
     },
-    separatorDot: {
-        width: 28,
-        height: StyleSheet.hairlineWidth,
+    metaDot: {
+        width: 3,
+        height: 3,
         borderRadius: 2,
-        backgroundColor: 'rgba(255, 255, 255, 0.5)',
+        backgroundColor: 'rgba(255, 255, 255, 0.6)',
         marginHorizontal: 8,
-        marginTop: 2
+        marginBottom: 6,
     },
     bottomRow: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-end',
+        height: 32,
+        paddingBottom: 2,
     },
     metaText: {
         fontSize: fontSizes.micro,

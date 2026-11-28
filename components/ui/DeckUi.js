@@ -67,12 +67,10 @@ const FadeText = ({ text, style, maxWidth = 120, maxChars = 15 }) => {
 
 // Progress yüzdesine göre chip gradient'ı — açıktan %100 (tik) paletine (#FFCC70 / #FF7505 / #D74400) doğru.
 // En alt kademe daha açıktır ama tamamen soluk/krem değil; turuncu doygunluğu korunur.
-const getInProgressGradient = (percent) => {
-  if (percent >= 75) return ['#FFCC70', '#FF7505', '#D74400']; // %100 ile aynı üçlü (yaklaşan kademe)
-  if (percent >= 50) return ['#FFC888', '#FB7A0E', '#E0500A'];
-  if (percent >= 25) return ['#FFC2A0', '#F28E2C', '#D45E16'];
-  return ['#FFB890', '#EA8F48', '#C66E30'];
-};
+// Progress chip: a soft orange in the bar's own hue while in progress; the
+// deep orange + ✓ at 100 %.
+const PROGRESS_CHIP_GRADIENT = ['#FFCC70', '#FF7505', '#D74400'];
+const PROGRESS_CHIP_SOFT = ['#FFB466', '#FF9A3D', '#F7852A'];
 
 // Fonksiyonu React.memo ile sarmak için const yapısına çevirdik
 const DeckCard = ({
@@ -117,8 +115,6 @@ const DeckCard = ({
   const progressValue = Math.max(0, Math.min(1, Number(deck?.deckProgress?.progress || 0)));
   const progressPercent = Math.round(progressValue * 100);
   const isProgressCompleted = progressPercent >= 100;
-  const isProgressNearComplete = progressPercent >= 75 && progressPercent < 100;
-  const inProgressGradient = getInProgressGradient(progressPercent);
   // Chip slightly bigger; overlap'i dengeleyip düşük % görünürlüğünü koruyoruz.
   const progressChipOverlap = 11;
   const progressFillMinWidth = progressPercent > 0 ? 4 : 0;
@@ -175,17 +171,18 @@ const DeckCard = ({
               />
               <FadeText
                 text={deck.profiles?.username || 'Kullanıcı'}
-                style={[typography.styles.body, styles.deckProfileUsername]}
+                style={styles.deckProfileUsername}
                 maxWidth={'75%'}
                 maxChars={12}
               />
             </View>
             <View style={styles.centerContentContainer}>
+              {/* single-line titles here, so the group is centred as a whole */}
               <View style={styles.deckHeaderModern}>
                 {deck.to_name ? (
                   <>
                     {renderDeckTitle(deck.name)}
-                    <View style={{ width: 60, height: 2, backgroundColor: colors.divider, borderRadius: 1, marginVertical: 10 }} />
+                    <View style={[styles.titleDivider, { backgroundColor: colors.divider }]} />
                     {renderDeckTitle(deck.to_name)}
                   </>
                 ) : (
@@ -218,11 +215,10 @@ const DeckCard = ({
               <View style={[styles.deckCountBadge, styles.progressBottomBadge]}>
                 <View style={[
                   styles.progressPercentChip,
-                  isProgressNearComplete && styles.progressPercentChipNearComplete,
                   isProgressCompleted && styles.progressPercentChipCompleted,
                 ]}>
                   <LinearGradient
-                    colors={isProgressCompleted ? ['#FFCC70', '#FF7505', '#D74400'] : inProgressGradient}
+                    colors={isProgressCompleted ? PROGRESS_CHIP_GRADIENT : PROGRESS_CHIP_SOFT}
                     locations={[0, 0.45, 1]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
@@ -263,15 +259,7 @@ const DeckCard = ({
           )}
           {!isFeatured ? (
             <TouchableOpacity
-              style={{
-                position: 'absolute',
-                bottom: 8,
-                right: 8,
-                backgroundColor: colors.iconBackground,
-                padding: 5,
-                borderRadius: 999,
-                zIndex: 10,
-              }}
+              style={[styles.favoriteButton, { backgroundColor: colors.iconBackground }]}
               onPress={handleFavoritePress} // YENİ FONKSİYONUMUZA BAĞLADIK
               activeOpacity={0.7}
             >
@@ -357,6 +345,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '100%',
   },
+  titleDivider: { width: 60, height: 2, borderRadius: 1, marginVertical: 10 },
+  favoriteButton: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
   deckCardFeatured: {
     marginRight: 0,
     marginBottom: 0,
@@ -413,16 +413,17 @@ const styles = StyleSheet.create({
     maxWidth: 120,
   },
   deckProfileAvatar: {
-    width: 27,
-    height: 27,
-    borderRadius: 11,
-    marginRight: 6,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
   },
   deckProfileUsername: {
-    fontSize: fontSizes.subhead,
-    color: '#BDBDBD',
-    fontFamily: fonts.bold,
-
+    fontSize: fontSizes.footnote,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontFamily: fonts.semibold,
   },
   backgroundCategoryIcon: {
     position: 'absolute',
@@ -542,14 +543,6 @@ const styles = StyleSheet.create({
   },
   progressBottomFillCompleted: {
     backgroundColor: '#FFFFFF',
-  },
-  progressPercentChipNearComplete: {
-    shadowColor: '#FB7B0B',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.45,
-    shadowRadius: 7,
-    elevation: 4,
-    borderColor: 'rgba(255, 255, 255, 0.45)',
   },
   progressPercentChipCompleted: {
     shadowColor: '#FF7505',

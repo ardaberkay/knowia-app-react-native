@@ -359,11 +359,8 @@ export default function CategoryDeckListScreen({ route }) {
               ? 'inProgress'
               : 'favorite'
           }
-          layoutMode={
-            isProgressDeck
-              ? 'double'
-              : 'pattern'
-          }
+          // community decks: wide cards; every other list: 2-column vertical cards
+          layoutMode={category === 'communityDecks' ? 'horizontal' : 'double'}
           onScrollBeginDrag={() =>
             Keyboard.dismiss()
           }
