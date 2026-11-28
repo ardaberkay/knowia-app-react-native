@@ -10,11 +10,11 @@ import { getCategoryColors } from '../../theme/colors';
 import { getCategoryIcon, ICONS } from '../../theme/icons';
 import PhosphorIcon from './PhosphorIcon';
 
-const ROW_HEIGHT = 22; // creator row and counts row
+const ROW_HEIGHT = 24; // creator row and counts row
 
 /**
  * Wide deck card (community decks). Left: category tile. Right: creator on
- * top, counts at the bottom (both 22 high), the title centred in the space
+ * top, counts at the bottom (both 24 high), the title centred in the space
  * between (name, to_name under it; without a to_name the name may take two
  * lines). The heart is pinned to the top-right corner and takes no room in
  * the layout.
@@ -166,9 +166,9 @@ const styles = StyleSheet.create({
         paddingRight: 40, // room for the pinned heart
     },
     userAvatar: {
-        width: 22,
-        height: 22,
-        borderRadius: 11,
+        width: 24,
+        height: 24,
+        borderRadius: 12,
         marginRight: 8,
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.4)',
