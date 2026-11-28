@@ -272,7 +272,8 @@
     "optional": "Optional",
     "example": "Example",
     "cancel": "Cancel",
-    "clear": "Clear"
+    "clear": "Clear",
+    "user": "User"
   },
   "moderation": {
     "reportUser": "Report user",

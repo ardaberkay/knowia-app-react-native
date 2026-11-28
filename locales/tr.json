@@ -269,7 +269,8 @@
     "optional": "Opsiyonel",
     "example": "Örnek",
     "cancel": "İptal",
-    "clear": "Temizle"
+    "clear": "Temizle",
+    "user": "Kullanıcı"
   },
   "moderation": {
     "reportUser": "Kullanıcıyı şikayet et",

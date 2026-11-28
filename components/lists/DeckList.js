@@ -113,7 +113,8 @@ const DeckCard = React.memo(
       onToggleFavorite(deck.id);
     };
 
-    const renderDeckText = (text) => {
+    // alone (no to_name) the name may always take 2 lines
+    const renderDeckText = (text, alone = false) => {
       if (!text) {
         return null;
       }
@@ -121,7 +122,7 @@ const DeckCard = React.memo(
       const isSingleWord =
         !text.trim().includes(' ');
 
-      if (isSingleWord) {
+      if (isSingleWord && !alone) {
         return (
           <Text
             numberOfLines={1}
@@ -438,7 +439,7 @@ const DeckCard = React.memo(
                 <View style={styles.titleHalfBottom}>{renderDeckText(deck.to_name)}</View>
               </>
             ) : (
-              renderDeckText(deck.name)
+              renderDeckText(deck.name, true)
             )}
           </View>
         </LinearGradient>
